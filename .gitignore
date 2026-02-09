@@ -1,0 +1,22 @@
+# ROS2 Build Artifacts
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+.Python
+
+# External dependencies (cloned by Docker)
+src/naoqi_driver2/
+src/libqi/
+src/hri_msgs/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
