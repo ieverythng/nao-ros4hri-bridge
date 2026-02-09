@@ -1,3 +1,4 @@
+# .gitignore
 # ROS2 Build Artifacts
 build/
 install/
@@ -10,8 +11,11 @@ __pycache__/
 
 # External dependencies (cloned by Docker)
 src/naoqi_driver2/
-src/libqi/
-src/hri_msgs/
+src/naoqi_libqi/
+src/naoqi_libqicore/
+src/naoqi_bridge_msgs2/
+src/nao_meshes2/
+src/pepper_meshes2/
 
 # IDEs
 .vscode/
@@ -20,3 +24,4 @@ src/hri_msgs/
 
 # OS
 .DS_Store
+
