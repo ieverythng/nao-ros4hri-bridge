@@ -1,10 +1,9 @@
 # docker/Dockerfile
 FROM ros:jazzy-ros-base-noble
 
-# Avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install build tools
+# Install build tools + MISSING DEPENDENCIES
 RUN apt-get update && apt-get install -y \
     python3-pip \
     python3-vcstool \
@@ -15,17 +14,26 @@ RUN apt-get update && apt-get install -y \
     curl \
     build-essential \
     cmake \
+    # Required by naoqi_driver2
+    ros-jazzy-cv-bridge \
+    ros-jazzy-ament-cmake \
+    ros-jazzy-ament-index-cpp \
+    ros-jazzy-sensor-msgs \
+    ros-jazzy-geometry-msgs \
+    ros-jazzy-tf2 \
+    ros-jazzy-tf2-ros \
+    libboost-all-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Create workspace
 WORKDIR /ros2_ws
 RUN mkdir -p /ros2_ws/src
 
-# Clone naoqi_driver2 FIRST (it contains dependencies.repos)
+# Clone naoqi_driver2 FIRST
 RUN cd /ros2_ws/src && \
     git clone https://github.com/ros-naoqi/naoqi_driver2.git
 
-# Use naoqi_driver2's dependencies.repos to clone everything else
+# Use naoqi_driver2's dependencies.repos
 RUN cd /ros2_ws/src && \
     vcs import < naoqi_driver2/dependencies.repos
 
@@ -35,17 +43,16 @@ COPY src/ /ros2_ws/src/
 # Initialize rosdep
 RUN rosdep update || true
 
-# Install ROS dependencies
-# Using || true to continue even if some dependencies fail
+# Install remaining ROS dependencies via rosdep
 RUN apt-get update && \
     rosdep install --from-paths /ros2_ws/src --ignore-src -r -y || true && \
     rm -rf /var/lib/apt/lists/*
 
-# Agree to mesh licenses (non-interactive)
+# Mesh licenses
 ENV I_AGREE_TO_NAO_MESHES_LICENSE=1
 ENV I_AGREE_TO_PEPPER_MESHES_LICENSE=1
 
-# Build workspace (skip meshes to avoid architecture issues)
+# Build workspace
 RUN bash -c "source /opt/ros/jazzy/setup.bash && \
     cd /ros2_ws && \
     colcon build --symlink-install \

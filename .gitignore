@@ -25,3 +25,9 @@ src/pepper_meshes2/
 # OS
 .DS_Store
 
+local_build/src/nao_meshes/
+local_build/src/naoqi_bridge_msgs2/
+local_build/src/naoqi_driver2/
+local_build/src/naoqi_libqi/
+local_build/src/pepper_meshes/
+local_build/src/libqicore/
