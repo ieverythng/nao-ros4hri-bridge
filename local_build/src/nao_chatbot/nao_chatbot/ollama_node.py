@@ -47,9 +47,9 @@ class OllamaChatbot(Node):
             self.get_logger().warn("Received LiveSpeech without usable text field")
             return
 
-        output = String()
-        output.data = f"{self.reply_prefix}{text}"
-        self._speak(output.data)
+        reply = self._build_reply(text)
+        output_text = f"{self.reply_prefix}{reply}"
+        self._speak(output_text)
         self.get_logger().info(f'Received user text: "{text}"')
 
     def _speak(self, text: str) -> None:
@@ -71,6 +71,21 @@ class OllamaChatbot(Node):
         msg.data = text
         self.speech_publisher.publish(msg)
         self.get_logger().info(f'Published fallback speech on "{self.output_topic}": {text}')
+
+    @staticmethod
+    def _build_reply(user_text: str) -> str:
+        lowered = user_text.lower()
+        if any(token in lowered for token in ("hello", "hi", "hey")):
+            return "Hello! Nice to meet you."
+        if "how are you" in lowered:
+            return "I am doing well. Thank you for asking."
+        if "your name" in lowered or "who are you" in lowered:
+            return "I am the Nao chatbot bridge."
+        if "help" in lowered:
+            return "You can greet me, ask my name, or ask how I am."
+        if "slavic" in lowered:
+            return "So you are talking about the hottest girl in the world?"    
+        return "I heard you. We are testing the chat to speech pipeline."
 
     @staticmethod
     def _extract_text(msg: LiveSpeech) -> str:
