@@ -1,4 +1,5 @@
 from setuptools import find_packages, setup
+from glob import glob
 
 package_name = 'nao_chatbot'
 
@@ -10,6 +11,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/launch', glob('launch/*.launch.py')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -24,6 +26,9 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'nao_rqt_bridge_node = nao_chatbot.nao_rqt_bridge:main',
+            'mission_controller_node = nao_chatbot.mission_controller:main',
+            'ollama_responder_node = nao_chatbot.ollama_responder:main',
             'ollama_node = nao_chatbot.ollama_node:main',
         ],
     },
