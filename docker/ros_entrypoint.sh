@@ -1,4 +1,3 @@
-# docker/ros_entrypoint.sh
 #!/bin/bash
 set -e
 
@@ -6,8 +5,8 @@ set -e
 source /opt/ros/jazzy/setup.bash
 
 # Source workspace if exists
-if [ -f /ros2_ws/install/setup.bash ]; then
-  source /ros2_ws/install/setup.bash
+if [ -f /home/ubuntu/ws/install/setup.bash ]; then
+  source /home/ubuntu/ws/install/setup.bash
   echo "✅ Workspace sourced successfully"
 else
   echo "⚠️  Workspace not built yet"
