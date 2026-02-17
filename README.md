@@ -24,6 +24,44 @@ backend mode:
 /chatbot/backend/request -> ollama_responder_node -> /chatbot/backend/response
 ```
 
+### Message Flow Diagrams
+
+Rules mode:
+
+```mermaid
+flowchart LR
+    A[User in rqt_chat] --> B["/humans/voices/anonymous_speaker/speech (LiveSpeech)"]
+    B --> C[nao_rqt_bridge_node]
+    C --> D["/chatbot/user_text (String)"]
+    D --> E["mission_controller_node (mode=rules)"]
+    E --> F["/chatbot/assistant_text (String)"]
+    F --> C
+    C --> G["/tts_engine/tts (TTS action)"]
+    C --> H["/speech (String)"]
+    G --> I[Robot output + rqt assistant bubble]
+    H --> I
+```
+
+Backend mode (Ollama):
+
+```mermaid
+flowchart LR
+    A[User in rqt_chat] --> B["/humans/voices/anonymous_speaker/speech (LiveSpeech)"]
+    B --> C[nao_rqt_bridge_node]
+    C --> D["/chatbot/user_text (String)"]
+    D --> E["mission_controller_node (mode=backend)"]
+    E --> F["/chatbot/backend/request (String)"]
+    F --> G[ollama_responder_node]
+    G --> H["/chatbot/backend/response (String)"]
+    H --> E
+    E --> I["/chatbot/assistant_text (String)"]
+    I --> C
+    C --> J["/tts_engine/tts (TTS action)"]
+    C --> K["/speech (String)"]
+    J --> L[Robot output + rqt assistant bubble]
+    K --> L
+```
+
 ## Repository Layout
 
 ```text
@@ -121,6 +159,18 @@ ros2 launch nao_chatbot nao_chatbot_stack.launch.py \
   network_interface:=wlp1s0 \
   mission_mode:=rules \
   ollama_enabled:=false
+```
+
+Start stack with Ollama backend mode:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_stack.launch.py \
+  start_naoqi_driver:=true \
+  nao_ip:=10.10.200.149 \
+  nao_port:=9559 \
+  network_interface:=wlp1s0 \
+  mission_mode:=backend \
+  ollama_enabled:=true
 ```
 
 Important args:

@@ -1,3 +1,5 @@
+import time
+
 import rclpy
 from hri_msgs.msg import LiveSpeech
 from rclpy.action import ActionClient
@@ -22,6 +24,7 @@ class NaoRqtBridge(Node):
         self.declare_parameter("also_publish_speech_topic", True)
         self.declare_parameter("tts_action_name", "/tts_engine/tts")
         self.declare_parameter("reply_prefix", "")
+        self.declare_parameter("dedupe_window_sec", 0.8)
 
         self.input_speech_topic = self.get_parameter("input_speech_topic").value
         self.user_text_topic = self.get_parameter("user_text_topic").value
@@ -33,6 +36,11 @@ class NaoRqtBridge(Node):
         ).value
         self.tts_action_name = self.get_parameter("tts_action_name").value
         self.reply_prefix = self.get_parameter("reply_prefix").value
+        self.dedupe_window_sec = float(self.get_parameter("dedupe_window_sec").value)
+        self._last_user_text = ""
+        self._last_user_text_ts = 0.0
+        self._last_assistant_text = ""
+        self._last_assistant_text_ts = 0.0
 
         self.user_text_publisher = self.create_publisher(String, self.user_text_topic, 10)
         self.naoqi_speech_publisher = self.create_publisher(
@@ -63,6 +71,15 @@ class NaoRqtBridge(Node):
         if not text:
             self.get_logger().warn("LiveSpeech received without usable text")
             return
+        now = time.monotonic()
+        if (
+            text == self._last_user_text
+            and now - self._last_user_text_ts <= self.dedupe_window_sec
+        ):
+            self.get_logger().warn(f'Ignored duplicate user text within {self.dedupe_window_sec}s')
+            return
+        self._last_user_text = text
+        self._last_user_text_ts = now
 
         user_msg = String()
         user_msg.data = text
@@ -73,6 +90,17 @@ class NaoRqtBridge(Node):
         text = f"{self.reply_prefix}{msg.data}".strip()
         if not text:
             return
+        now = time.monotonic()
+        if (
+            text == self._last_assistant_text
+            and now - self._last_assistant_text_ts <= self.dedupe_window_sec
+        ):
+            self.get_logger().warn(
+                f'Ignored duplicate assistant text within {self.dedupe_window_sec}s'
+            )
+            return
+        self._last_assistant_text = text
+        self._last_assistant_text_ts = now
         self._send_robot_output(text)
 
     def _send_robot_output(self, text: str) -> None:
@@ -99,7 +127,6 @@ class NaoRqtBridge(Node):
             if isinstance(value, str) and value.strip():
                 return value.strip()
         return ""
-
 
 def main(args=None) -> None:
     rclpy.init(args=args)
