@@ -2,65 +2,31 @@
 
 ROS 2 Jazzy workspace for NAO + ROS4HRI + modular chatbot orchestration.
 
-This repository is now configured with `src/` as the canonical source tree used by Docker builds.
+This repository uses `src/` as the canonical source tree and builds the runtime image `iiia:nao`.
 
-## Architecture Summary
+## Current Architecture
 
-- `nao_rqt_bridge_node`: bridge between ROS4HRI chat topics and robot outputs
-- `mission_controller_node`: intent extraction and routing policy
-- `ollama_responder_node`: optional Ollama backend responder
-- `ollama_node`: legacy entrypoint for compatibility (bridge + mission controller)
+Main nodes:
+
+- `nao_rqt_bridge_node`: ROS4HRI I/O bridge (`LiveSpeech` in, TTS + `/speech` out)
+- `mission_controller_node`: intent/routing logic (`rules` or `backend`)
+- `ollama_responder_node`: Ollama backend client with prompt/context controls
+- `ollama_node`: legacy compatibility entrypoint (bridge + mission controller)
+
+High-level flow:
 
 ```text
-User -> rqt_chat -> /humans/voices/anonymous_speaker/speech (LiveSpeech)
-   -> nao_rqt_bridge_node -> /chatbot/user_text
-   -> mission_controller_node (mode=rules|backend)
-      -> /chatbot/assistant_text
-         -> nao_rqt_bridge_node
-            -> /tts_engine/tts (for rqt_chat robot message bubble)
-            -> /speech (for naoqi_driver TTS bridge)
-
-backend mode:
-/chatbot/backend/request -> ollama_responder_node -> /chatbot/backend/response
+User/rqt_chat -> /humans/voices/anonymous_speaker/speech (LiveSpeech)
+  -> nao_rqt_bridge_node -> /chatbot/user_text
+  -> mission_controller_node
+       rules mode   -> /chatbot/assistant_text
+       backend mode -> /chatbot/backend/request -> ollama_responder_node -> /chatbot/backend/response -> /chatbot/assistant_text
+  -> nao_rqt_bridge_node -> /tts_engine/tts + /speech
 ```
 
-### Message Flow Diagrams
+Extra control channel:
 
-Rules mode:
-
-```mermaid
-flowchart LR
-    A[User in rqt_chat] --> B["/humans/voices/anonymous_speaker/speech (LiveSpeech)"]
-    B --> C[nao_rqt_bridge_node]
-    C --> D["/chatbot/user_text (String)"]
-    D --> E["mission_controller_node (mode=rules)"]
-    E --> F["/chatbot/assistant_text (String)"]
-    F --> C
-    C --> G["/tts_engine/tts (TTS action)"]
-    C --> H["/speech (String)"]
-    G --> I[Robot output + rqt assistant bubble]
-    H --> I
-```
-
-Backend mode (Ollama):
-
-```mermaid
-flowchart LR
-    A[User in rqt_chat] --> B["/humans/voices/anonymous_speaker/speech (LiveSpeech)"]
-    B --> C[nao_rqt_bridge_node]
-    C --> D["/chatbot/user_text (String)"]
-    D --> E["mission_controller_node (mode=backend)"]
-    E --> F["/chatbot/backend/request (String)"]
-    F --> G[ollama_responder_node]
-    G --> H["/chatbot/backend/response (String)"]
-    H --> E
-    E --> I["/chatbot/assistant_text (String)"]
-    I --> C
-    C --> J["/tts_engine/tts (TTS action)"]
-    C --> K["/speech (String)"]
-    J --> L[Robot output + rqt assistant bubble]
-    K --> L
-```
+- `mission_controller_node` publishes posture commands to `/chatbot/posture_command` (`stand`, `sit`, `kneel`).
 
 ## Repository Layout
 
@@ -84,29 +50,25 @@ flowchart LR
 └── README.md
 ```
 
-## Docker Build
+## Docker
 
-Build the image:
+Build:
 
 ```bash
 ./scripts/build_docker.sh
 ```
 
-This builds tag:
+Build output tag:
 
 ```bash
 iiia:nao
 ```
 
-The Dockerfile now:
+Current Docker strategy:
 
-- uses workspace `/home/ubuntu/ws`
-- installs ROS4HRI chat dependencies from SocialMinds apt repo:
-  - `socialminds-ros-jazzy-rqt-chat`
-  - `socialminds-ros-jazzy-tts-msgs`
-  - `socialminds-ros-jazzy-hri-msgs`
-  - `socialminds-ros-jazzy-hri-actions-msgs`
-- builds `src/` content into `/home/ubuntu/ws/install`
+- `docker/Dockerfile` extends the proven local base image `iiia:nao`
+- overlays repo `src/` into `/home/ubuntu/ws/src`
+- rebuilds `nao_chatbot` package only
 
 ## Run Container
 
@@ -116,7 +78,7 @@ On host:
 xhost +SI:localuser:root
 ```
 
-Start container:
+Run:
 
 ```bash
 docker run -it --rm --network host \
@@ -143,49 +105,91 @@ xhost -SI:localuser:root
 
 ## Launch Stack
 
-Show available launch arguments:
+Show launch arguments:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_stack.launch.py --show-args
 ```
 
-Start stack with NAO driver:
+### Rules mode (deterministic)
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_stack.launch.py \
   start_naoqi_driver:=true \
   nao_ip:=10.10.200.149 \
-  nao_port:=9559 \
   network_interface:=wlp1s0 \
   mission_mode:=rules \
   ollama_enabled:=false
 ```
 
-Start stack with Ollama backend mode:
+### Backend mode (Ollama-first)
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_stack.launch.py \
   start_naoqi_driver:=true \
   nao_ip:=10.10.200.149 \
-  nao_port:=9559 \
   network_interface:=wlp1s0 \
   mission_mode:=backend \
-  ollama_enabled:=true
+  ollama_enabled:=true \
+  backend_fallback_to_rules:=false \
+  ollama_model:=llama3.2:1b \
+  ollama_context_window_tokens:=4096 \
+  ollama_first_request_timeout_sec:=60.0 \
+  ollama_request_timeout_sec:=20.0
 ```
 
-Important args:
+## Key Launch Arguments (Current)
 
-- `start_naoqi_driver` (`false` by default)
+Core:
+
+- `start_naoqi_driver`
 - `nao_ip`
 - `nao_port`
-- `network_interface` (example: `wlp1s0`, `enx...`; avoid non-existing `eth0`)
+- `network_interface`
 - `qi_listen_url`
-- `mission_mode` (`rules` or `backend`)
-- `ollama_enabled` (`true` or `false`)
+- `mission_mode` (`rules` | `backend`)
 
-## Launch rqt_chat
+Mission controller:
 
-Inside container (after sourcing ROS):
+- `backend_fallback_to_rules` (default `false`)
+- `backend_response_timeout_sec` (default `30.0`)
+- `posture_command_topic` (default `/chatbot/posture_command`)
+
+Ollama responder:
+
+- `ollama_enabled`
+- `ollama_model` (default `llama3.2:1b`)
+- `ollama_url` (default `http://localhost:11434/api/chat`)
+- `ollama_context_window_tokens` (maps to Ollama `num_ctx`)
+- `ollama_request_timeout_sec`
+- `ollama_first_request_timeout_sec`
+- `ollama_temperature`
+- `ollama_top_p`
+- `ollama_robot_name`
+- `ollama_persona_prompt_path` (optional file prompt)
+- `ollama_prompt_addendum` (inline extra instruction)
+
+## Prompt and Personality
+
+`ollama_responder` supports layered prompt composition:
+
+1. optional persona file (`ollama_persona_prompt_path`)
+2. templated `system_prompt` (supports `{robot_name}`)
+3. optional `prompt_addendum`
+
+It also supports periodic identity reinforcement (`identity_reminder_every_n_turns`) to keep long-horizon personality consistency.
+
+## Context Window
+
+Context window is explicitly configurable through:
+
+- `ollama_context_window_tokens` -> Ollama `options.num_ctx`
+
+So yes, context window is now controlled by launch args (recommended for Docker workflows).
+
+## rqt_chat Launch
+
+Inside container:
 
 ```bash
 export LIBGL_ALWAYS_SOFTWARE=1
@@ -193,7 +197,7 @@ export QT_X11_NO_MITSHM=1
 ros2 run rqt_gui rqt_gui --standalone rqt_chat.chat.ChatPlugin --force-discover
 ```
 
-If you see `could not connect to display :0`, fix host X11 auth first:
+If display fails:
 
 ```bash
 xhost +SI:localuser:root
@@ -201,44 +205,54 @@ xhost +SI:localuser:root
 
 ## Development Loop
 
-For normal development, edit files directly under:
+Edit:
 
 ```text
 src/nao_chatbot/
 ```
 
-Then rebuild container image or rebuild package in a running container:
+Rebuild package in running container:
 
 ```bash
 docker exec -it nao_ros2 bash -lc \
   'source /opt/ros/jazzy/setup.bash && cd /home/ubuntu/ws && colcon build --symlink-install --packages-select nao_chatbot'
 ```
 
-Optional snapshot of a validated running container:
+Optional snapshot:
 
 ```bash
 docker commit nao_ros2 iiia:nao
 ```
 
-## Troubleshooting
+## Current Known-Good Status
 
-### Launch file or package appears missing
+- rqt_chat works with both rules and backend modes
+- Ollama integration works with `llama3.2:1b`
+- first-request warmup handled with longer timeout
+- no mandatory hard locks for duplicate launches
+- posture command extraction scaffold is live (`/chatbot/posture_command`)
 
-- Confirm container was started from latest image:
-  - `docker ps --no-trunc`
-  - `docker images`
-- Recreate container from current `iiia:nao` if needed.
+## Next Steps Roadmap
 
-### `ros2 topic pub /cmd_vel ...` waits for subscribers
+Near-term:
 
-- `naoqi_driver` is not subscribed yet (not running or not connected).
-- Ensure launch includes:
-  - `start_naoqi_driver:=true`
-  - correct `nao_ip`
-  - valid `network_interface` for your host/container
+1. Wire `/chatbot/posture_command` to actual NAO posture actions (`stand`, `sit`, `kneel`).
+2. Add structured LLM output mode (intent JSON) so mission controller consumes typed intents, not only keyword heuristics.
+3. Add dedicated launch profile presets (`rules_demo`, `backend_demo`, `backend_strict_no_fallback`).
 
-### NAO IP changes
+Audio / multimodal:
 
-- Pass updated IP at launch:
-  - `nao_ip:=<current_ip>`
+4. Add NAO microphone/ASR ingestion path into `/chatbot/user_text`.
+5. Tag inputs by source (`typed`, `asr`) for logs and evaluation.
+6. Optionally mirror ASR inputs into rqt_chat UI for operator visibility.
+
+Research-oriented (IIIA-05 alignment):
+
+7. Integrate symbolic context (knowledge base facts) into prompt builder.
+8. Add intent-to-plan intermediary (goal + slots) before action execution.
+9. Add evaluation logging (latency, fallback count, success, clarification rate).
+
+Handoff note:
+
+- This README is the current operational baseline for continuing work in another assistant/chat environment.
 
