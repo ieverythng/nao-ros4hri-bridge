@@ -11,6 +11,7 @@ Main nodes:
 - `nao_rqt_bridge_node`: ROS4HRI I/O bridge (`LiveSpeech` in, TTS + `/speech` out)
 - `mission_controller_node`: intent/routing logic (`rules` or `backend`)
 - `ollama_responder_node`: Ollama backend client with prompt/context controls
+- `nao_posture_bridge_node`: posture command bridge (`/chatbot/posture_command` -> NAOqi `ALRobotPosture.goToPosture`)
 - `ollama_node`: legacy compatibility entrypoint (bridge + mission controller)
 
 High-level flow:
@@ -21,6 +22,7 @@ User/rqt_chat -> /humans/voices/anonymous_speaker/speech (LiveSpeech)
   -> mission_controller_node
        rules mode   -> /chatbot/assistant_text
        backend mode -> /chatbot/backend/request -> ollama_responder_node -> /chatbot/backend/response -> /chatbot/assistant_text
+       posture cmd  -> /chatbot/posture_command -> nao_posture_bridge_node -> ALRobotPosture.goToPosture
   -> nao_rqt_bridge_node -> /tts_engine/tts + /speech
 ```
 
@@ -47,6 +49,10 @@ Extra control channel:
 │       │   └── ollama_node.py
 │       ├── package.xml
 │       └── setup.py
+│   └── nao_posture_bridge/
+│       ├── src/nao_posture_bridge_node.cpp
+│       ├── CMakeLists.txt
+│       └── package.xml
 └── README.md
 ```
 
@@ -68,7 +74,7 @@ Current Docker strategy:
 
 - `docker/Dockerfile` extends the proven local base image `iiia:nao`
 - overlays repo `src/` into `/home/ubuntu/ws/src`
-- rebuilds `nao_chatbot` package only
+- rebuilds `nao_chatbot` and `nao_posture_bridge`
 
 ## Run Container
 
@@ -111,6 +117,12 @@ Show launch arguments:
 ros2 launch nao_chatbot nao_chatbot_stack.launch.py --show-args
 ```
 
+`rqt_chat` now auto-starts by default when launching the stack. Disable it with:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_stack.launch.py start_rqt_chat:=false
+```
+
 ### Rules mode (deterministic)
 
 ```bash
@@ -148,12 +160,25 @@ Core:
 - `network_interface`
 - `qi_listen_url`
 - `mission_mode` (`rules` | `backend`)
+- `start_rqt_chat` (default `true`)
+- `rqt_chat_start_delay_sec` (default `1.5`)
 
 Mission controller:
 
 - `backend_fallback_to_rules` (default `false`)
 - `backend_response_timeout_sec` (default `30.0`)
 - `posture_command_topic` (default `/chatbot/posture_command`)
+
+Posture bridge:
+
+- `posture_bridge_enabled` (default `true`)
+- `posture_bridge_speed` (default `0.8`)
+- `posture_bridge_stand_posture_name` (default `Stand`)
+- `posture_bridge_kneel_posture_name` (default `Crouch`)
+- `posture_bridge_stand_speed` (default `0.8`)
+- `posture_bridge_kneel_speed` (default `0.8`)
+- `posture_bridge_sit_speed` (default `0.8`)
+- `posture_bridge_command_dedupe_window_sec` (default `1.5`)
 
 Ollama responder:
 
@@ -215,7 +240,7 @@ Rebuild package in running container:
 
 ```bash
 docker exec -it nao_ros2 bash -lc \
-  'source /opt/ros/jazzy/setup.bash && cd /home/ubuntu/ws && colcon build --symlink-install --packages-select nao_chatbot'
+  'source /opt/ros/jazzy/setup.bash && cd /home/ubuntu/ws && colcon build --symlink-install --packages-select nao_chatbot nao_posture_bridge'
 ```
 
 Optional snapshot:
@@ -230,13 +255,13 @@ docker commit nao_ros2 iiia:nao
 - Ollama integration works with `llama3.2:1b`
 - first-request warmup handled with longer timeout
 - no mandatory hard locks for duplicate launches
-- posture command extraction scaffold is live (`/chatbot/posture_command`)
+- posture command bridge is live (`/chatbot/posture_command` -> `ALRobotPosture.goToPosture`)
 
 ## Next Steps Roadmap
 
 Near-term:
 
-1. Wire `/chatbot/posture_command` to actual NAO posture actions (`stand`, `sit`, `kneel`).
+1. Stabilize posture transitions on old NAO hardware (`StandInit`/`Crouch` profile and speed tuning).
 2. Add structured LLM output mode (intent JSON) so mission controller consumes typed intents, not only keyword heuristics.
 3. Add dedicated launch profile presets (`rules_demo`, `backend_demo`, `backend_strict_no_fallback`).
 
@@ -255,4 +280,3 @@ Research-oriented (IIIA-05 alignment):
 Handoff note:
 
 - This README is the current operational baseline for continuing work in another assistant/chat environment.
-

@@ -16,7 +16,7 @@ COPY src/ /home/ubuntu/ws/src/
 # Rebuild only the chatbot package on top of the validated base.
 RUN bash -c "source /opt/ros/jazzy/setup.bash && \
     cd /home/ubuntu/ws && \
-    colcon build --symlink-install --packages-select nao_chatbot"
+    colcon build --symlink-install --packages-select nao_chatbot nao_posture_bridge"
 
 # Keep entrypoint from this repo for deterministic sourcing behavior.
 COPY docker/ros_entrypoint.sh /

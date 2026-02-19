@@ -1,6 +1,8 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
+from launch.actions import ExecuteProcess
 from launch.actions import IncludeLaunchDescription
+from launch.actions import TimerAction
 from launch.substitutions import LaunchConfiguration
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.conditions import IfCondition
@@ -38,6 +40,16 @@ def generate_launch_description():
         default_value="tcp://0.0.0.0:0",
         description="QI listen URL used by naoqi_driver audio extractor.",
     )
+    start_rqt_chat_arg = DeclareLaunchArgument(
+        "start_rqt_chat",
+        default_value="true",
+        description="Whether to auto-start rqt_chat UI together with this stack.",
+    )
+    rqt_chat_start_delay_sec_arg = DeclareLaunchArgument(
+        "rqt_chat_start_delay_sec",
+        default_value="1.5",
+        description="Delay before launching rqt_chat (helps when stack is still booting).",
+    )
     mission_mode_arg = DeclareLaunchArgument(
         "mission_mode",
         default_value="rules",
@@ -57,6 +69,46 @@ def generate_launch_description():
         "posture_command_topic",
         default_value="/chatbot/posture_command",
         description="Topic where posture intents are published as commands.",
+    )
+    posture_bridge_enabled_arg = DeclareLaunchArgument(
+        "posture_bridge_enabled",
+        default_value="true",
+        description="Whether to bridge /chatbot/posture_command to NAO ALRobotPosture.",
+    )
+    posture_bridge_speed_arg = DeclareLaunchArgument(
+        "posture_bridge_speed",
+        default_value="0.8",
+        description="Speed used for ALRobotPosture.goToPosture calls.",
+    )
+    posture_bridge_stand_posture_name_arg = DeclareLaunchArgument(
+        "posture_bridge_stand_posture_name",
+        default_value="Stand",
+        description='Posture name used when command is "stand" (e.g. Stand or StandInit).',
+    )
+    posture_bridge_kneel_posture_name_arg = DeclareLaunchArgument(
+        "posture_bridge_kneel_posture_name",
+        default_value="Crouch",
+        description='Posture name used when command is "kneel" (e.g. Crouch).',
+    )
+    posture_bridge_stand_speed_arg = DeclareLaunchArgument(
+        "posture_bridge_stand_speed",
+        default_value="0.8",
+        description='Speed used for "stand" posture calls.',
+    )
+    posture_bridge_kneel_speed_arg = DeclareLaunchArgument(
+        "posture_bridge_kneel_speed",
+        default_value="0.8",
+        description='Speed used for "kneel"/"crouch" posture calls.',
+    )
+    posture_bridge_sit_speed_arg = DeclareLaunchArgument(
+        "posture_bridge_sit_speed",
+        default_value="0.8",
+        description='Speed used for "sit" posture calls.',
+    )
+    posture_bridge_command_dedupe_window_sec_arg = DeclareLaunchArgument(
+        "posture_bridge_command_dedupe_window_sec",
+        default_value="1.5",
+        description="Ignore duplicate posture commands within this time window (seconds).",
     )
     ollama_enabled_arg = DeclareLaunchArgument(
         "ollama_enabled",
@@ -119,10 +171,26 @@ def generate_launch_description():
     nao_port = LaunchConfiguration("nao_port")
     network_interface = LaunchConfiguration("network_interface")
     qi_listen_url = LaunchConfiguration("qi_listen_url")
+    start_rqt_chat = LaunchConfiguration("start_rqt_chat")
+    rqt_chat_start_delay_sec = LaunchConfiguration("rqt_chat_start_delay_sec")
     mission_mode = LaunchConfiguration("mission_mode")
     backend_fallback_to_rules = LaunchConfiguration("backend_fallback_to_rules")
     backend_response_timeout_sec = LaunchConfiguration("backend_response_timeout_sec")
     posture_command_topic = LaunchConfiguration("posture_command_topic")
+    posture_bridge_enabled = LaunchConfiguration("posture_bridge_enabled")
+    posture_bridge_speed = LaunchConfiguration("posture_bridge_speed")
+    posture_bridge_stand_posture_name = LaunchConfiguration(
+        "posture_bridge_stand_posture_name"
+    )
+    posture_bridge_kneel_posture_name = LaunchConfiguration(
+        "posture_bridge_kneel_posture_name"
+    )
+    posture_bridge_stand_speed = LaunchConfiguration("posture_bridge_stand_speed")
+    posture_bridge_kneel_speed = LaunchConfiguration("posture_bridge_kneel_speed")
+    posture_bridge_sit_speed = LaunchConfiguration("posture_bridge_sit_speed")
+    posture_bridge_command_dedupe_window_sec = LaunchConfiguration(
+        "posture_bridge_command_dedupe_window_sec"
+    )
     ollama_enabled = LaunchConfiguration("ollama_enabled")
     ollama_model = LaunchConfiguration("ollama_model")
     ollama_url = LaunchConfiguration("ollama_url")
@@ -193,8 +261,51 @@ def generate_launch_description():
             }
         ],
     )
+    posture_bridge = Node(
+        package="nao_posture_bridge",
+        executable="nao_posture_bridge_node",
+        name="nao_posture_bridge",
+        output="screen",
+        condition=IfCondition(posture_bridge_enabled),
+        parameters=[
+            {
+                "posture_command_topic": posture_command_topic,
+                "nao_ip": nao_ip,
+                "nao_port": nao_port,
+                "posture_speed": posture_bridge_speed,
+                "stand_posture_name": posture_bridge_stand_posture_name,
+                "kneel_posture_name": posture_bridge_kneel_posture_name,
+                "stand_speed": posture_bridge_stand_speed,
+                "kneel_speed": posture_bridge_kneel_speed,
+                "sit_speed": posture_bridge_sit_speed,
+                "command_dedupe_window_sec": posture_bridge_command_dedupe_window_sec,
+            }
+        ],
+    )
 
-    # TODO: Add rqt_chat launch immediate after bridge is ready
+    rqt_chat_process = ExecuteProcess(
+        cmd=[
+            "ros2",
+            "run",
+            "rqt_gui",
+            "rqt_gui",
+            "--standalone",
+            "rqt_chat.chat.ChatPlugin",
+            "--force-discover",
+        ],
+        additional_env={
+            "LIBGL_ALWAYS_SOFTWARE": "1",
+            "QT_X11_NO_MITSHM": "1",
+        },
+        output="screen",
+        condition=IfCondition(start_rqt_chat),
+    )
+
+    rqt_chat = TimerAction(
+        period=rqt_chat_start_delay_sec,
+        actions=[rqt_chat_process],
+        condition=IfCondition(start_rqt_chat),
+    )
 
     return LaunchDescription(
         [
@@ -203,10 +314,20 @@ def generate_launch_description():
             nao_port_arg,
             network_interface_arg,
             qi_listen_url_arg,
+            start_rqt_chat_arg,
+            rqt_chat_start_delay_sec_arg,
             mission_mode_arg,
             backend_fallback_to_rules_arg,
             backend_response_timeout_sec_arg,
             posture_command_topic_arg,
+            posture_bridge_enabled_arg,
+            posture_bridge_speed_arg,
+            posture_bridge_stand_posture_name_arg,
+            posture_bridge_kneel_posture_name_arg,
+            posture_bridge_stand_speed_arg,
+            posture_bridge_kneel_speed_arg,
+            posture_bridge_sit_speed_arg,
+            posture_bridge_command_dedupe_window_sec_arg,
             ollama_enabled_arg,
             ollama_model_arg,
             ollama_url_arg,
@@ -222,5 +343,7 @@ def generate_launch_description():
             bridge,
             mission,
             ollama,
+            posture_bridge,
+            rqt_chat,
         ]
     )
