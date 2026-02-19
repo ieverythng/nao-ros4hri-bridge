@@ -1,10 +1,10 @@
 # docker/Dockerfile
 #
-# Canonical build strategy:
-# - Reuse the locally validated base image `iiia:nao`
-# - Overlay only repository sources (src/) and rebuild changed packages
-# This keeps behavior aligned with the proven runtime stack.
-FROM iiia:nao
+# Canonical overlay strategy:
+# - Reuse a validated runtime image (default: iiia:nao)
+# - Overlay repository sources (src/) and rebuild local packages
+ARG BASE_IMAGE=iiia:nao
+FROM ${BASE_IMAGE}
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -12,6 +12,13 @@ WORKDIR /home/ubuntu/ws
 
 # Overlay repository sources into the runtime workspace.
 COPY src/ /home/ubuntu/ws/src/
+
+# ASR optional runtime dependencies for laptop microphone mode.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libportaudio2 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/* && \
+    python3 -m pip install --no-cache-dir --break-system-packages sounddevice vosk
 
 # Rebuild only the chatbot package on top of the validated base.
 RUN bash -c "source /opt/ros/jazzy/setup.bash && \

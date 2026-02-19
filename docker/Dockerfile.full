@@ -1,0 +1,37 @@
+FROM ros:jazzy-ros-base
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Add SocialMinds apt repository for ROS4HRI + NAO packages.
+COPY docker/keys/socialminds.gpg /usr/share/keyrings/socialminds.gpg
+RUN echo "deb [signed-by=/usr/share/keyrings/socialminds.gpg] https://socialminds.doc.iiia.csic.es/apt/ jazzy main" \
+    > /etc/apt/sources.list.d/socialminds.list
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libportaudio2 \
+    python3-colcon-common-extensions \
+    python3-pip \
+    ros-jazzy-naoqi-libqi \
+    socialminds-ros-jazzy-hri-msgs \
+    socialminds-ros-jazzy-naoqi-bridge-msgs \
+    socialminds-ros-jazzy-naoqi-driver \
+    socialminds-ros-jazzy-rqt-chat \
+    socialminds-ros-jazzy-tts-msgs \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m pip install --no-cache-dir --break-system-packages sounddevice vosk
+
+WORKDIR /home/ubuntu/ws
+RUN mkdir -p /home/ubuntu/ws/src
+
+COPY src/ /home/ubuntu/ws/src/
+
+RUN bash -c "source /opt/ros/jazzy/setup.bash && \
+    cd /home/ubuntu/ws && \
+    colcon build --symlink-install --packages-select nao_chatbot nao_posture_bridge"
+
+COPY docker/ros_entrypoint.sh /
+RUN chmod +x /ros_entrypoint.sh
+
+ENTRYPOINT ["/ros_entrypoint.sh"]
+CMD ["bash"]
