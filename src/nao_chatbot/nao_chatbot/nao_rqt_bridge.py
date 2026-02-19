@@ -2,6 +2,7 @@ import time
 
 import rclpy
 from hri_msgs.msg import LiveSpeech
+from nao_chatbot.asr_utils import extract_text
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from std_msgs.msg import String
@@ -67,7 +68,7 @@ class NaoRqtBridge(Node):
         )
 
     def _on_live_speech(self, msg: LiveSpeech) -> None:
-        text = self._extract_text(msg)
+        text = extract_text(msg)
         if not text:
             self.get_logger().warn("LiveSpeech received without usable text")
             return
@@ -119,14 +120,6 @@ class NaoRqtBridge(Node):
             self.get_logger().info(
                 f'Published robot speech on "{self.naoqi_speech_topic}": {text}'
             )
-
-    @staticmethod
-    def _extract_text(msg: LiveSpeech) -> str:
-        for field_name in ("final", "incremental", "text", "transcript", "utterance"):
-            value = getattr(msg, field_name, "")
-            if isinstance(value, str) and value.strip():
-                return value.strip()
-        return ""
 
 def main(args=None) -> None:
     rclpy.init(args=args)

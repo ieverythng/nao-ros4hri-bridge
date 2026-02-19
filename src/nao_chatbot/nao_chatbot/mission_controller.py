@@ -1,9 +1,12 @@
-import re
 import time
 
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
+
+from nao_chatbot.intent_rules import build_rule_response
+from nao_chatbot.intent_rules import detect_intent
+from nao_chatbot.intent_rules import posture_command_for_intent
 
 
 class MissionController(Node):
@@ -87,7 +90,7 @@ class MissionController(Node):
         self._last_user_text = text
         self._last_user_text_ts = now
 
-        intent = self._detect_intent(text)
+        intent = detect_intent(text)
         self._publish(self.intent_publisher, intent)
         self._handle_posture_intent(intent)
 
@@ -101,7 +104,7 @@ class MissionController(Node):
             )
             return
 
-        response = self._build_rule_response(intent)
+        response = build_rule_response(intent)
         self._publish(self.assistant_publisher, response)
         self.get_logger().info(
             f'Published rule response to "{self.assistant_text_topic}" | intent={intent}'
@@ -124,7 +127,7 @@ class MissionController(Node):
             f'Forwarded backend response to "{self.assistant_text_topic}"'
         )
         # Optional: detect posture requests in backend text responses too.
-        self._handle_posture_intent(self._detect_intent(text))
+        self._handle_posture_intent(detect_intent(text))
 
     def _schedule_backend_fallback(self, intent: str) -> None:
         self.pending_backend_fallback_intent = intent
@@ -150,7 +153,7 @@ class MissionController(Node):
         intent = self.pending_backend_fallback_intent
         if not intent:
             return
-        fallback = self._build_rule_response(intent)
+        fallback = build_rule_response(intent)
         self._publish(self.assistant_publisher, fallback)
         self.get_logger().warn(
             "Backend response timeout; published rule-based fallback response"
@@ -173,89 +176,8 @@ class MissionController(Node):
             return value.strip().lower() in {"1", "true", "yes", "on"}
         return bool(value)
 
-    @staticmethod
-    def _detect_intent(text: str) -> str:
-        lowered = text.lower()
-        if MissionController._contains_any_phrase(
-            lowered,
-            (
-                "stand up",
-                "get up",
-                "please stand",
-                "can you stand",
-                "stand",
-            ),
-        ):
-            return "posture_stand"
-        if MissionController._contains_any_phrase(
-            lowered,
-            (
-                "sit down",
-                "take a seat",
-                "please sit",
-                "can you sit",
-                "sit",
-            ),
-        ):
-            return "posture_sit"
-        if MissionController._contains_any_phrase(
-            lowered,
-            (
-                "kneel down",
-                "kneel",
-                "crouch",
-                "on your knees",
-                "seiza",
-            ),
-        ):
-            return "posture_kneel"
-        if MissionController._contains_any_phrase(lowered, ("hello", "hi", "hey")):
-            return "greet"
-        if MissionController._contains_any_phrase(lowered, ("how are you",)):
-            return "wellbeing"
-        if MissionController._contains_any_phrase(
-            lowered, ("your name", "who are you")
-        ):
-            return "identity"
-        if MissionController._contains_any_phrase(lowered, ("help",)):
-            return "help"
-        return "fallback"
-
-    @staticmethod
-    def _contains_any_phrase(text: str, phrases: tuple[str, ...]) -> bool:
-        for phrase in phrases:
-            # Build regex that matches full words and supports flexible spacing.
-            words = [re.escape(part) for part in phrase.split()]
-            pattern = r"\b" + r"\s+".join(words) + r"\b"
-            if re.search(pattern, text):
-                return True
-        return False
-
-    @staticmethod
-    def _build_rule_response(intent: str) -> str:
-        if intent == "posture_stand":
-            return "Sure. I am switching to a standing posture."
-        if intent == "posture_sit":
-            return "Sure. I am switching to a sitting posture."
-        if intent == "posture_kneel":
-            return "Sure. I am switching to a kneeling posture."
-        if intent == "greet":
-            return "Hello! Nice to meet you."
-        if intent == "wellbeing":
-            return "I am doing well. Thank you for asking."
-        if intent == "identity":
-            return "I am your Nao mission controller."
-        if intent == "help":
-            return "You can greet me, ask my name, ask how I am, or ask for posture changes like stand, kneel, or sit."
-        return "I heard you. We are testing the chat to speech pipeline."
-
     def _handle_posture_intent(self, intent: str) -> None:
-        posture_map = {
-            "posture_stand": "stand",
-            "posture_sit": "sit",
-            "posture_kneel": "kneel",
-        }
-        command = posture_map.get(intent)
+        command = posture_command_for_intent(intent)
         if not command:
             return
         self._publish(self.posture_command_publisher, command)

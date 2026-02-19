@@ -50,6 +50,51 @@ def generate_launch_description():
         default_value="1.5",
         description="Delay before launching rqt_chat (helps when stack is still booting).",
     )
+    laptop_asr_enabled_arg = DeclareLaunchArgument(
+        "laptop_asr_enabled",
+        default_value="false",
+        description="Enable local microphone ASR (Vosk) that publishes LiveSpeech.",
+    )
+    asr_output_speech_topic_arg = DeclareLaunchArgument(
+        "asr_output_speech_topic",
+        default_value="/humans/voices/anonymous_speaker/speech",
+        description="Output speech topic where laptop ASR publishes LiveSpeech.",
+    )
+    asr_vosk_model_path_arg = DeclareLaunchArgument(
+        "asr_vosk_model_path",
+        default_value="",
+        description="Absolute path to Vosk model directory used by laptop ASR.",
+    )
+    asr_sample_rate_hz_arg = DeclareLaunchArgument(
+        "asr_sample_rate_hz",
+        default_value="16000",
+        description="Microphone sample rate for laptop ASR.",
+    )
+    asr_block_duration_ms_arg = DeclareLaunchArgument(
+        "asr_block_duration_ms",
+        default_value="250",
+        description="Audio block duration in ms used by laptop ASR capture loop.",
+    )
+    asr_device_index_arg = DeclareLaunchArgument(
+        "asr_device_index",
+        default_value="-1",
+        description="Microphone device index; -1 uses system default input device.",
+    )
+    asr_min_chars_arg = DeclareLaunchArgument(
+        "asr_min_chars",
+        default_value="2",
+        description="Minimum transcript length required before publishing ASR output.",
+    )
+    asr_dedupe_window_sec_arg = DeclareLaunchArgument(
+        "asr_dedupe_window_sec",
+        default_value="0.8",
+        description="Ignore duplicate ASR transcripts within this window in seconds.",
+    )
+    asr_publish_partial_arg = DeclareLaunchArgument(
+        "asr_publish_partial",
+        default_value="false",
+        description="Whether to publish Vosk partial hypotheses as incremental speech.",
+    )
     mission_mode_arg = DeclareLaunchArgument(
         "mission_mode",
         default_value="rules",
@@ -173,6 +218,15 @@ def generate_launch_description():
     qi_listen_url = LaunchConfiguration("qi_listen_url")
     start_rqt_chat = LaunchConfiguration("start_rqt_chat")
     rqt_chat_start_delay_sec = LaunchConfiguration("rqt_chat_start_delay_sec")
+    laptop_asr_enabled = LaunchConfiguration("laptop_asr_enabled")
+    asr_output_speech_topic = LaunchConfiguration("asr_output_speech_topic")
+    asr_vosk_model_path = LaunchConfiguration("asr_vosk_model_path")
+    asr_sample_rate_hz = LaunchConfiguration("asr_sample_rate_hz")
+    asr_block_duration_ms = LaunchConfiguration("asr_block_duration_ms")
+    asr_device_index = LaunchConfiguration("asr_device_index")
+    asr_min_chars = LaunchConfiguration("asr_min_chars")
+    asr_dedupe_window_sec = LaunchConfiguration("asr_dedupe_window_sec")
+    asr_publish_partial = LaunchConfiguration("asr_publish_partial")
     mission_mode = LaunchConfiguration("mission_mode")
     backend_fallback_to_rules = LaunchConfiguration("backend_fallback_to_rules")
     backend_response_timeout_sec = LaunchConfiguration("backend_response_timeout_sec")
@@ -225,6 +279,26 @@ def generate_launch_description():
         executable="nao_rqt_bridge_node",
         name="nao_rqt_bridge",
         output="screen",
+    )
+    laptop_asr = Node(
+        package="nao_chatbot",
+        executable="laptop_asr_node",
+        name="laptop_asr",
+        output="screen",
+        condition=IfCondition(laptop_asr_enabled),
+        parameters=[
+            {
+                "enabled": laptop_asr_enabled,
+                "output_speech_topic": asr_output_speech_topic,
+                "vosk_model_path": asr_vosk_model_path,
+                "sample_rate_hz": asr_sample_rate_hz,
+                "block_duration_ms": asr_block_duration_ms,
+                "device_index": asr_device_index,
+                "min_chars": asr_min_chars,
+                "dedupe_window_sec": asr_dedupe_window_sec,
+                "publish_partial": asr_publish_partial,
+            }
+        ],
     )
     mission = Node(
         package="nao_chatbot",
@@ -316,6 +390,15 @@ def generate_launch_description():
             qi_listen_url_arg,
             start_rqt_chat_arg,
             rqt_chat_start_delay_sec_arg,
+            laptop_asr_enabled_arg,
+            asr_output_speech_topic_arg,
+            asr_vosk_model_path_arg,
+            asr_sample_rate_hz_arg,
+            asr_block_duration_ms_arg,
+            asr_device_index_arg,
+            asr_min_chars_arg,
+            asr_dedupe_window_sec_arg,
+            asr_publish_partial_arg,
             mission_mode_arg,
             backend_fallback_to_rules_arg,
             backend_response_timeout_sec_arg,
@@ -341,6 +424,7 @@ def generate_launch_description():
             ollama_prompt_addendum_arg,
             naoqi_driver,
             bridge,
+            laptop_asr,
             mission,
             ollama,
             posture_bridge,

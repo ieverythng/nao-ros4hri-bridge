@@ -8,6 +8,7 @@ log/
 __pycache__/
 *.py[cod]
 .Python
+.pytest_cache/
 
 # External dependencies (cloned by Docker)
 src/naoqi_driver2/
@@ -31,3 +32,6 @@ local_build/src/naoqi_driver2/
 local_build/src/naoqi_libqi/
 local_build/src/pepper_meshes/
 local_build/src/libqicore/
+
+# Docker exports
+docker/*.tar.gz

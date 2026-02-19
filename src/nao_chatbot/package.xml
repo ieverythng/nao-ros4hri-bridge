@@ -2,10 +2,10 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>nao_chatbot</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <version>0.1.0</version>
+  <description>ROS 2 chatbot orchestration and bridges for NAO + ROS4HRI.</description>
   <maintainer email="juanbeck@icloud.com">juanbeck</maintainer>
-  <license>TODO: License declaration</license>
+  <license>BSD-3-Clause</license>
 
   <depend>rclpy</depend>
   <depend>std_msgs</depend>

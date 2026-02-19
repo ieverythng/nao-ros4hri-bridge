@@ -5,7 +5,7 @@ package_name = 'nao_chatbot'
 
 setup(
     name=package_name,
-    version='0.0.0',
+    version='0.1.0',
     packages=find_packages(exclude=['test']),
     data_files=[
         ('share/ament_index/resource_index/packages',
@@ -17,11 +17,20 @@ setup(
     zip_safe=True,
     maintainer='juanbeck',
     maintainer_email='juanbeck@icloud.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='ROS 2 chatbot orchestration and bridges for NAO + ROS4HRI',
+    license='BSD-3-Clause',
     extras_require={
         'test': [
             'pytest',
+        ],
+        'asr': [
+            'sounddevice',
+            'vosk',
+        ],
+        'dev': [
+            'pre-commit',
+            'pytest',
+            'ruff',
         ],
     },
     entry_points={
@@ -30,6 +39,7 @@ setup(
             'mission_controller_node = nao_chatbot.mission_controller:main',
             'ollama_responder_node = nao_chatbot.ollama_responder:main',
             'ollama_node = nao_chatbot.ollama_node:main',
+            'laptop_asr_node = nao_chatbot.laptop_asr:main',
         ],
     },
 )
