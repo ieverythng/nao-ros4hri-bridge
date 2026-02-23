@@ -6,6 +6,8 @@ This repository uses `src/` as the canonical source tree.
 
 ## Current Architecture
 
+Presentation-ready diagram: [`docs/architecture_diagram.md`](docs/architecture_diagram.md)
+
 Main nodes:
 
 - `nao_rqt_bridge_node`: ROS4HRI I/O bridge (`LiveSpeech` in, TTS + `/speech` out)
