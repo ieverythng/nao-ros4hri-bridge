@@ -28,7 +28,7 @@ COPY src/ /home/ubuntu/ws/src/
 
 RUN bash -c "source /opt/ros/jazzy/setup.bash && \
     cd /home/ubuntu/ws && \
-    colcon build --symlink-install --packages-select nao_chatbot nao_posture_bridge"
+    colcon build --symlink-install --packages-select nao_skills nao_chatbot nao_posture_bridge"
 
 COPY docker/ros_entrypoint.sh /
 RUN chmod +x /ros_entrypoint.sh

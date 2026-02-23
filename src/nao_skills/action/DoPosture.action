@@ -1,0 +1,9 @@
+string posture_name
+float32 speed
+---
+bool success
+string message
+float32 duration
+---
+string status
+float32 progress

@@ -20,10 +20,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* && \
     python3 -m pip install --no-cache-dir --break-system-packages sounddevice vosk
 
-# Rebuild only the chatbot package on top of the validated base.
+# Rebuild local workspace packages on top of the validated base.
 RUN bash -c "source /opt/ros/jazzy/setup.bash && \
     cd /home/ubuntu/ws && \
-    colcon build --symlink-install --packages-select nao_chatbot nao_posture_bridge"
+    colcon build --symlink-install --packages-select nao_skills nao_chatbot nao_posture_bridge"
 
 # Keep entrypoint from this repo for deterministic sourcing behavior.
 COPY docker/ros_entrypoint.sh /

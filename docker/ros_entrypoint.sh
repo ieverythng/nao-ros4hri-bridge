@@ -15,7 +15,7 @@ fi
 # Print ROS environment
 echo "ROS_DISTRO: $ROS_DISTRO"
 echo "Available packages:"
-ros2 pkg list | grep -E "(naoqi|nao_chatbot|nao_posture_bridge)" || \
+ros2 pkg list | grep -E "(naoqi|nao_chatbot|nao_posture_bridge|nao_skills)" || \
   echo "No expected nao-related packages found"
 
 exec "$@"

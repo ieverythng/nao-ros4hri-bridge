@@ -9,6 +9,7 @@ __pycache__/
 *.py[cod]
 .Python
 .pytest_cache/
+.venv/
 
 # External dependencies (cloned by Docker)
 src/naoqi_driver2/

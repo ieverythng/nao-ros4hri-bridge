@@ -10,8 +10,10 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
+  <depend>rclpy</depend>
   <depend>std_msgs</depend>
   <depend>naoqi_libqi</depend>
+  <depend>nao_skills</depend>
 
   <export>
     <build_type>ament_cmake</build_type>
