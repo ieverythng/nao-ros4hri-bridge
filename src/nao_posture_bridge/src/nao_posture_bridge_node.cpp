@@ -72,6 +72,8 @@ private:
   {
     const std::string url = "tcp://" + nao_ip_ + ":" + std::to_string(nao_port_);
     try {
+      posture_service_ = qi::AnyObject();
+      session_.reset();
       session_ = qi::makeSession();
       session_->connect(url).value();
       posture_service_ = session_->service("ALRobotPosture").value();
@@ -99,6 +101,33 @@ private:
       RCLCPP_ERROR(get_logger(), "Failed to connect to NAOqi (%s): %s", url.c_str(), e.what());
       return false;
     }
+  }
+
+  bool get_current_posture(std::string & posture_name)
+  {
+    try {
+      posture_name = posture_service_.call<std::string>("getPosture");
+      return true;
+    } catch (const std::exception & e) {
+      RCLCPP_WARN(get_logger(), "Could not read current posture: %s", e.what());
+      return false;
+    }
+  }
+
+  bool is_already_in_target_posture(const std::string & posture_name)
+  {
+    std::string current_posture;
+    if (!get_current_posture(current_posture)) {
+      return false;
+    }
+    if (normalize(current_posture) != normalize(posture_name)) {
+      return false;
+    }
+    RCLCPP_INFO(
+      get_logger(),
+      "Skipping goToPosture because NAO is already in '%s'",
+      current_posture.c_str());
+    return true;
   }
 
   static std::string normalize(const std::string & text)
@@ -180,6 +209,9 @@ private:
           return false;
         }
       }
+      if (is_already_in_target_posture(posture_name)) {
+        return true;
+      }
       return run_call();
     } catch (const std::exception & e) {
       RCLCPP_ERROR(get_logger(), "Posture call failed: %s", e.what());
@@ -192,6 +224,9 @@ private:
     try {
       if (!connect_session()) {
         return false;
+      }
+      if (is_already_in_target_posture(posture_name)) {
+        return true;
       }
       return run_call();
     } catch (const std::exception & e) {
@@ -233,7 +268,7 @@ private:
       last_command_time_ = now;
       RCLCPP_INFO(
         get_logger(),
-        "Executed posture command '%s' -> goToPosture('%s', %.2f)",
+        "Handled posture command '%s' -> target '%s' @ %.2f",
         command.c_str(),
         posture_name.c_str(),
         posture_speed);
