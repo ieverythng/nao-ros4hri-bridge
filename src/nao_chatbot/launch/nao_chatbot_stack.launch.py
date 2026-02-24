@@ -45,6 +45,14 @@ def generate_launch_description():
         default_value="true",
         description="Whether to auto-start rqt_chat UI together with this stack.",
     )
+    bridge_input_speech_topic_arg = DeclareLaunchArgument(
+        "bridge_input_speech_topic",
+        default_value="/humans/voices/anonymous_speaker/speech",
+        description=(
+            "Speech topic consumed by nao_rqt_bridge and forwarded to "
+            "/chatbot/user_text."
+        ),
+    )
     rqt_chat_start_delay_sec_arg = DeclareLaunchArgument(
         "rqt_chat_start_delay_sec",
         default_value="1.5",
@@ -110,10 +118,67 @@ def generate_launch_description():
         default_value="30.0",
         description="Seconds to wait for backend response before fallback.",
     )
+    backend_execute_posture_after_response_arg = DeclareLaunchArgument(
+        "backend_execute_posture_after_response",
+        default_value="true",
+        description=(
+            "If true in backend mode, execute posture intent only after backend "
+            "response (or fallback timeout)."
+        ),
+    )
+    backend_posture_from_response_enabled_arg = DeclareLaunchArgument(
+        "backend_posture_from_response_enabled",
+        default_value="false",
+        description=(
+            "If true, mission controller also extracts posture intent from backend "
+            "assistant text (can cause contradictory posture commands)."
+        ),
+    )
     posture_command_topic_arg = DeclareLaunchArgument(
         "posture_command_topic",
         default_value="/chatbot/posture_command",
         description="Topic where posture intents are published as commands.",
+    )
+    use_posture_skill_arg = DeclareLaunchArgument(
+        "use_posture_skill",
+        default_value="true",
+        description="Use posture action client (/skill/do_posture) from mission controller.",
+    )
+    posture_skill_action_arg = DeclareLaunchArgument(
+        "posture_skill_action",
+        default_value="/skill/do_posture",
+        description="Action name used for posture skill requests.",
+    )
+    posture_skill_speed_arg = DeclareLaunchArgument(
+        "posture_skill_speed",
+        default_value="0.9",
+        description="Default speed sent by mission controller posture skill goals.",
+    )
+    posture_skill_dispatch_wait_sec_arg = DeclareLaunchArgument(
+        "posture_skill_dispatch_wait_sec",
+        default_value="1.0",
+        description=(
+            "How long mission controller waits for /skill/do_posture server "
+            "discovery before topic fallback."
+        ),
+    )
+    posture_skill_server_enabled_arg = DeclareLaunchArgument(
+        "posture_skill_server_enabled",
+        default_value="true",
+        description="Whether to launch posture_skill_server_node with this stack.",
+    )
+    posture_skill_server_default_speed_arg = DeclareLaunchArgument(
+        "posture_skill_server_default_speed",
+        default_value="0.8",
+        description="Default speed used by posture skill server when request speed <= 0.",
+    )
+    posture_skill_server_fallback_to_topic_arg = DeclareLaunchArgument(
+        "posture_skill_server_fallback_to_topic",
+        default_value="true",
+        description=(
+            "When true, posture skill server forwards to posture command topic if qi "
+            "is missing/unavailable."
+        ),
     )
     posture_bridge_enabled_arg = DeclareLaunchArgument(
         "posture_bridge_enabled",
@@ -217,6 +282,7 @@ def generate_launch_description():
     network_interface = LaunchConfiguration("network_interface")
     qi_listen_url = LaunchConfiguration("qi_listen_url")
     start_rqt_chat = LaunchConfiguration("start_rqt_chat")
+    bridge_input_speech_topic = LaunchConfiguration("bridge_input_speech_topic")
     rqt_chat_start_delay_sec = LaunchConfiguration("rqt_chat_start_delay_sec")
     laptop_asr_enabled = LaunchConfiguration("laptop_asr_enabled")
     asr_output_speech_topic = LaunchConfiguration("asr_output_speech_topic")
@@ -230,7 +296,26 @@ def generate_launch_description():
     mission_mode = LaunchConfiguration("mission_mode")
     backend_fallback_to_rules = LaunchConfiguration("backend_fallback_to_rules")
     backend_response_timeout_sec = LaunchConfiguration("backend_response_timeout_sec")
+    backend_execute_posture_after_response = LaunchConfiguration(
+        "backend_execute_posture_after_response"
+    )
+    backend_posture_from_response_enabled = LaunchConfiguration(
+        "backend_posture_from_response_enabled"
+    )
     posture_command_topic = LaunchConfiguration("posture_command_topic")
+    use_posture_skill = LaunchConfiguration("use_posture_skill")
+    posture_skill_action = LaunchConfiguration("posture_skill_action")
+    posture_skill_speed = LaunchConfiguration("posture_skill_speed")
+    posture_skill_dispatch_wait_sec = LaunchConfiguration(
+        "posture_skill_dispatch_wait_sec"
+    )
+    posture_skill_server_enabled = LaunchConfiguration("posture_skill_server_enabled")
+    posture_skill_server_default_speed = LaunchConfiguration(
+        "posture_skill_server_default_speed"
+    )
+    posture_skill_server_fallback_to_topic = LaunchConfiguration(
+        "posture_skill_server_fallback_to_topic"
+    )
     posture_bridge_enabled = LaunchConfiguration("posture_bridge_enabled")
     posture_bridge_speed = LaunchConfiguration("posture_bridge_speed")
     posture_bridge_stand_posture_name = LaunchConfiguration(
@@ -279,6 +364,11 @@ def generate_launch_description():
         executable="nao_rqt_bridge_node",
         name="nao_rqt_bridge",
         output="screen",
+        parameters=[
+            {
+                "input_speech_topic": bridge_input_speech_topic,
+            }
+        ],
     )
     laptop_asr = Node(
         package="nao_chatbot",
@@ -310,7 +400,13 @@ def generate_launch_description():
                 "mode": mission_mode,
                 "backend_fallback_to_rules": backend_fallback_to_rules,
                 "backend_response_timeout_sec": backend_response_timeout_sec,
+                "backend_execute_posture_after_response": backend_execute_posture_after_response,
+                "backend_posture_from_response_enabled": backend_posture_from_response_enabled,
                 "posture_command_topic": posture_command_topic,
+                "use_posture_skill": use_posture_skill,
+                "posture_skill_action": posture_skill_action,
+                "posture_skill_speed": posture_skill_speed,
+                "posture_skill_dispatch_wait_sec": posture_skill_dispatch_wait_sec,
             }
         ],
     )
@@ -356,6 +452,23 @@ def generate_launch_description():
             }
         ],
     )
+    posture_skill_server = Node(
+        package="nao_posture_bridge",
+        executable="posture_skill_server_node",
+        name="posture_skill_server",
+        output="screen",
+        condition=IfCondition(posture_skill_server_enabled),
+        parameters=[
+            {
+                "nao_ip": nao_ip,
+                "nao_port": nao_port,
+                "action_name": posture_skill_action,
+                "default_speed": posture_skill_server_default_speed,
+                "fallback_to_posture_topic": posture_skill_server_fallback_to_topic,
+                "posture_command_topic": posture_command_topic,
+            }
+        ],
+    )
 
     rqt_chat_process = ExecuteProcess(
         cmd=[
@@ -389,6 +502,7 @@ def generate_launch_description():
             network_interface_arg,
             qi_listen_url_arg,
             start_rqt_chat_arg,
+            bridge_input_speech_topic_arg,
             rqt_chat_start_delay_sec_arg,
             laptop_asr_enabled_arg,
             asr_output_speech_topic_arg,
@@ -402,7 +516,16 @@ def generate_launch_description():
             mission_mode_arg,
             backend_fallback_to_rules_arg,
             backend_response_timeout_sec_arg,
+            backend_execute_posture_after_response_arg,
+            backend_posture_from_response_enabled_arg,
             posture_command_topic_arg,
+            use_posture_skill_arg,
+            posture_skill_action_arg,
+            posture_skill_speed_arg,
+            posture_skill_dispatch_wait_sec_arg,
+            posture_skill_server_enabled_arg,
+            posture_skill_server_default_speed_arg,
+            posture_skill_server_fallback_to_topic_arg,
             posture_bridge_enabled_arg,
             posture_bridge_speed_arg,
             posture_bridge_stand_posture_name_arg,
@@ -425,6 +548,7 @@ def generate_launch_description():
             naoqi_driver,
             bridge,
             laptop_asr,
+            posture_skill_server,
             mission,
             ollama,
             posture_bridge,

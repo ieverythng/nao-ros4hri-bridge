@@ -37,3 +37,4 @@ local_build/src/libqicore/
 # Docker exports
 docker/*.tar.gz
 src/motions_skills/
+src/std_skills/
