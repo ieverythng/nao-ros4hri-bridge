@@ -1,9 +1,12 @@
-string posture_name
-float32 speed
+# Goal - What mission controller requests
+string posture_name  # "Stand", "Sit", "Crouch", "StandInit"
+float32 speed        # 0.0-1.0, execution speed
 ---
+# Result - Final outcome
 bool success
 string message
 float32 duration
 ---
-string status
-float32 progress
+# Feedback - Progress updates during execution
+string status        # "preparing", "executing", "completing"
+float32 progress     # 0.0-1.0

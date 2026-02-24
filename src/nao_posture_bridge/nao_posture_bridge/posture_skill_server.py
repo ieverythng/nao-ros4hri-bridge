@@ -39,7 +39,7 @@ class PostureSkillServer(Node):
     def __init__(self) -> None:
         super().__init__("posture_skill_server")
 
-        self.declare_parameter("nao_ip", "10.10.200.149")
+        self.declare_parameter("nao_ip", "172.26.112.62")
         self.declare_parameter("nao_port", 9559)
         self.declare_parameter("action_name", "/skill/do_posture")
         self.declare_parameter("default_speed", 0.8)

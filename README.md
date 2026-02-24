@@ -8,8 +8,9 @@ This repository uses `src/` as the canonical source tree.
 
 - Phase 0 complete: `nao_skills` action interface package exists with `DoPosture.action`.
 - Phase 1 complete: `posture_skill_server_node` is available in `nao_posture_bridge`.
-- Backward compatibility preserved: legacy topic bridge remains active.
-- Phase 2+ pending: mission controller still publishes posture topic commands.
+- Phase 2 complete: mission controller can dispatch posture via `/skill/do_posture`.
+- Backend-first posture timing: in `backend` mode, posture execution is deferred until backend response by default.
+- Backward compatibility preserved: topic fallback remains active when action server is unavailable.
 
 ## Current Runtime Architecture
 
@@ -33,7 +34,9 @@ Speech/Text input
   -> mission_controller_node
        rules mode   -> /chatbot/assistant_text
        backend mode -> /chatbot/backend/request -> ollama_responder_node -> /chatbot/backend/response -> /chatbot/assistant_text
-       posture cmd  -> /chatbot/posture_command -> nao_posture_bridge_node -> ALRobotPosture.goToPosture
+       posture intent -> /skill/do_posture (DoPosture action)
+  -> posture_skill_server_node -> ALRobotPosture.goToPosture
+     fallback (if qi unavailable) -> /chatbot/posture_command -> nao_posture_bridge_node -> ALRobotPosture.goToPosture
   -> nao_rqt_bridge_node -> /tts_engine/tts + /speech
 ```
 
@@ -144,7 +147,7 @@ When done on host:
 xhost -SI:localuser:root
 ```
 
-## Launch Chatbot Stack (Legacy Topic Path)
+## Launch Chatbot Stack (Skills Enabled by Default)
 
 Show launch arguments:
 
@@ -160,6 +163,8 @@ ros2 launch nao_chatbot nao_chatbot_stack.launch.py \
   nao_ip:=10.10.200.149 \
   network_interface:=wlp1s0 \
   mission_mode:=backend \
+  use_posture_skill:=true \
+  backend_posture_from_response_enabled:=false \
   ollama_enabled:=true \
   backend_fallback_to_rules:=false \
   ollama_model:=llama3.2:1b \
@@ -167,6 +172,9 @@ ros2 launch nao_chatbot nao_chatbot_stack.launch.py \
   ollama_first_request_timeout_sec:=60.0 \
   ollama_request_timeout_sec:=20.0
 ```
+
+In `backend` mode, mission controller defaults to `backend_execute_posture_after_response:=true`
+so the robot executes posture only after assistant text is received.
 
 Important shell note: never leave trailing spaces after a line-continuation `\`.
 
@@ -195,6 +203,12 @@ Quick check for direct NAOqi Python support in container:
 
 ```bash
 python3 -c "import qi; print('qi import OK')"
+```
+
+Confirm a single posture action server is active (avoid duplicate execution):
+
+```bash
+ros2 action info /skill/do_posture
 ```
 
 Send goal with feedback:
@@ -256,4 +270,4 @@ python3 -m py_compile src/nao_posture_bridge/nao_posture_bridge/posture_skill_se
 - `nao_posture_bridge` exports both:
   - `nao_posture_bridge_node` (topic bridge)
   - `posture_skill_server_node` (action server)
-- `nao_chatbot` stack remains functional with existing topic-based mission flow
+- `nao_chatbot` stack supports action-first posture flow with topic fallback
