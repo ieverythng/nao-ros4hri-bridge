@@ -40,6 +40,12 @@ Speech/Text input
   -> nao_rqt_bridge_node -> /tts_engine/tts + /speech
 ```
 
+ASR note:
+
+- In this stack, ASR is a ROS4HRI percept pipeline (publisher of `LiveSpeech`),
+  not an action skill.
+- Skills are used for execution APIs (for example posture via `/skill/do_posture`).
+
 ```text
 Manual/External skill client
   -> /skill/do_posture (nao_skills/action/DoPosture)
@@ -67,6 +73,11 @@ Manual/External skill client
 │   │   ├── action/DoPosture.action
 │   │   ├── CMakeLists.txt
 │   │   └── package.xml
+│   ├── std_skills/
+│   │   ├── msg/
+│   │   ├── srv/
+│   │   ├── action/
+│   │   └── package.xml
 │   ├── nao_posture_bridge/
 │   │   ├── nao_posture_bridge/posture_skill_server.py
 │   │   ├── src/nao_posture_bridge_node.cpp
@@ -74,6 +85,9 @@ Manual/External skill client
 │   │   └── package.xml
 │   └── nao_chatbot/
 │       ├── launch/nao_chatbot_stack.launch.py
+│       ├── launch/nao_chatbot_legacy.launch.py
+│       ├── launch/nao_chatbot_skills.launch.py
+│       ├── launch/nao_chatbot_skills_asr.launch.py
 │       ├── nao_chatbot/
 │       │   ├── intent_rules.py
 │       │   ├── laptop_asr.py
@@ -177,6 +191,29 @@ In `backend` mode, mission controller defaults to `backend_execute_posture_after
 so the robot executes posture only after assistant text is received.
 
 Important shell note: never leave trailing spaces after a line-continuation `\`.
+
+## Launch Profiles (Recommended)
+
+Use short profile launches for demos:
+
+```bash
+# Legacy/fallback path
+ros2 launch nao_chatbot nao_chatbot_legacy.launch.py
+
+# Skills-first path
+ros2 launch nao_chatbot nao_chatbot_skills.launch.py
+
+# Skills + Vosk laptop ASR
+ros2 launch nao_chatbot nao_chatbot_skills_asr.launch.py \
+  asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15
+```
+
+Each profile still allows `mission_mode:=rules|backend`.
+
+Full profile matrix and examples:
+
+- [`docs/launch_profiles.md`](docs/launch_profiles.md)
+- [`docs/ros4hri_skills_audit.md`](docs/ros4hri_skills_audit.md)
 
 ## Run Posture Skill Action Server (Phase 1)
 
