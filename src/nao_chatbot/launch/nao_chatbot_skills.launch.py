@@ -101,6 +101,7 @@ def generate_launch_description():
             "posture_bridge_enabled": "true",
             "backend_execute_posture_after_response": "true",
             "backend_posture_from_response_enabled": "false",
+            "asr_vosk_enabled": "false",
             "laptop_asr_enabled": "false",
         }.items(),
     )

@@ -38,3 +38,4 @@ local_build/src/libqicore/
 docker/*.tar.gz
 src/motions_skills/
 src/std_skills/
+/.cache-pre-commit

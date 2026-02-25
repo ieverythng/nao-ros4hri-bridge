@@ -19,7 +19,7 @@ Presentation diagram (legacy topic flow): [`docs/architecture_diagram.md`](docs/
 Main nodes:
 
 - `nao_rqt_bridge_node`: ROS4HRI I/O bridge (`LiveSpeech` in, TTS + `/speech` out)
-- `laptop_asr_node`: local microphone ASR (Vosk) -> `LiveSpeech`
+- `asr_vosk_node`: local microphone ASR (Vosk) -> `LiveSpeech`
 - `mission_controller_node`: intent/routing logic (`rules` or `backend`)
 - `ollama_responder_node`: Ollama backend client with prompt/context controls
 - `nao_posture_bridge_node`: legacy topic posture bridge (`/chatbot/posture_command` -> NAOqi `ALRobotPosture`)
@@ -45,6 +45,11 @@ ASR note:
 - In this stack, ASR is a ROS4HRI percept pipeline (publisher of `LiveSpeech`),
   not an action skill.
 - Skills are used for execution APIs (for example posture via `/skill/do_posture`).
+- `naoqi_driver` robot microphone source is `/audio` (`naoqi_bridge_msgs/msg/AudioBuffer`),
+  and NAO built-in recognition is exposed via `/listen`
+  (`naoqi_bridge_msgs/action/Listen`).
+- `bridge_input_speech_topic` must remain a `LiveSpeech` topic, so `/audio`
+  requires an adapter node before it can be bridged to `/chatbot/user_text`.
 
 ```text
 Manual/External skill client
@@ -90,6 +95,7 @@ Manual/External skill client
 │       ├── launch/nao_chatbot_skills_asr.launch.py
 │       ├── nao_chatbot/
 │       │   ├── intent_rules.py
+│       │   ├── asr_vosk.py
 │       │   ├── laptop_asr.py
 │       │   ├── mission_controller.py
 │       │   ├── nao_rqt_bridge.py
@@ -205,7 +211,24 @@ ros2 launch nao_chatbot nao_chatbot_skills.launch.py
 
 # Skills + Vosk laptop ASR
 ros2 launch nao_chatbot nao_chatbot_skills_asr.launch.py \
-  asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15
+  asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15 \
+  asr_min_words:=2
+```
+
+ASR behavior defaults in `skills_asr`:
+
+- Speech guard ON: microphone input is muted while robot speech is active (`/speech`)
+- Filler filter ON: one-word fillers (`uh`, `um`, `huh`, ...) are dropped
+- Warning throttle ON: repeated microphone overflow warnings are rate-limited
+
+Useful ASR tuning parameters:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_skills_asr.launch.py \
+  asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15 \
+  asr_block_duration_ms:=350 \
+  asr_min_words:=2 \
+  asr_status_warn_period_sec:=3.0
 ```
 
 Each profile still allows `mission_mode:=rules|backend`.

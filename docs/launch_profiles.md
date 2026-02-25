@@ -10,7 +10,7 @@ predefined defaults.
 
 - Legacy posture path (topic-based)
 - Skill posture path disabled
-- Laptop Vosk ASR disabled
+- Vosk ASR node (`asr_vosk_node`) disabled
 - Default `mission_mode`: `rules`
 
 ### `nao_chatbot_skills.launch.py`
@@ -19,14 +19,15 @@ predefined defaults.
 - Posture skill server enabled
 - Topic bridge kept enabled for controlled fallback
 - Backend-first posture timing enabled
-- Laptop Vosk ASR disabled
+- Vosk ASR node (`asr_vosk_node`) disabled
 - Default `mission_mode`: `backend`
 
 ### `nao_chatbot_skills_asr.launch.py`
 
 - Same as `skills` profile
-- Laptop Vosk ASR enabled by default
+- Vosk ASR node (`asr_vosk_node`) enabled by default
 - Default Vosk model path: `/models/vosk-model-small-en-us-0.15`
+- ASR speech guard enabled by default (mutes microphone while robot is speaking)
 - Default `mission_mode`: `backend`
 
 ## Common Usage
@@ -58,19 +59,30 @@ ros2 launch nao_chatbot nao_chatbot_skills.launch.py \
 ros2 launch nao_chatbot nao_chatbot_skills_asr.launch.py \
   nao_ip:=10.10.200.149 \
   network_interface:=wlp1s0 \
-  asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15
+  asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15 \
+  asr_min_words:=2
 ```
+
+Useful ASR stability knobs:
+
+- `asr_block_duration_ms` (higher can reduce overflow warnings)
+- `asr_status_warn_period_sec` (throttles repeated overflow logs)
+- `asr_suppress_during_robot_speech` (keep `true` for turn-taking demos)
 
 ## Robot-Mic Ready Switch
 
-To use a robot-mic ASR publisher instead of local laptop Vosk:
+`bridge_input_speech_topic` must be `hri_msgs/LiveSpeech`.
 
-1. Disable laptop ASR in `skills_asr` profile.
-2. Point bridge input to the robot ASR `LiveSpeech` topic.
+`naoqi_driver` robot microphone output is raw audio on `/audio`
+(`naoqi_bridge_msgs/msg/AudioBuffer`) and speech recognition is available via
+`/listen` (`naoqi_bridge_msgs/action/Listen`).
+
+To use robot microphone with this stack, disable local Vosk and point bridge
+to a `LiveSpeech` topic produced by an adapter node.
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_skills_asr.launch.py \
-  laptop_asr_enabled:=false \
+  asr_vosk_enabled:=false \
   bridge_input_speech_topic:=/humans/voices/anonymous_speaker/speech
 ```
 

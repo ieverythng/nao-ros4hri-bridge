@@ -18,9 +18,21 @@ repos:
 
   - repo: local
     hooks:
-      - id: nao-chatbot-launch-syntax
-        name: nao-chatbot-launch-syntax
-        entry: python3 -m py_compile src/nao_chatbot/launch/nao_chatbot_stack.launch.py
+      - id: chatbot-launch-syntax
+        name: chatbot-launch-syntax
+        entry: bash -lc 'python3 -m py_compile src/nao_chatbot/launch/*.launch.py'
+        language: system
+        pass_filenames: false
+
+      - id: chatbot-asr-syntax
+        name: chatbot-asr-syntax
+        entry: python3 -m py_compile src/nao_chatbot/nao_chatbot/asr_utils.py src/nao_chatbot/nao_chatbot/asr_vosk.py src/nao_chatbot/nao_chatbot/laptop_asr.py
+        language: system
+        pass_filenames: false
+
+      - id: nao-chatbot-asr-unit-tests
+        name: nao-chatbot-asr-unit-tests
+        entry: bash -lc 'PYTHONPATH=src/nao_chatbot pytest -q src/nao_chatbot/test/unit/test_asr_utils.py src/nao_chatbot/test/unit/test_asr_vosk.py'
         language: system
         pass_filenames: false
 
