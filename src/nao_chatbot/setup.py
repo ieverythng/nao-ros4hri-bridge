@@ -39,7 +39,8 @@ setup(
             'mission_controller_node = nao_chatbot.mission_controller:main',
             'ollama_responder_node = nao_chatbot.ollama_responder:main',
             'ollama_node = nao_chatbot.ollama_node:main',
-            'laptop_asr_node = nao_chatbot.laptop_asr:main',
+            'asr_vosk_node = nao_chatbot.asr_vosk:main',
+            'laptop_asr_node = nao_chatbot.asr_vosk:main',
         ],
     },
 )

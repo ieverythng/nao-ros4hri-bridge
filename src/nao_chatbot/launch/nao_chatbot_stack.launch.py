@@ -3,12 +3,13 @@ from launch.actions import DeclareLaunchArgument
 from launch.actions import ExecuteProcess
 from launch.actions import IncludeLaunchDescription
 from launch.actions import TimerAction
-from launch.substitutions import LaunchConfiguration
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.conditions import IfCondition
-from launch_ros.substitutions import FindPackageShare
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
 from launch.substitutions import PathJoinSubstitution
+from launch.substitutions import PythonExpression
 from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
@@ -20,89 +21,137 @@ def generate_launch_description():
     nao_ip_arg = DeclareLaunchArgument(
         "nao_ip",
         default_value="10.10.200.149",
-        description="NAO robot IP address used by naoqi_driver.",
+        description="NAO robot IP address used by naoqi_driver and posture nodes.",
     )
     nao_port_arg = DeclareLaunchArgument(
         "nao_port",
         default_value="9559",
-        description="NAOqi port used by naoqi_driver.",
+        description="NAOqi port.",
     )
     network_interface_arg = DeclareLaunchArgument(
         "network_interface",
         default_value="eth0",
-        description=(
-            "Network interface for naoqi_driver (must exist in host/container, "
-            "eg wlp1s0 or enx...)."
-        ),
+        description="Network interface for naoqi_driver.",
     )
     qi_listen_url_arg = DeclareLaunchArgument(
         "qi_listen_url",
         default_value="tcp://0.0.0.0:0",
         description="QI listen URL used by naoqi_driver audio extractor.",
     )
+
     start_rqt_chat_arg = DeclareLaunchArgument(
         "start_rqt_chat",
         default_value="true",
-        description="Whether to auto-start rqt_chat UI together with this stack.",
-    )
-    bridge_input_speech_topic_arg = DeclareLaunchArgument(
-        "bridge_input_speech_topic",
-        default_value="/humans/voices/anonymous_speaker/speech",
-        description=(
-            "Speech topic consumed by nao_rqt_bridge and forwarded to "
-            "/chatbot/user_text."
-        ),
+        description="Whether to start rqt_chat UI.",
     )
     rqt_chat_start_delay_sec_arg = DeclareLaunchArgument(
         "rqt_chat_start_delay_sec",
         default_value="1.5",
-        description="Delay before launching rqt_chat (helps when stack is still booting).",
+        description="Delay before launching rqt_chat.",
+    )
+
+    bridge_input_speech_topic_arg = DeclareLaunchArgument(
+        "bridge_input_speech_topic",
+        default_value="/humans/voices/anonymous_speaker/speech",
+        description="LiveSpeech input consumed by nao_rqt_bridge.",
+    )
+
+    asr_vosk_enabled_arg = DeclareLaunchArgument(
+        "asr_vosk_enabled",
+        default_value="false",
+        description="Enable local Vosk ASR node.",
     )
     laptop_asr_enabled_arg = DeclareLaunchArgument(
         "laptop_asr_enabled",
         default_value="false",
-        description="Enable local microphone ASR (Vosk) that publishes LiveSpeech.",
+        description="Deprecated alias for asr_vosk_enabled.",
     )
     asr_output_speech_topic_arg = DeclareLaunchArgument(
         "asr_output_speech_topic",
         default_value="/humans/voices/anonymous_speaker/speech",
-        description="Output speech topic where laptop ASR publishes LiveSpeech.",
+        description="LiveSpeech topic where local ASR publishes transcripts.",
     )
     asr_vosk_model_path_arg = DeclareLaunchArgument(
         "asr_vosk_model_path",
         default_value="",
-        description="Absolute path to Vosk model directory used by laptop ASR.",
+        description="Absolute path to Vosk model directory.",
     )
     asr_sample_rate_hz_arg = DeclareLaunchArgument(
         "asr_sample_rate_hz",
         default_value="16000",
-        description="Microphone sample rate for laptop ASR.",
+        description="Preferred sample rate for local ASR.",
     )
     asr_block_duration_ms_arg = DeclareLaunchArgument(
         "asr_block_duration_ms",
         default_value="250",
-        description="Audio block duration in ms used by laptop ASR capture loop.",
+        description="Audio block duration in ms used by local ASR.",
     )
     asr_device_index_arg = DeclareLaunchArgument(
         "asr_device_index",
         default_value="-1",
-        description="Microphone device index; -1 uses system default input device.",
+        description="Microphone device index; -1 uses default.",
     )
     asr_min_chars_arg = DeclareLaunchArgument(
         "asr_min_chars",
         default_value="2",
-        description="Minimum transcript length required before publishing ASR output.",
+        description="Minimum transcript length before publishing.",
     )
     asr_dedupe_window_sec_arg = DeclareLaunchArgument(
         "asr_dedupe_window_sec",
         default_value="0.8",
-        description="Ignore duplicate ASR transcripts within this window in seconds.",
+        description="Ignore duplicate ASR outputs within this window.",
     )
     asr_publish_partial_arg = DeclareLaunchArgument(
         "asr_publish_partial",
         default_value="false",
-        description="Whether to publish Vosk partial hypotheses as incremental speech.",
+        description="Publish partial hypotheses from Vosk.",
     )
+    asr_allow_sample_rate_fallback_arg = DeclareLaunchArgument(
+        "asr_allow_sample_rate_fallback",
+        default_value="true",
+        description="Try device-default/common rates if requested rate is unsupported.",
+    )
+    asr_min_words_arg = DeclareLaunchArgument(
+        "asr_min_words",
+        default_value="1",
+        description="Minimum number of words required before publishing transcript.",
+    )
+    asr_ignore_single_token_fillers_arg = DeclareLaunchArgument(
+        "asr_ignore_single_token_fillers",
+        default_value="true",
+        description='Drop one-word fillers like "um"/"huh".',
+    )
+    asr_suppress_during_robot_speech_arg = DeclareLaunchArgument(
+        "asr_suppress_during_robot_speech",
+        default_value="true",
+        description="Mute ASR while robot speech is active to avoid overlap/echo.",
+    )
+    asr_robot_speech_topic_arg = DeclareLaunchArgument(
+        "asr_robot_speech_topic",
+        default_value="/speech",
+        description="Topic used to detect robot speech and apply ASR mute window.",
+    )
+    asr_speech_guard_sec_per_word_arg = DeclareLaunchArgument(
+        "asr_speech_guard_sec_per_word",
+        default_value="0.33",
+        description="Estimated robot speech seconds per word used by ASR mute guard.",
+    )
+    asr_speech_guard_min_sec_arg = DeclareLaunchArgument(
+        "asr_speech_guard_min_sec",
+        default_value="1.0",
+        description="Minimum ASR mute window in seconds after robot speech starts.",
+    )
+    asr_speech_guard_extra_sec_arg = DeclareLaunchArgument(
+        "asr_speech_guard_extra_sec",
+        default_value="0.5",
+        description="Extra mute seconds added after estimated robot speech duration.",
+    )
+    asr_status_warn_period_sec_arg = DeclareLaunchArgument(
+        "asr_status_warn_period_sec",
+        default_value="2.0",
+        description="Minimum interval between repeated ASR stream warnings.",
+    )
+
     mission_mode_arg = DeclareLaunchArgument(
         "mission_mode",
         default_value="rules",
@@ -111,169 +160,86 @@ def generate_launch_description():
     backend_fallback_to_rules_arg = DeclareLaunchArgument(
         "backend_fallback_to_rules",
         default_value="false",
-        description="If true, mission controller emits rule fallback on backend timeout.",
+        description="Enable fallback rule response when backend times out.",
     )
     backend_response_timeout_sec_arg = DeclareLaunchArgument(
         "backend_response_timeout_sec",
         default_value="30.0",
-        description="Seconds to wait for backend response before fallback.",
+        description="Seconds to wait for backend response.",
     )
     backend_execute_posture_after_response_arg = DeclareLaunchArgument(
         "backend_execute_posture_after_response",
         default_value="true",
-        description=(
-            "If true in backend mode, execute posture intent only after backend "
-            "response (or fallback timeout)."
-        ),
+        description="Execute posture intent after backend response in backend mode.",
     )
     backend_posture_from_response_enabled_arg = DeclareLaunchArgument(
         "backend_posture_from_response_enabled",
         default_value="false",
-        description=(
-            "If true, mission controller also extracts posture intent from backend "
-            "assistant text (can cause contradictory posture commands)."
-        ),
+        description="Derive posture intent from backend response text.",
     )
+
     posture_command_topic_arg = DeclareLaunchArgument(
         "posture_command_topic",
         default_value="/chatbot/posture_command",
-        description="Topic where posture intents are published as commands.",
+        description="Topic used for legacy posture bridge commands.",
     )
     use_posture_skill_arg = DeclareLaunchArgument(
         "use_posture_skill",
         default_value="true",
-        description="Use posture action client (/skill/do_posture) from mission controller.",
+        description="Use posture action client from mission controller.",
     )
     posture_skill_action_arg = DeclareLaunchArgument(
         "posture_skill_action",
         default_value="/skill/do_posture",
-        description="Action name used for posture skill requests.",
+        description="Posture action name.",
     )
     posture_skill_speed_arg = DeclareLaunchArgument(
         "posture_skill_speed",
         default_value="0.9",
-        description="Default speed sent by mission controller posture skill goals.",
+        description="Default posture speed sent by mission controller.",
     )
     posture_skill_dispatch_wait_sec_arg = DeclareLaunchArgument(
         "posture_skill_dispatch_wait_sec",
         default_value="1.0",
-        description=(
-            "How long mission controller waits for /skill/do_posture server "
-            "discovery before topic fallback."
-        ),
+        description="Wait timeout before posture skill dispatch fallback.",
     )
+
     posture_skill_server_enabled_arg = DeclareLaunchArgument(
         "posture_skill_server_enabled",
         default_value="true",
-        description="Whether to launch posture_skill_server_node with this stack.",
+        description="Launch posture skill action server.",
     )
     posture_skill_server_default_speed_arg = DeclareLaunchArgument(
         "posture_skill_server_default_speed",
         default_value="0.8",
-        description="Default speed used by posture skill server when request speed <= 0.",
+        description="Default speed inside posture skill server.",
     )
     posture_skill_server_fallback_to_topic_arg = DeclareLaunchArgument(
         "posture_skill_server_fallback_to_topic",
         default_value="true",
-        description=(
-            "When true, posture skill server forwards to posture command topic if qi "
-            "is missing/unavailable."
-        ),
+        description="Allow posture skill server to fallback to posture command topic.",
     )
+
     posture_bridge_enabled_arg = DeclareLaunchArgument(
         "posture_bridge_enabled",
         default_value="true",
-        description="Whether to bridge /chatbot/posture_command to NAO ALRobotPosture.",
+        description="Launch legacy posture bridge node.",
     )
     posture_bridge_speed_arg = DeclareLaunchArgument(
         "posture_bridge_speed",
         default_value="0.8",
-        description="Speed used for ALRobotPosture.goToPosture calls.",
+        description="Default posture speed for legacy posture bridge.",
     )
-    posture_bridge_stand_posture_name_arg = DeclareLaunchArgument(
-        "posture_bridge_stand_posture_name",
-        default_value="Stand",
-        description='Posture name used when command is "stand" (e.g. Stand or StandInit).',
-    )
-    posture_bridge_kneel_posture_name_arg = DeclareLaunchArgument(
-        "posture_bridge_kneel_posture_name",
-        default_value="Crouch",
-        description='Posture name used when command is "kneel" (e.g. Crouch).',
-    )
-    posture_bridge_stand_speed_arg = DeclareLaunchArgument(
-        "posture_bridge_stand_speed",
-        default_value="0.8",
-        description='Speed used for "stand" posture calls.',
-    )
-    posture_bridge_kneel_speed_arg = DeclareLaunchArgument(
-        "posture_bridge_kneel_speed",
-        default_value="0.8",
-        description='Speed used for "kneel"/"crouch" posture calls.',
-    )
-    posture_bridge_sit_speed_arg = DeclareLaunchArgument(
-        "posture_bridge_sit_speed",
-        default_value="0.8",
-        description='Speed used for "sit" posture calls.',
-    )
-    posture_bridge_command_dedupe_window_sec_arg = DeclareLaunchArgument(
-        "posture_bridge_command_dedupe_window_sec",
-        default_value="1.5",
-        description="Ignore duplicate posture commands within this time window (seconds).",
-    )
+
     ollama_enabled_arg = DeclareLaunchArgument(
         "ollama_enabled",
         default_value="false",
-        description="Whether to enable Ollama backend responses.",
+        description="Enable Ollama responder node.",
     )
     ollama_model_arg = DeclareLaunchArgument(
         "ollama_model",
         default_value="llama3.2:1b",
-        description="Ollama model name to use for chat backend.",
-    )
-    ollama_url_arg = DeclareLaunchArgument(
-        "ollama_url",
-        default_value="http://localhost:11434/api/chat",
-        description="Ollama chat endpoint URL.",
-    )
-    ollama_request_timeout_sec_arg = DeclareLaunchArgument(
-        "ollama_request_timeout_sec",
-        default_value="20.0",
-        description="Timeout for regular Ollama requests.",
-    )
-    ollama_first_request_timeout_sec_arg = DeclareLaunchArgument(
-        "ollama_first_request_timeout_sec",
-        default_value="60.0",
-        description="Timeout for first Ollama request (model warm-up).",
-    )
-    ollama_context_window_tokens_arg = DeclareLaunchArgument(
-        "ollama_context_window_tokens",
-        default_value="4096",
-        description="Ollama context window (num_ctx) in tokens.",
-    )
-    ollama_temperature_arg = DeclareLaunchArgument(
-        "ollama_temperature",
-        default_value="0.2",
-        description="Ollama temperature for response variability.",
-    )
-    ollama_top_p_arg = DeclareLaunchArgument(
-        "ollama_top_p",
-        default_value="0.9",
-        description="Ollama top_p sampling parameter.",
-    )
-    ollama_robot_name_arg = DeclareLaunchArgument(
-        "ollama_robot_name",
-        default_value="NAO",
-        description="Robot name injected into system prompt.",
-    )
-    ollama_persona_prompt_path_arg = DeclareLaunchArgument(
-        "ollama_persona_prompt_path",
-        default_value="",
-        description="Optional absolute path to persona prompt text file.",
-    )
-    ollama_prompt_addendum_arg = DeclareLaunchArgument(
-        "ollama_prompt_addendum",
-        default_value="",
-        description="Extra instruction text appended to system prompt.",
+        description="Ollama model name.",
     )
 
     start_naoqi_driver = LaunchConfiguration("start_naoqi_driver")
@@ -282,8 +248,10 @@ def generate_launch_description():
     network_interface = LaunchConfiguration("network_interface")
     qi_listen_url = LaunchConfiguration("qi_listen_url")
     start_rqt_chat = LaunchConfiguration("start_rqt_chat")
-    bridge_input_speech_topic = LaunchConfiguration("bridge_input_speech_topic")
     rqt_chat_start_delay_sec = LaunchConfiguration("rqt_chat_start_delay_sec")
+
+    bridge_input_speech_topic = LaunchConfiguration("bridge_input_speech_topic")
+    asr_vosk_enabled = LaunchConfiguration("asr_vosk_enabled")
     laptop_asr_enabled = LaunchConfiguration("laptop_asr_enabled")
     asr_output_speech_topic = LaunchConfiguration("asr_output_speech_topic")
     asr_vosk_model_path = LaunchConfiguration("asr_vosk_model_path")
@@ -293,6 +261,22 @@ def generate_launch_description():
     asr_min_chars = LaunchConfiguration("asr_min_chars")
     asr_dedupe_window_sec = LaunchConfiguration("asr_dedupe_window_sec")
     asr_publish_partial = LaunchConfiguration("asr_publish_partial")
+    asr_allow_sample_rate_fallback = LaunchConfiguration("asr_allow_sample_rate_fallback")
+    asr_min_words = LaunchConfiguration("asr_min_words")
+    asr_ignore_single_token_fillers = LaunchConfiguration(
+        "asr_ignore_single_token_fillers"
+    )
+    asr_suppress_during_robot_speech = LaunchConfiguration(
+        "asr_suppress_during_robot_speech"
+    )
+    asr_robot_speech_topic = LaunchConfiguration("asr_robot_speech_topic")
+    asr_speech_guard_sec_per_word = LaunchConfiguration(
+        "asr_speech_guard_sec_per_word"
+    )
+    asr_speech_guard_min_sec = LaunchConfiguration("asr_speech_guard_min_sec")
+    asr_speech_guard_extra_sec = LaunchConfiguration("asr_speech_guard_extra_sec")
+    asr_status_warn_period_sec = LaunchConfiguration("asr_status_warn_period_sec")
+
     mission_mode = LaunchConfiguration("mission_mode")
     backend_fallback_to_rules = LaunchConfiguration("backend_fallback_to_rules")
     backend_response_timeout_sec = LaunchConfiguration("backend_response_timeout_sec")
@@ -302,13 +286,13 @@ def generate_launch_description():
     backend_posture_from_response_enabled = LaunchConfiguration(
         "backend_posture_from_response_enabled"
     )
+
     posture_command_topic = LaunchConfiguration("posture_command_topic")
     use_posture_skill = LaunchConfiguration("use_posture_skill")
     posture_skill_action = LaunchConfiguration("posture_skill_action")
     posture_skill_speed = LaunchConfiguration("posture_skill_speed")
-    posture_skill_dispatch_wait_sec = LaunchConfiguration(
-        "posture_skill_dispatch_wait_sec"
-    )
+    posture_skill_dispatch_wait_sec = LaunchConfiguration("posture_skill_dispatch_wait_sec")
+
     posture_skill_server_enabled = LaunchConfiguration("posture_skill_server_enabled")
     posture_skill_server_default_speed = LaunchConfiguration(
         "posture_skill_server_default_speed"
@@ -318,31 +302,9 @@ def generate_launch_description():
     )
     posture_bridge_enabled = LaunchConfiguration("posture_bridge_enabled")
     posture_bridge_speed = LaunchConfiguration("posture_bridge_speed")
-    posture_bridge_stand_posture_name = LaunchConfiguration(
-        "posture_bridge_stand_posture_name"
-    )
-    posture_bridge_kneel_posture_name = LaunchConfiguration(
-        "posture_bridge_kneel_posture_name"
-    )
-    posture_bridge_stand_speed = LaunchConfiguration("posture_bridge_stand_speed")
-    posture_bridge_kneel_speed = LaunchConfiguration("posture_bridge_kneel_speed")
-    posture_bridge_sit_speed = LaunchConfiguration("posture_bridge_sit_speed")
-    posture_bridge_command_dedupe_window_sec = LaunchConfiguration(
-        "posture_bridge_command_dedupe_window_sec"
-    )
+
     ollama_enabled = LaunchConfiguration("ollama_enabled")
     ollama_model = LaunchConfiguration("ollama_model")
-    ollama_url = LaunchConfiguration("ollama_url")
-    ollama_request_timeout_sec = LaunchConfiguration("ollama_request_timeout_sec")
-    ollama_first_request_timeout_sec = LaunchConfiguration(
-        "ollama_first_request_timeout_sec"
-    )
-    ollama_context_window_tokens = LaunchConfiguration("ollama_context_window_tokens")
-    ollama_temperature = LaunchConfiguration("ollama_temperature")
-    ollama_top_p = LaunchConfiguration("ollama_top_p")
-    ollama_robot_name = LaunchConfiguration("ollama_robot_name")
-    ollama_persona_prompt_path = LaunchConfiguration("ollama_persona_prompt_path")
-    ollama_prompt_addendum = LaunchConfiguration("ollama_prompt_addendum")
 
     naoqi_driver = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -364,32 +326,50 @@ def generate_launch_description():
         executable="nao_rqt_bridge_node",
         name="nao_rqt_bridge",
         output="screen",
-        parameters=[
-            {
-                "input_speech_topic": bridge_input_speech_topic,
-            }
-        ],
+        parameters=[{"input_speech_topic": bridge_input_speech_topic}],
     )
-    laptop_asr = Node(
+
+    asr_vosk_condition = IfCondition(
+        PythonExpression(
+            [
+                "('",
+                asr_vosk_enabled,
+                "' == 'true') or ('",
+                laptop_asr_enabled,
+                "' == 'true')",
+            ]
+        )
+    )
+    asr_vosk = Node(
         package="nao_chatbot",
-        executable="laptop_asr_node",
-        name="laptop_asr",
+        executable="asr_vosk_node",
+        name="asr_vosk",
         output="screen",
-        condition=IfCondition(laptop_asr_enabled),
+        condition=asr_vosk_condition,
         parameters=[
             {
-                "enabled": laptop_asr_enabled,
+                "enabled": True,
                 "output_speech_topic": asr_output_speech_topic,
                 "vosk_model_path": asr_vosk_model_path,
                 "sample_rate_hz": asr_sample_rate_hz,
                 "block_duration_ms": asr_block_duration_ms,
                 "device_index": asr_device_index,
                 "min_chars": asr_min_chars,
+                "min_words": asr_min_words,
                 "dedupe_window_sec": asr_dedupe_window_sec,
                 "publish_partial": asr_publish_partial,
+                "allow_sample_rate_fallback": asr_allow_sample_rate_fallback,
+                "ignore_single_token_fillers": asr_ignore_single_token_fillers,
+                "suppress_during_robot_speech": asr_suppress_during_robot_speech,
+                "robot_speech_topic": asr_robot_speech_topic,
+                "speech_guard_sec_per_word": asr_speech_guard_sec_per_word,
+                "speech_guard_min_sec": asr_speech_guard_min_sec,
+                "speech_guard_extra_sec": asr_speech_guard_extra_sec,
+                "status_warn_period_sec": asr_status_warn_period_sec,
             }
         ],
     )
+
     mission = Node(
         package="nao_chatbot",
         executable="mission_controller_node",
@@ -410,27 +390,15 @@ def generate_launch_description():
             }
         ],
     )
+
     ollama = Node(
         package="nao_chatbot",
         executable="ollama_responder_node",
         name="ollama_responder",
         output="screen",
-        parameters=[
-            {
-                "enabled": ollama_enabled,
-                "model": ollama_model,
-                "ollama_url": ollama_url,
-                "request_timeout_sec": ollama_request_timeout_sec,
-                "first_request_timeout_sec": ollama_first_request_timeout_sec,
-                "context_window_tokens": ollama_context_window_tokens,
-                "temperature": ollama_temperature,
-                "top_p": ollama_top_p,
-                "robot_name": ollama_robot_name,
-                "persona_prompt_path": ollama_persona_prompt_path,
-                "prompt_addendum": ollama_prompt_addendum,
-            }
-        ],
+        parameters=[{"enabled": ollama_enabled, "model": ollama_model}],
     )
+
     posture_bridge = Node(
         package="nao_posture_bridge",
         executable="nao_posture_bridge_node",
@@ -443,15 +411,10 @@ def generate_launch_description():
                 "nao_ip": nao_ip,
                 "nao_port": nao_port,
                 "posture_speed": posture_bridge_speed,
-                "stand_posture_name": posture_bridge_stand_posture_name,
-                "kneel_posture_name": posture_bridge_kneel_posture_name,
-                "stand_speed": posture_bridge_stand_speed,
-                "kneel_speed": posture_bridge_kneel_speed,
-                "sit_speed": posture_bridge_sit_speed,
-                "command_dedupe_window_sec": posture_bridge_command_dedupe_window_sec,
             }
         ],
     )
+
     posture_skill_server = Node(
         package="nao_posture_bridge",
         executable="posture_skill_server_node",
@@ -471,23 +434,9 @@ def generate_launch_description():
     )
 
     rqt_chat_process = ExecuteProcess(
-        cmd=[
-            "ros2",
-            "run",
-            "rqt_gui",
-            "rqt_gui",
-            "--standalone",
-            "rqt_chat.chat.ChatPlugin",
-            "--force-discover",
-        ],
-        additional_env={
-            "LIBGL_ALWAYS_SOFTWARE": "1",
-            "QT_X11_NO_MITSHM": "1",
-        },
+        cmd=["ros2", "run", "rqt_gui", "rqt_gui", "--standalone", "rqt_chat.chat.ChatPlugin"],
         output="screen",
-        condition=IfCondition(start_rqt_chat),
     )
-
     rqt_chat = TimerAction(
         period=rqt_chat_start_delay_sec,
         actions=[rqt_chat_process],
@@ -502,8 +451,9 @@ def generate_launch_description():
             network_interface_arg,
             qi_listen_url_arg,
             start_rqt_chat_arg,
-            bridge_input_speech_topic_arg,
             rqt_chat_start_delay_sec_arg,
+            bridge_input_speech_topic_arg,
+            asr_vosk_enabled_arg,
             laptop_asr_enabled_arg,
             asr_output_speech_topic_arg,
             asr_vosk_model_path_arg,
@@ -513,6 +463,15 @@ def generate_launch_description():
             asr_min_chars_arg,
             asr_dedupe_window_sec_arg,
             asr_publish_partial_arg,
+            asr_allow_sample_rate_fallback_arg,
+            asr_min_words_arg,
+            asr_ignore_single_token_fillers_arg,
+            asr_suppress_during_robot_speech_arg,
+            asr_robot_speech_topic_arg,
+            asr_speech_guard_sec_per_word_arg,
+            asr_speech_guard_min_sec_arg,
+            asr_speech_guard_extra_sec_arg,
+            asr_status_warn_period_sec_arg,
             mission_mode_arg,
             backend_fallback_to_rules_arg,
             backend_response_timeout_sec_arg,
@@ -528,26 +487,11 @@ def generate_launch_description():
             posture_skill_server_fallback_to_topic_arg,
             posture_bridge_enabled_arg,
             posture_bridge_speed_arg,
-            posture_bridge_stand_posture_name_arg,
-            posture_bridge_kneel_posture_name_arg,
-            posture_bridge_stand_speed_arg,
-            posture_bridge_kneel_speed_arg,
-            posture_bridge_sit_speed_arg,
-            posture_bridge_command_dedupe_window_sec_arg,
             ollama_enabled_arg,
             ollama_model_arg,
-            ollama_url_arg,
-            ollama_request_timeout_sec_arg,
-            ollama_first_request_timeout_sec_arg,
-            ollama_context_window_tokens_arg,
-            ollama_temperature_arg,
-            ollama_top_p_arg,
-            ollama_robot_name_arg,
-            ollama_persona_prompt_path_arg,
-            ollama_prompt_addendum_arg,
             naoqi_driver,
             bridge,
-            laptop_asr,
+            asr_vosk,
             posture_skill_server,
             mission,
             ollama,

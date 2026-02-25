@@ -63,31 +63,56 @@ def generate_launch_description():
         default_value="true",
         description="Allow skill server topic fallback when direct NAOqi is unavailable.",
     )
-    laptop_asr_enabled_arg = DeclareLaunchArgument(
-        "laptop_asr_enabled",
+    asr_vosk_enabled_arg = DeclareLaunchArgument(
+        "asr_vosk_enabled",
         default_value="true",
         description="Enable local Vosk ASR node.",
+    )
+    laptop_asr_enabled_arg = DeclareLaunchArgument(
+        "laptop_asr_enabled",
+        default_value="false",
+        description="Deprecated alias for asr_vosk_enabled.",
     )
     asr_vosk_model_path_arg = DeclareLaunchArgument(
         "asr_vosk_model_path",
         default_value="/models/vosk-model-small-en-us-0.15",
-        description="Absolute path to Vosk model used by laptop ASR.",
+        description="Absolute path to Vosk model used by asr_vosk.",
     )
     asr_sample_rate_hz_arg = DeclareLaunchArgument(
         "asr_sample_rate_hz",
         default_value="16000",
-        description="Microphone sample rate for laptop ASR.",
+        description="Microphone sample rate for asr_vosk.",
+    )
+    asr_block_duration_ms_arg = DeclareLaunchArgument(
+        "asr_block_duration_ms",
+        default_value="300",
+        description="Audio chunk duration in ms for ASR capture loop.",
     )
     asr_device_index_arg = DeclareLaunchArgument(
         "asr_device_index",
         default_value="-1",
         description="Microphone device index; -1 uses system default.",
     )
+    asr_min_words_arg = DeclareLaunchArgument(
+        "asr_min_words",
+        default_value="1",
+        description="Minimum words required before forwarding ASR transcript.",
+    )
+    asr_suppress_during_robot_speech_arg = DeclareLaunchArgument(
+        "asr_suppress_during_robot_speech",
+        default_value="true",
+        description="Mute ASR while robot is speaking to avoid overlap.",
+    )
+    asr_status_warn_period_sec_arg = DeclareLaunchArgument(
+        "asr_status_warn_period_sec",
+        default_value="2.0",
+        description="Throttle period for repeated ASR stream warnings.",
+    )
     bridge_input_speech_topic_arg = DeclareLaunchArgument(
         "bridge_input_speech_topic",
         default_value="/humans/voices/anonymous_speaker/speech",
         description=(
-            "Speech topic consumed by nao_rqt_bridge. Keep default for laptop ASR, "
+            "Speech topic consumed by nao_rqt_bridge. Keep default for asr_vosk, "
             "override for robot-mic ASR sources."
         ),
     )
@@ -105,10 +130,17 @@ def generate_launch_description():
     posture_skill_server_fallback_to_topic = LaunchConfiguration(
         "posture_skill_server_fallback_to_topic"
     )
+    asr_vosk_enabled = LaunchConfiguration("asr_vosk_enabled")
     laptop_asr_enabled = LaunchConfiguration("laptop_asr_enabled")
     asr_vosk_model_path = LaunchConfiguration("asr_vosk_model_path")
     asr_sample_rate_hz = LaunchConfiguration("asr_sample_rate_hz")
+    asr_block_duration_ms = LaunchConfiguration("asr_block_duration_ms")
     asr_device_index = LaunchConfiguration("asr_device_index")
+    asr_min_words = LaunchConfiguration("asr_min_words")
+    asr_suppress_during_robot_speech = LaunchConfiguration(
+        "asr_suppress_during_robot_speech"
+    )
+    asr_status_warn_period_sec = LaunchConfiguration("asr_status_warn_period_sec")
     bridge_input_speech_topic = LaunchConfiguration("bridge_input_speech_topic")
 
     stack_launch = IncludeLaunchDescription(
@@ -134,10 +166,15 @@ def generate_launch_description():
             "posture_bridge_enabled": "true",
             "backend_execute_posture_after_response": "true",
             "backend_posture_from_response_enabled": "false",
+            "asr_vosk_enabled": asr_vosk_enabled,
             "laptop_asr_enabled": laptop_asr_enabled,
             "asr_vosk_model_path": asr_vosk_model_path,
             "asr_sample_rate_hz": asr_sample_rate_hz,
+            "asr_block_duration_ms": asr_block_duration_ms,
             "asr_device_index": asr_device_index,
+            "asr_min_words": asr_min_words,
+            "asr_suppress_during_robot_speech": asr_suppress_during_robot_speech,
+            "asr_status_warn_period_sec": asr_status_warn_period_sec,
             "bridge_input_speech_topic": bridge_input_speech_topic,
         }.items(),
     )
@@ -155,10 +192,15 @@ def generate_launch_description():
             ollama_model_arg,
             posture_skill_speed_arg,
             posture_skill_server_fallback_to_topic_arg,
+            asr_vosk_enabled_arg,
             laptop_asr_enabled_arg,
             asr_vosk_model_path_arg,
             asr_sample_rate_hz_arg,
+            asr_block_duration_ms_arg,
             asr_device_index_arg,
+            asr_min_words_arg,
+            asr_suppress_during_robot_speech_arg,
+            asr_status_warn_period_sec_arg,
             bridge_input_speech_topic_arg,
             stack_launch,
         ]

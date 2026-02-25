@@ -26,7 +26,7 @@ repos:
 
       - id: chatbot-asr-syntax
         name: chatbot-asr-syntax
-        entry: python3 -m py_compile src/nao_chatbot/nao_chatbot/asr_utils.py src/nao_chatbot/nao_chatbot/asr_vosk.py src/nao_chatbot/nao_chatbot/laptop_asr.py
+        entry: python3 -m py_compile src/nao_chatbot/nao_chatbot/asr_utils.py src/nao_chatbot/nao_chatbot/asr_vosk.py
         language: system
         pass_filenames: false
 
