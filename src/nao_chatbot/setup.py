@@ -36,7 +36,9 @@ setup(
     entry_points={
         'console_scripts': [
             'nao_rqt_bridge_node = nao_chatbot.nao_rqt_bridge:main',
+            'dialogue_manager_node = nao_chatbot.dialogue_manager:main',
             'mission_controller_node = nao_chatbot.mission_controller:main',
+            'chat_skill_server_node = nao_chatbot.chat_skill_server:main',
             'ollama_responder_node = nao_chatbot.ollama_responder:main',
             'ollama_node = nao_chatbot.ollama_node:main',
             'asr_vosk_node = nao_chatbot.asr_vosk:main',

@@ -87,3 +87,23 @@ Local `nao_skills` manifest follows this convention:
   - `rosidl_generate_interfaces() ... dependency 'moveit_msgs' has not been found`
 
 This is an environment dependency issue, not a skill-manifest issue.
+
+## Phase 2 Update (2026-02-25)
+
+The high-priority dialogue migration items are now implemented in this workspace:
+
+- `nao_rqt_bridge` migrated to `dialogue_manager` architecture.
+  - `src/nao_chatbot/nao_chatbot/dialogue_manager.py`
+  - Backward-compat alias kept at
+    `src/nao_chatbot/nao_chatbot/nao_rqt_bridge.py`
+- New skill interfaces in `nao_skills`:
+  - `action/SayText.action` (`/skill/say`)
+  - `action/Chat.action` (`/skill/chat`)
+- New skill servers:
+  - `nao_posture_bridge/say_skill_server.py` (`/skill/say`)
+  - `nao_chatbot/chat_skill_server.py` (`/skill/chat`)
+- New skill clients:
+  - `nao_chatbot/say_skill_client.py` (used by `dialogue_manager`)
+  - `nao_chatbot/chat_skill_client.py` (used by `mission_controller`)
+- `mission_controller` backend mode now supports action-first chat through
+  `/skill/chat`, with legacy backend-topic fallback.

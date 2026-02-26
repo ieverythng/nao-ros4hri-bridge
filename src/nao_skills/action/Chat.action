@@ -1,0 +1,12 @@
+# Goal - What mission controller requests
+string user_message
+string[] conversation_history  # Previous turns (recommended format: "role:text")
+---
+# Result - Final outcome
+bool success
+string assistant_response
+string[] updated_history
+---
+# Feedback - Progress updates during execution
+string status    # "thinking", "generating", "complete"
+float32 progress # 0.0-1.0

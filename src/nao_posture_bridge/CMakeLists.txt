@@ -27,4 +27,18 @@ install(
   RENAME posture_skill_server_node
 )
 
+install(
+  PROGRAMS
+    nao_posture_bridge/say_skill_server.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME say_skill_server_node
+)
+
+install(
+  PROGRAMS
+    nao_posture_bridge/speech_skill_server.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME speech_skill_server_node
+)
+
 ament_package()

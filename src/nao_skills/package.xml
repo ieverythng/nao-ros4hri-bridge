@@ -61,5 +61,87 @@
             description: Progress value in [0.0, 1.0].
     </skill>
 
+    <skill content-type="yaml">
+      id: say
+      version: 1.0.0
+      description: |
+        Speak robot utterances through the speech/TTS pipeline.
+      interface: action
+      default_interface_path: /skill/say
+      datatype: nao_skills/action/SayText
+      functional_domains:
+        - communication
+      parameters:
+        in:
+          - name: text
+            type: string
+            required: true
+            description: Text to synthesize.
+          - name: language
+            type: string
+            default: en-US
+            description: Language tag for synthesis voice selection.
+          - name: volume
+            type: float
+            default: 1.0
+            max: 1.0
+            description: Output gain in [0.0, 1.0].
+        out:
+          - name: success
+            type: boolean
+            description: True if speech request completed successfully.
+          - name: message
+            type: string
+            description: Execution result details.
+          - name: duration
+            type: float
+            description: Synthesis/speaking duration in seconds.
+        feedback:
+          - name: status
+            type: string
+            description: Execution phase (for example preparing/speaking/completing).
+          - name: progress
+            type: float
+            description: Progress value in [0.0, 1.0].
+    </skill>
+
+    <skill content-type="yaml">
+      id: chat
+      version: 1.0.0
+      description: |
+        Run a conversational turn against the configured language model backend.
+      interface: action
+      default_interface_path: /skill/chat
+      datatype: nao_skills/action/Chat
+      functional_domains:
+        - communication
+      parameters:
+        in:
+          - name: user_message
+            type: string
+            required: true
+            description: User utterance to process.
+          - name: conversation_history
+            type: array[string]
+            description: Conversation turns passed from the dialogue stack.
+        out:
+          - name: success
+            type: boolean
+            description: True if an assistant response was produced.
+          - name: assistant_response
+            type: string
+            description: Generated assistant answer.
+          - name: updated_history
+            type: array[string]
+            description: Updated conversation history to persist upstream.
+        feedback:
+          - name: status
+            type: string
+            description: Execution phase (for example thinking/generating/complete).
+          - name: progress
+            type: float
+            description: Progress value in [0.0, 1.0].
+    </skill>
+
   </export>
 </package>

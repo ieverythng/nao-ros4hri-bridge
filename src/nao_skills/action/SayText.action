@@ -1,0 +1,13 @@
+# Goal - What dialogue manager requests
+string text
+string language  # "en-US", "es-ES", etc.
+float32 volume   # 0.0-1.0
+---
+# Result - Final outcome
+bool success
+string message
+float32 duration
+---
+# Feedback - Progress updates during execution
+string status    # "preparing", "speaking", "completing"
+float32 progress # 0.0-1.0

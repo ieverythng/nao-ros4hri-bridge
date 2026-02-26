@@ -4,13 +4,13 @@ ROS 2 Jazzy workspace for NAO + ROS4HRI + chatbot orchestration with an ongoing 
 
 This repository uses `src/` as the canonical source tree.
 
-## Migration Status (As of February 23, 2026)
+## Migration Status (As of February 25, 2026)
 
-- Phase 0 complete: `nao_skills` action interface package exists with `DoPosture.action`.
-- Phase 1 complete: `posture_skill_server_node` is available in `nao_posture_bridge`.
-- Phase 2 complete: mission controller can dispatch posture via `/skill/do_posture`.
-- Backend-first posture timing: in `backend` mode, posture execution is deferred until backend response by default.
-- Backward compatibility preserved: topic fallback remains active when action server is unavailable.
+- Phase 0 complete: `nao_skills` now exposes `DoPosture.action`, `SayText.action`, and `Chat.action`.
+- Phase 1 complete: skill servers available for `/skill/do_posture`, `/skill/say`, and `/skill/chat`.
+- Phase 2 complete: mission controller can dispatch posture and chat over actions.
+- Dialogue migration complete: `dialogue_manager_node` replaces bridge logic while preserving LiveSpeech input flow.
+- Backward compatibility preserved: topic fallback remains active when action servers are unavailable.
 
 ## Current Runtime Architecture
 
@@ -18,26 +18,30 @@ Presentation diagram (legacy topic flow): [`docs/architecture_diagram.md`](docs/
 
 Main nodes:
 
-- `nao_rqt_bridge_node`: ROS4HRI I/O bridge (`LiveSpeech` in, TTS + `/speech` out)
+- `dialogue_manager_node`: turn orchestration (`LiveSpeech` in, `/chatbot/user_text` out, `/skill/say` dispatch)
+- `nao_rqt_bridge_node`: compatibility alias to `dialogue_manager_node`
 - `asr_vosk_node`: local microphone ASR (Vosk) -> `LiveSpeech`
-- `mission_controller_node`: intent/routing logic (`rules` or `backend`)
-- `ollama_responder_node`: Ollama backend client with prompt/context controls
+- `mission_controller_node`: intent/routing logic (`rules` or `backend`) + `/skill/chat` client
+- `chat_skill_server_node`: `/skill/chat` action server backed by Ollama
+- `ollama_responder_node`: legacy backend-topic responder (optional compatibility mode)
 - `nao_posture_bridge_node`: legacy topic posture bridge (`/chatbot/posture_command` -> NAOqi `ALRobotPosture`)
 - `posture_skill_server_node`: action posture bridge (`/skill/do_posture` -> NAOqi `ALRobotPosture`)
+- `say_skill_server_node`: action speech bridge (`/skill/say` -> `/tts_engine/tts`)
 
 Active flows today:
 
 ```text
 Speech/Text input
   -> /humans/voices/anonymous_speaker/speech (LiveSpeech)
-  -> nao_rqt_bridge_node -> /chatbot/user_text
+  -> dialogue_manager_node -> /chatbot/user_text
   -> mission_controller_node
        rules mode   -> /chatbot/assistant_text
-       backend mode -> /chatbot/backend/request -> ollama_responder_node -> /chatbot/backend/response -> /chatbot/assistant_text
+       backend mode -> /skill/chat (Chat action) -> chat_skill_server_node -> /chatbot/assistant_text
        posture intent -> /skill/do_posture (DoPosture action)
   -> posture_skill_server_node -> ALRobotPosture.goToPosture
      fallback (if qi unavailable) -> /chatbot/posture_command -> nao_posture_bridge_node -> ALRobotPosture.goToPosture
-  -> nao_rqt_bridge_node -> /tts_engine/tts + /speech
+  -> dialogue_manager_node -> /skill/say (SayText action) -> say_skill_server_node -> /tts_engine/tts
+  -> dialogue_manager_node -> /speech (compatibility + ASR guard pathway)
 ```
 
 ASR note:
@@ -76,6 +80,8 @@ Manual/External skill client
 ├── src/
 │   ├── nao_skills/
 │   │   ├── action/DoPosture.action
+│   │   ├── action/SayText.action
+│   │   ├── action/Chat.action
 │   │   ├── CMakeLists.txt
 │   │   └── package.xml
 │   ├── std_skills/
@@ -85,6 +91,7 @@ Manual/External skill client
 │   │   └── package.xml
 │   ├── nao_posture_bridge/
 │   │   ├── nao_posture_bridge/posture_skill_server.py
+│   │   ├── nao_posture_bridge/say_skill_server.py
 │   │   ├── src/nao_posture_bridge_node.cpp
 │   │   ├── CMakeLists.txt
 │   │   └── package.xml
@@ -97,7 +104,11 @@ Manual/External skill client
 │       │   ├── intent_rules.py
 │       │   ├── asr_vosk.py
 │       │   ├── laptop_asr.py
+│       │   ├── dialogue_manager.py
 │       │   ├── mission_controller.py
+│       │   ├── chat_skill_client.py
+│       │   ├── chat_skill_server.py
+│       │   ├── say_skill_client.py
 │       │   ├── nao_rqt_bridge.py
 │       │   └── ollama_responder.py
 │       └── test/unit/
@@ -183,14 +194,15 @@ ros2 launch nao_chatbot nao_chatbot_stack.launch.py \
   nao_ip:=10.10.200.149 \
   network_interface:=wlp1s0 \
   mission_mode:=backend \
+  use_chat_skill:=true \
+  chat_skill_server_enabled:=true \
+  use_say_skill:=true \
+  say_skill_server_enabled:=true \
   use_posture_skill:=true \
   backend_posture_from_response_enabled:=false \
   ollama_enabled:=true \
   backend_fallback_to_rules:=false \
-  ollama_model:=llama3.2:1b \
-  ollama_context_window_tokens:=4096 \
-  ollama_first_request_timeout_sec:=60.0 \
-  ollama_request_timeout_sec:=20.0
+  ollama_model:=llama3.2:1b
 ```
 
 In `backend` mode, mission controller defaults to `backend_execute_posture_after_response:=true`

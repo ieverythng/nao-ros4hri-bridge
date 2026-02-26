@@ -53,7 +53,7 @@ def generate_launch_description():
     bridge_input_speech_topic_arg = DeclareLaunchArgument(
         "bridge_input_speech_topic",
         default_value="/humans/voices/anonymous_speaker/speech",
-        description="LiveSpeech input consumed by nao_rqt_bridge.",
+        description="LiveSpeech input consumed by dialogue_manager.",
     )
 
     asr_vosk_enabled_arg = DeclareLaunchArgument(
@@ -160,22 +160,57 @@ def generate_launch_description():
     backend_fallback_to_rules_arg = DeclareLaunchArgument(
         "backend_fallback_to_rules",
         default_value="false",
-        description="Enable fallback rule response when backend times out.",
+        description="Enable fallback rule response when backend/chat times out.",
     )
     backend_response_timeout_sec_arg = DeclareLaunchArgument(
         "backend_response_timeout_sec",
         default_value="30.0",
-        description="Seconds to wait for backend response.",
+        description="Seconds to wait for backend/chat response.",
     )
     backend_execute_posture_after_response_arg = DeclareLaunchArgument(
         "backend_execute_posture_after_response",
         default_value="true",
-        description="Execute posture intent after backend response in backend mode.",
+        description="Execute posture intent after backend/chat response in backend mode.",
     )
     backend_posture_from_response_enabled_arg = DeclareLaunchArgument(
         "backend_posture_from_response_enabled",
         default_value="false",
         description="Derive posture intent from backend response text.",
+    )
+    use_chat_skill_arg = DeclareLaunchArgument(
+        "use_chat_skill",
+        default_value="true",
+        description="Use `/skill/chat` action client from mission_controller.",
+    )
+    chat_skill_action_arg = DeclareLaunchArgument(
+        "chat_skill_action",
+        default_value="/skill/chat",
+        description="Chat skill action name.",
+    )
+    chat_skill_dispatch_wait_sec_arg = DeclareLaunchArgument(
+        "chat_skill_dispatch_wait_sec",
+        default_value="1.0",
+        description="Wait timeout before chat skill dispatch fallback.",
+    )
+    chat_skill_fallback_to_backend_topic_arg = DeclareLaunchArgument(
+        "chat_skill_fallback_to_backend_topic",
+        default_value="true",
+        description="Fallback to backend topic when chat skill is unavailable.",
+    )
+    chat_history_max_entries_arg = DeclareLaunchArgument(
+        "chat_history_max_entries",
+        default_value="24",
+        description="Maximum serialized chat history entries kept by mission controller.",
+    )
+    chat_skill_server_enabled_arg = DeclareLaunchArgument(
+        "chat_skill_server_enabled",
+        default_value="true",
+        description="Launch `/skill/chat` action server.",
+    )
+    legacy_backend_node_enabled_arg = DeclareLaunchArgument(
+        "legacy_backend_node_enabled",
+        default_value="false",
+        description="Launch legacy backend topic responder (ollama_responder).",
     )
 
     posture_command_topic_arg = DeclareLaunchArgument(
@@ -231,10 +266,66 @@ def generate_launch_description():
         description="Default posture speed for legacy posture bridge.",
     )
 
+    use_say_skill_arg = DeclareLaunchArgument(
+        "use_say_skill",
+        default_value="true",
+        description="Use `/skill/say` action client from dialogue_manager.",
+    )
+    say_skill_action_arg = DeclareLaunchArgument(
+        "say_skill_action",
+        default_value="/skill/say",
+        description="Say skill action name.",
+    )
+    say_skill_language_arg = DeclareLaunchArgument(
+        "say_skill_language",
+        default_value="en-US",
+        description="Default language passed to `/skill/say` goals.",
+    )
+    say_skill_volume_arg = DeclareLaunchArgument(
+        "say_skill_volume",
+        default_value="1.0",
+        description="Default volume passed to `/skill/say` goals.",
+    )
+    say_skill_dispatch_wait_sec_arg = DeclareLaunchArgument(
+        "say_skill_dispatch_wait_sec",
+        default_value="0.8",
+        description="Wait timeout before say skill dispatch fallback.",
+    )
+    dialogue_publish_speech_topic_arg = DeclareLaunchArgument(
+        "dialogue_publish_speech_topic",
+        default_value="true",
+        description="Publish assistant speech to robot speech topic from dialogue manager.",
+    )
+    dialogue_fallback_publish_speech_topic_arg = DeclareLaunchArgument(
+        "dialogue_fallback_publish_speech_topic",
+        default_value="true",
+        description="Fallback to speech topic if say skill is unavailable/failed.",
+    )
+    say_skill_server_enabled_arg = DeclareLaunchArgument(
+        "say_skill_server_enabled",
+        default_value="true",
+        description="Launch `/skill/say` action server.",
+    )
+    say_skill_tts_action_name_arg = DeclareLaunchArgument(
+        "say_skill_tts_action_name",
+        default_value="/tts_engine/tts",
+        description="Underlying TTS action endpoint used by say skill server.",
+    )
+    say_skill_server_fallback_to_topic_arg = DeclareLaunchArgument(
+        "say_skill_server_fallback_to_topic",
+        default_value="true",
+        description="Fallback to speech topic if TTS action is unavailable.",
+    )
+    say_skill_server_publish_speech_topic_arg = DeclareLaunchArgument(
+        "say_skill_server_publish_speech_topic",
+        default_value="false",
+        description="Publish `/speech` directly from say skill server.",
+    )
+
     ollama_enabled_arg = DeclareLaunchArgument(
         "ollama_enabled",
         default_value="false",
-        description="Enable Ollama responder node.",
+        description="Enable Ollama requests in chat/legacy backend servers.",
     )
     ollama_model_arg = DeclareLaunchArgument(
         "ollama_model",
@@ -286,6 +377,15 @@ def generate_launch_description():
     backend_posture_from_response_enabled = LaunchConfiguration(
         "backend_posture_from_response_enabled"
     )
+    use_chat_skill = LaunchConfiguration("use_chat_skill")
+    chat_skill_action = LaunchConfiguration("chat_skill_action")
+    chat_skill_dispatch_wait_sec = LaunchConfiguration("chat_skill_dispatch_wait_sec")
+    chat_skill_fallback_to_backend_topic = LaunchConfiguration(
+        "chat_skill_fallback_to_backend_topic"
+    )
+    chat_history_max_entries = LaunchConfiguration("chat_history_max_entries")
+    chat_skill_server_enabled = LaunchConfiguration("chat_skill_server_enabled")
+    legacy_backend_node_enabled = LaunchConfiguration("legacy_backend_node_enabled")
 
     posture_command_topic = LaunchConfiguration("posture_command_topic")
     use_posture_skill = LaunchConfiguration("use_posture_skill")
@@ -302,6 +402,24 @@ def generate_launch_description():
     )
     posture_bridge_enabled = LaunchConfiguration("posture_bridge_enabled")
     posture_bridge_speed = LaunchConfiguration("posture_bridge_speed")
+
+    use_say_skill = LaunchConfiguration("use_say_skill")
+    say_skill_action = LaunchConfiguration("say_skill_action")
+    say_skill_language = LaunchConfiguration("say_skill_language")
+    say_skill_volume = LaunchConfiguration("say_skill_volume")
+    say_skill_dispatch_wait_sec = LaunchConfiguration("say_skill_dispatch_wait_sec")
+    dialogue_publish_speech_topic = LaunchConfiguration("dialogue_publish_speech_topic")
+    dialogue_fallback_publish_speech_topic = LaunchConfiguration(
+        "dialogue_fallback_publish_speech_topic"
+    )
+    say_skill_server_enabled = LaunchConfiguration("say_skill_server_enabled")
+    say_skill_tts_action_name = LaunchConfiguration("say_skill_tts_action_name")
+    say_skill_server_fallback_to_topic = LaunchConfiguration(
+        "say_skill_server_fallback_to_topic"
+    )
+    say_skill_server_publish_speech_topic = LaunchConfiguration(
+        "say_skill_server_publish_speech_topic"
+    )
 
     ollama_enabled = LaunchConfiguration("ollama_enabled")
     ollama_model = LaunchConfiguration("ollama_model")
@@ -321,12 +439,24 @@ def generate_launch_description():
         }.items(),
     )
 
-    bridge = Node(
+    dialogue_manager = Node(
         package="nao_chatbot",
-        executable="nao_rqt_bridge_node",
-        name="nao_rqt_bridge",
+        executable="dialogue_manager_node",
+        name="dialogue_manager",
         output="screen",
-        parameters=[{"input_speech_topic": bridge_input_speech_topic}],
+        parameters=[
+            {
+                "input_speech_topic": bridge_input_speech_topic,
+                "naoqi_speech_topic": asr_robot_speech_topic,
+                "use_say_skill": use_say_skill,
+                "say_skill_action": say_skill_action,
+                "say_skill_language": say_skill_language,
+                "say_skill_volume": say_skill_volume,
+                "say_skill_dispatch_wait_sec": say_skill_dispatch_wait_sec,
+                "also_publish_speech_topic": dialogue_publish_speech_topic,
+                "fallback_publish_speech_topic": dialogue_fallback_publish_speech_topic,
+            }
+        ],
     )
 
     asr_vosk_condition = IfCondition(
@@ -382,6 +512,11 @@ def generate_launch_description():
                 "backend_response_timeout_sec": backend_response_timeout_sec,
                 "backend_execute_posture_after_response": backend_execute_posture_after_response,
                 "backend_posture_from_response_enabled": backend_posture_from_response_enabled,
+                "use_chat_skill": use_chat_skill,
+                "chat_skill_action": chat_skill_action,
+                "chat_skill_dispatch_wait_sec": chat_skill_dispatch_wait_sec,
+                "chat_skill_fallback_to_backend_topic": chat_skill_fallback_to_backend_topic,
+                "chat_history_max_entries": chat_history_max_entries,
                 "posture_command_topic": posture_command_topic,
                 "use_posture_skill": use_posture_skill,
                 "posture_skill_action": posture_skill_action,
@@ -391,11 +526,38 @@ def generate_launch_description():
         ],
     )
 
+    chat_skill_server = Node(
+        package="nao_chatbot",
+        executable="chat_skill_server_node",
+        name="chat_skill_server",
+        output="screen",
+        condition=IfCondition(chat_skill_server_enabled),
+        parameters=[
+            {
+                "action_name": chat_skill_action,
+                "enabled": ollama_enabled,
+                "model": ollama_model,
+            }
+        ],
+    )
+
+    legacy_backend_condition = IfCondition(
+        PythonExpression(
+            [
+                "('",
+                legacy_backend_node_enabled,
+                "' == 'true') or ('",
+                use_chat_skill,
+                "' == 'false')",
+            ]
+        )
+    )
     ollama = Node(
         package="nao_chatbot",
         executable="ollama_responder_node",
         name="ollama_responder",
         output="screen",
+        condition=legacy_backend_condition,
         parameters=[{"enabled": ollama_enabled, "model": ollama_model}],
     )
 
@@ -433,8 +595,32 @@ def generate_launch_description():
         ],
     )
 
+    say_skill_server = Node(
+        package="nao_posture_bridge",
+        executable="say_skill_server_node",
+        name="say_skill_server",
+        output="screen",
+        condition=IfCondition(say_skill_server_enabled),
+        parameters=[
+            {
+                "action_name": say_skill_action,
+                "tts_action_name": say_skill_tts_action_name,
+                "naoqi_speech_topic": asr_robot_speech_topic,
+                "fallback_to_speech_topic": say_skill_server_fallback_to_topic,
+                "also_publish_speech_topic": say_skill_server_publish_speech_topic,
+            }
+        ],
+    )
+
     rqt_chat_process = ExecuteProcess(
-        cmd=["ros2", "run", "rqt_gui", "rqt_gui", "--standalone", "rqt_chat.chat.ChatPlugin"],
+        cmd=[
+            "ros2",
+            "run",
+            "rqt_gui",
+            "rqt_gui",
+            "--standalone",
+            "rqt_chat.chat.ChatPlugin",
+        ],
         output="screen",
     )
     rqt_chat = TimerAction(
@@ -477,6 +663,13 @@ def generate_launch_description():
             backend_response_timeout_sec_arg,
             backend_execute_posture_after_response_arg,
             backend_posture_from_response_enabled_arg,
+            use_chat_skill_arg,
+            chat_skill_action_arg,
+            chat_skill_dispatch_wait_sec_arg,
+            chat_skill_fallback_to_backend_topic_arg,
+            chat_history_max_entries_arg,
+            chat_skill_server_enabled_arg,
+            legacy_backend_node_enabled_arg,
             posture_command_topic_arg,
             use_posture_skill_arg,
             posture_skill_action_arg,
@@ -487,12 +680,25 @@ def generate_launch_description():
             posture_skill_server_fallback_to_topic_arg,
             posture_bridge_enabled_arg,
             posture_bridge_speed_arg,
+            use_say_skill_arg,
+            say_skill_action_arg,
+            say_skill_language_arg,
+            say_skill_volume_arg,
+            say_skill_dispatch_wait_sec_arg,
+            dialogue_publish_speech_topic_arg,
+            dialogue_fallback_publish_speech_topic_arg,
+            say_skill_server_enabled_arg,
+            say_skill_tts_action_name_arg,
+            say_skill_server_fallback_to_topic_arg,
+            say_skill_server_publish_speech_topic_arg,
             ollama_enabled_arg,
             ollama_model_arg,
             naoqi_driver,
-            bridge,
+            dialogue_manager,
             asr_vosk,
             posture_skill_server,
+            say_skill_server,
+            chat_skill_server,
             mission,
             ollama,
             posture_bridge,
