@@ -1,30 +1,34 @@
 # NAO ROS4HRI Bridge
 
-ROS 2 Jazzy workspace for NAO + ROS4HRI + chatbot orchestration with an ongoing migration to skill actions.
+ROS 2 Jazzy workspace for NAO + ROS4HRI + chatbot orchestration with canonical skill-action interfaces.
 
 This repository uses `src/` as the canonical source tree.
 
-## Migration Status (As of February 25, 2026)
+## Migration Status (As of March 2, 2026)
 
-- Phase 0 complete: `nao_skills` now exposes `DoPosture.action`, `SayText.action`, and `Chat.action`.
-- Phase 1 complete: skill servers available for `/skill/do_posture`, `/skill/say`, and `/skill/chat`.
-- Phase 2 complete: mission controller can dispatch posture and chat over actions.
-- Dialogue migration complete: `dialogue_manager_node` replaces bridge logic while preserving LiveSpeech input flow.
-- Backward compatibility preserved: topic fallback remains active when action servers are unavailable.
+- Canonical communication skills are active:
+  - `/skill/say` -> `communication_skills/action/Say`
+  - `/skill/chat` -> `communication_skills/action/Chat`
+- NAO-specific skill remains:
+  - `/skill/do_posture` -> `nao_skills/action/DoPosture`
+- Compatibility endpoints removed:
+  - `/skill/say_text_compat` removed
+  - `/skill/chat_compat` removed
+- Local alias wrappers removed:
+  - `nao_chatbot.dialogue_manager`
+  - `nao_chatbot.nao_rqt_bridge`
 
 ## Current Runtime Architecture
 
-Presentation diagram (legacy topic flow): [`docs/architecture_diagram.md`](docs/architecture_diagram.md)
+Presentation diagram: [`docs/whiteboard_migration_diagram.md`](docs/whiteboard_migration_diagram.md)
 
 Main nodes:
 
-- `dialogue_manager_node`: turn orchestration (`LiveSpeech` in, `/chatbot/user_text` out, `/skill/say` dispatch)
-- `nao_rqt_bridge_node`: compatibility alias to `dialogue_manager_node`
+- `dialogue_manager_node` (package `dialogue_manager`): turn orchestration (`LiveSpeech` in, `/chatbot/user_text` out, `/skill/say` dispatch)
 - `asr_vosk_node`: local microphone ASR (Vosk) -> `LiveSpeech`
 - `mission_controller_node`: intent/routing logic (`rules` or `backend`) + `/skill/chat` client
-- `chat_skill_server_node`: `/skill/chat` action server backed by Ollama
-- `ollama_responder_node`: legacy backend-topic responder (optional compatibility mode)
-- `nao_posture_bridge_node`: legacy topic posture bridge (`/chatbot/posture_command` -> NAOqi `ALRobotPosture`)
+- `ollama_chatbot_node`: `/skill/chat` action server backed by Ollama
+- `nao_posture_bridge_node`: posture topic bridge (`/chatbot/posture_command` -> NAOqi `ALRobotPosture`)
 - `posture_skill_server_node`: action posture bridge (`/skill/do_posture` -> NAOqi `ALRobotPosture`)
 - `say_skill_server_node`: action speech bridge (`/skill/say` -> `/tts_engine/tts`)
 
@@ -36,11 +40,11 @@ Speech/Text input
   -> dialogue_manager_node -> /chatbot/user_text
   -> mission_controller_node
        rules mode   -> /chatbot/assistant_text
-       backend mode -> /skill/chat (Chat action) -> chat_skill_server_node -> /chatbot/assistant_text
+       backend mode -> /skill/chat (communication_skills/action/Chat) -> ollama_chatbot_node -> /chatbot/assistant_text
        posture intent -> /skill/do_posture (DoPosture action)
   -> posture_skill_server_node -> ALRobotPosture.goToPosture
      fallback (if qi unavailable) -> /chatbot/posture_command -> nao_posture_bridge_node -> ALRobotPosture.goToPosture
-  -> dialogue_manager_node -> /skill/say (SayText action) -> say_skill_server_node -> /tts_engine/tts
+  -> dialogue_manager_node -> /skill/say (communication_skills/action/Say) -> say_skill_server_node -> /tts_engine/tts
   -> dialogue_manager_node -> /speech (compatibility + ASR guard pathway)
 ```
 
@@ -78,10 +82,19 @@ Manual/External skill client
 │   ├── setup_dev_tools.sh
 │   └── run_precommit.sh
 ├── src/
+│   ├── communication_skills/
+│   │   ├── action/Ask.action
+│   │   ├── action/Say.action
+│   │   ├── action/Chat.action
+│   │   ├── CMakeLists.txt
+│   │   └── package.xml
+│   ├── dialogue_manager/
+│   │   ├── dialogue_manager/
+│   │   ├── launch/dialogue_manager.launch.py
+│   │   ├── setup.py
+│   │   └── package.xml
 │   ├── nao_skills/
 │   │   ├── action/DoPosture.action
-│   │   ├── action/SayText.action
-│   │   ├── action/Chat.action
 │   │   ├── CMakeLists.txt
 │   │   └── package.xml
 │   ├── std_skills/
@@ -97,20 +110,17 @@ Manual/External skill client
 │   │   └── package.xml
 │   └── nao_chatbot/
 │       ├── launch/nao_chatbot_stack.launch.py
-│       ├── launch/nao_chatbot_legacy.launch.py
 │       ├── launch/nao_chatbot_skills.launch.py
 │       ├── launch/nao_chatbot_skills_asr.launch.py
 │       ├── nao_chatbot/
 │       │   ├── intent_rules.py
 │       │   ├── asr_vosk.py
-│       │   ├── laptop_asr.py
-│       │   ├── dialogue_manager.py
 │       │   ├── mission_controller.py
 │       │   ├── chat_skill_client.py
 │       │   ├── chat_skill_server.py
+│       │   ├── ollama_chatbot.py
 │       │   ├── say_skill_client.py
-│       │   ├── nao_rqt_bridge.py
-│       │   └── ollama_responder.py
+│       │   └── ...
 │       └── test/unit/
 ├── .pre-commit-config.yaml
 ├── requirements-dev.txt
@@ -191,7 +201,7 @@ Backend mode example:
 ```bash
 ros2 launch nao_chatbot nao_chatbot_stack.launch.py \
   start_naoqi_driver:=true \
-  nao_ip:=10.10.200.149 \
+  nao_ip:=172.26.112.62 \
   network_interface:=wlp1s0 \
   mission_mode:=backend \
   use_chat_skill:=true \
@@ -215,9 +225,6 @@ Important shell note: never leave trailing spaces after a line-continuation `\`.
 Use short profile launches for demos:
 
 ```bash
-# Legacy/fallback path
-ros2 launch nao_chatbot nao_chatbot_legacy.launch.py
-
 # Skills-first path
 ros2 launch nao_chatbot nao_chatbot_skills.launch.py
 
@@ -257,18 +264,18 @@ Start server:
 ```bash
 ros2 run nao_posture_bridge posture_skill_server_node \
   --ros-args \
-  -p nao_ip:=10.10.200.149 \
+  -p nao_ip:=172.26.112.62 \
   -p nao_port:=9559 \
   -p default_speed:=0.85
 ```
 
 If you see `python qi is missing`, the server now falls back to publishing
 `/chatbot/posture_command` (enabled by default via `fallback_to_posture_topic:=true`).
-In that case, run the legacy bridge node in parallel:
+In that case, run the posture topic bridge node in parallel:
 
 ```bash
 ros2 run nao_posture_bridge nao_posture_bridge_node \
-  --ros-args -p nao_ip:=10.10.200.149 -p nao_port:=9559
+  --ros-args -p nao_ip:=172.26.112.62 -p nao_port:=9559
 ```
 
 Quick check for direct NAOqi Python support in container:
@@ -338,7 +345,7 @@ python3 -m py_compile src/nao_posture_bridge/nao_posture_bridge/posture_skill_se
 
 ## Known Good Baseline
 
-- `nao_skills` action interfaces build and are discoverable
+- `nao_skills` posture action interface builds and is discoverable
 - `nao_posture_bridge` exports both:
   - `nao_posture_bridge_node` (topic bridge)
   - `posture_skill_server_node` (action server)

@@ -6,13 +6,6 @@ predefined defaults.
 
 ## Profiles
 
-### `nao_chatbot_legacy.launch.py`
-
-- Legacy posture path (topic-based)
-- Skill posture path disabled
-- Vosk ASR node (`asr_vosk_node`) disabled
-- Default `mission_mode`: `rules`
-
 ### `nao_chatbot_skills.launch.py`
 
 - Skill posture path enabled (`/skill/do_posture`)
@@ -45,19 +38,14 @@ ros2 launch nao_chatbot nao_chatbot_skills.launch.py mission_mode:=backend
 ## Demo Commands
 
 ```bash
-# 1) Legacy
-ros2 launch nao_chatbot nao_chatbot_legacy.launch.py \
-  nao_ip:=10.10.200.149 \
-  network_interface:=wlp1s0
-
-# 2) Skills
+# 1) Skills
 ros2 launch nao_chatbot nao_chatbot_skills.launch.py \
-  nao_ip:=10.10.200.149 \
+  nao_ip:=172.26.112.62 \
   network_interface:=wlp1s0
 
-# 3) Skills + Vosk ASR
+# 2) Skills + Vosk ASR
 ros2 launch nao_chatbot nao_chatbot_skills_asr.launch.py \
-  nao_ip:=10.10.200.149 \
+  nao_ip:=172.26.112.62 \
   network_interface:=wlp1s0 \
   asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15 \
   asr_min_words:=2

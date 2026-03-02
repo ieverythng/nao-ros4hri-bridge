@@ -11,6 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libportaudio2 \
     python3-colcon-common-extensions \
     python3-pip \
+    socialminds-ros-jazzy-chatbot-msgs \
+    socialminds-ros-jazzy-hri-actions-msgs \
     ros-jazzy-naoqi-libqi \
     socialminds-ros-jazzy-hri-msgs \
     socialminds-ros-jazzy-naoqi-bridge-msgs \
@@ -28,7 +30,7 @@ COPY src/ /home/ubuntu/ws/src/
 
 RUN bash -c "source /opt/ros/jazzy/setup.bash && \
     cd /home/ubuntu/ws && \
-    colcon build --symlink-install --packages-select nao_skills nao_chatbot nao_posture_bridge"
+    colcon build --symlink-install --packages-select std_skills communication_skills nao_skills dialogue_manager nao_chatbot nao_posture_bridge"
 
 COPY docker/ros_entrypoint.sh /
 RUN chmod +x /ros_entrypoint.sh

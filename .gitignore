@@ -39,3 +39,4 @@ docker/*.tar.gz
 src/motions_skills/
 src/std_skills/
 /.cache-pre-commit
+src/nao_chatbot/nao_chatbot/ollama_node.py

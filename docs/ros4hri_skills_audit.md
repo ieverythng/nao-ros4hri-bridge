@@ -92,18 +92,20 @@ This is an environment dependency issue, not a skill-manifest issue.
 
 The high-priority dialogue migration items are now implemented in this workspace:
 
-- `nao_rqt_bridge` migrated to `dialogue_manager` architecture.
-  - `src/nao_chatbot/nao_chatbot/dialogue_manager.py`
-  - Backward-compat alias kept at
-    `src/nao_chatbot/nao_chatbot/nao_rqt_bridge.py`
-- New skill interfaces in `nao_skills`:
-  - `action/SayText.action` (`/skill/say`)
-  - `action/Chat.action` (`/skill/chat`)
+- `nao_rqt_bridge` migration completed into standalone `dialogue_manager` package
+  runtime (`dialogue_manager_node`).
+- Canonical skill interfaces now use `communication_skills`:
+  - `/skill/say` -> `communication_skills/action/Say`
+  - `/skill/chat` -> `communication_skills/action/Chat`
+- Compatibility action endpoints removed:
+  - `/skill/say_text_compat` removed
+  - `/skill/chat_compat` removed
+- `nao_skills` now only exposes posture action (`DoPosture`) for NAO-specific motion.
 - New skill servers:
   - `nao_posture_bridge/say_skill_server.py` (`/skill/say`)
   - `nao_chatbot/chat_skill_server.py` (`/skill/chat`)
 - New skill clients:
   - `nao_chatbot/say_skill_client.py` (used by `dialogue_manager`)
   - `nao_chatbot/chat_skill_client.py` (used by `mission_controller`)
-- `mission_controller` backend mode now supports action-first chat through
-  `/skill/chat`, with legacy backend-topic fallback.
+- `mission_controller` backend mode supports canonical action-first chat
+  (`/skill/chat`) with rule-based timeout/unavailable fallback.

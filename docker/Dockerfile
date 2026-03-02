@@ -20,6 +20,8 @@ COPY src/ /home/ubuntu/ws/src/
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libportaudio2 \
     python3-pip \
+    socialminds-ros-jazzy-chatbot-msgs \
+    socialminds-ros-jazzy-hri-actions-msgs \
     && rm -rf /var/lib/apt/lists/* && \
     python3 -m pip install --no-cache-dir --break-system-packages sounddevice vosk
 
@@ -27,13 +29,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN bash -c "source /opt/ros/jazzy/setup.bash && \
     cd /home/ubuntu/ws && \
     rm -rf \
+      /home/ubuntu/ws/build/std_skills \
+      /home/ubuntu/ws/build/communication_skills \
+      /home/ubuntu/ws/build/dialogue_manager \
       /home/ubuntu/ws/build/nao_skills \
       /home/ubuntu/ws/build/nao_chatbot \
       /home/ubuntu/ws/build/nao_posture_bridge \
+      /home/ubuntu/ws/install/std_skills \
+      /home/ubuntu/ws/install/communication_skills \
+      /home/ubuntu/ws/install/dialogue_manager \
       /home/ubuntu/ws/install/nao_skills \
       /home/ubuntu/ws/install/nao_chatbot \
       /home/ubuntu/ws/install/nao_posture_bridge && \
-    colcon build --symlink-install --packages-select nao_skills nao_chatbot nao_posture_bridge"
+    colcon build --symlink-install --packages-select std_skills communication_skills nao_skills dialogue_manager nao_chatbot nao_posture_bridge"
 
 # Keep entrypoint from this repo for deterministic sourcing behavior.
 COPY docker/ros_entrypoint.sh /
