@@ -1,0 +1,181 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>communication_skills</name>
+  <version>1.5.0</version>
+  <description>Interfaces for PAL Communication skills</description>
+  <maintainer email="luka.juricic@pal-robotics.com">Luka Juricic</maintainer>
+  <license>Apache License 2.0</license>
+  <author email="luka.juricic@pal-robotics.com">Luka Juricic</author>
+
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
+
+  <depend>action_msgs</depend>
+  <depend>builtin_interfaces</depend>
+  <depend>chatbot_msgs</depend>
+  <depend>std_skills</depend>
+
+  <exec_depend>rosidl_default_runtime</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_archlint</test_depend>
+
+
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+
+    <skill content-type="yaml">
+        id: ask
+        version: 1.0.0
+        description: |
+          A specialization of the :skill:`chat` where the role
+          is predefined and the dialogue is always initiated by the robot.
+
+          See :ref:`dialogue_management` for details.
+        interface: action
+        default_interface_path: /skill/ask
+        datatype: communication_skills/action/Ask
+        functional_domains:
+          - communication
+        parameters:
+          in:
+            - name: question
+              type: string
+              required: true
+              description: |
+                The question to be asked to the user. It is used to
+                generate the initial utterance of the dialogue.
+            - name: answers_schema
+              type: string
+              required: true
+              description: |
+                The serialized JSON object of pieces of information
+                to be retrieved through the chat. The keys correspond to the info
+                required, while the values follow the `JSON schema format for object
+                properties &lt;https://json-schema.org/understanding-json-schema/reference/object.html#properties&gt;`_.
+
+                For example, if the required information is the person age, the
+                dictionary could be the following:
+
+                .. code:: json
+
+                   {"age": {"type": "integer", "minimum": 0}}
+
+                For a simple yes/no question, you could have instead:
+
+                .. code:: json
+
+                   {"response": {"type": "boolean"}}
+            - name: person_id
+              type: string
+              default: ""
+              description: If targeting a specific person, the ID of the person.
+            - name: group_id
+              type: string
+              default: ""
+              description: If targeting a group of people, the ID of the group *(currently not supported)*.
+            - name: meta.priority
+              type: integer
+              default: 128
+              description: Between 0 and 255. Higher value means that this skill invokation will have higher priority.
+          out:
+            - name: answers
+              type: object
+              description: |
+                The serialized JSON object containing the pieces
+                retrieved from the chat, depending on the answers_schema.
+
+                For *age* example above, the result might be:
+
+                .. code:: json
+
+                   {"age": 42}
+    </skill>
+
+    <skill content-type="yaml">
+        id: chat
+        version: 1.0.0
+        description: |
+           Start a dialogue with a defined purpose.
+
+           See :ref:`dialogue_management` for details.
+        interface: action
+        default_interface_path: /skill/chat
+        datatype: communication_skills/action/Chat
+        functional_domains:
+          - communication
+        parameters:
+          in:
+            - name: role
+              type: string
+              description: The name and configuration for the dialogue purpose (chatbot-dependent).
+              required: true
+              default: __default__
+            - name: initiate
+              type: boolean
+              default: false
+              description: If true, the dialogue is opened and the robot initiates the conversation.
+            - name: initial_input
+              type: string
+              default: ""
+              description: |
+                Optionally specify the utterance the chatbot initiates the conversation with.
+                Otherwise, the chatbot may generate one based on the role. It is ignored if
+                ``initiate`` is false.
+            - name: person_id
+              type: string
+              default: ""
+              description: If targeting a specific person, the ID of the person.
+            - name: group_id
+              type: string
+              default: ""
+              description: If targeting a group of people, the ID of the group *(currently not supported)*.
+            - name: meta.priority
+              type: integer
+              default: 128
+              description: Between 0 and 255. Higher value means that this skill invokation will have higher priority.
+          out:
+            - name: role_result
+              type: string
+              description: A machine-readable serialized JSON object containing the result, depending on the role.
+    </skill>
+
+    <skill content-type="yaml">
+        id: say
+        version: 1.0.0
+        description: |
+          Speak out the provided input text (also executing any
+          additional markup action).
+
+          See :ref:`tts` for details.
+        interface: action
+        default_interface_path: /skill/say
+        datatype: communication_skills/action/Say
+        functional_domains:
+          - communication
+        parameters:
+          in:
+            - name: input
+              type: string
+              required: true
+              description: |
+                The :ref:`multi-modal expression &lt;tts-markup&gt;` to be read-out.
+            - name: person_id
+              type: string
+              default: ""
+              description: If targeting a specific person, the ID of the person.
+            - name: group_id
+              type: string
+              default: ""
+              description: If targeting a group of people, the ID of the group *(currently not supported)*.
+            - name: meta.priority
+              type: integer
+              default: 128
+              description: Between 0 and 255. Higher value means that this skill invokation will have higher priority.
+    </skill>
+  </export>
+</package>

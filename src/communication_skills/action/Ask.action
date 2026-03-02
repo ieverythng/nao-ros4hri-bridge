@@ -1,0 +1,52 @@
+# Retrieve some pieces of information through a chat with a person or a group of people.
+# It is a specialization of the Chat action, where:
+# - role.name = ASK_ROLE
+# - role.configuration =
+#   {
+#     "question":  question
+#     "result_schema_properties": answers_schema
+#   }
+# - initiate: true
+# - initial_input: question
+# ---
+# - role_results: answers
+
+std_skills/Meta meta
+
+# The ID of the person to interact with.
+# If empty, any user can be interacted with.
+string person_id
+
+# The ID of the group of persons to interact with.
+# If empty, any group of persons can be interacted with.
+# If not empty, the 'person_id' field should be ignored.
+string group_id
+
+# The JSON dictionary of pieces of information to be retrieved through the chat.
+# The keys correspond to the info required,
+# while the values follow the JSON schema format for object properties
+# (see https://json-schema.org/understanding-json-schema/reference/object.html#properties).
+# For example, if the required information is the person age,
+# the dictionary could be the following:
+#   {"age": {"type": "integer", "minimum": 0}}
+string answers_schema "{}"
+
+# Specifies the question the robot should utter when initiating the chat.
+# It is equivalent to using the 'Say' action after starting the chat.
+# If empty, the robot will use an autonomously generated question to initiate the chat.
+string question
+
+---
+std_skills/Result result
+
+# The JSON dictionary of values obtained from the chat,
+# where the keys correspond to the 'answers_schema' fields.
+# If the piece of information relative to a key could not be retrieved,
+# its associated key is not added to the results.
+# For example, if the schema is '{"name": {"type": "string"}, "age": {"type": "integer"}}'
+# and the age could not be retrieved, the dictionary could be the following:
+#   {"name": "Bob"}
+string answers "{}"
+
+---
+std_skills/Feedback feedback

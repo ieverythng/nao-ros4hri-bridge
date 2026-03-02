@@ -1,0 +1,46 @@
+# Start chatting with a person or a group of people.
+
+std_skills/Meta meta
+
+# The ID of the person to interact with.
+# If empty, any user can be interacted with.
+string person_id
+
+# The ID of the group of persons to interact with.
+# If empty, any group of persons can be interacted with.
+# If not empty, the 'person_id' field should be ignored.
+string group_id
+
+# The role of the chat.
+chatbot_msgs/DialogueRole role
+
+# Whether the chat should be initiated by the robot, otherwise it should wait for a user input.
+bool initiate
+
+# Specifies the text the robot should utter when initiating the chat.
+# It is equivalent to using the 'Say' action after starting the chat.
+# It is only used if the 'initiate' field is true.
+# If empty and the 'initiate' field is true,
+# the robot will use an autonomously generated text to initiate the chat,
+# based on the provided `role`.
+string initial_input
+
+---
+std_skills/Result result
+
+# The JSON dictionary of results obtained from the dialogue, based on the role.
+# For example, if the role.name is ASK_ROLE, and the role.configuration is
+# {
+#   ...
+#   "result_schema_properties": {  # ->
+#     "age": {
+#       "type": "integer",
+#       "minimum": 0,
+#   },
+# }
+# the dictionary could be the following:
+#   {"age": "12"}
+string role_results "{}"
+
+---
+std_skills/Feedback feedback
