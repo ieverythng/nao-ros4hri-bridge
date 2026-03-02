@@ -1,5 +1,6 @@
 from nao_chatbot.intent_rules import build_rule_response
 from nao_chatbot.intent_rules import detect_intent
+from nao_chatbot.intent_rules import normalize_intent
 from nao_chatbot.intent_rules import posture_command_for_intent
 
 
@@ -33,3 +34,14 @@ def test_posture_command_mapping() -> None:
     assert posture_command_for_intent("posture_sit") == "sit"
     assert posture_command_for_intent("posture_kneel") == "kneel"
     assert posture_command_for_intent("fallback") == ""
+
+
+def test_normalize_intent_aliases_and_keywords() -> None:
+    assert normalize_intent("__intent_greet__") == "greet"
+    assert normalize_intent("PLEASE_STAND") == "posture_stand"
+    assert normalize_intent("who_are_you") == "identity"
+    assert (
+        normalize_intent("__intent_start_activity__", hint_text="please stand up now")
+        == "posture_stand"
+    )
+    assert normalize_intent("something_unknown") == "fallback"

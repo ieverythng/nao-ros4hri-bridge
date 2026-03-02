@@ -79,7 +79,6 @@ class MissionController(Node):
         )
 
         self.pending_backend_fallback_intent = None
-        self.pending_backend_posture_intent = None
         self.pending_backend_user_text = ""
         self.pending_backend_timer = None
         self._last_user_text = ""
@@ -155,33 +154,26 @@ class MissionController(Node):
         self._last_user_text = text
         self._last_user_text_ts = now
 
-        intent = detect_intent(text)
-        self._publish(self.intent_publisher, intent)
-
         if self.mode == "backend":
-            if self.backend_execute_posture_after_response:
-                self.pending_backend_posture_intent = intent
-                if posture_command_for_intent(intent):
-                    self.get_logger().info(
-                        f"Deferred posture execution until backend response | intent={intent}"
-                    )
-            else:
-                self._handle_posture_intent(intent)
-
             self.pending_backend_user_text = text
+            fallback_intent = (
+                detect_intent(text) if self.backend_fallback_to_rules else "fallback"
+            )
 
-            if self._dispatch_chat_skill_request(text, intent):
+            if self._dispatch_chat_skill_request(text, fallback_intent):
                 return
 
             self.pending_backend_fallback_intent = None
             self._cancel_backend_fallback_timer()
             self._handle_backend_no_chat_response(
-                intent,
+                fallback_intent,
                 reason="Chat skill dispatch failed",
                 posture_source="chat_skill_dispatch_failure_fallback",
             )
             return
 
+        intent = detect_intent(text)
+        self._publish(self.intent_publisher, intent)
         self._handle_posture_intent(intent)
         response = build_rule_response(intent)
         self._publish(self.assistant_publisher, response)
@@ -190,7 +182,7 @@ class MissionController(Node):
             f'Published rule response to "{self.assistant_text_topic}" | intent={intent}'
         )
 
-    def _dispatch_chat_skill_request(self, text: str, intent: str) -> bool:
+    def _dispatch_chat_skill_request(self, text: str, fallback_intent: str) -> bool:
         if not self.use_chat_skill or self.chat_client is None:
             self.get_logger().warn(
                 "Chat skill is disabled/unavailable in backend mode; cannot dispatch"
@@ -214,9 +206,10 @@ class MissionController(Node):
             self.get_logger().warn("Chat skill goal submission failed")
             return False
 
-        self._schedule_backend_fallback(intent)
+        self._schedule_backend_fallback(fallback_intent)
         self.get_logger().info(
-            f'Forwarded request to chat skill "{self.chat_skill_action}" | intent={intent}'
+            f'Forwarded request to chat skill "{self.chat_skill_action}" '
+            f"(fallback_intent={fallback_intent})"
         )
         return True
 
@@ -227,7 +220,7 @@ class MissionController(Node):
             self.get_logger().warn("Ignored stale chat skill result")
             return
 
-        request_intent = self.pending_backend_fallback_intent
+        request_fallback_intent = self.pending_backend_fallback_intent or "fallback"
         self._cancel_backend_fallback_timer()
         self.pending_backend_fallback_intent = None
 
@@ -236,9 +229,13 @@ class MissionController(Node):
         if result.updated_history:
             self.conversation_history = self._trim_chat_history(result.updated_history)
 
+        resolved_intent = self._resolve_backend_intent(
+            backend_intent=result.intent,
+            fallback_intent=request_fallback_intent,
+        )
+
         if not response and self.backend_fallback_to_rules:
-            fallback_intent = request_intent or self.pending_backend_posture_intent or "fallback"
-            response = build_rule_response(fallback_intent)
+            response = build_rule_response(resolved_intent)
             fallback_applied = True
             self.get_logger().warn(
                 "Chat skill returned empty response; published rule-based fallback"
@@ -254,13 +251,23 @@ class MissionController(Node):
         else:
             self.get_logger().warn("Chat skill returned no response and no fallback applied")
 
+        if resolved_intent:
+            self._publish(self.intent_publisher, resolved_intent)
+            self.get_logger().info(
+                "Published backend intent to \"%s\" | intent=%s source=%s confidence=%.2f"
+                % (
+                    self.intent_topic,
+                    resolved_intent,
+                    result.intent_source or "unknown",
+                    float(result.intent_confidence),
+                )
+            )
+
         self.pending_backend_user_text = ""
-        pending_intent = self.pending_backend_posture_intent
-        self.pending_backend_posture_intent = None
-        if self.backend_execute_posture_after_response and pending_intent:
+        if self.backend_execute_posture_after_response and resolved_intent:
             self._handle_posture_intent(
-                pending_intent,
-                source="chat_skill_response_for_user_intent",
+                resolved_intent,
+                source="chat_skill_result_intent",
             )
             return
         if self.backend_posture_from_response_enabled and response:
@@ -303,6 +310,7 @@ class MissionController(Node):
         if self.backend_fallback_to_rules:
             fallback = build_rule_response(intent)
             self._publish(self.assistant_publisher, fallback)
+            self._publish(self.intent_publisher, intent)
             self._append_conversation_turn(self.pending_backend_user_text, fallback)
             self.get_logger().warn(f"{reason}; published rule-based fallback response")
         else:
@@ -311,17 +319,23 @@ class MissionController(Node):
             )
 
         self.pending_backend_user_text = ""
-        pending_intent = self.pending_backend_posture_intent
-        self.pending_backend_posture_intent = None
-        if (
-            self.backend_fallback_to_rules
-            and self.backend_execute_posture_after_response
-            and pending_intent
-        ):
+        if self.backend_fallback_to_rules and self.backend_execute_posture_after_response:
             self._handle_posture_intent(
-                pending_intent,
+                intent,
                 source=posture_source,
             )
+
+    def _resolve_backend_intent(
+        self,
+        backend_intent: str,
+        fallback_intent: str,
+    ) -> str:
+        clean_backend_intent = str(backend_intent).strip()
+        if clean_backend_intent:
+            return clean_backend_intent
+        if self.backend_fallback_to_rules:
+            return fallback_intent or "fallback"
+        return "fallback"
 
     @staticmethod
     def _publish(publisher, text: str) -> None:

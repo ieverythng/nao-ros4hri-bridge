@@ -316,6 +316,21 @@ def generate_launch_description():
         default_value="llama3.2:1b",
         description="Ollama model name.",
     )
+    ollama_intent_detection_mode_arg = DeclareLaunchArgument(
+        "ollama_intent_detection_mode",
+        default_value="llm_with_rules_fallback",
+        description='Intent extraction mode in `/skill/chat`: "rules", "llm", or "llm_with_rules_fallback".',
+    )
+    ollama_intent_model_arg = DeclareLaunchArgument(
+        "ollama_intent_model",
+        default_value="",
+        description="Optional dedicated model for intent extraction (empty uses ollama_model).",
+    )
+    ollama_intent_request_timeout_sec_arg = DeclareLaunchArgument(
+        "ollama_intent_request_timeout_sec",
+        default_value="10.0",
+        description="Intent extraction timeout for `/skill/chat` Ollama requests.",
+    )
 
     start_naoqi_driver = LaunchConfiguration("start_naoqi_driver")
     nao_ip = LaunchConfiguration("nao_ip")
@@ -402,6 +417,11 @@ def generate_launch_description():
 
     ollama_enabled = LaunchConfiguration("ollama_enabled")
     ollama_model = LaunchConfiguration("ollama_model")
+    ollama_intent_detection_mode = LaunchConfiguration("ollama_intent_detection_mode")
+    ollama_intent_model = LaunchConfiguration("ollama_intent_model")
+    ollama_intent_request_timeout_sec = LaunchConfiguration(
+        "ollama_intent_request_timeout_sec"
+    )
 
     naoqi_driver = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -505,6 +525,9 @@ def generate_launch_description():
                 "action_name": chat_skill_action,
                 "enabled": ollama_enabled,
                 "model": ollama_model,
+                "intent_detection_mode": ollama_intent_detection_mode,
+                "intent_model": ollama_intent_model,
+                "intent_request_timeout_sec": ollama_intent_request_timeout_sec,
             }
         ],
     )
@@ -638,6 +661,9 @@ def generate_launch_description():
             say_skill_server_publish_speech_topic_arg,
             ollama_enabled_arg,
             ollama_model_arg,
+            ollama_intent_detection_mode_arg,
+            ollama_intent_model_arg,
+            ollama_intent_request_timeout_sec_arg,
             naoqi_driver,
             dialogue_manager,
             asr_vosk,

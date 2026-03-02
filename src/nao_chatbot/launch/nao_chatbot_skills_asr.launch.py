@@ -53,6 +53,16 @@ def generate_launch_description():
         default_value="llama3.2:1b",
         description="Ollama model name.",
     )
+    ollama_intent_detection_mode_arg = DeclareLaunchArgument(
+        "ollama_intent_detection_mode",
+        default_value="llm_with_rules_fallback",
+        description='Intent extraction mode in `/skill/chat`: "rules", "llm", or "llm_with_rules_fallback".',
+    )
+    ollama_intent_model_arg = DeclareLaunchArgument(
+        "ollama_intent_model",
+        default_value="",
+        description="Optional dedicated model for intent extraction (empty uses ollama_model).",
+    )
     posture_skill_speed_arg = DeclareLaunchArgument(
         "posture_skill_speed",
         default_value="0.9",
@@ -121,6 +131,8 @@ def generate_launch_description():
     mission_mode = LaunchConfiguration("mission_mode")
     ollama_enabled = LaunchConfiguration("ollama_enabled")
     ollama_model = LaunchConfiguration("ollama_model")
+    ollama_intent_detection_mode = LaunchConfiguration("ollama_intent_detection_mode")
+    ollama_intent_model = LaunchConfiguration("ollama_intent_model")
     posture_skill_speed = LaunchConfiguration("posture_skill_speed")
     posture_skill_server_fallback_to_topic = LaunchConfiguration(
         "posture_skill_server_fallback_to_topic"
@@ -153,6 +165,8 @@ def generate_launch_description():
             "mission_mode": mission_mode,
             "ollama_enabled": ollama_enabled,
             "ollama_model": ollama_model,
+            "ollama_intent_detection_mode": ollama_intent_detection_mode,
+            "ollama_intent_model": ollama_intent_model,
             "use_chat_skill": "true",
             "chat_skill_server_enabled": "true",
             "use_posture_skill": "true",
@@ -188,6 +202,8 @@ def generate_launch_description():
             mission_mode_arg,
             ollama_enabled_arg,
             ollama_model_arg,
+            ollama_intent_detection_mode_arg,
+            ollama_intent_model_arg,
             posture_skill_speed_arg,
             posture_skill_server_fallback_to_topic_arg,
             asr_vosk_enabled_arg,

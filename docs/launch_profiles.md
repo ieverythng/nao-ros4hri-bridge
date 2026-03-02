@@ -12,6 +12,8 @@ predefined defaults.
 - Posture skill server enabled
 - Topic bridge kept enabled for controlled fallback
 - Backend-first posture timing enabled
+- Default Ollama model: `llama3.2:1b`
+- Default intent mode: `llm_with_rules_fallback`
 - Vosk ASR node (`asr_vosk_node`) disabled
 - Default `mission_mode`: `backend`
 
@@ -21,6 +23,8 @@ predefined defaults.
 - Vosk ASR node (`asr_vosk_node`) enabled by default
 - Default Vosk model path: `/models/vosk-model-small-en-us-0.15`
 - ASR speech guard enabled by default (mutes microphone while robot is speaking)
+- Default Ollama model: `llama3.2:1b`
+- Default intent mode: `llm_with_rules_fallback`
 - Default `mission_mode`: `backend`
 
 ## Common Usage
@@ -41,14 +45,16 @@ ros2 launch nao_chatbot nao_chatbot_skills.launch.py mission_mode:=backend
 # 1) Skills
 ros2 launch nao_chatbot nao_chatbot_skills.launch.py \
   nao_ip:=172.26.112.62 \
-  network_interface:=wlp1s0
+  network_interface:=wlp1s0 \
+  ollama_intent_detection_mode:=llm_with_rules_fallback
 
 # 2) Skills + Vosk ASR
 ros2 launch nao_chatbot nao_chatbot_skills_asr.launch.py \
   nao_ip:=172.26.112.62 \
   network_interface:=wlp1s0 \
   asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15 \
-  asr_min_words:=2
+  asr_min_words:=2 \
+  ollama_intent_detection_mode:=llm_with_rules_fallback
 ```
 
 Useful ASR stability knobs:
@@ -56,6 +62,13 @@ Useful ASR stability knobs:
 - `asr_block_duration_ms` (higher can reduce overflow warnings)
 - `asr_status_warn_period_sec` (throttles repeated overflow logs)
 - `asr_suppress_during_robot_speech` (keep `true` for turn-taking demos)
+
+Useful chat/intent knobs:
+
+- `ollama_model` (default: `llama3.2:1b`)
+- `ollama_intent_detection_mode` (`rules`, `llm`, `llm_with_rules_fallback`)
+- `ollama_intent_model` (optional dedicated model for structured response)
+- `ollama_intent_request_timeout_sec` (structured response timeout)
 
 ## Robot-Mic Ready Switch
 

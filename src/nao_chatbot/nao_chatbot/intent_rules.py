@@ -1,6 +1,78 @@
 import re
 
 
+SUPPORTED_INTENTS = (
+    "posture_stand",
+    "posture_sit",
+    "posture_kneel",
+    "greet",
+    "wellbeing",
+    "identity",
+    "help",
+    "fallback",
+)
+
+_INTENT_ALIASES = {
+    "__intent_greet__": "greet",
+    "__intent_hello__": "greet",
+    "__intent_identity__": "identity",
+    "__intent_help__": "help",
+    "__intent_wellbeing__": "wellbeing",
+    "__intent_stand__": "posture_stand",
+    "__intent_sit__": "posture_sit",
+    "__intent_kneel__": "posture_kneel",
+    "__intent_say__": "fallback",
+    "__intent_start_activity__": "fallback",
+}
+
+
+def normalize_intent(
+    intent: str,
+    default: str = "fallback",
+    hint_text: str = "",
+) -> str:
+    """Normalize incoming intent labels to one of SUPPORTED_INTENTS."""
+    raw = str(intent).strip().lower()
+    hints = str(hint_text).strip().lower()
+    if not raw:
+        if hints:
+            hinted = detect_intent(hints)
+            if hinted != "fallback":
+                return hinted
+        return default
+    if raw in SUPPORTED_INTENTS:
+        return raw
+    if raw in _INTENT_ALIASES:
+        alias = _INTENT_ALIASES[raw]
+        if alias != "fallback":
+            return alias
+
+    search_space = f"{raw} {hints}".strip()
+    if "stand" in search_space or search_space.endswith("_up"):
+        return "posture_stand"
+    if "sit" in search_space or "seat" in search_space:
+        return "posture_sit"
+    if (
+        "kneel" in search_space
+        or "crouch" in search_space
+        or "seiza" in search_space
+    ):
+        return "posture_kneel"
+    if "greet" in search_space or "hello" in search_space:
+        return "greet"
+    if (
+        "who_are_you" in search_space
+        or "name" in search_space
+        or "identity" in search_space
+    ):
+        return "identity"
+    if "wellbeing" in search_space or "how_are_you" in search_space:
+        return "wellbeing"
+    if "help" in search_space:
+        return "help"
+    return default
+
+
 def detect_intent(text: str) -> str:
     lowered = text.lower()
     if _contains_any_phrase(

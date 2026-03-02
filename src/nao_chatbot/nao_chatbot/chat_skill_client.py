@@ -8,6 +8,7 @@ from typing import Optional
 
 from chatbot_msgs.msg import DialogueRole
 from communication_skills.action import Chat
+from nao_chatbot.intent_rules import normalize_intent
 from rclpy.action import ActionClient
 from rclpy.node import Node
 
@@ -23,6 +24,9 @@ class ChatSkillResult:
     assistant_response: str
     updated_history: list[str]
     message: str = ""
+    intent: str = "fallback"
+    intent_source: str = ""
+    intent_confidence: float = 0.0
 
 
 class ChatSkillClient:
@@ -157,11 +161,19 @@ class ChatSkillClient:
             or result.result.error_code == SkillResult.ROS_ENOERR
         )
         message = str(parsed.get("message", result.result.error_msg))
+        intent = normalize_intent(self._extract_intent(parsed))
+        intent_source = str(parsed.get("intent_source", "")).strip()
+        intent_confidence = self._coerce_float(
+            parsed.get("intent_confidence", parsed.get("confidence", 0.0))
+        )
         compatibility_result = ChatSkillResult(
             success=success,
             assistant_response=str(assistant_response).strip(),
             updated_history=updated_history,
             message=message.strip(),
+            intent=intent,
+            intent_source=intent_source,
+            intent_confidence=intent_confidence,
         )
 
         if compatibility_result.success:
@@ -198,3 +210,21 @@ class ChatSkillClient:
         if not isinstance(parsed, dict):
             return {}
         return parsed
+
+    @staticmethod
+    def _coerce_float(value) -> float:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0.0
+
+    @staticmethod
+    def _extract_intent(payload: dict) -> str:
+        raw_intent = payload.get("intent", "")
+        if not raw_intent:
+            user_intent = payload.get("user_intent")
+            if isinstance(user_intent, dict):
+                raw_intent = user_intent.get("type", user_intent.get("intent", ""))
+            elif isinstance(user_intent, str):
+                raw_intent = user_intent
+        return str(raw_intent).strip()

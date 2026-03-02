@@ -40,13 +40,48 @@ Speech/Text input
   -> dialogue_manager_node -> /chatbot/user_text
   -> mission_controller_node
        rules mode   -> /chatbot/assistant_text
-       backend mode -> /skill/chat (communication_skills/action/Chat) -> ollama_chatbot_node -> /chatbot/assistant_text
+       backend mode -> /skill/chat (communication_skills/action/Chat)
+                    -> ollama_chatbot_node (verbal_ack + user_intent JSON)
+                    -> /chatbot/assistant_text + /chatbot/intent
        posture intent -> /skill/do_posture (DoPosture action)
   -> posture_skill_server_node -> ALRobotPosture.goToPosture
      fallback (if qi unavailable) -> /chatbot/posture_command -> nao_posture_bridge_node -> ALRobotPosture.goToPosture
   -> dialogue_manager_node -> /skill/say (communication_skills/action/Say) -> say_skill_server_node -> /tts_engine/tts
   -> dialogue_manager_node -> /speech (compatibility + ASR guard pathway)
 ```
+
+## LLM Intent Pipeline (Template-Aligned)
+
+`ollama_chatbot_node` now follows a single structured response pipeline inspired by
+the ROS4HRI chatbot template:
+
+- One LLM call returns JSON with:
+  - `verbal_ack`: short natural acknowledgement/answer
+  - `user_intent`: optional structured intent payload
+- `mission_controller_node` remains the action authority:
+  - publishes assistant text
+  - publishes normalized intent
+  - decides posture execution from normalized intent
+
+Normalized intent labels expected by mission controller:
+
+- `posture_stand`
+- `posture_sit`
+- `posture_kneel`
+- `greet`
+- `identity`
+- `wellbeing`
+- `help`
+- `fallback`
+
+Chat skill intent modes:
+
+- `ollama_intent_detection_mode:=llm_with_rules_fallback` (default)
+  - use LLM JSON response, fallback to rule intent if needed
+- `ollama_intent_detection_mode:=llm`
+  - strict LLM-only structured intent
+- `ollama_intent_detection_mode:=rules`
+  - no LLM intent extraction (fast wiring checks)
 
 ASR note:
 
@@ -212,11 +247,30 @@ ros2 launch nao_chatbot nao_chatbot_stack.launch.py \
   backend_posture_from_response_enabled:=false \
   ollama_enabled:=true \
   backend_fallback_to_rules:=false \
-  ollama_model:=llama3.2:1b
+  ollama_model:=llama3.2:1b \
+  ollama_intent_detection_mode:=llm_with_rules_fallback
 ```
 
 In `backend` mode, mission controller defaults to `backend_execute_posture_after_response:=true`
 so the robot executes posture only after assistant text is received.
+
+To force strict rules behavior while still using backend wiring:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_stack.launch.py \
+  mission_mode:=backend \
+  ollama_enabled:=false \
+  ollama_intent_detection_mode:=rules
+```
+
+To try `gpt-oss` again later:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_stack.launch.py \
+  mission_mode:=backend \
+  ollama_enabled:=true \
+  ollama_model:=gpt-oss:20b-cloud
+```
 
 Important shell note: never leave trailing spaces after a line-continuation `\`.
 
