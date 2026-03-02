@@ -46,7 +46,7 @@ def generate_launch_description():
     ollama_enabled_arg = DeclareLaunchArgument(
         "ollama_enabled",
         default_value="true",
-        description="Enable Ollama backend node.",
+        description="Enable Ollama-backed `/skill/chat` action server.",
     )
     ollama_model_arg = DeclareLaunchArgument(
         "ollama_model",
@@ -96,7 +96,6 @@ def generate_launch_description():
             "ollama_model": ollama_model,
             "use_chat_skill": "true",
             "chat_skill_server_enabled": "true",
-            "legacy_backend_node_enabled": "false",
             "use_posture_skill": "true",
             "posture_skill_speed": posture_skill_speed,
             "posture_skill_server_enabled": "true",
@@ -108,7 +107,6 @@ def generate_launch_description():
             "backend_execute_posture_after_response": "true",
             "backend_posture_from_response_enabled": "false",
             "asr_vosk_enabled": "false",
-            "laptop_asr_enabled": "false",
         }.items(),
     )
 

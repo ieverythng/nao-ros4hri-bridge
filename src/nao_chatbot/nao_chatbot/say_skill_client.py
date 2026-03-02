@@ -1,13 +1,26 @@
 #!/usr/bin/env python3
 """Say skill action client for dialogue manager."""
 
+import time
+from dataclasses import dataclass
 from typing import Callable
 from typing import Optional
 
+from communication_skills.action import Say
 from rclpy.action import ActionClient
 from rclpy.node import Node
 
-from nao_skills.action import SayText
+from std_skills.msg import Meta as SkillMeta
+from std_skills.msg import Result as SkillResult
+
+
+@dataclass
+class SaySkillResult:
+    """Compatibility result used by dialogue_manager."""
+
+    success: bool
+    message: str
+    duration: float
 
 
 class SaySkillClient:
@@ -25,9 +38,10 @@ class SaySkillClient:
         self._default_language = default_language
         self._default_volume = default_volume
 
-        self._client = ActionClient(node, SayText, action_name)
+        self._client = ActionClient(node, Say, action_name)
         self._goal_handle = None
-        self._result_callback: Optional[Callable[[SayText.Result], None]] = None
+        self._result_callback: Optional[Callable[[SaySkillResult], None]] = None
+        self._goal_start_ts = 0.0
 
         node.get_logger().info(f"Say skill client initialized: {action_name}")
 
@@ -53,7 +67,7 @@ class SaySkillClient:
         language: Optional[str] = None,
         volume: Optional[float] = None,
         feedback_callback: Optional[Callable] = None,
-        result_callback: Optional[Callable[[SayText.Result], None]] = None,
+        result_callback: Optional[Callable[[SaySkillResult], None]] = None,
     ) -> bool:
         """Send say goal asynchronously."""
         cleaned_text = text.strip()
@@ -71,12 +85,15 @@ class SaySkillClient:
             resolved_language = language.strip()
         resolved_volume = self._default_volume if volume is None else float(volume)
 
-        goal = SayText.Goal()
-        goal.text = cleaned_text
-        goal.language = resolved_language
-        goal.volume = resolved_volume
+        goal = Say.Goal()
+        goal.meta.caller = self._node.get_name()
+        goal.meta.priority = SkillMeta.NORMAL_PRIORITY
+        goal.person_id = ""
+        goal.group_id = ""
+        goal.input = cleaned_text
 
         self._result_callback = result_callback
+        self._goal_start_ts = time.monotonic()
         self._node.get_logger().info(
             f"Sending say goal | language={resolved_language} volume={resolved_volume:.2f}"
         )
@@ -92,9 +109,9 @@ class SaySkillClient:
 
     def _default_feedback(self, feedback_msg) -> None:
         """Default feedback handler."""
-        feedback = feedback_msg.feedback
+        feedback = feedback_msg.feedback.feedback
         self._node.get_logger().info(
-            f"Say skill progress: {feedback.status} ({feedback.progress * 100.0:.0f}%)"
+            f"Say skill progress: {feedback.data_str} ({feedback.data_float * 100.0:.0f}%)"
         )
 
     def _goal_response_callback(self, future) -> None:
@@ -122,13 +139,26 @@ class SaySkillClient:
             return
 
         result = wrapped_result.result
-        if result.success:
-            self._node.get_logger().info(f"Say goal succeeded: {result.message}")
+        duration = 0.0
+        if self._goal_start_ts > 0.0:
+            duration = max(0.0, time.monotonic() - self._goal_start_ts)
+        success = result.result.error_code == SkillResult.ROS_ENOERR
+        message = result.result.error_msg
+        if not message and success:
+            message = "Spoken via TTS action server"
+        if success:
+            self._node.get_logger().info(f"Say goal succeeded: {message}")
         else:
-            self._node.get_logger().error(f"Say goal failed: {result.message}")
+            self._node.get_logger().error(f"Say goal failed: {message or 'unknown'}")
 
         if self._result_callback is not None:
-            self._result_callback(result)
+            self._result_callback(
+                SaySkillResult(
+                    success=success,
+                    message=message,
+                    duration=duration,
+                )
+            )
 
     def cancel_goal(self) -> None:
         """Cancel the currently active goal."""

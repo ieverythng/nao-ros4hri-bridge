@@ -8,23 +8,25 @@ import threading
 import urllib.error
 import urllib.request
 
+from chatbot_msgs.msg import DialogueRole
+from communication_skills.action import Chat
 import rclpy
 from rcl_interfaces.msg import ParameterDescriptor
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
-
-from nao_skills.action import Chat
+from std_skills.msg import Result as SkillResult
 
 
 class ChatSkillServer(Node):
-    """Serve conversational turns over `/skill/chat`."""
+    """Serve Ollama-backed conversational turns over `/skill/chat`."""
 
     def __init__(self) -> None:
-        super().__init__("chat_skill_server")
+        super().__init__("ollama_chatbot")
 
         self.declare_parameter("action_name", "/skill/chat")
+        self.declare_parameter("role_name", DialogueRole.DEFAULT_ROLE)
         self.declare_parameter(
             "enabled",
             True,
@@ -62,6 +64,7 @@ class ChatSkillServer(Node):
         self.declare_parameter("identity_reminder_every_n_turns", 6)
 
         self.action_name = self.get_parameter("action_name").value
+        self.role_name = self.get_parameter("role_name").value
         self.enabled = self._as_bool(self.get_parameter("enabled").value)
         self.ollama_url = self.get_parameter("ollama_url").value
         self.model = self.get_parameter("model").value
@@ -98,8 +101,13 @@ class ChatSkillServer(Node):
         )
 
         self.get_logger().info(
-            "chat_skill_server ready | action:%s enabled:%s model:%s"
-            % (self.action_name, self.enabled, self.model)
+            "ollama_chatbot ready | action:%s canonical_type:communication_skills/action/Chat "
+            "backend_enabled:%s model:%s"
+            % (
+                self.action_name,
+                self.enabled,
+                self.model,
+            )
         )
         self._log_model_inventory()
 
@@ -107,8 +115,9 @@ class ChatSkillServer(Node):
         if self._execution_lock.locked():
             self.get_logger().warn("Rejected chat goal because another goal is running")
             return GoalResponse.REJECT
-        if not goal_request.user_message.strip():
-            self.get_logger().warn("Rejected chat goal with empty user_message")
+        user_message, _history = self._extract_canonical_goal(goal_request)
+        if not user_message:
+            self.get_logger().warn("Rejected chat goal with empty user message")
             return GoalResponse.REJECT
         return GoalResponse.ACCEPT
 
@@ -119,23 +128,65 @@ class ChatSkillServer(Node):
     async def execute_callback(self, goal_handle):
         if not self._execution_lock.acquire(blocking=False):
             goal_handle.abort()
-            return self._result(False, "", [])
+            return self._canonical_result(
+                False,
+                "Another chat goal is already executing",
+                [],
+                "",
+                SkillResult.ROS_ECANCELED,
+            )
 
         try:
-            return self._execute_locked(goal_handle)
+            user_text, history = self._extract_canonical_goal(goal_handle.request)
+            if not user_text:
+                goal_handle.abort()
+                return self._canonical_result(
+                    False,
+                    "Goal user message is empty",
+                    history,
+                    "",
+                    SkillResult.ROS_EBADMSG,
+                )
+
+            success, assistant_text, updated_history = self._execute_conversation(
+                goal_handle=goal_handle,
+                user_text=user_text,
+                history=history,
+            )
+            if goal_handle.is_cancel_requested:
+                goal_handle.canceled()
+                return self._canonical_result(
+                    False,
+                    "Cancelled while executing chat goal",
+                    history,
+                    "",
+                    SkillResult.ROS_ECANCELED,
+                )
+
+            goal_handle.succeed()
+            error_code = SkillResult.ROS_ENOERR if success else SkillResult.ROS_EOTHER
+            message = "" if success else "No assistant response generated"
+            return self._canonical_result(
+                success,
+                message,
+                updated_history,
+                assistant_text,
+                error_code,
+            )
         finally:
             self._execution_lock.release()
 
-    def _execute_locked(self, goal_handle):
-        goal = goal_handle.request
-        user_text = goal.user_message.strip()
-
+    def _execute_conversation(
+        self,
+        goal_handle,
+        user_text: str,
+        history: list[str],
+    ) -> tuple[bool, str, list[str]]:
         self._publish_feedback(goal_handle, "thinking", 0.1)
         if goal_handle.is_cancel_requested:
-            goal_handle.canceled()
-            return self._result(False, "", list(goal.conversation_history))
+            return False, "", list(history)
 
-        history_messages = self._history_to_messages(goal.conversation_history)
+        history_messages = self._history_to_messages(history)
         if (
             self.identity_reminder_every_n_turns > 0
             and self._handled_requests > 0
@@ -160,8 +211,7 @@ class ChatSkillServer(Node):
 
         self._publish_feedback(goal_handle, "generating", 0.4)
         if goal_handle.is_cancel_requested:
-            goal_handle.canceled()
-            return self._result(False, "", list(goal.conversation_history))
+            return False, "", list(history)
 
         timeout_sec = (
             self.first_request_timeout_sec
@@ -188,11 +238,41 @@ class ChatSkillServer(Node):
                 {"role": "assistant", "content": assistant_text},
             ]
         )
-
         self._handled_requests += 1
         self._publish_feedback(goal_handle, "complete", 1.0)
-        goal_handle.succeed()
-        return self._result(success, assistant_text, updated_history)
+        return success, assistant_text, updated_history
+
+    def _extract_canonical_goal(self, goal: Chat.Goal) -> tuple[str, list[str]]:
+        payload = self._parse_json_dict(goal.role.configuration)
+        user_message = str(payload.get("user_message", "")).strip()
+        if not user_message and goal.initial_input.strip():
+            user_message = goal.initial_input.strip()
+        if not user_message:
+            user_message = str(payload.get("input", "")).strip()
+
+        history_raw = payload.get("conversation_history", payload.get("history", []))
+        history = self._coerce_history(history_raw)
+        return user_message, history
+
+    @staticmethod
+    def _coerce_history(raw_history) -> list[str]:
+        if isinstance(raw_history, list):
+            return [str(entry).strip() for entry in raw_history if str(entry).strip()]
+        if isinstance(raw_history, str) and raw_history.strip():
+            return [raw_history.strip()]
+        return []
+
+    @staticmethod
+    def _parse_json_dict(payload: str) -> dict:
+        if not payload:
+            return {}
+        try:
+            parsed = json.loads(payload)
+        except json.JSONDecodeError:
+            return {}
+        if not isinstance(parsed, dict):
+            return {}
+        return parsed
 
     def _query_ollama(self, messages: list[dict], timeout_sec: float) -> str:
         payload = {
@@ -348,16 +428,30 @@ class ChatSkillServer(Node):
     @staticmethod
     def _publish_feedback(goal_handle, status: str, progress: float) -> None:
         feedback = Chat.Feedback()
-        feedback.status = status
-        feedback.progress = float(progress)
+        feedback.feedback.data_str = status
+        feedback.feedback.data_float = float(progress)
         goal_handle.publish_feedback(feedback)
 
     @staticmethod
-    def _result(success: bool, assistant_response: str, updated_history: list[str]):
+    def _canonical_result(
+        success: bool,
+        message: str,
+        updated_history: list[str],
+        assistant_response: str,
+        error_code: int,
+    ):
         result = Chat.Result()
-        result.success = bool(success)
-        result.assistant_response = assistant_response
-        result.updated_history = list(updated_history)
+        result.result.error_code = int(error_code)
+        result.result.error_msg = message
+        result.role_results = json.dumps(
+            {
+                "success": bool(success),
+                "assistant_response": assistant_response,
+                "updated_history": list(updated_history),
+                "message": message,
+            },
+            separators=(",", ":"),
+        )
         return result
 
     @staticmethod

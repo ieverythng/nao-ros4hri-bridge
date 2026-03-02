@@ -15,7 +15,7 @@ def generate_launch_description():
     )
     nao_ip_arg = DeclareLaunchArgument(
         "nao_ip",
-        default_value="10.10.200.149",
+        default_value="172.26.112.62",
         description="NAO robot IP.",
     )
     nao_port_arg = DeclareLaunchArgument(
@@ -46,7 +46,7 @@ def generate_launch_description():
     ollama_enabled_arg = DeclareLaunchArgument(
         "ollama_enabled",
         default_value="true",
-        description="Enable Ollama backend node.",
+        description="Enable Ollama-backed `/skill/chat` action server.",
     )
     ollama_model_arg = DeclareLaunchArgument(
         "ollama_model",
@@ -67,11 +67,6 @@ def generate_launch_description():
         "asr_vosk_enabled",
         default_value="true",
         description="Enable local Vosk ASR node.",
-    )
-    laptop_asr_enabled_arg = DeclareLaunchArgument(
-        "laptop_asr_enabled",
-        default_value="false",
-        description="Deprecated alias for asr_vosk_enabled.",
     )
     asr_vosk_model_path_arg = DeclareLaunchArgument(
         "asr_vosk_model_path",
@@ -131,7 +126,6 @@ def generate_launch_description():
         "posture_skill_server_fallback_to_topic"
     )
     asr_vosk_enabled = LaunchConfiguration("asr_vosk_enabled")
-    laptop_asr_enabled = LaunchConfiguration("laptop_asr_enabled")
     asr_vosk_model_path = LaunchConfiguration("asr_vosk_model_path")
     asr_sample_rate_hz = LaunchConfiguration("asr_sample_rate_hz")
     asr_block_duration_ms = LaunchConfiguration("asr_block_duration_ms")
@@ -161,7 +155,6 @@ def generate_launch_description():
             "ollama_model": ollama_model,
             "use_chat_skill": "true",
             "chat_skill_server_enabled": "true",
-            "legacy_backend_node_enabled": "false",
             "use_posture_skill": "true",
             "posture_skill_speed": posture_skill_speed,
             "posture_skill_server_enabled": "true",
@@ -173,7 +166,6 @@ def generate_launch_description():
             "backend_execute_posture_after_response": "true",
             "backend_posture_from_response_enabled": "false",
             "asr_vosk_enabled": asr_vosk_enabled,
-            "laptop_asr_enabled": laptop_asr_enabled,
             "asr_vosk_model_path": asr_vosk_model_path,
             "asr_sample_rate_hz": asr_sample_rate_hz,
             "asr_block_duration_ms": asr_block_duration_ms,
@@ -199,7 +191,6 @@ def generate_launch_description():
             posture_skill_speed_arg,
             posture_skill_server_fallback_to_topic_arg,
             asr_vosk_enabled_arg,
-            laptop_asr_enabled_arg,
             asr_vosk_model_path_arg,
             asr_sample_rate_hz_arg,
             asr_block_duration_ms_arg,

@@ -6,14 +6,14 @@ import time
 
 import rclpy
 from action_msgs.msg import GoalStatus
+from communication_skills.action import Say
 from rclpy.action import ActionClient, ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from std_msgs.msg import String
+from std_skills.msg import Result as SkillResult
 from tts_msgs.action import TTS
-
-from nao_skills.action import SayText
 
 
 class SaySkillServer(Node):
@@ -57,7 +57,7 @@ class SaySkillServer(Node):
 
         self._action_server = ActionServer(
             self,
-            SayText,
+            Say,
             self.action_name,
             execute_callback=self.execute_callback,
             goal_callback=self.goal_callback,
@@ -66,7 +66,8 @@ class SaySkillServer(Node):
         )
 
         self.get_logger().info(
-            "say_skill_server ready | action:%s tts:%s speech:%s fallback:%s publish:%s"
+            "say_skill_server ready | action:%s canonical_type:communication_skills/action/Say "
+            "tts:%s speech:%s fallback:%s publish:%s"
             % (
                 self.action_name,
                 self.tts_action_name,
@@ -76,22 +77,14 @@ class SaySkillServer(Node):
             )
         )
 
-    def goal_callback(self, goal_request: SayText.Goal) -> GoalResponse:
+    def goal_callback(self, goal_request: Say.Goal) -> GoalResponse:
         if self._execution_lock.locked():
             self.get_logger().warn("Rejected say goal because another goal is running")
             return GoalResponse.REJECT
 
-        text = goal_request.text.strip()
+        text = goal_request.input.strip()
         if not text:
             self.get_logger().warn("Rejected say goal with empty text")
-            return GoalResponse.REJECT
-
-        volume = float(goal_request.volume)
-        if volume < 0.0 or volume > 1.0:
-            self.get_logger().warn(
-                "Rejected say goal with invalid volume %.3f (valid range: 0.0-1.0)"
-                % volume
-            )
             return GoalResponse.REJECT
 
         return GoalResponse.ACCEPT
@@ -103,36 +96,54 @@ class SaySkillServer(Node):
     async def execute_callback(self, goal_handle):
         if not self._execution_lock.acquire(blocking=False):
             goal_handle.abort()
-            return self._result(
+            return self._canonical_result(
                 False,
                 "Another say goal is already executing",
-                0.0,
+                error_code=SkillResult.ROS_ECANCELED,
             )
-
         try:
-            return await self._execute_locked(goal_handle)
+            goal = goal_handle.request
+            status, message, _duration = await self._run_execution(
+                goal_handle=goal_handle,
+                text=goal.input.strip(),
+                language=self.default_language,
+                volume=self.default_volume,
+                feedback_publisher=self._publish_feedback,
+            )
+            if status == "canceled":
+                goal_handle.canceled()
+                return self._canonical_result(
+                    False, message, error_code=SkillResult.ROS_ECANCELED
+                )
+            if status == "aborted":
+                goal_handle.abort()
+                return self._canonical_result(
+                    False, message, error_code=SkillResult.ROS_EOTHER
+                )
+            goal_handle.succeed()
+            return self._canonical_result(
+                True, message, error_code=SkillResult.ROS_ENOERR
+            )
         finally:
             self._execution_lock.release()
 
-    async def _execute_locked(self, goal_handle):
+    async def _run_execution(
+        self,
+        goal_handle,
+        text: str,
+        language: str,
+        volume: float,
+        feedback_publisher,
+    ) -> tuple[str, str, float]:
         start_time = time.monotonic()
-        goal = goal_handle.request
-
-        text = goal.text.strip()
         if not text:
-            goal_handle.abort()
-            return self._result(False, "Goal text is empty", 0.0)
-
-        language = goal.language.strip() or self.default_language
-        volume = float(goal.volume)
+            return ("aborted", "Goal text is empty", 0.0)
         if volume < 0.0 or volume > 1.0:
-            goal_handle.abort()
-            return self._result(False, "Goal volume is invalid", 0.0)
+            return ("aborted", "Goal volume is invalid", 0.0)
 
-        self._publish_feedback(goal_handle, "preparing", 0.0)
+        feedback_publisher(goal_handle, "preparing", 0.0)
         if goal_handle.is_cancel_requested:
-            goal_handle.canceled()
-            return self._result(False, "Cancelled before execution", 0.0)
+            return ("canceled", "Cancelled before execution", 0.0)
 
         if self.also_publish_speech_topic:
             self._publish_speech_topic(text)
@@ -142,11 +153,11 @@ class SaySkillServer(Node):
             text=text,
             language=language,
             volume=volume,
+            feedback_publisher=feedback_publisher,
         )
         duration = time.monotonic() - start_time
         if tts_status == GoalStatus.STATUS_CANCELED:
-            goal_handle.canceled()
-            return self._result(False, message, duration)
+            return ("canceled", message, duration)
         if tts_status != GoalStatus.STATUS_SUCCEEDED:
             if self.fallback_to_speech_topic:
                 if not self.also_publish_speech_topic:
@@ -154,20 +165,17 @@ class SaySkillServer(Node):
                 self.get_logger().warn(
                     "TTS action unavailable/failed. Completed with speech-topic fallback."
                 )
-                self._publish_feedback(goal_handle, "completing", 1.0)
-                goal_handle.succeed()
-                return self._result(
-                    True,
+                feedback_publisher(goal_handle, "completing", 1.0)
+                return (
+                    "succeeded",
                     f"{message}; delivered via speech topic fallback",
                     duration,
                 )
 
-            goal_handle.abort()
-            return self._result(False, message, duration)
+            return ("aborted", message, duration)
 
-        self._publish_feedback(goal_handle, "completing", 1.0)
-        goal_handle.succeed()
-        return self._result(True, "Spoken via TTS action server", duration)
+        feedback_publisher(goal_handle, "completing", 1.0)
+        return ("succeeded", "Spoken via TTS action server", duration)
 
     async def _forward_tts_goal(
         self,
@@ -175,6 +183,7 @@ class SaySkillServer(Node):
         text: str,
         language: str,
         volume: float,
+        feedback_publisher,
     ) -> tuple[int, str]:
         if not self._tts_client.wait_for_server(timeout_sec=self.tts_server_wait_sec):
             return (
@@ -185,9 +194,10 @@ class SaySkillServer(Node):
         if goal_handle.is_cancel_requested:
             return (GoalStatus.STATUS_CANCELED, "Cancelled before TTS dispatch")
 
-        self._publish_feedback(goal_handle, "speaking", 0.4)
+        feedback_publisher(goal_handle, "speaking", 0.4)
         tts_goal = TTS.Goal()
         tts_goal.input = text
+        tts_goal.locale = language.replace("-", "_")
 
         self.get_logger().info(
             "Forwarding say request to TTS action | lang:%s volume:%.2f text:%s"
@@ -207,7 +217,8 @@ class SaySkillServer(Node):
         wrapped_result = await result_future
         if wrapped_result is None:
             return (GoalStatus.STATUS_ABORTED, "TTS result wrapper was empty")
-
+        if wrapped_result.result and wrapped_result.result.error_msg:
+            return (int(wrapped_result.status), wrapped_result.result.error_msg)
         return (int(wrapped_result.status), "TTS action completed")
 
     def _publish_speech_topic(self, text: str) -> None:
@@ -221,17 +232,16 @@ class SaySkillServer(Node):
 
     @staticmethod
     def _publish_feedback(goal_handle, status: str, progress: float) -> None:
-        feedback = SayText.Feedback()
-        feedback.status = status
-        feedback.progress = float(progress)
+        feedback = Say.Feedback()
+        feedback.feedback.data_str = status
+        feedback.feedback.data_float = float(progress)
         goal_handle.publish_feedback(feedback)
 
     @staticmethod
-    def _result(success: bool, message: str, duration: float):
-        result = SayText.Result()
-        result.success = bool(success)
-        result.message = message
-        result.duration = float(duration)
+    def _canonical_result(success: bool, message: str, error_code: int):
+        result = Say.Result()
+        result.result.error_code = int(error_code)
+        result.result.error_msg = "" if success else message
         return result
 
     @staticmethod

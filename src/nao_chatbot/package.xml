@@ -11,8 +11,12 @@
   <depend>rcl_interfaces</depend>
   <depend>std_msgs</depend>
   <depend>hri_msgs</depend>
+  <depend>chatbot_msgs</depend>
+  <depend>std_skills</depend>
+  <depend>communication_skills</depend>
   <depend>tts_msgs</depend>
   <depend>nao_skills</depend>
+  <depend>dialogue_manager</depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
 

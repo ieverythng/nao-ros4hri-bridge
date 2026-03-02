@@ -7,7 +7,6 @@ from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import PathJoinSubstitution
-from launch.substitutions import PythonExpression
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
@@ -20,7 +19,7 @@ def generate_launch_description():
     )
     nao_ip_arg = DeclareLaunchArgument(
         "nao_ip",
-        default_value="10.10.200.149",
+        default_value="172.26.112.62",
         description="NAO robot IP address used by naoqi_driver and posture nodes.",
     )
     nao_port_arg = DeclareLaunchArgument(
@@ -60,11 +59,6 @@ def generate_launch_description():
         "asr_vosk_enabled",
         default_value="false",
         description="Enable local Vosk ASR node.",
-    )
-    laptop_asr_enabled_arg = DeclareLaunchArgument(
-        "laptop_asr_enabled",
-        default_value="false",
-        description="Deprecated alias for asr_vosk_enabled.",
     )
     asr_output_speech_topic_arg = DeclareLaunchArgument(
         "asr_output_speech_topic",
@@ -192,11 +186,6 @@ def generate_launch_description():
         default_value="1.0",
         description="Wait timeout before chat skill dispatch fallback.",
     )
-    chat_skill_fallback_to_backend_topic_arg = DeclareLaunchArgument(
-        "chat_skill_fallback_to_backend_topic",
-        default_value="true",
-        description="Fallback to backend topic when chat skill is unavailable.",
-    )
     chat_history_max_entries_arg = DeclareLaunchArgument(
         "chat_history_max_entries",
         default_value="24",
@@ -207,16 +196,11 @@ def generate_launch_description():
         default_value="true",
         description="Launch `/skill/chat` action server.",
     )
-    legacy_backend_node_enabled_arg = DeclareLaunchArgument(
-        "legacy_backend_node_enabled",
-        default_value="false",
-        description="Launch legacy backend topic responder (ollama_responder).",
-    )
 
     posture_command_topic_arg = DeclareLaunchArgument(
         "posture_command_topic",
         default_value="/chatbot/posture_command",
-        description="Topic used for legacy posture bridge commands.",
+        description="Topic used for posture bridge fallback commands.",
     )
     use_posture_skill_arg = DeclareLaunchArgument(
         "use_posture_skill",
@@ -258,12 +242,12 @@ def generate_launch_description():
     posture_bridge_enabled_arg = DeclareLaunchArgument(
         "posture_bridge_enabled",
         default_value="true",
-        description="Launch legacy posture bridge node.",
+        description="Launch posture bridge node for topic-fallback execution.",
     )
     posture_bridge_speed_arg = DeclareLaunchArgument(
         "posture_bridge_speed",
         default_value="0.8",
-        description="Default posture speed for legacy posture bridge.",
+        description="Default posture speed for posture bridge fallback node.",
     )
 
     use_say_skill_arg = DeclareLaunchArgument(
@@ -325,7 +309,7 @@ def generate_launch_description():
     ollama_enabled_arg = DeclareLaunchArgument(
         "ollama_enabled",
         default_value="false",
-        description="Enable Ollama requests in chat/legacy backend servers.",
+        description="Enable Ollama requests in the `/skill/chat` action server.",
     )
     ollama_model_arg = DeclareLaunchArgument(
         "ollama_model",
@@ -343,7 +327,6 @@ def generate_launch_description():
 
     bridge_input_speech_topic = LaunchConfiguration("bridge_input_speech_topic")
     asr_vosk_enabled = LaunchConfiguration("asr_vosk_enabled")
-    laptop_asr_enabled = LaunchConfiguration("laptop_asr_enabled")
     asr_output_speech_topic = LaunchConfiguration("asr_output_speech_topic")
     asr_vosk_model_path = LaunchConfiguration("asr_vosk_model_path")
     asr_sample_rate_hz = LaunchConfiguration("asr_sample_rate_hz")
@@ -380,12 +363,8 @@ def generate_launch_description():
     use_chat_skill = LaunchConfiguration("use_chat_skill")
     chat_skill_action = LaunchConfiguration("chat_skill_action")
     chat_skill_dispatch_wait_sec = LaunchConfiguration("chat_skill_dispatch_wait_sec")
-    chat_skill_fallback_to_backend_topic = LaunchConfiguration(
-        "chat_skill_fallback_to_backend_topic"
-    )
     chat_history_max_entries = LaunchConfiguration("chat_history_max_entries")
     chat_skill_server_enabled = LaunchConfiguration("chat_skill_server_enabled")
-    legacy_backend_node_enabled = LaunchConfiguration("legacy_backend_node_enabled")
 
     posture_command_topic = LaunchConfiguration("posture_command_topic")
     use_posture_skill = LaunchConfiguration("use_posture_skill")
@@ -440,7 +419,7 @@ def generate_launch_description():
     )
 
     dialogue_manager = Node(
-        package="nao_chatbot",
+        package="dialogue_manager",
         executable="dialogue_manager_node",
         name="dialogue_manager",
         output="screen",
@@ -459,17 +438,7 @@ def generate_launch_description():
         ],
     )
 
-    asr_vosk_condition = IfCondition(
-        PythonExpression(
-            [
-                "('",
-                asr_vosk_enabled,
-                "' == 'true') or ('",
-                laptop_asr_enabled,
-                "' == 'true')",
-            ]
-        )
-    )
+    asr_vosk_condition = IfCondition(asr_vosk_enabled)
     asr_vosk = Node(
         package="nao_chatbot",
         executable="asr_vosk_node",
@@ -515,7 +484,6 @@ def generate_launch_description():
                 "use_chat_skill": use_chat_skill,
                 "chat_skill_action": chat_skill_action,
                 "chat_skill_dispatch_wait_sec": chat_skill_dispatch_wait_sec,
-                "chat_skill_fallback_to_backend_topic": chat_skill_fallback_to_backend_topic,
                 "chat_history_max_entries": chat_history_max_entries,
                 "posture_command_topic": posture_command_topic,
                 "use_posture_skill": use_posture_skill,
@@ -528,8 +496,8 @@ def generate_launch_description():
 
     chat_skill_server = Node(
         package="nao_chatbot",
-        executable="chat_skill_server_node",
-        name="chat_skill_server",
+        executable="ollama_chatbot_node",
+        name="ollama_chatbot",
         output="screen",
         condition=IfCondition(chat_skill_server_enabled),
         parameters=[
@@ -539,26 +507,6 @@ def generate_launch_description():
                 "model": ollama_model,
             }
         ],
-    )
-
-    legacy_backend_condition = IfCondition(
-        PythonExpression(
-            [
-                "('",
-                legacy_backend_node_enabled,
-                "' == 'true') or ('",
-                use_chat_skill,
-                "' == 'false')",
-            ]
-        )
-    )
-    ollama = Node(
-        package="nao_chatbot",
-        executable="ollama_responder_node",
-        name="ollama_responder",
-        output="screen",
-        condition=legacy_backend_condition,
-        parameters=[{"enabled": ollama_enabled, "model": ollama_model}],
     )
 
     posture_bridge = Node(
@@ -640,7 +588,6 @@ def generate_launch_description():
             rqt_chat_start_delay_sec_arg,
             bridge_input_speech_topic_arg,
             asr_vosk_enabled_arg,
-            laptop_asr_enabled_arg,
             asr_output_speech_topic_arg,
             asr_vosk_model_path_arg,
             asr_sample_rate_hz_arg,
@@ -666,10 +613,8 @@ def generate_launch_description():
             use_chat_skill_arg,
             chat_skill_action_arg,
             chat_skill_dispatch_wait_sec_arg,
-            chat_skill_fallback_to_backend_topic_arg,
             chat_history_max_entries_arg,
             chat_skill_server_enabled_arg,
-            legacy_backend_node_enabled_arg,
             posture_command_topic_arg,
             use_posture_skill_arg,
             posture_skill_action_arg,
@@ -700,7 +645,6 @@ def generate_launch_description():
             say_skill_server,
             chat_skill_server,
             mission,
-            ollama,
             posture_bridge,
             rqt_chat,
         ]

@@ -22,8 +22,6 @@ class MissionController(Node):
         self.declare_parameter("assistant_text_topic", "/chatbot/assistant_text")
         self.declare_parameter("intent_topic", "/chatbot/intent")
         self.declare_parameter("posture_command_topic", "/chatbot/posture_command")
-        self.declare_parameter("backend_request_topic", "/chatbot/backend/request")
-        self.declare_parameter("backend_response_topic", "/chatbot/backend/response")
         self.declare_parameter("backend_fallback_to_rules", False)
         self.declare_parameter("backend_response_timeout_sec", 30.0)
         self.declare_parameter("backend_execute_posture_after_response", True)
@@ -36,7 +34,6 @@ class MissionController(Node):
         self.declare_parameter("use_chat_skill", True)
         self.declare_parameter("chat_skill_action", "/skill/chat")
         self.declare_parameter("chat_skill_dispatch_wait_sec", 1.0)
-        self.declare_parameter("chat_skill_fallback_to_backend_topic", True)
         self.declare_parameter("chat_history_max_entries", 24)
 
         self.mode = self.get_parameter("mode").value
@@ -44,8 +41,6 @@ class MissionController(Node):
         self.assistant_text_topic = self.get_parameter("assistant_text_topic").value
         self.intent_topic = self.get_parameter("intent_topic").value
         self.posture_command_topic = self.get_parameter("posture_command_topic").value
-        self.backend_request_topic = self.get_parameter("backend_request_topic").value
-        self.backend_response_topic = self.get_parameter("backend_response_topic").value
         self.backend_fallback_to_rules = self._as_bool(
             self.get_parameter("backend_fallback_to_rules").value
         )
@@ -79,9 +74,6 @@ class MissionController(Node):
             0.0,
             float(self.get_parameter("chat_skill_dispatch_wait_sec").value),
         )
-        self.chat_skill_fallback_to_backend_topic = self._as_bool(
-            self.get_parameter("chat_skill_fallback_to_backend_topic").value
-        )
         self.chat_history_max_entries = max(
             0, int(self.get_parameter("chat_history_max_entries").value)
         )
@@ -89,10 +81,7 @@ class MissionController(Node):
         self.pending_backend_fallback_intent = None
         self.pending_backend_posture_intent = None
         self.pending_backend_user_text = ""
-        self.pending_backend_source = None
         self.pending_backend_timer = None
-        self.waiting_backend_response = False
-        self.ignore_late_backend_response = False
         self._last_user_text = ""
         self._last_user_text_ts = 0.0
         self.conversation_history = []
@@ -106,14 +95,8 @@ class MissionController(Node):
         self.posture_command_publisher = self.create_publisher(
             String, self.posture_command_topic, 10
         )
-        self.backend_request_publisher = self.create_publisher(
-            String, self.backend_request_topic, 10
-        )
 
         self.create_subscription(String, self.user_text_topic, self._on_user_text, 10)
-        self.create_subscription(
-            String, self.backend_response_topic, self._on_backend_response, 10
-        )
 
         if self.use_posture_skill:
             self.posture_client = PostureSkillClient(
@@ -130,7 +113,7 @@ class MissionController(Node):
                     "Posture skill server unavailable at startup; will retry and use topic fallback until it appears"
                 )
         else:
-            self.get_logger().info("Using legacy topic-based posture commands")
+            self.get_logger().info("Using topic-based posture commands")
 
         if self.use_chat_skill:
             self.chat_client = ChatSkillClient(self, action_name=self.chat_skill_action)
@@ -140,20 +123,18 @@ class MissionController(Node):
                 )
             else:
                 self.get_logger().warn(
-                    "Chat skill server unavailable at startup; will use backend topic fallback"
+                    "Chat skill server unavailable at startup; backend mode will rely on rules fallback if enabled"
                 )
 
         self.get_logger().info(
             "mission_controller ready | mode:%s user:%s assistant:%s intent:%s "
-            "posture:%s backend_req:%s backend_resp:%s use_chat_skill:%s"
+            "posture:%s use_chat_skill:%s"
             % (
                 self.mode,
                 self.user_text_topic,
                 self.assistant_text_topic,
                 self.intent_topic,
                 self.posture_command_topic,
-                self.backend_request_topic,
-                self.backend_response_topic,
                 self.use_chat_skill,
             )
         )
@@ -188,18 +169,16 @@ class MissionController(Node):
                 self._handle_posture_intent(intent)
 
             self.pending_backend_user_text = text
-            self.pending_backend_source = None
-            self.ignore_late_backend_response = False
-            self.waiting_backend_response = True
 
             if self._dispatch_chat_skill_request(text, intent):
                 return
 
-            self.pending_backend_source = "backend_topic"
-            self._publish(self.backend_request_publisher, text)
-            self._schedule_backend_fallback(intent)
-            self.get_logger().info(
-                f'Forwarded request to backend "{self.backend_request_topic}" | intent={intent}'
+            self.pending_backend_fallback_intent = None
+            self._cancel_backend_fallback_timer()
+            self._handle_backend_no_chat_response(
+                intent,
+                reason="Chat skill dispatch failed",
+                posture_source="chat_skill_dispatch_failure_fallback",
             )
             return
 
@@ -213,6 +192,9 @@ class MissionController(Node):
 
     def _dispatch_chat_skill_request(self, text: str, intent: str) -> bool:
         if not self.use_chat_skill or self.chat_client is None:
+            self.get_logger().warn(
+                "Chat skill is disabled/unavailable in backend mode; cannot dispatch"
+            )
             return False
 
         if not self.chat_client.ensure_server(
@@ -221,23 +203,7 @@ class MissionController(Node):
             self.get_logger().warn(
                 f'Chat skill server "{self.chat_skill_action}" unavailable at dispatch'
             )
-            if self.chat_skill_fallback_to_backend_topic:
-                return False
-            fallback = build_rule_response(intent)
-            self._publish(self.assistant_publisher, fallback)
-            self._append_conversation_turn(text, fallback)
-            self.waiting_backend_response = False
-            self.pending_backend_source = None
-            self.pending_backend_user_text = ""
-            self.pending_backend_fallback_intent = None
-            pending_intent = self.pending_backend_posture_intent
-            self.pending_backend_posture_intent = None
-            if self.backend_execute_posture_after_response and pending_intent:
-                self._handle_posture_intent(
-                    pending_intent,
-                    source="chat_skill_unavailable_rules_fallback",
-                )
-            return True
+            return False
 
         sent = self.chat_client.send_goal(
             user_message=text,
@@ -245,9 +211,9 @@ class MissionController(Node):
             result_callback=self._on_chat_skill_result,
         )
         if not sent:
+            self.get_logger().warn("Chat skill goal submission failed")
             return False
 
-        self.pending_backend_source = "chat_skill"
         self._schedule_backend_fallback(intent)
         self.get_logger().info(
             f'Forwarded request to chat skill "{self.chat_skill_action}" | intent={intent}'
@@ -257,15 +223,13 @@ class MissionController(Node):
     def _on_chat_skill_result(self, result) -> None:
         if self.mode != "backend":
             return
-        if self.pending_backend_source != "chat_skill":
+        if self.pending_backend_fallback_intent is None:
             self.get_logger().warn("Ignored stale chat skill result")
             return
 
         request_intent = self.pending_backend_fallback_intent
         self._cancel_backend_fallback_timer()
         self.pending_backend_fallback_intent = None
-        self.waiting_backend_response = False
-        self.pending_backend_source = None
 
         response = result.assistant_response.strip()
         fallback_applied = False
@@ -302,42 +266,6 @@ class MissionController(Node):
         if self.backend_posture_from_response_enabled and response:
             self._handle_posture_intent(detect_intent(response), source="chat_skill_response")
 
-    def _on_backend_response(self, msg: String) -> None:
-        if self.mode != "backend":
-            return
-        if self.pending_backend_source == "chat_skill":
-            self.get_logger().warn("Ignored backend topic response while chat skill is active")
-            return
-        if not self.waiting_backend_response and self.ignore_late_backend_response:
-            self.get_logger().warn("Ignored late backend response after fallback")
-            return
-        text = msg.data.strip()
-        if not text:
-            return
-
-        self._cancel_backend_fallback_timer()
-        self.pending_backend_fallback_intent = None
-        self.waiting_backend_response = False
-        self.pending_backend_source = None
-        self._publish(self.assistant_publisher, text)
-        self._append_conversation_turn(self.pending_backend_user_text, text)
-        self.pending_backend_user_text = ""
-        self.get_logger().info(
-            f'Forwarded backend response to "{self.assistant_text_topic}"'
-        )
-        pending_intent = self.pending_backend_posture_intent
-        self.pending_backend_posture_intent = None
-        if self.backend_execute_posture_after_response and pending_intent:
-            self._handle_posture_intent(
-                pending_intent,
-                source="backend_response_for_user_intent",
-            )
-            return
-        # Optional backend-to-posture mapping can cause contradictory commands
-        # (e.g., assistant text containing "get up"), so keep it disabled by default.
-        if self.backend_posture_from_response_enabled:
-            self._handle_posture_intent(detect_intent(text), source="backend_response")
-
     def _schedule_backend_fallback(self, intent: str) -> None:
         self.pending_backend_fallback_intent = intent
         self._cancel_backend_fallback_timer()
@@ -360,30 +288,39 @@ class MissionController(Node):
             return
 
         self.pending_backend_fallback_intent = None
-        self.waiting_backend_response = False
-        self.ignore_late_backend_response = True
-        self.pending_backend_source = None
+        self._handle_backend_no_chat_response(
+            intent,
+            reason="Chat skill response timeout",
+            posture_source="chat_skill_timeout_fallback",
+        )
 
+    def _handle_backend_no_chat_response(
+        self,
+        intent: str,
+        reason: str,
+        posture_source: str,
+    ) -> None:
         if self.backend_fallback_to_rules:
             fallback = build_rule_response(intent)
             self._publish(self.assistant_publisher, fallback)
             self._append_conversation_turn(self.pending_backend_user_text, fallback)
-            self.get_logger().warn(
-                "Backend/chat response timeout; published rule-based fallback response"
-            )
+            self.get_logger().warn(f"{reason}; published rule-based fallback response")
         else:
             self.get_logger().warn(
-                "Backend/chat response timeout; no fallback published "
-                "(backend_fallback_to_rules is false)"
+                f"{reason}; no fallback published (backend_fallback_to_rules is false)"
             )
 
         self.pending_backend_user_text = ""
         pending_intent = self.pending_backend_posture_intent
         self.pending_backend_posture_intent = None
-        if self.backend_fallback_to_rules and self.backend_execute_posture_after_response and pending_intent:
+        if (
+            self.backend_fallback_to_rules
+            and self.backend_execute_posture_after_response
+            and pending_intent
+        ):
             self._handle_posture_intent(
                 pending_intent,
-                source="backend_timeout_fallback",
+                source=posture_source,
             )
 
     @staticmethod
@@ -414,7 +351,7 @@ class MissionController(Node):
         return cleaned
 
     def _handle_posture_intent(self, intent: str, source: str = "user_text") -> None:
-        """Handle posture intent via skill action or legacy topic fallback."""
+        """Handle posture intent via skill action or topic fallback."""
         command = posture_command_for_intent(intent)
         if not command:
             return

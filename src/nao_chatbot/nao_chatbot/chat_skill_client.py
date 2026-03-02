@@ -1,13 +1,28 @@
 #!/usr/bin/env python3
 """Chat skill action client for mission controller."""
 
+import json
+from dataclasses import dataclass
 from typing import Callable
 from typing import Optional
 
+from chatbot_msgs.msg import DialogueRole
+from communication_skills.action import Chat
 from rclpy.action import ActionClient
 from rclpy.node import Node
 
-from nao_skills.action import Chat
+from std_skills.msg import Meta as SkillMeta
+from std_skills.msg import Result as SkillResult
+
+
+@dataclass
+class ChatSkillResult:
+    """Compatibility result used by mission_controller."""
+
+    success: bool
+    assistant_response: str
+    updated_history: list[str]
+    message: str = ""
 
 
 class ChatSkillClient:
@@ -17,13 +32,15 @@ class ChatSkillClient:
         self,
         node: Node,
         action_name: str = "/skill/chat",
+        role_name: str = DialogueRole.DEFAULT_ROLE,
     ) -> None:
         self._node = node
         self._action_name = action_name
+        self._role_name = role_name or DialogueRole.DEFAULT_ROLE
 
         self._client = ActionClient(node, Chat, action_name)
         self._goal_handle = None
-        self._result_callback: Optional[Callable[[Chat.Result], None]] = None
+        self._result_callback: Optional[Callable[[ChatSkillResult], None]] = None
 
         node.get_logger().info(f"Chat skill client initialized: {action_name}")
 
@@ -48,7 +65,7 @@ class ChatSkillClient:
         user_message: str,
         conversation_history: list[str],
         feedback_callback: Optional[Callable] = None,
-        result_callback: Optional[Callable[[Chat.Result], None]] = None,
+        result_callback: Optional[Callable[[ChatSkillResult], None]] = None,
     ) -> bool:
         """Send chat goal asynchronously."""
         clean_message = user_message.strip()
@@ -62,13 +79,26 @@ class ChatSkillClient:
             return False
 
         goal = Chat.Goal()
-        goal.user_message = clean_message
-        goal.conversation_history = list(conversation_history)
+        goal.meta.caller = self._node.get_name()
+        goal.meta.priority = SkillMeta.NORMAL_PRIORITY
+        goal.person_id = ""
+        goal.group_id = ""
+        goal.role = DialogueRole()
+        goal.role.name = self._role_name
+        goal.role.configuration = json.dumps(
+            {
+                "user_message": clean_message,
+                "conversation_history": list(conversation_history),
+            },
+            separators=(",", ":"),
+        )
+        goal.initiate = False
+        goal.initial_input = ""
 
         self._result_callback = result_callback
         self._node.get_logger().info(
-            "Sending chat goal with %d history entries"
-            % len(goal.conversation_history)
+            "Sending chat goal with %d history entries (role=%s)"
+            % (len(conversation_history), goal.role.name)
         )
 
         send_goal_future = self._client.send_goal_async(
@@ -82,10 +112,10 @@ class ChatSkillClient:
 
     def _default_feedback(self, feedback_msg) -> None:
         """Default feedback handler."""
-        feedback = feedback_msg.feedback
+        feedback = feedback_msg.feedback.feedback
         self._node.get_logger().info(
             "Chat skill progress: %s (%0.0f%%)"
-            % (feedback.status, feedback.progress * 100.0)
+            % (feedback.data_str, feedback.data_float * 100.0)
         )
 
     def _goal_response_callback(self, future) -> None:
@@ -113,13 +143,37 @@ class ChatSkillClient:
             return
 
         result = wrapped_result.result
-        if result.success:
+        parsed = self._parse_role_results(result.role_results)
+        assistant_response = parsed.get("assistant_response", "")
+        updated_history = parsed.get("updated_history", [])
+        if not isinstance(updated_history, list):
+            updated_history = []
+        updated_history = [
+            str(entry).strip() for entry in updated_history if str(entry).strip()
+        ]
+
+        success = bool(
+            parsed.get("success", False)
+            or result.result.error_code == SkillResult.ROS_ENOERR
+        )
+        message = str(parsed.get("message", result.result.error_msg))
+        compatibility_result = ChatSkillResult(
+            success=success,
+            assistant_response=str(assistant_response).strip(),
+            updated_history=updated_history,
+            message=message.strip(),
+        )
+
+        if compatibility_result.success:
             self._node.get_logger().info("Chat goal succeeded")
         else:
-            self._node.get_logger().warn("Chat goal finished with failure status")
+            self._node.get_logger().warn(
+                "Chat goal finished with failure status: %s"
+                % (compatibility_result.message or "unknown")
+            )
 
         if self._result_callback is not None:
-            self._result_callback(result)
+            self._result_callback(compatibility_result)
 
     def cancel_goal(self) -> None:
         """Cancel the currently active goal."""
@@ -132,3 +186,15 @@ class ChatSkillClient:
         cancel_future.add_done_callback(
             lambda _future: self._node.get_logger().info("Chat goal cancel request sent")
         )
+
+    @staticmethod
+    def _parse_role_results(payload: str) -> dict:
+        if not payload:
+            return {}
+        try:
+            parsed = json.loads(payload)
+        except json.JSONDecodeError:
+            return {}
+        if not isinstance(parsed, dict):
+            return {}
+        return parsed
