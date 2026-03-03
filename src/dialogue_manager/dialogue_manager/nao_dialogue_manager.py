@@ -69,6 +69,9 @@ class DialogueManager(Node):
         self._last_state_payload = ""
         self._speech_topic_sent_for_current_turn = False
         self._pending_assistant_text = ""
+        self._pending_assistant_turn_id = ""
+        self._current_turn_id = ""
+        self._turn_counter = 0
 
         self.user_text_publisher = self.create_publisher(String, self.user_text_topic, 10)
         self.naoqi_speech_publisher = self.create_publisher(
@@ -134,20 +137,34 @@ class DialogueManager(Node):
             )
             return
 
+        turn_id = self._next_turn_id()
         self._last_user_text = text
         self._last_user_text_ts = now
         self._awaiting_assistant_turn = True
         self._speech_topic_sent_for_current_turn = False
         self._pending_assistant_text = ""
+        self._pending_assistant_turn_id = turn_id
+        self._current_turn_id = turn_id
 
-        self._publish_text(self.user_text_publisher, text)
+        self._publish_text(
+            self.user_text_publisher, self._encode_text_payload(text, turn_id)
+        )
         self._set_state("thinking", "user_turn_forwarded")
-        self.get_logger().info(f'Forwarded user text to "{self.user_text_topic}": {text}')
+        self._trace(
+            turn_id,
+            "USER_FORWARDED",
+            'topic="%s" text="%s"'
+            % (self.user_text_topic, self._preview_text(text)),
+        )
 
     def _on_assistant_text(self, msg: String) -> None:
-        text = f"{self.reply_prefix}{msg.data}".strip()
+        parsed_text, parsed_turn_id = self._decode_text_payload(msg.data)
+        text = f"{self.reply_prefix}{parsed_text}".strip()
         if not text:
             return
+        turn_id = (
+            parsed_turn_id or self._pending_assistant_turn_id or self._current_turn_id
+        )
 
         now = time.monotonic()
         if (
@@ -163,16 +180,20 @@ class DialogueManager(Node):
         self._last_assistant_text_ts = now
         self._awaiting_assistant_turn = False
         self._pending_assistant_text = text
+        self._pending_assistant_turn_id = turn_id
+        if turn_id:
+            self._current_turn_id = turn_id
 
         self._set_state("speaking", "assistant_turn_received")
-        self._dispatch_say_turn(text)
+        self._dispatch_say_turn(text, turn_id)
 
     def _on_intent(self, msg: String) -> None:
-        self._latest_intent = msg.data.strip()
+        intent_text, _intent_turn_id = self._decode_text_payload(msg.data)
+        self._latest_intent = intent_text
         if self._awaiting_assistant_turn and self._latest_intent:
             self._set_state("thinking", "intent_detected")
 
-    def _dispatch_say_turn(self, text: str) -> None:
+    def _dispatch_say_turn(self, text: str, turn_id: str) -> None:
         sent_via_say = False
         if self.use_say_skill and self.say_client is not None:
             if self.say_client.ensure_server(
@@ -182,38 +203,66 @@ class DialogueManager(Node):
                     text=text,
                     language=self.say_skill_language,
                     volume=self.say_skill_volume,
+                    turn_id=turn_id,
                     result_callback=self._on_say_result,
                 )
             else:
-                self.get_logger().warn(
-                    f'Say skill server "{self.say_skill_action}" unavailable at dispatch'
+                self._trace(
+                    turn_id,
+                    "SAY_UNAVAILABLE",
+                    'action="%s"' % self.say_skill_action,
+                    level="warn",
                 )
 
         if self.also_publish_speech_topic:
-            self._publish_speech_topic(text)
+            self._publish_speech_topic(text, turn_id=turn_id)
             self._speech_topic_sent_for_current_turn = True
 
         if sent_via_say:
-            self.get_logger().info(f"Assistant turn dispatched to say skill: {text}")
+            self._trace(
+                turn_id,
+                "SAY_DISPATCHED",
+                'action="%s" text_len=%d' % (self.say_skill_action, len(text)),
+            )
             return
 
         if self.fallback_publish_speech_topic and not self._speech_topic_sent_for_current_turn:
-            self._publish_speech_topic(text)
+            self._publish_speech_topic(text, turn_id=turn_id)
             self._speech_topic_sent_for_current_turn = True
 
         self._set_state("idle", "assistant_turn_published_topic_only")
+        self._trace(turn_id, "TURN_DONE", "assistant turn published via topic only")
+        self._pending_assistant_turn_id = ""
 
     def _on_say_result(self, result) -> None:
+        turn_id = (
+            str(getattr(result, "turn_id", "")).strip()
+            or self._pending_assistant_turn_id
+            or self._current_turn_id
+            or "unknown"
+        )
         if result.success:
             self._set_state("idle", "assistant_turn_spoken")
+            self._trace(turn_id, "TURN_DONE", "assistant turn spoken")
+            self._pending_assistant_turn_id = ""
             return
 
-        self.get_logger().warn(f"Say skill failed: {result.message}")
+        self._trace(
+            turn_id,
+            "SAY_FAILED",
+            result.message or "unknown",
+            level="warn",
+        )
         if self.fallback_publish_speech_topic and not self._speech_topic_sent_for_current_turn:
             if self._pending_assistant_text:
-                self._publish_speech_topic(self._pending_assistant_text)
+                self._publish_speech_topic(
+                    self._pending_assistant_text,
+                    turn_id=turn_id,
+                )
                 self._speech_topic_sent_for_current_turn = True
         self._set_state("idle", "assistant_turn_say_failed")
+        self._trace(turn_id, "TURN_DONE", "assistant turn completed with say fallback")
+        self._pending_assistant_turn_id = ""
 
     def _set_state(self, state: str, reason: str) -> None:
         payload = {
@@ -221,6 +270,7 @@ class DialogueManager(Node):
             "reason": reason,
             "awaiting_assistant_turn": self._awaiting_assistant_turn,
             "latest_intent": self._latest_intent,
+            "turn_id": self._current_turn_id or "unknown",
         }
         encoded = json.dumps(payload, separators=(",", ":"))
         if encoded == self._last_state_payload:
@@ -228,10 +278,13 @@ class DialogueManager(Node):
         self._last_state_payload = encoded
         self._publish_text(self.dialogue_state_publisher, encoded)
 
-    def _publish_speech_topic(self, text: str) -> None:
+    def _publish_speech_topic(self, text: str, turn_id: str = "") -> None:
         self._publish_text(self.naoqi_speech_publisher, text)
-        self.get_logger().info(
-            f'Published robot speech on "{self.naoqi_speech_topic}": {text}'
+        self._trace(
+            turn_id,
+            "SPEECH_PUBLISHED",
+            'topic="%s" text="%s"'
+            % (self.naoqi_speech_topic, self._preview_text(text)),
         )
 
     @staticmethod
@@ -247,6 +300,83 @@ class DialogueManager(Node):
         if isinstance(value, str):
             return value.strip().lower() in {"1", "true", "yes", "on"}
         return bool(value)
+
+    def _next_turn_id(self) -> str:
+        self._turn_counter += 1
+        return f"d{self._turn_counter:05d}"
+
+    def _trace(
+        self,
+        turn_id: str,
+        stage: str,
+        message: str,
+        level: str = "info",
+    ) -> None:
+        logger = self.get_logger()
+        line = f"{self._turn_label(turn_id)} {stage} | {message}"
+        if level == "warn":
+            logger.warn(line)
+            return
+        if level == "error":
+            logger.error(line)
+            return
+        logger.info(line)
+
+    @staticmethod
+    def _turn_label(turn_id: str) -> str:
+        clean_turn_id = str(turn_id).strip()
+        if not clean_turn_id:
+            return "[turn:unknown]"
+        return f"[turn:{clean_turn_id}]"
+
+    @staticmethod
+    def _preview_text(text: str, max_len: int = 72) -> str:
+        clean = " ".join(str(text).split())
+        if len(clean) <= max_len:
+            return clean
+        return clean[: max_len - 3] + "..."
+
+    @staticmethod
+    def _encode_text_payload(text: str, turn_id: str) -> str:
+        return json.dumps(
+            {
+                "text": str(text).strip(),
+                "turn_id": str(turn_id).strip(),
+            },
+            separators=(",", ":"),
+        )
+
+    @staticmethod
+    def _decode_text_payload(payload: str) -> tuple[str, str]:
+        raw = str(payload).strip()
+        if not raw:
+            return "", ""
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError:
+            return raw, ""
+        if isinstance(parsed, str):
+            return parsed.strip(), ""
+        if not isinstance(parsed, dict):
+            return raw, ""
+        text = str(
+            parsed.get(
+                "text",
+                parsed.get(
+                    "intent",
+                    parsed.get(
+                        "user_text",
+                        parsed.get("message", parsed.get("input", "")),
+                    ),
+                ),
+            )
+        ).strip()
+        turn_id = str(parsed.get("turn_id", parsed.get("trace_id", ""))).strip()
+        if not text:
+            if turn_id:
+                return "", turn_id
+            return raw, ""
+        return text, turn_id
 
 
 def main(args=None) -> None:

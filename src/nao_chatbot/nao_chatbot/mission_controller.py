@@ -1,3 +1,4 @@
+import json
 import time
 
 import rclpy
@@ -80,9 +81,11 @@ class MissionController(Node):
 
         self.pending_backend_fallback_intent = None
         self.pending_backend_user_text = ""
+        self.pending_backend_turn_id = ""
         self.pending_backend_timer = None
         self._last_user_text = ""
         self._last_user_text_ts = 0.0
+        self._turn_counter = 0
         self.conversation_history = []
         self.posture_client = None
         self.chat_client = None
@@ -139,9 +142,15 @@ class MissionController(Node):
         )
 
     def _on_user_text(self, msg: String) -> None:
-        text = msg.data.strip()
+        text, incoming_turn_id = self._decode_text_payload(msg.data)
         if not text:
             return
+        turn_id = incoming_turn_id or self._next_turn_id()
+        self._trace(
+            turn_id,
+            "TURN_START",
+            f'mode={self.mode} user="{self._preview_text(text)}"',
+        )
         now = time.monotonic()
         if (
             text == self._last_user_text
@@ -156,33 +165,45 @@ class MissionController(Node):
 
         if self.mode == "backend":
             self.pending_backend_user_text = text
+            self.pending_backend_turn_id = turn_id
             fallback_intent = (
                 detect_intent(text) if self.backend_fallback_to_rules else "fallback"
             )
 
-            if self._dispatch_chat_skill_request(text, fallback_intent):
+            if self._dispatch_chat_skill_request(text, fallback_intent, turn_id):
                 return
 
             self.pending_backend_fallback_intent = None
+            self.pending_backend_turn_id = ""
             self._cancel_backend_fallback_timer()
             self._handle_backend_no_chat_response(
                 fallback_intent,
                 reason="Chat skill dispatch failed",
                 posture_source="chat_skill_dispatch_failure_fallback",
+                turn_id=turn_id,
             )
             return
 
         intent = detect_intent(text)
         self._publish(self.intent_publisher, intent)
-        self._handle_posture_intent(intent)
+        self._trace(turn_id, "INTENT_PUBLISHED", f"{intent} source=rules")
+        self._handle_posture_intent(intent, turn_id=turn_id)
         response = build_rule_response(intent)
         self._publish(self.assistant_publisher, response)
         self._append_conversation_turn(text, response)
-        self.get_logger().info(
-            f'Published rule response to "{self.assistant_text_topic}" | intent={intent}'
+        self._trace(
+            turn_id,
+            "ASSISTANT_PUBLISHED",
+            f'topic="{self.assistant_text_topic}" intent={intent}',
         )
+        self._trace(turn_id, "TURN_DONE", "rules path complete")
 
-    def _dispatch_chat_skill_request(self, text: str, fallback_intent: str) -> bool:
+    def _dispatch_chat_skill_request(
+        self,
+        text: str,
+        fallback_intent: str,
+        turn_id: str,
+    ) -> bool:
         if not self.use_chat_skill or self.chat_client is None:
             self.get_logger().warn(
                 "Chat skill is disabled/unavailable in backend mode; cannot dispatch"
@@ -200,6 +221,7 @@ class MissionController(Node):
         sent = self.chat_client.send_goal(
             user_message=text,
             conversation_history=list(self.conversation_history),
+            turn_id=turn_id,
             result_callback=self._on_chat_skill_result,
         )
         if not sent:
@@ -207,22 +229,29 @@ class MissionController(Node):
             return False
 
         self._schedule_backend_fallback(fallback_intent)
-        self.get_logger().info(
-            f'Forwarded request to chat skill "{self.chat_skill_action}" '
-            f"(fallback_intent={fallback_intent})"
+        self._trace(
+            turn_id,
+            "CHAT_DISPATCH",
+            f'action="{self.chat_skill_action}" fallback_intent={fallback_intent}',
         )
         return True
 
     def _on_chat_skill_result(self, result) -> None:
+        turn_id = (
+            str(getattr(result, "turn_id", "")).strip()
+            or self.pending_backend_turn_id
+            or "unknown"
+        )
         if self.mode != "backend":
             return
         if self.pending_backend_fallback_intent is None:
-            self.get_logger().warn("Ignored stale chat skill result")
+            self._trace(turn_id, "CHAT_STALE", "ignored stale chat result", level="warn")
             return
 
         request_fallback_intent = self.pending_backend_fallback_intent or "fallback"
         self._cancel_backend_fallback_timer()
         self.pending_backend_fallback_intent = None
+        self.pending_backend_turn_id = ""
 
         response = result.assistant_response.strip()
         fallback_applied = False
@@ -245,22 +274,31 @@ class MissionController(Node):
             self._publish(self.assistant_publisher, response)
             if fallback_applied or not result.updated_history:
                 self._append_conversation_turn(self.pending_backend_user_text, response)
-            self.get_logger().info(
-                f'Forwarded chat skill response to "{self.assistant_text_topic}"'
+            self._trace(
+                turn_id,
+                "ASSISTANT_PUBLISHED",
+                f'topic="{self.assistant_text_topic}" len={len(response)}',
             )
         else:
-            self.get_logger().warn("Chat skill returned no response and no fallback applied")
+            self._trace(
+                turn_id,
+                "ASSISTANT_EMPTY",
+                "chat skill returned no response and no fallback applied",
+                level="warn",
+            )
 
         if resolved_intent:
             self._publish(self.intent_publisher, resolved_intent)
-            self.get_logger().info(
-                "Published backend intent to \"%s\" | intent=%s source=%s confidence=%.2f"
+            self._trace(
+                turn_id,
+                "INTENT_PUBLISHED",
+                "topic=\"%s\" intent=%s source=%s confidence=%.2f"
                 % (
                     self.intent_topic,
                     resolved_intent,
                     result.intent_source or "unknown",
                     float(result.intent_confidence),
-                )
+                ),
             )
 
         self.pending_backend_user_text = ""
@@ -268,10 +306,17 @@ class MissionController(Node):
             self._handle_posture_intent(
                 resolved_intent,
                 source="chat_skill_result_intent",
+                turn_id=turn_id,
             )
+            self._trace(turn_id, "TURN_DONE", "backend path complete (posture dispatched)")
             return
         if self.backend_posture_from_response_enabled and response:
-            self._handle_posture_intent(detect_intent(response), source="chat_skill_response")
+            self._handle_posture_intent(
+                detect_intent(response),
+                source="chat_skill_response",
+                turn_id=turn_id,
+            )
+        self._trace(turn_id, "TURN_DONE", "backend path complete")
 
     def _schedule_backend_fallback(self, intent: str) -> None:
         self.pending_backend_fallback_intent = intent
@@ -299,23 +344,34 @@ class MissionController(Node):
             intent,
             reason="Chat skill response timeout",
             posture_source="chat_skill_timeout_fallback",
+            turn_id=self.pending_backend_turn_id or "unknown",
         )
+        self.pending_backend_turn_id = ""
 
     def _handle_backend_no_chat_response(
         self,
         intent: str,
         reason: str,
         posture_source: str,
+        turn_id: str = "",
     ) -> None:
         if self.backend_fallback_to_rules:
             fallback = build_rule_response(intent)
             self._publish(self.assistant_publisher, fallback)
             self._publish(self.intent_publisher, intent)
             self._append_conversation_turn(self.pending_backend_user_text, fallback)
-            self.get_logger().warn(f"{reason}; published rule-based fallback response")
+            self._trace(
+                turn_id,
+                "FALLBACK_RESPONSE",
+                f"{reason}; published rule-based fallback response",
+                level="warn",
+            )
         else:
-            self.get_logger().warn(
-                f"{reason}; no fallback published (backend_fallback_to_rules is false)"
+            self._trace(
+                turn_id,
+                "FALLBACK_SKIPPED",
+                f"{reason}; no fallback published (backend_fallback_to_rules is false)",
+                level="warn",
             )
 
         self.pending_backend_user_text = ""
@@ -323,7 +379,9 @@ class MissionController(Node):
             self._handle_posture_intent(
                 intent,
                 source=posture_source,
+                turn_id=turn_id,
             )
+        self._trace(turn_id, "TURN_DONE", "backend fallback complete")
 
     def _resolve_backend_intent(
         self,
@@ -351,6 +409,32 @@ class MissionController(Node):
             return value.strip().lower() in {"1", "true", "yes", "on"}
         return bool(value)
 
+    @staticmethod
+    def _decode_text_payload(payload: str) -> tuple[str, str]:
+        raw = str(payload).strip()
+        if not raw:
+            return "", ""
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError:
+            return raw, ""
+        if isinstance(parsed, str):
+            return parsed.strip(), ""
+        if not isinstance(parsed, dict):
+            return raw, ""
+        text = str(
+            parsed.get(
+                "text",
+                parsed.get("user_text", parsed.get("message", parsed.get("input", ""))),
+            )
+        ).strip()
+        turn_id = str(parsed.get("turn_id", parsed.get("trace_id", ""))).strip()
+        if not text:
+            if turn_id:
+                return "", turn_id
+            return raw, ""
+        return text, turn_id
+
     def _append_conversation_turn(self, user_text: str, assistant_text: str) -> None:
         if user_text.strip():
             self.conversation_history.append(f"user:{user_text.strip()}")
@@ -364,7 +448,12 @@ class MissionController(Node):
             return cleaned[-self.chat_history_max_entries :]
         return cleaned
 
-    def _handle_posture_intent(self, intent: str, source: str = "user_text") -> None:
+    def _handle_posture_intent(
+        self,
+        intent: str,
+        source: str = "user_text",
+        turn_id: str = "",
+    ) -> None:
         """Handle posture intent via skill action or topic fallback."""
         command = posture_command_for_intent(intent)
         if not command:
@@ -383,23 +472,67 @@ class MissionController(Node):
                     "kneel": "Crouch",
                 }
                 posture_name = posture_map.get(command.lower(), "Stand")
-                self.get_logger().info(
-                    f"Executing posture via skill: {posture_name} (intent: {intent}, source: {source})"
+                self._trace(
+                    turn_id,
+                    "POSTURE_DISPATCH",
+                    f"{posture_name} intent={intent} source={source}",
                 )
                 self.posture_client.send_goal(
                     posture_name=posture_name,
                     speed=self.posture_skill_speed,
+                    turn_id=turn_id,
                     result_callback=lambda result: self.get_logger().info(
-                        f"Posture result: {result.message}"
+                        "%s POSTURE_RESULT | %s"
+                        % (
+                            self._turn_label(turn_id),
+                            result.message,
+                        )
                     ),
                 )
                 return
 
         self._publish(self.posture_command_publisher, command)
-        self.get_logger().info(
-            f'Published posture command "{command}" to "{self.posture_command_topic}"'
-            f" (source: {source})"
+        self._trace(
+            turn_id,
+            "POSTURE_TOPIC_FALLBACK",
+            'published "%s" to "%s" (source=%s)'
+            % (command, self.posture_command_topic, source),
         )
+
+    def _next_turn_id(self) -> str:
+        self._turn_counter += 1
+        return f"t{self._turn_counter:05d}"
+
+    def _trace(
+        self,
+        turn_id: str,
+        stage: str,
+        message: str,
+        level: str = "info",
+    ) -> None:
+        logger = self.get_logger()
+        line = f"{self._turn_label(turn_id)} {stage} | {message}"
+        if level == "warn":
+            logger.warn(line)
+            return
+        if level == "error":
+            logger.error(line)
+            return
+        logger.info(line)
+
+    @staticmethod
+    def _turn_label(turn_id: str) -> str:
+        clean_turn_id = str(turn_id).strip()
+        if not clean_turn_id:
+            return "[turn:unknown]"
+        return f"[turn:{clean_turn_id}]"
+
+    @staticmethod
+    def _preview_text(text: str, max_len: int = 72) -> str:
+        clean = " ".join(str(text).split())
+        if len(clean) <= max_len:
+            return clean
+        return clean[: max_len - 1] + "…"
 
 
 def main(args=None) -> None:

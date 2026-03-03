@@ -78,22 +78,26 @@ class SaySkillServer(Node):
         )
 
     def goal_callback(self, goal_request: Say.Goal) -> GoalResponse:
+        turn_id = self._extract_turn_id(goal_request)
         if self._execution_lock.locked():
-            self.get_logger().warn("Rejected say goal because another goal is running")
+            self._trace(turn_id, "SAY_REJECTED", "another goal is running", level="warn")
             return GoalResponse.REJECT
 
         text = goal_request.input.strip()
         if not text:
-            self.get_logger().warn("Rejected say goal with empty text")
+            self._trace(turn_id, "SAY_REJECTED", "empty text", level="warn")
             return GoalResponse.REJECT
+        self._trace(turn_id, "SAY_ACCEPTED", "goal accepted")
 
         return GoalResponse.ACCEPT
 
-    def cancel_callback(self, _goal_handle) -> CancelResponse:
-        self.get_logger().info("Received cancel request for say goal")
+    def cancel_callback(self, goal_handle) -> CancelResponse:
+        turn_id = self._extract_turn_id(goal_handle.request)
+        self._trace(turn_id, "SAY_CANCEL", "cancel request received")
         return CancelResponse.ACCEPT
 
     async def execute_callback(self, goal_handle):
+        turn_id = self._extract_turn_id(goal_handle.request)
         if not self._execution_lock.acquire(blocking=False):
             goal_handle.abort()
             return self._canonical_result(
@@ -109,18 +113,22 @@ class SaySkillServer(Node):
                 language=self.default_language,
                 volume=self.default_volume,
                 feedback_publisher=self._publish_feedback,
+                turn_id=turn_id,
             )
             if status == "canceled":
                 goal_handle.canceled()
+                self._trace(turn_id, "TURN_DONE", "say canceled", level="warn")
                 return self._canonical_result(
                     False, message, error_code=SkillResult.ROS_ECANCELED
                 )
             if status == "aborted":
                 goal_handle.abort()
+                self._trace(turn_id, "TURN_DONE", "say aborted", level="error")
                 return self._canonical_result(
                     False, message, error_code=SkillResult.ROS_EOTHER
                 )
             goal_handle.succeed()
+            self._trace(turn_id, "TURN_DONE", "say succeeded")
             return self._canonical_result(
                 True, message, error_code=SkillResult.ROS_ENOERR
             )
@@ -134,6 +142,7 @@ class SaySkillServer(Node):
         language: str,
         volume: float,
         feedback_publisher,
+        turn_id: str,
     ) -> tuple[str, str, float]:
         start_time = time.monotonic()
         if not text:
@@ -141,12 +150,17 @@ class SaySkillServer(Node):
         if volume < 0.0 or volume > 1.0:
             return ("aborted", "Goal volume is invalid", 0.0)
 
+        self._trace(
+            turn_id,
+            "SAY_START",
+            "text_len=%d lang=%s volume=%.2f" % (len(text), language, volume),
+        )
         feedback_publisher(goal_handle, "preparing", 0.0)
         if goal_handle.is_cancel_requested:
             return ("canceled", "Cancelled before execution", 0.0)
 
         if self.also_publish_speech_topic:
-            self._publish_speech_topic(text)
+            self._publish_speech_topic(text, turn_id=turn_id)
 
         tts_status, message = await self._forward_tts_goal(
             goal_handle=goal_handle,
@@ -154,6 +168,7 @@ class SaySkillServer(Node):
             language=language,
             volume=volume,
             feedback_publisher=feedback_publisher,
+            turn_id=turn_id,
         )
         duration = time.monotonic() - start_time
         if tts_status == GoalStatus.STATUS_CANCELED:
@@ -161,9 +176,12 @@ class SaySkillServer(Node):
         if tts_status != GoalStatus.STATUS_SUCCEEDED:
             if self.fallback_to_speech_topic:
                 if not self.also_publish_speech_topic:
-                    self._publish_speech_topic(text)
-                self.get_logger().warn(
-                    "TTS action unavailable/failed. Completed with speech-topic fallback."
+                    self._publish_speech_topic(text, turn_id=turn_id)
+                self._trace(
+                    turn_id,
+                    "SAY_TTS_FALLBACK",
+                    "TTS unavailable/failed; used speech topic fallback",
+                    level="warn",
                 )
                 feedback_publisher(goal_handle, "completing", 1.0)
                 return (
@@ -184,6 +202,7 @@ class SaySkillServer(Node):
         language: str,
         volume: float,
         feedback_publisher,
+        turn_id: str,
     ) -> tuple[int, str]:
         if not self._tts_client.wait_for_server(timeout_sec=self.tts_server_wait_sec):
             return (
@@ -199,9 +218,11 @@ class SaySkillServer(Node):
         tts_goal.input = text
         tts_goal.locale = language.replace("-", "_")
 
-        self.get_logger().info(
-            "Forwarding say request to TTS action | lang:%s volume:%.2f text:%s"
-            % (language, volume, text)
+        self._trace(
+            turn_id,
+            "SAY_TTS_FORWARD",
+            "tts=%s lang=%s volume=%.2f"
+            % (self.tts_action_name, language, volume),
         )
         send_goal_future = self._tts_client.send_goal_async(tts_goal)
         tts_goal_handle = await send_goal_future
@@ -221,13 +242,14 @@ class SaySkillServer(Node):
             return (int(wrapped_result.status), wrapped_result.result.error_msg)
         return (int(wrapped_result.status), "TTS action completed")
 
-    def _publish_speech_topic(self, text: str) -> None:
+    def _publish_speech_topic(self, text: str, turn_id: str = "") -> None:
         msg = String()
         msg.data = text
         self._speech_publisher.publish(msg)
-        self.get_logger().info(
-            'Published speech fallback to "%s": %s'
-            % (self.naoqi_speech_topic, text)
+        self._trace(
+            turn_id,
+            "SPEECH_PUBLISHED",
+            'topic="%s" text_len=%d' % (self.naoqi_speech_topic, len(text)),
         )
 
     @staticmethod
@@ -251,6 +273,43 @@ class SaySkillServer(Node):
         if isinstance(value, str):
             return value.strip().lower() in {"1", "true", "yes", "on"}
         return bool(value)
+
+    @staticmethod
+    def _extract_turn_id(goal: Say.Goal) -> str:
+        for raw_value in (goal.group_id, goal.person_id):
+            value = str(raw_value).strip()
+            if not value:
+                continue
+            if value.startswith("turn:"):
+                return value[5:].strip() or "unknown"
+            if value.startswith("turn_id:"):
+                return value[8:].strip() or "unknown"
+            return value
+        return "unknown"
+
+    def _trace(
+        self,
+        turn_id: str,
+        stage: str,
+        message: str,
+        level: str = "info",
+    ) -> None:
+        logger = self.get_logger()
+        line = f"{self._turn_label(turn_id)} {stage} | {message}"
+        if level == "warn":
+            logger.warn(line)
+            return
+        if level == "error":
+            logger.error(line)
+            return
+        logger.info(line)
+
+    @staticmethod
+    def _turn_label(turn_id: str) -> str:
+        clean_turn_id = str(turn_id).strip()
+        if not clean_turn_id:
+            return "[turn:unknown]"
+        return f"[turn:{clean_turn_id}]"
 
 
 def main(args=None) -> None:

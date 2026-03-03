@@ -19,6 +19,7 @@ class SaySkillResult:
     success: bool
     message: str
     duration: float
+    turn_id: str = ""
 
 
 class SaySkillClient:
@@ -40,6 +41,7 @@ class SaySkillClient:
         self._goal_handle = None
         self._result_callback: Optional[Callable[[SaySkillResult], None]] = None
         self._goal_start_ts = 0.0
+        self._active_turn_id = ""
 
         node.get_logger().info(f"Say skill client initialized: {action_name}")
 
@@ -64,6 +66,7 @@ class SaySkillClient:
         text: str,
         language: Optional[str] = None,
         volume: Optional[float] = None,
+        turn_id: str = "",
         feedback_callback: Optional[Callable] = None,
         result_callback: Optional[Callable[[SaySkillResult], None]] = None,
     ) -> bool:
@@ -88,12 +91,21 @@ class SaySkillClient:
         goal.meta.priority = SkillMeta.NORMAL_PRIORITY
         goal.person_id = ""
         goal.group_id = ""
+        clean_turn_id = str(turn_id).strip()
+        if clean_turn_id:
+            goal.group_id = f"turn:{clean_turn_id}"
         goal.input = cleaned_text
 
         self._result_callback = result_callback
         self._goal_start_ts = time.monotonic()
+        self._active_turn_id = clean_turn_id
         self._node.get_logger().info(
-            f"Sending say goal | language={resolved_language} volume={resolved_volume:.2f}"
+            "%s SAY_SEND | lang=%s volume=%.2f"
+            % (
+                self._turn_label(self._active_turn_id),
+                resolved_language,
+                resolved_volume,
+            )
         )
 
         send_goal_future = self._client.send_goal_async(
@@ -109,7 +121,12 @@ class SaySkillClient:
         """Default feedback handler."""
         feedback = feedback_msg.feedback.feedback
         self._node.get_logger().info(
-            f"Say skill progress: {feedback.data_str} ({feedback.data_float * 100.0:.0f}%)"
+            "%s SAY_PROGRESS | %s (%0.0f%%)"
+            % (
+                self._turn_label(self._active_turn_id),
+                feedback.data_str,
+                feedback.data_float * 100.0,
+            )
         )
 
     def _goal_response_callback(self, future) -> None:
@@ -121,10 +138,16 @@ class SaySkillClient:
             return
 
         if self._goal_handle is None or not self._goal_handle.accepted:
-            self._node.get_logger().error("Say goal rejected by server")
+            self._node.get_logger().error(
+                "%s SAY_REJECTED | action server rejected goal"
+                % self._turn_label(self._active_turn_id)
+            )
             return
 
-        self._node.get_logger().info("Say goal accepted, awaiting result")
+        self._node.get_logger().info(
+            "%s SAY_ACCEPTED | awaiting result"
+            % self._turn_label(self._active_turn_id)
+        )
         get_result_future = self._goal_handle.get_result_async()
         get_result_future.add_done_callback(self._get_result_callback)
 
@@ -145,9 +168,15 @@ class SaySkillClient:
         if not message and success:
             message = "Spoken via TTS action server"
         if success:
-            self._node.get_logger().info(f"Say goal succeeded: {message}")
+            self._node.get_logger().info(
+                "%s SAY_DONE | success %s"
+                % (self._turn_label(self._active_turn_id), message)
+            )
         else:
-            self._node.get_logger().error(f"Say goal failed: {message or 'unknown'}")
+            self._node.get_logger().error(
+                "%s SAY_DONE | failed %s"
+                % (self._turn_label(self._active_turn_id), message or "unknown")
+            )
 
         if self._result_callback is not None:
             self._result_callback(
@@ -155,6 +184,7 @@ class SaySkillClient:
                     success=success,
                     message=message,
                     duration=duration,
+                    turn_id=self._active_turn_id,
                 )
             )
 
@@ -169,3 +199,10 @@ class SaySkillClient:
         cancel_future.add_done_callback(
             lambda _future: self._node.get_logger().info("Say goal cancel request sent")
         )
+
+    @staticmethod
+    def _turn_label(turn_id: str) -> str:
+        clean_turn_id = str(turn_id).strip()
+        if not clean_turn_id:
+            return "[turn:unknown]"
+        return f"[turn:{clean_turn_id}]"

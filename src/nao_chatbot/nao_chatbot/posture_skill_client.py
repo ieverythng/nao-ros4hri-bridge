@@ -26,6 +26,7 @@ class PostureSkillClient:
         self._client = ActionClient(node, DoPosture, action_name)
         self._goal_handle = None
         self._result_callback: Optional[Callable[[DoPosture.Result], None]] = None
+        self._active_turn_id = ""
 
         node.get_logger().info(f"Posture skill client initialized: {action_name}")
 
@@ -49,6 +50,7 @@ class PostureSkillClient:
         self,
         posture_name: str,
         speed: Optional[float] = None,
+        turn_id: str = "",
         feedback_callback: Optional[Callable] = None,
         result_callback: Optional[Callable[[DoPosture.Result], None]] = None,
     ) -> None:
@@ -70,9 +72,15 @@ class PostureSkillClient:
         goal.speed = resolved_speed
 
         self._result_callback = result_callback
+        self._active_turn_id = str(turn_id).strip()
 
         self._node.get_logger().info(
-            f"Sending posture goal: {cleaned_posture_name} @ {resolved_speed:.2f}"
+            "%s POSTURE_SEND | %s @ %.2f"
+            % (
+                self._turn_label(self._active_turn_id),
+                cleaned_posture_name,
+                resolved_speed,
+            )
         )
 
         send_goal_future = self._client.send_goal_async(
@@ -87,7 +95,12 @@ class PostureSkillClient:
         """Default feedback handler."""
         feedback = feedback_msg.feedback
         self._node.get_logger().info(
-            f"Posture skill progress: {feedback.status} ({feedback.progress * 100.0:.0f}%)"
+            "%s POSTURE_PROGRESS | %s (%0.0f%%)"
+            % (
+                self._turn_label(self._active_turn_id),
+                feedback.status,
+                feedback.progress * 100.0,
+            )
         )
 
     def _goal_response_callback(self, future) -> None:
@@ -99,10 +112,16 @@ class PostureSkillClient:
             return
 
         if self._goal_handle is None or not self._goal_handle.accepted:
-            self._node.get_logger().error("Posture goal rejected by server")
+            self._node.get_logger().error(
+                "%s POSTURE_REJECTED | action server rejected goal"
+                % self._turn_label(self._active_turn_id)
+            )
             return
 
-        self._node.get_logger().info("Posture goal accepted, awaiting result")
+        self._node.get_logger().info(
+            "%s POSTURE_ACCEPTED | awaiting result"
+            % self._turn_label(self._active_turn_id)
+        )
         get_result_future = self._goal_handle.get_result_async()
         get_result_future.add_done_callback(self._get_result_callback)
 
@@ -116,9 +135,15 @@ class PostureSkillClient:
 
         result = wrapped_result.result
         if result.success:
-            self._node.get_logger().info(f"Posture goal succeeded: {result.message}")
+            self._node.get_logger().info(
+                "%s POSTURE_DONE | success %s"
+                % (self._turn_label(self._active_turn_id), result.message)
+            )
         else:
-            self._node.get_logger().error(f"Posture goal failed: {result.message}")
+            self._node.get_logger().error(
+                "%s POSTURE_DONE | failed %s"
+                % (self._turn_label(self._active_turn_id), result.message)
+            )
 
         if self._result_callback is not None:
             self._result_callback(result)
@@ -134,3 +159,10 @@ class PostureSkillClient:
         cancel_future.add_done_callback(
             lambda _future: self._node.get_logger().info("Posture goal cancel request sent")
         )
+
+    @staticmethod
+    def _turn_label(turn_id: str) -> str:
+        clean_turn_id = str(turn_id).strip()
+        if not clean_turn_id:
+            return "[turn:unknown]"
+        return f"[turn:{clean_turn_id}]"

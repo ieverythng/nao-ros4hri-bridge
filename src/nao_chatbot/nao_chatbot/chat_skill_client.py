@@ -27,6 +27,7 @@ class ChatSkillResult:
     intent: str = "fallback"
     intent_source: str = ""
     intent_confidence: float = 0.0
+    turn_id: str = ""
 
 
 class ChatSkillClient:
@@ -45,6 +46,7 @@ class ChatSkillClient:
         self._client = ActionClient(node, Chat, action_name)
         self._goal_handle = None
         self._result_callback: Optional[Callable[[ChatSkillResult], None]] = None
+        self._active_turn_id = ""
 
         node.get_logger().info(f"Chat skill client initialized: {action_name}")
 
@@ -68,6 +70,7 @@ class ChatSkillClient:
         self,
         user_message: str,
         conversation_history: list[str],
+        turn_id: str = "",
         feedback_callback: Optional[Callable] = None,
         result_callback: Optional[Callable[[ChatSkillResult], None]] = None,
     ) -> bool:
@@ -93,6 +96,7 @@ class ChatSkillClient:
             {
                 "user_message": clean_message,
                 "conversation_history": list(conversation_history),
+                "turn_id": str(turn_id).strip(),
             },
             separators=(",", ":"),
         )
@@ -100,9 +104,14 @@ class ChatSkillClient:
         goal.initial_input = ""
 
         self._result_callback = result_callback
+        self._active_turn_id = str(turn_id).strip()
         self._node.get_logger().info(
-            "Sending chat goal with %d history entries (role=%s)"
-            % (len(conversation_history), goal.role.name)
+            "%s CHAT_SEND | history=%d role=%s"
+            % (
+                self._turn_label(self._active_turn_id),
+                len(conversation_history),
+                goal.role.name,
+            )
         )
 
         send_goal_future = self._client.send_goal_async(
@@ -118,8 +127,12 @@ class ChatSkillClient:
         """Default feedback handler."""
         feedback = feedback_msg.feedback.feedback
         self._node.get_logger().info(
-            "Chat skill progress: %s (%0.0f%%)"
-            % (feedback.data_str, feedback.data_float * 100.0)
+            "%s CHAT_PROGRESS | %s (%0.0f%%)"
+            % (
+                self._turn_label(self._active_turn_id),
+                feedback.data_str,
+                feedback.data_float * 100.0,
+            )
         )
 
     def _goal_response_callback(self, future) -> None:
@@ -131,10 +144,16 @@ class ChatSkillClient:
             return
 
         if self._goal_handle is None or not self._goal_handle.accepted:
-            self._node.get_logger().error("Chat goal rejected by server")
+            self._node.get_logger().error(
+                "%s CHAT_REJECTED | action server rejected goal"
+                % self._turn_label(self._active_turn_id)
+            )
             return
 
-        self._node.get_logger().info("Chat goal accepted, awaiting result")
+        self._node.get_logger().info(
+            "%s CHAT_ACCEPTED | awaiting result"
+            % self._turn_label(self._active_turn_id)
+        )
         get_result_future = self._goal_handle.get_result_async()
         get_result_future.add_done_callback(self._get_result_callback)
 
@@ -166,6 +185,7 @@ class ChatSkillClient:
         intent_confidence = self._coerce_float(
             parsed.get("intent_confidence", parsed.get("confidence", 0.0))
         )
+        result_turn_id = str(parsed.get("turn_id", self._active_turn_id)).strip()
         compatibility_result = ChatSkillResult(
             success=success,
             assistant_response=str(assistant_response).strip(),
@@ -174,14 +194,26 @@ class ChatSkillClient:
             intent=intent,
             intent_source=intent_source,
             intent_confidence=intent_confidence,
+            turn_id=result_turn_id,
         )
 
         if compatibility_result.success:
-            self._node.get_logger().info("Chat goal succeeded")
+            self._node.get_logger().info(
+                "%s CHAT_DONE | success intent=%s source=%s confidence=%.2f"
+                % (
+                    self._turn_label(compatibility_result.turn_id),
+                    compatibility_result.intent,
+                    compatibility_result.intent_source or "unknown",
+                    compatibility_result.intent_confidence,
+                )
+            )
         else:
             self._node.get_logger().warn(
-                "Chat goal finished with failure status: %s"
-                % (compatibility_result.message or "unknown")
+                "%s CHAT_DONE | failed status=%s"
+                % (
+                    self._turn_label(compatibility_result.turn_id),
+                    compatibility_result.message or "unknown",
+                )
             )
 
         if self._result_callback is not None:
@@ -228,3 +260,10 @@ class ChatSkillClient:
             elif isinstance(user_intent, str):
                 raw_intent = user_intent
         return str(raw_intent).strip()
+
+    @staticmethod
+    def _turn_label(turn_id: str) -> str:
+        clean_turn_id = str(turn_id).strip()
+        if not clean_turn_id:
+            return "[turn:unknown]"
+        return f"[turn:{clean_turn_id}]"

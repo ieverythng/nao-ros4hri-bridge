@@ -204,7 +204,9 @@ class ChatSkillServer(Node):
         if self._execution_lock.locked():
             self.get_logger().warn("Rejected chat goal because another goal is running")
             return GoalResponse.REJECT
-        user_message, _history, _user_id = self._extract_canonical_goal(goal_request)
+        user_message, _history, _user_id, _turn_id = self._extract_canonical_goal(
+            goal_request
+        )
         if not user_message:
             self.get_logger().warn("Rejected chat goal with empty user message")
             return GoalResponse.REJECT
@@ -227,10 +229,18 @@ class ChatSkillServer(Node):
                 intent_source="server_busy",
                 intent_confidence=0.0,
                 user_intent={},
+                turn_id="unknown",
             )
 
         try:
-            user_text, history, user_id = self._extract_canonical_goal(goal_handle.request)
+            user_text, history, user_id, turn_id = self._extract_canonical_goal(
+                goal_handle.request
+            )
+            self._trace(
+                turn_id,
+                "TURN_START",
+                f'user="{self._preview_text(user_text)}" mode={self.intent_detection_mode}',
+            )
             if not user_text:
                 goal_handle.abort()
                 return self._canonical_result(
@@ -243,6 +253,7 @@ class ChatSkillServer(Node):
                     intent_source="bad_goal",
                     intent_confidence=0.0,
                     user_intent={},
+                    turn_id=turn_id,
                 )
 
             (
@@ -258,6 +269,7 @@ class ChatSkillServer(Node):
                 user_text=user_text,
                 history=history,
                 user_id=user_id,
+                turn_id=turn_id,
             )
 
             if goal_handle.is_cancel_requested:
@@ -272,6 +284,7 @@ class ChatSkillServer(Node):
                     intent_source="cancelled",
                     intent_confidence=0.0,
                     user_intent={},
+                    turn_id=turn_id,
                 )
 
             goal_handle.succeed()
@@ -287,6 +300,7 @@ class ChatSkillServer(Node):
                 intent_source=intent_source,
                 intent_confidence=intent_confidence,
                 user_intent=user_intent,
+                turn_id=turn_id,
             )
         finally:
             self._execution_lock.release()
@@ -297,6 +311,7 @@ class ChatSkillServer(Node):
         user_text: str,
         history: list[str],
         user_id: str,
+        turn_id: str,
     ) -> tuple[bool, str, list[str], str, str, float, dict]:
         self._publish_feedback(goal_handle, "thinking", 0.1)
         if goal_handle.is_cancel_requested:
@@ -307,6 +322,7 @@ class ChatSkillServer(Node):
                 user_text=user_text,
                 history=history,
                 source="rules",
+                turn_id=turn_id,
             )
             self._publish_feedback(goal_handle, "complete", 1.0)
             return result
@@ -317,12 +333,14 @@ class ChatSkillServer(Node):
                     user_text=user_text,
                     history=history,
                     source="rules_llm_disabled",
+                    turn_id=turn_id,
                 )
                 self._publish_feedback(goal_handle, "complete", 1.0)
                 return result
             result = self._execute_disabled_turn(
                 user_text=user_text,
                 history=history,
+                turn_id=turn_id,
             )
             self._publish_feedback(goal_handle, "complete", 1.0)
             return result
@@ -358,6 +376,7 @@ class ChatSkillServer(Node):
             user_text=user_text,
             user_id=user_id,
             timeout_sec=timeout_sec,
+            turn_id=turn_id,
         )
         if not parsed_response:
             if self.intent_detection_mode == "llm_with_rules_fallback":
@@ -365,12 +384,14 @@ class ChatSkillServer(Node):
                     user_text=user_text,
                     history=history,
                     source="rules_llm_parse_fallback",
+                    turn_id=turn_id,
                 )
                 self._publish_feedback(goal_handle, "complete", 1.0)
                 return result
             result = self._execute_llm_failure_turn(
                 user_text=user_text,
                 history=history,
+                turn_id=turn_id,
             )
             self._publish_feedback(goal_handle, "complete", 1.0)
             return result
@@ -397,6 +418,12 @@ class ChatSkillServer(Node):
                 parsed_response.get("confidence", 0.0),
             )
         )
+        self._trace(
+            turn_id,
+            "LLM_STRUCTURED",
+            "ack_len=%d user_intent_type=%s"
+            % (len(verbal_ack), user_intent.get("type", "")),
+        )
 
         if not resolved_intent:
             if self.intent_detection_mode == "llm_with_rules_fallback":
@@ -414,6 +441,12 @@ class ChatSkillServer(Node):
                 verbal_ack = build_rule_response("fallback")
             else:
                 verbal_ack = self.fallback_response
+        self._trace(
+            turn_id,
+            "INTENT_RESOLVED",
+            "intent=%s source=%s confidence=%.2f"
+            % (resolved_intent, source, confidence),
+        )
 
         updated_history = self._messages_to_history(
             history_messages
@@ -424,6 +457,7 @@ class ChatSkillServer(Node):
         )
         self._handled_requests += 1
         self._publish_feedback(goal_handle, "complete", 1.0)
+        self._trace(turn_id, "TURN_DONE", "chat backend complete")
         return (
             True,
             verbal_ack,
@@ -439,6 +473,7 @@ class ChatSkillServer(Node):
         user_text: str,
         history: list[str],
         source: str,
+        turn_id: str,
     ) -> tuple[bool, str, list[str], str, str, float, dict]:
         intent = detect_intent(user_text)
         verbal_ack = build_rule_response(intent)
@@ -451,6 +486,12 @@ class ChatSkillServer(Node):
             ]
         )
         self._handled_requests += 1
+        self._trace(
+            turn_id,
+            "INTENT_RESOLVED",
+            "intent=%s source=%s confidence=%.2f" % (intent, source, 1.0),
+        )
+        self._trace(turn_id, "TURN_DONE", "rule path complete")
         return (
             True,
             verbal_ack,
@@ -465,6 +506,7 @@ class ChatSkillServer(Node):
         self,
         user_text: str,
         history: list[str],
+        turn_id: str,
     ) -> tuple[bool, str, list[str], str, str, float, dict]:
         verbal_ack = self.fallback_response
         updated_history = self._messages_to_history(
@@ -475,6 +517,7 @@ class ChatSkillServer(Node):
             ]
         )
         self._handled_requests += 1
+        self._trace(turn_id, "TURN_DONE", "llm disabled fallback response", level="warn")
         return (
             False,
             verbal_ack,
@@ -489,6 +532,7 @@ class ChatSkillServer(Node):
         self,
         user_text: str,
         history: list[str],
+        turn_id: str,
     ) -> tuple[bool, str, list[str], str, str, float, dict]:
         verbal_ack = self.fallback_response
         updated_history = self._messages_to_history(
@@ -499,6 +543,7 @@ class ChatSkillServer(Node):
             ]
         )
         self._handled_requests += 1
+        self._trace(turn_id, "TURN_DONE", "llm request failed, fallback response", level="warn")
         return (
             False,
             verbal_ack,
@@ -515,7 +560,14 @@ class ChatSkillServer(Node):
         user_text: str,
         user_id: str,
         timeout_sec: float,
+        turn_id: str = "",
     ) -> dict:
+        self._trace(
+            turn_id,
+            "LLM_REQUEST",
+            "model=%s history=%d timeout=%.1fs"
+            % (self.intent_model, len(history_messages), timeout_sec),
+        )
         messages = [
             {"role": "system", "content": self._build_chatbot_prompt(user_id=user_id)},
         ]
@@ -579,7 +631,9 @@ class ChatSkillServer(Node):
             parts.append(self.intent_prompt_addendum.strip())
         return "\n\n".join(parts).strip()
 
-    def _extract_canonical_goal(self, goal: Chat.Goal) -> tuple[str, list[str], str]:
+    def _extract_canonical_goal(
+        self, goal: Chat.Goal
+    ) -> tuple[str, list[str], str, str]:
         payload = self._parse_json_dict(goal.role.configuration)
         user_message = str(payload.get("user_message", "")).strip()
         if not user_message and goal.initial_input.strip():
@@ -595,7 +649,11 @@ class ChatSkillServer(Node):
             user_id = str(goal.person_id).strip()
         if not user_id:
             user_id = "user1"
-        return user_message, history, user_id
+
+        turn_id = str(payload.get("turn_id", payload.get("trace_id", ""))).strip()
+        if not turn_id:
+            turn_id = "unknown"
+        return user_message, history, user_id, turn_id
 
     @staticmethod
     def _coerce_history(raw_history) -> list[str]:
@@ -800,6 +858,7 @@ class ChatSkillServer(Node):
         intent_source: str,
         intent_confidence: float,
         user_intent: dict,
+        turn_id: str,
     ):
         result = Chat.Result()
         result.result.error_code = int(error_code)
@@ -815,6 +874,7 @@ class ChatSkillServer(Node):
                 "intent_source": intent_source,
                 "intent_confidence": float(intent_confidence),
                 "user_intent": dict(user_intent),
+                "turn_id": str(turn_id).strip(),
             },
             separators=(",", ":"),
         )
@@ -834,6 +894,37 @@ class ChatSkillServer(Node):
             return float(value)
         except (TypeError, ValueError):
             return 0.0
+
+    def _trace(
+        self,
+        turn_id: str,
+        stage: str,
+        message: str,
+        level: str = "info",
+    ) -> None:
+        logger = self.get_logger()
+        line = f"{self._turn_label(turn_id)} {stage} | {message}"
+        if level == "warn":
+            logger.warn(line)
+            return
+        if level == "error":
+            logger.error(line)
+            return
+        logger.info(line)
+
+    @staticmethod
+    def _turn_label(turn_id: str) -> str:
+        clean_turn_id = str(turn_id).strip()
+        if not clean_turn_id:
+            return "[turn:unknown]"
+        return f"[turn:{clean_turn_id}]"
+
+    @staticmethod
+    def _preview_text(text: str, max_len: int = 72) -> str:
+        clean = " ".join(str(text).split())
+        if len(clean) <= max_len:
+            return clean
+        return clean[: max_len - 3] + "..."
 
 
 def main(args=None) -> None:
