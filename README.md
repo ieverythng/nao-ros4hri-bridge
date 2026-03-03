@@ -83,6 +83,18 @@ Chat skill intent modes:
 - `ollama_intent_detection_mode:=rules`
   - no LLM intent extraction (fast wiring checks)
 
+Prompt/schema editing:
+
+- Default prompt pack file:
+  - `src/nao_chatbot/config/chat_prompt_pack.yaml`
+- Launch arg to override file:
+  - `ollama_prompt_pack_path:=/absolute/path/to/chat_prompt_pack.yaml`
+- Skill-catalog prompt injection defaults:
+  - `ollama_use_skill_catalog:=true`
+  - `ollama_skill_catalog_packages:=communication_skills,nao_skills`
+  - `ollama_skill_catalog_max_entries:=16`
+  - `ollama_skill_catalog_max_chars:=3000`
+
 ASR note:
 
 - In this stack, ASR is a ROS4HRI percept pipeline (publisher of `LiveSpeech`),
