@@ -63,6 +63,33 @@ def generate_launch_description():
         default_value="",
         description="Optional dedicated model for intent extraction (empty uses ollama_model).",
     )
+    ollama_prompt_pack_path_arg = DeclareLaunchArgument(
+        "ollama_prompt_pack_path",
+        default_value=PathJoinSubstitution(
+            [FindPackageShare("nao_chatbot"), "config", "chat_prompt_pack.yaml"]
+        ),
+        description="YAML prompt-pack path loaded by `/skill/chat` server.",
+    )
+    ollama_use_skill_catalog_arg = DeclareLaunchArgument(
+        "ollama_use_skill_catalog",
+        default_value="true",
+        description="Inject compact skill catalog into chat/intent prompts.",
+    )
+    ollama_skill_catalog_packages_arg = DeclareLaunchArgument(
+        "ollama_skill_catalog_packages",
+        default_value="communication_skills,nao_skills",
+        description="CSV package allowlist for skill-catalog extraction.",
+    )
+    ollama_skill_catalog_max_entries_arg = DeclareLaunchArgument(
+        "ollama_skill_catalog_max_entries",
+        default_value="16",
+        description="Maximum number of skill entries injected into prompts.",
+    )
+    ollama_skill_catalog_max_chars_arg = DeclareLaunchArgument(
+        "ollama_skill_catalog_max_chars",
+        default_value="3000",
+        description="Maximum serialized skill-catalog size in characters.",
+    )
     posture_skill_speed_arg = DeclareLaunchArgument(
         "posture_skill_speed",
         default_value="0.9",
@@ -133,6 +160,13 @@ def generate_launch_description():
     ollama_model = LaunchConfiguration("ollama_model")
     ollama_intent_detection_mode = LaunchConfiguration("ollama_intent_detection_mode")
     ollama_intent_model = LaunchConfiguration("ollama_intent_model")
+    ollama_prompt_pack_path = LaunchConfiguration("ollama_prompt_pack_path")
+    ollama_use_skill_catalog = LaunchConfiguration("ollama_use_skill_catalog")
+    ollama_skill_catalog_packages = LaunchConfiguration("ollama_skill_catalog_packages")
+    ollama_skill_catalog_max_entries = LaunchConfiguration(
+        "ollama_skill_catalog_max_entries"
+    )
+    ollama_skill_catalog_max_chars = LaunchConfiguration("ollama_skill_catalog_max_chars")
     posture_skill_speed = LaunchConfiguration("posture_skill_speed")
     posture_skill_server_fallback_to_topic = LaunchConfiguration(
         "posture_skill_server_fallback_to_topic"
@@ -167,6 +201,11 @@ def generate_launch_description():
             "ollama_model": ollama_model,
             "ollama_intent_detection_mode": ollama_intent_detection_mode,
             "ollama_intent_model": ollama_intent_model,
+            "ollama_prompt_pack_path": ollama_prompt_pack_path,
+            "ollama_use_skill_catalog": ollama_use_skill_catalog,
+            "ollama_skill_catalog_packages": ollama_skill_catalog_packages,
+            "ollama_skill_catalog_max_entries": ollama_skill_catalog_max_entries,
+            "ollama_skill_catalog_max_chars": ollama_skill_catalog_max_chars,
             "use_chat_skill": "true",
             "chat_skill_server_enabled": "true",
             "use_posture_skill": "true",
@@ -204,6 +243,11 @@ def generate_launch_description():
             ollama_model_arg,
             ollama_intent_detection_mode_arg,
             ollama_intent_model_arg,
+            ollama_prompt_pack_path_arg,
+            ollama_use_skill_catalog_arg,
+            ollama_skill_catalog_packages_arg,
+            ollama_skill_catalog_max_entries_arg,
+            ollama_skill_catalog_max_chars_arg,
             posture_skill_speed_arg,
             posture_skill_server_fallback_to_topic_arg,
             asr_vosk_enabled_arg,

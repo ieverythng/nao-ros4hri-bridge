@@ -69,6 +69,9 @@ Useful chat/intent knobs:
 - `ollama_intent_detection_mode` (`rules`, `llm`, `llm_with_rules_fallback`)
 - `ollama_intent_model` (optional dedicated model for structured response)
 - `ollama_intent_request_timeout_sec` (structured response timeout)
+- `ollama_prompt_pack_path` (YAML file with prompts and JSON schemas)
+- `ollama_use_skill_catalog` (inject compact skill catalog into LLM prompts)
+- `ollama_skill_catalog_packages` (CSV allowlist, default `communication_skills,nao_skills`)
 
 ## Robot-Mic Ready Switch
 

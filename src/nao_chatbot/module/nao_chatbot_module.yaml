@@ -1,0 +1,2 @@
+nao_chatbot:
+  launch: "nao_chatbot nao_chatbot_stack.launch.py"
