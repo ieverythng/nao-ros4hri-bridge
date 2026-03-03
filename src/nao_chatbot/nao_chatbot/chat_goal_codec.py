@@ -4,12 +4,8 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
 
 from nao_chatbot.chat_history import coerce_history
-
-if TYPE_CHECKING:  # pragma: no cover
-    from communication_skills.action import Chat
 
 
 def parse_json_dict(payload: str) -> dict:
