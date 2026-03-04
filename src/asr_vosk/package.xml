@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>asr_vosk</name>
+  <version>2.4.0</version>
+  <description>The asr_vosk package</description>
+  <maintainer email="severin.lemaignan@pal-robotics.com">Séverin Lemaignan</maintainer>
+  <license>Apache License 2.0</license>
+  <author email="severin.lemaignan@pal-robotics.com">Séverin Lemaignan</author>
+  <author email="sara.cooper@pal-robotics.com">Sara Cooper</author>
+  <author email="luka.juricic@pal-robotics.com">Luka Juricic</author>
+
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>audio_common_msgs</exec_depend>
+  <exec_depend>diagnostic_msgs</exec_depend>
+  <exec_depend>hri_msgs</exec_depend>
+  <exec_depend>lifecycle_msgs</exec_depend>
+  <exec_depend>rcl_interfaces</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>vosk</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

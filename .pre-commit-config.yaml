@@ -14,7 +14,7 @@ repos:
     hooks:
       - id: ruff
         args: [--select=F,E9]
-        files: ^src/(nao_chatbot|nao_posture_bridge)/.*\.py$
+        files: ^src/(nao_chatbot|nao_posture_bridge|asr_vosk|simple_audio_capture)/.*\.py$
 
   - repo: local
     hooks:

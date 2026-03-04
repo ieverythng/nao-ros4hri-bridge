@@ -20,12 +20,13 @@ This repository uses `src/` as the canonical source tree.
 
 ## Current Runtime Architecture
 
-Presentation diagram: [`docs/whiteboard_migration_diagram.md`](docs/whiteboard_migration_diagram.md)
+Presentation diagram: [`docs/current_workflow.md`](docs/current_workflow.md)
 
 Main nodes:
 
 - `dialogue_manager_node` (package `dialogue_manager`): turn orchestration (`LiveSpeech` in, `/chatbot/user_text` out, `/skill/say` dispatch)
-- `asr_vosk_node`: local microphone ASR (Vosk) -> `LiveSpeech`
+- `asr_vosk` (package `asr_vosk`, lifecycle node): local Vosk ASR -> `LiveSpeech`
+- `simple_audio_capture` (optional): GStreamer microphone capture -> `audio_common_msgs/AudioData`
 - `mission_controller_node`: intent/routing logic (`rules` or `backend`) + `/skill/chat` client
 - `ollama_chatbot_node`: `/skill/chat` action server backed by Ollama
 - `nao_posture_bridge_node`: posture topic bridge (`/chatbot/posture_command` -> NAOqi `ALRobotPosture`)
@@ -182,6 +183,12 @@ Manual/External skill client
 │   │   ├── src/nao_posture_bridge_node.cpp
 │   │   ├── CMakeLists.txt
 │   │   └── package.xml
+│   ├── simple_audio_capture/
+│   │   ├── simple_audio_capture/audio_capture_node.py
+│   │   ├── launch/audio_capture.launch.py
+│   │   ├── config/speech_recognition.yaml
+│   │   ├── setup.py
+│   │   └── package.xml
 │   └── nao_chatbot/
 │       ├── launch/nao_chatbot_stack.launch.py
 │       ├── launch/nao_chatbot_skills.launch.py
@@ -246,6 +253,27 @@ docker run -it --rm --network host \
   -e LIBGL_ALWAYS_SOFTWARE=1 \
   -e QT_X11_NO_MITSHM=1 \
   -v /tmp/.X11-unix:/tmp/.X11-unix \
+  iiia:nao bash
+```
+
+For `skills_asr` profile in Docker, add model + audio sharing:
+
+```bash
+UIDN="$(id -u)"
+PULSE_DIR="/run/user/${UIDN}/pulse"
+
+docker run -it --rm --network host \
+  --name nao_ros2 \
+  -e DISPLAY=$DISPLAY \
+  -e XDG_RUNTIME_DIR=/run/user/${UIDN} \
+  -e PULSE_SERVER=unix:${PULSE_DIR}/native \
+  -e LIBGL_ALWAYS_SOFTWARE=1 \
+  -e QT_X11_NO_MITSHM=1 \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  -v "${PULSE_DIR}:${PULSE_DIR}" \
+  -v "${HOME}/.config/pulse/cookie:/root/.config/pulse/cookie:ro" \
+  -v /absolute/path/to/vosk-models:/models:ro \
+  --device /dev/snd \
   iiia:nao bash
 ```
 
@@ -323,32 +351,38 @@ ros2 launch nao_chatbot nao_chatbot_skills.launch.py
 
 # Skills + Vosk laptop ASR
 ros2 launch nao_chatbot nao_chatbot_skills_asr.launch.py \
-  asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15 \
-  asr_min_words:=2
+  asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15
 ```
 
 ASR behavior defaults in `skills_asr`:
 
-- Speech guard ON: microphone input is muted while robot speech is active (`/speech`)
-- Filler filter ON: one-word fillers (`uh`, `um`, `huh`, ...) are dropped
-- Warning throttle ON: repeated microphone overflow warnings are rate-limited
+- `simple_audio_capture` enabled with `pulsesrc` on `/laptop/microphone0`
+- `asr_vosk` lifecycle node auto-transitions `Unconfigured -> Inactive -> Active`
+- model path defaults to `/models/vosk-model-small-en-us-0.15`
 
 Useful ASR tuning parameters:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_skills_asr.launch.py \
   asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15 \
-  asr_block_duration_ms:=350 \
-  asr_min_words:=2 \
-  asr_status_warn_period_sec:=3.0
+  asr_speech_locale:=en_US \
+  asr_start_listening:=true
 ```
+
+Common ASR troubleshooting notes:
+
+- If logs show `Configured source_type "history" not found`, fix to `pulsesrc` or `alsasrc`.
+- Keep `asr_speech_locale:=en_US` when using English Vosk models.
+- Verify model path exists inside container at `asr_vosk_model_path`.
 
 Each profile still allows `mission_mode:=rules|backend`.
 
 Full profile matrix and examples:
 
 - [`docs/launch_profiles.md`](docs/launch_profiles.md)
-- [`docs/ros4hri_skills_audit.md`](docs/ros4hri_skills_audit.md)
+- [`docs/current_workflow.md`](docs/current_workflow.md)
+- [`docs/asr_vosk_setup.md`](docs/asr_vosk_setup.md)
+- [`docs/node_interactions_map.md`](docs/node_interactions_map.md)
 
 ## Run Posture Skill Action Server (Phase 1)
 
