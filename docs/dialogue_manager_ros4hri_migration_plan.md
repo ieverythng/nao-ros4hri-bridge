@@ -47,10 +47,12 @@ Completed:
 - pinned and recorded upstream commit hashes
 
 Open items:
-- `rpk` scaffolding step
-  - current state: `rpk` not available in local shell nor container baseline image
-  - temporary fallback: upstream package intake performed manually
-  - follow-up: run equivalent `rpk` generation once tool is available in environment
+- `rpk` scaffolding parity sweep
+  - current state: `rpk` is now available in the container environment
+  - current implementation status: runtime already migrated and validated with
+    canonical endpoints, so full regeneration is optional
+  - follow-up: perform a non-disruptive scaffold parity pass only if needed for
+    stricter upstream structure alignment
 
 ### Section 2: Canonical Skill Interfaces
 
@@ -155,6 +157,27 @@ Completed:
 
 Done criteria:
 - docs and launch/runtime graph are aligned and current
+
+### Post-Migration Update (2026-03-03)
+
+Status: `Verified`
+
+Updates after Section 5:
+
+- `/skill/chat` backend refactored to modular architecture:
+  - `chat_skill_server.py` (server wiring)
+  - `chat_turn_engine.py` (two-stage response/intent flow)
+  - `chat_config.py`, `chat_goal_codec.py`, `chat_history.py`,
+    `chat_prompts.py`, `prompt_pack.py`, `ollama_transport.py`,
+    `skill_catalog.py`
+- Intent extraction now follows a two-stage model call strategy:
+  - stage 1: generate `verbal_ack`
+  - stage 2: extract structured `user_intent`
+  - `mission_controller` remains execution authority
+- End-to-end `turn_id` propagation/log tracing is now standard across:
+  - `dialogue_manager_node`
+  - `mission_controller_node`
+  - `ollama_chatbot_node`
 
 ## Validation Matrix (Per Section)
 

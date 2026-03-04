@@ -4,7 +4,7 @@ ROS 2 Jazzy workspace for NAO + ROS4HRI + chatbot orchestration with canonical s
 
 This repository uses `src/` as the canonical source tree.
 
-## Migration Status (As of March 2, 2026)
+## Migration Status (As of March 3, 2026)
 
 - Canonical communication skills are active:
   - `/skill/say` -> `communication_skills/action/Say`
@@ -41,7 +41,7 @@ Speech/Text input
   -> mission_controller_node
        rules mode   -> /chatbot/assistant_text
        backend mode -> /skill/chat (communication_skills/action/Chat)
-                    -> ollama_chatbot_node (verbal_ack + user_intent JSON)
+                    -> ollama_chatbot_node (two-stage: response then intent extraction)
                     -> /chatbot/assistant_text + /chatbot/intent
        posture intent -> /skill/do_posture (DoPosture action)
   -> posture_skill_server_node -> ALRobotPosture.goToPosture
@@ -50,18 +50,19 @@ Speech/Text input
   -> dialogue_manager_node -> /speech (compatibility + ASR guard pathway)
 ```
 
-## LLM Intent Pipeline (Template-Aligned)
+## LLM Intent Pipeline (Template-Aligned, Two-Stage)
 
-`ollama_chatbot_node` now follows a single structured response pipeline inspired by
-the ROS4HRI chatbot template:
+`ollama_chatbot_node` uses a two-stage pipeline inspired by the ROS4HRI chatbot
+template:
 
-- One LLM call returns JSON with:
-  - `verbal_ack`: short natural acknowledgement/answer
-  - `user_intent`: optional structured intent payload
-- `mission_controller_node` remains the action authority:
-  - publishes assistant text
-  - publishes normalized intent
-  - decides posture execution from normalized intent
+1. Stage 1 (`response`): LLM generates natural acknowledgement/answer (`verbal_ack`)
+2. Stage 2 (`intent`): LLM extracts structured `user_intent` from user text + stage-1 reply
+
+`mission_controller_node` remains the action authority:
+
+- publishes assistant text
+- publishes normalized intent
+- decides posture execution from normalized intent
 
 Normalized intent labels expected by mission controller:
 
@@ -77,11 +78,30 @@ Normalized intent labels expected by mission controller:
 Chat skill intent modes:
 
 - `ollama_intent_detection_mode:=llm_with_rules_fallback` (default)
-  - use LLM JSON response, fallback to rule intent if needed
+  - use LLM stage-2 intent, fallback to rule intent if intent extraction fails
 - `ollama_intent_detection_mode:=llm`
-  - strict LLM-only structured intent
+  - strict LLM-only intent extraction
 - `ollama_intent_detection_mode:=rules`
-  - no LLM intent extraction (fast wiring checks)
+  - bypass LLM intent extraction and resolve intent from rules
+
+Turn traceability (`turn_id`):
+
+- `dialogue_manager_node` assigns a monotonic `turn_id` and forwards it with `/chatbot/user_text`
+- `mission_controller_node` propagates `turn_id` into `/skill/chat` goal configuration
+- `chat_skill_server` returns the same `turn_id` in `Chat.Result.role_results`
+- logs in dialogue, mission, and chat skill nodes include `[turn:<id>]` for end-to-end tracing
+
+Modular backend components:
+
+- `chat_skill_server.py`: `/skill/chat` action server lifecycle/wiring
+- `chat_turn_engine.py`: two-stage execution policy (`response` then `intent`)
+- `chat_config.py`: ROS parameter declarations and config loading
+- `chat_goal_codec.py`: canonical goal/result payload handling
+- `chat_history.py`: history serialization and trimming
+- `chat_prompts.py`: stage-specific prompt builders
+- `prompt_pack.py`: YAML prompt-pack + schema defaults/loader
+- `ollama_transport.py`: Ollama HTTP transport adapter
+- `skill_catalog.py`: prompt-time skill-catalog extraction from package manifests
 
 Prompt/schema editing:
 
@@ -89,6 +109,12 @@ Prompt/schema editing:
   - `src/nao_chatbot/config/chat_prompt_pack.yaml`
 - Launch arg to override file:
   - `ollama_prompt_pack_path:=/absolute/path/to/chat_prompt_pack.yaml`
+- Prompt pack content controls:
+  - `system_prompt`
+  - `response_prompt_addendum`
+  - `intent_prompt_addendum`
+  - `response_schema`
+  - `intent_schema`
 - Skill-catalog prompt injection defaults:
   - `ollama_use_skill_catalog:=true`
   - `ollama_skill_catalog_packages:=communication_skills,nao_skills`
@@ -126,6 +152,7 @@ Manual/External skill client
 │   ├── build_docker.sh
 │   ├── export_docker_image.sh
 │   ├── import_docker_image.sh
+│   ├── run_tests.sh
 │   ├── setup_dev_tools.sh
 │   └── run_precommit.sh
 ├── src/
@@ -384,6 +411,22 @@ Optional VS Code tasks (if `.vscode/tasks.json` is present in your local workspa
 - `Pre-commit: All Files`
 - `Tests: Chatbot Unit`
 
+Run the local verification suite directly:
+
+```bash
+./scripts/run_tests.sh
+```
+
+`run_tests.sh` always runs syntax checks + `nao_chatbot` unit tests, and runs
+`dialogue_manager` unit tests automatically when `chatbot_msgs` is available in
+the active shell.
+
+To enforce strict full-suite behavior (fail if `chatbot_msgs` is missing):
+
+```bash
+./scripts/run_tests.sh --strict-dialogue
+```
+
 Enforcement:
 
 - `setup_dev_tools.sh` installs both `pre-commit` and `pre-push` git hooks.
@@ -396,7 +439,7 @@ source .venv/bin/activate
 python -m pre_commit run --all-files
 ```
 
-Run unit tests:
+Run only chatbot unit tests:
 
 ```bash
 PYTHONPATH=src/nao_chatbot pytest -q src/nao_chatbot/test/unit

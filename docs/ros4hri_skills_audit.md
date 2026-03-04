@@ -109,3 +109,22 @@ The high-priority dialogue migration items are now implemented in this workspace
   - `nao_chatbot/chat_skill_client.py` (used by `mission_controller`)
 - `mission_controller` backend mode supports canonical action-first chat
   (`/skill/chat`) with rule-based timeout/unavailable fallback.
+
+## Phase 3 Update (2026-03-03)
+
+Backend chat execution has been standardized around a modular ROS4HRI-friendly
+architecture while preserving canonical skill interfaces:
+
+- `/skill/chat` remains `communication_skills/action/Chat`
+- `ollama_chatbot_node` now uses two LLM stages:
+  1. response generation (`verbal_ack`)
+  2. intent extraction (`user_intent`)
+- `mission_controller` remains the single action authority for:
+  - publishing assistant text
+  - publishing normalized intents
+  - dispatching posture via `/skill/do_posture`
+
+Traceability update:
+
+- `turn_id` is propagated in user text payloads, chat goal configuration, and
+  chat result payloads, enabling cross-node log tracing for each interaction.

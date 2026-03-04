@@ -18,32 +18,8 @@ repos:
 
   - repo: local
     hooks:
-      - id: chatbot-launch-syntax
-        name: chatbot-launch-syntax
-        entry: bash -lc 'python3 -m py_compile src/nao_chatbot/launch/*.launch.py'
-        language: system
-        pass_filenames: false
-
-      - id: chatbot-asr-syntax
-        name: chatbot-asr-syntax
-        entry: python3 -m py_compile src/nao_chatbot/nao_chatbot/asr_utils.py src/nao_chatbot/nao_chatbot/asr_vosk.py
-        language: system
-        pass_filenames: false
-
-      - id: nao-chatbot-asr-unit-tests
-        name: nao-chatbot-asr-unit-tests
-        entry: bash -lc 'PYTHONPATH=src/nao_chatbot pytest -q src/nao_chatbot/test/unit/test_asr_utils.py src/nao_chatbot/test/unit/test_asr_vosk.py'
-        language: system
-        pass_filenames: false
-
-      - id: posture-skill-server-syntax
-        name: posture-skill-server-syntax
-        entry: python3 -m py_compile src/nao_posture_bridge/nao_posture_bridge/posture_skill_server.py
-        language: system
-        pass_filenames: false
-
-      - id: nao-chatbot-unit-tests
-        name: nao-chatbot-unit-tests
-        entry: bash -lc 'PYTHONPATH=src/nao_chatbot pytest -q src/nao_chatbot/test/unit'
+      - id: workspace-test-suite
+        name: workspace-test-suite
+        entry: ./scripts/run_tests.sh
         language: system
         pass_filenames: false
