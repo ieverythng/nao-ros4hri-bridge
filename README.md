@@ -4,13 +4,14 @@ ROS 2 Jazzy workspace for NAO + ROS4HRI + chatbot orchestration with canonical s
 
 This repository uses `src/` as the canonical source tree.
 
-## Migration Status (As of March 3, 2026)
+## Migration Status (As of March 4, 2026)
 
 - Canonical communication skills are active:
   - `/skill/say` -> `communication_skills/action/Say`
   - `/skill/chat` -> `communication_skills/action/Chat`
-- NAO-specific skill remains:
+- NAO-specific skills:
   - `/skill/do_posture` -> `nao_skills/action/DoPosture`
+  - `/skill/do_head_motion` -> `nao_skills/action/DoHeadMotion`
 - Compatibility endpoints removed:
   - `/skill/say_text_compat` removed
   - `/skill/chat_compat` removed
@@ -30,6 +31,7 @@ Main nodes:
 - `ollama_chatbot_node`: `/skill/chat` action server backed by Ollama
 - `nao_posture_bridge_node`: posture topic bridge (`/chatbot/posture_command` -> NAOqi `ALRobotPosture`)
 - `posture_skill_server_node`: action posture bridge (`/skill/do_posture` -> NAOqi `ALRobotPosture`)
+- `head_motion_skill_server_node`: topic-based head bridge (`/skill/do_head_motion` -> `/joint_angles`)
 - `say_skill_server_node`: action speech bridge (`/skill/say` -> `/tts_engine/tts`)
 
 Active flows today:
@@ -46,6 +48,11 @@ Speech/Text input
        posture intent -> /skill/do_posture (DoPosture action)
   -> posture_skill_server_node -> ALRobotPosture.goToPosture
      fallback (if qi unavailable) -> /chatbot/posture_command -> nao_posture_bridge_node -> ALRobotPosture.goToPosture
+Manual/external head skill client
+  -> /skill/do_head_motion (DoHeadMotion action)
+  -> head_motion_skill_server_node
+  -> /joint_angles (naoqi_bridge_msgs/msg/JointAnglesWithSpeed)
+  -> naoqi_driver -> ALMotion head joints
   -> dialogue_manager_node -> /skill/say (communication_skills/action/Say) -> say_skill_server_node -> /tts_engine/tts
   -> dialogue_manager_node -> /speech (compatibility + ASR guard pathway)
 ```
@@ -62,13 +69,18 @@ template:
 
 - publishes assistant text
 - publishes normalized intent
-- decides posture execution from normalized intent
+- decides posture/head execution from normalized intent
 
 Normalized intent labels expected by mission controller:
 
 - `posture_stand`
 - `posture_sit`
 - `posture_kneel`
+- `head_center`
+- `head_look_left`
+- `head_look_right`
+- `head_look_up`
+- `head_look_down`
 - `greet`
 - `identity`
 - `wellbeing`
@@ -129,6 +141,9 @@ ASR note:
 - `naoqi_driver` robot microphone source is `/audio` (`naoqi_bridge_msgs/msg/AudioBuffer`),
   and NAO built-in recognition is exposed via `/listen`
   (`naoqi_bridge_msgs/action/Listen`).
+- `naoqi_driver` head actuation is exposed on `/joint_angles`
+  (`naoqi_bridge_msgs/msg/JointAnglesWithSpeed`), and touch interfaces are exposed
+  as `head_touch`, `hand_touch`, and `bumper`.
 - `bridge_input_speech_topic` must remain a `LiveSpeech` topic, so `/audio`
   requires an adapter node before it can be bridged to `/chatbot/user_text`.
 
@@ -137,6 +152,9 @@ Manual/External skill client
   -> /skill/do_posture (nao_skills/action/DoPosture)
   -> posture_skill_server_node
   -> ALRobotPosture.goToPosture
+  -> /skill/do_head_motion (nao_skills/action/DoHeadMotion)
+  -> head_motion_skill_server_node
+  -> /joint_angles (naoqi_bridge_msgs/msg/JointAnglesWithSpeed)
 ```
 
 ## Repository Layout
@@ -168,6 +186,7 @@ Manual/External skill client
 │   │   ├── setup.py
 │   │   └── package.xml
 │   ├── nao_skills/
+│   │   ├── action/DoHeadMotion.action
 │   │   ├── action/DoPosture.action
 │   │   ├── CMakeLists.txt
 │   │   └── package.xml
@@ -177,6 +196,7 @@ Manual/External skill client
 │   │   ├── action/
 │   │   └── package.xml
 │   ├── nao_posture_bridge/
+│   │   ├── nao_posture_bridge/head_motion_skill_server.py
 │   │   ├── nao_posture_bridge/posture_skill_server.py
 │   │   ├── nao_posture_bridge/say_skill_server.py
 │   │   ├── src/nao_posture_bridge_node.cpp
@@ -189,6 +209,7 @@ Manual/External skill client
 │       ├── nao_chatbot/
 │       │   ├── intent_rules.py
 │       │   ├── asr_vosk.py
+│       │   ├── head_motion_skill_client.py
 │       │   ├── mission_controller.py
 │       │   ├── chat_skill_client.py
 │       │   ├── chat_skill_server.py
@@ -391,6 +412,54 @@ ros2 action send_goal /skill/do_posture nao_skills/action/DoPosture \
   --feedback
 ```
 
+## Run Head Motion Skill Action Server (Topic-Only)
+
+The head-motion skill is intentionally topic-driven and publishes to
+`naoqi_driver` joint-angle interface (`/joint_angles`).
+
+Start server:
+
+```bash
+ros2 run nao_posture_bridge head_motion_skill_server_node \
+  --ros-args \
+  -p default_speed:=0.25 \
+  -p joint_angles_topic:=/joint_angles
+```
+
+Confirm action server:
+
+```bash
+ros2 action info /skill/do_head_motion
+```
+
+Send absolute head target (radians):
+
+```bash
+ros2 action send_goal /skill/do_head_motion nao_skills/action/DoHeadMotion \
+  "{yaw: 0.45, pitch: -0.10, speed: 0.25, relative: false}" \
+  --feedback
+```
+
+Send relative head increment:
+
+```bash
+ros2 action send_goal /skill/do_head_motion nao_skills/action/DoHeadMotion \
+  "{yaw: -0.20, pitch: 0.05, speed: 0.20, relative: true}" \
+  --feedback
+```
+
+`DoHeadMotion` goal fields:
+
+- `yaw` (`float32`): target HeadYaw in radians (positive left, negative right).
+- `pitch` (`float32`): target HeadPitch in radians (negative up, positive down).
+- `speed` (`float32`): fraction of max joint speed in `(0.0, 1.0]`; `0.0` means use server default.
+- `relative` (`bool`): `false` for absolute target, `true` for incremental motion.
+
+Text-command intents supported by `mission_controller`:
+
+- `head_look_left`, `head_look_right`, `head_look_up`, `head_look_down`, `head_center`
+- Example utterances: "look left", "turn your head right", "look up", "look down", "look center"
+
 ## Quality Gates
 
 Host/VS Code setup (recommended for fast feedback):
@@ -450,12 +519,16 @@ Local syntax checks (also covered by pre-commit hooks):
 ```bash
 python3 -m py_compile src/nao_chatbot/launch/nao_chatbot_stack.launch.py
 python3 -m py_compile src/nao_posture_bridge/nao_posture_bridge/posture_skill_server.py
+python3 -m py_compile src/nao_posture_bridge/nao_posture_bridge/head_motion_skill_server.py
 ```
 
 ## Known Good Baseline
 
-- `nao_skills` posture action interface builds and is discoverable
+- `nao_skills` action interfaces build and are discoverable:
+  - `DoPosture`
+  - `DoHeadMotion`
 - `nao_posture_bridge` exports both:
   - `nao_posture_bridge_node` (topic bridge)
   - `posture_skill_server_node` (action server)
+  - `head_motion_skill_server_node` (topic-based action server)
 - `nao_chatbot` stack supports action-first posture flow with topic fallback

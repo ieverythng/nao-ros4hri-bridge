@@ -222,6 +222,36 @@ def generate_launch_description():
         default_value="1.0",
         description="Wait timeout before posture skill dispatch fallback.",
     )
+    use_head_motion_skill_arg = DeclareLaunchArgument(
+        "use_head_motion_skill",
+        default_value="true",
+        description="Use head-motion action client from mission controller.",
+    )
+    head_motion_skill_action_arg = DeclareLaunchArgument(
+        "head_motion_skill_action",
+        default_value="/skill/do_head_motion",
+        description="Head-motion action name.",
+    )
+    head_motion_skill_speed_arg = DeclareLaunchArgument(
+        "head_motion_skill_speed",
+        default_value="0.25",
+        description="Default head-motion speed sent by mission controller.",
+    )
+    head_motion_skill_dispatch_wait_sec_arg = DeclareLaunchArgument(
+        "head_motion_skill_dispatch_wait_sec",
+        default_value="1.0",
+        description="Wait timeout before head-motion skill dispatch fallback.",
+    )
+    head_motion_fallback_to_joint_topic_arg = DeclareLaunchArgument(
+        "head_motion_fallback_to_joint_topic",
+        default_value="true",
+        description="Allow mission controller head-motion fallback to `/joint_angles`.",
+    )
+    head_motion_joint_angles_topic_arg = DeclareLaunchArgument(
+        "head_motion_joint_angles_topic",
+        default_value="/joint_angles",
+        description="Joint-angle topic for mission fallback and head-motion skill server.",
+    )
 
     posture_skill_server_enabled_arg = DeclareLaunchArgument(
         "posture_skill_server_enabled",
@@ -238,7 +268,16 @@ def generate_launch_description():
         default_value="true",
         description="Allow posture skill server to fallback to posture command topic.",
     )
-
+    head_motion_skill_server_enabled_arg = DeclareLaunchArgument(
+        "head_motion_skill_server_enabled",
+        default_value="true",
+        description="Launch head-motion skill action server.",
+    )
+    head_motion_skill_server_default_speed_arg = DeclareLaunchArgument(
+        "head_motion_skill_server_default_speed",
+        default_value="0.2",
+        description="Default speed inside head-motion skill server.",
+    )
     posture_bridge_enabled_arg = DeclareLaunchArgument(
         "posture_bridge_enabled",
         default_value="true",
@@ -413,6 +452,18 @@ def generate_launch_description():
     posture_skill_action = LaunchConfiguration("posture_skill_action")
     posture_skill_speed = LaunchConfiguration("posture_skill_speed")
     posture_skill_dispatch_wait_sec = LaunchConfiguration("posture_skill_dispatch_wait_sec")
+    use_head_motion_skill = LaunchConfiguration("use_head_motion_skill")
+    head_motion_skill_action = LaunchConfiguration("head_motion_skill_action")
+    head_motion_skill_speed = LaunchConfiguration("head_motion_skill_speed")
+    head_motion_skill_dispatch_wait_sec = LaunchConfiguration(
+        "head_motion_skill_dispatch_wait_sec"
+    )
+    head_motion_fallback_to_joint_topic = LaunchConfiguration(
+        "head_motion_fallback_to_joint_topic"
+    )
+    head_motion_joint_angles_topic = LaunchConfiguration(
+        "head_motion_joint_angles_topic"
+    )
 
     posture_skill_server_enabled = LaunchConfiguration("posture_skill_server_enabled")
     posture_skill_server_default_speed = LaunchConfiguration(
@@ -420,6 +471,12 @@ def generate_launch_description():
     )
     posture_skill_server_fallback_to_topic = LaunchConfiguration(
         "posture_skill_server_fallback_to_topic"
+    )
+    head_motion_skill_server_enabled = LaunchConfiguration(
+        "head_motion_skill_server_enabled"
+    )
+    head_motion_skill_server_default_speed = LaunchConfiguration(
+        "head_motion_skill_server_default_speed"
     )
     posture_bridge_enabled = LaunchConfiguration("posture_bridge_enabled")
     posture_bridge_speed = LaunchConfiguration("posture_bridge_speed")
@@ -548,6 +605,12 @@ def generate_launch_description():
                 "posture_skill_action": posture_skill_action,
                 "posture_skill_speed": posture_skill_speed,
                 "posture_skill_dispatch_wait_sec": posture_skill_dispatch_wait_sec,
+                "use_head_motion_skill": use_head_motion_skill,
+                "head_motion_skill_action": head_motion_skill_action,
+                "head_motion_skill_speed": head_motion_skill_speed,
+                "head_motion_skill_dispatch_wait_sec": head_motion_skill_dispatch_wait_sec,
+                "head_motion_joint_angles_topic": head_motion_joint_angles_topic,
+                "head_motion_fallback_to_joint_topic": head_motion_fallback_to_joint_topic,
             }
         ],
     )
@@ -605,6 +668,21 @@ def generate_launch_description():
                 "default_speed": posture_skill_server_default_speed,
                 "fallback_to_posture_topic": posture_skill_server_fallback_to_topic,
                 "posture_command_topic": posture_command_topic,
+            }
+        ],
+    )
+
+    head_motion_skill_server = Node(
+        package="nao_posture_bridge",
+        executable="head_motion_skill_server_node",
+        name="head_motion_skill_server",
+        output="screen",
+        condition=IfCondition(head_motion_skill_server_enabled),
+        parameters=[
+            {
+                "action_name": head_motion_skill_action,
+                "default_speed": head_motion_skill_server_default_speed,
+                "joint_angles_topic": head_motion_joint_angles_topic,
             }
         ],
     )
@@ -686,9 +764,17 @@ def generate_launch_description():
             posture_skill_action_arg,
             posture_skill_speed_arg,
             posture_skill_dispatch_wait_sec_arg,
+            use_head_motion_skill_arg,
+            head_motion_skill_action_arg,
+            head_motion_skill_speed_arg,
+            head_motion_skill_dispatch_wait_sec_arg,
+            head_motion_fallback_to_joint_topic_arg,
+            head_motion_joint_angles_topic_arg,
             posture_skill_server_enabled_arg,
             posture_skill_server_default_speed_arg,
             posture_skill_server_fallback_to_topic_arg,
+            head_motion_skill_server_enabled_arg,
+            head_motion_skill_server_default_speed_arg,
             posture_bridge_enabled_arg,
             posture_bridge_speed_arg,
             use_say_skill_arg,
@@ -716,6 +802,7 @@ def generate_launch_description():
             dialogue_manager,
             asr_vosk,
             posture_skill_server,
+            head_motion_skill_server,
             say_skill_server,
             chat_skill_server,
             mission,

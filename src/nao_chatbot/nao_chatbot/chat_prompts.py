@@ -31,6 +31,11 @@ Canonical intent labels:
 - posture_stand
 - posture_sit
 - posture_kneel
+- head_center
+- head_look_left
+- head_look_right
+- head_look_up
+- head_look_down
 - greet
 - identity
 - wellbeing

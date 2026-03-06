@@ -61,5 +61,54 @@
             description: Progress value in [0.0, 1.0].
     </skill>
 
+    <skill content-type="yaml">
+      id: do_head_motion
+      version: 1.0.0
+      description: |
+        Execute NAO head motion by commanding HeadYaw and HeadPitch targets.
+        The skill supports absolute targets and relative increments.
+      interface: action
+      default_interface_path: /skill/do_head_motion
+      datatype: nao_skills/action/DoHeadMotion
+      functional_domains:
+        - motions
+      parameters:
+        in:
+          - name: yaw
+            type: float
+            required: true
+            description: HeadYaw angle in radians.
+          - name: pitch
+            type: float
+            required: true
+            description: HeadPitch angle in radians.
+          - name: speed
+            type: float
+            default: 0.2
+            max: 1.0
+            description: Joint speed fraction in [0.0, 1.0].
+          - name: relative
+            type: boolean
+            default: false
+            description: Whether yaw/pitch are interpreted as relative increments.
+        out:
+          - name: success
+            type: boolean
+            description: True if head motion request completed successfully.
+          - name: message
+            type: string
+            description: Execution result message.
+          - name: duration
+            type: float
+            description: Execution duration in seconds.
+        feedback:
+          - name: status
+            type: string
+            description: Execution phase (for example preparing/executing/completing).
+          - name: progress
+            type: float
+            description: Progress value in [0.0, 1.0].
+    </skill>
+
   </export>
 </package>
