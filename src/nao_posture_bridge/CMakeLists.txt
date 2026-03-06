@@ -22,6 +22,13 @@ target_link_libraries(
 install(TARGETS nao_posture_bridge_node DESTINATION lib/${PROJECT_NAME})
 install(
   PROGRAMS
+    nao_posture_bridge/head_motion_skill_server.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME head_motion_skill_server_node
+)
+
+install(
+  PROGRAMS
     nao_posture_bridge/posture_skill_server.py
   DESTINATION lib/${PROJECT_NAME}
   RENAME posture_skill_server_node
