@@ -48,6 +48,12 @@ class NodeVosk(Node):
             ParameterDescriptor(description='Comma-separated filler tokens dropped when ignore_single_token_fillers is true.'))
         self.declare_parameter(
             'debug_log_results', False, ParameterDescriptor(description='Log final hypotheses and filter decisions for debugging.'))
+        self.declare_parameter(
+            'push_to_talk_enabled', False,
+            ParameterDescriptor(description='Require an explicit Bool gate before ASR listens.'))
+        self.declare_parameter(
+            'push_to_talk_topic', '/asr_vosk/push_to_talk',
+            ParameterDescriptor(description='Bool topic that enables/disables listening when push-to-talk is active.'))
 
         self.get_logger().info('State: Unconfigured.')
 
@@ -57,6 +63,7 @@ class NodeVosk(Node):
         self.audio_data_sub = None
         self.voice_detected_sub = None
         self.robot_speaking_sub = None
+        self.push_to_talk_sub = None
 
     def on_parameter_change(self, params):
         for param in params:
@@ -101,6 +108,8 @@ class NodeVosk(Node):
             token.strip().lower() for token in str(fillers_csv).split(',') if token.strip()
         }
         self.debug_log_results = self.get_parameter('debug_log_results').value
+        self.push_to_talk_enabled = self.get_parameter('push_to_talk_enabled').value
+        self.push_to_talk_topic = self.get_parameter('push_to_talk_topic').value
 
         loaded_model, _ = self.load_model(self.model)
         if not loaded_model:
@@ -112,13 +121,14 @@ class NodeVosk(Node):
         self.get_logger().info(f'Using locale: {self.speech_locale}')
         self.get_logger().info(
             'Final filter: min_chars=%d min_words=%d min_conf=%.2f '
-            'ignore_single_token_fillers=%s publish_partials=%s'
+            'ignore_single_token_fillers=%s publish_partials=%s ptt=%s'
             % (
                 self.min_final_chars,
                 self.min_final_words,
                 float(self.min_final_confidence),
                 str(self.ignore_single_token_fillers),
                 str(self.publish_partials),
+                str(self.push_to_talk_enabled),
             )
         )
 
@@ -136,7 +146,12 @@ class NodeVosk(Node):
         self.last_final_confidence = 0.0
         self.last_drop_reason = ''
         self.dropped_final_count = 0
-        self.listening = self.start_listening
+        self.robot_speaking = False
+        self.operator_listening_enabled = (
+            False if self.push_to_talk_enabled else bool(self.start_listening)
+        )
+        self.listening = False
+        self._refresh_listening_state()
         self.diag_pub = self.create_publisher(
             DiagnosticArray, "/diagnostics", 1)
         self.voices_pub = self.create_publisher(
@@ -156,6 +171,10 @@ class NodeVosk(Node):
             Bool, "audio/voice_detected", self.on_voice_detected, 1)
         self.robot_speaking_sub = self.create_subscription(
             Bool, "/robot_speaking", self.on_robot_speaking, 1)
+        if self.push_to_talk_enabled:
+            self.push_to_talk_sub = self.create_subscription(
+                Bool, self.push_to_talk_topic, self.on_push_to_talk, 1
+            )
         #self.listening_sub = self.create_subscription(
         #    Bool, "/start_listening", self.on_start_listening, 1)
 
@@ -193,6 +212,9 @@ class NodeVosk(Node):
         if self.robot_speaking_sub is not None:
             self.destroy_subscription(self.robot_speaking_sub)
             self.robot_speaking_sub = None
+        if self.push_to_talk_sub is not None:
+            self.destroy_subscription(self.push_to_talk_sub)
+            self.push_to_talk_sub = None
         self.destroy_publisher(self.diag_pub)
         self.destroy_publisher(self.voices_pub)
         self.destroy_publisher(self.speech_pub)
@@ -215,16 +237,22 @@ class NodeVosk(Node):
         self.is_speaking_pub.publish(msg)
 
     def on_start_listening(self, msg):
-        self.listening = msg.data
+        self.operator_listening_enabled = bool(msg.data)
+        self._refresh_listening_state()
         #self.start_listening = True
 
     def on_robot_speaking(self, msg):
-        # Stop listening when robot is speaking
-        if msg.data:
-            self.listening = False
-        else:
-            # Resume listening when robot is not speaking
-            self.listening = True
+        self.robot_speaking = bool(msg.data)
+        self._refresh_listening_state()
+
+    def on_push_to_talk(self, msg):
+        self.operator_listening_enabled = bool(msg.data)
+        self._refresh_listening_state()
+
+    def _refresh_listening_state(self):
+        self.listening = bool(self.operator_listening_enabled) and not bool(
+            self.robot_speaking
+        )
 
     def on_audio_data(self, audio_data_msg):
 
@@ -325,6 +353,8 @@ class NodeVosk(Node):
                          value=self._state_machine.current_state[1]),
                 KeyValue(key="Model", value=self.model),
                 KeyValue(key="Currently listening", value=str(self.listening)),
+                KeyValue(key="Push-to-talk enabled", value=str(self.push_to_talk_enabled)),
+                KeyValue(key="Operator listening enabled", value=str(self.operator_listening_enabled)),
                 KeyValue(key="Last recognised sentence",
                          value=self.last_final),
                 KeyValue(key="Last recognised confidence", value=f'{self.last_final_confidence:.2f}'),

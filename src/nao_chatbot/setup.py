@@ -27,10 +27,6 @@ setup(
         'test': [
             'pytest',
         ],
-        'asr': [
-            'sounddevice',
-            'vosk',
-        ],
         'dev': [
             'pre-commit',
             'pytest',
@@ -39,9 +35,9 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'asr_push_to_talk_cli = nao_chatbot.asr_push_to_talk_cli:main',
             'mission_controller_node = nao_chatbot.mission_controller:main',
             'ollama_chatbot_node = nao_chatbot.ollama_chatbot:main',
-            'asr_vosk_node = nao_chatbot.asr_vosk:main',
         ],
     },
 )

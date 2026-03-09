@@ -299,6 +299,8 @@ def test_on_robot_speaking_toggles_listening(monkeypatch):
     module = _import_node_vosk(monkeypatch)
 
     node = module.NodeVosk.__new__(module.NodeVosk)
+    node.operator_listening_enabled = True
+    node.robot_speaking = False
     node.listening = True
 
     module.NodeVosk.on_robot_speaking(node, types.SimpleNamespace(data=True))
@@ -306,6 +308,34 @@ def test_on_robot_speaking_toggles_listening(monkeypatch):
 
     module.NodeVosk.on_robot_speaking(node, types.SimpleNamespace(data=False))
     assert node.listening is True
+
+
+def test_on_push_to_talk_enables_listening(monkeypatch):
+    module = _import_node_vosk(monkeypatch)
+
+    node = module.NodeVosk.__new__(module.NodeVosk)
+    node.operator_listening_enabled = False
+    node.robot_speaking = False
+    node.listening = False
+
+    module.NodeVosk.on_push_to_talk(node, types.SimpleNamespace(data=True))
+
+    assert node.operator_listening_enabled is True
+    assert node.listening is True
+
+
+def test_on_push_to_talk_respects_robot_speaking_gate(monkeypatch):
+    module = _import_node_vosk(monkeypatch)
+
+    node = module.NodeVosk.__new__(module.NodeVosk)
+    node.operator_listening_enabled = False
+    node.robot_speaking = True
+    node.listening = False
+
+    module.NodeVosk.on_push_to_talk(node, types.SimpleNamespace(data=True))
+
+    assert node.operator_listening_enabled is True
+    assert node.listening is False
 
 
 def test_extract_avg_confidence_from_result_words(monkeypatch):

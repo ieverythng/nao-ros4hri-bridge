@@ -48,7 +48,7 @@ def generate_launch_description():
     )
     publish_partials_arg = DeclareLaunchArgument(
         'publish_partials',
-        default_value='true',
+        default_value='false',
         description='Publish incremental partial hypotheses.',
     )
     min_final_chars_arg = DeclareLaunchArgument(
@@ -81,6 +81,16 @@ def generate_launch_description():
         default_value='false',
         description='Enable debug logs for final hypotheses and filtering decisions.',
     )
+    push_to_talk_enabled_arg = DeclareLaunchArgument(
+        'push_to_talk_enabled',
+        default_value='false',
+        description='Require an explicit Bool gate before ASR listens.',
+    )
+    push_to_talk_topic_arg = DeclareLaunchArgument(
+        'push_to_talk_topic',
+        default_value='/asr_vosk/push_to_talk',
+        description='Bool topic that enables/disables listening in push-to-talk mode.',
+    )
 
     vosk_node = LifecycleNode(
         package=pkg_name,
@@ -103,6 +113,8 @@ def generate_launch_description():
                 'ignore_single_token_fillers': LaunchConfiguration('ignore_single_token_fillers'),
                 'single_token_fillers_csv': LaunchConfiguration('single_token_fillers_csv'),
                 'debug_log_results': LaunchConfiguration('debug_log_results'),
+                'push_to_talk_enabled': LaunchConfiguration('push_to_talk_enabled'),
+                'push_to_talk_topic': LaunchConfiguration('push_to_talk_topic'),
             },
         ],
         output='screen',
@@ -135,6 +147,8 @@ def generate_launch_description():
     ld.add_action(ignore_single_token_fillers_arg)
     ld.add_action(single_token_fillers_csv_arg)
     ld.add_action(debug_log_results_arg)
+    ld.add_action(push_to_talk_enabled_arg)
+    ld.add_action(push_to_talk_topic_arg)
     ld.add_action(vosk_node)
     ld.add_action(configure_event)
     ld.add_action(activate_event)

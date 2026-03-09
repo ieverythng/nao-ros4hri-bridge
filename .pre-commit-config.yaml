@@ -1,23 +1,38 @@
 minimum_pre_commit_version: "3.5.0"
 
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
-    hooks:
-      - id: check-merge-conflict
-      - id: check-yaml
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
-
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.10
-    hooks:
-      - id: ruff
-        args: [--select=F,E9]
-        files: ^src/(nao_chatbot|nao_posture_bridge|asr_vosk|simple_audio_capture)/.*\.py$
-
   - repo: local
     hooks:
+      - id: check-merge-conflict
+        name: check for merge conflicts
+        entry: python3 scripts/precommit_check_merge_conflict.py
+        language: system
+        types: [text]
+
+      - id: check-yaml
+        name: check yaml
+        entry: python3 scripts/precommit_check_yaml.py
+        language: system
+        files: \.(yaml|yml)$
+
+      - id: end-of-file-fixer
+        name: fix end of files
+        entry: python3 scripts/precommit_fix_eof.py
+        language: system
+        types: [text]
+
+      - id: trailing-whitespace
+        name: trim trailing whitespace
+        entry: python3 scripts/precommit_trim_trailing_whitespace.py
+        language: system
+        types: [text]
+
+      - id: ruff
+        name: ruff
+        entry: ./.venv/bin/ruff check --select=F,E9
+        language: system
+        files: ^src/(nao_chatbot|nao_posture_bridge|asr_vosk|simple_audio_capture|dialogue_manager)/.*\.py$
+
       - id: workspace-test-suite
         name: workspace-test-suite
         entry: ./scripts/run_tests.sh

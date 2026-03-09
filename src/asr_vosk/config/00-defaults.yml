@@ -13,7 +13,7 @@ asr_vosk:
     # Speech locale metadata
     speech_locale: en_US
     # Publish partial (incremental) hypotheses.
-    publish_partials: true
+    publish_partials: false
     # Minimum final hypothesis length (characters).
     min_final_chars: 2
     # Minimum number of whitespace-separated words in a final hypothesis.
@@ -26,3 +26,7 @@ asr_vosk:
     single_token_fillers_csv: "uh,um,hmm,huh,erm,ah,eh"
     # Enable debug logs of final hypotheses and filtering decisions.
     debug_log_results: false
+    # Require an explicit Bool gate before ASR listens.
+    push_to_talk_enabled: false
+    # Topic used to enable/disable listening in push-to-talk mode.
+    push_to_talk_topic: /asr_vosk/push_to_talk
