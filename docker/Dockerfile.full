@@ -14,10 +14,16 @@ RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/socialminds.gpg] https://socialm
     > /etc/apt/sources.list.d/socialminds.list
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    gstreamer1.0-alsa \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-pulseaudio \
+    gstreamer1.0-tools \
     git \
-    libportaudio2 \
+    python3-gi \
     python3-colcon-common-extensions \
     python3-pip \
+    socialminds-ros-jazzy-audio-common \
     socialminds-ros-jazzy-std-skills \
     socialminds-ros-jazzy-chatbot-msgs \
     socialminds-ros-jazzy-hri-actions-msgs \
@@ -31,7 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-jazzy-rqt-gui-py \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python3 -m pip install --no-cache-dir --break-system-packages sounddevice vosk
+RUN python3 -m pip install --no-cache-dir --break-system-packages vosk
 
 WORKDIR /home/ubuntu/ws
 RUN mkdir -p /home/ubuntu/ws/src
@@ -41,7 +47,7 @@ RUN git clone --depth 1 --branch 1.4.0 https://github.com/ros4hri/rqt_chat.git /
 
 RUN bash -c "source /opt/ros/jazzy/setup.bash && \
     cd /home/ubuntu/ws && \
-    colcon build --symlink-install --packages-select communication_skills nao_skills dialogue_manager nao_chatbot nao_posture_bridge rqt_chat"
+    colcon build --symlink-install --packages-select communication_skills nao_skills dialogue_manager asr_vosk nao_chatbot simple_audio_capture nao_posture_bridge rqt_chat"
 
 COPY docker/ros_entrypoint.sh /
 RUN chmod +x /ros_entrypoint.sh
