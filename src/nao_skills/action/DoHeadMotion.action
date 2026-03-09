@@ -1,0 +1,14 @@
+# Goal - Requested head orientation command
+float32 yaw      # radians, HeadYaw target (absolute unless relative=true)
+float32 pitch    # radians, HeadPitch target (absolute unless relative=true)
+float32 speed    # 0.0-1.0, execution speed (0.0 means use default)
+bool relative    # if true, yaw/pitch are deltas instead of absolute angles
+---
+# Result - Final outcome
+bool success
+string message
+float32 duration
+---
+# Feedback - Progress updates during execution
+string status        # "preparing", "executing", "completing"
+float32 progress     # 0.0-1.0

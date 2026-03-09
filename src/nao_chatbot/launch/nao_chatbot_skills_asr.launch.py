@@ -95,6 +95,11 @@ def generate_launch_description():
         default_value="0.9",
         description="Posture skill speed sent by mission controller.",
     )
+    head_motion_skill_speed_arg = DeclareLaunchArgument(
+        "head_motion_skill_speed",
+        default_value="0.25",
+        description="Head-motion skill speed sent by mission controller.",
+    )
     posture_skill_server_fallback_to_topic_arg = DeclareLaunchArgument(
         "posture_skill_server_fallback_to_topic",
         default_value="true",
@@ -268,6 +273,7 @@ def generate_launch_description():
     )
     ollama_skill_catalog_max_chars = LaunchConfiguration("ollama_skill_catalog_max_chars")
     posture_skill_speed = LaunchConfiguration("posture_skill_speed")
+    head_motion_skill_speed = LaunchConfiguration("head_motion_skill_speed")
     posture_skill_server_fallback_to_topic = LaunchConfiguration(
         "posture_skill_server_fallback_to_topic"
     )
@@ -342,8 +348,11 @@ def generate_launch_description():
             "chat_skill_server_enabled": "true",
             "use_posture_skill": "true",
             "posture_skill_speed": posture_skill_speed,
+            "use_head_motion_skill": "true",
+            "head_motion_skill_speed": head_motion_skill_speed,
             "posture_skill_server_enabled": "true",
             "posture_skill_server_fallback_to_topic": posture_skill_server_fallback_to_topic,
+            "head_motion_skill_server_enabled": "true",
             "use_say_skill": "true",
             "say_skill_server_enabled": "true",
             "say_skill_server_fallback_to_topic": "true",
@@ -401,6 +410,7 @@ def generate_launch_description():
             ollama_skill_catalog_max_entries_arg,
             ollama_skill_catalog_max_chars_arg,
             posture_skill_speed_arg,
+            head_motion_skill_speed_arg,
             posture_skill_server_fallback_to_topic_arg,
             asr_vosk_enabled_arg,
             asr_microphone_topic_arg,

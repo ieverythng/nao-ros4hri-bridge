@@ -17,6 +17,7 @@
   <depend>communication_skills</depend>
   <depend>tts_msgs</depend>
   <depend>naoqi_libqi</depend>
+  <depend>naoqi_bridge_msgs</depend>
   <depend>nao_skills</depend>
 
   <export>

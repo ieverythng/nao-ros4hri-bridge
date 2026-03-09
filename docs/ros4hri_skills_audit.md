@@ -46,6 +46,10 @@ Local `nao_skills` manifest follows this convention:
 - `default_interface_path: /skill/do_posture`
 - `datatype: nao_skills/action/DoPosture`
 - input/output/feedback fields aligned with `DoPosture.action`
+- `id: do_head_motion`
+- `default_interface_path: /skill/do_head_motion`
+- `datatype: nao_skills/action/DoHeadMotion`
+- input/output/feedback fields aligned with `DoHeadMotion.action`
 
 ## Speech/TTS Upstream Baseline
 
@@ -129,3 +133,26 @@ Traceability update:
 
 - `turn_id` is propagated in user text payloads, chat goal configuration, and
   chat result payloads, enabling cross-node log tracing for each interaction.
+
+## Phase 4 Update (2026-03-04)
+
+Head-motion support has been added as a callable NAO skill while keeping
+execution aligned with `naoqi_driver` exposed interfaces:
+
+- New skill interface in `nao_skills`:
+  - `/skill/do_head_motion` (`nao_skills/action/DoHeadMotion`)
+- New action server:
+  - `nao_posture_bridge/head_motion_skill_server.py`
+- Execution strategy:
+  - Topic-only publication to `/joint_angles`
+    (`naoqi_bridge_msgs/msg/JointAnglesWithSpeed`)
+  - No direct NAOqi call path in this skill server
+
+Upstream reference check completed in containerized apt packages:
+
+- `motions_skills` provides trajectory-oriented interfaces:
+  - `ExecuteJointTrajectory.action`
+  - `ExecuteCartesianTrajectory.action`
+- `naoqi_driver` exposes head/touch relevant interfaces:
+  - command topic: `/joint_angles`
+  - touch-related streams: `head_touch`, `hand_touch`, `bumper`

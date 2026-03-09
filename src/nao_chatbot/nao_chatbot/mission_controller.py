@@ -1,13 +1,16 @@
 import json
 import time
 
+from naoqi_bridge_msgs.msg import JointAnglesWithSpeed
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 
 from nao_chatbot.chat_skill_client import ChatSkillClient
+from nao_chatbot.head_motion_skill_client import HeadMotionSkillClient
 from nao_chatbot.intent_rules import build_rule_response
 from nao_chatbot.intent_rules import detect_intent
+from nao_chatbot.intent_rules import head_motion_goal_for_intent
 from nao_chatbot.intent_rules import posture_command_for_intent
 from nao_chatbot.posture_skill_client import PostureSkillClient
 
@@ -32,6 +35,12 @@ class MissionController(Node):
         self.declare_parameter("posture_skill_action", "/skill/do_posture")
         self.declare_parameter("posture_skill_speed", 0.8)
         self.declare_parameter("posture_skill_dispatch_wait_sec", 1.0)
+        self.declare_parameter("use_head_motion_skill", True)
+        self.declare_parameter("head_motion_skill_action", "/skill/do_head_motion")
+        self.declare_parameter("head_motion_skill_speed", 0.25)
+        self.declare_parameter("head_motion_skill_dispatch_wait_sec", 1.0)
+        self.declare_parameter("head_motion_joint_angles_topic", "/joint_angles")
+        self.declare_parameter("head_motion_fallback_to_joint_topic", True)
         self.declare_parameter("use_chat_skill", True)
         self.declare_parameter("chat_skill_action", "/skill/chat")
         self.declare_parameter("chat_skill_dispatch_wait_sec", 1.0)
@@ -67,6 +76,23 @@ class MissionController(Node):
             0.0,
             float(self.get_parameter("posture_skill_dispatch_wait_sec").value),
         )
+        self.use_head_motion_skill = self._as_bool(
+            self.get_parameter("use_head_motion_skill").value
+        )
+        self.head_motion_skill_action = self.get_parameter("head_motion_skill_action").value
+        self.head_motion_skill_speed = float(
+            self.get_parameter("head_motion_skill_speed").value
+        )
+        self.head_motion_skill_dispatch_wait_sec = max(
+            0.0,
+            float(self.get_parameter("head_motion_skill_dispatch_wait_sec").value),
+        )
+        self.head_motion_joint_angles_topic = self.get_parameter(
+            "head_motion_joint_angles_topic"
+        ).value
+        self.head_motion_fallback_to_joint_topic = self._as_bool(
+            self.get_parameter("head_motion_fallback_to_joint_topic").value
+        )
         self.use_chat_skill = self._as_bool(
             self.get_parameter("use_chat_skill").value
         )
@@ -88,6 +114,7 @@ class MissionController(Node):
         self._turn_counter = 0
         self.conversation_history = []
         self.posture_client = None
+        self.head_motion_client = None
         self.chat_client = None
 
         self.assistant_publisher = self.create_publisher(
@@ -96,6 +123,9 @@ class MissionController(Node):
         self.intent_publisher = self.create_publisher(String, self.intent_topic, 10)
         self.posture_command_publisher = self.create_publisher(
             String, self.posture_command_topic, 10
+        )
+        self.head_motion_topic_publisher = self.create_publisher(
+            JointAnglesWithSpeed, self.head_motion_joint_angles_topic, 10
         )
 
         self.create_subscription(String, self.user_text_topic, self._on_user_text, 10)
@@ -117,6 +147,23 @@ class MissionController(Node):
         else:
             self.get_logger().info("Using topic-based posture commands")
 
+        if self.use_head_motion_skill:
+            self.head_motion_client = HeadMotionSkillClient(
+                self,
+                action_name=self.head_motion_skill_action,
+                default_speed=self.head_motion_skill_speed,
+            )
+            if self.head_motion_client.wait_for_server(timeout_sec=3.0):
+                self.get_logger().info(
+                    f'Head-motion skill server connected at "{self.head_motion_skill_action}"'
+                )
+            else:
+                self.get_logger().warn(
+                    "Head-motion skill server unavailable at startup; will retry and use topic fallback until it appears"
+                )
+        else:
+            self.get_logger().info("Using topic-based head-motion commands")
+
         if self.use_chat_skill:
             self.chat_client = ChatSkillClient(self, action_name=self.chat_skill_action)
             if self.chat_client.wait_for_server(timeout_sec=1.5):
@@ -130,13 +177,14 @@ class MissionController(Node):
 
         self.get_logger().info(
             "mission_controller ready | mode:%s user:%s assistant:%s intent:%s "
-            "posture:%s use_chat_skill:%s"
+            "posture:%s head:%s use_chat_skill:%s"
             % (
                 self.mode,
                 self.user_text_topic,
                 self.assistant_text_topic,
                 self.intent_topic,
                 self.posture_command_topic,
+                self.head_motion_joint_angles_topic,
                 self.use_chat_skill,
             )
         )
@@ -188,6 +236,7 @@ class MissionController(Node):
         self._publish(self.intent_publisher, intent)
         self._trace(turn_id, "INTENT_PUBLISHED", f"{intent} source=rules")
         self._handle_posture_intent(intent, turn_id=turn_id)
+        self._handle_head_motion_intent(intent, turn_id=turn_id)
         response = build_rule_response(intent)
         self._publish(self.assistant_publisher, response)
         self._append_conversation_turn(text, response)
@@ -308,10 +357,20 @@ class MissionController(Node):
                 source="chat_skill_result_intent",
                 turn_id=turn_id,
             )
-            self._trace(turn_id, "TURN_DONE", "backend path complete (posture dispatched)")
+            self._handle_head_motion_intent(
+                resolved_intent,
+                source="chat_skill_result_intent",
+                turn_id=turn_id,
+            )
+            self._trace(turn_id, "TURN_DONE", "backend path complete (motion dispatched)")
             return
         if self.backend_posture_from_response_enabled and response:
             self._handle_posture_intent(
+                detect_intent(response),
+                source="chat_skill_response",
+                turn_id=turn_id,
+            )
+            self._handle_head_motion_intent(
                 detect_intent(response),
                 source="chat_skill_response",
                 turn_id=turn_id,
@@ -377,6 +436,11 @@ class MissionController(Node):
         self.pending_backend_user_text = ""
         if self.backend_fallback_to_rules and self.backend_execute_posture_after_response:
             self._handle_posture_intent(
+                intent,
+                source=posture_source,
+                turn_id=turn_id,
+            )
+            self._handle_head_motion_intent(
                 intent,
                 source=posture_source,
                 turn_id=turn_id,
@@ -497,6 +561,74 @@ class MissionController(Node):
             "POSTURE_TOPIC_FALLBACK",
             'published "%s" to "%s" (source=%s)'
             % (command, self.posture_command_topic, source),
+        )
+
+    def _handle_head_motion_intent(
+        self,
+        intent: str,
+        source: str = "user_text",
+        turn_id: str = "",
+    ) -> None:
+        """Handle head-motion intent via skill action or topic fallback."""
+        goal = head_motion_goal_for_intent(intent)
+        if not goal:
+            return
+
+        yaw = float(goal.get("yaw", 0.0))
+        pitch = float(goal.get("pitch", 0.0))
+        relative = bool(goal.get("relative", False))
+
+        if self.use_head_motion_skill and self.head_motion_client is not None:
+            if not self.head_motion_client.ensure_server(
+                wait_timeout_sec=self.head_motion_skill_dispatch_wait_sec
+            ):
+                self.get_logger().warn(
+                    f'Head-motion skill server "{self.head_motion_skill_action}" unavailable at dispatch; using topic fallback'
+                )
+            else:
+                self._trace(
+                    turn_id,
+                    "HEAD_DISPATCH",
+                    "yaw=%.4f pitch=%.4f relative=%s intent=%s source=%s"
+                    % (yaw, pitch, relative, intent, source),
+                )
+                self.head_motion_client.send_goal(
+                    yaw=yaw,
+                    pitch=pitch,
+                    speed=self.head_motion_skill_speed,
+                    relative=relative,
+                    turn_id=turn_id,
+                    result_callback=lambda result: self.get_logger().info(
+                        "%s HEAD_RESULT | %s"
+                        % (
+                            self._turn_label(turn_id),
+                            result.message,
+                        )
+                    ),
+                )
+                return
+
+        if not self.head_motion_fallback_to_joint_topic:
+            return
+
+        msg = JointAnglesWithSpeed()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.joint_names = ["HeadYaw", "HeadPitch"]
+        msg.joint_angles = [yaw, pitch]
+        msg.speed = float(self.head_motion_skill_speed)
+        msg.relative = 1 if relative else 0
+        self.head_motion_topic_publisher.publish(msg)
+        self._trace(
+            turn_id,
+            "HEAD_TOPIC_FALLBACK",
+            'published yaw=%.4f pitch=%.4f relative=%s to "%s" (source=%s)'
+            % (
+                yaw,
+                pitch,
+                relative,
+                self.head_motion_joint_angles_topic,
+                source,
+            ),
         )
 
     def _next_turn_id(self) -> str:
