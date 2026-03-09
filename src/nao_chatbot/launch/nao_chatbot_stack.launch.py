@@ -1,14 +1,21 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
+from launch.actions import EmitEvent
 from launch.actions import ExecuteProcess
 from launch.actions import IncludeLaunchDescription
+from launch.actions import RegisterEventHandler
 from launch.actions import TimerAction
 from launch.conditions import IfCondition
+from launch.events import matches_action
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import PathJoinSubstitution
+from launch_ros.actions import LifecycleNode
 from launch_ros.actions import Node
+from launch_ros.event_handlers import OnStateTransition
+from launch_ros.events.lifecycle import ChangeState
 from launch_ros.substitutions import FindPackageShare
+from lifecycle_msgs.msg import Transition
 
 
 def generate_launch_description():
@@ -65,6 +72,16 @@ def generate_launch_description():
         default_value="/humans/voices/anonymous_speaker/speech",
         description="LiveSpeech topic where local ASR publishes transcripts.",
     )
+    asr_microphone_topic_arg = DeclareLaunchArgument(
+        "asr_microphone_topic",
+        default_value="/laptop/microphone0",
+        description="Audio topic consumed by the ASR lifecycle node.",
+    )
+    asr_speech_locale_arg = DeclareLaunchArgument(
+        "asr_speech_locale",
+        default_value="en_US",
+        description="Locale string published in LiveSpeech messages.",
+    )
     asr_vosk_model_path_arg = DeclareLaunchArgument(
         "asr_vosk_model_path",
         default_value="",
@@ -75,75 +92,120 @@ def generate_launch_description():
         default_value="16000",
         description="Preferred sample rate for local ASR.",
     )
-    asr_block_duration_ms_arg = DeclareLaunchArgument(
-        "asr_block_duration_ms",
-        default_value="250",
-        description="Audio block duration in ms used by local ASR.",
-    )
-    asr_device_index_arg = DeclareLaunchArgument(
-        "asr_device_index",
-        default_value="-1",
-        description="Microphone device index; -1 uses default.",
-    )
-    asr_min_chars_arg = DeclareLaunchArgument(
-        "asr_min_chars",
-        default_value="2",
-        description="Minimum transcript length before publishing.",
-    )
-    asr_dedupe_window_sec_arg = DeclareLaunchArgument(
-        "asr_dedupe_window_sec",
-        default_value="0.8",
-        description="Ignore duplicate ASR outputs within this window.",
-    )
-    asr_publish_partial_arg = DeclareLaunchArgument(
-        "asr_publish_partial",
-        default_value="false",
-        description="Publish partial hypotheses from Vosk.",
-    )
-    asr_allow_sample_rate_fallback_arg = DeclareLaunchArgument(
-        "asr_allow_sample_rate_fallback",
+    asr_start_listening_arg = DeclareLaunchArgument(
+        "asr_start_listening",
         default_value="true",
-        description="Try device-default/common rates if requested rate is unsupported.",
+        description="Whether ASR starts listening immediately after activation.",
     )
-    asr_min_words_arg = DeclareLaunchArgument(
-        "asr_min_words",
+    asr_publish_partials_arg = DeclareLaunchArgument(
+        "asr_publish_partials",
+        default_value="false",
+        description="Publish incremental partial hypotheses from ASR.",
+    )
+    asr_min_final_chars_arg = DeclareLaunchArgument(
+        "asr_min_final_chars",
+        default_value="2",
+        description="Drop final hypotheses shorter than this number of characters.",
+    )
+    asr_min_final_words_arg = DeclareLaunchArgument(
+        "asr_min_final_words",
         default_value="1",
-        description="Minimum number of words required before publishing transcript.",
+        description="Drop final hypotheses with fewer words than this value.",
+    )
+    asr_min_final_confidence_arg = DeclareLaunchArgument(
+        "asr_min_final_confidence",
+        default_value="0.0",
+        description="Minimum average confidence [0-1] required for final ASR hypotheses.",
     )
     asr_ignore_single_token_fillers_arg = DeclareLaunchArgument(
         "asr_ignore_single_token_fillers",
         default_value="true",
-        description='Drop one-word fillers like "um"/"huh".',
+        description="Drop one-token filler words (eg. uh, um, huh).",
     )
-    asr_suppress_during_robot_speech_arg = DeclareLaunchArgument(
-        "asr_suppress_during_robot_speech",
-        default_value="true",
-        description="Mute ASR while robot speech is active to avoid overlap/echo.",
+    asr_single_token_fillers_csv_arg = DeclareLaunchArgument(
+        "asr_single_token_fillers_csv",
+        default_value="uh,um,hmm,huh,erm,ah,eh",
+        description="Comma-separated fillers dropped when one-token filler filtering is enabled.",
+    )
+    asr_debug_log_results_arg = DeclareLaunchArgument(
+        "asr_debug_log_results",
+        default_value="false",
+        description="Enable debug logs of final ASR hypotheses and filtering decisions.",
+    )
+    asr_push_to_talk_enabled_arg = DeclareLaunchArgument(
+        "asr_push_to_talk_enabled",
+        default_value="false",
+        description="Require an explicit Bool gate before ASR listens.",
+    )
+    asr_push_to_talk_topic_arg = DeclareLaunchArgument(
+        "asr_push_to_talk_topic",
+        default_value="/asr_vosk/push_to_talk",
+        description="Bool topic used to enable/disable listening in push-to-talk mode.",
     )
     asr_robot_speech_topic_arg = DeclareLaunchArgument(
         "asr_robot_speech_topic",
         default_value="/speech",
-        description="Topic used to detect robot speech and apply ASR mute window.",
+        description="Robot speech topic used by dialogue/say components.",
     )
-    asr_speech_guard_sec_per_word_arg = DeclareLaunchArgument(
-        "asr_speech_guard_sec_per_word",
-        default_value="0.33",
-        description="Estimated robot speech seconds per word used by ASR mute guard.",
+    asr_audio_capture_enabled_arg = DeclareLaunchArgument(
+        "asr_audio_capture_enabled",
+        default_value="false",
+        description="Launch simple_audio_capture node for ASR audio_topic backend.",
     )
-    asr_speech_guard_min_sec_arg = DeclareLaunchArgument(
-        "asr_speech_guard_min_sec",
-        default_value="1.0",
-        description="Minimum ASR mute window in seconds after robot speech starts.",
+    asr_audio_capture_source_type_arg = DeclareLaunchArgument(
+        "asr_audio_capture_source_type",
+        default_value="pulsesrc",
+        description='GStreamer source type for audio capture ("pulsesrc" or "alsasrc").',
     )
-    asr_speech_guard_extra_sec_arg = DeclareLaunchArgument(
-        "asr_speech_guard_extra_sec",
-        default_value="0.5",
-        description="Extra mute seconds added after estimated robot speech duration.",
+    asr_audio_capture_device_arg = DeclareLaunchArgument(
+        "asr_audio_capture_device",
+        default_value="",
+        description="Optional audio capture device identifier.",
     )
-    asr_status_warn_period_sec_arg = DeclareLaunchArgument(
-        "asr_status_warn_period_sec",
-        default_value="2.0",
-        description="Minimum interval between repeated ASR stream warnings.",
+    asr_audio_capture_sample_rate_arg = DeclareLaunchArgument(
+        "asr_audio_capture_sample_rate",
+        default_value="16000",
+        description="Audio capture sample rate in Hz.",
+    )
+    asr_audio_capture_channels_arg = DeclareLaunchArgument(
+        "asr_audio_capture_channels",
+        default_value="1",
+        description="Audio capture channel count.",
+    )
+    asr_audio_capture_sample_format_arg = DeclareLaunchArgument(
+        "asr_audio_capture_sample_format",
+        default_value="S16LE",
+        description="Audio capture sample format.",
+    )
+    asr_audio_capture_chunk_size_arg = DeclareLaunchArgument(
+        "asr_audio_capture_chunk_size",
+        default_value="2048",
+        description="Audio capture chunk size in bytes.",
+    )
+    dialogue_accept_incremental_speech_arg = DeclareLaunchArgument(
+        "dialogue_accept_incremental_speech",
+        default_value="false",
+        description="Allow dialogue_manager to consume incremental ASR hypotheses.",
+    )
+    dialogue_ignore_user_speech_while_busy_arg = DeclareLaunchArgument(
+        "dialogue_ignore_user_speech_while_busy",
+        default_value="true",
+        description="Ignore new ASR input while a user turn is already awaiting an assistant response.",
+    )
+    dialogue_user_turn_holdoff_sec_arg = DeclareLaunchArgument(
+        "dialogue_user_turn_holdoff_sec",
+        default_value="0.6",
+        description="Seconds to buffer/merge consecutive ASR finals before forwarding one user turn.",
+    )
+    dialogue_user_turn_min_chars_arg = DeclareLaunchArgument(
+        "dialogue_user_turn_min_chars",
+        default_value="2",
+        description="Minimum character length accepted for forwarded ASR user turns.",
+    )
+    dialogue_user_turn_min_words_arg = DeclareLaunchArgument(
+        "dialogue_user_turn_min_words",
+        default_value="1",
+        description="Minimum word count accepted for forwarded ASR user turns.",
     )
 
     mission_mode_arg = DeclareLaunchArgument(
@@ -409,28 +471,32 @@ def generate_launch_description():
     bridge_input_speech_topic = LaunchConfiguration("bridge_input_speech_topic")
     asr_vosk_enabled = LaunchConfiguration("asr_vosk_enabled")
     asr_output_speech_topic = LaunchConfiguration("asr_output_speech_topic")
+    asr_microphone_topic = LaunchConfiguration("asr_microphone_topic")
+    asr_speech_locale = LaunchConfiguration("asr_speech_locale")
     asr_vosk_model_path = LaunchConfiguration("asr_vosk_model_path")
     asr_sample_rate_hz = LaunchConfiguration("asr_sample_rate_hz")
-    asr_block_duration_ms = LaunchConfiguration("asr_block_duration_ms")
-    asr_device_index = LaunchConfiguration("asr_device_index")
-    asr_min_chars = LaunchConfiguration("asr_min_chars")
-    asr_dedupe_window_sec = LaunchConfiguration("asr_dedupe_window_sec")
-    asr_publish_partial = LaunchConfiguration("asr_publish_partial")
-    asr_allow_sample_rate_fallback = LaunchConfiguration("asr_allow_sample_rate_fallback")
-    asr_min_words = LaunchConfiguration("asr_min_words")
+    asr_start_listening = LaunchConfiguration("asr_start_listening")
+    asr_publish_partials = LaunchConfiguration("asr_publish_partials")
+    asr_min_final_chars = LaunchConfiguration("asr_min_final_chars")
+    asr_min_final_words = LaunchConfiguration("asr_min_final_words")
+    asr_min_final_confidence = LaunchConfiguration("asr_min_final_confidence")
     asr_ignore_single_token_fillers = LaunchConfiguration(
         "asr_ignore_single_token_fillers"
     )
-    asr_suppress_during_robot_speech = LaunchConfiguration(
-        "asr_suppress_during_robot_speech"
-    )
+    asr_single_token_fillers_csv = LaunchConfiguration("asr_single_token_fillers_csv")
+    asr_debug_log_results = LaunchConfiguration("asr_debug_log_results")
+    asr_push_to_talk_enabled = LaunchConfiguration("asr_push_to_talk_enabled")
+    asr_push_to_talk_topic = LaunchConfiguration("asr_push_to_talk_topic")
     asr_robot_speech_topic = LaunchConfiguration("asr_robot_speech_topic")
-    asr_speech_guard_sec_per_word = LaunchConfiguration(
-        "asr_speech_guard_sec_per_word"
+    asr_audio_capture_enabled = LaunchConfiguration("asr_audio_capture_enabled")
+    asr_audio_capture_source_type = LaunchConfiguration("asr_audio_capture_source_type")
+    asr_audio_capture_device = LaunchConfiguration("asr_audio_capture_device")
+    asr_audio_capture_sample_rate = LaunchConfiguration("asr_audio_capture_sample_rate")
+    asr_audio_capture_channels = LaunchConfiguration("asr_audio_capture_channels")
+    asr_audio_capture_sample_format = LaunchConfiguration(
+        "asr_audio_capture_sample_format"
     )
-    asr_speech_guard_min_sec = LaunchConfiguration("asr_speech_guard_min_sec")
-    asr_speech_guard_extra_sec = LaunchConfiguration("asr_speech_guard_extra_sec")
-    asr_status_warn_period_sec = LaunchConfiguration("asr_status_warn_period_sec")
+    asr_audio_capture_chunk_size = LaunchConfiguration("asr_audio_capture_chunk_size")
 
     mission_mode = LaunchConfiguration("mission_mode")
     backend_fallback_to_rules = LaunchConfiguration("backend_fallback_to_rules")
@@ -489,6 +555,21 @@ def generate_launch_description():
     dialogue_publish_speech_topic = LaunchConfiguration("dialogue_publish_speech_topic")
     dialogue_fallback_publish_speech_topic = LaunchConfiguration(
         "dialogue_fallback_publish_speech_topic"
+    )
+    dialogue_accept_incremental_speech = LaunchConfiguration(
+        "dialogue_accept_incremental_speech"
+    )
+    dialogue_ignore_user_speech_while_busy = LaunchConfiguration(
+        "dialogue_ignore_user_speech_while_busy"
+    )
+    dialogue_user_turn_holdoff_sec = LaunchConfiguration(
+        "dialogue_user_turn_holdoff_sec"
+    )
+    dialogue_user_turn_min_chars = LaunchConfiguration(
+        "dialogue_user_turn_min_chars"
+    )
+    dialogue_user_turn_min_words = LaunchConfiguration(
+        "dialogue_user_turn_min_words"
     )
     say_skill_server_enabled = LaunchConfiguration("say_skill_server_enabled")
     say_skill_tts_action_name = LaunchConfiguration("say_skill_tts_action_name")
@@ -549,39 +630,85 @@ def generate_launch_description():
                 "say_skill_dispatch_wait_sec": say_skill_dispatch_wait_sec,
                 "also_publish_speech_topic": dialogue_publish_speech_topic,
                 "fallback_publish_speech_topic": dialogue_fallback_publish_speech_topic,
+                "accept_incremental_speech": dialogue_accept_incremental_speech,
+                "ignore_user_speech_while_busy": dialogue_ignore_user_speech_while_busy,
+                "user_turn_holdoff_sec": dialogue_user_turn_holdoff_sec,
+                "user_turn_min_chars": dialogue_user_turn_min_chars,
+                "user_turn_min_words": dialogue_user_turn_min_words,
+            }
+        ],
+    )
+
+    asr_audio_capture = Node(
+        package="simple_audio_capture",
+        executable="audio_capture_node",
+        name="simple_audio_capture",
+        output="screen",
+        condition=IfCondition(asr_audio_capture_enabled),
+        parameters=[
+            {
+                "source_type": asr_audio_capture_source_type,
+                "device": asr_audio_capture_device,
+                "sample_rate": asr_audio_capture_sample_rate,
+                "channels": asr_audio_capture_channels,
+                "sample_format": asr_audio_capture_sample_format,
+                "chunk_size": asr_audio_capture_chunk_size,
+                "audio_topic": asr_microphone_topic,
             }
         ],
     )
 
     asr_vosk_condition = IfCondition(asr_vosk_enabled)
-    asr_vosk = Node(
-        package="nao_chatbot",
-        executable="asr_vosk_node",
+    asr_vosk = LifecycleNode(
+        package="asr_vosk",
+        executable="asr_vosk",
         name="asr_vosk",
+        namespace="",
         output="screen",
+        emulate_tty=True,
         condition=asr_vosk_condition,
         parameters=[
             {
-                "enabled": True,
+                "audio_rate": asr_sample_rate_hz,
+                "model": asr_vosk_model_path,
+                "microphone_topic": asr_microphone_topic,
+                "start_listening": asr_start_listening,
                 "output_speech_topic": asr_output_speech_topic,
-                "vosk_model_path": asr_vosk_model_path,
-                "sample_rate_hz": asr_sample_rate_hz,
-                "block_duration_ms": asr_block_duration_ms,
-                "device_index": asr_device_index,
-                "min_chars": asr_min_chars,
-                "min_words": asr_min_words,
-                "dedupe_window_sec": asr_dedupe_window_sec,
-                "publish_partial": asr_publish_partial,
-                "allow_sample_rate_fallback": asr_allow_sample_rate_fallback,
+                "speech_locale": asr_speech_locale,
+                "publish_partials": asr_publish_partials,
+                "min_final_chars": asr_min_final_chars,
+                "min_final_words": asr_min_final_words,
+                "min_final_confidence": asr_min_final_confidence,
                 "ignore_single_token_fillers": asr_ignore_single_token_fillers,
-                "suppress_during_robot_speech": asr_suppress_during_robot_speech,
-                "robot_speech_topic": asr_robot_speech_topic,
-                "speech_guard_sec_per_word": asr_speech_guard_sec_per_word,
-                "speech_guard_min_sec": asr_speech_guard_min_sec,
-                "speech_guard_extra_sec": asr_speech_guard_extra_sec,
-                "status_warn_period_sec": asr_status_warn_period_sec,
+                "single_token_fillers_csv": asr_single_token_fillers_csv,
+                "debug_log_results": asr_debug_log_results,
+                "push_to_talk_enabled": asr_push_to_talk_enabled,
+                "push_to_talk_topic": asr_push_to_talk_topic,
             }
         ],
+    )
+    asr_vosk_configure = EmitEvent(
+        condition=asr_vosk_condition,
+        event=ChangeState(
+            lifecycle_node_matcher=matches_action(asr_vosk),
+            transition_id=Transition.TRANSITION_CONFIGURE,
+        ),
+    )
+    asr_vosk_activate = RegisterEventHandler(
+        condition=asr_vosk_condition,
+        event_handler=OnStateTransition(
+            target_lifecycle_node=asr_vosk,
+            goal_state="inactive",
+            entities=[
+                EmitEvent(
+                    event=ChangeState(
+                        lifecycle_node_matcher=matches_action(asr_vosk),
+                        transition_id=Transition.TRANSITION_ACTIVATE,
+                    )
+                )
+            ],
+            handle_once=True,
+        ),
     )
 
     mission = Node(
@@ -733,22 +860,33 @@ def generate_launch_description():
             bridge_input_speech_topic_arg,
             asr_vosk_enabled_arg,
             asr_output_speech_topic_arg,
+            asr_microphone_topic_arg,
+            asr_speech_locale_arg,
             asr_vosk_model_path_arg,
             asr_sample_rate_hz_arg,
-            asr_block_duration_ms_arg,
-            asr_device_index_arg,
-            asr_min_chars_arg,
-            asr_dedupe_window_sec_arg,
-            asr_publish_partial_arg,
-            asr_allow_sample_rate_fallback_arg,
-            asr_min_words_arg,
+            asr_start_listening_arg,
+            asr_publish_partials_arg,
+            asr_min_final_chars_arg,
+            asr_min_final_words_arg,
+            asr_min_final_confidence_arg,
             asr_ignore_single_token_fillers_arg,
-            asr_suppress_during_robot_speech_arg,
+            asr_single_token_fillers_csv_arg,
+            asr_debug_log_results_arg,
+            asr_push_to_talk_enabled_arg,
+            asr_push_to_talk_topic_arg,
             asr_robot_speech_topic_arg,
-            asr_speech_guard_sec_per_word_arg,
-            asr_speech_guard_min_sec_arg,
-            asr_speech_guard_extra_sec_arg,
-            asr_status_warn_period_sec_arg,
+            asr_audio_capture_enabled_arg,
+            asr_audio_capture_source_type_arg,
+            asr_audio_capture_device_arg,
+            asr_audio_capture_sample_rate_arg,
+            asr_audio_capture_channels_arg,
+            asr_audio_capture_sample_format_arg,
+            asr_audio_capture_chunk_size_arg,
+            dialogue_accept_incremental_speech_arg,
+            dialogue_ignore_user_speech_while_busy_arg,
+            dialogue_user_turn_holdoff_sec_arg,
+            dialogue_user_turn_min_chars_arg,
+            dialogue_user_turn_min_words_arg,
             mission_mode_arg,
             backend_fallback_to_rules_arg,
             backend_response_timeout_sec_arg,
@@ -800,7 +938,10 @@ def generate_launch_description():
             ollama_skill_catalog_max_chars_arg,
             naoqi_driver,
             dialogue_manager,
+            asr_audio_capture,
             asr_vosk,
+            asr_vosk_configure,
+            asr_vosk_activate,
             posture_skill_server,
             head_motion_skill_server,
             say_skill_server,

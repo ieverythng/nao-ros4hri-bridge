@@ -1,6 +1,7 @@
 # Dialogue Manager ROS4HRI Migration Plan
 
 Date: 2026-02-26
+Status: Historical migration log (for current runtime view use `current_workflow.md`)
 Owner: nao-ros4hri-bridge
 
 ## Summary
@@ -133,7 +134,7 @@ Status: `Verified`
 Tasks:
 - remove/de-emphasize proven deprecated paths
 - fix stale docs references
-- refresh whiteboard architecture with:
+- refresh current workflow architecture with:
   - old
   - transition
   - target

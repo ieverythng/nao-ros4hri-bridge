@@ -1,6 +1,7 @@
 # ROS4HRI Skills Audit (Phase 1)
 
 Date: 2026-02-24
+Status: Historical reference (for current runtime view use `current_workflow.md`)
 
 ## Scope
 

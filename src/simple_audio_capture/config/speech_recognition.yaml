@@ -1,0 +1,11 @@
+/**:
+  ros__parameters:
+    source_type: "pulsesrc"
+    device: ""
+    format: "wave"
+    sample_format: "S16LE"
+    sample_rate: 16000
+    channels: 1
+    depth: 16
+    chunk_size: 2048
+    audio_topic: "/laptop/microphone0"

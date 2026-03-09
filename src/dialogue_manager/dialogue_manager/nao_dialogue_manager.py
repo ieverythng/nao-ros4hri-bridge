@@ -10,6 +10,7 @@ from rclpy.node import Node
 from std_msgs.msg import String
 
 from dialogue_manager.nao_asr_utils import extract_text
+from dialogue_manager.nao_asr_utils import merge_text_chunks
 from dialogue_manager.say_skill_client import SaySkillClient
 
 
@@ -36,6 +37,11 @@ class DialogueManager(Node):
         self.declare_parameter("fallback_publish_speech_topic", True)
         self.declare_parameter("reply_prefix", "")
         self.declare_parameter("dedupe_window_sec", 0.8)
+        self.declare_parameter("accept_incremental_speech", False)
+        self.declare_parameter("ignore_user_speech_while_busy", True)
+        self.declare_parameter("user_turn_holdoff_sec", 0.6)
+        self.declare_parameter("user_turn_min_chars", 2)
+        self.declare_parameter("user_turn_min_words", 1)
 
         self.input_speech_topic = self.get_parameter("input_speech_topic").value
         self.user_text_topic = self.get_parameter("user_text_topic").value
@@ -59,6 +65,24 @@ class DialogueManager(Node):
         )
         self.reply_prefix = self.get_parameter("reply_prefix").value
         self.dedupe_window_sec = float(self.get_parameter("dedupe_window_sec").value)
+        self.accept_incremental_speech = self._as_bool(
+            self.get_parameter("accept_incremental_speech").value
+        )
+        self.ignore_user_speech_while_busy = self._as_bool(
+            self.get_parameter("ignore_user_speech_while_busy").value
+        )
+        self.user_turn_holdoff_sec = max(
+            0.0,
+            float(self.get_parameter("user_turn_holdoff_sec").value),
+        )
+        self.user_turn_min_chars = max(
+            0,
+            int(self.get_parameter("user_turn_min_chars").value),
+        )
+        self.user_turn_min_words = max(
+            1,
+            int(self.get_parameter("user_turn_min_words").value),
+        )
 
         self._last_user_text = ""
         self._last_user_text_ts = 0.0
@@ -70,6 +94,10 @@ class DialogueManager(Node):
         self._speech_topic_sent_for_current_turn = False
         self._pending_assistant_text = ""
         self._pending_assistant_turn_id = ""
+        self._pending_user_text = ""
+        self._pending_user_locale = ""
+        self._pending_user_confidence = 0.0
+        self._pending_user_deadline_ts = 0.0
         self._current_turn_id = ""
         self._turn_counter = 0
 
@@ -80,6 +108,7 @@ class DialogueManager(Node):
         self.dialogue_state_publisher = self.create_publisher(
             String, self.dialogue_state_topic, 10
         )
+        self._user_turn_timer = self.create_timer(0.1, self._flush_pending_user_turn_if_due)
 
         self.say_client = None
         if self.use_say_skill:
@@ -110,7 +139,8 @@ class DialogueManager(Node):
 
         self._set_state("idle", "startup")
         self.get_logger().info(
-            "dialogue_manager ready | in:%s user:%s assistant:%s say:%s speech:%s state:%s"
+            "dialogue_manager ready | in:%s user:%s assistant:%s say:%s speech:%s state:%s "
+            "incremental:%s holdoff:%.2fs busy_guard:%s"
             % (
                 self.input_speech_topic,
                 self.user_text_topic,
@@ -118,19 +148,76 @@ class DialogueManager(Node):
                 self.say_skill_action,
                 self.naoqi_speech_topic,
                 self.dialogue_state_topic,
+                str(self.accept_incremental_speech),
+                self.user_turn_holdoff_sec,
+                str(self.ignore_user_speech_while_busy),
             )
         )
 
     def _on_live_speech(self, msg: LiveSpeech) -> None:
-        text = extract_text(msg)
+        text = extract_text(
+            msg,
+            allow_incremental=self.accept_incremental_speech,
+        )
         if not text:
-            self.get_logger().warn("LiveSpeech received without usable text")
+            self.get_logger().warn("LiveSpeech received without usable final text")
+            return
+
+        if not self._should_accept_user_text(text):
+            self.get_logger().warn(
+                'Ignored short ASR text: "%s"' % self._preview_text(text)
+            )
+            return
+
+        if self._awaiting_assistant_turn and self.ignore_user_speech_while_busy:
+            self._trace(
+                self._current_turn_id,
+                "USER_IGNORED_BUSY",
+                'text="%s"' % self._preview_text(text),
+                level="warn",
+            )
             return
 
         now = time.monotonic()
+        if self.user_turn_holdoff_sec <= 0.0:
+            self._forward_user_text(text, now)
+            return
+
+        merged_text = merge_text_chunks(self._pending_user_text, text)
+        self._pending_user_text = merged_text
+        self._pending_user_locale = str(getattr(msg, "locale", "")).strip()
+        self._pending_user_confidence = max(
+            float(getattr(msg, "confidence", 0.0)),
+            float(self._pending_user_confidence),
+        )
+        self._pending_user_deadline_ts = now + self.user_turn_holdoff_sec
+        self._trace(
+            self._current_turn_id,
+            "USER_BUFFERED",
+            'text="%s" holdoff=%.2fs'
+            % (self._preview_text(self._pending_user_text), self.user_turn_holdoff_sec),
+        )
+
+    def _flush_pending_user_turn_if_due(self) -> None:
+        if not self._pending_user_text:
+            return
+
+        now = time.monotonic()
+        if now < self._pending_user_deadline_ts:
+            return
+
+        text = self._pending_user_text
+        self._pending_user_text = ""
+        self._pending_user_locale = ""
+        self._pending_user_confidence = 0.0
+        self._pending_user_deadline_ts = 0.0
+        self._forward_user_text(text, now)
+
+    def _forward_user_text(self, text: str, now: float | None = None) -> None:
+        current_time = time.monotonic() if now is None else float(now)
         if (
             text == self._last_user_text
-            and now - self._last_user_text_ts <= self.dedupe_window_sec
+            and current_time - self._last_user_text_ts <= self.dedupe_window_sec
         ):
             self.get_logger().warn(
                 f'Ignored duplicate user text within {self.dedupe_window_sec}s'
@@ -139,7 +226,7 @@ class DialogueManager(Node):
 
         turn_id = self._next_turn_id()
         self._last_user_text = text
-        self._last_user_text_ts = now
+        self._last_user_text_ts = current_time
         self._awaiting_assistant_turn = True
         self._speech_topic_sent_for_current_turn = False
         self._pending_assistant_text = ""
@@ -156,6 +243,15 @@ class DialogueManager(Node):
             'topic="%s" text="%s"'
             % (self.user_text_topic, self._preview_text(text)),
         )
+
+    def _should_accept_user_text(self, text: str) -> bool:
+        clean = " ".join(str(text).split())
+        if len(clean) < self.user_turn_min_chars:
+            return False
+        word_count = len([token for token in clean.split(" ") if token])
+        if word_count < self.user_turn_min_words:
+            return False
+        return True
 
     def _on_assistant_text(self, msg: String) -> None:
         parsed_text, parsed_turn_id = self._decode_text_payload(msg.data)

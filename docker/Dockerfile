@@ -18,12 +18,18 @@ COPY src/ /home/ubuntu/ws/src/
 
 # ASR optional runtime dependencies for laptop microphone mode.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libportaudio2 \
+    gstreamer1.0-alsa \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-pulseaudio \
+    gstreamer1.0-tools \
+    python3-gi \
     python3-pip \
+    socialminds-ros-jazzy-audio-common \
     socialminds-ros-jazzy-chatbot-msgs \
     socialminds-ros-jazzy-hri-actions-msgs \
     && rm -rf /var/lib/apt/lists/* && \
-    python3 -m pip install --no-cache-dir --break-system-packages sounddevice vosk
+    python3 -m pip install --no-cache-dir --break-system-packages vosk
 
 # Rebuild local workspace packages on top of the validated base.
 RUN bash -c "source /opt/ros/jazzy/setup.bash && \
@@ -32,16 +38,20 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       /home/ubuntu/ws/build/std_skills \
       /home/ubuntu/ws/build/communication_skills \
       /home/ubuntu/ws/build/dialogue_manager \
+      /home/ubuntu/ws/build/asr_vosk \
       /home/ubuntu/ws/build/nao_skills \
       /home/ubuntu/ws/build/nao_chatbot \
+      /home/ubuntu/ws/build/simple_audio_capture \
       /home/ubuntu/ws/build/nao_posture_bridge \
       /home/ubuntu/ws/install/std_skills \
       /home/ubuntu/ws/install/communication_skills \
       /home/ubuntu/ws/install/dialogue_manager \
+      /home/ubuntu/ws/install/asr_vosk \
       /home/ubuntu/ws/install/nao_skills \
       /home/ubuntu/ws/install/nao_chatbot \
+      /home/ubuntu/ws/install/simple_audio_capture \
       /home/ubuntu/ws/install/nao_posture_bridge && \
-    colcon build --symlink-install --packages-select std_skills communication_skills nao_skills dialogue_manager nao_chatbot nao_posture_bridge"
+    colcon build --symlink-install --packages-select std_skills communication_skills nao_skills dialogue_manager asr_vosk nao_chatbot simple_audio_capture nao_posture_bridge"
 
 # Keep entrypoint from this repo for deterministic sourcing behavior.
 COPY docker/ros_entrypoint.sh /

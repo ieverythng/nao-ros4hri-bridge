@@ -1,0 +1,32 @@
+asr_vosk:
+  ros__parameters:
+    # Device sampling rate
+    audio_rate: 16000
+    # Model family name
+    model: /models/vosk-model-small-en-us-0.15
+    # Microphone audio input topic
+    microphone_topic: /laptop/microphone0
+    # If set to True, the robot starts listening on boot by default
+    start_listening: True
+    # ROS4HRI LiveSpeech topic
+    output_speech_topic: /humans/voices/anonymous_speaker/speech
+    # Speech locale metadata
+    speech_locale: en_US
+    # Publish partial (incremental) hypotheses.
+    publish_partials: false
+    # Minimum final hypothesis length (characters).
+    min_final_chars: 2
+    # Minimum number of whitespace-separated words in a final hypothesis.
+    min_final_words: 1
+    # Minimum average confidence for final hypotheses [0-1].
+    min_final_confidence: 0.0
+    # Drop one-token filler utterances.
+    ignore_single_token_fillers: true
+    # Comma-separated fillers removed when single-token filler filtering is enabled.
+    single_token_fillers_csv: "uh,um,hmm,huh,erm,ah,eh"
+    # Enable debug logs of final hypotheses and filtering decisions.
+    debug_log_results: false
+    # Require an explicit Bool gate before ASR listens.
+    push_to_talk_enabled: false
+    # Topic used to enable/disable listening in push-to-talk mode.
+    push_to_talk_topic: /asr_vosk/push_to_talk
