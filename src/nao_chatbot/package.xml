@@ -19,6 +19,7 @@
   <depend>nao_skills</depend>
   <depend>naoqi_bridge_msgs</depend>
   <depend>dialogue_manager</depend>
+  <exec_depend>nao_skill_servers</exec_depend>
   <exec_depend>python3-yaml</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>

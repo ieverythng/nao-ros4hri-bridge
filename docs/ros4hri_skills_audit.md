@@ -1,158 +1,70 @@
-# ROS4HRI Skills Audit (Phase 1)
+# ROS4HRI Skills Audit
 
-Date: 2026-02-24
-Status: Historical reference (for current runtime view use `current_workflow.md`)
+Last updated: 2026-03-09
+Status: current snapshot
 
-## Scope
+This file records how the local workspace currently maps onto ROS4HRI skill conventions.
 
-This audit compares the local migration with upstream ROS4HRI skill conventions
-and speech stack packages hosted in:
+## Canonical Skill Interfaces In Use
 
-- `socialminds/ros4hri/std_skills`
-- `socialminds/ros4hri/motions_skills`
-- `socialminds/ros4hri/communication_skills`
-- `socialminds/ros4hri/interaction_skills`
-- `socialminds/ros4hri/asr_vosk`
-- `socialminds/ros4hri/rqt_chat`
-- `socialminds/ros4hri/architecture_schemas`
+### Communication skills
+
+- `/skill/say` -> `communication_skills/action/Say`
+- `/skill/chat` -> `communication_skills/action/Chat`
+
+### NAO-specific skills
+
+- `/skill/do_posture` -> `nao_skills/action/DoPosture`
+- `/skill/do_head_motion` -> `nao_skills/action/DoHeadMotion`
+
+## Runtime Ownership
+
+| Runtime concern | Package |
+|---|---|
+| dialogue turn bridge | `dialogue_manager` |
+| mission/chat orchestration | `nao_chatbot` |
+| posture/head/say execution | `nao_skill_servers` |
+| NAO skill interfaces only | `nao_skills` |
+| local ASR | `asr_vosk` + `simple_audio_capture` |
 
 ## Confirmed Current Posture Flow
 
-The posture request path is action-based at orchestration level, with optional
-execution fallback:
+1. `mission_controller` sends `DoPosture` to `/skill/do_posture`
+2. `posture_skill_server` executes directly through NAOqi when available
+3. if direct NAOqi is unavailable, it publishes `/chatbot/posture_command`
+4. `nao_posture_bridge_node` executes that fallback topic path
 
-1. `mission_controller` sends `DoPosture` goal to `/skill/do_posture`
-2. `posture_skill_server` accepts goal
-3. If direct NAOqi is unavailable, server publishes `/chatbot/posture_command`
-4. `nao_posture_bridge_node` executes posture via NAOqi
+## Confirmed Current Head-Motion Flow
 
-This means action client/server wiring is correct, while low-level execution can
-still route through topic fallback.
+1. `mission_controller` sends `DoHeadMotion` to `/skill/do_head_motion`
+2. `head_motion_skill_server` validates ranges and speed
+3. it publishes `naoqi_bridge_msgs/msg/JointAnglesWithSpeed` to `/joint_angles`
+4. `naoqi_driver` applies the motion to the robot head joints
 
-## Skill Manifest Convention (Upstream)
+## Confirmed Current Speech Flow
 
-From upstream packages and schemas:
+1. `dialogue_manager` receives assistant text
+2. it dispatches `/skill/say`
+3. `say_skill_server` forwards to `/tts_engine/tts`
+4. optional `/speech` publication remains available for NAO/TTS compatibility and ASR suppression workflows
 
-- Skill definition packages declare one or more `<skill content-type="yaml|json">`
-  entries in `package.xml`.
-- `datatype` is expressed as `package/interface/Type` (for example
-  `communication_skills/action/Say`).
-- Parameters are documented in `in`, `out`, and optionally `feedback`.
-- Functional domains use schema enum values (for posture: `motions`).
+## Local ASR Status
 
-Local `nao_skills` manifest follows this convention:
+- `simple_audio_capture` publishes `audio_common_msgs/msg/AudioData`
+- `asr_vosk` publishes `hri_msgs/msg/LiveSpeech`
+- application launches default to final-only forwarding into `dialogue_manager`
+- push-to-talk is supported through `/asr_vosk/push_to_talk`
 
-- `id: do_posture`
-- `default_interface_path: /skill/do_posture`
-- `datatype: nao_skills/action/DoPosture`
-- input/output/feedback fields aligned with `DoPosture.action`
-- `id: do_head_motion`
-- `default_interface_path: /skill/do_head_motion`
-- `datatype: nao_skills/action/DoHeadMotion`
-- input/output/feedback fields aligned with `DoHeadMotion.action`
+## Package Boundary Decision
 
-## Speech/TTS Upstream Baseline
+The old `nao_posture_bridge` package name no longer matched reality once head motion and say execution were added. That runtime package is now `nao_skill_servers`.
 
-### `communication_skills`
+This keeps the boundary clean:
 
-- Defines skills:
-  - `/skill/say` (`communication_skills/action/Say`)
-  - `/skill/chat` (`communication_skills/action/Chat`)
-  - `/skill/ask` (`communication_skills/action/Ask`)
-- Uses `std_skills/Meta`, `std_skills/Result`, `std_skills/Feedback`.
+- `nao_skills` remains interface-only
+- `nao_skill_servers` contains executable servers and bridges
 
-### `rqt_chat`
+## Notes
 
-- Publishes user input as `hri_msgs/msg/LiveSpeech` on:
-  - `/humans/voices/anonymous_speaker/speech`
-- Exposes TTS action endpoint:
-  - `/tts_engine/tts` (`tts_msgs/action/TTS`)
-
-### `asr_vosk`
-
-- Subscribes:
-  - `audio/channel0` (`audio_common_msgs/AudioData`)
-  - `audio/voice_detected` (`std_msgs/Bool`)
-  - `/robot_speaking` (`std_msgs/Bool`)
-- Publishes:
-  - `/humans/voices/anonymous_speaker/speech` (`hri_msgs/LiveSpeech`)
-  - `/humans/voices/anonymous_speaker/audio`
-  - `/humans/voices/anonymous_speaker/is_speaking`
-  - `/humans/voices/tracked`
-
-## Local Workspace Changes Applied
-
-- Cloned upstream `std_skills` into `src/std_skills`.
-- Validated build:
-  - `std_skills` and `nao_skills` build successfully.
-
-## Current Build Gap
-
-- `motions_skills` currently fails in this workspace due missing `moveit_msgs`:
-  - `rosidl_generate_interfaces() ... dependency 'moveit_msgs' has not been found`
-
-This is an environment dependency issue, not a skill-manifest issue.
-
-## Phase 2 Update (2026-02-25)
-
-The high-priority dialogue migration items are now implemented in this workspace:
-
-- `nao_rqt_bridge` migration completed into standalone `dialogue_manager` package
-  runtime (`dialogue_manager_node`).
-- Canonical skill interfaces now use `communication_skills`:
-  - `/skill/say` -> `communication_skills/action/Say`
-  - `/skill/chat` -> `communication_skills/action/Chat`
-- Compatibility action endpoints removed:
-  - `/skill/say_text_compat` removed
-  - `/skill/chat_compat` removed
-- `nao_skills` now only exposes posture action (`DoPosture`) for NAO-specific motion.
-- New skill servers:
-  - `nao_posture_bridge/say_skill_server.py` (`/skill/say`)
-  - `nao_chatbot/chat_skill_server.py` (`/skill/chat`)
-- New skill clients:
-  - `nao_chatbot/say_skill_client.py` (used by `dialogue_manager`)
-  - `nao_chatbot/chat_skill_client.py` (used by `mission_controller`)
-- `mission_controller` backend mode supports canonical action-first chat
-  (`/skill/chat`) with rule-based timeout/unavailable fallback.
-
-## Phase 3 Update (2026-03-03)
-
-Backend chat execution has been standardized around a modular ROS4HRI-friendly
-architecture while preserving canonical skill interfaces:
-
-- `/skill/chat` remains `communication_skills/action/Chat`
-- `ollama_chatbot_node` now uses two LLM stages:
-  1. response generation (`verbal_ack`)
-  2. intent extraction (`user_intent`)
-- `mission_controller` remains the single action authority for:
-  - publishing assistant text
-  - publishing normalized intents
-  - dispatching posture via `/skill/do_posture`
-
-Traceability update:
-
-- `turn_id` is propagated in user text payloads, chat goal configuration, and
-  chat result payloads, enabling cross-node log tracing for each interaction.
-
-## Phase 4 Update (2026-03-04)
-
-Head-motion support has been added as a callable NAO skill while keeping
-execution aligned with `naoqi_driver` exposed interfaces:
-
-- New skill interface in `nao_skills`:
-  - `/skill/do_head_motion` (`nao_skills/action/DoHeadMotion`)
-- New action server:
-  - `nao_posture_bridge/head_motion_skill_server.py`
-- Execution strategy:
-  - Topic-only publication to `/joint_angles`
-    (`naoqi_bridge_msgs/msg/JointAnglesWithSpeed`)
-  - No direct NAOqi call path in this skill server
-
-Upstream reference check completed in containerized apt packages:
-
-- `motions_skills` provides trajectory-oriented interfaces:
-  - `ExecuteJointTrajectory.action`
-  - `ExecuteCartesianTrajectory.action`
-- `naoqi_driver` exposes head/touch relevant interfaces:
-  - command topic: `/joint_angles`
-  - touch-related streams: `head_touch`, `hand_touch`, `bumper`
+- Compatibility action aliases are no longer part of the active stack.
+- The legacy lifecycle/chatbot-based `dialogue_manager` runtime has been removed; the maintained runtime is `dialogue_manager_node`.

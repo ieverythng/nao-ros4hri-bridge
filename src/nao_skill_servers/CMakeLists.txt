@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(nao_posture_bridge)
+project(nao_skill_servers)
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -22,30 +22,23 @@ target_link_libraries(
 install(TARGETS nao_posture_bridge_node DESTINATION lib/${PROJECT_NAME})
 install(
   PROGRAMS
-    nao_posture_bridge/head_motion_skill_server.py
+    nao_skill_servers/head_motion_skill_server.py
   DESTINATION lib/${PROJECT_NAME}
   RENAME head_motion_skill_server_node
 )
 
 install(
   PROGRAMS
-    nao_posture_bridge/posture_skill_server.py
+    nao_skill_servers/posture_skill_server.py
   DESTINATION lib/${PROJECT_NAME}
   RENAME posture_skill_server_node
 )
 
 install(
   PROGRAMS
-    nao_posture_bridge/say_skill_server.py
+    nao_skill_servers/say_skill_server.py
   DESTINATION lib/${PROJECT_NAME}
   RENAME say_skill_server_node
-)
-
-install(
-  PROGRAMS
-    nao_posture_bridge/speech_skill_server.py
-  DESTINATION lib/${PROJECT_NAME}
-  RENAME speech_skill_server_node
 )
 
 ament_package()

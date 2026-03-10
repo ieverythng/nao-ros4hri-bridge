@@ -1,568 +1,75 @@
 # NAO ROS4HRI Bridge
 
-ROS 2 Jazzy workspace for NAO + ROS4HRI + chatbot orchestration with canonical skill-action interfaces.
+ROS 2 Jazzy workspace for NAO + ROS4HRI orchestration, local ASR, and Ollama-backed chat.
 
-This repository uses `src/` as the canonical source tree.
+## Current Runtime
 
-## Migration Status (As of March 4, 2026)
+Core runtime packages:
 
-- Canonical communication skills are active:
-  - `/skill/say` -> `communication_skills/action/Say`
-  - `/skill/chat` -> `communication_skills/action/Chat`
-- NAO-specific skills:
-  - `/skill/do_posture` -> `nao_skills/action/DoPosture`
-  - `/skill/do_head_motion` -> `nao_skills/action/DoHeadMotion`
-- Compatibility endpoints removed:
-  - `/skill/say_text_compat` removed
-  - `/skill/chat_compat` removed
-- Local alias wrappers removed:
-  - `nao_chatbot.dialogue_manager`
-  - `nao_chatbot.nao_rqt_bridge`
+- `dialogue_manager`: bridges `hri_msgs/LiveSpeech` into `/chatbot/user_text`, merges short ASR bursts into one turn, and dispatches `/skill/say`
+- `nao_chatbot`: mission controller, `/skill/chat` server, prompt/config pipeline, push-to-talk CLI
+- `nao_skill_servers`: execution package for posture, head motion, say, and the posture fallback bridge
+- `asr_vosk`: local Vosk ASR lifecycle node publishing ROS4HRI `LiveSpeech`
+- `simple_audio_capture`: microphone capture to `audio_common_msgs/AudioData`
+- `nao_skills`, `communication_skills`, `std_skills`: canonical interfaces
 
-## Current Runtime Architecture
-
-Presentation diagram: [`docs/current_workflow.md`](docs/current_workflow.md)
-
-Main nodes:
-
-- `dialogue_manager_node` (package `dialogue_manager`): turn orchestration (`LiveSpeech` in, `/chatbot/user_text` out, `/skill/say` dispatch)
-- `asr_vosk` (package `asr_vosk`, lifecycle node): local Vosk ASR -> `LiveSpeech`
-- `simple_audio_capture` (optional): GStreamer microphone capture -> `audio_common_msgs/AudioData`
-- `mission_controller_node`: intent/routing logic (`rules` or `backend`) + `/skill/chat` client
-- `ollama_chatbot_node`: `/skill/chat` action server backed by Ollama
-- `nao_posture_bridge_node`: posture topic bridge (`/chatbot/posture_command` -> NAOqi `ALRobotPosture`)
-- `posture_skill_server_node`: action posture bridge (`/skill/do_posture` -> NAOqi `ALRobotPosture`)
-- `head_motion_skill_server_node`: topic-based head bridge (`/skill/do_head_motion` -> `/joint_angles`)
-- `say_skill_server_node`: action speech bridge (`/skill/say` -> `/tts_engine/tts`)
-
-Active flows today:
+Main live flow:
 
 ```text
-Speech/Text input
-  -> /humans/voices/anonymous_speaker/speech (LiveSpeech)
-  -> dialogue_manager_node -> /chatbot/user_text
-  -> mission_controller_node
-       rules mode   -> /chatbot/assistant_text
-       backend mode -> /skill/chat (communication_skills/action/Chat)
-                    -> ollama_chatbot_node (two-stage: response then intent extraction)
-                    -> /chatbot/assistant_text + /chatbot/intent
-       posture intent -> /skill/do_posture (DoPosture action)
-  -> posture_skill_server_node -> ALRobotPosture.goToPosture
-     fallback (if qi unavailable) -> /chatbot/posture_command -> nao_posture_bridge_node -> ALRobotPosture.goToPosture
-Manual/external head skill client
-  -> /skill/do_head_motion (DoHeadMotion action)
-  -> head_motion_skill_server_node
-  -> /joint_angles (naoqi_bridge_msgs/msg/JointAnglesWithSpeed)
-  -> naoqi_driver -> ALMotion head joints
-  -> dialogue_manager_node -> /skill/say (communication_skills/action/Say) -> say_skill_server_node -> /tts_engine/tts
-  -> dialogue_manager_node -> /speech (compatibility + ASR guard pathway)
+simple_audio_capture -> asr_vosk -> /humans/voices/anonymous_speaker/speech
+    -> dialogue_manager_node -> /chatbot/user_text
+    -> mission_controller_node
+        -> /skill/chat -> ollama_chatbot_node
+        -> /chatbot/assistant_text + /chatbot/intent
+    -> dialogue_manager_node -> /skill/say -> say_skill_server_node -> /tts_engine/tts
 ```
 
-## LLM Intent Pipeline (Template-Aligned, Two-Stage)
-
-`ollama_chatbot_node` uses a two-stage pipeline inspired by the ROS4HRI chatbot
-template:
-
-1. Stage 1 (`response`): LLM generates natural acknowledgement/answer (`verbal_ack`)
-2. Stage 2 (`intent`): LLM extracts structured `user_intent` from user text + stage-1 reply
-
-`mission_controller_node` remains the action authority:
-
-- publishes assistant text
-- publishes normalized intent
-- decides posture/head execution from normalized intent
-
-Normalized intent labels expected by mission controller:
-
-- `posture_stand`
-- `posture_sit`
-- `posture_kneel`
-- `head_center`
-- `head_look_left`
-- `head_look_right`
-- `head_look_up`
-- `head_look_down`
-- `greet`
-- `identity`
-- `wellbeing`
-- `help`
-- `fallback`
-
-Chat skill intent modes:
-
-- `ollama_intent_detection_mode:=llm_with_rules_fallback` (default)
-  - use LLM stage-2 intent, fallback to rule intent if intent extraction fails
-- `ollama_intent_detection_mode:=llm`
-  - strict LLM-only intent extraction
-- `ollama_intent_detection_mode:=rules`
-  - bypass LLM intent extraction and resolve intent from rules
-
-Turn traceability (`turn_id`):
-
-- `dialogue_manager_node` assigns a monotonic `turn_id` and forwards it with `/chatbot/user_text`
-- `mission_controller_node` propagates `turn_id` into `/skill/chat` goal configuration
-- `chat_skill_server` returns the same `turn_id` in `Chat.Result.role_results`
-- logs in dialogue, mission, and chat skill nodes include `[turn:<id>]` for end-to-end tracing
-
-Modular backend components:
-
-- `chat_skill_server.py`: `/skill/chat` action server lifecycle/wiring
-- `chat_turn_engine.py`: two-stage execution policy (`response` then `intent`)
-- `chat_config.py`: ROS parameter declarations and config loading
-- `chat_goal_codec.py`: canonical goal/result payload handling
-- `chat_history.py`: history serialization and trimming
-- `chat_prompts.py`: stage-specific prompt builders
-- `prompt_pack.py`: YAML prompt-pack + schema defaults/loader
-- `ollama_transport.py`: Ollama HTTP transport adapter
-- `skill_catalog.py`: prompt-time skill-catalog extraction from package manifests
-
-Prompt/schema editing:
-
-- Default prompt pack file:
-  - `src/nao_chatbot/config/chat_prompt_pack.yaml`
-- Launch arg to override file:
-  - `ollama_prompt_pack_path:=/absolute/path/to/chat_prompt_pack.yaml`
-- Prompt pack content controls:
-  - `system_prompt`
-  - `response_prompt_addendum`
-  - `intent_prompt_addendum`
-  - `response_schema`
-  - `intent_schema`
-- Skill-catalog prompt injection defaults:
-  - `ollama_use_skill_catalog:=true`
-  - `ollama_skill_catalog_packages:=communication_skills,nao_skills`
-  - `ollama_skill_catalog_max_entries:=16`
-  - `ollama_skill_catalog_max_chars:=3000`
-
-ASR note:
-
-- In this stack, ASR is a ROS4HRI percept pipeline (publisher of `LiveSpeech`),
-  not an action skill.
-- Skills are used for execution APIs (for example posture via `/skill/do_posture`).
-- `naoqi_driver` robot microphone source is `/audio` (`naoqi_bridge_msgs/msg/AudioBuffer`),
-  and NAO built-in recognition is exposed via `/listen`
-  (`naoqi_bridge_msgs/action/Listen`).
-- `naoqi_driver` head actuation is exposed on `/joint_angles`
-  (`naoqi_bridge_msgs/msg/JointAnglesWithSpeed`), and touch interfaces are exposed
-  as `head_touch`, `hand_touch`, and `bumper`.
-- `bridge_input_speech_topic` must remain a `LiveSpeech` topic, so `/audio`
-  requires an adapter node before it can be bridged to `/chatbot/user_text`.
+Robot execution flow:
 
 ```text
-Manual/External skill client
-  -> /skill/do_posture (nao_skills/action/DoPosture)
-  -> posture_skill_server_node
-  -> ALRobotPosture.goToPosture
-  -> /skill/do_head_motion (nao_skills/action/DoHeadMotion)
-  -> head_motion_skill_server_node
-  -> /joint_angles (naoqi_bridge_msgs/msg/JointAnglesWithSpeed)
+mission_controller_node
+    -> /skill/do_posture -> posture_skill_server_node
+       fallback -> /chatbot/posture_command -> nao_posture_bridge_node
+    -> /skill/do_head_motion -> head_motion_skill_server_node -> /joint_angles
 ```
 
-## Repository Layout
+## Launch Profiles
 
-```text
-.
-├── docker/
-│   ├── Dockerfile
-│   ├── Dockerfile.full
-│   ├── keys/socialminds.gpg
-│   └── ros_entrypoint.sh
-├── scripts/
-│   ├── build_docker.sh
-│   ├── export_docker_image.sh
-│   ├── import_docker_image.sh
-│   ├── run_tests.sh
-│   ├── setup_dev_tools.sh
-│   └── run_precommit.sh
-├── src/
-│   ├── communication_skills/
-│   │   ├── action/Ask.action
-│   │   ├── action/Say.action
-│   │   ├── action/Chat.action
-│   │   ├── CMakeLists.txt
-│   │   └── package.xml
-│   ├── dialogue_manager/
-│   │   ├── dialogue_manager/
-│   │   ├── launch/dialogue_manager.launch.py
-│   │   ├── setup.py
-│   │   └── package.xml
-│   ├── nao_skills/
-│   │   ├── action/DoHeadMotion.action
-│   │   ├── action/DoPosture.action
-│   │   ├── CMakeLists.txt
-│   │   └── package.xml
-│   ├── std_skills/
-│   │   ├── msg/
-│   │   ├── srv/
-│   │   ├── action/
-│   │   └── package.xml
-│   ├── nao_posture_bridge/
-│   │   ├── nao_posture_bridge/head_motion_skill_server.py
-│   │   ├── nao_posture_bridge/posture_skill_server.py
-│   │   ├── nao_posture_bridge/say_skill_server.py
-│   │   ├── src/nao_posture_bridge_node.cpp
-│   │   ├── CMakeLists.txt
-│   │   └── package.xml
-│   ├── simple_audio_capture/
-│   │   ├── simple_audio_capture/audio_capture_node.py
-│   │   ├── launch/audio_capture.launch.py
-│   │   ├── config/speech_recognition.yaml
-│   │   ├── setup.py
-│   │   └── package.xml
-│   └── nao_chatbot/
-│       ├── launch/nao_chatbot_stack.launch.py
-│       ├── launch/nao_chatbot_skills.launch.py
-│       ├── launch/nao_chatbot_skills_asr.launch.py
-│       ├── nao_chatbot/
-│       │   ├── intent_rules.py
-│       │   ├── asr_vosk.py
-│       │   ├── head_motion_skill_client.py
-│       │   ├── mission_controller.py
-│       │   ├── chat_skill_client.py
-│       │   ├── chat_skill_server.py
-│       │   ├── ollama_chatbot.py
-│       │   ├── say_skill_client.py
-│       │   └── ...
-│       └── test/unit/
-├── .pre-commit-config.yaml
-├── requirements-dev.txt
-└── README.md
-```
+Primary launch files live in `src/nao_chatbot/launch/`:
 
-## Docker Build Modes
+- `nao_chatbot_stack.launch.py`: full configurable stack surface
+- `nao_chatbot_skills.launch.py`: skills-first runtime without local ASR
+- `nao_chatbot_skills_asr.launch.py`: skills runtime plus `simple_audio_capture` + `asr_vosk`
+- `nao_chatbot_asr_only.launch.py`: isolated ASR pipeline
 
-### 1) Overlay build (default, fastest)
+Quick reference:
 
-Reuses an existing validated runtime image (default `iiia:nao`) and rebuilds local workspace packages:
+- [docs/launch_profiles.md](docs/launch_profiles.md)
+- [docs/current_workflow.md](docs/current_workflow.md)
+- [docs/node_interactions_map.md](docs/node_interactions_map.md)
+- [docs/ollama_chatbot_architecture.md](docs/ollama_chatbot_architecture.md)
+- [docs/asr_vosk_setup.md](docs/asr_vosk_setup.md)
+- [docs/nao_camera_vlm_research.md](docs/nao_camera_vlm_research.md)
 
-- `nao_skills`
-- `nao_chatbot`
-- `nao_posture_bridge`
+## Build And Test
 
-```bash
-./scripts/build_docker.sh overlay iiia:nao
-```
-
-Override base image:
-
-```bash
-BASE_IMAGE=my_base_image ./scripts/build_docker.sh overlay my_overlay_tag
-```
-
-### 2) Full build
-
-Builds from `ros:jazzy-ros-base`, installs ROS4HRI/NAO dependencies, then builds workspace packages.
-
-```bash
-./scripts/build_docker.sh full iiia:nao
-```
-
-## Run Container
-
-On host:
-
-```bash
-xhost +SI:localuser:root
-```
-
-Run:
-
-```bash
-docker run -it --rm --network host \
-  --name nao_ros2 \
-  -e DISPLAY=$DISPLAY \
-  -e LIBGL_ALWAYS_SOFTWARE=1 \
-  -e QT_X11_NO_MITSHM=1 \
-  -v /tmp/.X11-unix:/tmp/.X11-unix \
-  iiia:nao bash
-```
-
-For `skills_asr` profile in Docker, add model + audio sharing:
-
-```bash
-UIDN="$(id -u)"
-PULSE_DIR="/run/user/${UIDN}/pulse"
-
-docker run -it --rm --network host \
-  --name nao_ros2 \
-  -e DISPLAY=$DISPLAY \
-  -e XDG_RUNTIME_DIR=/run/user/${UIDN} \
-  -e PULSE_SERVER=unix:${PULSE_DIR}/native \
-  -e LIBGL_ALWAYS_SOFTWARE=1 \
-  -e QT_X11_NO_MITSHM=1 \
-  -v /tmp/.X11-unix:/tmp/.X11-unix \
-  -v "${PULSE_DIR}:${PULSE_DIR}" \
-  -v "${HOME}/.config/pulse/cookie:/root/.config/pulse/cookie:ro" \
-  -v /absolute/path/to/vosk-models:/models:ro \
-  --device /dev/snd \
-  iiia:nao bash
-```
-
-Inside container:
+Build selected packages:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-source /home/ubuntu/ws/install/setup.bash
+colcon build --symlink-install --packages-select \
+  std_skills communication_skills nao_skills dialogue_manager \
+  asr_vosk simple_audio_capture nao_skill_servers nao_chatbot
 ```
 
-When done on host:
-
-```bash
-xhost -SI:localuser:root
-```
-
-## Launch Chatbot Stack (Skills Enabled by Default)
-
-Show launch arguments:
-
-```bash
-ros2 launch nao_chatbot nao_chatbot_stack.launch.py --show-args
-```
-
-Backend mode example:
-
-```bash
-ros2 launch nao_chatbot nao_chatbot_stack.launch.py \
-  start_naoqi_driver:=true \
-  nao_ip:=172.26.112.62 \
-  network_interface:=wlp1s0 \
-  mission_mode:=backend \
-  use_chat_skill:=true \
-  chat_skill_server_enabled:=true \
-  use_say_skill:=true \
-  say_skill_server_enabled:=true \
-  use_posture_skill:=true \
-  backend_posture_from_response_enabled:=false \
-  ollama_enabled:=true \
-  backend_fallback_to_rules:=false \
-  ollama_model:=llama3.2:1b \
-  ollama_intent_detection_mode:=llm_with_rules_fallback
-```
-
-In `backend` mode, mission controller defaults to `backend_execute_posture_after_response:=true`
-so the robot executes posture only after assistant text is received.
-
-To force strict rules behavior while still using backend wiring:
-
-```bash
-ros2 launch nao_chatbot nao_chatbot_stack.launch.py \
-  mission_mode:=backend \
-  ollama_enabled:=false \
-  ollama_intent_detection_mode:=rules
-```
-
-To try `gpt-oss` again later:
-
-```bash
-ros2 launch nao_chatbot nao_chatbot_stack.launch.py \
-  mission_mode:=backend \
-  ollama_enabled:=true \
-  ollama_model:=gpt-oss:20b-cloud
-```
-
-Important shell note: never leave trailing spaces after a line-continuation `\`.
-
-## Launch Profiles (Recommended)
-
-Use short profile launches for demos:
-
-```bash
-# Skills-first path
-ros2 launch nao_chatbot nao_chatbot_skills.launch.py
-
-# Skills + Vosk laptop ASR
-ros2 launch nao_chatbot nao_chatbot_skills_asr.launch.py \
-  asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15
-```
-
-ASR behavior defaults in `skills_asr`:
-
-- `simple_audio_capture` enabled with `pulsesrc` on `/laptop/microphone0`
-- `asr_vosk` lifecycle node auto-transitions `Unconfigured -> Inactive -> Active`
-- model path defaults to `/models/vosk-model-small-en-us-0.15`
-
-Useful ASR tuning parameters:
-
-```bash
-ros2 launch nao_chatbot nao_chatbot_skills_asr.launch.py \
-  asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15 \
-  asr_speech_locale:=en_US \
-  asr_start_listening:=true
-```
-
-Common ASR troubleshooting notes:
-
-- If logs show `Configured source_type "history" not found`, fix to `pulsesrc` or `alsasrc`.
-- Keep `asr_speech_locale:=en_US` when using English Vosk models.
-- Verify model path exists inside container at `asr_vosk_model_path`.
-
-Each profile still allows `mission_mode:=rules|backend`.
-
-Full profile matrix and examples:
-
-- [`docs/launch_profiles.md`](docs/launch_profiles.md)
-- [`docs/current_workflow.md`](docs/current_workflow.md)
-- [`docs/asr_vosk_setup.md`](docs/asr_vosk_setup.md)
-- [`docs/node_interactions_map.md`](docs/node_interactions_map.md)
-
-## Run Posture Skill Action Server (Phase 1)
-
-Start server:
-
-```bash
-ros2 run nao_posture_bridge posture_skill_server_node \
-  --ros-args \
-  -p nao_ip:=172.26.112.62 \
-  -p nao_port:=9559 \
-  -p default_speed:=0.85
-```
-
-If you see `python qi is missing`, the server now falls back to publishing
-`/chatbot/posture_command` (enabled by default via `fallback_to_posture_topic:=true`).
-In that case, run the posture topic bridge node in parallel:
-
-```bash
-ros2 run nao_posture_bridge nao_posture_bridge_node \
-  --ros-args -p nao_ip:=172.26.112.62 -p nao_port:=9559
-```
-
-Quick check for direct NAOqi Python support in container:
-
-```bash
-python3 -c "import qi; print('qi import OK')"
-```
-
-Confirm a single posture action server is active (avoid duplicate execution):
-
-```bash
-ros2 action info /skill/do_posture
-```
-
-Send goal with feedback:
-
-```bash
-ros2 action send_goal /skill/do_posture nao_skills/action/DoPosture \
-  "{posture_name: 'Sit', speed: 0.85}" \
-  --feedback
-```
-
-## Run Head Motion Skill Action Server (Topic-Only)
-
-The head-motion skill is intentionally topic-driven and publishes to
-`naoqi_driver` joint-angle interface (`/joint_angles`).
-
-Start server:
-
-```bash
-ros2 run nao_posture_bridge head_motion_skill_server_node \
-  --ros-args \
-  -p default_speed:=0.25 \
-  -p joint_angles_topic:=/joint_angles
-```
-
-Confirm action server:
-
-```bash
-ros2 action info /skill/do_head_motion
-```
-
-Send absolute head target (radians):
-
-```bash
-ros2 action send_goal /skill/do_head_motion nao_skills/action/DoHeadMotion \
-  "{yaw: 0.45, pitch: -0.10, speed: 0.25, relative: false}" \
-  --feedback
-```
-
-Send relative head increment:
-
-```bash
-ros2 action send_goal /skill/do_head_motion nao_skills/action/DoHeadMotion \
-  "{yaw: -0.20, pitch: 0.05, speed: 0.20, relative: true}" \
-  --feedback
-```
-
-`DoHeadMotion` goal fields:
-
-- `yaw` (`float32`): target HeadYaw in radians (positive left, negative right).
-- `pitch` (`float32`): target HeadPitch in radians (negative up, positive down).
-- `speed` (`float32`): fraction of max joint speed in `(0.0, 1.0]`; `0.0` means use server default.
-- `relative` (`bool`): `false` for absolute target, `true` for incremental motion.
-
-Text-command intents supported by `mission_controller`:
-
-- `head_look_left`, `head_look_right`, `head_look_up`, `head_look_down`, `head_center`
-- Example utterances: "look left", "turn your head right", "look up", "look down", "look center"
-
-## Quality Gates
-
-Host/VS Code setup (recommended for fast feedback):
-
-```bash
-./scripts/setup_dev_tools.sh
-```
-
-Run hooks from VS Code integrated terminal:
-
-```bash
-./scripts/run_precommit.sh
-```
-
-Optional VS Code tasks (if `.vscode/tasks.json` is present in your local workspace):
-
-- `Dev: Setup Tools`
-- `Pre-commit: All Files`
-- `Tests: Chatbot Unit`
-
-Run the local verification suite directly:
+Run the local validation suite:
 
 ```bash
 ./scripts/run_tests.sh
+./.venv/bin/pre-commit run --all-files
 ```
 
-`run_tests.sh` always runs syntax checks + `nao_chatbot` unit tests, and runs
-`dialogue_manager` unit tests automatically when `chatbot_msgs` is available in
-the active shell.
+## Notes
 
-To enforce strict full-suite behavior (fail if `chatbot_msgs` is missing):
-
-```bash
-./scripts/run_tests.sh --strict-dialogue
-```
-
-Enforcement:
-
-- `setup_dev_tools.sh` installs both `pre-commit` and `pre-push` git hooks.
-- VS Code source-control commits will trigger the same hooks automatically.
-
-Manual equivalent:
-
-```bash
-source .venv/bin/activate
-python -m pre_commit run --all-files
-```
-
-Run only chatbot unit tests:
-
-```bash
-PYTHONPATH=src/nao_chatbot pytest -q src/nao_chatbot/test/unit
-```
-
-Local syntax checks (also covered by pre-commit hooks):
-
-```bash
-python3 -m py_compile src/nao_chatbot/launch/nao_chatbot_stack.launch.py
-python3 -m py_compile src/nao_posture_bridge/nao_posture_bridge/posture_skill_server.py
-python3 -m py_compile src/nao_posture_bridge/nao_posture_bridge/head_motion_skill_server.py
-```
-
-## Known Good Baseline
-
-- `nao_skills` action interfaces build and are discoverable:
-  - `DoPosture`
-  - `DoHeadMotion`
-- `nao_posture_bridge` exports both:
-  - `nao_posture_bridge_node` (topic bridge)
-  - `posture_skill_server_node` (action server)
-  - `head_motion_skill_server_node` (topic-based action server)
-- `nao_chatbot` stack supports action-first posture flow with topic fallback
+- Vendored/local overlay repos under `src/motions_skills/` and `src/std_skills/` are intentionally left untouched.
+- `naoqi_driver` already exposes camera topics and joint interfaces; future vision work should build on those published ROS interfaces instead of adding a parallel capture stack.

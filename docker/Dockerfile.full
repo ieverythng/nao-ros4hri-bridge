@@ -47,7 +47,7 @@ RUN git clone --depth 1 --branch 1.4.0 https://github.com/ros4hri/rqt_chat.git /
 
 RUN bash -c "source /opt/ros/jazzy/setup.bash && \
     cd /home/ubuntu/ws && \
-    colcon build --symlink-install --packages-select communication_skills nao_skills dialogue_manager asr_vosk nao_chatbot simple_audio_capture nao_posture_bridge rqt_chat"
+    colcon build --symlink-install --packages-select communication_skills nao_skills dialogue_manager asr_vosk nao_chatbot simple_audio_capture nao_skill_servers rqt_chat"
 
 COPY docker/ros_entrypoint.sh /
 RUN chmod +x /ros_entrypoint.sh

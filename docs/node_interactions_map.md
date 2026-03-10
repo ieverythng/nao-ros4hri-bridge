@@ -1,6 +1,6 @@
-# Node Interactions and Module Map
+# Node Interactions And Module Map
 
-Last updated: 2026-03-06
+Last updated: 2026-03-09
 
 This document maps runtime nodes to internal modules and external dependencies.
 
@@ -14,9 +14,10 @@ This document maps runtime nodes to internal modules and external dependencies.
 | `asr_vosk` | `asr_vosk` | `asr_vosk` (lifecycle) | `asr_vosk_enabled` |
 | `simple_audio_capture` | `simple_audio_capture` | `audio_capture_node` | `asr_audio_capture_enabled` |
 | `asr_push_to_talk_cli` | `nao_chatbot` | `asr_push_to_talk_cli` | manual operator utility |
-| `posture_skill_server` | `nao_posture_bridge` | `posture_skill_server_node` | `posture_skill_server_enabled` |
-| `say_skill_server` | `nao_posture_bridge` | `say_skill_server_node` | `say_skill_server_enabled` |
-| `nao_posture_bridge` | `nao_posture_bridge` | `nao_posture_bridge_node` | `posture_bridge_enabled` |
+| `posture_skill_server` | `nao_skill_servers` | `posture_skill_server_node` | `posture_skill_server_enabled` |
+| `head_motion_skill_server` | `nao_skill_servers` | `head_motion_skill_server_node` | `head_motion_skill_server_enabled` |
+| `say_skill_server` | `nao_skill_servers` | `say_skill_server_node` | `say_skill_server_enabled` |
+| `nao_posture_bridge` | `nao_skill_servers` | `nao_posture_bridge_node` | `posture_bridge_enabled` |
 | `naoqi_driver` | `naoqi_driver` | launch include | `start_naoqi_driver` |
 
 ## Node Interaction Graph
@@ -35,7 +36,11 @@ flowchart LR
     DM -->|/skill/say| SAY["say_skill_server"]
     SAY -->|/tts_engine/tts| TTS["TTS action server"]
     MC -->|/skill/do_posture| POST["posture_skill_server"]
+    MC -->|/skill/do_head_motion| HEAD["head_motion_skill_server"]
     POST -->|fallback topic| BR["nao_posture_bridge"]
+    HEAD -->|/joint_angles| NQ["naoqi_driver / joint subscriber"]
+    NQDRV["naoqi_driver"] --> CAMF["camera/front/image_raw"]
+    NQDRV --> CAMB["camera/bottom/image_raw"]
 ```
 
 ## `nao_chatbot` Internal Module Relationships
@@ -47,23 +52,30 @@ flowchart LR
 - Uses:
   - `chat_skill_client.py` (`/skill/chat` client)
   - `posture_skill_client.py` (`/skill/do_posture` client)
+  - `head_motion_skill_client.py` (`/skill/do_head_motion` client)
   - `intent_rules.py` (rule intent detect + fallback response)
 - External dependencies:
   - `communication_skills/action/Chat`
   - `nao_skills/action/DoPosture`
+  - `nao_skills/action/DoHeadMotion`
 
 ### Chat skill server path (`ollama_chatbot_node`)
 
 - Entry module:
   - `nao_chatbot/ollama_chatbot.py` -> `chat_skill_server.py`
 - Core execution pipeline:
-  - `chat_config.py` (parameter model)
-  - `chat_goal_codec.py` (goal/result canonicalization)
-  - `chat_turn_engine.py` (response + intent stages)
-  - `chat_history.py` (history trimming/serialization)
-  - `chat_prompts.py` + `prompt_pack.py` (prompt and schema pack)
-  - `ollama_transport.py` (HTTP transport)
-  - `skill_catalog.py` (prompt-time skill catalog extraction)
+  - `chat_config.py`
+  - `chat_goal_codec.py`
+  - `chat_turn_engine.py`
+  - `chat_history.py`
+  - `chat_prompts.py`
+  - `prompt_pack.py`
+  - `ollama_transport.py`
+  - `skill_catalog.py`
+
+See also:
+
+- `ollama_chatbot_architecture.md`
 
 ### ASR path (`asr_vosk` lifecycle node)
 
@@ -80,26 +92,26 @@ flowchart LR
   - can gate listening with push-to-talk
   - filters low-quality/filler finals before publish
 
-### Operator push-to-talk utility
-
-- Entry module:
-  - `nao_chatbot/asr_push_to_talk_cli.py`
-- Output:
-  - `std_msgs/Bool` on `/asr_vosk/push_to_talk`
-- Behavior:
-  - interactive terminal utility for toggle/open/close control
-  - also supports one-shot `--open`, `--close`, and `--pulse`
-
 ### Dialogue bridge path (`dialogue_manager_node`)
 
 - Entry module:
   - `dialogue_manager/nao_dialogue_manager.py`
-- Speech ingestion behavior:
+- Supporting modules:
+  - `dialogue_manager/nao_asr_utils.py`
+  - `dialogue_manager/say_skill_client.py`
+- Behavior:
   - consumes final `LiveSpeech` text by default
   - buffers and merges consecutive ASR finals for a short holdoff window
   - ignores overlapping user speech while an assistant turn is pending
 
-## Per-Node Background Workers / Subprocess-like Activity
+### Execution servers path (`nao_skill_servers`)
+
+- `nao_skill_servers/posture_skill_server.py`
+- `nao_skill_servers/head_motion_skill_server.py`
+- `nao_skill_servers/say_skill_server.py`
+- `src/nao_skill_servers/src/nao_posture_bridge_node.cpp`
+
+## Per-Node Background Workers / Subprocess-Like Activity
 
 | Node | Worker/process behavior |
 |---|---|
@@ -108,14 +120,16 @@ flowchart LR
 | `simple_audio_capture` | Dedicated GStreamer loop thread |
 | `ollama_chatbot` | Performs outbound HTTP calls to Ollama |
 | `say_skill_server` | Calls downstream `/tts_engine/tts` action |
+| `head_motion_skill_server` | Publishes `JointAnglesWithSpeed` to `/joint_angles` |
 | `posture_skill_server` | Calls NAOqi posture or topic fallback |
 | `nao_posture_bridge` | Executes posture commands from fallback topic |
+| `naoqi_driver` | Publishes camera and robot-state topics |
 
-## Where to Update This Map
+## Where To Update This Map
 
 Update this document when any of the following changes:
 
 - Launch-node wiring in `nao_chatbot_stack.launch.py`
-- New executable nodes in `setup.py` files
+- New executable nodes in package setup/CMake files
 - Topic/action contracts between nodes
 - Internal module ownership of a node execution path

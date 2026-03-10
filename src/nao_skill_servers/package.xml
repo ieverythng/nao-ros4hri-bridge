@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>nao_posture_bridge</name>
+  <name>nao_skill_servers</name>
   <version>0.1.0</version>
-  <description>ROS 2 bridge from chatbot posture commands to NAOqi ALRobotPosture calls.</description>
+  <description>ROS 2 execution servers and bridges for NAO posture, head motion, and speech.</description>
 
   <maintainer email="juanbeck@icloud.com">juanbeck</maintainer>
   <license>BSD-3-Clause</license>

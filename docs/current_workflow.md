@@ -1,6 +1,6 @@
 # Current Workflow
 
-Last updated: 2026-03-06
+Last updated: 2026-03-09
 
 This is the live architecture reference for this repository.
 It mirrors the launch behavior in:
@@ -10,7 +10,7 @@ It mirrors the launch behavior in:
 - `src/nao_chatbot/launch/nao_chatbot_skills_asr.launch.py`
 - `src/nao_chatbot/launch/nao_chatbot_asr_only.launch.py`
 
-## Profiles at a Glance
+## Profiles At A Glance
 
 | Launch profile | Purpose | ASR mode | Notes |
 |---|---|---|---|
@@ -19,10 +19,13 @@ It mirrors the launch behavior in:
 | `nao_chatbot_skills_asr.launch.py` | Skills + local ASR | Topic-fed lifecycle ASR | Launches `simple_audio_capture` + `asr_vosk` |
 | `nao_chatbot_asr_only.launch.py` | ASR-only isolation/debug profile | Topic-fed lifecycle ASR | Launches only `simple_audio_capture` + `asr_vosk` |
 
-## End-to-End Runtime Flow
+## End-To-End Runtime Flow
 
 ```text
-LiveSpeech source (/humans/voices/anonymous_speaker/speech)
+simple_audio_capture
+    -> /laptop/microphone0 (AudioData)
+    -> asr_vosk
+    -> /humans/voices/anonymous_speaker/speech (LiveSpeech)
     -> dialogue_manager_node
         final-only extraction by default
         short holdoff + merge of consecutive ASR finals
@@ -42,18 +45,18 @@ LiveSpeech source (/humans/voices/anonymous_speaker/speech)
             -> /skill/do_posture (nao_skills/action/DoPosture)
             -> posture_skill_server_node
             -> fallback /chatbot/posture_command -> nao_posture_bridge_node
-    -> dialogue_manager_node
-        -> /skill/say (communication_skills/action/Say)
-        -> say_skill_server_node
-        -> /tts_engine/tts
+        head route:
+            -> /skill/do_head_motion (nao_skills/action/DoHeadMotion)
+            -> head_motion_skill_server_node
+            -> /joint_angles
 ```
 
 ## Mermaid: Active Nodes
 
 ```mermaid
 flowchart LR
-    ASR["asr_vosk (lifecycle)"] -->|LiveSpeech finals by default| DM["dialogue_manager_node"]
-    SAC["simple_audio_capture"] -->|AudioData| ASR
+    SAC["simple_audio_capture"] -->|AudioData| ASR["asr_vosk (lifecycle)"]
+    ASR -->|LiveSpeech finals by default| DM["dialogue_manager_node"]
 
     DM -->|/chatbot/user_text| MC["mission_controller_node"]
     MC -->|/skill/chat| CHAT["ollama_chatbot_node"]
@@ -66,11 +69,14 @@ flowchart LR
     SAY -->|/tts_engine/tts| TTS["TTS engine"]
 
     MC -->|/skill/do_posture| PS["posture_skill_server_node"]
+    MC -->|/skill/do_head_motion| HEAD["head_motion_skill_server_node"]
     PS -->|direct| NAOQI["NAOqi ALRobotPosture"]
     PS -->|fallback /chatbot/posture_command| PB["nao_posture_bridge_node"]
     PB --> NAOQI
+    HEAD -->|/joint_angles| JOINT["naoqi_driver joint interface"]
 
-    NQ["naoqi_driver (optional)"] --> DM
+    NAOQIDRIVER["naoqi_driver (optional)"] --> CAM1["camera/front/image_raw"]
+    NAOQIDRIVER --> CAM2["camera/bottom/image_raw"]
 ```
 
 ## Mermaid: ASR Variants
@@ -98,10 +104,23 @@ flowchart TD
 - `dialogue_user_turn_holdoff_sec`: buffers/merges consecutive ASR finals into one turn.
 - `dialogue_ignore_user_speech_while_busy`: blocks overlapping user turns while a reply is pending.
 - `mission_mode`: selects `rules` vs `backend` behavior in `mission_controller_node`.
+- `use_head_motion_skill`: enables/disables `/skill/do_head_motion` dispatch from mission controller.
+- `head_motion_skill_server_enabled`: enables/disables the head-motion execution server.
 - `start_naoqi_driver`: includes/excludes `naoqi_driver`.
 - `start_rqt_chat`: includes/excludes `rqt_chat`.
 
-## Source of Truth Rule
+## Notes
+
+- The execution package is now `nao_skill_servers`; the fallback bridge executable remains `nao_posture_bridge_node`.
+- `naoqi_driver` already exposes front and bottom image topics, which is the correct starting point for future VLM/VLA work.
+
+## Related Docs
+
+- `ollama_chatbot_architecture.md`
+- `repo_runtime_audit.md`
+- `nao_camera_vlm_research.md`
+
+## Source Of Truth Rule
 
 If this file and launch code ever diverge, launch code is authoritative.
 Update this file whenever launch defaults or node wiring changes.

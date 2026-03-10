@@ -13,13 +13,8 @@
 # limitations under the License.
 
 from launch import LaunchDescription
-from launch.actions import EmitEvent, RegisterEventHandler
-from launch.events import matches_action
+from launch_ros.actions import Node
 from launch_pal import get_pal_configuration
-from launch_ros.actions import LifecycleNode
-from launch_ros.event_handlers import OnStateTransition
-from launch_ros.events.lifecycle import ChangeState
-from lifecycle_msgs.msg import Transition
 
 
 def generate_launch_description():
@@ -32,34 +27,17 @@ def generate_launch_description():
     # user overrides
     config = get_pal_configuration(pkg=pkg, node=node, ld=ld)
 
-    node = LifecycleNode(
+    node = Node(
         package=pkg,
-        executable='start_manager',
+        executable='dialogue_manager_node',
         namespace='',
         name=node,
         parameters=config['parameters'],
         remappings=config['remappings'],
         arguments=config['arguments'],
         output='both', emulate_tty=True,
-        )
+    )
 
     ld.add_action(node)
-
-    # automatically perform the lifecycle transitions to configure and activate
-    # the skill at startup
-    configure_event = EmitEvent(event=ChangeState(
-        lifecycle_node_matcher=matches_action(node),
-        transition_id=Transition.TRANSITION_CONFIGURE))
-
-    ld.add_action(configure_event)
-
-    activate_event = RegisterEventHandler(OnStateTransition(
-        target_lifecycle_node=node, goal_state='inactive',
-        entities=[EmitEvent(event=ChangeState(
-            lifecycle_node_matcher=matches_action(node),
-            transition_id=Transition.TRANSITION_ACTIVATE))],
-        handle_once=True))
-
-    ld.add_action(activate_event)
 
     return ld

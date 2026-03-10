@@ -31,7 +31,6 @@ setup(
     zip_safe=True,
     entry_points={
         'console_scripts': [
-            'start_manager = ' + NAME + '.start_manager:main',
             'dialogue_manager_node = ' + NAME + '.nao_dialogue_manager:main',
         ],
     },

@@ -1,99 +1,60 @@
 # dialogue_manager
 
-A ROS2 lifecycle node that handles multi-modal communication between the robot and humans.
+Current standalone dialogue bridge for the NAO + ROS4HRI stack.
 
-## Overview
+## Responsibility
 
-The Dialogue Manager:
-- Provides responses to human utterances using an external chatbot backend
-- Sends responses to TTS for speech synthesis
-- Exposes three high-level skills: `chat`, `ask`, and `say`
-- Supports multi-modal expressions with synchronized gestures and expressions
+`dialogue_manager_node` is the user-turn boundary node between ROS4HRI speech input and the rest of the chatbot pipeline.
 
+Input:
 
-```mermaid
-graph LR
-    subgraph "Dialogue Manager"
-        CHAT["/skill/chat"]
-        ASK["/skill/ask"]
-        SAY["/skill/say"]
-        DM["Dialogue<br/>Tracking"]
-    end
+- `hri_msgs/LiveSpeech` on `/humans/voices/anonymous_speaker/speech` by default
+- `/chatbot/assistant_text`
+- `/chatbot/intent`
 
-    MC["Mission<br/>Controller"] --> CHAT & ASK & SAY
+Output:
 
-    SPEECH["/humans/voices/*/speech"] --> DM
+- `/chatbot/user_text` as JSON payloads carrying `text` and `turn_id`
+- `/chatbot/dialogue_state`
+- `/speech` mirror for robot speech / ASR suppression path
+- `/skill/say` dispatch when the say skill server is enabled
 
-    DM --> CB["Chatbot<br/>Engine"]
-    DM --> TTS["TTS<br/>Engine"]
-    DM --> INT["/intents"]
-    DM --> CC["~/closed_captions"]
-```
+## Runtime Behavior
 
-## ROS API
-
-All topics/services exist only in `active` state. Actions exist in both `configured` and `active` states but reject goals in the former.
-
-### Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `chatbot` | string | `"chatbot"` | Chatbot node FQN prefix. Empty = disabled |
-| `enable_default_chat` | bool | `false` | Enable default chat while active |
-| `default_chat_role` | string | `"__default__"` | Role for default chat |
-| `default_chat_configuration` | string | `""` | Configuration for default chat |
-| `chatbot_startup_timeout` | float | `30.0` | Max wait for chatbot startup (s) |
-| `chatbot_response_timeout` | float | `5.0` | Max wait for chatbot response (s) |
-| `multi_modal_expression_timeout` | float | `60.0` | Max expression duration (s) |
-| `markup_action_timeout` | float | `10.0` | Default markup action timeout (s) |
-| `markup_libraries` | string[] | `["config/00-default_markup_libraries.json"]` | Markup definition files |
-| `disabled_markup_actions` | string[] | `["motion"]` | Markup actions to skip |
-
-### Topics
-
-#### Subscribed
-
-| Topic | Type | Description |
-|-------|------|-------------|
-| `/humans/voices/tracked` | `hri_msgs/IdsList` | Tracked voice IDs |
-| `/humans/voices/<id>/speech` | `hri_msgs/LiveSpeech` | User speech input |
-
-#### Published
-
-| Topic | Type | Description |
-|-------|------|-------------|
-| `~/closed_captions` | `hri_actions_msgs/ClosedCaption` | Captions for all speech |
-| `~/robot_speech` | `std_msgs/String` | Current word being spoken |
-| `~/currently_waiting_for_chatbot_response` | `std_msgs/Bool` | True while waiting for chatbot |
-| `/intents` | `hri_actions_msgs/Intent` | Detected intents |
-| `/diagnostics` | `diagnostic_msgs/DiagnosticArray` | Node diagnostics |
-
-### Action Servers
-
-
-| Action | Interface | Description |
-|--------|-----------|-------------|
-| `/skill/chat` | `communication_skills/Chat` | Start dialogue with defined role |
-| `/skill/ask` | `communication_skills/Ask` | Ask question and get structured answers |
-| `/skill/say` | `communication_skills/Say` | Speak multi-modal expression |
-
-**Priority handling:** Goals are rejected if `meta.priority` ≤ any ongoing dialogue or expression.
-
-### Action Clients
-
-| Action | Interface | Description |
-|--------|-----------|-------------|
-| `<chatbot>/start_dialogue` | `chatbot_msgs/Dialogue` | Open dialogue channel |
-| `tts_engine/tts` | `tts_msgs/TTS` | Text-to-speech |
-
-### Service Clients
-
-| Service | Interface | Description |
-|---------|-----------|-------------|
-| `<chatbot>/dialogue_interaction` | `chatbot_msgs/DialogueInteraction` | Send input, get response |
+- consumes final ASR text by default
+- optionally accepts incremental speech via `accept_incremental_speech`
+- buffers and merges consecutive ASR finals for `user_turn_holdoff_sec`
+- blocks overlapping user turns while the assistant is still processing/speaking when `ignore_user_speech_while_busy:=true`
+- de-duplicates repeated user and assistant text inside short windows
 
 ## Launch
 
 ```bash
 ros2 launch dialogue_manager dialogue_manager.launch.py
 ```
+
+That launch now starts the same `dialogue_manager_node` executable used by the full NAO stack.
+
+## Key Parameters
+
+- `input_speech_topic`
+- `user_text_topic`
+- `assistant_text_topic`
+- `intent_topic`
+- `dialogue_state_topic`
+- `naoqi_speech_topic`
+- `use_say_skill`
+- `say_skill_action`
+- `say_skill_language`
+- `say_skill_volume`
+- `say_skill_dispatch_wait_sec`
+- `also_publish_speech_topic`
+- `fallback_publish_speech_topic`
+- `dedupe_window_sec`
+- `accept_incremental_speech`
+- `ignore_user_speech_while_busy`
+- `user_turn_holdoff_sec`
+- `user_turn_min_chars`
+- `user_turn_min_words`
+
+Default values are installed in `config/00-defaults.yml`.

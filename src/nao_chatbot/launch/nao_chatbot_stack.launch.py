@@ -766,7 +766,7 @@ def generate_launch_description():
     )
 
     posture_bridge = Node(
-        package="nao_posture_bridge",
+        package="nao_skill_servers",
         executable="nao_posture_bridge_node",
         name="nao_posture_bridge",
         output="screen",
@@ -782,7 +782,7 @@ def generate_launch_description():
     )
 
     posture_skill_server = Node(
-        package="nao_posture_bridge",
+        package="nao_skill_servers",
         executable="posture_skill_server_node",
         name="posture_skill_server",
         output="screen",
@@ -800,7 +800,7 @@ def generate_launch_description():
     )
 
     head_motion_skill_server = Node(
-        package="nao_posture_bridge",
+        package="nao_skill_servers",
         executable="head_motion_skill_server_node",
         name="head_motion_skill_server",
         output="screen",
@@ -815,7 +815,7 @@ def generate_launch_description():
     )
 
     say_skill_server = Node(
-        package="nao_posture_bridge",
+        package="nao_skill_servers",
         executable="say_skill_server_node",
         name="say_skill_server",
         output="screen",

@@ -1,34 +1,22 @@
 /dialogue_manager:
   ros__parameters:
-    # Chatbot node FQN - prefix for ~/start_dialogue and ~/dialogue_interaction
-    # Empty string disables chatbot (forwards speech as RAW_USER_INPUT intent)
-    chatbot: "chatbot"
-
-    # Enable default chat while node is active
-    enable_default_chat: false
-
-    # Role for the default chat
-    default_chat_role: "__default__"
-
-    # Configuration for the default chat (JSON string)
-    default_chat_configuration: ""
-
-    # Maximum wait time for chatbot model startup (seconds)
-    chatbot_startup_timeout: 30.0
-
-    # Maximum wait time for chatbot responses (seconds)
-    chatbot_response_timeout: 5.0
-
-    # Maximum execution duration for full multi-modal expression (seconds)
-    multi_modal_expression_timeout: 60.0
-
-    # Default max time for markup actions (seconds)
-    markup_action_timeout: 10.0
-
-    # Paths to JSON files defining markup actions/variables
-    markup_libraries:
-      - "config/00-default_markup_libraries.json"
-
-    # Markup actions to skip during expression execution
-    disabled_markup_actions:
-      - "motion"
+    input_speech_topic: "/humans/voices/anonymous_speaker/speech"
+    user_text_topic: "/chatbot/user_text"
+    assistant_text_topic: "/chatbot/assistant_text"
+    intent_topic: "/chatbot/intent"
+    dialogue_state_topic: "/chatbot/dialogue_state"
+    naoqi_speech_topic: "/speech"
+    use_say_skill: true
+    say_skill_action: "/skill/say"
+    say_skill_language: "en-US"
+    say_skill_volume: 1.0
+    say_skill_dispatch_wait_sec: 0.8
+    also_publish_speech_topic: true
+    fallback_publish_speech_topic: true
+    reply_prefix: ""
+    dedupe_window_sec: 0.8
+    accept_incremental_speech: false
+    ignore_user_speech_while_busy: true
+    user_turn_holdoff_sec: 0.6
+    user_turn_min_chars: 2
+    user_turn_min_words: 1
