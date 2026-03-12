@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>nao_replay_motion</name>
+  <version>0.1.0</version>
+  <description>NAO motion execution package for replay-motion and head-motion primitives.</description>
+
+  <maintainer email="juanbeck@icloud.com">juanbeck</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclpy</depend>
+  <depend>action_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>std_skills</depend>
+  <depend>naoqi_libqi</depend>
+  <depend>naoqi_bridge_msgs</depend>
+  <depend>nao_skills</depend>
+
+  <test_depend>ament_cmake_pytest</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+    <implements type="skill" package="nao_skills" id="replay_motion" />
+    <implements type="skill" package="nao_skills" id="do_head_motion" />
+  </export>
+</package>
