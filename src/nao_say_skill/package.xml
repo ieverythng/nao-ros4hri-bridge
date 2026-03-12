@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>nao_say_skill</name>
+  <version>0.1.0</version>
+  <description>NAO-specific speech execution skill exposing /nao/say.</description>
+
+  <maintainer email="juanbeck@icloud.com">juanbeck</maintainer>
+  <license>Apache-2.0</license>
+
+  <depend>rclpy</depend>
+  <depend>lifecycle_msgs</depend>
+  <depend>diagnostic_msgs</depend>
+  <depend>action_msgs</depend>
+  <depend>launch</depend>
+  <depend>launch_ros</depend>
+  <depend>launch_pal</depend>
+  <depend>communication_skills</depend>
+  <depend>std_msgs</depend>
+  <depend>std_skills</depend>
+  <depend>tts_msgs</depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+    <skill content-type="yaml">
+      id: nao_say
+      version: 1.0.0
+      description: |
+        NAO-specific speech execution endpoint used to bridge canonical
+        communication requests onto the robot TTS stack.
+      interface: action
+      default_interface_path: /nao/say
+      datatype: communication_skills/action/Say
+      functional_domains:
+        - communication
+        - nao
+    </skill>
+  </export>
+</package>

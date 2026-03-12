@@ -1,0 +1,10 @@
+/nao_say_skill:
+  ros__parameters:
+    action_name: "/nao/say"
+    tts_action_name: "/tts_engine/tts"
+    debug_speech_topic: "/debug/nao_say/speech"
+    default_language: "en-US"
+    default_volume: 1.0
+    tts_server_wait_sec: 0.5
+    also_publish_debug_topic: true
+    fallback_to_debug_topic: true

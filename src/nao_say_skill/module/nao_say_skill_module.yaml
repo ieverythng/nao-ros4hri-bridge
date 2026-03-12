@@ -1,0 +1,2 @@
+nao_say_skill:
+  launch: "nao_say_skill nao_say_skill.launch.py"

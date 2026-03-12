@@ -20,6 +20,50 @@
     <build_type>ament_cmake</build_type>
 
     <skill content-type="yaml">
+      id: replay_motion
+      version: 1.0.0
+      description: |
+        Replay a named NAO motion primitive or posture-compatible motion.
+        This is the canonical local entry point for posture-style robot motion
+        execution during the ROS4HRI refactor.
+      interface: action
+      default_interface_path: /skill/replay_motion
+      datatype: nao_skills/action/ReplayMotion
+      functional_domains:
+        - motions
+      parameters:
+        in:
+          - name: motion_name
+            type: string
+            required: true
+            description: |
+              Named motion primitive to replay (for example: stand, sit,
+              kneel, crouch, standinit).
+          - name: speed
+            type: float
+            default: 0.8
+            max: 1.0
+            description: Execution speed in [0.0, 1.0].
+        out:
+          - name: success
+            type: boolean
+            description: True if the motion finished successfully.
+          - name: message
+            type: string
+            description: Execution result message.
+          - name: duration
+            type: float
+            description: Execution duration in seconds.
+        feedback:
+          - name: status
+            type: string
+            description: Execution phase (for example preparing/executing/completing).
+          - name: progress
+            type: float
+            description: Progress value in [0.0, 1.0].
+    </skill>
+
+    <skill content-type="yaml">
       id: do_posture
       version: 1.0.0
       description: |

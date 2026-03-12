@@ -12,6 +12,7 @@ find_package(action_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "action/DoHeadMotion.action"
   "action/DoPosture.action"
+  "action/ReplayMotion.action"
   DEPENDENCIES action_msgs
 )
 

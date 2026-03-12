@@ -1,0 +1,12 @@
+# Goal - replay a named NAO motion/posture primitive
+string motion_name
+float32 speed
+---
+# Result - final outcome
+bool success
+string message
+float32 duration
+---
+# Feedback - progress updates during execution
+string status
+float32 progress
