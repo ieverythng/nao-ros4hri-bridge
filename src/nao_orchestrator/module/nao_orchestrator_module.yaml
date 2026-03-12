@@ -1,0 +1,2 @@
+nao_orchestrator:
+  launch: "nao_orchestrator nao_orchestrator.launch.py"

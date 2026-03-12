@@ -1,0 +1,10 @@
+/nao_orchestrator:
+  ros__parameters:
+    intent_topic: "/intents"
+    enable_legacy_intent_bridge: true
+    legacy_intent_topic: "/chatbot/intent"
+    nao_say_action: "/nao/say"
+    replay_motion_action: "/skill/replay_motion"
+    head_motion_action: "/skill/do_head_motion"
+    look_at_action: "/skill/look_at"
+    default_greeting: "Hello! Nice to meet you."
