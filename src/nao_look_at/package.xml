@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>nao_look_at</name>
+  <version>0.1.0</version>
+  <description>NAO-specific scaffold for the ROS4HRI look_at skill.</description>
+
+  <maintainer email="juanbeck@icloud.com">juanbeck</maintainer>
+  <license>Apache-2.0</license>
+
+  <depend>rclpy</depend>
+  <depend>lifecycle_msgs</depend>
+  <depend>diagnostic_msgs</depend>
+  <depend>launch</depend>
+  <depend>launch_ros</depend>
+  <depend>launch_pal</depend>
+  <depend>interaction_skills</depend>
+  <depend>std_skills</depend>
+  <depend>naoqi_bridge_msgs</depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+    <implements type="skill" package="interaction_skills" id="look_at" />
+  </export>
+</package>

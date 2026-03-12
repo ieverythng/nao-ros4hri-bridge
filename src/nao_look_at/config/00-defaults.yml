@@ -1,0 +1,8 @@
+/nao_look_at:
+  ros__parameters:
+    action_name: "/skill/look_at"
+    joint_angles_topic: "/joint_angles"
+    require_joint_angles_subscribers: false
+    reset_yaw: 0.0
+    reset_pitch: 0.0
+    default_speed: 0.2
