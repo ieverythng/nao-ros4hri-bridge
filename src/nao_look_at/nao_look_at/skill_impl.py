@@ -42,14 +42,14 @@ class NaoLookAtSkill(Node):
     def __init__(self) -> None:
         super().__init__("nao_look_at")
 
-        self.declare_parameter("action_name", "/skill/look_at")
+        self.declare_parameter("look_at_action_name", "/skill/look_at")
         self.declare_parameter("joint_angles_topic", "/joint_angles")
         self.declare_parameter("require_joint_angles_subscribers", False)
         self.declare_parameter("reset_yaw", 0.0)
         self.declare_parameter("reset_pitch", 0.0)
         self.declare_parameter("default_speed", 0.2)
 
-        self.action_name = str(self.get_parameter("action_name").value)
+        self.action_name = str(self.get_parameter("look_at_action_name").value)
         self.joint_angles_topic = str(self.get_parameter("joint_angles_topic").value)
         self.require_joint_angles_subscribers = bool(
             self.get_parameter("require_joint_angles_subscribers").value
@@ -66,19 +66,24 @@ class NaoLookAtSkill(Node):
         self._diag_pub = None
         self._diag_timer = None
         self._joint_angles_pub = None
+        self._joint_angles_available = JointAnglesWithSpeed is not None
 
         self.get_logger().info("nao_look_at created; waiting for lifecycle configure")
 
     def on_configure(self, _state: State) -> TransitionCallbackReturn:
-        if JointAnglesWithSpeed is None:
-            self.get_logger().error("JointAnglesWithSpeed is unavailable")
-            return TransitionCallbackReturn.FAILURE
+        self._joint_angles_available = JointAnglesWithSpeed is not None
 
-        self._joint_angles_pub = self.create_publisher(
-            JointAnglesWithSpeed,
-            self.joint_angles_topic,
-            10,
-        )
+        if self._joint_angles_available:
+            self._joint_angles_pub = self.create_publisher(
+                JointAnglesWithSpeed,
+                self.joint_angles_topic,
+                10,
+            )
+        else:
+            self._joint_angles_pub = None
+            self.get_logger().warn(
+                "JointAnglesWithSpeed is unavailable; nao_look_at will stay in scaffold mode"
+            )
         self._diag_pub = self.create_publisher(DiagnosticArray, "/diagnostics", 1)
         self._diag_timer = self.create_timer(1.0, self._publish_diagnostics)
         self._action_server = ActionServer(
@@ -129,7 +134,11 @@ class NaoLookAtSkill(Node):
             return GoalResponse.REJECT
         if policy == LookAt.Goal.GLANCE and not self._has_target(goal_request):
             return GoalResponse.REJECT
-        if self.require_joint_angles_subscribers and self._joint_angles_pub.get_subscription_count() <= 0:
+        if (
+            self.require_joint_angles_subscribers
+            and self._joint_angles_pub is not None
+            and self._joint_angles_pub.get_subscription_count() <= 0
+        ):
             return GoalResponse.REJECT
         return GoalResponse.ACCEPT
 
@@ -149,7 +158,14 @@ class NaoLookAtSkill(Node):
 
             self._publish_feedback(goal_handle, "preparing", 0.0)
             if policy == LookAt.Goal.RESET:
-                self._publish_reset_pose()
+                if not self._publish_reset_pose():
+                    self._stats.goals_failed += 1
+                    goal_handle.abort()
+                    return self._result(
+                        False,
+                        "JointAnglesWithSpeed is unavailable; reset policy cannot publish",
+                        SkillResult.ROS_ENOTSUP,
+                    )
                 self._publish_feedback(goal_handle, "completing", 1.0)
                 self._stats.goals_succeeded += 1
                 goal_handle.succeed()
@@ -183,7 +199,9 @@ class NaoLookAtSkill(Node):
         finally:
             self._execution_lock.release()
 
-    def _publish_reset_pose(self) -> None:
+    def _publish_reset_pose(self) -> bool:
+        if self._joint_angles_pub is None or JointAnglesWithSpeed is None:
+            return False
         msg = JointAnglesWithSpeed()
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.joint_names = ["HeadYaw", "HeadPitch"]
@@ -191,17 +209,27 @@ class NaoLookAtSkill(Node):
         msg.speed = float(self.default_speed)
         msg.relative = 0
         self._joint_angles_pub.publish(msg)
+        return True
 
     def _publish_diagnostics(self) -> None:
         if self._diag_pub is None:
             return
+        degraded = not self._joint_angles_available
         status = DiagnosticStatus(
-            level=DiagnosticStatus.OK,
+            level=DiagnosticStatus.WARN if degraded else DiagnosticStatus.OK,
             name="/nao_look_at",
-            message="nao_look_at running",
+            message=(
+                "nao_look_at running (scaffold mode only)"
+                if degraded
+                else "nao_look_at running"
+            ),
             values=[
                 KeyValue(key="state", value="active" if self._is_active else "inactive"),
-                KeyValue(key="action_name", value=self.action_name),
+                KeyValue(key="look_at_action_name", value=self.action_name),
+                KeyValue(
+                    key="joint_angles_available",
+                    value=str(self._joint_angles_available),
+                ),
                 KeyValue(key="goals_started", value=str(self._stats.goals_started)),
                 KeyValue(key="goals_succeeded", value=str(self._stats.goals_succeeded)),
                 KeyValue(key="goals_failed", value=str(self._stats.goals_failed)),

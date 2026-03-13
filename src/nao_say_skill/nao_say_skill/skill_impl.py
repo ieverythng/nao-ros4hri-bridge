@@ -32,7 +32,7 @@ class NaoSaySkill(Node):
     def __init__(self) -> None:
         super().__init__("nao_say_skill")
 
-        self.declare_parameter("action_name", "/nao/say")
+        self.declare_parameter("say_action_name", "/nao/say")
         self.declare_parameter("tts_action_name", "/tts_engine/tts")
         self.declare_parameter("debug_speech_topic", "/debug/nao_say/speech")
         self.declare_parameter("default_language", "en-US")
@@ -41,7 +41,7 @@ class NaoSaySkill(Node):
         self.declare_parameter("also_publish_debug_topic", True)
         self.declare_parameter("fallback_to_debug_topic", True)
 
-        self.action_name = str(self.get_parameter("action_name").value)
+        self.action_name = str(self.get_parameter("say_action_name").value)
         self.tts_action_name = str(self.get_parameter("tts_action_name").value)
         self.debug_speech_topic = str(self.get_parameter("debug_speech_topic").value)
         self.default_language = str(self.get_parameter("default_language").value)
@@ -316,7 +316,7 @@ class NaoSaySkill(Node):
             message="nao_say_skill running",
             values=[
                 KeyValue(key="state", value="active" if self._is_active else "inactive"),
-                KeyValue(key="action_name", value=self.action_name),
+                KeyValue(key="say_action_name", value=self.action_name),
                 KeyValue(key="goals_started", value=str(self._stats.goals_started)),
                 KeyValue(key="goals_succeeded", value=str(self._stats.goals_succeeded)),
                 KeyValue(key="goals_failed", value=str(self._stats.goals_failed)),

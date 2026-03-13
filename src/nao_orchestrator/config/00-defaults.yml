@@ -4,7 +4,18 @@
     enable_legacy_intent_bridge: true
     legacy_intent_topic: "/chatbot/intent"
     nao_say_action: "/nao/say"
+    nao_say_wait_sec: 0.2
     replay_motion_action: "/skill/replay_motion"
+    replay_motion_speed: 0.8
+    replay_motion_wait_sec: 0.2
     head_motion_action: "/skill/do_head_motion"
+    head_motion_speed: 0.25
+    head_motion_wait_sec: 0.2
     look_at_action: "/skill/look_at"
+    look_at_wait_sec: 0.2
+    posture_command_topic: "/chatbot/posture_command"
+    fallback_to_posture_topic: true
+    head_motion_joint_angles_topic: "/joint_angles"
+    fallback_to_joint_angles_topic: true
+    dedupe_window_sec: 0.8
     default_greeting: "Hello! Nice to meet you."

@@ -1,6 +1,6 @@
 /nao_say_skill:
   ros__parameters:
-    action_name: "/nao/say"
+    say_action_name: "/nao/say"
     tts_action_name: "/tts_engine/tts"
     debug_speech_topic: "/debug/nao_say/speech"
     default_language: "en-US"

@@ -1,6 +1,6 @@
 /nao_look_at:
   ros__parameters:
-    action_name: "/skill/look_at"
+    look_at_action_name: "/skill/look_at"
     joint_angles_topic: "/joint_angles"
     require_joint_angles_subscribers: false
     reset_yaw: 0.0

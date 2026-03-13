@@ -19,6 +19,11 @@
   <depend>nao_skills</depend>
   <depend>naoqi_bridge_msgs</depend>
   <depend>dialogue_manager</depend>
+  <exec_depend>chatbot_llm</exec_depend>
+  <exec_depend>nao_look_at</exec_depend>
+  <exec_depend>nao_orchestrator</exec_depend>
+  <exec_depend>nao_replay_motion</exec_depend>
+  <exec_depend>nao_say_skill</exec_depend>
   <exec_depend>nao_skill_servers</exec_depend>
   <exec_depend>python3-yaml</exec_depend>
   <exec_depend>launch</exec_depend>

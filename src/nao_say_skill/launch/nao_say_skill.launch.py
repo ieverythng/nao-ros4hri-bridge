@@ -13,11 +13,11 @@
 # limitations under the License.
 
 from launch import LaunchDescription
-from launch.actions import EmitEvent, RegisterEventHandler
+from launch.actions import EmitEvent
+from launch.actions import TimerAction
 from launch.events import matches_action
 from launch_pal import get_pal_configuration
 from launch_ros.actions import LifecycleNode
-from launch_ros.event_handlers import OnStateTransition
 from launch_ros.events.lifecycle import ChangeState
 from lifecycle_msgs.msg import Transition
 
@@ -42,28 +42,29 @@ def generate_launch_description():
 
     ld.add_action(node)
     ld.add_action(
-        EmitEvent(
-            event=ChangeState(
-                lifecycle_node_matcher=matches_action(node),
-                transition_id=Transition.TRANSITION_CONFIGURE,
-            )
+        TimerAction(
+            period=1.0,
+            actions=[
+                EmitEvent(
+                    event=ChangeState(
+                        lifecycle_node_matcher=matches_action(node),
+                        transition_id=Transition.TRANSITION_CONFIGURE,
+                    )
+                )
+            ],
         )
     )
     ld.add_action(
-        RegisterEventHandler(
-            OnStateTransition(
-                target_lifecycle_node=node,
-                goal_state="inactive",
-                entities=[
-                    EmitEvent(
-                        event=ChangeState(
-                            lifecycle_node_matcher=matches_action(node),
-                            transition_id=Transition.TRANSITION_ACTIVATE,
-                        )
+        TimerAction(
+            period=2.0,
+            actions=[
+                EmitEvent(
+                    event=ChangeState(
+                        lifecycle_node_matcher=matches_action(node),
+                        transition_id=Transition.TRANSITION_ACTIVATE,
                     )
-                ],
-                handle_once=True,
-            )
+                )
+            ],
         )
     )
 
