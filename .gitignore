@@ -41,3 +41,6 @@ src/std_skills/
 /.cache-pre-commit
 src/nao_chatbot/nao_chatbot/ollama_node.py
 /ref_src
+/.migration_backups
+src/chatbot_llm/
+src/dialogue_manager/

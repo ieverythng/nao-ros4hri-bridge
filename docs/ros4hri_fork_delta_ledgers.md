@@ -1,6 +1,6 @@
 # ROS4HRI Fork Delta Ledgers
 
-Last updated: 2026-03-12
+Last updated: 2026-03-13
 
 This document records the local-vs-upstream deltas for the upstream packages
 that are being used as the source of truth for the refactor.
@@ -39,17 +39,20 @@ Upstream owns:
 
 Current local delta in `src/dialogue_manager`:
 
-- replaced upstream runtime with `nao_dialogue_manager.py`
-- added custom `/chatbot/user_text`, `/chatbot/assistant_text`, and
-  `/chatbot/dialogue_state` transport topics
-- added local ASR turn buffering, de-duplication, and busy-guard logic
-- added direct `/speech` mirroring and local say-skill dispatch helpers
+- active runtime has been reset to the upstream baseline and now passes the
+  upstream-focused local test suite
+- archived the old NAO-specific bridge runtime under
+  `.migration_backups/dialogue_manager_legacy_bridge_20260313/`
+- retained a temporary `dialogue_manager_node` console-script alias so older
+  launches do not fail immediately during the cutover
+- migration launch overrides the upstream `chatbot` parameter to
+  `chatbot_llm`
 
 Migration rule:
 
 - upstream runtime remains authoritative
-- local `/chatbot/*` transport must be externalized into NAO-specific glue or
-  removed
+- local `/chatbot/*` transport remains legacy and should be externalized into
+  NAO-specific glue or removed
 - robot-specific speech execution should move to `/nao/say`, not be baked into
   the canonical `dialogue_manager` contract
 
