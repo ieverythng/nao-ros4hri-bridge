@@ -25,15 +25,17 @@ ASR is still transitional:
 simple_audio_capture -> asr_vosk -> /humans/voices/anonymous_speaker/speech
 ```
 
-That ASR path is currently launched independently through
-`nao_chatbot_asr_only.launch.py` while the upstream ASR contract is being
-restored.
+That ASR path can be launched independently through
+`nao_chatbot_asr_only.launch.py` or together with the migrated stack through
+`nao_chatbot_ros4hri_with_asr.launch.py` while the upstream ASR contract is
+being restored.
 
 ## Primary Launch Files
 
 | Launch file | Purpose |
 | --- | --- |
 | `nao_chatbot_ros4hri_migration.launch.py` | Main migrated runtime |
+| `nao_chatbot_ros4hri_with_asr.launch.py` | Main migrated runtime plus `simple_audio_capture` and `asr_vosk` |
 | `nao_chatbot_asr_only.launch.py` | Isolated ASR testing |
 
 ## Responsibility Split
@@ -59,6 +61,8 @@ These exist only to keep motion execution stable while the migration finishes.
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py
+ros2 launch nao_chatbot nao_chatbot_ros4hri_with_asr.launch.py \
+  asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15
 ros2 action list -t
 ros2 service list -t
 ros2 lifecycle get /dialogue_manager

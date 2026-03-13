@@ -90,6 +90,11 @@ def generate_launch_description():
             description='Launch the full rqt shell for runtime tools.',
         ),
         DeclareLaunchArgument(
+            'start_rqt_chat',
+            default_value='true',
+            description='Launch rqt_chat in passive mode against the migrated stack.',
+        ),
+        DeclareLaunchArgument(
             'start_robot_speech_debug',
             default_value='true',
             description='Launch a logger that mirrors robot speech into ROS logs.',
@@ -164,6 +169,7 @@ def generate_launch_description():
             'ollama_intent_model': LaunchConfiguration('ollama_intent_model'),
             'chatbot_server_url': LaunchConfiguration('chatbot_server_url'),
             'start_rqt_console': LaunchConfiguration('start_rqt_console'),
+            'start_rqt_chat': LaunchConfiguration('start_rqt_chat'),
             'start_robot_speech_debug': LaunchConfiguration(
                 'start_robot_speech_debug'
             ),

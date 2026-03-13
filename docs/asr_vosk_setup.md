@@ -14,12 +14,14 @@ cutover is still pending, so ASR is not yet part of the primary migrated stack.
   - subscribes to the microphone topic
   - publishes `hri_msgs/LiveSpeech` to `/humans/voices/anonymous_speaker/speech`
 
-## Launch Profile
+## Launch Profiles
 
 - ASR isolation only:
   - `ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py`
+- Full migrated stack with ASR:
+  - `ros2 launch nao_chatbot nao_chatbot_ros4hri_with_asr.launch.py`
 
-This profile runs `asr_vosk` as a lifecycle node and automatically triggers:
+Both launch paths run `asr_vosk` as a lifecycle node and automatically trigger:
 
 1. `CONFIGURE`
 2. `ACTIVATE`
@@ -31,8 +33,15 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
   asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15
 ```
 
-This profile now defaults to push-to-talk enabled, so ASR will stay closed until you
-open the gate.
+Or together with the migrated dialogue/orchestration stack:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_ros4hri_with_asr.launch.py \
+  asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15
+```
+
+These launches now default to push-to-talk enabled, so ASR will stay closed
+until you open the gate.
 
 ## Key Parameters
 

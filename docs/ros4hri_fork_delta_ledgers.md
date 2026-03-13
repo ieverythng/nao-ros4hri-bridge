@@ -41,10 +41,6 @@ Current local delta in `src/dialogue_manager`:
 
 - active runtime has been reset to the upstream baseline and now passes the
   upstream-focused local test suite
-- archived the old NAO-specific bridge runtime under
-  `.migration_backups/dialogue_manager_legacy_bridge_20260313/`
-- retained a temporary `dialogue_manager_node` console-script alias so older
-  launches do not fail immediately during the cutover
 - migration launch overrides the upstream `chatbot` parameter to
   `chatbot_llm`
 

@@ -9,9 +9,10 @@ This is the quick execution guide for the active launch files in this repo.
 | Launch file | What it enables by default | What it disables by default |
 |---|---|---|
 | `nao_chatbot_ros4hri_migration.launch.py` | Migrated ROS4HRI stack (`chatbot_llm`, `dialogue_manager`, `nao_orchestrator`, `nao_say_skill`, `nao_replay_motion`, `nao_look_at`) | Local ASR |
+| `nao_chatbot_ros4hri_with_asr.launch.py` | Migrated ROS4HRI stack plus `simple_audio_capture` and `asr_vosk` | None |
 | `nao_chatbot_asr_only.launch.py` | Isolated ASR pipeline (`simple_audio_capture` + `asr_vosk`) | Dialogue/mission/chat/robot nodes |
 
-Legacy `nao_chatbot_stack`, `nao_chatbot_skills`, and
+Old `nao_chatbot_stack`, `nao_chatbot_skills`, and
 `nao_chatbot_skills_asr` wrappers were removed during the ROS4HRI cleanup so
 the workspace only exposes the migrated launch surface.
 
@@ -19,6 +20,7 @@ the workspace only exposes the migrated launch surface.
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py --show-args
+ros2 launch nao_chatbot nao_chatbot_ros4hri_with_asr.launch.py --show-args
 ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py --show-args
 ```
 
@@ -36,6 +38,13 @@ With robot driver:
 ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
   start_naoqi_driver:=true \
   nao_ip:=172.26.112.62
+```
+
+### Primary migrated stack with ASR
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_ros4hri_with_asr.launch.py \
+  asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15
 ```
 
 ### ASR-only profile

@@ -166,6 +166,11 @@ def generate_launch_description():
         default_value="true",
         description="Launch the full rqt shell for runtime tools.",
     )
+    start_rqt_chat_arg = DeclareLaunchArgument(
+        "start_rqt_chat",
+        default_value="true",
+        description="Launch rqt_chat in passive mode against the migrated stack.",
+    )
     start_robot_speech_debug_arg = DeclareLaunchArgument(
         "start_robot_speech_debug",
         default_value="true",
@@ -374,6 +379,23 @@ def generate_launch_description():
         ],
         output="screen",
     )
+    rqt_chat = ExecuteProcess(
+        condition=IfCondition(LaunchConfiguration("start_rqt_chat")),
+        cmd=[
+            "bash",
+            "-lc",
+            "if ! command -v rqt >/dev/null 2>&1; then "
+            "echo 'rqt is not installed in this environment'; "
+            "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
+            "echo 'rqt_chat launch skipped: DISPLAY/WAYLAND_DISPLAY is not set'; "
+            "else "
+            "exec rqt --standalone rqt_chat.chat.ChatPlugin --ros-args "
+            "-p enable_tts_action_server:=false "
+            "-p robot_output_topic:=/debug/nao_say/speech; "
+            "fi",
+        ],
+        output="screen",
+    )
     robot_speech_debug = Node(
         package="nao_chatbot",
         executable="robot_speech_debug",
@@ -393,6 +415,7 @@ def generate_launch_description():
             start_nao_replay_motion_arg,
             start_nao_look_at_arg,
             start_rqt_console_arg,
+            start_rqt_chat_arg,
             start_robot_speech_debug_arg,
             nao_ip_arg,
             nao_port_arg,
@@ -410,6 +433,7 @@ def generate_launch_description():
             chatbot_server_url_arg,
             naoqi_driver_launch,
             rqt_console,
+            rqt_chat,
             robot_speech_debug,
             *chatbot_llm_bundle,
             *dialogue_manager_bundle,

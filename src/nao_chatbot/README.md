@@ -24,6 +24,7 @@ Useful demo overrides:
 ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
   start_naoqi_driver:=true \
   start_rqt_console:=true \
+  start_rqt_chat:=true \
   ollama_model:=gpt-oss:120b-cloud
 ```
 
@@ -66,6 +67,6 @@ ros2 run nao_chatbot robot_speech_debug
   routed to `chatbot_llm` immediately
 - `start_rqt_console:=true` now opens the full `rqt` shell instead of only the
   standalone console plugin
-- do not load `rqt_chat` together with the migrated speech stack yet; it
-  creates its own `/tts_engine/tts` action server and conflicts with
-  `nao_say_skill`
+- `start_rqt_chat:=true` launches a patched passive `rqt_chat` window that:
+  keeps user speech publishing, disables its local `/tts_engine/tts` action
+  server, and shows robot replies from `/debug/nao_say/speech`

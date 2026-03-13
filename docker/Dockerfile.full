@@ -34,6 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     socialminds-ros-jazzy-naoqi-driver \
     socialminds-ros-jazzy-tts-msgs \
     ros-jazzy-rqt \
+    ros-jazzy-rqt-console \
     ros-jazzy-rqt-gui \
     ros-jazzy-rqt-gui-py \
     && rm -rf /var/lib/apt/lists/*
@@ -45,7 +46,6 @@ RUN mkdir -p /home/ubuntu/ws/src
 
 COPY src/ /home/ubuntu/ws/src/
 COPY ref_src/interaction_skills/ /home/ubuntu/ws/src/interaction_skills/
-RUN git clone --depth 1 --branch 1.4.0 https://github.com/ros4hri/rqt_chat.git /home/ubuntu/ws/src/rqt_chat
 
 RUN bash -c "source /opt/ros/jazzy/setup.bash && \
     cd /home/ubuntu/ws && \
