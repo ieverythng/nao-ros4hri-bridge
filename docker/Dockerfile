@@ -33,7 +33,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* && \
     python3 -m pip install --no-cache-dir --break-system-packages vosk
 
-# Rebuild local workspace packages on top of the validated base.
+# Rebuild the migrated local workspace packages on top of the validated base.
 RUN bash -c "source /opt/ros/jazzy/setup.bash && \
     cd /home/ubuntu/ws && \
     rm -rf \
@@ -50,7 +50,6 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       /home/ubuntu/ws/build/nao_replay_motion \
       /home/ubuntu/ws/build/nao_say_skill \
       /home/ubuntu/ws/build/simple_audio_capture \
-      /home/ubuntu/ws/build/nao_skill_servers \
       /home/ubuntu/ws/install/std_skills \
       /home/ubuntu/ws/install/communication_skills \
       /home/ubuntu/ws/install/dialogue_manager \
@@ -63,8 +62,7 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       /home/ubuntu/ws/install/nao_orchestrator \
       /home/ubuntu/ws/install/nao_replay_motion \
       /home/ubuntu/ws/install/nao_say_skill \
-      /home/ubuntu/ws/install/simple_audio_capture \
-      /home/ubuntu/ws/install/nao_skill_servers && \
+      /home/ubuntu/ws/install/simple_audio_capture && \
     colcon build --symlink-install --packages-select \
       std_skills \
       communication_skills \
@@ -78,8 +76,7 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       nao_look_at \
       nao_orchestrator \
       nao_chatbot \
-      simple_audio_capture \
-      nao_skill_servers"
+      simple_audio_capture"
 
 # Keep entrypoint from this repo for deterministic sourcing behavior.
 COPY docker/ros_entrypoint.sh /

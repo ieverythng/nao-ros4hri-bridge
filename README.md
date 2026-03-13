@@ -22,8 +22,8 @@ Legacy or still-migrating pieces:
 - `asr_vosk`: active cutover to the upstream ROS4HRI contract is still pending
 - `simple_audio_capture`: still used as the local microphone source and will
   eventually sit behind the upstream-style ASR adapter path
-- `nao_chatbot_stack.launch.py` and the `mission_controller` codepath remain in
-  the repo only as compatibility/legacy references
+- retained topic fallbacks such as `/chatbot/posture_command` exist only as
+  transition bridges for motion execution
 
 Current migrated flow:
 
@@ -44,9 +44,6 @@ This split is deliberate:
 Primary launch files live in `src/nao_chatbot/launch/`:
 
 - `nao_chatbot_ros4hri_migration.launch.py`: primary migrated runtime
-- `nao_chatbot_stack.launch.py`: legacy pre-migration stack surface
-- `nao_chatbot_skills.launch.py`: legacy compatibility wrapper without local ASR
-- `nao_chatbot_skills_asr.launch.py`: legacy compatibility wrapper plus `simple_audio_capture` + `asr_vosk`
 - `nao_chatbot_asr_only.launch.py`: isolated ASR pipeline
 
 Quick reference:
@@ -80,5 +77,7 @@ Run the local validation suite:
 
 - `src/dialogue_manager/` and `src/chatbot_llm/` are nested fork repos; review
   and PR them in their own histories, not through the monorepo diff.
+- legacy `mission_controller`, `ollama_chatbot`, and `nao_skill_servers`
+  runtime surfaces have been removed from the active workspace
 - Vendored/local overlay repos under `src/motions_skills/` and `src/std_skills/` are intentionally left untouched.
 - `naoqi_driver` already exposes camera topics and joint interfaces; future vision work should build on those published ROS interfaces instead of adding a parallel capture stack.

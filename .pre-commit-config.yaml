@@ -31,7 +31,7 @@ repos:
         name: ruff
         entry: ./.venv/bin/ruff check --select=F,E9
         language: system
-        files: ^src/(nao_chatbot|nao_skill_servers|asr_vosk|simple_audio_capture|dialogue_manager)/.*\.py$
+        files: ^src/(nao_chatbot|nao_look_at|nao_orchestrator|nao_replay_motion|nao_say_skill|asr_vosk|simple_audio_capture)/.*\.py$
 
       - id: workspace-test-suite
         name: workspace-test-suite

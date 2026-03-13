@@ -1,6 +1,7 @@
 # nao_orchestrator
 
-`nao_orchestrator` is the new lifecycle orchestration package for NAO.
+`nao_orchestrator` is the lifecycle orchestration package for NAO in the
+migrated ROS4HRI stack.
 
 Steady-state target:
 
@@ -43,3 +44,24 @@ ros2 topic pub --once /chatbot/intent std_msgs/msg/String "{data: '{\"intent\":\
 ```bash
 ros2 topic pub --once /intents hri_actions_msgs/msg/Intent "{intent: 'perform_motion', data: '{\"object\":\"stand\"}'}"
 ```
+
+## Parameters
+
+The package defaults are in `config/00-defaults.yml`. The most important knobs
+are:
+
+- `intent_topic`
+- `enable_legacy_intent_bridge`
+- `legacy_intent_topic`
+- `nao_say_action`
+- `replay_motion_action`
+- `head_motion_action`
+- `look_at_action`
+- `posture_command_topic`
+- `dedupe_window_sec`
+
+## Design Rule
+
+`nao_orchestrator` should stay downstream-only. It must not grow back into a
+dialogue or chatbot node. User-turn ingestion belongs to `dialogue_manager`,
+and model interaction belongs to `chatbot_llm`.

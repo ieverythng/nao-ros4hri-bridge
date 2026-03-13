@@ -1,2 +1,2 @@
 nao_chatbot:
-  launch: "nao_chatbot nao_chatbot_stack.launch.py"
+  launch: "nao_chatbot nao_chatbot_ros4hri_migration.launch.py"

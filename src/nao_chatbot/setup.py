@@ -12,7 +12,6 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch', glob('launch/*.launch.py')),
-        ('share/' + package_name + '/config', glob('config/*.yaml')),
         ('share/ament_index/resource_index/pal_system_module',
             ['module/' + package_name]),
         ('share/' + package_name + '/module', ['module/' + package_name + '_module.yaml']),
@@ -21,7 +20,7 @@ setup(
     zip_safe=True,
     maintainer='juanbeck',
     maintainer_email='juanbeck@icloud.com',
-    description='ROS 2 chatbot orchestration and bridges for NAO + ROS4HRI',
+    description='Launch and operator-utility package for the NAO ROS4HRI migration stack',
     license='BSD-3-Clause',
     extras_require={
         'test': [
@@ -36,8 +35,6 @@ setup(
     entry_points={
         'console_scripts': [
             'asr_push_to_talk_cli = nao_chatbot.asr_push_to_talk_cli:main',
-            'mission_controller_node = nao_chatbot.mission_controller:main',
-            'ollama_chatbot_node = nao_chatbot.ollama_chatbot:main',
         ],
     },
 )

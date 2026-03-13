@@ -62,7 +62,6 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       nao_orchestrator \
       nao_chatbot \
       simple_audio_capture \
-      nao_skill_servers \
       rqt_chat"
 
 COPY docker/ros_entrypoint.sh /

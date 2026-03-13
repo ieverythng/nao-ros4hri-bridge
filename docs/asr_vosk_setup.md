@@ -1,9 +1,10 @@
 # ASR Vosk Setup and Operations
 
-Last updated: 2026-03-06
+Last updated: 2026-03-13
 
-This repo now uses the imported package from `src/asr_vosk` (colleague-provided), not
-`nao_chatbot/asr_vosk.py`, for runtime ASR.
+This repo currently uses the imported package from `src/asr_vosk` together with
+`simple_audio_capture` for isolated ASR testing. The final upstream ROS4HRI ASR
+cutover is still pending, so ASR is not yet part of the primary migrated stack.
 
 ## Active ASR Nodes
 
@@ -13,14 +14,12 @@ This repo now uses the imported package from `src/asr_vosk` (colleague-provided)
   - subscribes to the microphone topic
   - publishes `hri_msgs/LiveSpeech` to `/humans/voices/anonymous_speaker/speech`
 
-## Launch Profiles
+## Launch Profile
 
-- Full stack with ASR:
-  - `ros2 launch nao_chatbot nao_chatbot_skills_asr.launch.py`
 - ASR isolation only:
   - `ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py`
 
-Both profiles run `asr_vosk` as a lifecycle node and automatically trigger:
+This profile runs `asr_vosk` as a lifecycle node and automatically triggers:
 
 1. `CONFIGURE`
 2. `ACTIVATE`
@@ -64,14 +63,6 @@ open the gate.
 - `asr_audio_capture_sample_format`: usually `S16LE`
 - `asr_audio_capture_chunk_size`: capture chunk size
 
-### `dialogue_manager` ASR turn controls
-
-- `dialogue_accept_incremental_speech`: keep `false` for Vosk turn routing
-- `dialogue_ignore_user_speech_while_busy`: ignore new user ASR while a turn is already awaiting a reply
-- `dialogue_user_turn_holdoff_sec`: buffer/merge consecutive ASR finals before forwarding one turn
-- `dialogue_user_turn_min_chars`: minimum forwarded character length
-- `dialogue_user_turn_min_words`: minimum forwarded word count
-
 ## Docker Requirements
 
 You typically need:
@@ -90,8 +81,8 @@ You typically need:
    - `ros2 topic info /laptop/microphone0 -v`
 3. Confirm speech output:
    - `ros2 topic echo /humans/voices/anonymous_speaker/speech`
-4. Confirm chatbot turn input:
-   - `ros2 topic echo /chatbot/user_text`
+4. Confirm no downstream stack is assumed:
+   - ASR-only mode stops at `/humans/voices/anonymous_speaker/speech`
 
 ## Systematic ASR Quality Debug
 
@@ -105,14 +96,10 @@ You typically need:
 4. Increase filtering if filler outputs dominate:
    - `asr_min_final_confidence:=0.35`
    - `asr_min_final_words:=2`
-5. Confirm turn coalescing in the dialogue bridge:
-   - keep `dialogue_accept_incremental_speech:=false`
-   - start with `dialogue_user_turn_holdoff_sec:=0.6`
-   - keep `dialogue_ignore_user_speech_while_busy:=true`
-6. Switch model for accuracy testing:
+5. Switch model for accuracy testing:
    - keep sample rate at `16000`
    - set `asr_vosk_model_path:=/models/<new-model-dir>`
-7. Isolate ASR from full stack:
+6. Isolate ASR from the rest of the stack:
    - `ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py ...`
 
 If the isolated profile still produces frequent filler finals with acceptable confidence,
@@ -126,7 +113,7 @@ enable it by default.
 Example launch:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_skills_asr.launch.py \
+ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
   asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15
 ```
 
@@ -175,3 +162,6 @@ toggle/open/close/pulse.
   - verify `asr_vosk_model_path` exists from inside container.
 - Pulse/ALSA not mounted:
   - capture node may run but publish unusable/empty audio.
+- Expecting dialogue execution from this profile:
+  - `nao_chatbot_asr_only.launch.py` is intentionally isolated until the ASR
+    contract is migrated into the main ROS4HRI stack.

@@ -22,7 +22,7 @@ if [[ -f install/setup.bash ]]; then
 fi
 set -u
 
-echo "[1/7] Syntax checks"
+echo "[1/8] Syntax checks"
 python3 - <<'PY'
 from pathlib import Path
 import py_compile
@@ -31,11 +31,13 @@ paths = []
 for pattern in (
     "src/nao_chatbot/launch/*.launch.py",
     "src/nao_chatbot/nao_chatbot/*.py",
+    "src/chatbot_llm/chatbot_llm/*.py",
+    "src/dialogue_manager/dialogue_manager/*.py",
     "src/asr_vosk/launch/*.launch.py",
     "src/asr_vosk/asr_vosk/*.py",
-    "src/nao_skill_servers/nao_skill_servers/*.py",
     "src/nao_look_at/nao_look_at/*.py",
     "src/nao_orchestrator/nao_orchestrator/*.py",
+    "src/nao_replay_motion/nao_replay_motion/*.py",
     "src/nao_say_skill/nao_say_skill/*.py",
     "src/simple_audio_capture/launch/*.launch.py",
     "src/simple_audio_capture/simple_audio_capture/*.py",
@@ -51,23 +53,44 @@ for path in paths:
 print(f"Compiled {compiled} python files")
 PY
 
-echo "[2/7] nao_chatbot unit tests"
-PYTHONPATH="src/nao_chatbot:${PYTHONPATH:-}" pytest -q src/nao_chatbot/test/unit
+echo "[2/8] nao_chatbot unit tests"
+PYTHONPATH="src/nao_chatbot:${PYTHONPATH:-}" pytest -q \
+  src/nao_chatbot/test/unit/test_asr_push_to_talk_cli.py
 
-echo "[3/7] asr_vosk unit tests"
+echo "[3/8] chatbot_llm unit tests"
+PYTHONPATH="src/chatbot_llm:${PYTHONPATH:-}" pytest -q \
+  src/chatbot_llm/test/test_intent_adapter.py \
+  src/chatbot_llm/test/test_turn_engine.py
+
+echo "[4/8] dialogue_manager unit tests"
+PYTHONPATH="src/dialogue_manager:${PYTHONPATH:-}" pytest -q \
+  src/dialogue_manager/test/test_chatbot_client.py \
+  src/dialogue_manager/test/test_dialogue.py \
+  src/dialogue_manager/test/test_integration.py \
+  src/dialogue_manager/test/test_manager_node.py \
+  src/dialogue_manager/test/test_skill_servers.py \
+  src/dialogue_manager/test/test_speech_handler.py \
+  src/dialogue_manager/test/test_tts_client.py
+
+echo "[5/8] asr_vosk unit tests"
 PYTHONPATH="src/asr_vosk:${PYTHONPATH:-}" pytest -q src/asr_vosk/test/unit
 
-echo "[4/7] simple_audio_capture unit tests"
+echo "[6/8] simple_audio_capture unit tests"
 PYTHONPATH="src/simple_audio_capture:${PYTHONPATH:-}" pytest -q src/simple_audio_capture/test/unit
 
-echo "[5/7] migration package unit tests"
-PYTHONPATH="src/nao_look_at:src/nao_orchestrator:src/nao_say_skill:${PYTHONPATH:-}" pytest -q \
+echo "[7/8] migration package unit tests"
+PYTHONPATH="src/nao_look_at:src/nao_orchestrator:src/nao_replay_motion:src/nao_say_skill:${PYTHONPATH:-}" pytest -q \
   src/nao_look_at/test/test_nao_look_at_unit.py \
   src/nao_orchestrator/test/test_nao_orchestrator_intent_rules.py \
+  src/nao_replay_motion/test/test_nao_replay_motion_unit.py \
   src/nao_say_skill/test/test_nao_say_skill_unit.py
 
-echo "[6/7] nao_skill_servers unit tests"
-PYTHONPATH="src/nao_skill_servers:${PYTHONPATH:-}" pytest -q src/nao_skill_servers/test/unit
+echo "[8/8] launch smoke"
+if [[ -f install/setup.bash ]]; then
+  ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py --show-args >/dev/null
+else
+  echo "Skipping launch smoke because install/setup.bash is not available."
+fi
 
-echo "[7/7] Done"
+echo "Done"
 echo "All available tests passed."
