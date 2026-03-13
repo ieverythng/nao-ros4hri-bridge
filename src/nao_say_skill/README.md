@@ -12,6 +12,7 @@ endpoint. The canonical communication skill remains owned by
 - action: `/nao/say`
 - type: `communication_skills/action/Say`
 - compatibility TTS action: `/tts_engine/tts`
+- debug TTS action: `/debug/say`
 - downstream TTS action: optional `tts_backend_action_name`
 - direct speech topic fallback: `/speech`
 - debug mirror topic: `/debug/nao_say/speech`
@@ -22,14 +23,17 @@ endpoint. The canonical communication skill remains owned by
 | --- | --- | --- |
 | `say_action_name` | `/nao/say` | NAO-specific speech action endpoint |
 | `tts_action_name` | `/tts_engine/tts` | TTS action endpoint exposed for `dialogue_manager` |
+| `debug_tts_action_name` | `/debug/say` | Debug-only TTS action used by `rqt_chat` or similar operator tools |
 | `tts_backend_action_name` | `""` | Optional downstream TTS action server used behind the compatibility endpoint |
 | `speech_topic` | `/speech` | Direct robot speech topic used for fallback execution |
 | `debug_speech_topic` | `/debug/nao_say/speech` | Debug-only speech mirror |
 | `default_language` | `en-US` | Default language used for outgoing TTS goals |
 | `default_volume` | `1.0` | Default TTS volume |
 | `tts_server_wait_sec` | `0.5` | Wait time before considering the TTS server unavailable |
+| `debug_tts_server_wait_sec` | `0.1` | Best-effort wait before deciding the debug TTS action is unavailable |
 | `fallback_to_speech_topic` | `true` | Publish to `/speech` if no downstream TTS action is available |
 | `also_publish_debug_topic` | `true` | Mirror successful speech requests to the debug topic |
+| `forward_debug_tts_action` | `true` | Forward each utterance to the debug TTS action when it exists |
 | `fallback_to_debug_topic` | `true` | Publish to the debug topic if TTS is unavailable |
 
 ## Launch
@@ -49,9 +53,13 @@ ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py
 ## Expected Behavior
 
 - when the TTS action server is available, `/nao/say` forwards the request to it
-- `dialogue_manager` now talks to this package through `/tts_engine/tts`
+- `dialogue_manager` talks to this package through `/tts_engine/tts`
+- operator tools such as `rqt_chat` can expose their own TTS server on
+  `/debug/say` without conflicting with the canonical speech path
 - when no downstream TTS action is configured, the package falls back to
   publishing the utterance on `/speech` for the robot driver
+- if no node is subscribed to `/speech` at runtime, the utterance is still
+  mirrored to the debug channels but the robot will not actually speak
 - the debug topic remains available alongside the robot speech path and is
   mirrored by `nao_chatbot/robot_speech_debug` into `rqt_console`
 - this package never claims canonical `/skill/say`; that remains the

@@ -4,16 +4,16 @@ from launch.actions import EmitEvent
 from launch.actions import ExecuteProcess
 from launch.actions import IncludeLaunchDescription
 from launch.actions import RegisterEventHandler
-from launch.actions import TimerAction
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessStart
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.events import matches_action
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import PathJoinSubstitution
 from launch.substitutions import PythonExpression
 from launch_ros.actions import LifecycleNode
 from launch_ros.actions import Node
+from launch_ros.event_handlers import OnStateTransition
 from launch_ros.events.lifecycle import ChangeState
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
@@ -27,8 +27,6 @@ def _make_lifecycle_bundle(
     node_name,
     condition,
     extra_parameters=None,
-    configure_delay_sec=1.0,
-    activate_delay_sec=2.5,
 ):
     config_path = PathJoinSubstitution(
         [FindPackageShare(package_name), "config", "00-defaults.yml"]
@@ -51,34 +49,31 @@ def _make_lifecycle_bundle(
         OnProcessStart(
             target_action=node,
             on_start=[
-                TimerAction(
-                    period=configure_delay_sec,
-                    actions=[
-                        EmitEvent(
-                            event=ChangeState(
-                                lifecycle_node_matcher=matches_action(node),
-                                transition_id=Transition.TRANSITION_CONFIGURE,
-                            )
-                        )
-                    ],
-                    condition=condition,
-                ),
-                TimerAction(
-                    period=activate_delay_sec,
-                    actions=[
-                        EmitEvent(
-                            event=ChangeState(
-                                lifecycle_node_matcher=matches_action(node),
-                                transition_id=Transition.TRANSITION_ACTIVATE,
-                            )
-                        )
-                    ],
-                    condition=condition,
+                EmitEvent(
+                    event=ChangeState(
+                        lifecycle_node_matcher=matches_action(node),
+                        transition_id=Transition.TRANSITION_CONFIGURE,
+                    )
                 ),
             ],
         ),
     )
-    return [node, configure]
+    activate = RegisterEventHandler(
+        OnStateTransition(
+            target_lifecycle_node=node,
+            goal_state="inactive",
+            entities=[
+                EmitEvent(
+                    event=ChangeState(
+                        lifecycle_node_matcher=matches_action(node),
+                        transition_id=Transition.TRANSITION_ACTIVATE,
+                    )
+                )
+            ],
+            handle_once=True,
+        )
+    )
+    return [node, configure, activate]
 
 
 def _prefer_first_non_empty(*names: str):
@@ -169,7 +164,7 @@ def generate_launch_description():
     start_rqt_chat_arg = DeclareLaunchArgument(
         "start_rqt_chat",
         default_value="true",
-        description="Launch rqt_chat in passive mode against the migrated stack.",
+        description="Launch rqt_chat remapped onto the migrated debug TTS action.",
     )
     start_robot_speech_debug_arg = DeclareLaunchArgument(
         "start_robot_speech_debug",
@@ -180,6 +175,11 @@ def generate_launch_description():
         "posture_command_topic",
         default_value="/chatbot/posture_command",
         description="Temporary posture bridge topic used during migration.",
+    )
+    debug_tts_action_name_arg = DeclareLaunchArgument(
+        "debug_tts_action_name",
+        default_value="/debug/say",
+        description="Debug-only TTS action used for rqt_chat and operator monitoring.",
     )
     dialogue_manager_chatbot_arg = DeclareLaunchArgument(
         "dialogue_manager_chatbot",
@@ -257,8 +257,6 @@ def generate_launch_description():
                 )
             },
         ],
-        configure_delay_sec=3.0,
-        activate_delay_sec=6.5,
     )
 
     dialogue_manager_bundle = _make_lifecycle_bundle(
@@ -292,8 +290,6 @@ def generate_launch_description():
                 )
             },
         ],
-        configure_delay_sec=4.5,
-        activate_delay_sec=8.0,
     )
 
     nao_orchestrator_bundle = _make_lifecycle_bundle(
@@ -309,8 +305,6 @@ def generate_launch_description():
                 )
             }
         ],
-        configure_delay_sec=4.0,
-        activate_delay_sec=7.0,
     )
 
     nao_say_skill_bundle = _make_lifecycle_bundle(
@@ -318,8 +312,14 @@ def generate_launch_description():
         executable="start_skill",
         node_name="nao_say_skill",
         condition=IfCondition(LaunchConfiguration("start_nao_say_skill")),
-        configure_delay_sec=5.0,
-        activate_delay_sec=9.0,
+        extra_parameters=[
+            {
+                "debug_tts_action_name": ParameterValue(
+                    LaunchConfiguration("debug_tts_action_name"),
+                    value_type=str,
+                )
+            }
+        ],
     )
 
     nao_replay_motion_launch = IncludeLaunchDescription(
@@ -360,8 +360,6 @@ def generate_launch_description():
         executable="start_skill",
         node_name="nao_look_at",
         condition=IfCondition(LaunchConfiguration("start_nao_look_at")),
-        configure_delay_sec=2.0,
-        activate_delay_sec=5.0,
     )
 
     rqt_console = ExecuteProcess(
@@ -384,15 +382,21 @@ def generate_launch_description():
         cmd=[
             "bash",
             "-lc",
+            [
             "if ! command -v rqt >/dev/null 2>&1; then "
             "echo 'rqt is not installed in this environment'; "
+            "elif ! python3 -c 'import importlib.util,sys; "
+            "sys.exit(0 if importlib.util.find_spec(\"rqt_chat\") else 1)' >/dev/null 2>&1; then "
+            "echo 'rqt_chat is not installed in this environment'; "
             "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
             "echo 'rqt_chat launch skipped: DISPLAY/WAYLAND_DISPLAY is not set'; "
             "else "
-            "exec rqt --standalone rqt_chat.chat.ChatPlugin --ros-args "
-            "-p enable_tts_action_server:=false "
-            "-p robot_output_topic:=/debug/nao_say/speech; "
-            "fi",
+                "exec rqt --standalone rqt_chat.chat.ChatPlugin --ros-args "
+                "-r /tts_engine/tts:=",
+                LaunchConfiguration("debug_tts_action_name"),
+                "; "
+                "fi",
+            ],
         ],
         output="screen",
     )
@@ -422,6 +426,7 @@ def generate_launch_description():
             network_interface_arg,
             qi_listen_url_arg,
             posture_command_topic_arg,
+            debug_tts_action_name_arg,
             dialogue_manager_chatbot_arg,
             dialogue_manager_enable_default_chat_arg,
             dialogue_manager_default_chat_role_arg,

@@ -92,7 +92,12 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'start_rqt_chat',
             default_value='true',
-            description='Launch rqt_chat in passive mode against the migrated stack.',
+            description='Launch rqt_chat remapped onto the migrated debug TTS action.',
+        ),
+        DeclareLaunchArgument(
+            'debug_tts_action_name',
+            default_value='/debug/say',
+            description='Debug-only TTS action used for rqt_chat and operator monitoring.',
         ),
         DeclareLaunchArgument(
             'start_robot_speech_debug',
@@ -170,6 +175,7 @@ def generate_launch_description():
             'chatbot_server_url': LaunchConfiguration('chatbot_server_url'),
             'start_rqt_console': LaunchConfiguration('start_rqt_console'),
             'start_rqt_chat': LaunchConfiguration('start_rqt_chat'),
+            'debug_tts_action_name': LaunchConfiguration('debug_tts_action_name'),
             'start_robot_speech_debug': LaunchConfiguration(
                 'start_robot_speech_debug'
             ),

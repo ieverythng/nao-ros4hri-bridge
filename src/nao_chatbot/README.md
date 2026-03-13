@@ -67,6 +67,10 @@ ros2 run nao_chatbot robot_speech_debug
   routed to `chatbot_llm` immediately
 - `start_rqt_console:=true` now opens the full `rqt` shell instead of only the
   standalone console plugin
-- `start_rqt_chat:=true` launches a patched passive `rqt_chat` window that:
-  keeps user speech publishing, disables its local `/tts_engine/tts` action
-  server, and shows robot replies from `/debug/nao_say/speech`
+- `start_rqt_chat:=true` launches upstream `rqt_chat` unchanged, but remaps its
+  internal `/tts_engine/tts` server onto `/debug/say` so it can display robot
+  speech without conflicting with `nao_say_skill`
+- `debug_tts_action_name:=/debug/say` controls the debug-only TTS action used
+  between `nao_say_skill` and `rqt_chat`
+- the Docker images install `rqt_chat` from the `socialminds-ros-jazzy-rqt-chat`
+  system package; the repo does not vendor that package in `src/`
