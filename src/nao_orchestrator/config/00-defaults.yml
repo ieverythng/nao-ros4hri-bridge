@@ -1,9 +1,10 @@
 /nao_orchestrator:
   ros__parameters:
     intent_topic: "/intents"
-    enable_legacy_intent_bridge: true
+    enable_legacy_intent_bridge: false
     legacy_intent_topic: "/chatbot/intent"
     nao_say_action: "/nao/say"
+    dispatch_speech_intents: false
     nao_say_wait_sec: 0.2
     replay_motion_action: "/skill/replay_motion"
     replay_motion_speed: 0.8

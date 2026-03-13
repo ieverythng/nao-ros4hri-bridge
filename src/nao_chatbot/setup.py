@@ -35,6 +35,7 @@ setup(
     entry_points={
         'console_scripts': [
             'asr_push_to_talk_cli = nao_chatbot.asr_push_to_talk_cli:main',
+            'robot_speech_debug = nao_chatbot.robot_speech_debug:main',
         ],
     },
 )

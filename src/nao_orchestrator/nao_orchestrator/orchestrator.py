@@ -52,9 +52,10 @@ class NaoOrchestrator(Node):
         self.get_logger().info('nao_orchestrator created; waiting for lifecycle configure')
 
         self.declare_parameter('intent_topic', '/intents')
-        self.declare_parameter('enable_legacy_intent_bridge', True)
+        self.declare_parameter('enable_legacy_intent_bridge', False)
         self.declare_parameter('legacy_intent_topic', '/chatbot/intent')
         self.declare_parameter('nao_say_action', '/nao/say')
+        self.declare_parameter('dispatch_speech_intents', False)
         self.declare_parameter('nao_say_wait_sec', 0.2)
         self.declare_parameter('replay_motion_action', '/skill/replay_motion')
         self.declare_parameter('replay_motion_speed', 0.8)
@@ -77,6 +78,9 @@ class NaoOrchestrator(Node):
         )
         self.legacy_intent_topic = str(self.get_parameter('legacy_intent_topic').value)
         self.nao_say_action = str(self.get_parameter('nao_say_action').value)
+        self.dispatch_speech_intents = bool(
+            self.get_parameter('dispatch_speech_intents').value
+        )
         self.nao_say_wait_sec = max(
             0.0,
             float(self.get_parameter('nao_say_wait_sec').value),
@@ -298,6 +302,13 @@ class NaoOrchestrator(Node):
             return
 
         if intent_name in (Intent.GREET, Intent.SAY):
+            if not self.dispatch_speech_intents:
+                self._stats.last_route = 'ignored:speech_owned_by_dialogue_manager'
+                self.get_logger().info(
+                    'Ignored conversational speech intent: %s source=%s'
+                    % (intent_name, source)
+                )
+                return
             text = resolve_say_text(
                 intent_name=intent_name,
                 data=data,
@@ -491,6 +502,10 @@ class NaoOrchestrator(Node):
                 KeyValue(
                     key='legacy_intent_bridge',
                     value=str(self.enable_legacy_intent_bridge),
+                ),
+                KeyValue(
+                    key='dispatch_speech_intents',
+                    value=str(self.dispatch_speech_intents),
                 ),
                 KeyValue(
                     key='intents_received',

@@ -44,6 +44,7 @@ This split is deliberate:
 Primary launch files live in `src/nao_chatbot/launch/`:
 
 - `nao_chatbot_ros4hri_migration.launch.py`: primary migrated runtime
+- `nao_chatbot_ros4hri_with_asr.launch.py`: migrated runtime plus isolated ASR
 - `nao_chatbot_asr_only.launch.py`: isolated ASR pipeline
 
 Quick reference:
@@ -77,7 +78,7 @@ Run the local validation suite:
 
 - `src/dialogue_manager/` and `src/chatbot_llm/` are nested fork repos; review
   and PR them in their own histories, not through the monorepo diff.
-- legacy `mission_controller`, `ollama_chatbot`, and `nao_skill_servers`
+- old `mission_controller`, `ollama_chatbot`, and `nao_skill_servers`
   runtime surfaces have been removed from the active workspace
 - Vendored/local overlay repos under `src/motions_skills/` and `src/std_skills/` are intentionally left untouched.
 - `naoqi_driver` already exposes camera topics and joint interfaces; future vision work should build on those published ROS interfaces instead of adding a parallel capture stack.

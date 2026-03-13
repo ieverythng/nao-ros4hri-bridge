@@ -18,7 +18,7 @@ What moved out of the old `mission_controller` on purpose:
 
 Transition support:
 
-- optional subscription to the legacy string topic `/chatbot/intent`
+- optional subscription to the older string topic `/chatbot/intent`
 - direct dispatch to `/nao/say`, `/skill/replay_motion`, `/skill/do_head_motion`,
   and `/skill/look_at`
 - topic fallbacks matching the old mission-controller flow:
@@ -29,9 +29,11 @@ Current migration boundary:
 
 - `nao_orchestrator` already covers the old mission-controller execution side:
   say dispatch, posture/replay-motion dispatch, retained head motion, and look-at reset
+- conversational speech intents are ignored by default because spoken chatbot
+  replies are already owned by `dialogue_manager -> /tts_engine/tts -> nao_say_skill`
 - `chatbot_llm` does not connect directly to `nao_orchestrator` in steady state
   because the canonical flow is `dialogue_manager -> /intents -> nao_orchestrator`
-- legacy `/chatbot/intent` support remains only as a temporary adapter for older producers
+- the older `/chatbot/intent` adapter is available but disabled by default
 
 Manual smoke examples:
 
@@ -54,6 +56,7 @@ are:
 - `enable_legacy_intent_bridge`
 - `legacy_intent_topic`
 - `nao_say_action`
+- `dispatch_speech_intents`
 - `replay_motion_action`
 - `head_motion_action`
 - `look_at_action`
