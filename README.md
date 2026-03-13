@@ -1,45 +1,52 @@
 # NAO ROS4HRI Bridge
 
-ROS 2 Jazzy workspace for NAO + ROS4HRI orchestration, local ASR, and Ollama-backed chat.
+ROS 2 Jazzy workspace for the NAO ROS4HRI migration.
 
 ## Current Runtime
 
-Core runtime packages:
+Primary migrated packages:
 
-- `dialogue_manager`: bridges `hri_msgs/LiveSpeech` into `/chatbot/user_text`, merges short ASR bursts into one turn, and dispatches `/skill/say`
-- `nao_chatbot`: mission controller, `/skill/chat` server, prompt/config pipeline, push-to-talk CLI
-- `nao_skill_servers`: execution package for posture, head motion, say, and the posture fallback bridge
-- `asr_vosk`: local Vosk ASR lifecycle node publishing ROS4HRI `LiveSpeech`
-- `simple_audio_capture`: microphone capture to `audio_common_msgs/AudioData`
-- `nao_skills`, `communication_skills`, `std_skills`: canonical interfaces
+- `dialogue_manager`: upstream ROS4HRI lifecycle runtime and canonical owner of
+  `/skill/chat`, `/skill/ask`, and `/skill/say`
+- `chatbot_llm`: upstream-aligned chatbot backend contract using the local
+  Ollama prompt/history pipeline
+- `nao_orchestrator`: downstream `/intents` consumer replacing the old
+  mission-controller execution role
+- `nao_say_skill`: NAO-specific speech execution on `/nao/say`
+- `nao_replay_motion`: NAO posture/replay-motion execution and retained
+  `/skill/do_head_motion`
+- `nao_look_at`: scaffolded `/skill/look_at` lifecycle package
 
-Main live flow:
+Legacy or still-migrating pieces:
+
+- `asr_vosk`: active cutover to the upstream ROS4HRI contract is still pending
+- `simple_audio_capture`: still used as the local microphone source and will
+  eventually sit behind the upstream-style ASR adapter path
+- `nao_chatbot_stack.launch.py` and the `mission_controller` codepath remain in
+  the repo only as compatibility/legacy references
+
+Current migrated flow:
 
 ```text
-simple_audio_capture -> asr_vosk -> /humans/voices/anonymous_speaker/speech
-    -> dialogue_manager_node -> /chatbot/user_text
-    -> mission_controller_node
-        -> /skill/chat -> ollama_chatbot_node
-        -> /chatbot/assistant_text + /chatbot/intent
-    -> dialogue_manager_node -> /skill/say -> say_skill_server_node -> /tts_engine/tts
+speech input -> dialogue_manager -> chatbot_llm
+    -> /intents -> nao_orchestrator
+    -> /nao/say | /skill/replay_motion | /skill/do_head_motion | /skill/look_at
 ```
 
-Robot execution flow:
+This split is deliberate:
 
-```text
-mission_controller_node
-    -> /skill/do_posture -> posture_skill_server_node
-       fallback -> /chatbot/posture_command -> nao_posture_bridge_node
-    -> /skill/do_head_motion -> head_motion_skill_server_node -> /joint_angles
-```
+- `dialogue_manager` owns dialogue and canonical communication skills
+- `chatbot_llm` owns backend model interaction
+- `nao_orchestrator` owns robot-side intent dispatch only
 
 ## Launch Profiles
 
 Primary launch files live in `src/nao_chatbot/launch/`:
 
-- `nao_chatbot_stack.launch.py`: full configurable stack surface
-- `nao_chatbot_skills.launch.py`: skills-first runtime without local ASR
-- `nao_chatbot_skills_asr.launch.py`: skills runtime plus `simple_audio_capture` + `asr_vosk`
+- `nao_chatbot_ros4hri_migration.launch.py`: primary migrated runtime
+- `nao_chatbot_stack.launch.py`: legacy pre-migration stack surface
+- `nao_chatbot_skills.launch.py`: legacy compatibility wrapper without local ASR
+- `nao_chatbot_skills_asr.launch.py`: legacy compatibility wrapper plus `simple_audio_capture` + `asr_vosk`
 - `nao_chatbot_asr_only.launch.py`: isolated ASR pipeline
 
 Quick reference:
@@ -58,8 +65,8 @@ Build selected packages:
 ```bash
 source /opt/ros/jazzy/setup.bash
 colcon build --symlink-install --packages-select \
-  std_skills communication_skills nao_skills dialogue_manager \
-  asr_vosk simple_audio_capture nao_skill_servers nao_chatbot
+  chatbot_llm dialogue_manager nao_orchestrator nao_say_skill \
+  nao_replay_motion nao_look_at nao_chatbot asr_vosk simple_audio_capture
 ```
 
 Run the local validation suite:
@@ -71,5 +78,7 @@ Run the local validation suite:
 
 ## Notes
 
+- `src/dialogue_manager/` and `src/chatbot_llm/` are nested fork repos; review
+  and PR them in their own histories, not through the monorepo diff.
 - Vendored/local overlay repos under `src/motions_skills/` and `src/std_skills/` are intentionally left untouched.
 - `naoqi_driver` already exposes camera topics and joint interfaces; future vision work should build on those published ROS interfaces instead of adding a parallel capture stack.

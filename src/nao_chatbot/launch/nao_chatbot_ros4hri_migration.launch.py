@@ -69,6 +69,31 @@ def _make_lifecycle_bundle(
 
 
 def generate_launch_description():
+    start_naoqi_driver_arg = DeclareLaunchArgument(
+        "start_naoqi_driver",
+        default_value="false",
+        description="Optionally launch naoqi_driver alongside the migrated ROS4HRI stack.",
+    )
+    nao_ip_arg = DeclareLaunchArgument(
+        "nao_ip",
+        default_value="172.26.112.62",
+        description="NAO robot IP passed to replay motion nodes and naoqi_driver.",
+    )
+    nao_port_arg = DeclareLaunchArgument(
+        "nao_port",
+        default_value="9559",
+        description="NAOqi port passed to replay motion nodes and naoqi_driver.",
+    )
+    network_interface_arg = DeclareLaunchArgument(
+        "network_interface",
+        default_value="eth0",
+        description="Network interface used by naoqi_driver when enabled.",
+    )
+    qi_listen_url_arg = DeclareLaunchArgument(
+        "qi_listen_url",
+        default_value="tcp://0.0.0.0:0",
+        description="QI listen URL used by naoqi_driver when enabled.",
+    )
     start_chatbot_llm_arg = DeclareLaunchArgument(
         "start_chatbot_llm",
         default_value="true",
@@ -98,16 +123,6 @@ def generate_launch_description():
         "start_nao_look_at",
         default_value="true",
         description="Launch the scaffolded look_at skill.",
-    )
-    nao_ip_arg = DeclareLaunchArgument(
-        "nao_ip",
-        default_value="172.26.112.62",
-        description="NAO robot IP passed to replay motion nodes.",
-    )
-    nao_port_arg = DeclareLaunchArgument(
-        "nao_port",
-        default_value="9559",
-        description="NAOqi port passed to replay motion nodes.",
     )
     posture_command_topic_arg = DeclareLaunchArgument(
         "posture_command_topic",
@@ -180,6 +195,21 @@ def generate_launch_description():
         }.items(),
     )
 
+    naoqi_driver_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [FindPackageShare("naoqi_driver"), "launch", "naoqi_driver.launch.py"]
+            )
+        ),
+        condition=IfCondition(LaunchConfiguration("start_naoqi_driver")),
+        launch_arguments={
+            "nao_ip": LaunchConfiguration("nao_ip"),
+            "nao_port": LaunchConfiguration("nao_port"),
+            "network_interface": LaunchConfiguration("network_interface"),
+            "qi_listen_url": LaunchConfiguration("qi_listen_url"),
+        }.items(),
+    )
+
     nao_look_at_bundle = _make_lifecycle_bundle(
         package_name="nao_look_at",
         executable="start_skill",
@@ -191,6 +221,7 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
+            start_naoqi_driver_arg,
             start_chatbot_llm_arg,
             start_dialogue_manager_arg,
             start_nao_orchestrator_arg,
@@ -199,8 +230,11 @@ def generate_launch_description():
             start_nao_look_at_arg,
             nao_ip_arg,
             nao_port_arg,
+            network_interface_arg,
+            qi_listen_url_arg,
             posture_command_topic_arg,
             dialogue_manager_chatbot_arg,
+            naoqi_driver_launch,
             *chatbot_llm_bundle,
             *dialogue_manager_bundle,
             *nao_orchestrator_bundle,

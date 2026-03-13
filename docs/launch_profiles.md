@@ -1,6 +1,6 @@
 # Launch Profiles
 
-Last updated: 2026-03-09
+Last updated: 2026-03-13
 
 This is the quick execution guide for the profile launch files in this repo.
 
@@ -8,14 +8,16 @@ This is the quick execution guide for the profile launch files in this repo.
 
 | Launch file | What it enables by default | What it disables by default |
 |---|---|---|
-| `nao_chatbot_stack.launch.py` | Full configurable stack surface | `asr_vosk_enabled:=false`, `asr_audio_capture_enabled:=false` |
-| `nao_chatbot_skills.launch.py` | Skills-first backend flow (`/skill/chat`, `/skill/say`, `/skill/do_posture`, `/skill/do_head_motion`) | Local ASR |
-| `nao_chatbot_skills_asr.launch.py` | Skills flow + local ASR (`simple_audio_capture` + `asr_vosk`) | None (ASR enabled) |
+| `nao_chatbot_ros4hri_migration.launch.py` | Migrated ROS4HRI stack (`chatbot_llm`, `dialogue_manager`, `nao_orchestrator`, `nao_say_skill`, `nao_replay_motion`, `nao_look_at`) | Local ASR |
+| `nao_chatbot_stack.launch.py` | Legacy pre-migration stack surface | `asr_vosk_enabled:=false`, `asr_audio_capture_enabled:=false` |
+| `nao_chatbot_skills.launch.py` | Legacy skills-first backend flow | Local ASR |
+| `nao_chatbot_skills_asr.launch.py` | Legacy skills flow + local ASR | None (ASR enabled) |
 | `nao_chatbot_asr_only.launch.py` | Isolated ASR pipeline (`simple_audio_capture` + `asr_vosk`) | Dialogue/mission/chat/robot nodes |
 
 ## Show Arguments
 
 ```bash
+ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py --show-args
 ros2 launch nao_chatbot nao_chatbot_stack.launch.py --show-args
 ros2 launch nao_chatbot nao_chatbot_skills.launch.py --show-args
 ros2 launch nao_chatbot nao_chatbot_skills_asr.launch.py --show-args
@@ -24,15 +26,29 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py --show-args
 
 ## Common Execution Commands
 
-### Skills-only profile
+### Primary migrated stack
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py
+```
+
+With robot driver:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
+  start_naoqi_driver:=true \
+  nao_ip:=172.26.112.62
+```
+
+### Legacy skills-only profile
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_skills.launch.py
 ```
 
-This starts orchestration plus execution servers from package `nao_skill_servers`.
+This is kept only as a compatibility launch while the repo finishes the ASR cutover.
 
-### Skills + ASR profile
+### Legacy skills + ASR profile
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_skills_asr.launch.py \
@@ -71,7 +87,7 @@ Push-to-talk helper:
 ros2 run nao_chatbot asr_push_to_talk_cli
 ```
 
-### Force rules mode in any profile
+### Force rules mode in the legacy stack
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_skills.launch.py mission_mode:=rules
@@ -89,7 +105,18 @@ ros2 launch nao_chatbot nao_chatbot_skills.launch.py mission_mode:=rules
 - `dialogue_user_turn_holdoff_sec`: buffers and merges consecutive ASR finals before forwarding `/chatbot/user_text`.
 - `dialogue_ignore_user_speech_while_busy`: blocks overlapping user turns while the assistant is still processing/speaking.
 
-### Chat behavior toggles
+### Migrated stack toggles
+
+- `start_chatbot_llm`
+- `start_dialogue_manager`
+- `start_nao_orchestrator`
+- `start_nao_say_skill`
+- `start_nao_replay_motion`
+- `start_nao_look_at`
+- `start_naoqi_driver`
+- `dialogue_manager_chatbot`
+
+### Legacy chat behavior toggles
 
 - `mission_mode`: `rules` or `backend`.
 - `ollama_enabled`: enable/disable live Ollama calls in the chat skill server.

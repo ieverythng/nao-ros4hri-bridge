@@ -8,6 +8,13 @@ Steady-state target:
 - dispatch canonical and NAO-specific skills
 - replace the local mission-controller role previously hosted in `nao_chatbot`
 
+What moved out of the old `mission_controller` on purpose:
+
+- user-text ingestion now belongs to `dialogue_manager`
+- chatbot turn execution now belongs to `dialogue_manager` + `chatbot_llm`
+- assistant-text generation/history no longer lives in the orchestrator
+- `nao_orchestrator` only owns downstream intent normalization and robot-skill dispatch
+
 Transition support:
 
 - optional subscription to the legacy string topic `/chatbot/intent`
@@ -21,10 +28,9 @@ Current migration boundary:
 
 - `nao_orchestrator` already covers the old mission-controller execution side:
   say dispatch, posture/replay-motion dispatch, retained head motion, and look-at reset
-- `chatbot_llm` is not connected directly to `nao_orchestrator` in the migration launch yet
-  because the steady-state contract goes through upstream `dialogue_manager`
-- until `dialogue_manager` is cut over, smoke tests should drive the orchestrator with
-  either `/chatbot/intent` or `/intents`
+- `chatbot_llm` does not connect directly to `nao_orchestrator` in steady state
+  because the canonical flow is `dialogue_manager -> /intents -> nao_orchestrator`
+- legacy `/chatbot/intent` support remains only as a temporary adapter for older producers
 
 Manual smoke examples:
 
