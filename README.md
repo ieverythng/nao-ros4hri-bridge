@@ -103,8 +103,9 @@ For the local KB smoke test:
   `/kb/revise`
 - inspect the KB with `/kb/query`
 - ask questions through `rqt_chat`
-- `dialogue_manager` now starts default chat with KB grounding enabled, so
-  `chatbot_llm` will query `KnowledgeCore` on each response turn
+- `chatbot_llm` now has KB querying enabled in its default node config, so it
+  will query `KnowledgeCore` on each response turn without a dialogue-role
+  override
 
 ## Notes
 

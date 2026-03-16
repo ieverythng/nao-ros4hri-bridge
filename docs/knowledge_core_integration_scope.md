@@ -1,87 +1,121 @@
 # KnowledgeCore Integration Scope
 
-This document records exactly what was added or changed for the local
-KnowledgeCore and `interaction_sim` integration so the branch can be reviewed
-against upstream behavior.
+This document records exactly what needs to be present in the workspace for the
+ROS4HRI migration to use the upstream symbolic knowledge stack, and which parts
+of the current integration are upstream versus local glue.
 
-## Upstream Packages Added To `src/`
+## Source Overlays To Download
 
-The following packages were added as source overlays and are intended to remain
-upstream code:
+Codex on a fresh laptop should ensure these source overlays exist under `src/`:
+
+- `src/chatbot_llm`
+- `src/dialogue_manager`
 
 - `src/kb_msgs`
 - `src/knowledge_core`
 - `src/interaction_sim`
 
-Current local state:
+Canonical clone sources for the forked migration packages:
 
-- no source changes inside `src/kb_msgs`
-- no source changes inside `src/knowledge_core`
-- no source changes inside `src/interaction_sim`
+- `https://github.com/ieverythng/nao_chatbot_llm.git`
+  branch: `feat/juan_nao_chatbot`
+- `https://github.com/ieverythng/dialogue_manager.git`
+  branch: `juan-feat-1`
 
-These packages were added only so the workspace can build and run the upstream
-knowledge/simulator stack locally.
+Canonical clone sources for the upstream knowledge/simulator packages:
 
-## Why `kb_msgs` Was Added
+- `https://github.com/pal-robotics/kb_msgs.git`
+- `https://gitlab.iiia.csic.es/socialminds/neurosymbolic-ai/knowledge_core.git`
+- `https://gitlab.iiia.csic.es/socialminds/ros4hri/interaction_sim.git`
 
-`kb_msgs` is not a local invention. It is part of the official ROS interface
-used by `knowledge_core`.
+The tracked helper for this workspace is:
+
+- `./scripts/bootstrap_socialminds_sources.sh`
+
+These packages should stay upstream and unmodified unless a specific bug forces
+an explicit local patch.
+
+The forked overlays are part of the migration itself:
+
+- `chatbot_llm` is the NAO-side backend where the read-only KB-to-LLM adapter
+  lives
+- `dialogue_manager` is the canonical ROS4HRI dialogue runtime used both by the
+  migrated NAO stack and by `interaction_sim`
+
+## Why `kb_msgs` Is Required
+
+`kb_msgs` is part of the official ROS interface for `knowledge_core`.
 
 In the upstream `knowledge_core` repo:
 
 - `package.xml` declares `kb_msgs` as an `exec_depend`
-- `knowledge_core_ros.py` imports services such as `Query`, `Revise`, `Manage`,
-  `About`, `Lookup`, `Sparql`, and `Event` from `kb_msgs`
-- the upstream README states that `kb_msgs` is required if the ROS interface is
-  used
+- `knowledge_core_ros.py` imports ROS services and messages from `kb_msgs`
+- the upstream README says `kb_msgs` is required when using the ROS interface
 
-`reasonable` is separate and optional. It is only the OWL RL reasoner backend
-used by `knowledge_core` when reasoning is enabled.
+`reasonable` is separate and optional. It provides OWL RL reasoning support,
+but it is not the ROS transport layer.
 
-## Local Changes Outside Upstream KB Packages
+## Upstream Behavior
 
-The local integration changes are in the existing fork overlays and launch
-surface, not in `knowledge_core` or `interaction_sim`.
+What stays upstream in the current test path:
+
+- `kb_msgs` defines the ROS message/service types
+- `knowledge_core` stores symbolic facts, performs optional reasoning, and
+  exposes `/kb/query`, `/kb/revise`, `/kb/events`, and related APIs
+- `interaction_sim` launches the upstream simulator loop, including
+  `knowledge_core`, `chatbot_llm`, `dialogue_manager`, and the UI tools
+
+No source changes are currently required inside:
+
+- `src/kb_msgs`
+- `src/knowledge_core`
+- `src/interaction_sim`
+
+The migrated stack also assumes these fork overlays are present:
+
+- `src/chatbot_llm`
+- `src/dialogue_manager`
+
+## Local Changes In The Migration Workspace
+
+The current local integration changes are limited to the existing forked
+packages and NAO launch surface.
 
 ### `chatbot_llm`
 
-Custom local change:
+Local change:
 
 - add a read-only `/kb/query` client
-- fetch a KB snapshot once per response turn
-- append that snapshot to the LLM prompts for response generation and intent
-  extraction
+- fetch KB state once per response turn
+- convert the structured `/kb/query` result into prompt text for the LLM
 
-This is local glue so the LLM can consume the upstream symbolic state. It does
-not modify `knowledge_core` semantics or API.
+This is the only vital local seam in the current test path. It exists because
+our `chatbot_llm` backend is the NAO-side LLM implementation and upstream
+`knowledge_core` does not natively know how to feed an LLM prompt.
 
 ### `dialogue_manager`
 
-Custom local change:
+Current test-path change:
 
-- set `default_chat_configuration` to a JSON block that enables the local
-  `chatbot_llm` KB snapshot feature for the default chat
+- no custom default role configuration is required
 
-This change exists so upstream `interaction_sim` can continue launching
-`dialogue_manager.launch.py` with `enable_default_chat=True` and still exercise
-the KB-grounded chatbot path.
+For the current test path, `dialogue_manager` stays on its upstream-style
+default chat flow and does not inject a custom KB role block.
 
 ### `nao_chatbot`
 
-Custom local changes:
+Local changes:
 
-- add launch support for starting `knowledge_core`
-- pass the same default KB role configuration in the migrated NAO launch path
-- document the simulator-based test path
+- add launch support for starting `knowledge_core` in the migrated NAO stack
+- document the upstream simulator-based smoke-test path
 
-## What `knowledge_snapshot` Is
+## What The Previous `knowledge_snapshot` Seam Was
 
-`knowledge_snapshot` is a local configuration block interpreted only by the
-forked `chatbot_llm` package in this workspace. It is not part of upstream
-`knowledge_core` and it is not a new KB service.
+`knowledge_snapshot` is a local `chatbot_llm` concept, not an upstream
+`knowledge_core` concept.
 
-Its purpose is to describe how `chatbot_llm` should query `/kb/query` before a
-turn:
+It was a role-level JSON block used to tell `chatbot_llm` how to query
+`/kb/query` before a turn:
 
 - `enabled`
 - `patterns`
@@ -90,30 +124,29 @@ turn:
 - `max_results`
 - `max_chars`
 
-It is effectively a prompt-grounding adapter between the upstream KB and the
-LLM.
+That mechanism still exists in the local `chatbot_llm` code, but it is not the
+default integration path anymore.
 
-## Current Behavioral Contract
+## Current Default Test Path
 
-What stays upstream:
+The current default test path is deliberately narrower:
 
-- `kb_msgs` service/message definitions
-- `knowledge_core` storage, reasoning, events, and ROS APIs
-- `interaction_sim` simulator loop and UI
+- `interaction_sim` launches the upstream simulator stack
+- `chatbot_llm` has KB querying enabled through node parameters
+- `dialogue_manager` uses its normal default chat behavior
+- `knowledge_core` remains the only symbolic store
 
-What is custom in this workspace:
+This keeps the test closer to upstream behavior while preserving the minimum
+LLM-side glue needed for the NAO chatbot.
 
-- the LLM-side read-only KB consumer path in `chatbot_llm`
-- the launch/default-role wiring that turns that consumer path on for default
-  chat sessions
+## Expected Smoke Test
 
-## If Maximum Upstream Alignment Is Preferred
+After the overlays are present and the workspace is built, the intended local
+test is:
 
-The most custom part today is `knowledge_snapshot`.
+1. launch `interaction_sim`
+2. add or move objects through `rqt_human_radar` or `/kb/revise`
+3. verify the symbolic state through `/kb/query`
+4. ask the chatbot about those objects through `rqt_chat`
 
-If you want a narrower local diff, the next simplification would be:
-
-- remove role-level `knowledge_snapshot` JSON from `dialogue_manager`
-- enable KB querying directly through `chatbot_llm` node parameters instead
-
-That would keep the same behavior while reducing one custom configuration seam.
+If that works, the migration is complete enough for the first integration test.

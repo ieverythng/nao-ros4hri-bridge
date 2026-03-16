@@ -7,12 +7,6 @@ from launch.substitutions import PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 
 
-DEFAULT_KNOWLEDGE_CHAT_CONFIGURATION = (
-    '{"knowledge_snapshot":{"enabled":true,"patterns":["?s ?p ?o"],'
-    '"vars":["?s","?p","?o"],"models":[],"max_results":40,"max_chars":3000}}'
-)
-
-
 def generate_launch_description():
     launch_args = [
         DeclareLaunchArgument(
@@ -67,7 +61,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'dialogue_manager_default_chat_configuration',
-            default_value=DEFAULT_KNOWLEDGE_CHAT_CONFIGURATION,
+            default_value='',
             description='Optional JSON configuration passed to the default dialogue session.',
         ),
         DeclareLaunchArgument(

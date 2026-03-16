@@ -20,12 +20,6 @@ from launch_ros.substitutions import FindPackageShare
 from lifecycle_msgs.msg import Transition
 
 
-DEFAULT_KNOWLEDGE_CHAT_CONFIGURATION = (
-    '{"knowledge_snapshot":{"enabled":true,"patterns":["?s ?p ?o"],'
-    '"vars":["?s","?p","?o"],"models":[],"max_results":40,"max_chars":3000}}'
-)
-
-
 def _make_lifecycle_bundle(
     *,
     package_name,
@@ -209,7 +203,7 @@ def generate_launch_description():
     )
     dialogue_manager_default_chat_configuration_arg = DeclareLaunchArgument(
         "dialogue_manager_default_chat_configuration",
-        default_value=DEFAULT_KNOWLEDGE_CHAT_CONFIGURATION,
+        default_value="",
         description="Optional JSON configuration passed to the default dialogue session.",
     )
     chatbot_model_arg = DeclareLaunchArgument(
