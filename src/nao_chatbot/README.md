@@ -70,3 +70,8 @@ ros2 run nao_chatbot robot_speech_debug
 - `start_rqt_chat:=true` launches a patched passive `rqt_chat` window that:
   keeps user speech publishing, disables its local `/tts_engine/tts` action
   server, and shows robot replies from `/debug/nao_say/speech`
+- `KnowledgeCore` is consumed unchanged as the shared symbolic store; the
+  migrated NAO stack reads it via `chatbot_llm` but does not write to it
+- `interaction_sim` remains the upstream simulator/reference environment for
+  exercising `knowledge_core`, `chatbot_llm`, and `dialogue_manager`; it is not
+  embedded in the NAO launch graph

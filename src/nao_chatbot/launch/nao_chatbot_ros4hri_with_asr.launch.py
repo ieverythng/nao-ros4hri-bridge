@@ -7,6 +7,12 @@ from launch.substitutions import PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 
 
+DEFAULT_KNOWLEDGE_CHAT_CONFIGURATION = (
+    '{"knowledge_snapshot":{"enabled":true,"patterns":["?s ?p ?o"],'
+    '"vars":["?s","?p","?o"],"models":[],"max_results":40,"max_chars":3000}}'
+)
+
+
 def generate_launch_description():
     launch_args = [
         DeclareLaunchArgument(
@@ -35,6 +41,11 @@ def generate_launch_description():
             description='QI listen URL used by naoqi_driver when enabled.',
         ),
         DeclareLaunchArgument(
+            'start_knowledge_core',
+            default_value='true',
+            description='Optionally launch KnowledgeCore together with the migrated stack.',
+        ),
+        DeclareLaunchArgument(
             'posture_command_topic',
             default_value='/chatbot/posture_command',
             description='Temporary posture bridge topic used during migration.',
@@ -56,7 +67,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'dialogue_manager_default_chat_configuration',
-            default_value='',
+            default_value=DEFAULT_KNOWLEDGE_CHAT_CONFIGURATION,
             description='Optional JSON configuration passed to the default dialogue session.',
         ),
         DeclareLaunchArgument(
@@ -148,6 +159,7 @@ def generate_launch_description():
         ),
         launch_arguments={
             'start_naoqi_driver': LaunchConfiguration('start_naoqi_driver'),
+            'start_knowledge_core': LaunchConfiguration('start_knowledge_core'),
             'nao_ip': LaunchConfiguration('nao_ip'),
             'nao_port': LaunchConfiguration('nao_port'),
             'network_interface': LaunchConfiguration('network_interface'),

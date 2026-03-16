@@ -20,6 +20,12 @@ from launch_ros.substitutions import FindPackageShare
 from lifecycle_msgs.msg import Transition
 
 
+DEFAULT_KNOWLEDGE_CHAT_CONFIGURATION = (
+    '{"knowledge_snapshot":{"enabled":true,"patterns":["?s ?p ?o"],'
+    '"vars":["?s","?p","?o"],"models":[],"max_results":40,"max_chars":3000}}'
+)
+
+
 def _make_lifecycle_bundle(
     *,
     package_name,
@@ -136,6 +142,11 @@ def generate_launch_description():
         default_value="true",
         description="Launch the upstream-aligned chatbot_llm backend.",
     )
+    start_knowledge_core_arg = DeclareLaunchArgument(
+        "start_knowledge_core",
+        default_value="true",
+        description="Launch KnowledgeCore for chatbot_llm grounding.",
+    )
     start_dialogue_manager_arg = DeclareLaunchArgument(
         "start_dialogue_manager",
         default_value="true",
@@ -198,7 +209,7 @@ def generate_launch_description():
     )
     dialogue_manager_default_chat_configuration_arg = DeclareLaunchArgument(
         "dialogue_manager_default_chat_configuration",
-        default_value="",
+        default_value=DEFAULT_KNOWLEDGE_CHAT_CONFIGURATION,
         description="Optional JSON configuration passed to the default dialogue session.",
     )
     chatbot_model_arg = DeclareLaunchArgument(
@@ -259,6 +270,19 @@ def generate_launch_description():
         ],
         configure_delay_sec=3.0,
         activate_delay_sec=6.5,
+    )
+
+    knowledge_core_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("knowledge_core"),
+                    "launch",
+                    "knowledge_core.launch.py",
+                ]
+            )
+        ),
+        condition=IfCondition(LaunchConfiguration("start_knowledge_core")),
     )
 
     dialogue_manager_bundle = _make_lifecycle_bundle(
@@ -409,6 +433,7 @@ def generate_launch_description():
         [
             start_naoqi_driver_arg,
             start_chatbot_llm_arg,
+            start_knowledge_core_arg,
             start_dialogue_manager_arg,
             start_nao_orchestrator_arg,
             start_nao_say_skill_arg,
@@ -435,6 +460,7 @@ def generate_launch_description():
             rqt_console,
             rqt_chat,
             robot_speech_debug,
+            knowledge_core_launch,
             *chatbot_llm_bundle,
             *dialogue_manager_bundle,
             *nao_orchestrator_bundle,
