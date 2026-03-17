@@ -1,23 +1,18 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.actions import EmitEvent
 from launch.actions import ExecuteProcess
 from launch.actions import IncludeLaunchDescription
 from launch.actions import RegisterEventHandler
 from launch.conditions import IfCondition
-from launch.event_handlers import OnProcessStart
-from launch.events import matches_action
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.event_handlers import OnProcessExit
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import PathJoinSubstitution
 from launch.substitutions import PythonExpression
 from launch_ros.actions import LifecycleNode
 from launch_ros.actions import Node
-from launch_ros.event_handlers import OnStateTransition
-from launch_ros.events.lifecycle import ChangeState
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
-from lifecycle_msgs.msg import Transition
 
 
 def _make_lifecycle_bundle(
@@ -45,35 +40,75 @@ def _make_lifecycle_bundle(
         emulate_tty=True,
         condition=condition,
     )
-    configure = RegisterEventHandler(
-        OnProcessStart(
-            target_action=node,
-            on_start=[
-                EmitEvent(
-                    event=ChangeState(
-                        lifecycle_node_matcher=matches_action(node),
-                        transition_id=Transition.TRANSITION_CONFIGURE,
-                    )
-                ),
-            ],
-        ),
+    bootstrap = ExecuteProcess(
+        cmd=[
+            "bash",
+            "-lc",
+            _lifecycle_bootstrap_script(node_name),
+        ],
+        output="screen",
+        condition=condition,
     )
-    activate = RegisterEventHandler(
-        OnStateTransition(
-            target_lifecycle_node=node,
-            goal_state="inactive",
-            entities=[
-                EmitEvent(
-                    event=ChangeState(
-                        lifecycle_node_matcher=matches_action(node),
-                        transition_id=Transition.TRANSITION_ACTIVATE,
-                    )
-                )
-            ],
-            handle_once=True,
+    return [node, bootstrap]
+
+
+def _not_launching_chatbot_llm_condition():
+    return IfCondition(
+        PythonExpression(
+            [
+                '"',
+                LaunchConfiguration("start_dialogue_manager"),
+                '" == "true" and "',
+                LaunchConfiguration("start_chatbot_llm"),
+                '" != "true"',
+            ]
         )
     )
-    return [node, configure, activate]
+
+
+def _launching_chatbot_llm_condition():
+    return IfCondition(
+        PythonExpression(
+            [
+                '"',
+                LaunchConfiguration("start_dialogue_manager"),
+                '" == "true" and "',
+                LaunchConfiguration("start_chatbot_llm"),
+                '" == "true"',
+            ]
+        )
+    )
+
+
+def _lifecycle_bootstrap_script(node_name: str, timeout_sec: int = 30) -> str:
+    normalized_name = f"/{str(node_name).lstrip('/')}"
+    return f"""
+node_name="{normalized_name}"
+deadline=$((SECONDS + {max(1, int(timeout_sec))}))
+while true; do
+  state="$(ros2 lifecycle get "$node_name" 2>/dev/null | awk '{{print $1}}')"
+  case "$state" in
+    active)
+      exit 0
+      ;;
+    inactive)
+      ros2 lifecycle set "$node_name" activate >/dev/null 2>&1 || true
+      ;;
+    unconfigured)
+      ros2 lifecycle set "$node_name" configure >/dev/null 2>&1 || true
+      ;;
+    finalized|errorprocessing)
+      echo "lifecycle bootstrap failed for $node_name: state=$state" >&2
+      exit 1
+      ;;
+  esac
+  if [ "$SECONDS" -ge "$deadline" ]; then
+    echo "lifecycle bootstrap timed out for $node_name (last_state=${{state:-unknown}})" >&2
+    exit 1
+  fi
+  sleep 0.2
+done
+""".strip()
 
 
 def _prefer_first_non_empty(*names: str):
@@ -159,12 +194,12 @@ def generate_launch_description():
     start_rqt_console_arg = DeclareLaunchArgument(
         "start_rqt_console",
         default_value="true",
-        description="Launch the full rqt shell for runtime tools.",
+        description="Launch a single remapped rqt shell for console and chat plugins.",
     )
     start_rqt_chat_arg = DeclareLaunchArgument(
         "start_rqt_chat",
-        default_value="true",
-        description="Launch rqt_chat remapped onto the migrated debug TTS action.",
+        default_value="false",
+        description="Optionally launch a separate rqt_chat window remapped onto the debug TTS action.",
     )
     start_robot_speech_debug_arg = DeclareLaunchArgument(
         "start_robot_speech_debug",
@@ -367,13 +402,17 @@ def generate_launch_description():
         cmd=[
             "bash",
             "-lc",
-            "if ! command -v rqt >/dev/null 2>&1; then "
-            "echo 'rqt is not installed in this environment'; "
-            "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
-            "echo 'rqt launch skipped: DISPLAY/WAYLAND_DISPLAY is not set'; "
-            "else "
-            "exec rqt; "
-            "fi",
+            [
+                "if ! command -v rqt >/dev/null 2>&1; then "
+                "echo 'rqt is not installed in this environment'; "
+                "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
+                "echo 'rqt launch skipped: DISPLAY/WAYLAND_DISPLAY is not set'; "
+                "else "
+                "exec rqt --ros-args -r /tts_engine/tts:=",
+                LaunchConfiguration("debug_tts_action_name"),
+                "; "
+                "fi",
+            ],
         ],
         output="screen",
     )
@@ -391,7 +430,7 @@ def generate_launch_description():
             "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
             "echo 'rqt_chat launch skipped: DISPLAY/WAYLAND_DISPLAY is not set'; "
             "else "
-                "exec rqt --standalone rqt_chat.chat.ChatPlugin --ros-args "
+                "exec rqt --clear-config --standalone rqt_chat.chat.ChatPlugin --ros-args "
                 "-r /tts_engine/tts:=",
                 LaunchConfiguration("debug_tts_action_name"),
                 "; "
@@ -407,6 +446,23 @@ def generate_launch_description():
         output="screen",
         emulate_tty=True,
         condition=IfCondition(LaunchConfiguration("start_robot_speech_debug")),
+    )
+
+    dialogue_manager_node = dialogue_manager_bundle[0]
+    dialogue_manager_bootstrap = dialogue_manager_bundle[1]
+    chatbot_llm_bootstrap = chatbot_llm_bundle[1]
+
+    dialogue_manager_bootstrap_immediate = ExecuteProcess(
+        cmd=dialogue_manager_bootstrap.cmd,
+        output="screen",
+        condition=_not_launching_chatbot_llm_condition(),
+    )
+    dialogue_manager_bootstrap_after_chatbot = RegisterEventHandler(
+        OnProcessExit(
+            target_action=chatbot_llm_bootstrap,
+            on_exit=[dialogue_manager_bootstrap],
+        ),
+        condition=_launching_chatbot_llm_condition(),
     )
 
     return LaunchDescription(
@@ -441,7 +497,9 @@ def generate_launch_description():
             rqt_chat,
             robot_speech_debug,
             *chatbot_llm_bundle,
-            *dialogue_manager_bundle,
+            dialogue_manager_node,
+            dialogue_manager_bootstrap_immediate,
+            dialogue_manager_bootstrap_after_chatbot,
             *nao_orchestrator_bundle,
             *nao_say_skill_bundle,
             nao_replay_motion_launch,

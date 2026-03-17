@@ -24,7 +24,6 @@ Useful demo overrides:
 ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
   start_naoqi_driver:=true \
   start_rqt_console:=true \
-  start_rqt_chat:=true \
   ollama_model:=gpt-oss:120b-cloud
 ```
 
@@ -56,6 +55,16 @@ logs, which makes the exact spoken text visible in `rqt_console`:
 ros2 run nao_chatbot robot_speech_debug
 ```
 
+## Provenance
+
+- `nao_chatbot` is a local utility/launch package, not a forked upstream runtime
+  repo
+- it exists to compose the migrated stack, expose demo/debug launch surfaces,
+  and ship operator helpers such as `asr_push_to_talk_cli` and
+  `robot_speech_debug`
+- chatbot execution remains in the forked `chatbot_llm` repo and dialogue
+  execution remains in the forked `dialogue_manager` repo
+
 ## Notes
 
 - legacy mission-controller and `/skill/chat` server code has been removed from
@@ -65,11 +74,10 @@ ros2 run nao_chatbot robot_speech_debug
 - this package is now a launch surface, not a skill implementation package
 - the migrated launch enables default chat by default so incoming speech is
   routed to `chatbot_llm` immediately
-- `start_rqt_console:=true` now opens the full `rqt` shell instead of only the
-  standalone console plugin
-- `start_rqt_chat:=true` launches upstream `rqt_chat` unchanged, but remaps its
-  internal `/tts_engine/tts` server onto `/debug/say` so it can display robot
-  speech without conflicting with `nao_say_skill`
+- `start_rqt_console:=true` opens a single remapped `rqt` shell; if you load
+  `rqt_chat` there, it shares the same `/tts_engine/tts -> /debug/say` remap
+- `start_rqt_chat:=true` is now optional and only needed if you want a separate
+  dedicated `rqt_chat` window
 - `debug_tts_action_name:=/debug/say` controls the debug-only TTS action used
   between `nao_say_skill` and `rqt_chat`
 - the Docker images install `rqt_chat` from the `socialminds-ros-jazzy-rqt-chat`

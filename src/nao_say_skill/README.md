@@ -50,6 +50,19 @@ As part of the migration stack:
 ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py
 ```
 
+## Provenance
+
+- package type: local NAO-specific lifecycle skill, not a fork of an upstream
+  runtime repo
+- scaffold basis: `rpk` `skills/say_python` template
+- architecture style: hybrid
+  - public speech contracts stay ROS4HRI-compatible through `/tts_engine/tts`
+    and `communication_skills/action/Say`
+  - execution is NAO-specific through `/nao/say`, `/speech`, and the debug
+    speech surfaces
+- review boundary: canonical `/skill/say` ownership remains in
+  `dialogue_manager`; this package is the robot-side execution hook only
+
 ## Expected Behavior
 
 - when the TTS action server is available, `/nao/say` forwards the request to it

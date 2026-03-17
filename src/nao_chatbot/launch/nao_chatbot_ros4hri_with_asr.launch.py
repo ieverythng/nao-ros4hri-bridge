@@ -87,12 +87,12 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'start_rqt_console',
             default_value='true',
-            description='Launch the full rqt shell for runtime tools.',
+            description='Launch a single remapped rqt shell for console and chat plugins.',
         ),
         DeclareLaunchArgument(
             'start_rqt_chat',
-            default_value='true',
-            description='Launch rqt_chat remapped onto the migrated debug TTS action.',
+            default_value='false',
+            description='Optionally launch a separate rqt_chat window remapped onto the debug TTS action.',
         ),
         DeclareLaunchArgument(
             'debug_tts_action_name',
