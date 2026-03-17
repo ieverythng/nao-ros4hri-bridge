@@ -47,9 +47,15 @@ The package still ships the push-to-talk helper used by `asr_vosk`:
 ros2 run nao_chatbot asr_push_to_talk_cli
 ```
 
-It also ships a small speech-debug helper that mirrors final robot utterances
-from `/debug/nao_say/speech` and `/dialogue_manager/closed_captions` into ROS
-logs, which makes the exact spoken text visible in `rqt_console`:
+It also ships a small speech-debug helper that mirrors the live conversation
+into ROS logs:
+
+- robot speech from `/debug/nao_say/speech`
+- system captions from `/dialogue_manager/closed_captions`
+- user captions from `/dialogue_manager/closed_captions`
+
+The helper labels user and robot captions separately so the operator trace in
+`rqt_console` does not make user speech look like robot speech:
 
 ```bash
 ros2 run nao_chatbot robot_speech_debug
