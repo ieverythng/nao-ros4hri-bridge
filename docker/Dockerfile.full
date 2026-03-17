@@ -37,6 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-jazzy-rqt-console \
     ros-jazzy-rqt-gui \
     ros-jazzy-rqt-gui-py \
+    socialminds-ros-jazzy-rqt-chat \
     && rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m pip install --no-cache-dir --break-system-packages vosk
@@ -61,8 +62,7 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       nao_look_at \
       nao_orchestrator \
       nao_chatbot \
-      simple_audio_capture \
-      rqt_chat"
+      simple_audio_capture"
 
 COPY docker/ros_entrypoint.sh /
 RUN chmod +x /ros_entrypoint.sh

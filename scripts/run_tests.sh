@@ -67,12 +67,18 @@ PY
 
 echo "[2/8] nao_chatbot unit tests"
 PYTHONPATH="src/nao_chatbot:${PYTHONPATH:-}" python3 -m pytest -q \
-  src/nao_chatbot/test/unit/test_asr_push_to_talk_cli.py
+  src/nao_chatbot/test/unit/test_asr_push_to_talk_cli.py \
+  src/nao_chatbot/test/unit/test_robot_speech_debug.py
 
 echo "[3/8] chatbot_llm unit tests"
-PYTHONPATH="src/chatbot_llm:${PYTHONPATH:-}" python3 -m pytest -q \
-  src/chatbot_llm/test/test_intent_adapter.py \
-  src/chatbot_llm/test/test_turn_engine.py
+if have_python_module hri_actions_msgs && have_python_module chatbot_msgs; then
+  PYTHONPATH="src/chatbot_llm:${PYTHONPATH:-}" python3 -m pytest -q \
+    src/chatbot_llm/test/test_intent_adapter.py \
+    src/chatbot_llm/test/test_knowledge_snapshot.py \
+    src/chatbot_llm/test/test_turn_engine.py
+else
+  echo "Skipping chatbot_llm ROS contract tests because required ROS message modules are unavailable."
+fi
 
 echo "[4/8] dialogue_manager unit tests"
 if have_python_module numpy; then

@@ -3,11 +3,14 @@
     say_action_name: "/nao/say"
     tts_action_name: "/tts_engine/tts"
     tts_backend_action_name: ""
+    debug_tts_action_name: "/debug/say"
     speech_topic: "/speech"
     debug_speech_topic: "/debug/nao_say/speech"
     default_language: "en-US"
     default_volume: 1.0
     tts_server_wait_sec: 0.5
+    debug_tts_server_wait_sec: 0.1
     fallback_to_speech_topic: true
     also_publish_debug_topic: true
+    forward_debug_tts_action: true
     fallback_to_debug_topic: true

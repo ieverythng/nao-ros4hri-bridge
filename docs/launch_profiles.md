@@ -113,3 +113,8 @@ See: [`asr_vosk_setup.md`](asr_vosk_setup.md)
 ## Maintenance Rule
 
 If launch defaults change, update this file in the same commit.
+
+Lifecycle note:
+- the migrated lifecycle nodes are brought up through event-driven transitions
+  (`process start -> configure`, `inactive -> activate`) rather than fixed
+  timer delays.

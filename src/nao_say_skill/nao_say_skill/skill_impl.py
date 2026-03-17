@@ -35,19 +35,25 @@ class NaoSaySkill(Node):
         self.declare_parameter("say_action_name", "/nao/say")
         self.declare_parameter("tts_action_name", "/tts_engine/tts")
         self.declare_parameter("tts_backend_action_name", "")
+        self.declare_parameter("debug_tts_action_name", "/debug/say")
         self.declare_parameter("speech_topic", "/speech")
         self.declare_parameter("debug_speech_topic", "/debug/nao_say/speech")
         self.declare_parameter("default_language", "en-US")
         self.declare_parameter("default_volume", 1.0)
         self.declare_parameter("tts_server_wait_sec", 0.5)
+        self.declare_parameter("debug_tts_server_wait_sec", 0.1)
         self.declare_parameter("fallback_to_speech_topic", True)
         self.declare_parameter("also_publish_debug_topic", True)
+        self.declare_parameter("forward_debug_tts_action", True)
         self.declare_parameter("fallback_to_debug_topic", True)
 
         self.action_name = str(self.get_parameter("say_action_name").value)
         self.tts_action_name = str(self.get_parameter("tts_action_name").value)
         self.tts_backend_action_name = str(
             self.get_parameter("tts_backend_action_name").value
+        )
+        self.debug_tts_action_name = str(
+            self.get_parameter("debug_tts_action_name").value
         )
         self.speech_topic = str(self.get_parameter("speech_topic").value)
         self.debug_speech_topic = str(self.get_parameter("debug_speech_topic").value)
@@ -57,11 +63,18 @@ class NaoSaySkill(Node):
             0.0,
             float(self.get_parameter("tts_server_wait_sec").value),
         )
+        self.debug_tts_server_wait_sec = max(
+            0.0,
+            float(self.get_parameter("debug_tts_server_wait_sec").value),
+        )
         self.fallback_to_speech_topic = self._as_bool(
             self.get_parameter("fallback_to_speech_topic").value
         )
         self.also_publish_debug_topic = self._as_bool(
             self.get_parameter("also_publish_debug_topic").value
+        )
+        self.forward_debug_tts_action = self._as_bool(
+            self.get_parameter("forward_debug_tts_action").value
         )
         self.fallback_to_debug_topic = self._as_bool(
             self.get_parameter("fallback_to_debug_topic").value
@@ -72,6 +85,7 @@ class NaoSaySkill(Node):
         self._say_action_server = None
         self._tts_action_server = None
         self._tts_backend_client = None
+        self._debug_tts_client = None
         self._speech_pub = None
         self._debug_speech_pub = None
         self._diag_pub = None
@@ -83,6 +97,7 @@ class NaoSaySkill(Node):
 
     def on_configure(self, _state: State) -> TransitionCallbackReturn:
         self._tts_backend_client = self._create_tts_backend_client()
+        self._debug_tts_client = self._create_debug_tts_client()
         self._speech_pub = self.create_publisher(String, self.speech_topic, 10)
         self._debug_speech_pub = self.create_publisher(
             String,
@@ -110,15 +125,21 @@ class NaoSaySkill(Node):
             callback_group=self._callback_group,
         )
         self.get_logger().info(
-            "nao_say_skill configured | say:%s tts:%s backend:%s speech:%s debug:%s"
+            "nao_say_skill configured | say:%s tts:%s backend:%s debug_tts:%s speech:%s debug:%s"
             % (
                 self.action_name,
                 self.tts_action_name,
                 self.tts_backend_action_name or "(speech_topic_fallback)",
+                self.debug_tts_action_name or "(disabled)",
                 self.speech_topic,
                 self.debug_speech_topic,
             )
         )
+        if self._tts_backend_client is None:
+            self.get_logger().warn(
+                "nao_say_skill is running without a downstream TTS backend; robot speech "
+                'depends on an active subscriber to "%s"' % self.speech_topic
+            )
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
@@ -142,6 +163,9 @@ class NaoSaySkill(Node):
         if self._tts_backend_client is not None:
             self._tts_backend_client.destroy()
             self._tts_backend_client = None
+        if self._debug_tts_client is not None:
+            self._debug_tts_client.destroy()
+            self._debug_tts_client = None
         if self._diag_timer is not None:
             self.destroy_timer(self._diag_timer)
             self._diag_timer = None
@@ -300,6 +324,7 @@ class NaoSaySkill(Node):
 
         if self.also_publish_debug_topic:
             self._publish_debug_speech(text, turn_id)
+        self._dispatch_debug_tts(text=text, language=language, turn_id=turn_id)
 
         tts_status, message = await self._forward_tts_goal(
             text=text,
@@ -312,19 +337,27 @@ class NaoSaySkill(Node):
         duration = time.monotonic() - start_time
         if tts_status == GoalStatus.STATUS_CANCELED:
             return ("canceled", message, duration)
-            if tts_status != GoalStatus.STATUS_SUCCEEDED:
-                if self.fallback_to_speech_topic:
-                    self._publish_speech_topic(text, turn_id)
-                    if tts_goal_handle is not None:
-                        self._publish_tts_feedback_words(tts_goal_handle, text)
-                    return (
-                        "succeeded",
-                        f"{message}; delivered via speech topic fallback",
+        if tts_status != GoalStatus.STATUS_SUCCEEDED:
+            if self.fallback_to_speech_topic:
+                speech_subscribers = self._publish_speech_topic(text, turn_id)
+                if tts_goal_handle is not None:
+                    self._publish_tts_feedback_words(tts_goal_handle, text)
+                delivery_message = f"{message}; delivered via speech topic fallback"
+                if speech_subscribers == 0:
+                    delivery_message = (
+                        f"{message}; published to speech topic fallback but no "
+                        "subscribers were present"
+                    )
+                return (
+                    "succeeded",
+                    delivery_message,
                     duration,
                 )
             if self.fallback_to_debug_topic:
                 if not self.also_publish_debug_topic:
                     self._publish_debug_speech(text, turn_id)
+                if tts_goal_handle is not None:
+                    self._publish_tts_feedback_words(tts_goal_handle, text)
                 return (
                     "succeeded",
                     f"{message}; delivered via debug topic fallback",
@@ -407,17 +440,28 @@ class NaoSaySkill(Node):
             'topic="%s" text_len=%d' % (self.debug_speech_topic, len(text)),
         )
 
-    def _publish_speech_topic(self, text: str, turn_id: str) -> None:
+    def _publish_speech_topic(self, text: str, turn_id: str) -> int:
         if self._speech_pub is None:
-            return
+            return 0
+        subscriber_count = int(self.count_subscribers(self.speech_topic))
+        if subscriber_count == 0:
+            self._trace(
+                turn_id,
+                "SPEECH_TOPIC_NO_SUBSCRIBERS",
+                'topic="%s" has no subscribers; robot audio will not play'
+                % self.speech_topic,
+                level="warn",
+            )
         msg = String()
         msg.data = text
         self._speech_pub.publish(msg)
         self._trace(
             turn_id,
             "SPEECH_TOPIC_PUBLISHED",
-            'topic="%s" text_len=%d' % (self.speech_topic, len(text)),
+            'topic="%s" text_len=%d subscribers=%d'
+            % (self.speech_topic, len(text), subscriber_count),
         )
+        return subscriber_count
 
     def _create_tts_backend_client(self):
         backend_name = self.tts_backend_action_name.strip()
@@ -434,6 +478,74 @@ class NaoSaySkill(Node):
             TTS,
             backend_name,
             callback_group=self._callback_group,
+        )
+
+    def _create_debug_tts_client(self):
+        if not self.forward_debug_tts_action:
+            return None
+        debug_name = self.debug_tts_action_name.strip()
+        if not debug_name:
+            return None
+        if debug_name in {
+            self.tts_action_name,
+            self.tts_backend_action_name,
+        }:
+            self.get_logger().warn(
+                "debug_tts_action_name overlaps with active TTS routes; disabling debug "
+                "TTS forwarding to avoid loops"
+            )
+            return None
+        return ActionClient(
+            self,
+            TTS,
+            debug_name,
+            callback_group=self._callback_group,
+        )
+
+    def _dispatch_debug_tts(self, text: str, language: str, turn_id: str) -> None:
+        if self._debug_tts_client is None:
+            return
+        if not self._debug_tts_client.wait_for_server(
+            timeout_sec=self.debug_tts_server_wait_sec
+        ):
+            return
+
+        debug_goal = TTS.Goal()
+        debug_goal.input = text
+        debug_goal.locale = self._normalize_tts_locale(language)
+        self._trace(
+            turn_id,
+            "DEBUG_TTS_FORWARD",
+            'action="%s" text_len=%d' % (self.debug_tts_action_name, len(text)),
+        )
+        future = self._debug_tts_client.send_goal_async(debug_goal)
+        future.add_done_callback(
+            lambda done: self._on_debug_tts_goal_response(done, turn_id)
+        )
+
+    def _on_debug_tts_goal_response(self, future, turn_id: str) -> None:
+        try:
+            goal_handle = future.result()
+        except Exception as exc:
+            self._trace(
+                turn_id,
+                "DEBUG_TTS_FAILED",
+                f"goal dispatch failed: {exc}",
+                level="warn",
+            )
+            return
+        if goal_handle is None or not goal_handle.accepted:
+            self._trace(
+                turn_id,
+                "DEBUG_TTS_REJECTED",
+                f'action="{self.debug_tts_action_name}" rejected goal',
+                level="warn",
+            )
+            return
+        self._trace(
+            turn_id,
+            "DEBUG_TTS_ACCEPTED",
+            f'action="{self.debug_tts_action_name}" accepted goal',
         )
 
     def _publish_tts_feedback_words(self, goal_handle, text: str) -> None:
@@ -471,7 +583,15 @@ class NaoSaySkill(Node):
                     key="tts_backend_action_name",
                     value=self.tts_backend_action_name or "(speech_topic_fallback)",
                 ),
+                KeyValue(
+                    key="debug_tts_action_name",
+                    value=self.debug_tts_action_name or "(disabled)",
+                ),
                 KeyValue(key="speech_topic", value=self.speech_topic),
+                KeyValue(
+                    key="speech_topic_subscribers",
+                    value=str(self.count_subscribers(self.speech_topic)),
+                ),
                 KeyValue(key="goals_started", value=str(self._stats.goals_started)),
                 KeyValue(key="goals_succeeded", value=str(self._stats.goals_succeeded)),
                 KeyValue(key="goals_failed", value=str(self._stats.goals_failed)),

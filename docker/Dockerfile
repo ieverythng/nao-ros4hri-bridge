@@ -34,6 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     socialminds-ros-jazzy-audio-common \
     socialminds-ros-jazzy-chatbot-msgs \
     socialminds-ros-jazzy-hri-actions-msgs \
+    socialminds-ros-jazzy-rqt-chat \
     && rm -rf /var/lib/apt/lists/* && \
     python3 -m pip install --no-cache-dir --break-system-packages vosk
 
@@ -53,7 +54,6 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       /home/ubuntu/ws/build/nao_orchestrator \
       /home/ubuntu/ws/build/nao_replay_motion \
       /home/ubuntu/ws/build/nao_say_skill \
-      /home/ubuntu/ws/build/rqt_chat \
       /home/ubuntu/ws/build/simple_audio_capture \
       /home/ubuntu/ws/install/std_skills \
       /home/ubuntu/ws/install/communication_skills \
@@ -67,7 +67,6 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       /home/ubuntu/ws/install/nao_orchestrator \
       /home/ubuntu/ws/install/nao_replay_motion \
       /home/ubuntu/ws/install/nao_say_skill \
-      /home/ubuntu/ws/install/rqt_chat \
       /home/ubuntu/ws/install/simple_audio_capture && \
     colcon build --symlink-install --packages-select \
       std_skills \
@@ -82,7 +81,6 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       nao_look_at \
       nao_orchestrator \
       nao_chatbot \
-      rqt_chat \
       simple_audio_capture"
 
 # Keep entrypoint from this repo for deterministic sourcing behavior.

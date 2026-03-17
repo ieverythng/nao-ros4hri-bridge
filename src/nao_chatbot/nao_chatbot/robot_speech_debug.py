@@ -7,6 +7,8 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 
+from .speech_debug_labels import classify_closed_caption_speaker
+
 
 class RobotSpeechDebugNode(Node):
     """Mirror final robot utterances into ROS logs for operator consoles."""
@@ -21,6 +23,7 @@ class RobotSpeechDebugNode(Node):
         )
         self.declare_parameter("dedupe_window_sec", 0.5)
 
+        self._last_label = ""
         self._last_text = ""
         self._last_timestamp = 0.0
         self._dedupe_window_sec = max(
@@ -52,23 +55,33 @@ class RobotSpeechDebugNode(Node):
         self._log_robot_text(msg.data, source="debug_speech")
 
     def _on_closed_caption(self, msg: ClosedCaption) -> None:
-        self._log_robot_text(msg.text, source="closed_caption")
+        label, source = classify_closed_caption_speaker(
+            msg.speaker_id,
+            system_speaker_id=ClosedCaption.SPEAKER_ID_SYSTEM,
+        )
+        self._log_text(msg.text, label=label, source=source)
 
     def _log_robot_text(self, text: str, source: str) -> None:
+        self._log_text(text, label="ROBOT OUTPUT", source=source)
+
+    def _log_text(self, text: str, label: str, source: str) -> None:
         clean_text = str(text).strip()
         if not clean_text:
             return
 
         now = time.monotonic()
         if (
+            label == self._last_label
+            and
             clean_text == self._last_text
             and (now - self._last_timestamp) <= self._dedupe_window_sec
         ):
             return
 
+        self._last_label = label
         self._last_text = clean_text
         self._last_timestamp = now
-        self.get_logger().info(f'[ROBOT OUTPUT] ({source}) "{clean_text}"')
+        self.get_logger().info(f'[{label}] ({source}) "{clean_text}"')
 
 
 def main(args: list[str] | None = None) -> None:

@@ -47,6 +47,19 @@ ros2 topic pub --once /chatbot/intent std_msgs/msg/String "{data: '{\"intent\":\
 ros2 topic pub --once /intents hri_actions_msgs/msg/Intent "{intent: 'perform_motion', data: '{\"object\":\"stand\"}'}"
 ```
 
+## Provenance
+
+- package type: local lifecycle orchestration node, not a forked upstream repo
+- scaffold basis: `rpk` mission-controller/lifecycle template
+- architecture style: hybrid replacement
+  - replaces the old local `mission_controller` execution role
+  - aligns steady-state I/O to the migrated ROS4HRI flow: `/intents` in,
+    skill actions out
+  - retains a small compatibility layer for legacy intent/topic bridges while
+    migration cleanup completes
+- design constraint: this package must stay downstream-only and must not grow
+  back into a chatbot or dialogue runtime
+
 ## Parameters
 
 The package defaults are in `config/00-defaults.yml`. The most important knobs

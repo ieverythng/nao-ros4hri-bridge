@@ -69,3 +69,7 @@ ros2 lifecycle get /dialogue_manager
 ros2 lifecycle get /chatbot_llm
 ros2 lifecycle get /nao_orchestrator
 ```
+
+Lifecycle nodes in the migrated stack are configured on process start and only
+activated once they report `inactive`; the launch surface no longer relies on
+fixed startup delays between transitions.
