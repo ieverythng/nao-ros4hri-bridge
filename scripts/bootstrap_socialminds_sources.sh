@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SRC_DIR="${ROOT_DIR}/src"
+REF_SRC_DIR="${ROOT_DIR}/ref_src/knowledge_sources"
 
 clone_or_update() {
   local repo_url="$1"
@@ -18,6 +18,11 @@ clone_or_update() {
   git clone --depth 1 "${repo_url}" "${target_dir}"
 }
 
-clone_or_update "https://github.com/pal-robotics/kb_msgs.git" "${SRC_DIR}/kb_msgs"
-clone_or_update "https://gitlab.iiia.csic.es/socialminds/neurosymbolic-ai/knowledge_core.git" "${SRC_DIR}/knowledge_core"
-clone_or_update "https://gitlab.iiia.csic.es/socialminds/ros4hri/interaction_sim.git" "${SRC_DIR}/interaction_sim"
+mkdir -p "${REF_SRC_DIR}"
+
+# Runtime/testing uses the official SocialMinds Jazzy Debian packages.
+# These clones are reference-only and live outside the active src/ workspace.
+clone_or_update "https://github.com/pal-robotics/kb_msgs.git" "${REF_SRC_DIR}/kb_msgs"
+clone_or_update "https://gitlab.iiia.csic.es/socialminds/neurosymbolic-ai/knowledge_core.git" "${REF_SRC_DIR}/knowledge_core"
+clone_or_update "https://gitlab.iiia.csic.es/socialminds/ros4hri/interaction_sim.git" "${REF_SRC_DIR}/interaction_sim"
+clone_or_update "https://github.com/severin-lemaignan/openrobots-ontology.git" "${REF_SRC_DIR}/oro"

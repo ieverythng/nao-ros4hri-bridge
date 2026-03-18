@@ -17,26 +17,63 @@ RUN rm -rf /home/ubuntu/ws/src && mkdir -p /home/ubuntu/ws/src
 COPY src/ /home/ubuntu/ws/src/
 COPY ref_src/interaction_skills/ /home/ubuntu/ws/src/interaction_skills/
 
-# ASR optional runtime dependencies for laptop microphone mode.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gstreamer1.0-alsa \
-    gstreamer1.0-plugins-base \
-    gstreamer1.0-plugins-good \
-    gstreamer1.0-pulseaudio \
-    gstreamer1.0-tools \
-    python3-gi \
-    python3-pip \
-    python3-yaml \
-    ros-jazzy-rqt \
-    ros-jazzy-rqt-console \
-    ros-jazzy-rqt-gui \
-    ros-jazzy-rqt-gui-py \
-    socialminds-ros-jazzy-audio-common \
-    socialminds-ros-jazzy-chatbot-msgs \
-    socialminds-ros-jazzy-hri-actions-msgs \
-    socialminds-ros-jazzy-rqt-chat \
-    && rm -rf /var/lib/apt/lists/* && \
-    python3 -m pip install --no-cache-dir --break-system-packages vosk
+# Most overlay rebuilds reuse a prepared base image, so only install runtime
+# dependencies when they are genuinely missing.
+RUN bash -lc 'set -euo pipefail; \
+    packages=( \
+      ros-jazzy-gscam \
+      ros-jazzy-image-transport-plugins \
+      ros-jazzy-rosbridge-server \
+      gstreamer1.0-alsa \
+      gstreamer1.0-plugins-base \
+      gstreamer1.0-plugins-good \
+      gstreamer1.0-pulseaudio \
+      gstreamer1.0-tools \
+      python3-gi \
+      python3-pip \
+      python3-yaml \
+      ros-jazzy-rqt-console \
+      ros-jazzy-rqt-gui \
+      ros-jazzy-rqt-gui-py \
+      ros-jazzy-rqt-image-view \
+      ros-jazzy-rqt-reconfigure \
+      socialminds-ros-jazzy-audio-common \
+      socialminds-ros-jazzy-chatbot-msgs \
+      socialminds-ros-jazzy-expressive-face \
+      socialminds-ros-jazzy-hri-actions-msgs \
+      socialminds-ros-jazzy-hri-emotion-models \
+      socialminds-ros-jazzy-hri-emotion-recognizer \
+      socialminds-ros-jazzy-hri-face-detect-yunet \
+      socialminds-ros-jazzy-hri-msgs \
+      socialminds-ros-jazzy-hri-person-manager \
+      socialminds-ros-jazzy-hri-visualization \
+      socialminds-ros-jazzy-interaction-sim \
+      socialminds-ros-jazzy-kb-msgs \
+      socialminds-ros-jazzy-knowledge-core \
+      socialminds-ros-jazzy-oro \
+      socialminds-ros-jazzy-pyhri \
+      socialminds-ros-jazzy-rqt-chat \
+      socialminds-ros-jazzy-rqt-human-radar \
+      socialminds-ros-jazzy-ros-qml-plugin \
+      socialminds-ros-jazzy-ui-msgs \
+      socialminds-ros-jazzy-ui-server \
+    ); \
+    missing=(); \
+    for pkg in "${packages[@]}"; do \
+      if ! dpkg -s "${pkg}" >/dev/null 2>&1; then \
+        missing+=("${pkg}"); \
+      fi; \
+    done; \
+    if [ ! -x /opt/ros/jazzy/bin/rqt ]; then \
+      missing+=(ros-jazzy-rqt-gui); \
+    fi; \
+    if [ "${#missing[@]}" -gt 0 ]; then \
+      apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update && \
+      apt-get install -y --no-install-recommends "${missing[@]}" && \
+      rm -rf /var/lib/apt/lists/*; \
+    fi; \
+    python3 -c "import importlib.util, sys; missing=[name for name in (\"vosk\", \"asyncore\", \"asynchat\") if importlib.util.find_spec(name) is None]; sys.exit(0 if not missing else 1)" \
+      || python3 -m pip install --no-cache-dir --break-system-packages vosk pyasyncore pyasynchat'
 
 # Rebuild the migrated local workspace packages on top of the validated base.
 RUN bash -c "source /opt/ros/jazzy/setup.bash && \

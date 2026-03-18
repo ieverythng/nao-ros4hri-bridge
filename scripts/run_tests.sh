@@ -117,6 +117,7 @@ echo "[8/8] launch smoke"
 if [[ -f install/setup.bash ]]; then
   ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py --show-args >/dev/null
   ros2 launch nao_chatbot nao_chatbot_ros4hri_with_asr.launch.py --show-args >/dev/null
+  ros2 launch nao_chatbot nao_chatbot_interaction_sim.launch.py --show-args >/dev/null
 else
   echo "Skipping launch smoke because install/setup.bash is not available."
 fi

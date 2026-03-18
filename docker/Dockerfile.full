@@ -14,6 +14,9 @@ RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/socialminds.gpg] https://socialm
     > /etc/apt/sources.list.d/socialminds.list
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-jazzy-gscam \
+    ros-jazzy-image-transport-plugins \
+    ros-jazzy-rosbridge-server \
     gstreamer1.0-alsa \
     gstreamer1.0-plugins-base \
     gstreamer1.0-plugins-good \
@@ -28,19 +31,39 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     socialminds-ros-jazzy-std-skills \
     socialminds-ros-jazzy-chatbot-msgs \
     socialminds-ros-jazzy-hri-actions-msgs \
+    socialminds-ros-jazzy-hri-face-detect-yunet \
+    socialminds-ros-jazzy-kb-msgs \
+    socialminds-ros-jazzy-knowledge-core \
     ros-jazzy-naoqi-libqi \
     socialminds-ros-jazzy-hri-msgs \
+    socialminds-ros-jazzy-hri-emotion-models \
+    socialminds-ros-jazzy-hri-emotion-recognizer \
+    socialminds-ros-jazzy-hri-person-manager \
+    socialminds-ros-jazzy-hri-visualization \
+    socialminds-ros-jazzy-expressive-face \
+    socialminds-ros-jazzy-interaction-sim \
     socialminds-ros-jazzy-naoqi-bridge-msgs \
     socialminds-ros-jazzy-naoqi-driver \
+    socialminds-ros-jazzy-oro \
+    socialminds-ros-jazzy-pyhri \
     socialminds-ros-jazzy-tts-msgs \
     ros-jazzy-rqt \
     ros-jazzy-rqt-console \
     ros-jazzy-rqt-gui \
     ros-jazzy-rqt-gui-py \
+    ros-jazzy-rqt-image-view \
+    ros-jazzy-rqt-reconfigure \
     socialminds-ros-jazzy-rqt-chat \
+    socialminds-ros-jazzy-rqt-human-radar \
+    socialminds-ros-jazzy-ros-qml-plugin \
+    socialminds-ros-jazzy-ui-msgs \
+    socialminds-ros-jazzy-ui-server \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python3 -m pip install --no-cache-dir --break-system-packages vosk
+RUN python3 -m pip install --no-cache-dir --break-system-packages \
+    vosk \
+    pyasyncore \
+    pyasynchat
 
 WORKDIR /home/ubuntu/ws
 RUN mkdir -p /home/ubuntu/ws/src

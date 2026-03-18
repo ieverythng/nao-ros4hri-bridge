@@ -37,7 +37,22 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'start_knowledge_core',
             default_value='true',
-            description='Optionally launch KnowledgeCore together with the migrated stack.',
+            description='Optionally launch KnowledgeCore together with the migrated stack when it is installed in the environment.',
+        ),
+        DeclareLaunchArgument(
+            'start_interaction_sim',
+            default_value='false',
+            description='Optionally launch the official interaction_sim perception and UI layer for webcam-driven KB testing.',
+        ),
+        DeclareLaunchArgument(
+            'start_interaction_sim_ui',
+            default_value='false',
+            description='Start ui_server together with the official interaction_sim perception stack.',
+        ),
+        DeclareLaunchArgument(
+            'interaction_sim_gscam_config',
+            default_value='v4l2src device=/dev/video0 ! video/x-raw,framerate=30/1 ! videoconvert',
+            description='GStreamer pipeline used by gscam when interaction_sim support is enabled.',
         ),
         DeclareLaunchArgument(
             'posture_command_topic',
@@ -92,12 +107,12 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'start_rqt_console',
             default_value='true',
-            description='Launch a single remapped rqt shell for console and chat plugins.',
+            description='Launch a single remapped rqt shell; when interaction_sim is enabled it loads the official simulator perspective.',
         ),
         DeclareLaunchArgument(
             'start_rqt_chat',
             default_value='false',
-            description='Optionally launch a separate rqt_chat window remapped onto the debug TTS action.',
+            description='Optionally launch a separate rqt_chat window remapped onto the debug TTS action when the simulator perspective is not in use.',
         ),
         DeclareLaunchArgument(
             'debug_tts_action_name',
@@ -159,10 +174,15 @@ def generate_launch_description():
         launch_arguments={
             'start_naoqi_driver': LaunchConfiguration('start_naoqi_driver'),
             'start_knowledge_core': LaunchConfiguration('start_knowledge_core'),
+            'start_interaction_sim': LaunchConfiguration('start_interaction_sim'),
+            'start_interaction_sim_ui': LaunchConfiguration('start_interaction_sim_ui'),
             'nao_ip': LaunchConfiguration('nao_ip'),
             'nao_port': LaunchConfiguration('nao_port'),
             'network_interface': LaunchConfiguration('network_interface'),
             'qi_listen_url': LaunchConfiguration('qi_listen_url'),
+            'interaction_sim_gscam_config': LaunchConfiguration(
+                'interaction_sim_gscam_config'
+            ),
             'posture_command_topic': LaunchConfiguration('posture_command_topic'),
             'dialogue_manager_chatbot': LaunchConfiguration('dialogue_manager_chatbot'),
             'dialogue_manager_enable_default_chat': LaunchConfiguration(

@@ -1,7 +1,13 @@
+import os
+
+from ament_index_python.packages import PackageNotFoundError
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.actions import ExecuteProcess
 from launch.actions import IncludeLaunchDescription
+from launch.actions import LogInfo
+from launch.actions import OpaqueFunction
 from launch.actions import RegisterEventHandler
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -66,20 +72,6 @@ def _not_launching_chatbot_llm_condition():
     )
 
 
-def _launching_chatbot_llm_condition():
-    return IfCondition(
-        PythonExpression(
-            [
-                '"',
-                LaunchConfiguration("start_dialogue_manager"),
-                '" == "true" and "',
-                LaunchConfiguration("start_chatbot_llm"),
-                '" == "true"',
-            ]
-        )
-    )
-
-
 def _lifecycle_bootstrap_script(node_name: str, timeout_sec: int = 30) -> str:
     normalized_name = f"/{str(node_name).lstrip('/')}"
     return f"""
@@ -111,6 +103,24 @@ done
 """.strip()
 
 
+def _service_wait_script(service_name: str, timeout_sec: int = 30) -> str:
+    normalized_name = f"/{str(service_name).lstrip('/')}"
+    return f"""
+service_name="{normalized_name}"
+deadline=$((SECONDS + {max(1, int(timeout_sec))}))
+while true; do
+  if ros2 service type "$service_name" >/dev/null 2>&1; then
+    exit 0
+  fi
+  if [ "$SECONDS" -ge "$deadline" ]; then
+    echo "service wait timed out for $service_name" >&2
+    exit 1
+  fi
+  sleep 0.2
+done
+""".strip()
+
+
 def _prefer_first_non_empty(*names: str):
     if not names:
         raise ValueError("At least one launch argument name is required")
@@ -133,6 +143,58 @@ def _prefer_first_non_empty(*names: str):
                 ]
             )
     return PythonExpression(expression)
+
+
+def _optional_launch_description(
+    context,
+    *,
+    package_name: str,
+    launch_file_name: str,
+    launch_arg_name: str,
+    required_packages=None,
+    launch_arguments=None,
+    display_name=None,
+):
+    if LaunchConfiguration(launch_arg_name).perform(context).lower() != "true":
+        return []
+
+    missing_packages = []
+    for required_package in required_packages or []:
+        try:
+            get_package_share_directory(required_package)
+        except PackageNotFoundError:
+            missing_packages.append(required_package)
+
+    if missing_packages:
+        return [
+            LogInfo(
+                msg=(
+                    f"{display_name or package_name} launch skipped because the following upstream "
+                    f"packages are missing: {', '.join(missing_packages)}"
+                )
+            )
+        ]
+
+    try:
+        package_share = get_package_share_directory(package_name)
+    except PackageNotFoundError:
+        return [
+            LogInfo(
+                msg=(
+                    f"{package_name} is not installed in this workspace; "
+                    f"skipping optional launch '{launch_file_name}'."
+                )
+            )
+        ]
+
+    return [
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                os.path.join(package_share, "launch", launch_file_name)
+            ),
+            launch_arguments=(launch_arguments or {}).items(),
+        )
+    ]
 
 
 def generate_launch_description():
@@ -169,12 +231,27 @@ def generate_launch_description():
     start_knowledge_core_arg = DeclareLaunchArgument(
         "start_knowledge_core",
         default_value="true",
-        description="Launch KnowledgeCore for chatbot_llm grounding.",
+        description="Optionally launch KnowledgeCore for chatbot_llm grounding when it is installed in the environment.",
     )
     start_dialogue_manager_arg = DeclareLaunchArgument(
         "start_dialogue_manager",
         default_value="true",
         description="Launch the upstream dialogue_manager lifecycle node.",
+    )
+    start_interaction_sim_arg = DeclareLaunchArgument(
+        "start_interaction_sim",
+        default_value="false",
+        description="Optionally launch the official interaction_sim perception and UI layer for webcam-driven KB testing.",
+    )
+    start_interaction_sim_ui_arg = DeclareLaunchArgument(
+        "start_interaction_sim_ui",
+        default_value="false",
+        description="Start ui_server together with the official interaction_sim perception stack.",
+    )
+    interaction_sim_gscam_config_arg = DeclareLaunchArgument(
+        "interaction_sim_gscam_config",
+        default_value="v4l2src device=/dev/video0 ! video/x-raw,framerate=30/1 ! videoconvert",
+        description="GStreamer pipeline used by gscam when interaction_sim support is enabled.",
     )
     start_nao_orchestrator_arg = DeclareLaunchArgument(
         "start_nao_orchestrator",
@@ -199,12 +276,12 @@ def generate_launch_description():
     start_rqt_console_arg = DeclareLaunchArgument(
         "start_rqt_console",
         default_value="true",
-        description="Launch a single remapped rqt shell for console and chat plugins.",
+        description="Launch a single remapped rqt shell; when interaction_sim is enabled it loads the official simulator perspective.",
     )
     start_rqt_chat_arg = DeclareLaunchArgument(
         "start_rqt_chat",
         default_value="false",
-        description="Optionally launch a separate rqt_chat window remapped onto the debug TTS action.",
+        description="Optionally launch a separate rqt_chat window remapped onto the debug TTS action when the simulator perspective is not in use.",
     )
     start_robot_speech_debug_arg = DeclareLaunchArgument(
         "start_robot_speech_debug",
@@ -297,19 +374,6 @@ def generate_launch_description():
                 )
             },
         ],
-    )
-
-    knowledge_core_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    FindPackageShare("knowledge_core"),
-                    "launch",
-                    "knowledge_core.launch.py",
-                ]
-            )
-        ),
-        condition=IfCondition(LaunchConfiguration("start_knowledge_core")),
     )
 
     dialogue_manager_bundle = _make_lifecycle_bundle(
@@ -416,7 +480,17 @@ def generate_launch_description():
     )
 
     rqt_console = ExecuteProcess(
-        condition=IfCondition(LaunchConfiguration("start_rqt_console")),
+        condition=IfCondition(
+            PythonExpression(
+                [
+                    '"',
+                    LaunchConfiguration("start_rqt_console"),
+                    '" == "true" and "',
+                    LaunchConfiguration("start_interaction_sim"),
+                    '" != "true"',
+                ]
+            )
+        ),
         cmd=[
             "bash",
             "-lc",
@@ -426,7 +500,7 @@ def generate_launch_description():
                 "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
                 "echo 'rqt launch skipped: DISPLAY/WAYLAND_DISPLAY is not set'; "
                 "else "
-                "exec rqt --ros-args -r /tts_engine/tts:=",
+                "exec rqt --clear-config --ros-args -r /tts_engine/tts:=",
                 LaunchConfiguration("debug_tts_action_name"),
                 "; "
                 "fi",
@@ -434,8 +508,68 @@ def generate_launch_description():
         ],
         output="screen",
     )
+    interaction_sim_rqt = ExecuteProcess(
+        condition=IfCondition(
+            PythonExpression(
+                [
+                    '"',
+                    LaunchConfiguration("start_rqt_console"),
+                    '" == "true" and "',
+                    LaunchConfiguration("start_interaction_sim"),
+                    '" == "true"',
+                ]
+            )
+        ),
+        cmd=[
+            "bash",
+            "-lc",
+            [
+                "if ! command -v rqt >/dev/null 2>&1; then "
+                "echo 'rqt is not installed in this environment'; "
+                "elif ! ros2 pkg prefix interaction_sim >/dev/null 2>&1; then "
+                "echo 'interaction_sim is not installed in this environment'; "
+                "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
+                "echo 'rqt launch skipped: DISPLAY/WAYLAND_DISPLAY is not set'; "
+                "else "
+                "perspective=\"$(ros2 pkg prefix interaction_sim)/share/interaction_sim/config/simulator.perspective\"; "
+                "exec rqt --clear-config --perspective-file \"$perspective\" --ros-args -r /tts_engine/tts:=",
+                LaunchConfiguration("debug_tts_action_name"),
+                "; "
+                "fi",
+            ],
+        ],
+        output="screen",
+    )
+    interaction_sim_rqt_chat_note = LogInfo(
+        condition=IfCondition(
+            PythonExpression(
+                [
+                    '"',
+                    LaunchConfiguration("start_rqt_chat"),
+                    '" == "true" and "',
+                    LaunchConfiguration("start_interaction_sim"),
+                    '" == "true"',
+                ]
+            )
+        ),
+        msg=(
+            "start_rqt_chat was requested together with start_interaction_sim. "
+            "Skipping the separate rqt_chat window because the interaction_sim "
+            "perspective already loads rqt_chat on the debug TTS action."
+        ),
+    )
     rqt_chat = ExecuteProcess(
-        condition=IfCondition(LaunchConfiguration("start_rqt_chat")),
+        condition=IfCondition(
+            PythonExpression(
+                [
+                    '"',
+                    LaunchConfiguration("start_rqt_chat"),
+                    '" == "true" and "',
+                    LaunchConfiguration("start_interaction_sim"),
+                    '" != "true"',
+                ]
+            )
+        ),
         cmd=[
             "bash",
             "-lc",
@@ -468,19 +602,100 @@ def generate_launch_description():
 
     dialogue_manager_node = dialogue_manager_bundle[0]
     dialogue_manager_bootstrap = dialogue_manager_bundle[1]
-    chatbot_llm_bootstrap = chatbot_llm_bundle[1]
+    chatbot_llm_bootstrap_immediate = ExecuteProcess(
+        cmd=chatbot_llm_bundle[1].cmd,
+        output="screen",
+        condition=IfCondition(
+            PythonExpression(
+                [
+                    '"',
+                    LaunchConfiguration("start_chatbot_llm"),
+                    '" == "true" and "',
+                    LaunchConfiguration("start_knowledge_core"),
+                    '" != "true"',
+                ]
+            )
+        ),
+    )
+    knowledge_core_query_wait = ExecuteProcess(
+        cmd=["bash", "-lc", _service_wait_script("/kb/query")],
+        output="screen",
+        condition=IfCondition(
+            PythonExpression(
+                [
+                    '"',
+                    LaunchConfiguration("start_chatbot_llm"),
+                    '" == "true" and "',
+                    LaunchConfiguration("start_knowledge_core"),
+                    '" == "true"',
+                ]
+            )
+        ),
+    )
+    chatbot_llm_bootstrap_after_knowledge = ExecuteProcess(
+        cmd=chatbot_llm_bundle[1].cmd,
+        output="screen",
+        condition=IfCondition(
+            PythonExpression(
+                [
+                    '"',
+                    LaunchConfiguration("start_chatbot_llm"),
+                    '" == "true" and "',
+                    LaunchConfiguration("start_knowledge_core"),
+                    '" == "true"',
+                ]
+            )
+        ),
+    )
 
     dialogue_manager_bootstrap_immediate = ExecuteProcess(
         cmd=dialogue_manager_bootstrap.cmd,
         output="screen",
         condition=_not_launching_chatbot_llm_condition(),
     )
-    dialogue_manager_bootstrap_after_chatbot = RegisterEventHandler(
+    chatbot_llm_bootstrap_after_knowledge_ready = RegisterEventHandler(
         OnProcessExit(
-            target_action=chatbot_llm_bootstrap,
+            target_action=knowledge_core_query_wait,
+            on_exit=[chatbot_llm_bootstrap_after_knowledge],
+        )
+    )
+    dialogue_manager_bootstrap_after_chatbot_immediate = RegisterEventHandler(
+        OnProcessExit(
+            target_action=chatbot_llm_bootstrap_immediate,
             on_exit=[dialogue_manager_bootstrap],
         ),
-        condition=_launching_chatbot_llm_condition(),
+        condition=IfCondition(
+            PythonExpression(
+                [
+                    '"',
+                    LaunchConfiguration("start_dialogue_manager"),
+                    '" == "true" and "',
+                    LaunchConfiguration("start_chatbot_llm"),
+                    '" == "true" and "',
+                    LaunchConfiguration("start_knowledge_core"),
+                    '" != "true"',
+                ]
+            )
+        ),
+    )
+    dialogue_manager_bootstrap_after_chatbot_delayed = RegisterEventHandler(
+        OnProcessExit(
+            target_action=chatbot_llm_bootstrap_after_knowledge,
+            on_exit=[dialogue_manager_bootstrap],
+        ),
+        condition=IfCondition(
+            PythonExpression(
+                [
+                    '"',
+                    LaunchConfiguration("start_dialogue_manager"),
+                    '" == "true" and "',
+                    LaunchConfiguration("start_chatbot_llm"),
+                    '" == "true" and "',
+                    LaunchConfiguration("start_knowledge_core"),
+                    '" == "true"',
+                ]
+            )
+        ),
     )
 
     return LaunchDescription(
@@ -489,6 +704,8 @@ def generate_launch_description():
             start_chatbot_llm_arg,
             start_knowledge_core_arg,
             start_dialogue_manager_arg,
+            start_interaction_sim_arg,
+            start_interaction_sim_ui_arg,
             start_nao_orchestrator_arg,
             start_nao_say_skill_arg,
             start_nao_replay_motion_arg,
@@ -496,6 +713,7 @@ def generate_launch_description():
             start_rqt_console_arg,
             start_rqt_chat_arg,
             start_robot_speech_debug_arg,
+            interaction_sim_gscam_config_arg,
             nao_ip_arg,
             nao_port_arg,
             network_interface_arg,
@@ -513,13 +731,62 @@ def generate_launch_description():
             chatbot_server_url_arg,
             naoqi_driver_launch,
             rqt_console,
+            interaction_sim_rqt,
+            interaction_sim_rqt_chat_note,
             rqt_chat,
             robot_speech_debug,
-            knowledge_core_launch,
-            *chatbot_llm_bundle,
+            OpaqueFunction(
+                function=_optional_launch_description,
+                kwargs={
+                    "package_name": "knowledge_core",
+                    "launch_file_name": "knowledge_core.launch.py",
+                    "launch_arg_name": "start_knowledge_core",
+                },
+            ),
+            OpaqueFunction(
+                function=_optional_launch_description,
+                kwargs={
+                    "package_name": "nao_chatbot",
+                    "launch_file_name": "nao_chatbot_interaction_sim.launch.py",
+                    "launch_arg_name": "start_interaction_sim",
+                    "display_name": "interaction_sim",
+                    "launch_arguments": {
+                        "debug_tts_action_name": LaunchConfiguration(
+                            "debug_tts_action_name"
+                        ),
+                        "interaction_sim_gscam_config": LaunchConfiguration(
+                            "interaction_sim_gscam_config"
+                        ),
+                        "start_interaction_sim_ui": LaunchConfiguration(
+                            "start_interaction_sim_ui"
+                        ),
+                    },
+                    "required_packages": [
+                        "expressive_face",
+                        "gscam",
+                        "hri_emotion_recognizer",
+                        "hri_face_detect_yunet",
+                        "hri_person_manager",
+                        "hri_visualization",
+                        "image_transport_plugins",
+                        "interaction_sim",
+                        "rosbridge_server",
+                        "rqt_chat",
+                        "rqt_human_radar",
+                        "rqt_image_view",
+                        "rqt_reconfigure",
+                        "ui_server",
+                    ],
+                },
+            ),
+            chatbot_llm_bundle[0],
+            chatbot_llm_bootstrap_immediate,
+            knowledge_core_query_wait,
+            chatbot_llm_bootstrap_after_knowledge_ready,
             dialogue_manager_node,
             dialogue_manager_bootstrap_immediate,
-            dialogue_manager_bootstrap_after_chatbot,
+            dialogue_manager_bootstrap_after_chatbot_immediate,
+            dialogue_manager_bootstrap_after_chatbot_delayed,
             *nao_orchestrator_bundle,
             *nao_say_skill_bundle,
             nao_replay_motion_launch,
