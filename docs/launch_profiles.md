@@ -1,6 +1,6 @@
 # Launch Profiles
 
-Last updated: 2026-03-13
+Last updated: 2026-03-18
 
 This is the quick execution guide for the active launch files in this repo.
 
@@ -37,6 +37,15 @@ With robot driver:
 ```bash
 ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
   start_naoqi_driver:=true \
+  nao_ip:=172.26.112.62
+```
+
+With packaged real-robot camera + RViz path:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
+  start_nao_robot:=true \
+  start_rviz:=true \
   nao_ip:=172.26.112.62
 ```
 
@@ -86,13 +95,26 @@ ros2 run nao_chatbot asr_push_to_talk_cli
 - `start_nao_replay_motion`
 - `start_nao_look_at`
 - `start_naoqi_driver`
+- `start_nao_robot`
+- `start_rviz`
 - `dialogue_manager_chatbot`
 
 ### Robot integration toggles
 
 - `start_naoqi_driver`: include/exclude `naoqi_driver`.
+- `start_nao_robot`: include/exclude the packaged `nao_robot` bring-up. This is
+  the preferred real-robot camera path because it already wires `naoqi_driver`,
+  `/camera/front/*`, and `hri_face_detect_yunet`.
+- `start_rviz`: launch `rviz2` with the packaged `nao_robot` RViz config for TF
+  and robot-camera validation.
 - `posture_command_topic`: temporary transition topic used by
   `nao_replay_motion` and `nao_orchestrator`.
+
+Recommended split:
+
+- Use `start_interaction_sim:=true` for home webcam testing.
+- Use `start_nao_robot:=true start_rviz:=true start_interaction_sim:=false` for
+  real robot TF/camera validation.
 
 ## ASR Preflight In Docker
 

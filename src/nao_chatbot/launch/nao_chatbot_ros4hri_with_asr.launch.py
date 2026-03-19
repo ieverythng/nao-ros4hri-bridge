@@ -40,6 +40,21 @@ def generate_launch_description():
             description='Optionally launch KnowledgeCore together with the migrated stack when it is installed in the environment.',
         ),
         DeclareLaunchArgument(
+            'start_nao_robot',
+            default_value='false',
+            description='Launch the packaged nao_robot bring-up for real-robot camera validation.',
+        ),
+        DeclareLaunchArgument(
+            'start_nao_robot_hri_visualization',
+            default_value='true',
+            description='Launch hri_visualization together with nao_robot.',
+        ),
+        DeclareLaunchArgument(
+            'start_rviz',
+            default_value='false',
+            description='Launch rviz2 using the packaged nao_robot RViz config.',
+        ),
+        DeclareLaunchArgument(
             'start_interaction_sim',
             default_value='false',
             description='Optionally launch the official interaction_sim perception and UI layer for webcam-driven KB testing.',
@@ -173,6 +188,9 @@ def generate_launch_description():
         ),
         launch_arguments={
             'start_naoqi_driver': LaunchConfiguration('start_naoqi_driver'),
+            'start_nao_robot': LaunchConfiguration('start_nao_robot'),
+            'start_nao_robot_hri_visualization': LaunchConfiguration('start_nao_robot_hri_visualization'),
+            'start_rviz': LaunchConfiguration('start_rviz'),
             'start_knowledge_core': LaunchConfiguration('start_knowledge_core'),
             'start_interaction_sim': LaunchConfiguration('start_interaction_sim'),
             'start_interaction_sim_ui': LaunchConfiguration('start_interaction_sim_ui'),

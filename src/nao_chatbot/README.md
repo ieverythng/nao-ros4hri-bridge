@@ -28,6 +28,15 @@ ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
   ollama_model:=gpt-oss:120b-cloud
 ```
 
+Real-robot camera + RViz validation:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
+  start_nao_robot:=true \
+  start_rviz:=true \
+  nao_ip:=172.26.112.62
+```
+
 Primary migrated stack with ASR:
 
 ```bash
@@ -91,6 +100,11 @@ ros2 run nao_chatbot robot_speech_debug
   face/person/emotion, visualization, expressive_face, rosbridge, and RQT
   support without duplicating `chatbot_llm`, `dialogue_manager`, or
   `knowledge_core`
+- `start_nao_robot:=true` launches the packaged real-robot bring-up from the
+  SocialMinds apt repository; it already includes `naoqi_driver`, the NAO front
+  camera topics, and `hri_face_detect_yunet`
+- `start_rviz:=true` launches `rviz2` with the packaged `nao_robot` RViz config
+  for robot-model, TF, and camera validation
 - `start_interaction_sim_ui:=true` also starts `ui_server` for the official UI
   server path
 - `interaction_sim_gscam_config:=...` lets you override the webcam pipeline for

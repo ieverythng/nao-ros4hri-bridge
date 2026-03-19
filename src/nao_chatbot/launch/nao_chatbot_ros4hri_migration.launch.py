@@ -72,6 +72,20 @@ def _not_launching_chatbot_llm_condition():
     )
 
 
+def _standalone_naoqi_driver_condition():
+    return IfCondition(
+        PythonExpression(
+            [
+                '"',
+                LaunchConfiguration("start_naoqi_driver"),
+                '" == "true" and "',
+                LaunchConfiguration("start_nao_robot"),
+                '" != "true"',
+            ]
+        )
+    )
+
+
 def _lifecycle_bootstrap_script(node_name: str, timeout_sec: int = 30) -> str:
     normalized_name = f"/{str(node_name).lstrip('/')}"
     return f"""
@@ -197,6 +211,41 @@ def _optional_launch_description(
     ]
 
 
+def _optional_rviz_launch(
+    context,
+    *,
+    launch_arg_name: str,
+    package_name: str,
+    config_relative_path: str,
+    display_name=None,
+):
+    if LaunchConfiguration(launch_arg_name).perform(context).lower() != "true":
+        return []
+
+    try:
+        package_share = get_package_share_directory(package_name)
+    except PackageNotFoundError:
+        return [
+            LogInfo(
+                msg=(
+                    f"{display_name or package_name} launch skipped because package "
+                    f"'{package_name}' is not installed in this environment."
+                )
+            )
+        ]
+
+    rviz_config = os.path.join(package_share, config_relative_path)
+    return [
+        Node(
+            package="rviz2",
+            executable="rviz2",
+            arguments=["-d", rviz_config],
+            output="screen",
+        ),
+        LogInfo(msg=f"RViz started with config: {rviz_config}"),
+    ]
+
+
 def generate_launch_description():
     start_naoqi_driver_arg = DeclareLaunchArgument(
         "start_naoqi_driver",
@@ -227,6 +276,27 @@ def generate_launch_description():
         "start_chatbot_llm",
         default_value="true",
         description="Launch the upstream-aligned chatbot_llm backend.",
+    )
+    start_nao_robot_arg = DeclareLaunchArgument(
+        "start_nao_robot",
+        default_value="false",
+        description=(
+            "Launch the packaged nao_robot bring-up (naoqi_driver + NAO camera "
+            "face detection) for real-robot validation."
+        ),
+    )
+    start_nao_robot_hri_visualization_arg = DeclareLaunchArgument(
+        "start_nao_robot_hri_visualization",
+        default_value="true",
+        description=(
+            "Launch hri_visualization together with nao_robot for robot-camera "
+            "overlay topics and diagnostics."
+        ),
+    )
+    start_rviz_arg = DeclareLaunchArgument(
+        "start_rviz",
+        default_value="false",
+        description="Launch rviz2 using the packaged nao_robot robot-camera config.",
     )
     start_knowledge_core_arg = DeclareLaunchArgument(
         "start_knowledge_core",
@@ -463,13 +533,50 @@ def generate_launch_description():
                 [FindPackageShare("naoqi_driver"), "launch", "naoqi_driver.launch.py"]
             )
         ),
-        condition=IfCondition(LaunchConfiguration("start_naoqi_driver")),
+        condition=_standalone_naoqi_driver_condition(),
         launch_arguments={
             "nao_ip": LaunchConfiguration("nao_ip"),
             "nao_port": LaunchConfiguration("nao_port"),
             "network_interface": LaunchConfiguration("network_interface"),
             "qi_listen_url": LaunchConfiguration("qi_listen_url"),
         }.items(),
+    )
+    nao_robot_note = LogInfo(
+        condition=IfCondition(
+            PythonExpression(
+                [
+                    '"',
+                    LaunchConfiguration("start_naoqi_driver"),
+                    '" == "true" and "',
+                    LaunchConfiguration("start_nao_robot"),
+                    '" == "true"',
+                ]
+            )
+        ),
+        msg=(
+            "start_naoqi_driver and start_nao_robot were both requested. "
+            "Skipping the standalone naoqi_driver launch because nao_robot "
+            "already includes it."
+        ),
+    )
+    robot_perception_note = LogInfo(
+        condition=IfCondition(
+            PythonExpression(
+                [
+                    '"',
+                    LaunchConfiguration("start_nao_robot"),
+                    '" == "true" and "',
+                    LaunchConfiguration("start_interaction_sim"),
+                    '" == "true"',
+                ]
+            )
+        ),
+        msg=(
+            "start_nao_robot and start_interaction_sim are both enabled. "
+            "This can launch overlapping perception nodes. Prefer "
+            "start_nao_robot:=true start_interaction_sim:=false when validating "
+            "the real robot camera and TF path."
+        ),
     )
 
     nao_look_at_bundle = _make_lifecycle_bundle(
@@ -701,6 +808,9 @@ def generate_launch_description():
     return LaunchDescription(
         [
             start_naoqi_driver_arg,
+            start_nao_robot_arg,
+            start_nao_robot_hri_visualization_arg,
+            start_rviz_arg,
             start_chatbot_llm_arg,
             start_knowledge_core_arg,
             start_dialogue_manager_arg,
@@ -730,6 +840,8 @@ def generate_launch_description():
             ollama_intent_model_arg,
             chatbot_server_url_arg,
             naoqi_driver_launch,
+            nao_robot_note,
+            robot_perception_note,
             rqt_console,
             interaction_sim_rqt,
             interaction_sim_rqt_chat_note,
@@ -741,6 +853,53 @@ def generate_launch_description():
                     "package_name": "knowledge_core",
                     "launch_file_name": "knowledge_core.launch.py",
                     "launch_arg_name": "start_knowledge_core",
+                },
+            ),
+            OpaqueFunction(
+                function=_optional_launch_description,
+                kwargs={
+                    "package_name": "nao_robot",
+                    "launch_file_name": "nao_robot.launch.py",
+                    "launch_arg_name": "start_nao_robot",
+                    "display_name": "nao_robot",
+                    "launch_arguments": {
+                        "nao_ip": LaunchConfiguration("nao_ip"),
+                        "nao_port": LaunchConfiguration("nao_port"),
+                    },
+                    "required_packages": ["nao_robot"],
+                },
+            ),
+            OpaqueFunction(
+                function=_optional_launch_description,
+                kwargs={
+                    "package_name": "hri_person_manager",
+                    "launch_file_name": "person_manager.launch.py",
+                    "launch_arg_name": "start_nao_robot",
+                    "display_name": "hri_person_manager",
+                    "launch_arguments": {
+                        "reference_frame": "CameraTop_optical_frame",
+                        "robot_reference_frame": "base_link",
+                    },
+                    "required_packages": ["hri_person_manager"],
+                },
+            ),
+            OpaqueFunction(
+                function=_optional_launch_description,
+                kwargs={
+                    "package_name": "hri_visualization",
+                    "launch_file_name": "hri_visualization.launch.py",
+                    "launch_arg_name": "start_nao_robot_hri_visualization",
+                    "display_name": "hri_visualization",
+                    "required_packages": ["hri_visualization"],
+                },
+            ),
+            OpaqueFunction(
+                function=_optional_rviz_launch,
+                kwargs={
+                    "launch_arg_name": "start_rviz",
+                    "package_name": "nao_chatbot",
+                    "config_relative_path": os.path.join("config", "nao_robot_safe.rviz"),
+                    "display_name": "nao_chatbot rviz",
                 },
             ),
             OpaqueFunction(
