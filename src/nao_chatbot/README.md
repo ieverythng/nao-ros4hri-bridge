@@ -37,6 +37,18 @@ ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
   nao_ip:=172.26.112.62
 ```
 
+Real robot + simulator tools-only overlay:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
+  start_nao_robot:=true \
+  start_rviz:=true \
+  start_interaction_sim:=true \
+  start_interaction_sim_perception:=false \
+  start_interaction_sim_tools:=true \
+  nao_ip:=172.26.112.62
+```
+
 Primary migrated stack with ASR:
 
 ```bash
@@ -96,17 +108,25 @@ ros2 run nao_chatbot robot_speech_debug
   views are available in one window
 - `start_rqt_chat:=true` is now optional and only needed if you want a separate
   dedicated `rqt_chat` window when the simulator perspective is not in use
-- `start_interaction_sim:=true` launches the official simulator-side webcam,
-  face/person/emotion, visualization, expressive_face, rosbridge, and RQT
-  support without duplicating `chatbot_llm`, `dialogue_manager`, or
-  `knowledge_core`
+- `start_interaction_sim:=true` enables the local wrapper around the official
+  simulator support launch without duplicating `chatbot_llm`,
+  `dialogue_manager`, or `knowledge_core`
+- `start_interaction_sim_perception:=true` launches the simulator-side webcam,
+  face/person/emotion, visualization, expressive_face, and simulator TF path
+- `start_interaction_sim_tools:=true` launches the simulator-side support tools
+  such as rosbridge and optional `ui_server`; this is the intended mode to pair
+  `rqt_human_radar` with `start_nao_robot:=true`
+- `start_interaction_sim_ui:=true` adds `ui_server` on top of the simulator
+  tools layer when those tools are enabled
 - `start_nao_robot:=true` launches the packaged real-robot bring-up from the
   SocialMinds apt repository; it already includes `naoqi_driver`, the NAO front
   camera topics, and `hri_face_detect_yunet`
+- `start_nao_robot_hri_visualization:=true` keeps the packaged
+  `hri_visualization` overlays from `nao_robot` enabled for the real-robot path
 - `start_rviz:=true` launches `rviz2` with the packaged `nao_robot` RViz config
   for robot-model, TF, and camera validation
-- `start_interaction_sim_ui:=true` also starts `ui_server` for the official UI
-  server path
+- `start_knowledge_core:=true` launches `KnowledgeCore` when it is installed in
+  the environment so `chatbot_llm` can query `/kb/query`
 - `interaction_sim_gscam_config:=...` lets you override the webcam pipeline for
   home testing
 - `debug_tts_action_name:=/debug/say` controls the debug-only TTS action used
@@ -122,3 +142,10 @@ ros2 run nao_chatbot robot_speech_debug
 - the simulator integration is composed from `nao_chatbot` rather than the raw
   upstream `interaction_sim/simulator.launch.py` so the migrated stack does not
   start duplicate `chatbot_llm`, `dialogue_manager`, or `knowledge_core` nodes
+
+## Related Docs
+
+- [../../README.md](../../README.md)
+- [../../docs/launch_profiles.md](../../docs/launch_profiles.md)
+- [../../docs/current_workflow.md](../../docs/current_workflow.md)
+- [../../docs/knowledge_core_integration_scope.md](../../docs/knowledge_core_integration_scope.md)

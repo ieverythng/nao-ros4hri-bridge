@@ -31,6 +31,10 @@ Current migration boundary:
   say dispatch, posture/replay-motion dispatch, retained head motion, and look-at reset
 - conversational speech intents are ignored by default because spoken chatbot
   replies are already owned by `dialogue_manager -> /tts_engine/tts -> nao_say_skill`
+- `kb_query_visible_people`, `kb_query_visible_objects`, and
+  `kb_query_scene_change` are preserved as distinct intent labels from
+  `chatbot_llm`, but the orchestrator currently only logs and ignores them so
+  dialogue ownership stays upstream
 - `chatbot_llm` does not connect directly to `nao_orchestrator` in steady state
   because the canonical flow is `dialogue_manager -> /intents -> nao_orchestrator`
 - the older `/chatbot/intent` adapter is available but disabled by default
@@ -75,6 +79,17 @@ are:
 - `look_at_action`
 - `posture_command_topic`
 - `dedupe_window_sec`
+
+Effective defaults from `config/00-defaults.yml`:
+
+- `/intents` is the primary subscribed topic
+- `/chatbot/intent` stays available as an optional legacy bridge
+- `/nao/say` stays disabled for conversational replies unless
+  `dispatch_speech_intents:=true`
+- `/skill/replay_motion`, `/skill/do_head_motion`, and `/skill/look_at` remain
+  the canonical downstream skill routes
+- `/chatbot/posture_command` and `/joint_angles` remain temporary topic
+  fallbacks during migration cleanup
 
 ## Design Rule
 

@@ -1,6 +1,6 @@
 # Launch Profiles
 
-Last updated: 2026-03-18
+Last updated: 2026-03-21
 
 This is the quick execution guide for the active launch files in this repo.
 
@@ -49,6 +49,18 @@ ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
   nao_ip:=172.26.112.62
 ```
 
+With packaged real-robot camera + interaction_sim tools-only overlay:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
+  start_nao_robot:=true \
+  start_rviz:=true \
+  start_interaction_sim:=true \
+  start_interaction_sim_perception:=false \
+  start_interaction_sim_tools:=true \
+  nao_ip:=172.26.112.62
+```
+
 ### Primary migrated stack with ASR
 
 ```bash
@@ -83,12 +95,15 @@ ros2 run nao_chatbot asr_push_to_talk_cli
 - `asr_microphone_topic`: topic used between capture and ASR.
 - `asr_publish_partials`: defaults to `false` in app launch surfaces.
 - `asr_push_to_talk_enabled`: requires an explicit Bool gate before ASR listens.
-- ASR is currently isolated in `nao_chatbot_asr_only.launch.py`; the full
-  upstream ASR cutover is still pending.
+- the local ASR stack can run either standalone or under
+  `nao_chatbot_ros4hri_with_asr.launch.py`, but it is still the local
+  `simple_audio_capture + asr_vosk` path rather than the final upstream ROS4HRI
+  ASR contract.
 
 ### Migrated stack toggles
 
 - `start_chatbot_llm`
+- `start_knowledge_core`
 - `start_dialogue_manager`
 - `start_nao_orchestrator`
 - `start_nao_say_skill`
@@ -96,7 +111,12 @@ ros2 run nao_chatbot asr_push_to_talk_cli
 - `start_nao_look_at`
 - `start_naoqi_driver`
 - `start_nao_robot`
+- `start_nao_robot_hri_visualization`
 - `start_rviz`
+- `start_interaction_sim`
+- `start_interaction_sim_perception`
+- `start_interaction_sim_tools`
+- `start_interaction_sim_ui`
 - `dialogue_manager_chatbot`
 
 ### Robot integration toggles
@@ -105,8 +125,17 @@ ros2 run nao_chatbot asr_push_to_talk_cli
 - `start_nao_robot`: include/exclude the packaged `nao_robot` bring-up. This is
   the preferred real-robot camera path because it already wires `naoqi_driver`,
   `/camera/front/*`, and `hri_face_detect_yunet`.
+- `start_nao_robot_hri_visualization`: keep the packaged `hri_visualization`
+  overlays from `nao_robot` enabled on the real-robot path.
 - `start_rviz`: launch `rviz2` with the packaged `nao_robot` RViz config for TF
   and robot-camera validation.
+- `start_interaction_sim`: enable the local interaction-sim wrapper launch.
+- `start_interaction_sim_perception`: toggle the simulator webcam/person/emotion
+  perception path on or off.
+- `start_interaction_sim_tools`: toggle simulator-side tools such as rosbridge
+  and `ui_server` on or off.
+- `start_interaction_sim_ui`: start `ui_server` when simulator tools are
+  enabled.
 - `posture_command_topic`: temporary transition topic used by
   `nao_replay_motion` and `nao_orchestrator`.
 
@@ -114,7 +143,11 @@ Recommended split:
 
 - Use `start_interaction_sim:=true` for home webcam testing.
 - Use `start_nao_robot:=true start_rviz:=true start_interaction_sim:=false` for
-  real robot TF/camera validation.
+  pure real-robot TF/camera validation.
+- Use `start_nao_robot:=true start_interaction_sim:=true
+  start_interaction_sim_perception:=false start_interaction_sim_tools:=true` to
+  combine the real robot camera path with simulator-side operator tools such as
+  `rqt_human_radar`.
 
 ## ASR Preflight In Docker
 

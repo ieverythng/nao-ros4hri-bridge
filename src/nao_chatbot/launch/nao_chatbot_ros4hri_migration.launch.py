@@ -311,12 +311,22 @@ def generate_launch_description():
     start_interaction_sim_arg = DeclareLaunchArgument(
         "start_interaction_sim",
         default_value="false",
-        description="Optionally launch the official interaction_sim perception and UI layer for webcam-driven KB testing.",
+        description="Optionally launch the official interaction_sim support launch for simulator testing.",
+    )
+    start_interaction_sim_perception_arg = DeclareLaunchArgument(
+        "start_interaction_sim_perception",
+        default_value="true",
+        description="Launch the interaction_sim webcam/person/emotion perception components.",
+    )
+    start_interaction_sim_tools_arg = DeclareLaunchArgument(
+        "start_interaction_sim_tools",
+        default_value="true",
+        description="Launch interaction_sim support tools such as rosbridge and ui_server.",
     )
     start_interaction_sim_ui_arg = DeclareLaunchArgument(
         "start_interaction_sim_ui",
         default_value="false",
-        description="Start ui_server together with the official interaction_sim perception stack.",
+        description="Start ui_server together with interaction_sim support tools.",
     )
     interaction_sim_gscam_config_arg = DeclareLaunchArgument(
         "interaction_sim_gscam_config",
@@ -567,15 +577,40 @@ def generate_launch_description():
                     LaunchConfiguration("start_nao_robot"),
                     '" == "true" and "',
                     LaunchConfiguration("start_interaction_sim"),
+                    '" == "true" and "',
+                    LaunchConfiguration("start_interaction_sim_perception"),
                     '" == "true"',
                 ]
             )
         ),
         msg=(
-            "start_nao_robot and start_interaction_sim are both enabled. "
+            "start_nao_robot and interaction_sim perception are both enabled. "
             "This can launch overlapping perception nodes. Prefer "
-            "start_nao_robot:=true start_interaction_sim:=false when validating "
-            "the real robot camera and TF path."
+            "start_nao_robot:=true start_interaction_sim:=true "
+            "start_interaction_sim_perception:=false when validating the real "
+            "robot camera with simulator tools only."
+        ),
+    )
+    robot_tools_only_note = LogInfo(
+        condition=IfCondition(
+            PythonExpression(
+                [
+                    '"',
+                    LaunchConfiguration("start_nao_robot"),
+                    '" == "true" and "',
+                    LaunchConfiguration("start_interaction_sim"),
+                    '" == "true" and "',
+                    LaunchConfiguration("start_interaction_sim_perception"),
+                    '" != "true" and "',
+                    LaunchConfiguration("start_interaction_sim_tools"),
+                    '" == "true"',
+                ]
+            )
+        ),
+        msg=(
+            "start_nao_robot is enabled together with interaction_sim tools-only mode. "
+            "This is the intended path for combining the real robot camera/TF with "
+            "simulator-side operator tools such as rosbridge, rqt_human_radar, and UI helpers."
         ),
     )
 
@@ -815,6 +850,8 @@ def generate_launch_description():
             start_knowledge_core_arg,
             start_dialogue_manager_arg,
             start_interaction_sim_arg,
+            start_interaction_sim_perception_arg,
+            start_interaction_sim_tools_arg,
             start_interaction_sim_ui_arg,
             start_nao_orchestrator_arg,
             start_nao_say_skill_arg,
@@ -842,6 +879,7 @@ def generate_launch_description():
             naoqi_driver_launch,
             nao_robot_note,
             robot_perception_note,
+            robot_tools_only_note,
             rqt_console,
             interaction_sim_rqt,
             interaction_sim_rqt_chat_note,
@@ -916,26 +954,17 @@ def generate_launch_description():
                         "interaction_sim_gscam_config": LaunchConfiguration(
                             "interaction_sim_gscam_config"
                         ),
+                        "start_interaction_sim_perception": LaunchConfiguration(
+                            "start_interaction_sim_perception"
+                        ),
+                        "start_interaction_sim_tools": LaunchConfiguration(
+                            "start_interaction_sim_tools"
+                        ),
                         "start_interaction_sim_ui": LaunchConfiguration(
                             "start_interaction_sim_ui"
                         ),
                     },
-                    "required_packages": [
-                        "expressive_face",
-                        "gscam",
-                        "hri_emotion_recognizer",
-                        "hri_face_detect_yunet",
-                        "hri_person_manager",
-                        "hri_visualization",
-                        "image_transport_plugins",
-                        "interaction_sim",
-                        "rosbridge_server",
-                        "rqt_chat",
-                        "rqt_human_radar",
-                        "rqt_image_view",
-                        "rqt_reconfigure",
-                        "ui_server",
-                    ],
+                    "required_packages": ["interaction_sim"],
                 },
             ),
             chatbot_llm_bundle[0],

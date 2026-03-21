@@ -31,6 +31,13 @@ except ImportError:  # pragma: no cover - runtime dependency
     JointAnglesWithSpeed = None
 
 
+KB_QUERY_INTENTS = {
+    'kb_query_visible_people',
+    'kb_query_visible_objects',
+    'kb_query_scene_change',
+}
+
+
 @dataclass(slots=True)
 class _RuntimeStats:
     intents_received: int = 0
@@ -340,6 +347,14 @@ class NaoOrchestrator(Node):
             self._stats.dispatch_failures += 1
             self._stats.last_route = 'ignored:unsupported_motion'
             self.get_logger().warn('Unsupported motion payload: %s' % payload)
+            return
+
+        if intent_name in KB_QUERY_INTENTS:
+            self._stats.last_route = 'ignored:kb_query'
+            self.get_logger().info(
+                'Observed KB query intent for future routing: %s source=%s data=%s'
+                % (intent_name, source, data)
+            )
             return
 
         self._stats.last_route = 'ignored:unhandled'

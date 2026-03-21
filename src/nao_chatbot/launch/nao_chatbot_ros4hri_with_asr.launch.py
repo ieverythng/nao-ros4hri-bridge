@@ -57,12 +57,22 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'start_interaction_sim',
             default_value='false',
-            description='Optionally launch the official interaction_sim perception and UI layer for webcam-driven KB testing.',
+            description='Optionally launch the official interaction_sim support launch for simulator testing.',
+        ),
+        DeclareLaunchArgument(
+            'start_interaction_sim_perception',
+            default_value='true',
+            description='Launch the interaction_sim webcam/person/emotion perception components.',
+        ),
+        DeclareLaunchArgument(
+            'start_interaction_sim_tools',
+            default_value='true',
+            description='Launch interaction_sim support tools such as rosbridge and ui_server.',
         ),
         DeclareLaunchArgument(
             'start_interaction_sim_ui',
             default_value='false',
-            description='Start ui_server together with the official interaction_sim perception stack.',
+            description='Start ui_server together with interaction_sim support tools.',
         ),
         DeclareLaunchArgument(
             'interaction_sim_gscam_config',
@@ -193,6 +203,12 @@ def generate_launch_description():
             'start_rviz': LaunchConfiguration('start_rviz'),
             'start_knowledge_core': LaunchConfiguration('start_knowledge_core'),
             'start_interaction_sim': LaunchConfiguration('start_interaction_sim'),
+            'start_interaction_sim_perception': LaunchConfiguration(
+                'start_interaction_sim_perception'
+            ),
+            'start_interaction_sim_tools': LaunchConfiguration(
+                'start_interaction_sim_tools'
+            ),
             'start_interaction_sim_ui': LaunchConfiguration('start_interaction_sim_ui'),
             'nao_ip': LaunchConfiguration('nao_ip'),
             'nao_port': LaunchConfiguration('nao_port'),

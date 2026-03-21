@@ -26,6 +26,15 @@ This package runs a ROS2 lifecycle node (`asr_vosk`) that subscribes to
 - `start_listening` (bool, default: `true`)
 - `output_speech_topic` (string, default: `/humans/voices/anonymous_speaker/speech`)
 - `speech_locale` (string, default: `en_US`)
+- `publish_partials` (bool, default: `false`)
+- `min_final_chars` (int, default: `2`)
+- `min_final_words` (int, default: `1`)
+- `min_final_confidence` (float, default: `0.0`)
+- `ignore_single_token_fillers` (bool, default: `true`)
+- `single_token_fillers_csv` (string, default: `uh,um,hmm,huh,erm,ah,eh`)
+- `debug_log_results` (bool, default: `false`)
+- `push_to_talk_enabled` (bool, default: `false` in the standalone package config)
+- `push_to_talk_topic` (string, default: `/asr_vosk/push_to_talk`)
 
 ## Launch
 
@@ -39,6 +48,10 @@ The launch file automatically transitions lifecycle state:
 
 1. `CONFIGURE`
 2. `ACTIVATE`
+
+The higher-level `nao_chatbot` ASR launch surfaces usually override
+`push_to_talk_enabled:=true`, so the standalone package default and the
+application-level default are intentionally different.
 
 ## Note on Models
 

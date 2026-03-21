@@ -18,7 +18,7 @@ from launch_ros.actions import SetRemap
 from launch_ros.substitutions import FindPackageShare
 
 
-_REQUIRED_PACKAGES = (
+_PERCEPTION_PACKAGES = (
     "interaction_sim",
     "expressive_face",
     "gscam",
@@ -27,18 +27,41 @@ _REQUIRED_PACKAGES = (
     "hri_person_manager",
     "hri_visualization",
     "image_transport_plugins",
+)
+
+_TOOLS_PACKAGES = (
+    "interaction_sim",
     "rosbridge_server",
-    "rqt_chat",
-    "rqt_human_radar",
-    "rqt_image_view",
-    "rqt_reconfigure",
     "ui_server",
 )
 
 
+def _as_bool(context, name: str) -> bool:
+    return str(LaunchConfiguration(name).perform(context)).strip().lower() == "true"
+
+
 def _generate_interaction_sim_actions(context):
+    start_perception = _as_bool(context, "start_interaction_sim_perception")
+    start_tools = _as_bool(context, "start_interaction_sim_tools")
+    if not start_perception and not start_tools:
+        return [
+            LogInfo(
+                msg=(
+                    "interaction_sim bring-up skipped because both "
+                    "start_interaction_sim_perception and "
+                    "start_interaction_sim_tools are disabled."
+                )
+            )
+        ]
+
+    required_packages = []
+    if start_perception:
+        required_packages.extend(_PERCEPTION_PACKAGES)
+    if start_tools:
+        required_packages.extend(_TOOLS_PACKAGES)
+
     missing_packages = []
-    for package_name in _REQUIRED_PACKAGES:
+    for package_name in required_packages:
         try:
             get_package_share_directory(package_name)
         except PackageNotFoundError:
@@ -49,17 +72,17 @@ def _generate_interaction_sim_actions(context):
             LogInfo(
                 msg=(
                     "interaction_sim bring-up skipped because the following official "
-                    f"packages are missing: {', '.join(missing_packages)}"
+                    f"packages are missing: {', '.join(sorted(set(missing_packages)))}"
                 )
             )
         ]
 
     interaction_sim_share = get_package_share_directory("interaction_sim")
+    scoped_actions = []
 
-    return [
-        GroupAction(
-            scoped=True,
-            actions=[
+    if start_perception:
+        scoped_actions.extend(
+            [
                 SetRemap(src="image", dst="/camera/image_raw"),
                 SetRemap(src="camera_info", dst="/camera/camera_info"),
                 SetRemap(
@@ -133,14 +156,6 @@ def _generate_interaction_sim_actions(context):
                     )
                 ),
                 Node(
-                    package="ui_server",
-                    executable="ui_server",
-                    condition=IfCondition(
-                        LaunchConfiguration("start_interaction_sim_ui")
-                    ),
-                    output="screen",
-                ),
-                Node(
                     package="tf2_ros",
                     executable="static_transform_publisher",
                     arguments=[
@@ -172,6 +187,20 @@ def _generate_interaction_sim_actions(context):
                     ],
                     output="screen",
                 ),
+            ]
+        )
+
+    if start_tools:
+        scoped_actions.extend(
+            [
+                Node(
+                    package="ui_server",
+                    executable="ui_server",
+                    condition=IfCondition(
+                        LaunchConfiguration("start_interaction_sim_ui")
+                    ),
+                    output="screen",
+                ),
                 IncludeLaunchDescription(
                     XMLLaunchDescriptionSource(
                         [
@@ -185,24 +214,35 @@ def _generate_interaction_sim_actions(context):
                         ]
                     )
                 ),
-                LogInfo(
-                    msg=(
-                        "interaction_sim perception/UI layer enabled. "
-                        "This launches the official simulator-side webcam, "
-                        "face/person/emotion, visualization, expressive_face, "
-                        "and rosbridge components without duplicating "
-                        "chatbot_llm, dialogue_manager, or knowledge_core."
-                    )
-                ),
-                LogInfo(
-                    msg=(
-                        "The interaction_sim perspective is available at "
-                        f"{os.path.join(interaction_sim_share, 'config', 'simulator.perspective')}"
-                    )
-                ),
-            ],
+            ]
         )
-    ]
+
+    mode_description = "tools-only"
+    if start_perception and start_tools:
+        mode_description = "perception + tools"
+    elif start_perception:
+        mode_description = "perception-only"
+
+    scoped_actions.extend(
+        [
+            LogInfo(
+                msg=(
+                    "interaction_sim %s layer enabled. "
+                    "This keeps simulator utilities separate from "
+                    "chatbot_llm, dialogue_manager, and knowledge_core."
+                )
+                % mode_description
+            ),
+            LogInfo(
+                msg=(
+                    "The interaction_sim perspective is available at "
+                    f"{os.path.join(interaction_sim_share, 'config', 'simulator.perspective')}"
+                )
+            ),
+        ]
+    )
+
+    return [GroupAction(scoped=True, actions=scoped_actions)]
 
 
 def generate_launch_description():
@@ -221,7 +261,17 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "start_interaction_sim_ui",
                 default_value="false",
-                description="Start ui_server together with the interaction_sim perception stack.",
+                description="Start ui_server together with the interaction_sim support tools.",
+            ),
+            DeclareLaunchArgument(
+                "start_interaction_sim_perception",
+                default_value="true",
+                description="Launch interaction_sim webcam/person/emotion perception components.",
+            ),
+            DeclareLaunchArgument(
+                "start_interaction_sim_tools",
+                default_value="true",
+                description="Launch interaction_sim support tools such as rosbridge and ui_server.",
             ),
             OpaqueFunction(function=_generate_interaction_sim_actions),
         ]

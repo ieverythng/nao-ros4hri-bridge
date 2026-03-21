@@ -44,6 +44,16 @@ def test_normalize_incoming_intent_maps_help_to_say() -> None:
     assert 'stand, sit, kneel' in data['object']
 
 
+def test_normalize_incoming_intent_preserves_custom_kb_query_labels() -> None:
+    intent_name, data = normalize_incoming_intent(
+        'kb_query_visible_people',
+        {'goal': 'visible_people'},
+        'Hello there!',
+    )
+    assert intent_name == 'kb_query_visible_people'
+    assert data == {'goal': 'visible_people'}
+
+
 def test_resolve_say_text_prefers_suggested_response_for_greet() -> None:
     text = resolve_say_text(
         Intent.GREET,
