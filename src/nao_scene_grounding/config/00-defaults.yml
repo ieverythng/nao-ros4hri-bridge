@@ -1,0 +1,19 @@
+/**:
+  ros__parameters:
+    detector_backend: emorobcare_cv
+    detector_topic: /detected_objects
+    summary_topic: ~/summary
+    min_detection_score: 0.35
+    allowed_labels: bottle,cup,book,cell phone,backpack,remote,laptop,keyboard,mouse,chair,blueberry,corn,pear,tomato,zucchini
+    label_class_overrides: >
+      {
+        "cell phone": "CellPhone"
+      }
+    entity_prefix: detected
+    observer_name: myself
+    knowledge_enabled: true
+    knowledge_revise_service_name: /kb/revise
+    knowledge_models: []
+    knowledge_lifespan_sec: 4.0
+    knowledge_refresh_interval_sec: 1.0
+    local_stale_after_sec: 4.5

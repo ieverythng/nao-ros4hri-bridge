@@ -1,0 +1,1 @@
+"""NAO scene grounding package."""

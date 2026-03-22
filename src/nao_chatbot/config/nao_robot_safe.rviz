@@ -7,6 +7,8 @@ Panels:
         - /RobotModel1
         - /TF1
         - /Image1
+        - /Object Detection Debug1
+        - /YOLO Debug1
       Splitter Ratio: 0.6
     Tree Height: 900
   - Class: rviz_common/Selection
@@ -62,7 +64,7 @@ Visualization Manager:
       Enabled: true
       Name: Image
       Image Topic:
-        Value: /camera/front/image_raw
+        Value: /nao_robot/camera/front/image_raw
       Max Value: 1
       Median window: 5
       Min Value: 0
@@ -70,6 +72,32 @@ Visualization Manager:
       Queue Size: 2
       Transport Hint: raw
       Unreliable: false
+      Value: true
+    - Class: rviz_default_plugins/Image
+      Enabled: true
+      Name: Object Detection Debug
+      Image Topic:
+        Value: /debug/object_detection
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Normalize Range: true
+      Queue Size: 2
+      Transport Hint: raw
+      Unreliable: true
+      Value: true
+    - Class: rviz_default_plugins/Image
+      Enabled: true
+      Name: YOLO Debug
+      Image Topic:
+        Value: /yolo/debug_image
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Normalize Range: true
+      Queue Size: 2
+      Transport Hint: raw
+      Unreliable: true
       Value: true
   Enabled: true
   Global Options:

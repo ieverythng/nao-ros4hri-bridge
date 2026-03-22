@@ -6,8 +6,10 @@ from nao_orchestrator.intent_rules import classify_motion_target
 from nao_orchestrator.intent_rules import make_intent_signature
 from nao_orchestrator.intent_rules import normalize_incoming_intent
 from nao_orchestrator.intent_rules import normalize_legacy_intent
+from nao_orchestrator.intent_rules import parse_execution_plan
 from nao_orchestrator.intent_rules import parse_intent_data
 from nao_orchestrator.intent_rules import posture_topic_fallback_for_motion
+from nao_orchestrator.intent_rules import resolve_ack_text
 from nao_orchestrator.intent_rules import resolve_say_text
 
 
@@ -81,6 +83,33 @@ def test_classify_motion_target_maps_look_at_reset_alias() -> None:
     assert payload['policy'] == 'reset'
 
 
+def test_resolve_ack_text_prefers_explicit_ack_text() -> None:
+    text = resolve_ack_text(
+        Intent.PERFORM_MOTION,
+        {'ack_text': 'Sure, I am standing up now.'},
+        'Default hello',
+    )
+    assert text == 'Sure, I am standing up now.'
+
+
+def test_parse_execution_plan_filters_unknown_steps() -> None:
+    plan = parse_execution_plan(
+        {
+            'plan': [
+                {'type': 'skill', 'name': 'perform_motion', 'args': {'object': 'stand'}},
+                {'type': 'mystery', 'name': 'ignored', 'args': {}},
+            ]
+        }
+    )
+    assert plan == [
+        {
+            'type': 'skill',
+            'name': 'perform_motion',
+            'args': {'object': 'stand'},
+        }
+    ]
+
+
 def test_posture_topic_fallback_for_motion_preserves_legacy_bridge_names() -> None:
     assert posture_topic_fallback_for_motion('standinit') == 'stand'
     assert posture_topic_fallback_for_motion('crouch') == 'kneel'
@@ -89,4 +118,16 @@ def test_posture_topic_fallback_for_motion_preserves_legacy_bridge_names() -> No
 def test_make_intent_signature_is_stable_for_same_payload() -> None:
     left = make_intent_signature(Intent.SAY, {'recipient': 'p1', 'object': 'hello'})
     right = make_intent_signature(Intent.SAY, {'object': 'hello', 'recipient': 'p1'})
+    assert left == right
+
+
+def test_make_intent_signature_ignores_ack_text_only_differences() -> None:
+    left = make_intent_signature(
+        Intent.PERFORM_MOTION,
+        {'object': 'stand', 'ack_text': 'Sure.'},
+    )
+    right = make_intent_signature(
+        Intent.PERFORM_MOTION,
+        {'object': 'stand', 'ack_text': 'Okay.'},
+    )
     assert left == right

@@ -108,6 +108,8 @@ _POSTURE_TOPIC_FALLBACKS = {
     'crouch': 'kneel',
 }
 
+_PLAN_STEP_TYPES = {'say', 'skill', 'look_at', 'noop'}
+
 
 def parse_intent_data(raw_data: str) -> dict:
     """Parse JSON payloads carried by `hri_actions_msgs/Intent.data`."""
@@ -213,6 +215,54 @@ def resolve_say_text(
     return ''
 
 
+def resolve_ack_text(
+    intent_name: str,
+    data: dict,
+    default_greeting: str,
+) -> str:
+    """Resolve acknowledgement text without forcing a duplicate speech dispatch."""
+    payload = _clean_payload(data)
+    explicit_ack = _first_non_empty(
+        payload.get('ack_text', ''),
+        payload.get('suggested_response', ''),
+    )
+    if explicit_ack:
+        return explicit_ack
+    return resolve_say_text(intent_name, payload, default_greeting)
+
+
+def parse_execution_plan(data: dict) -> list[dict]:
+    """Parse an optional structured execution plan embedded in intent data."""
+    if not isinstance(data, dict):
+        return []
+
+    raw_plan = data.get('plan', [])
+    if isinstance(raw_plan, str):
+        try:
+            raw_plan = json.loads(raw_plan)
+        except json.JSONDecodeError:
+            raw_plan = []
+
+    if not isinstance(raw_plan, list):
+        return []
+
+    parsed_steps: list[dict] = []
+    for step in raw_plan:
+        if not isinstance(step, dict):
+            continue
+        step_type = str(step.get('type', '')).strip().lower()
+        if step_type not in _PLAN_STEP_TYPES:
+            continue
+        parsed_steps.append(
+            {
+                'type': step_type,
+                'name': str(step.get('name', '')).strip().lower(),
+                'args': _clean_payload(step.get('args', {})),
+            }
+        )
+    return parsed_steps
+
+
 def classify_motion_target(intent_name: str, data: dict) -> tuple[str, dict]:
     """Map canonical motion intents to the concrete NAO execution path."""
     clean_intent = str(intent_name).strip()
@@ -246,6 +296,8 @@ def posture_topic_fallback_for_motion(motion_name: str) -> str:
 def make_intent_signature(intent_name: str, data: dict) -> str:
     """Build a stable dedupe key for recently processed intents."""
     payload = _clean_payload(data)
+    payload.pop('ack_text', None)
+    payload.pop('scene_targets', None)
     serialized = json.dumps(payload, sort_keys=True, separators=(',', ':'))
     return f'{str(intent_name).strip()}::{serialized}'
 

@@ -55,6 +55,21 @@ def generate_launch_description():
             description='Launch rviz2 using the packaged nao_robot RViz config.',
         ),
         DeclareLaunchArgument(
+            'start_object_detection',
+            default_value='false',
+            description='Optionally launch the configured external object detector backend.',
+        ),
+        DeclareLaunchArgument(
+            'object_detection_backend',
+            default_value='emorobcare_cv',
+            description='External detector backend to launch: emorobcare_cv or yolo_ros.',
+        ),
+        DeclareLaunchArgument(
+            'start_scene_grounding',
+            default_value='false',
+            description='Launch the local object-grounding node.',
+        ),
+        DeclareLaunchArgument(
             'start_interaction_sim',
             default_value='false',
             description='Optionally launch the official interaction_sim support launch for simulator testing.',
@@ -78,6 +93,61 @@ def generate_launch_description():
             'interaction_sim_gscam_config',
             default_value='v4l2src device=/dev/video0 ! video/x-raw,framerate=30/1 ! videoconvert',
             description='GStreamer pipeline used by gscam when interaction_sim support is enabled.',
+        ),
+        DeclareLaunchArgument(
+            'object_detection_namespace',
+            default_value='yolo',
+            description='Namespace used by the external detector stack.',
+        ),
+        DeclareLaunchArgument(
+            'object_detection_model',
+            default_value='yolov8n.pt',
+            description='Detector model forwarded to yolo_ros.',
+        ),
+        DeclareLaunchArgument(
+            'object_detection_device',
+            default_value='cpu',
+            description='Detector device forwarded to yolo_ros.',
+        ),
+        DeclareLaunchArgument(
+            'object_detection_threshold',
+            default_value='0.35',
+            description='Detector score threshold forwarded to yolo_ros and scene grounding.',
+        ),
+        DeclareLaunchArgument(
+            'object_detection_input_image_topic',
+            default_value='/nao_robot/camera/front/image_raw',
+            description='Image topic forwarded to yolo_ros.',
+        ),
+        DeclareLaunchArgument(
+            'object_detection_image_reliability',
+            default_value='2',
+            description='Image QoS reliability forwarded to yolo_ros.',
+        ),
+        DeclareLaunchArgument(
+            'scene_grounding_detector_topic',
+            default_value='/detected_objects',
+            description='Detection topic consumed by nao_scene_grounding.',
+        ),
+        DeclareLaunchArgument(
+            'scene_grounding_summary_topic',
+            default_value='/scene/summary',
+            description='Summary topic published by nao_scene_grounding.',
+        ),
+        DeclareLaunchArgument(
+            'scene_grounding_allowed_labels',
+            default_value='bottle,cup,book,cell phone,backpack,remote,laptop,keyboard,mouse,chair,blueberry,corn,pear,tomato,zucchini',
+            description='Comma-separated object labels that should be grounded.',
+        ),
+        DeclareLaunchArgument(
+            'scene_grounding_knowledge_lifespan_sec',
+            default_value='4.0',
+            description='KnowledgeCore lifespan for grounded object facts.',
+        ),
+        DeclareLaunchArgument(
+            'scene_grounding_knowledge_refresh_interval_sec',
+            default_value='1.0',
+            description='Refresh interval for grounded object facts.',
         ),
         DeclareLaunchArgument(
             'posture_command_topic',
@@ -201,6 +271,9 @@ def generate_launch_description():
             'start_nao_robot': LaunchConfiguration('start_nao_robot'),
             'start_nao_robot_hri_visualization': LaunchConfiguration('start_nao_robot_hri_visualization'),
             'start_rviz': LaunchConfiguration('start_rviz'),
+            'start_object_detection': LaunchConfiguration('start_object_detection'),
+            'object_detection_backend': LaunchConfiguration('object_detection_backend'),
+            'start_scene_grounding': LaunchConfiguration('start_scene_grounding'),
             'start_knowledge_core': LaunchConfiguration('start_knowledge_core'),
             'start_interaction_sim': LaunchConfiguration('start_interaction_sim'),
             'start_interaction_sim_perception': LaunchConfiguration(
@@ -216,6 +289,36 @@ def generate_launch_description():
             'qi_listen_url': LaunchConfiguration('qi_listen_url'),
             'interaction_sim_gscam_config': LaunchConfiguration(
                 'interaction_sim_gscam_config'
+            ),
+            'object_detection_namespace': LaunchConfiguration(
+                'object_detection_namespace'
+            ),
+            'object_detection_backend': LaunchConfiguration('object_detection_backend'),
+            'object_detection_model': LaunchConfiguration('object_detection_model'),
+            'object_detection_device': LaunchConfiguration('object_detection_device'),
+            'object_detection_threshold': LaunchConfiguration(
+                'object_detection_threshold'
+            ),
+            'object_detection_input_image_topic': LaunchConfiguration(
+                'object_detection_input_image_topic'
+            ),
+            'object_detection_image_reliability': LaunchConfiguration(
+                'object_detection_image_reliability'
+            ),
+            'scene_grounding_detector_topic': LaunchConfiguration(
+                'scene_grounding_detector_topic'
+            ),
+            'scene_grounding_summary_topic': LaunchConfiguration(
+                'scene_grounding_summary_topic'
+            ),
+            'scene_grounding_allowed_labels': LaunchConfiguration(
+                'scene_grounding_allowed_labels'
+            ),
+            'scene_grounding_knowledge_lifespan_sec': LaunchConfiguration(
+                'scene_grounding_knowledge_lifespan_sec'
+            ),
+            'scene_grounding_knowledge_refresh_interval_sec': LaunchConfiguration(
+                'scene_grounding_knowledge_refresh_interval_sec'
             ),
             'posture_command_topic': LaunchConfiguration('posture_command_topic'),
             'dialogue_manager_chatbot': LaunchConfiguration('dialogue_manager_chatbot'),

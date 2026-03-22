@@ -211,6 +211,72 @@ def _optional_launch_description(
     ]
 
 
+def _optional_object_detection_launch(context):
+    if LaunchConfiguration("start_object_detection").perform(context).lower() != "true":
+        return []
+
+    backend = LaunchConfiguration("object_detection_backend").perform(context).strip().lower()
+    if backend in ("yolo_ros", "yolo"):
+        return _optional_launch_description(
+            context,
+            package_name="yolo_bringup",
+            launch_file_name="yolo.launch.py",
+            launch_arg_name="start_object_detection",
+            display_name="yolo_ros",
+            launch_arguments={
+                "namespace": LaunchConfiguration("object_detection_namespace"),
+                "model": LaunchConfiguration("object_detection_model"),
+                "device": LaunchConfiguration("object_detection_device"),
+                "threshold": LaunchConfiguration("object_detection_threshold"),
+                "input_image_topic": LaunchConfiguration("object_detection_input_image_topic"),
+                "image_reliability": LaunchConfiguration("object_detection_image_reliability"),
+                "use_tracking": "True",
+                "use_debug": "True",
+            },
+            required_packages=["yolo_bringup", "yolo_ros"],
+        )
+
+    if backend in ("emorobcare_cv", "emorobot", "emorobcare"):
+        try:
+            get_package_share_directory("emorobcare_cv_object_detection")
+        except PackageNotFoundError:
+            return [
+                LogInfo(
+                    msg=(
+                        "emorobcare object detection launch skipped because package "
+                        "'emorobcare_cv_object_detection' is not installed in this environment."
+                    )
+                )
+            ]
+        return [
+            LogInfo(
+                msg=(
+                    "Launching emorobcare_cv_object_detection. Its package-local config.yaml "
+                    "still controls options such as draw_image and human_radar."
+                )
+            ),
+            Node(
+                package="emorobcare_cv_object_detection",
+                executable="object_detector_node",
+                output="screen",
+                emulate_tty=True,
+                remappings=[
+                    ("/camera/image_raw", LaunchConfiguration("object_detection_input_image_topic")),
+                ],
+            ),
+        ]
+
+    return [
+        LogInfo(
+            msg=(
+                "Unsupported object_detection_backend='%s'. Supported backends are "
+                "emorobcare_cv and yolo_ros."
+            )
+            % backend
+        )
+    ]
+
+
 def _optional_rviz_launch(
     context,
     *,
@@ -297,6 +363,76 @@ def generate_launch_description():
         "start_rviz",
         default_value="false",
         description="Launch rviz2 using the packaged nao_robot robot-camera config.",
+    )
+    start_object_detection_arg = DeclareLaunchArgument(
+        "start_object_detection",
+        default_value="false",
+        description="Optionally launch the configured external object detector backend.",
+    )
+    object_detection_backend_arg = DeclareLaunchArgument(
+        "object_detection_backend",
+        default_value="emorobcare_cv",
+        description="External detector backend to launch: emorobcare_cv or yolo_ros.",
+    )
+    start_scene_grounding_arg = DeclareLaunchArgument(
+        "start_scene_grounding",
+        default_value="false",
+        description="Launch the local object-to-KnowledgeCore grounding node.",
+    )
+    object_detection_namespace_arg = DeclareLaunchArgument(
+        "object_detection_namespace",
+        default_value="yolo",
+        description="Namespace used for the external detector stack.",
+    )
+    object_detection_model_arg = DeclareLaunchArgument(
+        "object_detection_model",
+        default_value="yolov8n.pt",
+        description="Detector model name or path forwarded to yolo_ros.",
+    )
+    object_detection_device_arg = DeclareLaunchArgument(
+        "object_detection_device",
+        default_value="cpu",
+        description="Detector device forwarded to yolo_ros, for example cpu or cuda:0.",
+    )
+    object_detection_threshold_arg = DeclareLaunchArgument(
+        "object_detection_threshold",
+        default_value="0.35",
+        description="Detector threshold forwarded to yolo_ros and mirrored into scene grounding defaults.",
+    )
+    object_detection_input_image_topic_arg = DeclareLaunchArgument(
+        "object_detection_input_image_topic",
+        default_value="/nao_robot/camera/front/image_raw",
+        description="RGB image topic remapped into the external detector stack.",
+    )
+    object_detection_image_reliability_arg = DeclareLaunchArgument(
+        "object_detection_image_reliability",
+        default_value="2",
+        description="Detector image QoS reliability, where 2 means Best Effort.",
+    )
+    scene_grounding_detector_topic_arg = DeclareLaunchArgument(
+        "scene_grounding_detector_topic",
+        default_value="/detected_objects",
+        description="Detection topic consumed by nao_scene_grounding.",
+    )
+    scene_grounding_summary_topic_arg = DeclareLaunchArgument(
+        "scene_grounding_summary_topic",
+        default_value="/scene/summary",
+        description="JSON summary topic published by nao_scene_grounding.",
+    )
+    scene_grounding_allowed_labels_arg = DeclareLaunchArgument(
+        "scene_grounding_allowed_labels",
+        default_value="bottle,cup,book,cell phone,backpack,remote,laptop,keyboard,mouse,chair,blueberry,corn,pear,tomato,zucchini",
+        description="Comma-separated detector labels to ground into KnowledgeCore.",
+    )
+    scene_grounding_knowledge_lifespan_sec_arg = DeclareLaunchArgument(
+        "scene_grounding_knowledge_lifespan_sec",
+        default_value="4.0",
+        description="KnowledgeCore lifespan used for transient grounded object facts.",
+    )
+    scene_grounding_knowledge_refresh_interval_sec_arg = DeclareLaunchArgument(
+        "scene_grounding_knowledge_refresh_interval_sec",
+        default_value="1.0",
+        description="Minimum interval between grounding refreshes for the same tracked object.",
     )
     start_knowledge_core_arg = DeclareLaunchArgument(
         "start_knowledge_core",
@@ -620,6 +756,73 @@ def generate_launch_description():
         node_name="nao_look_at",
         condition=IfCondition(LaunchConfiguration("start_nao_look_at")),
     )
+    nao_scene_grounding_node = Node(
+        package="nao_scene_grounding",
+        executable="start_node",
+        name="nao_scene_grounding",
+        output="screen",
+        emulate_tty=True,
+        parameters=[
+            PathJoinSubstitution(
+                [FindPackageShare("nao_scene_grounding"), "config", "00-defaults.yml"]
+            ),
+            {
+                "detector_backend": ParameterValue(
+                    LaunchConfiguration("object_detection_backend"),
+                    value_type=str,
+                )
+            },
+            {
+                "detector_topic": ParameterValue(
+                    LaunchConfiguration("scene_grounding_detector_topic"),
+                    value_type=str,
+                )
+            },
+            {
+                "summary_topic": ParameterValue(
+                    LaunchConfiguration("scene_grounding_summary_topic"),
+                    value_type=str,
+                )
+            },
+            {
+                "min_detection_score": ParameterValue(
+                    LaunchConfiguration("object_detection_threshold"),
+                    value_type=float,
+                )
+            },
+            {
+                "allowed_labels": ParameterValue(
+                    LaunchConfiguration("scene_grounding_allowed_labels"),
+                    value_type=str,
+                )
+            },
+            {
+                "knowledge_enabled": ParameterValue(
+                    LaunchConfiguration("start_knowledge_core"),
+                    value_type=bool,
+                )
+            },
+            {
+                "knowledge_lifespan_sec": ParameterValue(
+                    LaunchConfiguration("scene_grounding_knowledge_lifespan_sec"),
+                    value_type=float,
+                )
+            },
+            {
+                "knowledge_refresh_interval_sec": ParameterValue(
+                    LaunchConfiguration("scene_grounding_knowledge_refresh_interval_sec"),
+                    value_type=float,
+                )
+            },
+            {
+                "local_stale_after_sec": ParameterValue(
+                    LaunchConfiguration("scene_grounding_knowledge_lifespan_sec"),
+                    value_type=float,
+                )
+            },
+        ],
+        condition=IfCondition(LaunchConfiguration("start_scene_grounding")),
+    )
 
     rqt_console = ExecuteProcess(
         condition=IfCondition(
@@ -846,6 +1049,9 @@ def generate_launch_description():
             start_nao_robot_arg,
             start_nao_robot_hri_visualization_arg,
             start_rviz_arg,
+            start_object_detection_arg,
+            object_detection_backend_arg,
+            start_scene_grounding_arg,
             start_chatbot_llm_arg,
             start_knowledge_core_arg,
             start_dialogue_manager_arg,
@@ -876,6 +1082,17 @@ def generate_launch_description():
             chatbot_intent_model_arg,
             ollama_intent_model_arg,
             chatbot_server_url_arg,
+            object_detection_namespace_arg,
+            object_detection_model_arg,
+            object_detection_device_arg,
+            object_detection_threshold_arg,
+            object_detection_input_image_topic_arg,
+            object_detection_image_reliability_arg,
+            scene_grounding_detector_topic_arg,
+            scene_grounding_summary_topic_arg,
+            scene_grounding_allowed_labels_arg,
+            scene_grounding_knowledge_lifespan_sec_arg,
+            scene_grounding_knowledge_refresh_interval_sec_arg,
             naoqi_driver_launch,
             nao_robot_note,
             robot_perception_note,
@@ -941,6 +1158,9 @@ def generate_launch_description():
                 },
             ),
             OpaqueFunction(
+                function=_optional_object_detection_launch,
+            ),
+            OpaqueFunction(
                 function=_optional_launch_description,
                 kwargs={
                     "package_name": "nao_chatbot",
@@ -979,5 +1199,6 @@ def generate_launch_description():
             *nao_say_skill_bundle,
             nao_replay_motion_launch,
             *nao_look_at_bundle,
+            nao_scene_grounding_node,
         ]
     )

@@ -20,8 +20,10 @@ from nao_orchestrator.intent_rules import (
     make_intent_signature,
     normalize_incoming_intent,
     normalize_legacy_intent,
+    parse_execution_plan,
     parse_intent_data,
     posture_topic_fallback_for_motion,
+    resolve_ack_text,
     resolve_say_text,
 )
 
@@ -308,6 +310,15 @@ class NaoOrchestrator(Node):
             )
             return
 
+        plan = parse_execution_plan(data)
+        if plan and self._handle_planned_intent(
+            intent_name=intent_name,
+            data=data,
+            plan=plan,
+            source=source,
+        ):
+            return
+
         if intent_name in (Intent.GREET, Intent.SAY):
             if not self.dispatch_speech_intents:
                 self._stats.last_route = 'ignored:speech_owned_by_dialogue_manager'
@@ -362,6 +373,127 @@ class NaoOrchestrator(Node):
             'Unhandled intent: %s source=%s data=%s'
             % (intent_name, source, data)
         )
+
+    def _handle_planned_intent(
+        self,
+        *,
+        intent_name: str,
+        data: dict,
+        plan: list[dict],
+        source: str,
+    ) -> bool:
+        self._maybe_dispatch_acknowledgement(
+            intent_name=intent_name,
+            data=data,
+            plan=plan,
+        )
+
+        executed_any = False
+        for step in plan:
+            if self._dispatch_plan_step(step, fallback_data=data):
+                executed_any = True
+                continue
+
+            self._stats.dispatch_failures += 1
+            self._stats.last_route = 'planned:failed'
+            self.get_logger().warn(
+                'Planned intent step failed | intent=%s source=%s step=%s'
+                % (intent_name, source, step)
+            )
+            return False
+
+        if executed_any:
+            self._stats.last_route = 'planned'
+            return True
+        return False
+
+    def _maybe_dispatch_acknowledgement(
+        self,
+        *,
+        intent_name: str,
+        data: dict,
+        plan: list[dict],
+    ) -> None:
+        if not self.dispatch_speech_intents:
+            return
+        if intent_name in (Intent.GREET, Intent.SAY):
+            return
+        if any(step.get('type') == 'say' for step in plan):
+            return
+
+        ack_text = resolve_ack_text(
+            intent_name=intent_name,
+            data=data,
+            default_greeting=self.default_greeting,
+        )
+        if not ack_text:
+            return
+        if self._dispatch_say(ack_text, data):
+            self._stats.dispatched_say += 1
+
+    def _dispatch_plan_step(self, step: dict, fallback_data: dict) -> bool:
+        step_type = str(step.get('type', '')).strip().lower()
+        step_name = str(step.get('name', '')).strip().lower()
+        step_args = dict(step.get('args', {}))
+
+        if step_type == 'noop':
+            return True
+
+        if step_type == 'say':
+            text = resolve_say_text(
+                intent_name=Intent.SAY,
+                data={
+                    'object': step_args.get('text', step_args.get('object', '')),
+                    'suggested_response': step_args.get('text', ''),
+                    'recipient': step_args.get(
+                        'recipient',
+                        fallback_data.get('recipient', ''),
+                    ),
+                },
+                default_greeting=self.default_greeting,
+            )
+            if self._dispatch_say(text, {**fallback_data, **step_args}):
+                self._stats.dispatched_say += 1
+                return True
+            return False
+
+        if step_type == 'look_at':
+            return self._dispatch_planned_look_at(step_name, step_args)
+
+        if step_type == 'skill':
+            if step_name in ('perform_motion', 'motion', ''):
+                route, payload = classify_motion_target(Intent.PERFORM_MOTION, step_args)
+                if route == 'replay_motion':
+                    if self._dispatch_replay_motion(payload['motion_name']):
+                        self._stats.dispatched_replay_motion += 1
+                        return True
+                    return False
+                if route == 'head_motion':
+                    if self._dispatch_head_motion(payload):
+                        self._stats.dispatched_head_motion += 1
+                        return True
+                    return False
+                if route == 'look_at_reset':
+                    if self._dispatch_look_at_reset():
+                        self._stats.dispatched_look_at += 1
+                        return True
+                    return False
+                return False
+            if step_name == 'look_at':
+                return self._dispatch_planned_look_at(step_name, step_args)
+
+        return False
+
+    def _dispatch_planned_look_at(self, step_name: str, step_args: dict) -> bool:
+        policy = str(
+            step_args.get('policy', step_args.get('object', step_name))
+        ).strip().lower()
+        if policy in ('reset', 'look_at_reset'):
+            if self._dispatch_look_at_reset():
+                self._stats.dispatched_look_at += 1
+                return True
+            return False
+        return False
 
     def _dispatch_say(self, text: str, data: dict) -> bool:
         clean_text = str(text).strip()

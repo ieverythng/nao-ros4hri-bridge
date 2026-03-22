@@ -23,8 +23,10 @@
   <exec_depend>nao_look_at</exec_depend>
   <exec_depend>nao_orchestrator</exec_depend>
   <exec_depend>nao_replay_motion</exec_depend>
+  <exec_depend>nao_scene_grounding</exec_depend>
   <exec_depend>nao_say_skill</exec_depend>
   <exec_depend>rqt_chat</exec_depend>
+  <exec_depend>rqt_image_view</exec_depend>
   <exec_depend>rviz2</exec_depend>
   <exec_depend>python3-yaml</exec_depend>
   <exec_depend>simple_audio_capture</exec_depend>
