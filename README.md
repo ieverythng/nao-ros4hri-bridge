@@ -14,6 +14,7 @@ Robot-side runtime packages in this repo:
 - `nao_say_skill`: NAO-specific `/nao/say` execution bridge
 - `nao_replay_motion`: replay-motion, posture compatibility, and head motion
 - `nao_look_at`: scaffolded `/skill/look_at` implementation
+- `nao_scene_grounding`: detector-to-KnowledgeCore grounding bridge and scene summary node
 - `asr_vosk`: local lifecycle ASR node
 - `simple_audio_capture`: local microphone source for the ASR path
 
@@ -78,6 +79,39 @@ If a dialogue role passes a JSON `knowledge_snapshot` block,
 `chatbot_llm` merges those role-level overrides with the node defaults for
 patterns, variables, models, and output limits.
 
+## Object Grounding And Scene Memory
+
+The migrated runtime now also supports a detector-first grounding path for
+demo-time object awareness:
+
+```text
+camera image -> external detector backend
+    -> nao_scene_grounding
+    -> /kb/revise + /scene/summary
+    -> knowledge snapshots inside chatbot_llm prompts
+```
+
+High-level ownership split:
+
+- the external detector owns raw object detection and debug images
+- `nao_scene_grounding` normalizes detector outputs, refreshes transient KB
+  facts, and publishes a compact JSON scene summary
+- `chatbot_llm` keeps using `knowledge_core` as the read-only source for
+  grounded scene context in response and intent prompts
+- `nao_orchestrator` consumes enriched intent metadata such as `ack_text`,
+  `scene_targets`, and optional execution `plan` steps without owning prompt
+  logic
+
+Two detector backends are supported behind the same grounding seam:
+
+- `emorobcare_cv_object_detection`: colleague package publishing
+  `/detected_objects` and optional `/debug/object_detection`
+- `yolo_ros`: fallback path publishing `/yolo/tracking` and
+  `/yolo/debug_image`
+
+The launch default is `emorobcare_cv`, but the grounding node stays backend
+agnostic so the detector can be swapped later without rewriting the KB bridge.
+
 ## Launch Profiles
 
 Primary launch files live in `src/nao_chatbot/launch/`:
@@ -115,6 +149,34 @@ ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
   nao_ip:=172.26.112.62
 ```
 
+Real robot camera plus object grounding through the colleague detector:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
+  start_nao_robot:=true \
+  start_rviz:=true \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv \
+  scene_grounding_detector_topic:=/detected_objects \
+  nao_ip:=172.26.112.62
+```
+
+Fallback object grounding through `yolo_ros`:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
+  start_nao_robot:=true \
+  start_rviz:=true \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=yolo_ros \
+  scene_grounding_detector_topic:=/yolo/tracking \
+  object_detection_model:=yolov8n.pt \
+  object_detection_device:=cpu \
+  nao_ip:=172.26.112.62
+```
+
 Quick reference:
 
 - [docs/launch_profiles.md](docs/launch_profiles.md)
@@ -134,7 +196,8 @@ source /opt/ros/jazzy/setup.bash
 colcon build --symlink-install --packages-select \
   std_skills communication_skills motions_skills nao_skills \
   chatbot_llm dialogue_manager nao_orchestrator nao_say_skill \
-  nao_replay_motion nao_look_at nao_chatbot asr_vosk simple_audio_capture
+  nao_replay_motion nao_look_at nao_scene_grounding nao_chatbot \
+  asr_vosk simple_audio_capture
 ```
 
 Run the local validation suite:
@@ -168,3 +231,6 @@ feed, not ad hoc local overlays under `src/`.
 - `naoqi_driver` already exposes camera topics and joint interfaces, so future
   vision work should build on those ROS interfaces instead of adding a parallel
   capture stack.
+- the colleague detector package is intentionally not hard-vendored into this
+  repo; place it in the Linux workspace `src/` tree and keep its own
+  `config/config.yaml` aligned with the launch path you want to demo.

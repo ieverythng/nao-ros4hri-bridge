@@ -1,6 +1,6 @@
 # Launch Profiles
 
-Last updated: 2026-03-21
+Last updated: 2026-03-22
 
 This is the quick execution guide for the active launch files in this repo.
 
@@ -61,6 +61,34 @@ ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
   nao_ip:=172.26.112.62
 ```
 
+With real-robot object grounding through the colleague detector:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
+  start_nao_robot:=true \
+  start_rviz:=true \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv \
+  scene_grounding_detector_topic:=/detected_objects \
+  nao_ip:=172.26.112.62
+```
+
+With fallback object grounding through `yolo_ros`:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
+  start_nao_robot:=true \
+  start_rviz:=true \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=yolo_ros \
+  scene_grounding_detector_topic:=/yolo/tracking \
+  object_detection_model:=yolov8n.pt \
+  object_detection_device:=cpu \
+  nao_ip:=172.26.112.62
+```
+
 ### Primary migrated stack with ASR
 
 ```bash
@@ -118,6 +146,20 @@ ros2 run nao_chatbot asr_push_to_talk_cli
 - `start_interaction_sim_tools`
 - `start_interaction_sim_ui`
 - `dialogue_manager_chatbot`
+- `start_object_detection`
+- `object_detection_backend`
+- `start_scene_grounding`
+- `object_detection_namespace`
+- `object_detection_model`
+- `object_detection_device`
+- `object_detection_threshold`
+- `object_detection_input_image_topic`
+- `object_detection_image_reliability`
+- `scene_grounding_detector_topic`
+- `scene_grounding_summary_topic`
+- `scene_grounding_allowed_labels`
+- `scene_grounding_knowledge_lifespan_sec`
+- `scene_grounding_knowledge_refresh_interval_sec`
 
 ### Robot integration toggles
 
@@ -129,6 +171,18 @@ ros2 run nao_chatbot asr_push_to_talk_cli
   overlays from `nao_robot` enabled on the real-robot path.
 - `start_rviz`: launch `rviz2` with the packaged `nao_robot` RViz config for TF
   and robot-camera validation.
+- `start_object_detection`: launch the configured detector backend. The shipped
+  options are `emorobcare_cv` and `yolo_ros`.
+- `object_detection_backend`: choose which detector backend launch surface to
+  activate.
+- `object_detection_input_image_topic`: image topic passed into the detector.
+- `scene_grounding_detector_topic`: detector output topic consumed by
+  `nao_scene_grounding`.
+- `start_scene_grounding`: start the detector-to-KnowledgeCore bridge node.
+- `scene_grounding_summary_topic`: JSON scene summary output topic.
+- `scene_grounding_allowed_labels`: comma-separated grounded object allowlist.
+- `scene_grounding_knowledge_lifespan_sec`: fact lifetime written into
+  KnowledgeCore for detector-derived objects.
 - `start_interaction_sim`: enable the local interaction-sim wrapper launch.
 - `start_interaction_sim_perception`: toggle the simulator webcam/person/emotion
   perception path on or off.
@@ -144,6 +198,9 @@ Recommended split:
 - Use `start_interaction_sim:=true` for home webcam testing.
 - Use `start_nao_robot:=true start_rviz:=true start_interaction_sim:=false` for
   pure real-robot TF/camera validation.
+- Use `start_nao_robot:=true start_object_detection:=true
+  start_scene_grounding:=true object_detection_backend:=emorobcare_cv` for the
+  current end-to-end object-grounding demo path.
 - Use `start_nao_robot:=true start_interaction_sim:=true
   start_interaction_sim_perception:=false start_interaction_sim_tools:=true` to
   combine the real robot camera path with simulator-side operator tools such as

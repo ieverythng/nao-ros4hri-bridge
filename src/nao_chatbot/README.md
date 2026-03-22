@@ -49,6 +49,34 @@ ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
   nao_ip:=172.26.112.62
 ```
 
+Real robot + object detection + scene grounding:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
+  start_nao_robot:=true \
+  start_rviz:=true \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv \
+  scene_grounding_detector_topic:=/detected_objects \
+  nao_ip:=172.26.112.62
+```
+
+Fallback detector profile with `yolo_ros`:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
+  start_nao_robot:=true \
+  start_rviz:=true \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=yolo_ros \
+  scene_grounding_detector_topic:=/yolo/tracking \
+  object_detection_model:=yolov8n.pt \
+  object_detection_device:=cpu \
+  nao_ip:=172.26.112.62
+```
+
 Primary migrated stack with ASR:
 
 ```bash
@@ -82,6 +110,37 @@ The helper labels user and robot captions separately so the operator trace in
 ```bash
 ros2 run nao_chatbot robot_speech_debug
 ```
+
+## New Perception Nodes
+
+The main launch surface now composes two new perception pieces for object-aware
+demo flows:
+
+- external detector backend
+  - either `emorobcare_cv_object_detection` or `yolo_ros`
+  - owns raw detections and detector-side debug images
+- `nao_scene_grounding`
+  - subscribes to detector outputs
+  - refreshes transient object facts in `knowledge_core`
+  - publishes `/scene/summary` as a compact JSON view of the grounded scene
+
+Recommended ownership split:
+
+- let detector packages focus on pixels, inference, and debug overlays
+- let `nao_scene_grounding` stay the single bridge from detections into
+  KnowledgeCore-facing symbolic facts
+- let `chatbot_llm` keep consuming those grounded facts through its normal
+  `knowledge_snapshot` path
+
+The launch arguments you will use most often for this path are:
+
+- `start_object_detection`
+- `object_detection_backend`
+- `object_detection_input_image_topic`
+- `scene_grounding_detector_topic`
+- `start_scene_grounding`
+- `scene_grounding_allowed_labels`
+- `scene_grounding_knowledge_lifespan_sec`
 
 ## Provenance
 
@@ -125,6 +184,10 @@ ros2 run nao_chatbot robot_speech_debug
   `hri_visualization` overlays from `nao_robot` enabled for the real-robot path
 - `start_rviz:=true` launches `rviz2` with the packaged `nao_robot` RViz config
   for robot-model, TF, and camera validation
+- `start_object_detection:=true` launches the selected detector backend; the
+  default is `emorobcare_cv` and the supported fallback is `yolo_ros`
+- `start_scene_grounding:=true` launches `nao_scene_grounding`, which bridges
+  object detections into transient KnowledgeCore facts and `/scene/summary`
 - `start_knowledge_core:=true` launches `KnowledgeCore` when it is installed in
   the environment so `chatbot_llm` can query `/kb/query`
 - `interaction_sim_gscam_config:=...` lets you override the webcam pipeline for
@@ -149,3 +212,4 @@ ros2 run nao_chatbot robot_speech_debug
 - [../../docs/launch_profiles.md](../../docs/launch_profiles.md)
 - [../../docs/current_workflow.md](../../docs/current_workflow.md)
 - [../../docs/knowledge_core_integration_scope.md](../../docs/knowledge_core_integration_scope.md)
+- [../nao_scene_grounding/README.md](../nao_scene_grounding/README.md)

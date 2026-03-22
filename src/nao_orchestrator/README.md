@@ -39,6 +39,23 @@ Current migration boundary:
   because the canonical flow is `dialogue_manager -> /intents -> nao_orchestrator`
 - the older `/chatbot/intent` adapter is available but disabled by default
 
+Structured intent metadata now also passes through `Intent.data` when present:
+
+- `ack_text`: preferred acknowledgement text for the turn
+- `ack_mode`: acknowledgement mode hint, currently informational
+- `scene_targets`: grounded entities or labels relevant to the request
+- `plan`: optional ordered execution steps for the orchestrator
+
+Supported `plan` step types:
+
+- `say`
+- `skill`
+- `look_at`
+- `noop`
+
+This keeps the top-level ROS contract stable while allowing richer downstream
+execution plans to arrive from `chatbot_llm`.
+
 Manual smoke examples:
 
 ```bash
@@ -90,6 +107,23 @@ Effective defaults from `config/00-defaults.yml`:
   the canonical downstream skill routes
 - `/chatbot/posture_command` and `/joint_angles` remain temporary topic
   fallbacks during migration cleanup
+
+## Planned Intent Handling
+
+When a structured `plan` is present in `Intent.data`, `nao_orchestrator` tries
+to execute those steps in order before falling back to the older intent routing
+rules.
+
+Current planned-step behavior:
+
+- `say`: dispatch speech through `/nao/say`
+- `skill`: currently supports motion-oriented routes such as replay motion and
+  look-at reset
+- `look_at`: currently scaffolded to reset-oriented look-at behavior
+- `noop`: explicit no-op placeholder
+
+If no valid `plan` exists, the package keeps the legacy migrated behavior for
+speech, posture, head motion, look-at reset, and KB query intent observation.
 
 ## Design Rule
 
