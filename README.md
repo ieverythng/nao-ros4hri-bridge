@@ -11,6 +11,7 @@ Robot-side runtime packages in this repo:
 
 - `nao_chatbot`: launch surfaces and operator utilities
 - `nao_orchestrator`: downstream `/intents` consumer and NAO skill dispatcher
+- `kb_skills`: dedicated KnowledgeCore client boundary and KB skill metadata
 - `nao_say_skill`: NAO-specific `/nao/say` execution bridge
 - `nao_replay_motion`: replay-motion, posture compatibility, and head motion
 - `nao_look_at`: scaffolded `/skill/look_at` implementation
@@ -65,7 +66,9 @@ Knowledge grounding is local to `chatbot_llm`, not to `knowledge_core`
 itself:
 
 - `knowledge_core` exposes `/kb/query` through `kb_msgs/srv/Query`
-- the local `chatbot_llm` fork calls `/kb/query` once per response turn
+- the local `kb_skills` package is the dedicated ROS-facing client boundary for
+  KnowledgeCore interactions
+- `chatbot_llm` uses `kb_skills` to call `/kb/query` once per response turn
 - the returned JSON bindings are formatted into a bounded text snapshot
 - that snapshot is appended to the response and intent prompts as grounded
   scene context
@@ -132,7 +135,7 @@ Build the local packages shipped in this repo:
 ```bash
 source /opt/ros/jazzy/setup.bash
 colcon build --symlink-install --packages-select \
-  std_skills communication_skills motions_skills nao_skills \
+  std_skills communication_skills motions_skills kb_skills nao_skills \
   chatbot_llm dialogue_manager nao_orchestrator nao_say_skill \
   nao_replay_motion nao_look_at nao_chatbot asr_vosk simple_audio_capture
 ```

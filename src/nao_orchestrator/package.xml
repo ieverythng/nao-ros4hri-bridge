@@ -17,6 +17,7 @@
   <depend>hri_actions_msgs</depend>
   <depend>communication_skills</depend>
   <depend>interaction_skills</depend>
+  <depend>kb_skills</depend>
   <depend>nao_skills</depend>
   <depend>naoqi_bridge_msgs</depend>
 

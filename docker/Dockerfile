@@ -85,6 +85,7 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       /home/ubuntu/ws/build/asr_vosk \
       /home/ubuntu/ws/build/chatbot_llm \
       /home/ubuntu/ws/build/interaction_skills \
+      /home/ubuntu/ws/build/kb_skills \
       /home/ubuntu/ws/build/nao_skills \
       /home/ubuntu/ws/build/nao_chatbot \
       /home/ubuntu/ws/build/nao_look_at \
@@ -98,6 +99,7 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       /home/ubuntu/ws/install/asr_vosk \
       /home/ubuntu/ws/install/chatbot_llm \
       /home/ubuntu/ws/install/interaction_skills \
+      /home/ubuntu/ws/install/kb_skills \
       /home/ubuntu/ws/install/nao_skills \
       /home/ubuntu/ws/install/nao_chatbot \
       /home/ubuntu/ws/install/nao_look_at \
@@ -109,6 +111,7 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       std_skills \
       communication_skills \
       interaction_skills \
+      kb_skills \
       nao_skills \
       dialogue_manager \
       asr_vosk \

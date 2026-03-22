@@ -1,6 +1,7 @@
 import json
 
 from hri_actions_msgs.msg import Intent
+from kb_skills.intent_labels import KB_QUERY_VISIBLE_PEOPLE
 
 from nao_orchestrator.intent_rules import classify_motion_target
 from nao_orchestrator.intent_rules import make_intent_signature
@@ -46,11 +47,11 @@ def test_normalize_incoming_intent_maps_help_to_say() -> None:
 
 def test_normalize_incoming_intent_preserves_custom_kb_query_labels() -> None:
     intent_name, data = normalize_incoming_intent(
-        'kb_query_visible_people',
+        KB_QUERY_VISIBLE_PEOPLE,
         {'goal': 'visible_people'},
         'Hello there!',
     )
-    assert intent_name == 'kb_query_visible_people'
+    assert intent_name == KB_QUERY_VISIBLE_PEOPLE
     assert data == {'goal': 'visible_people'}
 
 

@@ -76,6 +76,7 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
     colcon build --symlink-install --packages-select \
       communication_skills \
       interaction_skills \
+      kb_skills \
       nao_skills \
       dialogue_manager \
       asr_vosk \
