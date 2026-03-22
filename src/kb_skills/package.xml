@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>kb_skills</name>
+  <version>0.1.0</version>
+  <description>KnowledgeCore client helpers and formal skill metadata for KB interactions.</description>
+
+  <maintainer email="juanbeck@icloud.com">juanbeck</maintainer>
+  <license>Apache-2.0</license>
+
+  <depend>rclpy</depend>
+  <depend>kb_msgs</depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+
+    <skill content-type="yaml">
+      id: kb_query
+      version: 1.0.0
+      description: |
+        Query symbolic scene state from KnowledgeCore through the canonical
+        `/kb/query` service. This is the phase-1 read-only KB surface used for
+        chatbot grounding and future planner-facing scene lookups.
+      interface: service
+      default_interface_path: /kb/query
+      datatype: kb_msgs/srv/Query
+      functional_domains:
+        - knowledge
+        - perception
+      parameters:
+        in:
+          - name: patterns
+            type: string[]
+            required: true
+            description: Triple-pattern list sent to KnowledgeCore.
+          - name: vars
+            type: string[]
+            required: true
+            description: Variables projected in the query response.
+          - name: models
+            type: string[]
+            default: []
+            description: Optional model scope used by the query.
+        out:
+          - name: json
+            type: string
+            description: JSON array of KnowledgeCore bindings.
+          - name: success
+            type: boolean
+            description: True if KnowledgeCore accepted and answered the query.
+          - name: error_msg
+            type: string
+            description: Error string returned by KnowledgeCore on failure.
+    </skill>
+  </export>
+</package>

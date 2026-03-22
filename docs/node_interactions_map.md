@@ -26,6 +26,7 @@ This map reflects the active migrated stack.
 graph LR
     Speech["/humans/voices/*/speech"] --> DM["dialogue_manager"]
     DM -->|chatbot_msgs/Dialogue + DialogueInteraction| CB["chatbot_llm"]
+    CB -->|"/kb/query via kb_skills"| KB["knowledge_core"]
     DM -->|/intents| ORCH["nao_orchestrator"]
     DET["detector backend"] --> SG["nao_scene_grounding"]
     SG -->|/kb/revise| KB["knowledge_core"]
@@ -50,6 +51,9 @@ graph LR
 
 - `nao_orchestrator` can still subscribe to `/chatbot/intent` while older
   producers exist.
+- `kb_skills` is the dedicated local package boundary for KnowledgeCore reads
+  today and future KB writes/revisions later; `chatbot_llm` decides when to use
+  it, while `nao_orchestrator` remains downstream-only.
 - `nao_replay_motion` still exposes `/skill/do_posture` as a compatibility
   adapter onto `/skill/replay_motion`.
 - `nao_look_at` is scaffolded and intentionally limited until the RViz and

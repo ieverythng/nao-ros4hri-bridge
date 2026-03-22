@@ -10,6 +10,7 @@ from communication_skills.action import Say
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from hri_actions_msgs.msg import Intent
 from interaction_skills.action import LookAt
+from kb_skills.intent_labels import KB_QUERY_INTENTS
 from nao_skills.action import DoHeadMotion, ReplayMotion
 from rclpy.action import ActionClient
 from rclpy.lifecycle import Node, State, TransitionCallbackReturn
@@ -31,13 +32,6 @@ try:  # pragma: no cover - runtime dependency
     from naoqi_bridge_msgs.msg import JointAnglesWithSpeed
 except ImportError:  # pragma: no cover - runtime dependency
     JointAnglesWithSpeed = None
-
-
-KB_QUERY_INTENTS = {
-    'kb_query_visible_people',
-    'kb_query_visible_objects',
-    'kb_query_scene_change',
-}
 
 
 @dataclass(slots=True)

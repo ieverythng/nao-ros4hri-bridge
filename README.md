@@ -11,6 +11,7 @@ Robot-side runtime packages in this repo:
 
 - `nao_chatbot`: launch surfaces and operator utilities
 - `nao_orchestrator`: downstream `/intents` consumer and NAO skill dispatcher
+- `kb_skills`: dedicated KnowledgeCore client boundary and KB skill metadata
 - `nao_say_skill`: NAO-specific `/nao/say` execution bridge
 - `nao_replay_motion`: replay-motion, posture compatibility, and head motion
 - `nao_look_at`: scaffolded `/skill/look_at` implementation
@@ -66,7 +67,9 @@ Knowledge grounding is local to `chatbot_llm`, not to `knowledge_core`
 itself:
 
 - `knowledge_core` exposes `/kb/query` through `kb_msgs/srv/Query`
-- the local `chatbot_llm` fork calls `/kb/query` once per response turn
+- the local `kb_skills` package is the dedicated ROS-facing client boundary for
+  KnowledgeCore interactions
+- `chatbot_llm` uses `kb_skills` to call `/kb/query` once per response turn
 - the returned JSON bindings are formatted into a bounded text snapshot
 - that snapshot is appended to the response and intent prompts as grounded
   scene context
@@ -111,6 +114,21 @@ Two detector backends are supported behind the same grounding seam:
 
 The launch default is `emorobcare_cv`, but the grounding node stays backend
 agnostic so the detector can be swapped later without rewriting the KB bridge.
+
+Current colleague-detector expectations:
+
+- keep `emorobcare_cv_object_detection` and `emorobcare_cv_msgs` available in
+  the active workspace when you use the `emorobcare_cv` backend
+- keep `use_knowledge_base: false` in the detector package so
+  `nao_scene_grounding` remains the single writer of detector-derived KB facts
+- keep `use_human_radar: false` unless you explicitly want the older radar path
+  active too
+- set `draw_image: true` when you want `/debug/object_detection` in RViz or
+  `rqt_image_view`
+- `cpu` is the safest laptop default for the detector runtime
+- the shipped detector model is currently biased toward labels such as
+  blueberry, corn, pear, tomato, and zucchini, so prop mismatch is the first
+  thing to revisit if detections look weak in demo prep
 
 ## Launch Profiles
 
@@ -194,7 +212,7 @@ Build the local packages shipped in this repo:
 ```bash
 source /opt/ros/jazzy/setup.bash
 colcon build --symlink-install --packages-select \
-  std_skills communication_skills motions_skills nao_skills \
+  std_skills communication_skills motions_skills kb_skills nao_skills \
   chatbot_llm dialogue_manager nao_orchestrator nao_say_skill \
   nao_replay_motion nao_look_at nao_scene_grounding nao_chatbot \
   asr_vosk simple_audio_capture
@@ -234,3 +252,6 @@ feed, not ad hoc local overlays under `src/`.
 - the colleague detector package is intentionally not hard-vendored into this
   repo; place it in the Linux workspace `src/` tree and keep its own
   `config/config.yaml` aligned with the launch path you want to demo.
+- `emorobcare_cv_object_detection` and `emorobcare_cv_msgs` are intentionally
+  ignored by the monorepo so they can stay in their own histories while still
+  being discovered by `colcon` from the shared workspace.

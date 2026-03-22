@@ -142,6 +142,17 @@ The launch arguments you will use most often for this path are:
 - `scene_grounding_allowed_labels`
 - `scene_grounding_knowledge_lifespan_sec`
 
+For the colleague detector path specifically:
+
+- keep `emorobcare_cv_object_detection` and `emorobcare_cv_msgs` built in the
+  workspace when `object_detection_backend:=emorobcare_cv`
+- keep `use_knowledge_base: false` in the detector package so
+  `nao_scene_grounding` remains the single KB writer for detections
+- keep `use_human_radar: false` unless you explicitly want that legacy path
+- set `draw_image: true` if you want `/debug/object_detection` in RViz or
+  `rqt_image_view`
+- prefer `cpu` on the laptop unless you have already validated a GPU path
+
 ## Provenance
 
 - `nao_chatbot` is a local utility/launch package, not a forked upstream runtime
@@ -188,6 +199,8 @@ The launch arguments you will use most often for this path are:
   default is `emorobcare_cv` and the supported fallback is `yolo_ros`
 - `start_scene_grounding:=true` launches `nao_scene_grounding`, which bridges
   object detections into transient KnowledgeCore facts and `/scene/summary`
+- the colleague detector package and its message package are intentionally kept
+  outside the monorepo history even when they are present under `src/`
 - `start_knowledge_core:=true` launches `KnowledgeCore` when it is installed in
   the environment so `chatbot_llm` can query `/kb/query`
 - `interaction_sim_gscam_config:=...` lets you override the webcam pipeline for

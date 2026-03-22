@@ -206,6 +206,23 @@ Recommended split:
   combine the real robot camera path with simulator-side operator tools such as
   `rqt_human_radar`.
 
+## Colleague Detector Preflight
+
+Before using `object_detection_backend:=emorobcare_cv`, check:
+
+- `emorobcare_cv_object_detection` and `emorobcare_cv_msgs` are both present in
+  the workspace and built
+- the detector package keeps `use_knowledge_base: false` so
+  `nao_scene_grounding` stays the single writer of detector-derived KB facts
+- `use_human_radar: false` unless you intentionally want that older path active
+- `draw_image: true` if you want `/debug/object_detection` in RViz or
+  `rqt_image_view`
+- `yolo_device: cpu` is set when the laptop path should prefer stability over
+  acceleration
+- the current model is still biased toward labels such as blueberry, corn,
+  pear, tomato, and zucchini, so mismatch with demo props is the first place to
+  tune
+
 ## ASR Preflight In Docker
 
 Before running ASR profiles in Docker, check:

@@ -239,20 +239,23 @@ def _optional_object_detection_launch(context):
     if backend in ("emorobcare_cv", "emorobot", "emorobcare"):
         try:
             get_package_share_directory("emorobcare_cv_object_detection")
+            get_package_share_directory("emorobcare_cv_msgs")
         except PackageNotFoundError:
             return [
                 LogInfo(
                     msg=(
-                        "emorobcare object detection launch skipped because package "
-                        "'emorobcare_cv_object_detection' is not installed in this environment."
+                        "emorobcare object detection launch skipped because "
+                        "'emorobcare_cv_object_detection' and/or "
+                        "'emorobcare_cv_msgs' are not installed in this environment."
                     )
                 )
             ]
         return [
             LogInfo(
                 msg=(
-                    "Launching emorobcare_cv_object_detection. Its package-local config.yaml "
-                    "still controls options such as draw_image and human_radar."
+                    "Launching emorobcare_cv_object_detection. Keep its package-local "
+                    "config.yaml aligned with this demo path: use_knowledge_base=false, "
+                    "use_human_radar=false, and draw_image=true when debug overlays are needed."
                 )
             ),
             Node(

@@ -38,7 +38,8 @@ Typical debug image:
 - `/debug/object_detection`
 
 This is the current demo-first default because it was authored with ROS4HRI in
-mind and already fits the NAO pipeline well.
+mind and already fits the NAO pipeline well. It also requires the
+`emorobcare_cv_msgs` package to be available in the same workspace.
 
 ### `yolo_ros`
 
@@ -70,7 +71,7 @@ TTL mechanism locally. Repeated observations refresh the lifespan before expiry.
 
 ## Main Parameters
 
-Defaults live in [`config/00-defaults.yml`](/Users/juanbendek/.codex/worktrees/fd0c/nao-ros4hri-bridge/src/nao_scene_grounding/config/00-defaults.yml).
+Defaults live in `config/00-defaults.yml`.
 
 Most useful knobs:
 
@@ -117,3 +118,6 @@ ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
   intentionally want its older radar integration active.
 - On the laptop, `cpu` is the safest default. GPU acceleration can be explored
   later on the Linux machine if available.
+- The current model is still biased toward labels such as blueberry, corn,
+  pear, tomato, and zucchini, so unusual demo props may require model or label
+  configuration updates before the run.
