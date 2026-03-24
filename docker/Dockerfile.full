@@ -93,7 +93,7 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       nao_chatbot \
       simple_audio_capture \
     ); \
-    for optional_pkg in emorobcare_cv_msgs emorobcare_cv_object_detection; do \
+    for optional_pkg in emorobcare_cv_msgs emorobcare_cv_object_detection my_game_interface; do \
       if [ -d \"/home/ubuntu/ws/src/${optional_pkg}\" ]; then \
         build_packages+=(\"${optional_pkg}\"); \
       fi; \

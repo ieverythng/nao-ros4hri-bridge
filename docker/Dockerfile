@@ -101,6 +101,7 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       /home/ubuntu/ws/build/simple_audio_capture \
       /home/ubuntu/ws/build/emorobcare_cv_msgs \
       /home/ubuntu/ws/build/emorobcare_cv_object_detection \
+      /home/ubuntu/ws/build/my_game_interface \
       /home/ubuntu/ws/install/std_skills \
       /home/ubuntu/ws/install/communication_skills \
       /home/ubuntu/ws/install/dialogue_manager \
@@ -118,7 +119,8 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       /home/ubuntu/ws/install/nao_scene_grounding \
       /home/ubuntu/ws/install/simple_audio_capture \
       /home/ubuntu/ws/install/emorobcare_cv_msgs \
-      /home/ubuntu/ws/install/emorobcare_cv_object_detection && \
+      /home/ubuntu/ws/install/emorobcare_cv_object_detection \
+      /home/ubuntu/ws/install/my_game_interface && \
     build_packages=( \
       std_skills \
       communication_skills \
@@ -137,7 +139,7 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       nao_chatbot \
       simple_audio_capture \
     ); \
-    for optional_pkg in emorobcare_cv_msgs emorobcare_cv_object_detection; do \
+    for optional_pkg in emorobcare_cv_msgs emorobcare_cv_object_detection my_game_interface; do \
       if [ -d \"/home/ubuntu/ws/src/${optional_pkg}\" ]; then \
         build_packages+=(\"${optional_pkg}\"); \
       fi; \

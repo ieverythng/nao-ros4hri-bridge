@@ -8,7 +8,11 @@ from nao_look_at.skill_impl import NaoLookAtSkill
 
 
 def main(args=None) -> None:
+    """Launch the NAO implementation of the upstream look_at contract."""
     rclpy.init(args=args)
+
+    # Keep this bootstrap obvious: this package is the NAO-facing runtime
+    # implementation behind the upstream interaction_skills contract.
     node = NaoLookAtSkill()
     executor = MultiThreadedExecutor()
     executor.add_node(node)

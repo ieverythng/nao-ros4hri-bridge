@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 
+# ---------------------------------------------------------------------------
+# Reserved write-side boundary
+# ---------------------------------------------------------------------------
+
 class KnowledgeCoreMutationClient:
     """Reserved seam for future KnowledgeCore writes and revisions.
 

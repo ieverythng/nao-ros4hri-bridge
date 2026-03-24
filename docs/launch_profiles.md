@@ -277,6 +277,9 @@ Notes:
   another launch toggle
 - if `emorobcare_cv_msgs` is not present in the workspace, the emorobcare
   detector path will be skipped by launch
+- `my_game_interface` is only required if you explicitly turn the detector's
+  legacy `use_human_radar` integration back on; the default raw-detections path
+  for `nao_scene_grounding` does not depend on it
 
 ## ASR Preflight In Docker
 

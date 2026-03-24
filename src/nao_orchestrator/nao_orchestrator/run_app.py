@@ -8,7 +8,11 @@ from nao_orchestrator.orchestrator import NaoOrchestrator
 
 
 def main(args=None) -> None:
+    """Launch the lifecycle orchestrator with a multithreaded executor."""
     rclpy.init(args=args)
+
+    # The orchestrator fans out to several skills and bridge services, so the
+    # executor bootstrap is kept explicit here for easier review.
     node = NaoOrchestrator()
     executor = MultiThreadedExecutor()
     executor.add_node(node)

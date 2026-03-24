@@ -178,6 +178,10 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   pear, tomato, and zucchini, so unusual demo props may require model or label
   configuration updates before the run.
 - The current detector package still expects `emorobcare_cv_msgs` plus some
-  detector-side runtime imports to be available. For tomorrow's demo, the
-  overlay image on top of `iiia:nao` is the safer path than a from-scratch
-  container rebuild.
+  detector-side runtime imports to be available. In the default
+  `use_knowledge_base: false` and `use_human_radar: false` setup, the important
+  runtime requirements are the detector itself, `emorobcare_cv_msgs`, and
+  `ultralytics`; `my_game_interface` is only needed if you re-enable the older
+  detector-side radar integration. For tomorrow's demo, the overlay image on
+  top of `iiia:nao` is still the safer path than a from-scratch container
+  rebuild.

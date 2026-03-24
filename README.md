@@ -289,10 +289,13 @@ Important detector caveat:
 
 - the emorobcare path still needs both `emorobcare_cv_object_detection` and
   `emorobcare_cv_msgs` available in the workspace
-- the current detector package also imports detector-side extras such as
-  `ultralytics` and `my_game_interface` at runtime, so the overlay image based
-  on `iiia:nao` is the safest path for tomorrow; `docker/Dockerfile.full`
-  should be treated as a fuller rebuild path, not the first demo choice
+- `ultralytics` is still required at runtime
+- `my_game_interface` is only needed when you intentionally enable the older
+  detector-side human-radar path; the default raw-detections flow used by
+  `nao_scene_grounding` does not require it
+- the overlay image based on `iiia:nao` remains the safest path for tomorrow;
+  `docker/Dockerfile.full` should be treated as a fuller rebuild path, not the
+  first demo choice
 
 ## KnowledgeCore References
 
