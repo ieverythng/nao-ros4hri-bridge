@@ -183,34 +183,24 @@ class NaoSaySkill(Node):
 
     def say_goal_callback(self, goal_request: Say.Goal) -> GoalResponse:
         turn_id = self._extract_turn_id(goal_request)
-        if not self._is_active:
-            self._trace(turn_id, "SAY_REJECTED", "node not active", level="warn")
-            return GoalResponse.REJECT
-        if self._execution_lock.locked():
-            self._trace(turn_id, "SAY_REJECTED", "another goal is running", level="warn")
-            return GoalResponse.REJECT
-        if not goal_request.input.strip():
-            self._trace(turn_id, "SAY_REJECTED", "empty text", level="warn")
-            return GoalResponse.REJECT
-        self._trace(turn_id, "SAY_ACCEPTED", "goal accepted")
-        return GoalResponse.ACCEPT
+        return self._evaluate_goal_request(
+            turn_id=turn_id,
+            route="SAY",
+            text=goal_request.input,
+        )
 
     def tts_goal_callback(self, goal_request: TTS.Goal) -> GoalResponse:
         turn_id = self._extract_turn_id_from_text(goal_request.input)
-        if not self._is_active:
-            self._trace(turn_id, "TTS_REJECTED", "node not active", level="warn")
-            return GoalResponse.REJECT
-        if self._execution_lock.locked():
-            self._trace(turn_id, "TTS_REJECTED", "another goal is running", level="warn")
-            return GoalResponse.REJECT
-        if not goal_request.input.strip():
-            self._trace(turn_id, "TTS_REJECTED", "empty text", level="warn")
-            return GoalResponse.REJECT
-        self._trace(turn_id, "TTS_ACCEPTED", "goal accepted")
-        return GoalResponse.ACCEPT
+        return self._evaluate_goal_request(
+            turn_id=turn_id,
+            route="TTS",
+            text=goal_request.input,
+        )
 
     def generic_cancel_callback(self, goal_handle) -> CancelResponse:
-        turn_id = self._extract_turn_id(getattr(goal_handle, "request", goal_handle))
+        turn_id = self._extract_turn_id_from_request_like(
+            getattr(goal_handle, "request", goal_handle)
+        )
         self._trace(turn_id, "SAY_CANCEL", "cancel request received")
         return CancelResponse.ACCEPT
 
@@ -603,6 +593,29 @@ class NaoSaySkill(Node):
         msg.status = [status]
         self._diag_pub.publish(msg)
 
+    def _evaluate_goal_request(
+        self,
+        *,
+        turn_id: str,
+        route: str,
+        text: str,
+    ) -> GoalResponse:
+        rejection_reason = self._goal_rejection_reason(text)
+        if rejection_reason is not None:
+            self._trace(turn_id, f"{route}_REJECTED", rejection_reason, level="warn")
+            return GoalResponse.REJECT
+        self._trace(turn_id, f"{route}_ACCEPTED", "goal accepted")
+        return GoalResponse.ACCEPT
+
+    def _goal_rejection_reason(self, text: str) -> str | None:
+        if not self._is_active:
+            return "node not active"
+        if self._execution_lock.locked():
+            return "another goal is running"
+        if not str(text).strip():
+            return "empty text"
+        return None
+
     @staticmethod
     def _publish_feedback(goal_handle, status: str, progress: float) -> None:
         feedback = Say.Feedback()
@@ -645,6 +658,14 @@ class NaoSaySkill(Node):
             if value.startswith("turn_id:"):
                 return value[8:].strip() or "unknown"
             return value
+        return "unknown"
+
+    @classmethod
+    def _extract_turn_id_from_request_like(cls, request) -> str:
+        if hasattr(request, "group_id") or hasattr(request, "person_id"):
+            return cls._extract_turn_id(request)
+        if hasattr(request, "input"):
+            return cls._extract_turn_id_from_text(request.input)
         return "unknown"
 
     @staticmethod

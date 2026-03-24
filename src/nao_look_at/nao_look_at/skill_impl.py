@@ -199,21 +199,7 @@ class NaoLookAtSkill(Node):
 
     def goal_callback(self, goal_request: LookAt.Goal) -> GoalResponse:
         """Validate supported policies and basic runtime preconditions."""
-        if not self._is_active or self._execution_lock.locked():
-            return GoalResponse.REJECT
-
-        policy = self._normalize_policy(goal_request.policy)
-        if policy not in self._SUPPORTED_POLICIES:
-            return GoalResponse.REJECT
-        if policy == LookAt.Goal.GLANCE and not self._has_target(goal_request):
-            return GoalResponse.REJECT
-        if policy == "" and self._has_target(goal_request) is False:
-            return GoalResponse.REJECT
-        if (
-            self.require_joint_angles_subscribers
-            and self._joint_angles_pub is not None
-            and self._joint_angles_pub.get_subscription_count() <= 0
-        ):
+        if self._goal_rejection_reason(goal_request) is not None:
             return GoalResponse.REJECT
         return GoalResponse.ACCEPT
 
@@ -235,35 +221,23 @@ class NaoLookAtSkill(Node):
             self._publish_feedback(goal_handle, "preparing", 0.0)
             if policy == LookAt.Goal.RESET:
                 if not self._publish_reset_pose():
-                    self._stats.goals_failed += 1
-                    goal_handle.abort()
-                    return self._result(
-                        False,
+                    return self._abort_goal(
+                        goal_handle,
                         "JointAnglesWithSpeed is unavailable; reset policy cannot publish",
                         SkillResult.ROS_ENOTSUP,
                     )
                 self._publish_feedback(goal_handle, "completing", 1.0)
-                self._stats.goals_succeeded += 1
-                goal_handle.succeed()
-                return self._result(True, "", SkillResult.ROS_ENOERR)
+                return self._succeed_goal(goal_handle)
 
             if self._has_target(request):
                 resolved = self._resolve_target_angles(request)
                 if isinstance(resolved, str):
-                    self._stats.goals_failed += 1
-                    goal_handle.abort()
-                    return self._result(
-                        False,
-                        resolved,
-                        SkillResult.ROS_ENOTSUP,
-                    )
+                    return self._abort_goal(goal_handle, resolved, SkillResult.ROS_ENOTSUP)
 
                 yaw, pitch, resolved_frame = resolved
                 if not self._publish_joint_pose(yaw, pitch):
-                    self._stats.goals_failed += 1
-                    goal_handle.abort()
-                    return self._result(
-                        False,
+                    return self._abort_goal(
+                        goal_handle,
                         "JointAnglesWithSpeed is unavailable; target tracking cannot publish",
                         SkillResult.ROS_ENOTSUP,
                     )
@@ -276,14 +250,10 @@ class NaoLookAtSkill(Node):
                 self._stats.last_policy = (
                     f"{policy or 'track'}:{resolved_frame}"
                 )
-                self._stats.goals_succeeded += 1
-                goal_handle.succeed()
-                return self._result(True, "", SkillResult.ROS_ENOERR)
+                return self._succeed_goal(goal_handle)
 
-            self._stats.goals_failed += 1
-            goal_handle.abort()
-            return self._result(
-                False,
+            return self._abort_goal(
+                goal_handle,
                 f"Policy '{policy}' is not implemented yet",
                 SkillResult.ROS_ENOTSUP,
             )
@@ -455,6 +425,38 @@ class NaoLookAtSkill(Node):
     # -------------------------------------------------------------------------
     # Diagnostics and small action helpers
     # -------------------------------------------------------------------------
+
+    def _goal_rejection_reason(self, goal_request: LookAt.Goal) -> str | None:
+        if not self._is_active:
+            return "node not active"
+        if self._execution_lock.locked():
+            return "another goal is running"
+
+        policy = self._normalize_policy(goal_request.policy)
+        has_target = self._has_target(goal_request)
+        if policy not in self._SUPPORTED_POLICIES:
+            return f"unsupported policy: {policy}"
+        if policy == LookAt.Goal.GLANCE and not has_target:
+            return "glance policy requires a target"
+        if policy == "" and not has_target:
+            return "target tracking requires a target"
+        if (
+            self.require_joint_angles_subscribers
+            and self._joint_angles_pub is not None
+            and self._joint_angles_pub.get_subscription_count() <= 0
+        ):
+            return "joint command topic has no subscribers"
+        return None
+
+    def _abort_goal(self, goal_handle, message: str, error_code: int):
+        self._stats.goals_failed += 1
+        goal_handle.abort()
+        return self._result(False, message, error_code)
+
+    def _succeed_goal(self, goal_handle):
+        self._stats.goals_succeeded += 1
+        goal_handle.succeed()
+        return self._result(True, "", SkillResult.ROS_ENOERR)
 
     def _publish_diagnostics(self) -> None:
         if self._diag_pub is None:

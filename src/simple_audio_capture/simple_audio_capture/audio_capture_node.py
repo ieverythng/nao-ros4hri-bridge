@@ -1,14 +1,5 @@
 #!/usr/bin/env python3
-"""
-Simple Audio Capture Node for ROS2
-
-This node captures audio from a microphone using GStreamer and publishes it to ROS2 topics.
-It handles both PulseAudio and ALSA sources automatically.
-
-Author: Auto-generated
-Date: October 30, 2025
-License: BSD
-"""
+"""Capture microphone audio with GStreamer and publish it on ROS topics."""
 
 import gi
 gi.require_version('Gst', '1.0')
@@ -99,16 +90,11 @@ class AudioCaptureNode(Node):
     def _get_parameters(self):
         """Retrieve parameter values from ROS2 parameter server."""
         self.device = self.get_parameter('device').value
-        # Normalize source_type (strip whitespace) and provide default if empty
         raw_source = self.get_parameter('source_type').value
-        if isinstance(raw_source, str):
-            self.source_type = raw_source.strip()
-        else:
-            self.source_type = str(raw_source)
-        if not self.source_type:
-            # Default to pulsesrc for most desktop systems
-            self.get_logger().warning('source_type parameter empty, defaulting to "pulsesrc"')
-            self.source_type = 'pulsesrc'
+        self.source_type = self._normalize_source_type(
+            raw_source,
+            warn_if_empty=True,
+        )
         self.format = self.get_parameter('format').value
         self.sample_format = self.get_parameter('sample_format').value
         self.sample_rate = self.get_parameter('sample_rate').value
@@ -116,6 +102,21 @@ class AudioCaptureNode(Node):
         self.depth = self.get_parameter('depth').value
         self.chunk_size = self.get_parameter('chunk_size').value
         self.audio_topic = self.get_parameter('audio_topic').value
+
+    def _normalize_source_type(self, raw_source, *, warn_if_empty: bool = False) -> str:
+        """Normalize the configured source type and keep the desktop-friendly default."""
+        clean_source = str(raw_source or '').strip()
+        if clean_source:
+            return clean_source
+        if warn_if_empty:
+            self.get_logger().warning(
+                'source_type parameter empty, defaulting to "pulsesrc"'
+            )
+        return 'pulsesrc'
+
+    @staticmethod
+    def _fallback_source_types() -> tuple[str, ...]:
+        return ('pulsesrc', 'alsasrc')
 
     def _log_configuration(self):
         """Log the current configuration."""
@@ -163,52 +164,32 @@ class AudioCaptureNode(Node):
             self.pipeline = Gst.Pipeline.new('audio_capture_pipeline')
 
             # Create source element
-            # Normalize source_type again (safety) and attempt sensible fallbacks
-            self.source_type = (self.source_type or '').strip()
-            factory = Gst.ElementFactory.find(self.source_type)
-            self.get_logger().debug(f'ElementFactory.find({self.source_type}) -> {factory}')
-
-            # If configured source_type isn't available, try common fallbacks
-            tried = []
-            if not factory:
-                tried.append(self.source_type)
-                for alt in ('pulsesrc', 'alsasrc'):
-                    if alt == self.source_type:
-                        continue
-                    falt = Gst.ElementFactory.find(alt)
-                    self.get_logger().debug(f'ElementFactory.find({alt}) -> {falt}')
-                    if falt:
-                        self.get_logger().warning(
-                            f'Configured source_type "{self.source_type}" not found; using fallback "{alt}"'
-                        )
-                        self.source_type = alt
-                        factory = falt
-                        break
+            configured_source = self._normalize_source_type(self.source_type)
+            self.source_type, factory, tried = self._resolve_source_factory(
+                configured_source
+            )
 
             self.source = Gst.ElementFactory.make(self.source_type, 'source')
             if not self.source:
                 # Provide extra diagnostics in the error
                 available = self._list_audio_factories(limit=30)
                 raise RuntimeError(
-                    f'Failed to create element "{self.source_type}". '\
-                    f'ElementFactory.find returned: {factory}. '\
-                    f'Tried: {tried}. Nearby audio-related factories (sample): {available}'
+                    (
+                        f'Failed to create element "{self.source_type}". '
+                        f'ElementFactory.find returned: {factory}. '
+                        f'Tried: {tried}. Nearby audio-related factories (sample): {available}'
+                    )
                 )
 
-            # Set device if specified (only for alsasrc)
-            if self.device and self.source_type == 'alsasrc':
-                self.source.set_property('device', self.device)
-                self.get_logger().info(f'Set ALSA device to: {self.device}')
-            elif self.device and self.source_type == 'pulsesrc':
-                # For PulseAudio, device is set differently
-                self.source.set_property('device', self.device)
-                self.get_logger().info(f'Set PulseAudio device to: {self.device}')
+            self._configure_source_device()
 
             # Create appsink to receive audio data
             self.sink = Gst.ElementFactory.make('appsink', 'sink')
             if not self.sink:
-                raise RuntimeError('Failed to create appsink element. '\
-                                   'Check that the gst-plugins-base package is installed and visible to this process.')
+                raise RuntimeError(
+                    'Failed to create appsink element. Check that the '
+                    'gst-plugins-base package is installed and visible to this process.'
+                )
 
             # Configure appsink
             self.sink.set_property('emit-signals', True)
@@ -263,6 +244,36 @@ class AudioCaptureNode(Node):
                 self.get_logger().debug('Could not query Gst.Registry for extra diagnostics')
             raise
 
+    def _resolve_source_factory(self, configured_source: str):
+        """Resolve the requested source element with explicit fallbacks."""
+        tried = []
+        seen = set()
+        for candidate in (configured_source, *self._fallback_source_types()):
+            if not candidate or candidate in seen:
+                continue
+            seen.add(candidate)
+            factory = Gst.ElementFactory.find(candidate)
+            self.get_logger().debug(f'ElementFactory.find({candidate}) -> {factory}')
+            if factory:
+                if candidate != configured_source:
+                    self.get_logger().warning(
+                        f'Configured source_type "{configured_source}" not found; '
+                        f'using fallback "{candidate}"'
+                    )
+                return candidate, factory, tried
+            tried.append(candidate)
+        return configured_source, None, tried
+
+    def _configure_source_device(self) -> None:
+        """Apply the optional device override to supported source elements."""
+        if not self.device:
+            return
+        if self.source_type not in self._fallback_source_types():
+            return
+        self.source.set_property('device', self.device)
+        source_label = 'ALSA' if self.source_type == 'alsasrc' else 'PulseAudio'
+        self.get_logger().info(f'Set {source_label} device to: {self.device}')
+
     def _log_gst_diagnostics(self):
         """Log environment and registry diagnostics useful when plugins or elements are missing."""
         try:
@@ -295,7 +306,7 @@ class AudioCaptureNode(Node):
                 try:
                     name = f.get_name()
                     klass = f.get_klass() or ''
-                    if 'Audio' in klass or 'audio' in klass.lower() or 'Source' in klass or 'Sink' in klass:
+                    if self._is_audio_factory_class(klass):
                         results.append(f'{name}({klass})')
                         if len(results) >= limit:
                             break
@@ -304,6 +315,16 @@ class AudioCaptureNode(Node):
             return results
         except Exception:
             return ['<could not enumerate factories>']
+
+    @staticmethod
+    def _is_audio_factory_class(factory_class: str) -> bool:
+        clean_class = str(factory_class or '')
+        lower_class = clean_class.lower()
+        return (
+            'audio' in lower_class
+            or 'Source' in clean_class
+            or 'Sink' in clean_class
+        )
 
     def _run_gstreamer(self):
         """Run the GStreamer pipeline (called in separate thread)."""
