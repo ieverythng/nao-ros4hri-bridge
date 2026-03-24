@@ -19,11 +19,9 @@ class KnowledgeCoreQueryClient:
         self._service_name = str(service_name or "/kb/query").strip() or "/kb/query"
         self._timeout_sec = max(0.05, float(timeout_sec))
         self._client = None
-        self._warned_import = False
         self._warned_unavailable = False
 
         if Query is None:
-            self._warned_import = True
             self._node.get_logger().warn(
                 "kb_msgs is unavailable; KnowledgeCore query client is disabled"
             )
@@ -55,16 +53,7 @@ class KnowledgeCoreQueryClient:
         trace_stage: str = "KB_QUERY",
     ) -> list[dict]:
         """Execute one query and return parsed response rows."""
-        if self._client is None:
-            return []
-
-        if not self._client.service_is_ready():
-            if not self._warned_unavailable:
-                self._node.get_logger().warn(
-                    "KnowledgeCore query service is unavailable at %s"
-                    % self._service_name
-                )
-                self._warned_unavailable = True
+        if not self._service_is_ready():
             return []
 
         response = self._query_once(
@@ -99,6 +88,48 @@ class KnowledgeCoreQueryClient:
         request.models = list(models)
 
         future = self._client.call_async(request)
+        response = self._await_response(
+            future,
+            turn_id=turn_id,
+            trace=trace,
+            trace_stage=trace_stage,
+        )
+        if response is None:
+            return None
+
+        if not getattr(response, "success", False):
+            self._trace(
+                trace,
+                turn_id,
+                trace_stage,
+                "query returned failure: %s" % getattr(response, "error_msg", ""),
+                level="warn",
+            )
+            return None
+        return response
+
+    def _service_is_ready(self) -> bool:
+        if self._client is None:
+            return False
+        if self._client.service_is_ready():
+            self._warned_unavailable = False
+            return True
+        if not self._warned_unavailable:
+            self._node.get_logger().warn(
+                "KnowledgeCore query service is unavailable at %s"
+                % self._service_name
+            )
+            self._warned_unavailable = True
+        return False
+
+    def _await_response(
+        self,
+        future,
+        *,
+        turn_id: str,
+        trace,
+        trace_stage: str,
+    ):
         completed = threading.Event()
         future.add_done_callback(lambda _future: completed.set())
 
@@ -114,7 +145,7 @@ class KnowledgeCoreQueryClient:
             return None
 
         try:
-            response = future.result()
+            return future.result()
         except Exception as err:  # pragma: no cover - rclpy failure path
             self._trace(
                 trace,
@@ -124,17 +155,6 @@ class KnowledgeCoreQueryClient:
                 level="warn",
             )
             return None
-
-        if not getattr(response, "success", False):
-            self._trace(
-                trace,
-                turn_id,
-                trace_stage,
-                "query returned failure: %s" % getattr(response, "error_msg", ""),
-                level="warn",
-            )
-            return None
-        return response
 
     # -------------------------------------------------------------------------
     # Payload normalization helpers

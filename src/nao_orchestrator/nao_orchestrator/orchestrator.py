@@ -353,26 +353,14 @@ class NaoOrchestrator(Node):
             return
 
         if intent_name == Intent.PERFORM_MOTION:
-            route, payload = classify_motion_target(intent_name, data)
-            if route == 'replay_motion':
-                if self._dispatch_replay_motion(payload['motion_name']):
-                    self._stats.dispatched_replay_motion += 1
-                    self._stats.last_route = 'replay_motion:%s' % payload['motion_name']
+            dispatched, route_name = self._dispatch_motion_payload(data)
+            if dispatched:
+                self._stats.last_route = route_name
                 return
-            if route == 'head_motion':
-                if self._dispatch_head_motion(payload):
-                    self._stats.dispatched_head_motion += 1
-                    self._stats.last_route = 'head_motion'
-                return
-            if route == 'look_at_reset':
-                if self._dispatch_look_at_reset():
-                    self._stats.dispatched_look_at += 1
-                    self._stats.last_route = 'look_at_reset'
-                return
-
-            self._stats.dispatch_failures += 1
-            self._stats.last_route = 'ignored:unsupported_motion'
-            self.get_logger().warn('Unsupported motion payload: %s' % payload)
+            if route_name == 'unsupported':
+                self._stats.dispatch_failures += 1
+                self._stats.last_route = 'ignored:unsupported_motion'
+                self.get_logger().warn('Unsupported motion payload: %s' % data)
             return
 
         if intent_name in KB_QUERY_INTENTS:
@@ -413,7 +401,6 @@ class NaoOrchestrator(Node):
                 executed_any = True
                 continue
 
-            self._stats.dispatch_failures += 1
             self._stats.last_route = 'planned:failed'
             self.get_logger().warn(
                 'Planned intent step failed | intent=%s source=%s step=%s'
@@ -482,26 +469,16 @@ class NaoOrchestrator(Node):
 
         if step_type == 'skill':
             if step_name in ('perform_motion', 'motion', ''):
-                route, payload = classify_motion_target(Intent.PERFORM_MOTION, step_args)
-                if route == 'replay_motion':
-                    if self._dispatch_replay_motion(payload['motion_name']):
-                        self._stats.dispatched_replay_motion += 1
-                        return True
-                    return False
-                if route == 'head_motion':
-                    if self._dispatch_head_motion(payload):
-                        self._stats.dispatched_head_motion += 1
-                        return True
-                    return False
-                if route == 'look_at_reset':
-                    if self._dispatch_look_at_reset():
-                        self._stats.dispatched_look_at += 1
-                        return True
-                    return False
-                return False
+                dispatched, _route_name = self._dispatch_motion_payload(
+                    step_args,
+                    count_unsupported_failure=True,
+                )
+                return dispatched
             if step_name == 'look_at':
                 return self._dispatch_planned_look_at(step_name, step_args)
 
+        self._stats.dispatch_failures += 1
+        self.get_logger().warn('Unsupported planned step: %s' % step)
         return False
 
     def _dispatch_planned_look_at(self, step_name: str, step_args: dict) -> bool:
@@ -517,7 +494,15 @@ class NaoOrchestrator(Node):
         target_frame = str(
             step_args.get('target_frame', step_args.get('frame_id', ''))
         ).strip()
-        if target_frame and self._dispatch_look_at_target(
+        if not target_frame:
+            self._stats.dispatch_failures += 1
+            self.get_logger().warn(
+                'Planned look_at step is missing a target frame or reset policy: %s'
+                % step_args
+            )
+            return False
+
+        if self._dispatch_look_at_target(
             frame_id=target_frame,
             x_value=step_args.get('x', 0.0),
             y_value=step_args.get('y', 0.0),
@@ -527,6 +512,37 @@ class NaoOrchestrator(Node):
             self._stats.dispatched_look_at += 1
             return True
         return False
+
+    def _dispatch_motion_payload(
+        self,
+        payload: dict,
+        *,
+        count_unsupported_failure: bool = False,
+    ) -> tuple[bool, str]:
+        route, resolved_payload = classify_motion_target(Intent.PERFORM_MOTION, payload)
+        if route == 'replay_motion':
+            motion_name = resolved_payload['motion_name']
+            if self._dispatch_replay_motion(motion_name):
+                self._stats.dispatched_replay_motion += 1
+                return True, 'replay_motion:%s' % motion_name
+            return False, 'replay_motion'
+
+        if route == 'head_motion':
+            if self._dispatch_head_motion(resolved_payload):
+                self._stats.dispatched_head_motion += 1
+                return True, 'head_motion'
+            return False, 'head_motion'
+
+        if route == 'look_at_reset':
+            if self._dispatch_look_at_reset():
+                self._stats.dispatched_look_at += 1
+                return True, 'look_at_reset'
+            return False, 'look_at_reset'
+
+        if count_unsupported_failure:
+            self._stats.dispatch_failures += 1
+            self.get_logger().warn('Unsupported motion payload: %s' % payload)
+        return False, 'unsupported'
 
     # -------------------------------------------------------------------------
     # Skill dispatch helpers

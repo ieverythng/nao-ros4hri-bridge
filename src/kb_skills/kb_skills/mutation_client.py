@@ -15,20 +15,24 @@ class KnowledgeCoreMutationClient:
     behind a dedicated package boundary rather than being embedded in LLM code.
     """
 
+    _PHASE_2_TEMPLATE = (
+        "KnowledgeCore {operation} is not wired yet. Phase 2 should bind the "
+        "upstream {endpoint} endpoint behind kb_skills."
+    )
+
     def add_fact(self, *args, **kwargs):
-        raise NotImplementedError(
-            "KnowledgeCore add_fact is not wired yet. Phase 2 should bind the "
-            "upstream write endpoint behind kb_skills."
-        )
+        self._raise_not_ready("add_fact", "write")
 
     def revise_fact(self, *args, **kwargs):
-        raise NotImplementedError(
-            "KnowledgeCore revise_fact is not wired yet. Phase 2 should bind the "
-            "upstream revise endpoint behind kb_skills."
-        )
+        self._raise_not_ready("revise_fact", "revise")
 
     def remove_fact(self, *args, **kwargs):
+        self._raise_not_ready("remove_fact", "delete/remove")
+
+    def _raise_not_ready(self, operation: str, endpoint: str) -> None:
         raise NotImplementedError(
-            "KnowledgeCore remove_fact is not wired yet. Phase 2 should bind the "
-            "upstream delete/remove endpoint behind kb_skills."
+            self._PHASE_2_TEMPLATE.format(
+                operation=operation,
+                endpoint=endpoint,
+            )
         )
