@@ -61,3 +61,9 @@ graph LR
 - detector backends are intentionally pluggable; the current launch surface can
   start either `emorobcare_cv_object_detection` or `yolo_ros`, both funneled
   into the same `nao_scene_grounding` contract.
+- `chatbot_llm` stays detector-agnostic: object detections become prompt
+  context only after `nao_scene_grounding` refreshes KB facts and
+  `chatbot_llm` reads them back through `/kb/query`.
+- enriched intent metadata such as `ack_text`, `ack_mode`, `scene_targets`, and
+  `plan` flows downstream in `Intent.data` so `nao_orchestrator` can stay a
+  pure execution consumer.

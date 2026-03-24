@@ -293,7 +293,6 @@ def generate_launch_description():
             'object_detection_namespace': LaunchConfiguration(
                 'object_detection_namespace'
             ),
-            'object_detection_backend': LaunchConfiguration('object_detection_backend'),
             'object_detection_model': LaunchConfiguration('object_detection_model'),
             'object_detection_device': LaunchConfiguration('object_detection_device'),
             'object_detection_threshold': LaunchConfiguration(

@@ -10,6 +10,22 @@ It keeps object detection modular on purpose:
 - downstream consumers can read the compact `/scene/summary` topic instead of
   depending on detector-specific message types
 
+## Where It Fits
+
+`nao_scene_grounding` does not feed `chatbot_llm` directly. The current flow is:
+
+1. the external detector publishes raw detections such as `/detected_objects`
+2. `nao_scene_grounding` subscribes to that detector topic and normalizes the
+   backend-specific message into shared observations
+3. the node refreshes transient object facts in `knowledge_core` through
+   `/kb/revise` and publishes `/scene/summary` for debug and future consumers
+4. on the next turn, `chatbot_llm` still reads the grounded scene through its
+   normal `/kb/query` plus `knowledge_snapshot` path
+
+This means detector integration stays modular: detector packages own inference,
+`nao_scene_grounding` owns detector-to-KB grounding, and `chatbot_llm` remains
+the read-side prompt consumer.
+
 ## What The Node Does
 
 `nao_scene_grounding` subscribes to one detector topic, normalizes the incoming

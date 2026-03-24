@@ -56,6 +56,18 @@ Supported `plan` step types:
 This keeps the top-level ROS contract stable while allowing richer downstream
 execution plans to arrive from `chatbot_llm`.
 
+High-level downstream flow:
+
+1. `chatbot_llm` emits canonical HRI intents plus optional `ack_text`,
+   `ack_mode`, `scene_targets`, and `plan`
+2. `nao_orchestrator` parses that metadata from `Intent.data`
+3. if a valid `plan` is present, the orchestrator tries to execute it first
+4. if there is no valid plan, the package falls back to the migrated legacy
+   routing for speech, motion, and look-at resets
+
+The orchestrator still does not own KB prompting or detector subscriptions; it
+only consumes the enriched downstream contract.
+
 Manual smoke examples:
 
 ```bash
