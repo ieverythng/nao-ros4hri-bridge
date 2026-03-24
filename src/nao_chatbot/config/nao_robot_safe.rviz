@@ -62,15 +62,28 @@ Visualization Manager:
       Value: true
     - Class: rviz_default_plugins/Image
       Enabled: true
-      Name: Image
+      Name: Robot Camera
       Image Topic:
-        Value: /nao_robot/camera/front/image_raw
+        Value: /camera/front/image_raw
       Max Value: 1
       Median window: 5
       Min Value: 0
       Normalize Range: true
       Queue Size: 2
       Transport Hint: raw
+      Unreliable: false
+      Value: true
+    - Class: rviz_default_plugins/Image
+      Enabled: true
+      Name: HRI Overlay
+      Image Topic:
+        Value: /image/hri_overlay
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Normalize Range: true
+      Queue Size: 2
+      Transport Hint: compressed
       Unreliable: false
       Value: true
     - Class: rviz_default_plugins/Image

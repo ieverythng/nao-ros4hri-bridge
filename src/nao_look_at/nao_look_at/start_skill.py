@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Entrypoint for the lifecycle NAO look_at scaffold."""
+"""Entrypoint for the NAO implementation of interaction_skills/look_at."""
 
 import rclpy
 from rclpy.executors import MultiThreadedExecutor

@@ -1,13 +1,16 @@
+"""Helpers for composing the official interaction_sim layers into our stack.
+
+The public launch surface stays small (`nao_chatbot_sim*.launch.py`), while the
+optional simulator perception/tools wiring lives here as reusable actions.
+"""
+
 import os
 
 from ament_index_python.packages import PackageNotFoundError
 from ament_index_python.packages import get_package_share_directory
-from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
 from launch.actions import GroupAction
 from launch.actions import IncludeLaunchDescription
 from launch.actions import LogInfo
-from launch.actions import OpaqueFunction
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
@@ -36,11 +39,21 @@ _TOOLS_PACKAGES = (
 )
 
 
+# -----------------------------------------------------------------------------
+# Small launch-time helpers
+# -----------------------------------------------------------------------------
+
+
 def _as_bool(context, name: str) -> bool:
+    """Read a launch argument as a normalized boolean string."""
     return str(LaunchConfiguration(name).perform(context)).strip().lower() == "true"
 
 
-def _generate_interaction_sim_actions(context):
+def build_interaction_sim_actions(context):
+    """Return the optional interaction_sim actions for the current profile."""
+    if not _as_bool(context, "start_interaction_sim"):
+        return []
+
     start_perception = _as_bool(context, "start_interaction_sim_perception")
     start_tools = _as_bool(context, "start_interaction_sim_tools")
     if not start_perception and not start_tools:
@@ -225,6 +238,8 @@ def _generate_interaction_sim_actions(context):
 
     scoped_actions.extend(
         [
+            # These log lines give operators a quick summary of which simulator
+            # layer is active without reading the full launch file.
             LogInfo(
                 msg=(
                     "interaction_sim %s layer enabled. "
@@ -243,36 +258,3 @@ def _generate_interaction_sim_actions(context):
     )
 
     return [GroupAction(scoped=True, actions=scoped_actions)]
-
-
-def generate_launch_description():
-    return LaunchDescription(
-        [
-            DeclareLaunchArgument(
-                "debug_tts_action_name",
-                default_value="/debug/say",
-                description="Debug-only TTS action used for operator-facing simulator tools.",
-            ),
-            DeclareLaunchArgument(
-                "interaction_sim_gscam_config",
-                default_value="v4l2src device=/dev/video0 ! video/x-raw,framerate=30/1 ! videoconvert",
-                description="GStreamer pipeline used by gscam for webcam-driven simulator tests.",
-            ),
-            DeclareLaunchArgument(
-                "start_interaction_sim_ui",
-                default_value="false",
-                description="Start ui_server together with the interaction_sim support tools.",
-            ),
-            DeclareLaunchArgument(
-                "start_interaction_sim_perception",
-                default_value="true",
-                description="Launch interaction_sim webcam/person/emotion perception components.",
-            ),
-            DeclareLaunchArgument(
-                "start_interaction_sim_tools",
-                default_value="true",
-                description="Launch interaction_sim support tools such as rosbridge and ui_server.",
-            ),
-            OpaqueFunction(function=_generate_interaction_sim_actions),
-        ]
-    )

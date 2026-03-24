@@ -1,6 +1,6 @@
 # Launch Profiles
 
-Last updated: 2026-03-22
+Last updated: 2026-03-24
 
 This is the quick execution guide for the active launch files in this repo.
 
@@ -8,78 +8,84 @@ This is the quick execution guide for the active launch files in this repo.
 
 | Launch file | What it enables by default | What it disables by default |
 |---|---|---|
-| `nao_chatbot_ros4hri_migration.launch.py` | Migrated ROS4HRI stack (`chatbot_llm`, `dialogue_manager`, `nao_orchestrator`, `nao_say_skill`, `nao_replay_motion`, `nao_look_at`) | Local ASR |
-| `nao_chatbot_ros4hri_with_asr.launch.py` | Migrated ROS4HRI stack plus `simple_audio_capture` and `asr_vosk` | None |
+| `nao_chatbot_sim.launch.py` | Migrated ROS4HRI stack + `interaction_sim` perception/tools + `rqt` | Local ASR, RViz |
+| `nao_chatbot_sim_asr.launch.py` | Simulator stack plus `simple_audio_capture` and `asr_vosk` | RViz |
+| `nao_chatbot_robot.launch.py` | Real robot camera, RViz, HRI overlays | Local ASR, simulator perception |
+| `nao_chatbot_robot_asr.launch.py` | Real robot camera, RViz, HRI overlays, local ASR | Simulator perception |
 | `nao_chatbot_asr_only.launch.py` | Isolated ASR pipeline (`simple_audio_capture` + `asr_vosk`) | Dialogue/mission/chat/robot nodes |
-
-Old `nao_chatbot_stack`, `nao_chatbot_skills`, and
-`nao_chatbot_skills_asr` wrappers were removed during the ROS4HRI cleanup so
-the workspace only exposes the migrated launch surface.
 
 ## Show Arguments
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py --show-args
-ros2 launch nao_chatbot nao_chatbot_ros4hri_with_asr.launch.py --show-args
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py --show-args
+ros2 launch nao_chatbot nao_chatbot_sim_asr.launch.py --show-args
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py --show-args
+ros2 launch nao_chatbot nao_chatbot_robot_asr.launch.py --show-args
 ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py --show-args
 ```
 
 ## Common Execution Commands
 
-### Primary migrated stack
+### Simulator stack
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py
 ```
 
-With robot driver:
+With emorobcare object detection:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
-  start_naoqi_driver:=true \
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv
+```
+
+### Simulator stack with ASR
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim_asr.launch.py \
+  asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15
+```
+
+### Robot stack
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   nao_ip:=172.26.112.62
 ```
 
-With packaged real-robot camera + RViz path:
+### Robot stack with ASR
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
-  start_nao_robot:=true \
-  start_rviz:=true \
+ros2 launch nao_chatbot nao_chatbot_robot_asr.launch.py \
   nao_ip:=172.26.112.62
 ```
 
-With packaged real-robot camera + interaction_sim tools-only overlay:
+With simulator tools only on top of the robot path:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
-  start_nao_robot:=true \
-  start_rviz:=true \
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   start_interaction_sim:=true \
   start_interaction_sim_perception:=false \
   start_interaction_sim_tools:=true \
   nao_ip:=172.26.112.62
 ```
 
-With real-robot object grounding through the colleague detector:
+With real-robot object grounding through emorobcare object detection:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
-  start_nao_robot:=true \
-  start_rviz:=true \
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=emorobcare_cv \
-  scene_grounding_detector_topic:=/detected_objects \
   nao_ip:=172.26.112.62
 ```
 
 With fallback object grounding through `yolo_ros`:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
-  start_nao_robot:=true \
-  start_rviz:=true \
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=yolo_ros \
@@ -87,13 +93,6 @@ ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
   object_detection_model:=yolov8n.pt \
   object_detection_device:=cpu \
   nao_ip:=172.26.112.62
-```
-
-### Primary migrated stack with ASR
-
-```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_with_asr.launch.py \
-  asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15
 ```
 
 ### ASR-only profile
@@ -123,8 +122,9 @@ ros2 run nao_chatbot asr_push_to_talk_cli
 - `asr_microphone_topic`: topic used between capture and ASR.
 - `asr_publish_partials`: defaults to `false` in app launch surfaces.
 - `asr_push_to_talk_enabled`: requires an explicit Bool gate before ASR listens.
-- the local ASR stack can run either standalone or under
-  `nao_chatbot_ros4hri_with_asr.launch.py`, but it is still the local
+- the local ASR stack can run either standalone, under
+  `nao_chatbot_sim_asr.launch.py`, or under `nao_chatbot_robot_asr.launch.py`, but
+  it is still the local
   `simple_audio_capture + asr_vosk` path rather than the final upstream ROS4HRI
   ASR contract.
 
@@ -140,6 +140,7 @@ ros2 run nao_chatbot asr_push_to_talk_cli
 - `start_naoqi_driver`
 - `start_nao_robot`
 - `start_nao_robot_hri_visualization`
+- `hri_visualization_image_topic`
 - `start_rviz`
 - `start_interaction_sim`
 - `start_interaction_sim_perception`
@@ -168,9 +169,12 @@ ros2 run nao_chatbot asr_push_to_talk_cli
   the preferred real-robot camera path because it already wires `naoqi_driver`,
   `/camera/front/*`, and `hri_face_detect_yunet`.
 - `start_nao_robot_hri_visualization`: keep the packaged `hri_visualization`
-  overlays from `nao_robot` enabled on the real-robot path.
+  overlays enabled on the real-robot path.
+- `hri_visualization_image_topic`: base image topic consumed by
+  `hri_visualization`; the compressed transport of this topic drives
+  `/image/hri_overlay`.
 - `start_rviz`: launch `rviz2` with the packaged `nao_robot` RViz config for TF
-  and robot-camera validation.
+  plus raw camera, HRI overlay, and detector debug validation.
 - `start_object_detection`: launch the configured detector backend. The shipped
   options are `emorobcare_cv` and `yolo_ros`.
 - `object_detection_backend`: choose which detector backend launch surface to
@@ -195,18 +199,18 @@ ros2 run nao_chatbot asr_push_to_talk_cli
 
 Recommended split:
 
-- Use `start_interaction_sim:=true` for home webcam testing.
-- Use `start_nao_robot:=true start_rviz:=true start_interaction_sim:=false` for
-  pure real-robot TF/camera validation.
-- Use `start_nao_robot:=true start_object_detection:=true
-  start_scene_grounding:=true object_detection_backend:=emorobcare_cv` for the
+- Use `nao_chatbot_sim.launch.py` for home webcam testing.
+- Use `nao_chatbot_robot.launch.py` for real-robot TF/camera/RViz validation.
+- Use `nao_chatbot_robot_asr.launch.py` when the robot demo also needs local ASR.
+- Add `start_object_detection:=true start_scene_grounding:=true
+  object_detection_backend:=emorobcare_cv` to the sim or robot wrapper for the
   current end-to-end object-grounding demo path.
-- Use `start_nao_robot:=true start_interaction_sim:=true
-  start_interaction_sim_perception:=false start_interaction_sim_tools:=true` to
-  combine the real robot camera path with simulator-side operator tools such as
+- Add `start_interaction_sim:=true start_interaction_sim_perception:=false
+  start_interaction_sim_tools:=true` on the robot wrapper to combine the real
+  robot camera path with simulator-side operator tools such as
   `rqt_human_radar`.
 
-## Colleague Detector Preflight
+## Emorobcare Object Detection Preflight
 
 Before using `object_detection_backend:=emorobcare_cv`, check:
 
@@ -222,6 +226,57 @@ Before using `object_detection_backend:=emorobcare_cv`, check:
 - the current model is still biased toward labels such as blueberry, corn,
   pear, tomato, and zucchini, so mismatch with demo props is the first place to
   tune
+
+## Docker Rebuild For Tomorrow
+
+Preferred rebuild:
+
+```bash
+docker build -f docker/Dockerfile \
+  --build-arg BASE_IMAGE=iiia:nao \
+  -t nao-ros4hri-bridge:demo .
+```
+
+Laptop-camera object-detection path:
+
+```bash
+docker run --rm -it \
+  --network host \
+  --ipc host \
+  --device /dev/video0 \
+  -e DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  nao-ros4hri-bridge:demo
+```
+
+Inside the container:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv
+```
+
+Then move to the robot path:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
+  nao_ip:=172.26.112.62 \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv
+```
+
+Notes:
+
+- the overlay Dockerfile now uses `src/interaction_skills` directly and also
+  rebuilds `nao_scene_grounding`
+- `start_nao_look_at` stays enabled by default on the robot wrappers, so the
+  next day's wiring work can focus on better target-frame usage rather than
+  another launch toggle
+- if `emorobcare_cv_msgs` is not present in the workspace, the emorobcare
+  detector path will be skipped by launch
 
 ## ASR Preflight In Docker
 

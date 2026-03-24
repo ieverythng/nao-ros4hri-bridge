@@ -1,4 +1,9 @@
-"""Continuous object grounding node for detector outputs."""
+"""Continuous object grounding node for detector outputs.
+
+The node sits between detector-specific topics and the rest of the NAO stack:
+it normalizes backend messages, refreshes transient KnowledgeCore facts, and
+publishes a compact `/scene/summary` for operators and future consumers.
+"""
 
 from __future__ import annotations
 
@@ -65,6 +70,8 @@ class NaoSceneGrounding(Node):
     def __init__(self) -> None:
         super().__init__('nao_scene_grounding')
 
+        # Configure the detector-facing and KnowledgeCore-facing seams first so
+        # the node can run with either detector backend without code changes.
         self.declare_parameter('detector_backend', 'emorobcare_cv')
         self.declare_parameter('detector_topic', '/detected_objects')
         self.declare_parameter('summary_topic', '~/summary')
@@ -117,6 +124,8 @@ class NaoSceneGrounding(Node):
             float(self.get_parameter('local_stale_after_sec').value),
         )
 
+        # Create publishers and service clients before subscriptions so early
+        # detections can immediately publish summaries and revise KB facts.
         self._summary_pub = self.create_publisher(String, self._summary_topic, 10)
         self._revise_client = None
         if self._knowledge_enabled and Revise is not None:
@@ -147,7 +156,12 @@ class NaoSceneGrounding(Node):
             )
         )
 
+    # -------------------------------------------------------------------------
+    # Detector subscription setup
+    # -------------------------------------------------------------------------
+
     def _create_detector_subscription(self) -> None:
+        """Subscribe to the selected detector backend if its message types exist."""
         if self._detector_backend == 'yolo_ros':
             if YoloDetectionArray is None:
                 self._log_missing_dependency_once(
@@ -182,6 +196,7 @@ class NaoSceneGrounding(Node):
         )
 
     def _make_adapter(self):
+        """Build the normalization adapter matching the active backend."""
         adapter_kwargs = {
             'allowed_labels': self._allowed_labels,
             'label_class_map': self._label_class_map,
@@ -194,7 +209,12 @@ class NaoSceneGrounding(Node):
             return EmorobcareDetectionAdapter(**adapter_kwargs)
         return YoloRosDetectionAdapter(**adapter_kwargs)
 
+    # -------------------------------------------------------------------------
+    # Detection ingestion and KB refresh
+    # -------------------------------------------------------------------------
+
     def _on_detections(self, msg) -> None:
+        """Merge one detector message into tracked objects and summary output."""
         now_sec = self._clock_now_sec()
         observations = self._adapter.parse_detections(
             msg,
@@ -233,6 +253,7 @@ class NaoSceneGrounding(Node):
             self._publish_summary()
 
     def _revise_observation(self, tracked: _TrackedObject, now_sec: float) -> bool:
+        """Refresh transient KnowledgeCore facts for one tracked object."""
         if not self._knowledge_enabled or self._revise_client is None or Revise is None:
             tracked.last_revised_sec = now_sec
             return False
@@ -257,7 +278,12 @@ class NaoSceneGrounding(Node):
         tracked.last_revised_sec = now_sec
         return True
 
+    # -------------------------------------------------------------------------
+    # Local housekeeping and operator-facing summary output
+    # -------------------------------------------------------------------------
+
     def _housekeeping_tick(self) -> None:
+        """Drop locally stale tracked objects and republish the summary if needed."""
         if not self._tracked_objects:
             return
         now_sec = self._clock_now_sec()
@@ -273,6 +299,7 @@ class NaoSceneGrounding(Node):
         self._publish_summary()
 
     def _publish_summary(self) -> None:
+        """Publish a stable JSON scene snapshot only when it actually changes."""
         payload = json.dumps(
             {
                 'observer': self._observer_name,
@@ -296,6 +323,7 @@ class NaoSceneGrounding(Node):
         self._last_summary_payload = payload
 
     def _log_missing_dependency_once(self, message: str) -> None:
+        """Avoid flooding logs when optional detector or KB deps are unavailable."""
         if message == self._last_missing_dependency_notice:
             return
         self._last_missing_dependency_notice = message
@@ -307,6 +335,7 @@ class NaoSceneGrounding(Node):
 
 
 def main(args=None) -> None:
+    """Run the scene-grounding node as a normal rclpy process."""
     rclpy.init(args=args)
     node = NaoSceneGrounding()
     try:

@@ -12,62 +12,66 @@ responsibilities have moved to:
 
 ## Launch Files
 
-Primary migrated stack:
+Primary launch stacks:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py
 ```
 
-Useful demo overrides:
+Simulator stack with emorobcare object detection + scene grounding:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
-  start_naoqi_driver:=true \
-  start_rqt_console:=true \
-  start_interaction_sim:=true \
-  ollama_model:=gpt-oss:120b-cloud
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv
 ```
 
-Real-robot camera + RViz validation:
+Simulator stack with ASR:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
-  start_nao_robot:=true \
-  start_rviz:=true \
+ros2 launch nao_chatbot nao_chatbot_sim_asr.launch.py \
+  asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15
+```
+
+Real-robot camera + RViz:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   nao_ip:=172.26.112.62
 ```
 
-Real robot + simulator tools-only overlay:
+Real-robot camera + RViz + ASR:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
-  start_nao_robot:=true \
-  start_rviz:=true \
-  start_interaction_sim:=true \
-  start_interaction_sim_perception:=false \
-  start_interaction_sim_tools:=true \
+ros2 launch nao_chatbot nao_chatbot_robot_asr.launch.py \
   nao_ip:=172.26.112.62
 ```
 
 Real robot + object detection + scene grounding:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
-  start_nao_robot:=true \
-  start_rviz:=true \
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=emorobcare_cv \
-  scene_grounding_detector_topic:=/detected_objects \
+  nao_ip:=172.26.112.62
+```
+
+Real robot + simulator tools-only overlay:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
+  start_interaction_sim:=true \
+  start_interaction_sim_perception:=false \
+  start_interaction_sim_tools:=true \
   nao_ip:=172.26.112.62
 ```
 
 Fallback detector profile with `yolo_ros`:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
-  start_nao_robot:=true \
-  start_rviz:=true \
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=yolo_ros \
@@ -77,17 +81,64 @@ ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
   nao_ip:=172.26.112.62
 ```
 
-Primary migrated stack with ASR:
-
-```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_with_asr.launch.py
-```
-
 ASR-only utility profile:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py
 ```
+
+## Demo Priorities
+
+Tomorrow's recommended order:
+
+1. rebuild the overlay Docker image and validate the laptop-camera detector path
+2. validate `nao_scene_grounding` plus `chatbot_llm` scene awareness in the
+   simulator profile
+3. switch to `nao_chatbot_robot.launch.py` for live robot camera, object
+   detection, and `nao_look_at` follow-up wiring
+
+Preferred rebuild:
+
+```bash
+docker build -f docker/Dockerfile \
+  --build-arg BASE_IMAGE=iiia:nao \
+  -t nao-ros4hri-bridge:demo .
+```
+
+Laptop-camera container run:
+
+```bash
+docker run --rm -it \
+  --network host \
+  --ipc host \
+  --device /dev/video0 \
+  -e DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  nao-ros4hri-bridge:demo
+```
+
+Inside the container, the primary test command is:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv
+```
+
+Then move to the robot path:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
+  nao_ip:=172.26.112.62 \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv
+```
+
+`nao_look_at` does not need a separate demo-specific flag here: the robot
+wrapper already starts it by default, and it now exists as the NAO
+implementation of the upstream `interaction_skills/look_at` contract.
 
 ## Operator Utility
 
@@ -142,7 +193,7 @@ The launch arguments you will use most often for this path are:
 - `scene_grounding_allowed_labels`
 - `scene_grounding_knowledge_lifespan_sec`
 
-For the colleague detector path specifically:
+For the emorobcare object detection path specifically:
 
 - keep `emorobcare_cv_object_detection` and `emorobcare_cv_msgs` built in the
   workspace when `object_detection_backend:=emorobcare_cv`
@@ -152,6 +203,7 @@ For the colleague detector path specifically:
 - set `draw_image: true` if you want `/debug/object_detection` in RViz or
   `rqt_image_view`
 - prefer `cpu` on the laptop unless you have already validated a GPU path
+- on the real robot, feed the detector from `/camera/front/image_raw`
 
 ## Provenance
 
@@ -170,6 +222,7 @@ For the colleague detector path specifically:
 - old `nao_chatbot_stack` launch wrappers have been removed as part of the
   ROS4HRI cleanup
 - this package is now a launch surface, not a skill implementation package
+- the new default module entrypoint is `nao_chatbot_sim.launch.py`
 - the migrated launch enables default chat by default so incoming speech is
   routed to `chatbot_llm` immediately
 - `start_rqt_console:=true` opens a single remapped `rqt` shell; with
@@ -192,15 +245,19 @@ For the colleague detector path specifically:
   SocialMinds apt repository; it already includes `naoqi_driver`, the NAO front
   camera topics, and `hri_face_detect_yunet`
 - `start_nao_robot_hri_visualization:=true` keeps the packaged
-  `hri_visualization` overlays from `nao_robot` enabled for the real-robot path
+  `hri_visualization` overlays enabled for the real-robot path and now remaps
+  its camera input onto `/camera/front/image_raw`
 - `start_rviz:=true` launches `rviz2` with the packaged `nao_robot` RViz config
-  for robot-model, TF, and camera validation
+  for robot-model, TF, raw camera, HRI overlay, and detector-debug validation
 - `start_object_detection:=true` launches the selected detector backend; the
   default is `emorobcare_cv` and the supported fallback is `yolo_ros`
 - `start_scene_grounding:=true` launches `nao_scene_grounding`, which bridges
   object detections into transient KnowledgeCore facts and `/scene/summary`
-- the colleague detector package and its message package are intentionally kept
+- the emorobcare object detection package and its message package are intentionally kept
   outside the monorepo history even when they are present under `src/`
+- the upstream `interaction_skills` package is also expected to live under
+  `src/` when needed, but it should stay read-only from this repo's point of
+  view
 - `start_knowledge_core:=true` launches `KnowledgeCore` when it is installed in
   the environment so `chatbot_llm` can query `/kb/query`
 - `interaction_sim_gscam_config:=...` lets you override the webcam pipeline for
@@ -214,7 +271,9 @@ For the colleague detector path specifically:
 - in the current Docker test path, `kb_msgs`, `knowledge_core`, `oro`,
   `interaction_sim`, and the simulator-side HRI/UI packages come from the
   official SocialMinds Jazzy apt feed
-- reference-only upstream clones still belong under `ref_src/knowledge_sources/`
+- reference-only upstream clones still belong under `ref_src/knowledge_sources/`,
+  but the active Docker rebuild path now expects `interaction_skills` directly
+  under `src/`
 - the simulator integration is composed from `nao_chatbot` rather than the raw
   upstream `interaction_sim/simulator.launch.py` so the migrated stack does not
   start duplicate `chatbot_llm`, `dialogue_manager`, or `knowledge_core` nodes

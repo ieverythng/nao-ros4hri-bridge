@@ -5,6 +5,9 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${REPO_ROOT}"
 
 export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+export PYTEST_ADDOPTS="${PYTEST_ADDOPTS:-} -p no:cacheprovider"
+export PYTHONPYCACHEPREFIX="$(mktemp -d)"
+trap 'rm -rf "${PYTHONPYCACHEPREFIX}"' EXIT
 
 if [[ $# -gt 0 ]]; then
   echo "Usage: $0"
@@ -121,9 +124,11 @@ fi
 
 echo "[9/9] launch smoke"
 if [[ -f install/setup.bash ]]; then
-  ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py --show-args >/dev/null
-  ros2 launch nao_chatbot nao_chatbot_ros4hri_with_asr.launch.py --show-args >/dev/null
-  ros2 launch nao_chatbot nao_chatbot_interaction_sim.launch.py --show-args >/dev/null
+  ros2 launch nao_chatbot nao_chatbot_sim.launch.py --show-args >/dev/null
+  ros2 launch nao_chatbot nao_chatbot_sim_asr.launch.py --show-args >/dev/null
+  ros2 launch nao_chatbot nao_chatbot_robot.launch.py --show-args >/dev/null
+  ros2 launch nao_chatbot nao_chatbot_robot_asr.launch.py --show-args >/dev/null
+  ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py --show-args >/dev/null
 else
   echo "Skipping launch smoke because install/setup.bash is not available."
 fi

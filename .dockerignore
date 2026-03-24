@@ -1,0 +1,14 @@
+build/
+install/
+log/
+.git/
+.venv/
+.cache-pre-commit/
+.pytest_cache/
+.ruff_cache/
+.vscode/
+ref_src/
+**/.git
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/

@@ -14,6 +14,7 @@
   <depend>launch_ros</depend>
   <depend>launch_pal</depend>
   <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
   <depend>hri_actions_msgs</depend>
   <depend>communication_skills</depend>
   <depend>interaction_skills</depend>

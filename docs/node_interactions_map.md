@@ -1,6 +1,6 @@
 # Node Interactions Map
 
-Last updated: 2026-03-22
+Last updated: 2026-03-24
 
 This map reflects the active migrated stack.
 
@@ -12,7 +12,7 @@ This map reflects the active migrated stack.
 | `chatbot_llm` | `chatbot_llm` | Backend dialogue service/action provider |
 | `nao_orchestrator` | `nao_orchestrator` | Consumes `/intents` and dispatches robot actions |
 | `nao_say_skill` | `nao_say_skill` | Robot-specific speech execution |
-| `nao_look_at` | `nao_look_at` | Scaffolded `look_at` lifecycle node |
+| `nao_look_at` | `nao_look_at` | NAO implementation of `interaction_skills/look_at` |
 | `nao_scene_grounding` | `nao_scene_grounding` | Detector-to-KB bridge and compact scene summary publisher |
 | `replay_motion_skill_server` | `nao_replay_motion` | Replay-motion execution |
 | `head_motion_skill_server` | `nao_replay_motion` | Transitional head-motion execution |
@@ -56,8 +56,8 @@ graph LR
   it, while `nao_orchestrator` remains downstream-only.
 - `nao_replay_motion` still exposes `/skill/do_posture` as a compatibility
   adapter onto `/skill/replay_motion`.
-- `nao_look_at` is scaffolded and intentionally limited until the RViz and
-  interaction-simulator work is completed.
+- `nao_look_at` now supports reset plus target-frame tracking; richer social
+  gaze policies are still deferred.
 - detector backends are intentionally pluggable; the current launch surface can
   start either `emorobcare_cv_object_detection` or `yolo_ros`, both funneled
   into the same `nao_scene_grounding` contract.

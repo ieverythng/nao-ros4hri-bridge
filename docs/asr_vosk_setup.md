@@ -1,6 +1,6 @@
 # ASR Vosk Setup and Operations
 
-Last updated: 2026-03-13
+Last updated: 2026-03-24
 
 This repo currently uses the imported package from `src/asr_vosk` together with
 `simple_audio_capture` for isolated ASR testing. The final upstream ROS4HRI ASR
@@ -18,8 +18,10 @@ cutover is still pending, so ASR is not yet part of the primary migrated stack.
 
 - ASR isolation only:
   - `ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py`
-- Full migrated stack with ASR:
-  - `ros2 launch nao_chatbot nao_chatbot_ros4hri_with_asr.launch.py`
+- Full simulator stack with ASR:
+  - `ros2 launch nao_chatbot nao_chatbot_sim_asr.launch.py`
+- Full robot stack with ASR:
+  - `ros2 launch nao_chatbot nao_chatbot_robot_asr.launch.py nao_ip:=...`
 
 Both launch paths run `asr_vosk` as a lifecycle node and automatically trigger:
 
@@ -36,7 +38,7 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
 Or together with the migrated dialogue/orchestration stack:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_with_asr.launch.py \
+ros2 launch nao_chatbot nao_chatbot_sim_asr.launch.py \
   asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15
 ```
 

@@ -20,7 +20,7 @@ Transition support:
 
 - optional subscription to the older string topic `/chatbot/intent`
 - direct dispatch to `/nao/say`, `/skill/replay_motion`, `/skill/do_head_motion`,
-  and `/skill/look_at`
+  and `/skill/look_at` from the upstream `interaction_skills/look_at` contract
 - topic fallbacks matching the old mission-controller flow:
   `/chatbot/posture_command` and `/joint_angles`
 - duplicate-intent suppression to avoid double-dispatch while legacy and new paths coexist
@@ -28,7 +28,8 @@ Transition support:
 Current migration boundary:
 
 - `nao_orchestrator` already covers the old mission-controller execution side:
-  say dispatch, posture/replay-motion dispatch, retained head motion, and look-at reset
+  say dispatch, posture/replay-motion dispatch, retained head motion, and
+  look-at reset or target-frame dispatch
 - conversational speech intents are ignored by default because spoken chatbot
   replies are already owned by `dialogue_manager -> /tts_engine/tts -> nao_say_skill`
 - `kb_query_visible_people`, `kb_query_visible_objects`, and
@@ -63,7 +64,7 @@ High-level downstream flow:
 2. `nao_orchestrator` parses that metadata from `Intent.data`
 3. if a valid `plan` is present, the orchestrator tries to execute it first
 4. if there is no valid plan, the package falls back to the migrated legacy
-   routing for speech, motion, and look-at resets
+   routing for speech, motion, and conservative look-at fallbacks
 
 The orchestrator still does not own KB prompting or detector subscriptions; it
 only consumes the enriched downstream contract.
@@ -131,7 +132,7 @@ Current planned-step behavior:
 - `say`: dispatch speech through `/nao/say`
 - `skill`: currently supports motion-oriented routes such as replay motion and
   look-at reset
-- `look_at`: currently scaffolded to reset-oriented look-at behavior
+- `look_at`: supports reset or target-frame dispatch through `/skill/look_at`
 - `noop`: explicit no-op placeholder
 
 If no valid `plan` exists, the package keeps the legacy migrated behavior for

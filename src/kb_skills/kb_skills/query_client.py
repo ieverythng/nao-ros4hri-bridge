@@ -35,6 +35,10 @@ class KnowledgeCoreQueryClient:
             callback_group=callback_group,
         )
 
+    # -------------------------------------------------------------------------
+    # Public query surface
+    # -------------------------------------------------------------------------
+
     @property
     def service_name(self) -> str:
         """Expose the resolved service name for diagnostics."""
@@ -74,6 +78,10 @@ class KnowledgeCoreQueryClient:
         if response is None:
             return []
         return self.parse_response_rows(getattr(response, "json", ""))
+
+    # -------------------------------------------------------------------------
+    # ROS query execution
+    # -------------------------------------------------------------------------
 
     def _query_once(
         self,
@@ -127,6 +135,10 @@ class KnowledgeCoreQueryClient:
             )
             return None
         return response
+
+    # -------------------------------------------------------------------------
+    # Payload normalization helpers
+    # -------------------------------------------------------------------------
 
     @staticmethod
     def parse_response_rows(json_payload: str) -> list[dict]:

@@ -1,22 +1,38 @@
 #!/usr/bin/env python3
-"""Lifecycle scaffold for the ROS4HRI /skill/look_at action."""
+"""NAO-side implementation of the ROS4HRI interaction_skills/look_at action.
+
+The upstream skill definition lives in `interaction_skills`. This node only
+implements that contract for NAO by translating accepted gaze requests into
+either head-joint commands or TF-based target tracking.
+"""
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
+import math
 import threading
 
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from interaction_skills.action import LookAt
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.duration import Duration
 from rclpy.lifecycle import Node, State, TransitionCallbackReturn
+from rclpy.time import Time
 from std_skills.msg import Result as SkillResult
 
 try:
     from naoqi_bridge_msgs.msg import JointAnglesWithSpeed
 except ImportError:  # pragma: no cover - runtime dependent
     JointAnglesWithSpeed = None
+
+try:  # pragma: no cover - runtime dependent
+    from tf2_ros import Buffer, TransformException, TransformListener
+except ImportError:  # pragma: no cover - runtime dependent
+    Buffer = None
+    TransformException = Exception
+    TransformListener = None
 
 
 @dataclass(slots=True)
@@ -28,7 +44,7 @@ class _LookAtStats:
 
 
 class NaoLookAtSkill(Node):
-    """Expose `/skill/look_at` while the full gaze pipeline is being built."""
+    """Implement the upstream `/skill/look_at` contract for NAO."""
 
     _SUPPORTED_POLICIES = {
         "",
@@ -48,6 +64,14 @@ class NaoLookAtSkill(Node):
         self.declare_parameter("reset_yaw", 0.0)
         self.declare_parameter("reset_pitch", 0.0)
         self.declare_parameter("default_speed", 0.2)
+        self.declare_parameter("look_from_frame", "CameraTop_frame")
+        self.declare_parameter("fallback_look_from_frame", "base_link")
+        self.declare_parameter("tf_lookup_timeout_sec", 0.2)
+        self.declare_parameter("glance_hold_sec", 0.7)
+        self.declare_parameter("minimum_target_distance_m", 0.05)
+        self.declare_parameter("max_yaw_abs", 1.5)
+        self.declare_parameter("min_pitch", -0.67)
+        self.declare_parameter("max_pitch", 0.51)
 
         self.action_name = str(self.get_parameter("look_at_action_name").value)
         self.joint_angles_topic = str(self.get_parameter("joint_angles_topic").value)
@@ -57,6 +81,29 @@ class NaoLookAtSkill(Node):
         self.reset_yaw = float(self.get_parameter("reset_yaw").value)
         self.reset_pitch = float(self.get_parameter("reset_pitch").value)
         self.default_speed = float(self.get_parameter("default_speed").value)
+        self.look_from_frame = (
+            str(self.get_parameter("look_from_frame").value).strip()
+            or "CameraTop_frame"
+        )
+        self.fallback_look_from_frame = (
+            str(self.get_parameter("fallback_look_from_frame").value).strip()
+            or "base_link"
+        )
+        self.tf_lookup_timeout_sec = max(
+            0.0,
+            float(self.get_parameter("tf_lookup_timeout_sec").value),
+        )
+        self.glance_hold_sec = max(
+            0.0,
+            float(self.get_parameter("glance_hold_sec").value),
+        )
+        self.minimum_target_distance_m = max(
+            0.001,
+            float(self.get_parameter("minimum_target_distance_m").value),
+        )
+        self.max_yaw_abs = max(0.0, float(self.get_parameter("max_yaw_abs").value))
+        self.min_pitch = float(self.get_parameter("min_pitch").value)
+        self.max_pitch = float(self.get_parameter("max_pitch").value)
 
         self._callback_group = ReentrantCallbackGroup()
         self._execution_lock = threading.Lock()
@@ -67,10 +114,18 @@ class NaoLookAtSkill(Node):
         self._diag_timer = None
         self._joint_angles_pub = None
         self._joint_angles_available = JointAnglesWithSpeed is not None
+        self._tf_buffer = None
+        self._tf_listener = None
+        self._tf_available = Buffer is not None and TransformListener is not None
 
         self.get_logger().info("nao_look_at created; waiting for lifecycle configure")
 
+    # -------------------------------------------------------------------------
+    # Lifecycle configuration
+    # -------------------------------------------------------------------------
+
     def on_configure(self, _state: State) -> TransitionCallbackReturn:
+        """Create the action server, diagnostics, and optional TF/joint wiring."""
         self._joint_angles_available = JointAnglesWithSpeed is not None
 
         if self._joint_angles_available:
@@ -82,7 +137,16 @@ class NaoLookAtSkill(Node):
         else:
             self._joint_angles_pub = None
             self.get_logger().warn(
-                "JointAnglesWithSpeed is unavailable; nao_look_at will stay in scaffold mode"
+                "JointAnglesWithSpeed is unavailable; nao_look_at will stay in reset-disabled mode"
+            )
+        if self._tf_available:
+            self._tf_buffer = Buffer()
+            self._tf_listener = TransformListener(self._tf_buffer, self, spin_thread=True)
+        else:
+            self._tf_buffer = None
+            self._tf_listener = None
+            self.get_logger().warn(
+                "tf2_ros is unavailable; nao_look_at target tracking will stay disabled"
             )
         self._diag_pub = self.create_publisher(DiagnosticArray, "/diagnostics", 1)
         self._diag_timer = self.create_timer(1.0, self._publish_diagnostics)
@@ -96,16 +160,18 @@ class NaoLookAtSkill(Node):
             callback_group=self._callback_group,
         )
         self.get_logger().info(
-            "nao_look_at configured | action:%s joint_topic:%s"
-            % (self.action_name, self.joint_angles_topic)
+            "nao_look_at configured | action:%s joint_topic:%s look_from:%s"
+            % (self.action_name, self.joint_angles_topic, self.look_from_frame)
         )
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
+        """Accept action goals once the lifecycle node becomes active."""
         self._is_active = True
         return super().on_activate(state)
 
     def on_deactivate(self, state: State) -> TransitionCallbackReturn:
+        """Reject new work while keeping the configured runtime state intact."""
         self._is_active = False
         return super().on_deactivate(state)
 
@@ -123,9 +189,16 @@ class NaoLookAtSkill(Node):
         if self._joint_angles_pub is not None:
             self.destroy_publisher(self._joint_angles_pub)
             self._joint_angles_pub = None
+        self._tf_listener = None
+        self._tf_buffer = None
         return TransitionCallbackReturn.SUCCESS
 
+    # -------------------------------------------------------------------------
+    # Action server callbacks
+    # -------------------------------------------------------------------------
+
     def goal_callback(self, goal_request: LookAt.Goal) -> GoalResponse:
+        """Validate supported policies and basic runtime preconditions."""
         if not self._is_active or self._execution_lock.locked():
             return GoalResponse.REJECT
 
@@ -133,6 +206,8 @@ class NaoLookAtSkill(Node):
         if policy not in self._SUPPORTED_POLICIES:
             return GoalResponse.REJECT
         if policy == LookAt.Goal.GLANCE and not self._has_target(goal_request):
+            return GoalResponse.REJECT
+        if policy == "" and self._has_target(goal_request) is False:
             return GoalResponse.REJECT
         if (
             self.require_joint_angles_subscribers
@@ -146,6 +221,7 @@ class NaoLookAtSkill(Node):
         return CancelResponse.ACCEPT
 
     async def execute_callback(self, goal_handle):
+        """Execute reset or target-tracking behavior for one look-at goal."""
         if not self._execution_lock.acquire(blocking=False):
             goal_handle.abort()
             return self._result(False, "Another look_at goal is already executing", SkillResult.ROS_ECANCELED)
@@ -171,55 +247,224 @@ class NaoLookAtSkill(Node):
                 goal_handle.succeed()
                 return self._result(True, "", SkillResult.ROS_ENOERR)
 
-            if policy == "" and self._has_target(request):
-                self._stats.goals_failed += 1
-                goal_handle.abort()
-                return self._result(
-                    False,
-                    "Target tracking scaffolded but not implemented yet",
-                    SkillResult.ROS_ENOTSUP,
-                )
+            if self._has_target(request):
+                resolved = self._resolve_target_angles(request)
+                if isinstance(resolved, str):
+                    self._stats.goals_failed += 1
+                    goal_handle.abort()
+                    return self._result(
+                        False,
+                        resolved,
+                        SkillResult.ROS_ENOTSUP,
+                    )
 
-            if policy == LookAt.Goal.GLANCE and self._has_target(request):
-                self._stats.goals_failed += 1
-                goal_handle.abort()
-                return self._result(
-                    False,
-                    "Glance policy scaffolded but not implemented yet",
-                    SkillResult.ROS_ENOTSUP,
+                yaw, pitch, resolved_frame = resolved
+                if not self._publish_joint_pose(yaw, pitch):
+                    self._stats.goals_failed += 1
+                    goal_handle.abort()
+                    return self._result(
+                        False,
+                        "JointAnglesWithSpeed is unavailable; target tracking cannot publish",
+                        SkillResult.ROS_ENOTSUP,
+                    )
+
+                self._publish_feedback(goal_handle, "tracking_target", 0.75)
+                if policy == LookAt.Goal.GLANCE and self.glance_hold_sec > 0.0:
+                    await asyncio.sleep(self.glance_hold_sec)
+                    self._publish_reset_pose()
+                self._publish_feedback(goal_handle, "completing", 1.0)
+                self._stats.last_policy = (
+                    f"{policy or 'track'}:{resolved_frame}"
                 )
+                self._stats.goals_succeeded += 1
+                goal_handle.succeed()
+                return self._result(True, "", SkillResult.ROS_ENOERR)
 
             self._stats.goals_failed += 1
             goal_handle.abort()
             return self._result(
                 False,
-                f"Policy '{policy}' is scaffolded but not implemented yet",
+                f"Policy '{policy}' is not implemented yet",
                 SkillResult.ROS_ENOTSUP,
             )
         finally:
             self._execution_lock.release()
 
+    # -------------------------------------------------------------------------
+    # Joint-command publishing
+    # -------------------------------------------------------------------------
+
     def _publish_reset_pose(self) -> bool:
+        return self._publish_joint_pose(self.reset_yaw, self.reset_pitch)
+
+    def _publish_joint_pose(self, yaw: float, pitch: float) -> bool:
+        """Publish the NAO head command used by reset and target tracking."""
         if self._joint_angles_pub is None or JointAnglesWithSpeed is None:
             return False
         msg = JointAnglesWithSpeed()
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.joint_names = ["HeadYaw", "HeadPitch"]
-        msg.joint_angles = [self.reset_yaw, self.reset_pitch]
+        msg.joint_angles = [float(yaw), float(pitch)]
         msg.speed = float(self.default_speed)
         msg.relative = 0
         self._joint_angles_pub.publish(msg)
         return True
 
+    # -------------------------------------------------------------------------
+    # TF and geometry helpers
+    # -------------------------------------------------------------------------
+
+    def _resolve_target_angles(self, goal_request: LookAt.Goal):
+        """Resolve a target frame into yaw/pitch angles for NAO head joints."""
+        resolved_vector = self._resolve_target_vector(goal_request)
+        if isinstance(resolved_vector, str):
+            return resolved_vector
+
+        x_value, y_value, z_value, resolved_frame = resolved_vector
+        try:
+            yaw, pitch = self._vector_to_angles(x_value, y_value, z_value)
+        except ValueError as exc:
+            return str(exc)
+        return (
+            self._clamp(yaw, -self.max_yaw_abs, self.max_yaw_abs),
+            self._clamp(pitch, self.min_pitch, self.max_pitch),
+            resolved_frame,
+        )
+
+    def _resolve_target_vector(self, goal_request: LookAt.Goal):
+        """Resolve the incoming target into the preferred local reference frame."""
+        if not self._has_target(goal_request):
+            return "No target frame was provided for look_at"
+
+        target = goal_request.target
+        source_frame = str(target.header.frame_id).strip()
+        point = (
+            float(target.point.x),
+            float(target.point.y),
+            float(target.point.z),
+        )
+
+        for reference_frame in self._reference_frames():
+            if source_frame == reference_frame:
+                return (*point, reference_frame)
+
+            if self._tf_buffer is None:
+                continue
+
+            try:
+                transform = self._tf_buffer.lookup_transform(
+                    reference_frame,
+                    source_frame,
+                    self._target_time(target),
+                    timeout=Duration(seconds=self.tf_lookup_timeout_sec),
+                )
+            except TransformException:
+                continue
+
+            transformed = self._apply_transform(point, transform)
+            distance = math.sqrt(
+                transformed[0] ** 2 + transformed[1] ** 2 + transformed[2] ** 2
+            )
+            if distance < self.minimum_target_distance_m:
+                return (
+                    "Target is too close to the look reference frame to compute "
+                    "a stable gaze command"
+                )
+            return (*transformed, reference_frame)
+
+        return (
+            "Could not resolve target frame '%s' into %s or %s"
+            % (
+                source_frame,
+                self.look_from_frame,
+                self.fallback_look_from_frame,
+            )
+        )
+
+    def _reference_frames(self) -> tuple[str, ...]:
+        ordered = []
+        for frame_id in (self.look_from_frame, self.fallback_look_from_frame):
+            clean = str(frame_id).strip()
+            if clean and clean not in ordered:
+                ordered.append(clean)
+        return tuple(ordered)
+
+    @staticmethod
+    def _target_time(target) -> Time:
+        stamp = getattr(getattr(target, "header", None), "stamp", None)
+        if stamp is None:
+            return Time()
+        if int(getattr(stamp, "sec", 0)) == 0 and int(getattr(stamp, "nanosec", 0)) == 0:
+            return Time()
+        return Time.from_msg(stamp)
+
+    @staticmethod
+    def _apply_transform(point, transform) -> tuple[float, float, float]:
+        translation = transform.transform.translation
+        rotation = transform.transform.rotation
+        rotated_x, rotated_y, rotated_z = NaoLookAtSkill._rotate_vector(
+            (float(point[0]), float(point[1]), float(point[2])),
+            (
+                float(rotation.x),
+                float(rotation.y),
+                float(rotation.z),
+                float(rotation.w),
+            ),
+        )
+        return (
+            rotated_x + float(translation.x),
+            rotated_y + float(translation.y),
+            rotated_z + float(translation.z),
+        )
+
+    @staticmethod
+    def _rotate_vector(vector, quaternion) -> tuple[float, float, float]:
+        x_value, y_value, z_value = vector
+        qx, qy, qz, qw = quaternion
+
+        r00 = 1.0 - 2.0 * (qy * qy + qz * qz)
+        r01 = 2.0 * (qx * qy - qz * qw)
+        r02 = 2.0 * (qx * qz + qy * qw)
+        r10 = 2.0 * (qx * qy + qz * qw)
+        r11 = 1.0 - 2.0 * (qx * qx + qz * qz)
+        r12 = 2.0 * (qy * qz - qx * qw)
+        r20 = 2.0 * (qx * qz - qy * qw)
+        r21 = 2.0 * (qy * qz + qx * qw)
+        r22 = 1.0 - 2.0 * (qx * qx + qy * qy)
+
+        return (
+            r00 * x_value + r01 * y_value + r02 * z_value,
+            r10 * x_value + r11 * y_value + r12 * z_value,
+            r20 * x_value + r21 * y_value + r22 * z_value,
+        )
+
+    @staticmethod
+    def _vector_to_angles(x_value: float, y_value: float, z_value: float) -> tuple[float, float]:
+        horizontal = math.hypot(x_value, y_value)
+        distance = math.sqrt(horizontal * horizontal + z_value * z_value)
+        if distance <= 1e-6:
+            raise ValueError("Target vector is empty; cannot compute look_at angles")
+        yaw = math.atan2(y_value, x_value)
+        pitch = -math.atan2(z_value, max(horizontal, 1e-6))
+        return yaw, pitch
+
+    @staticmethod
+    def _clamp(value: float, lower: float, upper: float) -> float:
+        return max(lower, min(upper, float(value)))
+
+    # -------------------------------------------------------------------------
+    # Diagnostics and small action helpers
+    # -------------------------------------------------------------------------
+
     def _publish_diagnostics(self) -> None:
         if self._diag_pub is None:
             return
-        degraded = not self._joint_angles_available
+        degraded = not self._joint_angles_available or self._tf_available is False
         status = DiagnosticStatus(
             level=DiagnosticStatus.WARN if degraded else DiagnosticStatus.OK,
             name="/nao_look_at",
             message=(
-                "nao_look_at running (scaffold mode only)"
+                "nao_look_at running with reset-only fallback"
                 if degraded
                 else "nao_look_at running"
             ),
@@ -229,6 +474,12 @@ class NaoLookAtSkill(Node):
                 KeyValue(
                     key="joint_angles_available",
                     value=str(self._joint_angles_available),
+                ),
+                KeyValue(key="tf_available", value=str(self._tf_available)),
+                KeyValue(key="look_from_frame", value=self.look_from_frame),
+                KeyValue(
+                    key="fallback_look_from_frame",
+                    value=self.fallback_look_from_frame,
                 ),
                 KeyValue(key="goals_started", value=str(self._stats.goals_started)),
                 KeyValue(key="goals_succeeded", value=str(self._stats.goals_succeeded)),

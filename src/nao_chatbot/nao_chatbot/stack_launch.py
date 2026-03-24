@@ -1,3 +1,10 @@
+"""Shared launch builder for the kept NAO demo profiles.
+
+The public launch files are intentionally small wrappers. This module owns the
+common launch arguments, optional external integrations, and lifecycle startup
+ordering for the simulator and real-robot profiles.
+"""
+
 import os
 
 from ament_index_python.packages import PackageNotFoundError
@@ -5,6 +12,7 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.actions import ExecuteProcess
+from launch.actions import GroupAction
 from launch.actions import IncludeLaunchDescription
 from launch.actions import LogInfo
 from launch.actions import OpaqueFunction
@@ -17,8 +25,23 @@ from launch.substitutions import PathJoinSubstitution
 from launch.substitutions import PythonExpression
 from launch_ros.actions import LifecycleNode
 from launch_ros.actions import Node
+from launch_ros.actions import SetRemap
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
+
+from nao_chatbot.interaction_sim_support import build_interaction_sim_actions
+
+
+# -----------------------------------------------------------------------------
+# Generic launch helpers
+# -----------------------------------------------------------------------------
+
+
+def _profile_default(profile_defaults: dict | None, name: str, fallback: str) -> str:
+    """Resolve a per-profile default while keeping the shared argument list small."""
+    if profile_defaults and name in profile_defaults:
+        return str(profile_defaults[name])
+    return str(fallback)
 
 
 def _make_lifecycle_bundle(
@@ -29,6 +52,7 @@ def _make_lifecycle_bundle(
     condition,
     extra_parameters=None,
 ):
+    """Create one lifecycle node plus the bootstrap process that activates it."""
     config_path = PathJoinSubstitution(
         [FindPackageShare(package_name), "config", "00-defaults.yml"]
     )
@@ -59,6 +83,7 @@ def _make_lifecycle_bundle(
 
 
 def _not_launching_chatbot_llm_condition():
+    """Condition used when dialogue_manager must boot without chatbot_llm."""
     return IfCondition(
         PythonExpression(
             [
@@ -73,6 +98,7 @@ def _not_launching_chatbot_llm_condition():
 
 
 def _standalone_naoqi_driver_condition():
+    """Launch naoqi_driver only when the packaged nao_robot path is not used."""
     return IfCondition(
         PythonExpression(
             [
@@ -87,6 +113,7 @@ def _standalone_naoqi_driver_condition():
 
 
 def _lifecycle_bootstrap_script(node_name: str, timeout_sec: int = 30) -> str:
+    """Generate a shell loop that configures and activates one lifecycle node."""
     normalized_name = f"/{str(node_name).lstrip('/')}"
     return f"""
 node_name="{normalized_name}"
@@ -118,6 +145,7 @@ done
 
 
 def _service_wait_script(service_name: str, timeout_sec: int = 30) -> str:
+    """Generate a shell loop that waits for one ROS service to appear."""
     normalized_name = f"/{str(service_name).lstrip('/')}"
     return f"""
 service_name="{normalized_name}"
@@ -136,6 +164,7 @@ done
 
 
 def _prefer_first_non_empty(*names: str):
+    """Build a launch expression that picks the first non-empty argument value."""
     if not names:
         raise ValueError("At least one launch argument name is required")
 
@@ -159,6 +188,11 @@ def _prefer_first_non_empty(*names: str):
     return PythonExpression(expression)
 
 
+# -----------------------------------------------------------------------------
+# Optional external integrations
+# -----------------------------------------------------------------------------
+
+
 def _optional_launch_description(
     context,
     *,
@@ -169,6 +203,7 @@ def _optional_launch_description(
     launch_arguments=None,
     display_name=None,
 ):
+    """Include an upstream launch file only when its package dependencies exist."""
     if LaunchConfiguration(launch_arg_name).perform(context).lower() != "true":
         return []
 
@@ -212,6 +247,7 @@ def _optional_launch_description(
 
 
 def _optional_object_detection_launch(context):
+    """Start the selected detector backend behind a single launch argument."""
     if LaunchConfiguration("start_object_detection").perform(context).lower() != "true":
         return []
 
@@ -288,6 +324,7 @@ def _optional_rviz_launch(
     config_relative_path: str,
     display_name=None,
 ):
+    """Start RViz with the packaged demo config when the profile requests it."""
     if LaunchConfiguration(launch_arg_name).perform(context).lower() != "true":
         return []
 
@@ -315,10 +352,67 @@ def _optional_rviz_launch(
     ]
 
 
-def generate_launch_description():
+def _optional_hri_visualization_launch(context):
+    """Remap hri_visualization onto the active robot camera topic."""
+    if LaunchConfiguration("start_nao_robot_hri_visualization").perform(context).lower() != "true":
+        return []
+
+    try:
+        package_share = get_package_share_directory("hri_visualization")
+    except PackageNotFoundError:
+        return [
+            LogInfo(
+                msg=(
+                    "hri_visualization launch skipped because package "
+                    "'hri_visualization' is not installed in this environment."
+                )
+            )
+        ]
+
+    image_topic = (
+        LaunchConfiguration("hri_visualization_image_topic").perform(context).strip()
+        or "/camera/front/image_raw"
+    )
+    return [
+        GroupAction(
+            scoped=True,
+            actions=[
+                SetRemap(src="image", dst=image_topic),
+                IncludeLaunchDescription(
+                    PythonLaunchDescriptionSource(
+                        os.path.join(
+                            package_share,
+                            "launch",
+                            "hri_visualization.launch.py",
+                        )
+                    )
+                ),
+            ],
+        ),
+        LogInfo(
+            msg=(
+                "hri_visualization input remapped to %s; overlay output is "
+                "published on /image/hri_overlay/compressed"
+            )
+            % image_topic
+        ),
+    ]
+
+
+# -----------------------------------------------------------------------------
+# Shared profile builder
+# -----------------------------------------------------------------------------
+
+
+def generate_profile_launch_description(
+    *,
+    profile_defaults: dict | None = None,
+    include_asr: bool = False,
+):
+    """Build the full launch description used by sim and robot wrappers."""
     start_naoqi_driver_arg = DeclareLaunchArgument(
         "start_naoqi_driver",
-        default_value="false",
+        default_value=_profile_default(profile_defaults, "start_naoqi_driver", "false"),
         description="Optionally launch naoqi_driver alongside the migrated ROS4HRI stack.",
     )
     nao_ip_arg = DeclareLaunchArgument(
@@ -348,7 +442,7 @@ def generate_launch_description():
     )
     start_nao_robot_arg = DeclareLaunchArgument(
         "start_nao_robot",
-        default_value="false",
+        default_value=_profile_default(profile_defaults, "start_nao_robot", "false"),
         description=(
             "Launch the packaged nao_robot bring-up (naoqi_driver + NAO camera "
             "face detection) for real-robot validation."
@@ -356,7 +450,11 @@ def generate_launch_description():
     )
     start_nao_robot_hri_visualization_arg = DeclareLaunchArgument(
         "start_nao_robot_hri_visualization",
-        default_value="true",
+        default_value=_profile_default(
+            profile_defaults,
+            "start_nao_robot_hri_visualization",
+            "true",
+        ),
         description=(
             "Launch hri_visualization together with nao_robot for robot-camera "
             "overlay topics and diagnostics."
@@ -364,8 +462,20 @@ def generate_launch_description():
     )
     start_rviz_arg = DeclareLaunchArgument(
         "start_rviz",
-        default_value="false",
-        description="Launch rviz2 using the packaged nao_robot robot-camera config.",
+        default_value=_profile_default(profile_defaults, "start_rviz", "false"),
+        description="Launch rviz2 using the packaged robot-scene validation config.",
+    )
+    hri_visualization_image_topic_arg = DeclareLaunchArgument(
+        "hri_visualization_image_topic",
+        default_value=_profile_default(
+            profile_defaults,
+            "hri_visualization_image_topic",
+            "/camera/front/image_raw",
+        ),
+        description=(
+            "Base image topic consumed by hri_visualization; the compressed "
+            "transport of this topic is used for overlays."
+        ),
     )
     start_object_detection_arg = DeclareLaunchArgument(
         "start_object_detection",
@@ -404,7 +514,11 @@ def generate_launch_description():
     )
     object_detection_input_image_topic_arg = DeclareLaunchArgument(
         "object_detection_input_image_topic",
-        default_value="/nao_robot/camera/front/image_raw",
+        default_value=_profile_default(
+            profile_defaults,
+            "object_detection_input_image_topic",
+            "/camera/front/image_raw",
+        ),
         description="RGB image topic remapped into the external detector stack.",
     )
     object_detection_image_reliability_arg = DeclareLaunchArgument(
@@ -449,22 +563,30 @@ def generate_launch_description():
     )
     start_interaction_sim_arg = DeclareLaunchArgument(
         "start_interaction_sim",
-        default_value="false",
+        default_value=_profile_default(profile_defaults, "start_interaction_sim", "false"),
         description="Optionally launch the official interaction_sim support launch for simulator testing.",
     )
     start_interaction_sim_perception_arg = DeclareLaunchArgument(
         "start_interaction_sim_perception",
-        default_value="true",
+        default_value=_profile_default(
+            profile_defaults,
+            "start_interaction_sim_perception",
+            "true",
+        ),
         description="Launch the interaction_sim webcam/person/emotion perception components.",
     )
     start_interaction_sim_tools_arg = DeclareLaunchArgument(
         "start_interaction_sim_tools",
-        default_value="true",
+        default_value=_profile_default(
+            profile_defaults,
+            "start_interaction_sim_tools",
+            "true",
+        ),
         description="Launch interaction_sim support tools such as rosbridge and ui_server.",
     )
     start_interaction_sim_ui_arg = DeclareLaunchArgument(
         "start_interaction_sim_ui",
-        default_value="false",
+        default_value=_profile_default(profile_defaults, "start_interaction_sim_ui", "false"),
         description="Start ui_server together with interaction_sim support tools.",
     )
     interaction_sim_gscam_config_arg = DeclareLaunchArgument(
@@ -490,11 +612,11 @@ def generate_launch_description():
     start_nao_look_at_arg = DeclareLaunchArgument(
         "start_nao_look_at",
         default_value="true",
-        description="Launch the scaffolded look_at skill.",
+        description="Launch the NAO look_at skill.",
     )
     start_rqt_console_arg = DeclareLaunchArgument(
         "start_rqt_console",
-        default_value="true",
+        default_value=_profile_default(profile_defaults, "start_rqt_console", "true"),
         description="Launch a single remapped rqt shell; when interaction_sim is enabled it loads the official simulator perspective.",
     )
     start_rqt_chat_arg = DeclareLaunchArgument(
@@ -562,6 +684,25 @@ def generate_launch_description():
         default_value="http://localhost:11434/api/chat",
         description="Backend HTTP endpoint used by chatbot_llm.",
     )
+    asr_launch_args = []
+    if include_asr:
+        asr_launch_args = [
+            DeclareLaunchArgument(
+                "asr_vosk_model_path",
+                default_value="/models/vosk-model-small-en-us-0.15",
+                description="Absolute path to the Vosk model.",
+            ),
+            DeclareLaunchArgument(
+                "asr_audio_capture_device",
+                default_value="",
+                description="Optional audio device identifier passed to simple_audio_capture.",
+            ),
+            DeclareLaunchArgument(
+                "asr_push_to_talk_enabled",
+                default_value="true",
+                description="Require an explicit Bool gate before ASR listens.",
+            ),
+        ]
 
     chatbot_llm_bundle = _make_lifecycle_bundle(
         package_name="chatbot_llm",
@@ -947,6 +1088,28 @@ def generate_launch_description():
         emulate_tty=True,
         condition=IfCondition(LaunchConfiguration("start_robot_speech_debug")),
     )
+    asr_launch = None
+    if include_asr:
+        asr_launch = IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                PathJoinSubstitution(
+                    [
+                        FindPackageShare("nao_chatbot"),
+                        "launch",
+                        "nao_chatbot_asr_only.launch.py",
+                    ]
+                )
+            ),
+            launch_arguments={
+                "asr_vosk_model_path": LaunchConfiguration("asr_vosk_model_path"),
+                "asr_audio_capture_device": LaunchConfiguration(
+                    "asr_audio_capture_device"
+                ),
+                "asr_push_to_talk_enabled": LaunchConfiguration(
+                    "asr_push_to_talk_enabled"
+                ),
+            }.items(),
+        )
 
     dialogue_manager_node = dialogue_manager_bundle[0]
     dialogue_manager_bootstrap = dialogue_manager_bundle[1]
@@ -1052,6 +1215,7 @@ def generate_launch_description():
             start_nao_robot_arg,
             start_nao_robot_hri_visualization_arg,
             start_rviz_arg,
+            hri_visualization_image_topic_arg,
             start_object_detection_arg,
             object_detection_backend_arg,
             start_scene_grounding_arg,
@@ -1085,6 +1249,7 @@ def generate_launch_description():
             chatbot_intent_model_arg,
             ollama_intent_model_arg,
             chatbot_server_url_arg,
+            *asr_launch_args,
             object_detection_namespace_arg,
             object_detection_model_arg,
             object_detection_device_arg,
@@ -1142,14 +1307,7 @@ def generate_launch_description():
                 },
             ),
             OpaqueFunction(
-                function=_optional_launch_description,
-                kwargs={
-                    "package_name": "hri_visualization",
-                    "launch_file_name": "hri_visualization.launch.py",
-                    "launch_arg_name": "start_nao_robot_hri_visualization",
-                    "display_name": "hri_visualization",
-                    "required_packages": ["hri_visualization"],
-                },
+                function=_optional_hri_visualization_launch,
             ),
             OpaqueFunction(
                 function=_optional_rviz_launch,
@@ -1163,33 +1321,7 @@ def generate_launch_description():
             OpaqueFunction(
                 function=_optional_object_detection_launch,
             ),
-            OpaqueFunction(
-                function=_optional_launch_description,
-                kwargs={
-                    "package_name": "nao_chatbot",
-                    "launch_file_name": "nao_chatbot_interaction_sim.launch.py",
-                    "launch_arg_name": "start_interaction_sim",
-                    "display_name": "interaction_sim",
-                    "launch_arguments": {
-                        "debug_tts_action_name": LaunchConfiguration(
-                            "debug_tts_action_name"
-                        ),
-                        "interaction_sim_gscam_config": LaunchConfiguration(
-                            "interaction_sim_gscam_config"
-                        ),
-                        "start_interaction_sim_perception": LaunchConfiguration(
-                            "start_interaction_sim_perception"
-                        ),
-                        "start_interaction_sim_tools": LaunchConfiguration(
-                            "start_interaction_sim_tools"
-                        ),
-                        "start_interaction_sim_ui": LaunchConfiguration(
-                            "start_interaction_sim_ui"
-                        ),
-                    },
-                    "required_packages": ["interaction_sim"],
-                },
-            ),
+            OpaqueFunction(function=build_interaction_sim_actions),
             chatbot_llm_bundle[0],
             chatbot_llm_bootstrap_immediate,
             knowledge_core_query_wait,
@@ -1203,5 +1335,6 @@ def generate_launch_description():
             nao_replay_motion_launch,
             *nao_look_at_bundle,
             nao_scene_grounding_node,
+            *( [asr_launch] if asr_launch is not None else [] ),
         ]
     )

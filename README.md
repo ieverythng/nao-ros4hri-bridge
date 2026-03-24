@@ -14,7 +14,7 @@ Robot-side runtime packages in this repo:
 - `kb_skills`: dedicated KnowledgeCore client boundary and KB skill metadata
 - `nao_say_skill`: NAO-specific `/nao/say` execution bridge
 - `nao_replay_motion`: replay-motion, posture compatibility, and head motion
-- `nao_look_at`: scaffolded `/skill/look_at` implementation
+- `nao_look_at`: NAO implementation of `interaction_skills/look_at`
 - `nao_scene_grounding`: detector-to-KnowledgeCore grounding bridge and scene summary node
 - `asr_vosk`: local lifecycle ASR node
 - `simple_audio_capture`: local microphone source for the ASR path
@@ -107,7 +107,7 @@ High-level ownership split:
 
 Two detector backends are supported behind the same grounding seam:
 
-- `emorobcare_cv_object_detection`: colleague package publishing
+- `emorobcare_cv_object_detection`: emorobcare object detection package publishing
   `/detected_objects` and optional `/debug/object_detection`
 - `yolo_ros`: fallback path publishing `/yolo/tracking` and
   `/yolo/debug_image`
@@ -115,7 +115,7 @@ Two detector backends are supported behind the same grounding seam:
 The launch default is `emorobcare_cv`, but the grounding node stays backend
 agnostic so the detector can be swapped later without rewriting the KB bridge.
 
-Current colleague-detector expectations:
+Current emorobcare object detection expectations:
 
 - keep `emorobcare_cv_object_detection` and `emorobcare_cv_msgs` available in
   the active workspace when you use the `emorobcare_cv` backend
@@ -132,68 +132,70 @@ Current colleague-detector expectations:
 
 ## Launch Profiles
 
-Primary launch files live in `src/nao_chatbot/launch/`:
+Primary operator-facing launch files live in `src/nao_chatbot/launch/`:
 
-- `nao_chatbot_ros4hri_migration.launch.py`: primary migrated runtime
-- `nao_chatbot_ros4hri_with_asr.launch.py`: migrated runtime plus local ASR
+- `nao_chatbot_sim.launch.py`: simulator stack with the official `interaction_sim` perspective
+- `nao_chatbot_sim_asr.launch.py`: simulator stack plus local ASR
+- `nao_chatbot_robot.launch.py`: real-robot camera, RViz, and HRI overlays
+- `nao_chatbot_robot_asr.launch.py`: real-robot camera, RViz, HRI overlays, and local ASR
 - `nao_chatbot_asr_only.launch.py`: isolated local ASR pipeline
 
 Useful launch combinations:
 
-Primary migrated stack:
+Simulator stack:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py
 ```
 
-Real robot TF/camera validation:
+Simulator stack with emorobcare object detection + scene grounding:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
-  start_nao_robot:=true \
-  start_rviz:=true \
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv
+```
+
+Real robot + RViz:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   nao_ip:=172.26.112.62
 ```
 
-Real robot camera plus simulator-side tools only:
+Real robot + RViz + ASR:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
-  start_nao_robot:=true \
-  start_rviz:=true \
+ros2 launch nao_chatbot nao_chatbot_robot_asr.launch.py \
+  nao_ip:=172.26.112.62
+```
+
+Real robot + RViz + emorobcare object detection:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv \
+  nao_ip:=172.26.112.62
+```
+
+Real robot + RViz + simulator-side operator tools only:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   start_interaction_sim:=true \
   start_interaction_sim_perception:=false \
   start_interaction_sim_tools:=true \
   nao_ip:=172.26.112.62
 ```
 
-Real robot camera plus object grounding through the colleague detector:
+Current robot-camera and overlay topics in the packaged stack:
 
-```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
-  start_nao_robot:=true \
-  start_rviz:=true \
-  start_object_detection:=true \
-  start_scene_grounding:=true \
-  object_detection_backend:=emorobcare_cv \
-  scene_grounding_detector_topic:=/detected_objects \
-  nao_ip:=172.26.112.62
-```
-
-Fallback object grounding through `yolo_ros`:
-
-```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
-  start_nao_robot:=true \
-  start_rviz:=true \
-  start_object_detection:=true \
-  start_scene_grounding:=true \
-  object_detection_backend:=yolo_ros \
-  scene_grounding_detector_topic:=/yolo/tracking \
-  object_detection_model:=yolov8n.pt \
-  object_detection_device:=cpu \
-  nao_ip:=172.26.112.62
-```
+- raw camera: `/camera/front/image_raw`
+- HRI overlay: `/image/hri_overlay` with `compressed` transport
+- emorobcare debug image: `/debug/object_detection`
 
 Quick reference:
 
@@ -225,6 +227,73 @@ Run the local validation suite:
 ./.venv/bin/pre-commit run --all-files
 ```
 
+## Docker Rebuild And Demo Prep
+
+Preferred image for tomorrow's demo work:
+
+```bash
+docker build -f docker/Dockerfile \
+  --build-arg BASE_IMAGE=iiia:nao \
+  -t nao-ros4hri-bridge:demo .
+```
+
+Why this is the preferred path:
+
+- it overlays the repo on top of the validated `iiia:nao` runtime image
+- it now rebuilds `nao_scene_grounding` and the kept launch surfaces
+- it picks up `src/interaction_skills` directly instead of relying on the old
+  `ref_src/interaction_skills` copy path
+- it will also build `emorobcare_cv_msgs` and
+  `emorobcare_cv_object_detection` when those packages are present under `src/`
+
+Laptop-camera object-detection smoke path:
+
+```bash
+docker run --rm -it \
+  --network host \
+  --ipc host \
+  --device /dev/video0 \
+  -e DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  nao-ros4hri-bridge:demo
+```
+
+Inside the container:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv
+```
+
+Real-robot object-detection follow-up:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
+  nao_ip:=172.26.112.62 \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv
+```
+
+Notes for the robot phase:
+
+- `start_nao_look_at` is already `true` by default in the robot wrappers
+- `nao_look_at` is the NAO implementation of the upstream
+  `interaction_skills/look_at` contract, not a separate local API
+- the preferred next integration step is to validate detector-grounded object
+  awareness first, then tighten the live target-frame wiring into `nao_look_at`
+
+Important detector caveat:
+
+- the emorobcare path still needs both `emorobcare_cv_object_detection` and
+  `emorobcare_cv_msgs` available in the workspace
+- the current detector package also imports detector-side extras such as
+  `ultralytics` and `my_game_interface` at runtime, so the overlay image based
+  on `iiia:nao` is the safest path for tomorrow; `docker/Dockerfile.full`
+  should be treated as a fuller rebuild path, not the first demo choice
+
 ## KnowledgeCore References
 
 Bootstrap the upstream reference clones if you need to inspect the official
@@ -249,9 +318,12 @@ feed, not ad hoc local overlays under `src/`.
 - `naoqi_driver` already exposes camera topics and joint interfaces, so future
   vision work should build on those ROS interfaces instead of adding a parallel
   capture stack.
-- the colleague detector package is intentionally not hard-vendored into this
+- the emorobcare object detection package is intentionally not hard-vendored into this
   repo; place it in the Linux workspace `src/` tree and keep its own
   `config/config.yaml` aligned with the launch path you want to demo.
+- the upstream `interaction_skills` package is also intentionally kept outside
+  the monorepo history even when it is present under `src/`; local packages
+  should implement its contracts rather than redefining them.
 - `emorobcare_cv_object_detection` and `emorobcare_cv_msgs` are intentionally
   ignored by the monorepo so they can stay in their own histories while still
   being discovered by `colcon` from the shared workspace.

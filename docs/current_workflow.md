@@ -1,6 +1,6 @@
 # Current Workflow
 
-Last updated: 2026-03-13
+Last updated: 2026-03-24
 
 This document describes the active migrated runtime. The old
 `mission_controller`, `ollama_chatbot`, and `nao_skill_servers` flow has been
@@ -26,16 +26,19 @@ simple_audio_capture -> asr_vosk -> /humans/voices/anonymous_speaker/speech
 ```
 
 That ASR path can be launched independently through
-`nao_chatbot_asr_only.launch.py` or together with the migrated stack through
-`nao_chatbot_ros4hri_with_asr.launch.py` while the upstream ASR contract is
+`nao_chatbot_asr_only.launch.py`, together with the simulator stack through
+`nao_chatbot_sim_asr.launch.py`, or on the robot stack through
+`nao_chatbot_robot_asr.launch.py` while the upstream ASR contract is
 being restored.
 
 ## Primary Launch Files
 
 | Launch file | Purpose |
 | --- | --- |
-| `nao_chatbot_ros4hri_migration.launch.py` | Main migrated runtime |
-| `nao_chatbot_ros4hri_with_asr.launch.py` | Main migrated runtime plus `simple_audio_capture` and `asr_vosk` |
+| `nao_chatbot_sim.launch.py` | Main simulator-facing runtime |
+| `nao_chatbot_sim_asr.launch.py` | Main simulator-facing runtime plus `simple_audio_capture` and `asr_vosk` |
+| `nao_chatbot_robot.launch.py` | Real robot camera + RViz stack |
+| `nao_chatbot_robot_asr.launch.py` | Real robot camera + RViz + ASR stack |
 | `nao_chatbot_asr_only.launch.py` | Isolated ASR testing |
 
 ## Responsibility Split
@@ -47,7 +50,7 @@ being restored.
 | `nao_orchestrator` | `/intents` consumption and robot-side dispatch |
 | `nao_say_skill` | `/nao/say` |
 | `nao_replay_motion` | `/skill/replay_motion`, temporary `/skill/do_posture`, retained `/skill/do_head_motion` |
-| `nao_look_at` | `/skill/look_at` scaffold |
+| `nao_look_at` | NAO implementation of the upstream `/skill/look_at` contract |
 
 ## Transitional Interfaces Still Present
 
@@ -60,9 +63,13 @@ These exist only to keep motion execution stable while the migration finishes.
 ## Verification Commands
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py
-ros2 launch nao_chatbot nao_chatbot_ros4hri_with_asr.launch.py \
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py
+ros2 launch nao_chatbot nao_chatbot_sim_asr.launch.py \
   asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
+  nao_ip:=172.26.112.62
+ros2 launch nao_chatbot nao_chatbot_robot_asr.launch.py \
+  nao_ip:=172.26.112.62
 ros2 action list -t
 ros2 service list -t
 ros2 lifecycle get /dialogue_manager

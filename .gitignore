@@ -46,3 +46,4 @@ src/chatbot_llm/
 src/dialogue_manager/
 src/emorobcare_cv_object_detection/
 src/emorobcare_cv_msgs/
+/src/interaction_skills

@@ -1,3 +1,5 @@
+"""Operator utility for toggling the local ASR push-to-talk gate."""
+
 from __future__ import annotations
 
 import argparse
@@ -23,6 +25,11 @@ class KeyAction(NamedTuple):
     state: bool
     should_exit: bool
     should_print_help: bool
+
+
+# -----------------------------------------------------------------------------
+# CLI and key-interpretation helpers
+# -----------------------------------------------------------------------------
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -74,6 +81,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def interpret_key(current_state: bool, key: str) -> KeyAction:
+    """Map one keypress into the next ASR gate state."""
     if key in (" ", "t", "T"):
         return KeyAction(not current_state, False, False)
     if key in ("o", "O", "+"):
@@ -85,6 +93,11 @@ def interpret_key(current_state: bool, key: str) -> KeyAction:
     if key in ("q", "Q", "\x03"):
         return KeyAction(current_state, True, False)
     return KeyAction(current_state, False, False)
+
+
+# -----------------------------------------------------------------------------
+# ROS publish helpers
+# -----------------------------------------------------------------------------
 
 
 def _require_ros() -> None:
@@ -107,7 +120,13 @@ def _print_state(enabled: bool) -> None:
     sys.stdout.flush()
 
 
+# -----------------------------------------------------------------------------
+# Interactive runtime
+# -----------------------------------------------------------------------------
+
+
 def _run_interactive(node, publisher, close_on_exit: bool) -> int:
+    """Run the terminal UI that toggles `/asr_vosk/push_to_talk`."""
     import termios
     import tty
 
@@ -155,6 +174,7 @@ def _run_interactive(node, publisher, close_on_exit: bool) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run one-shot or interactive push-to-talk publishing."""
     parser = build_parser()
     args = parser.parse_args(argv)
 

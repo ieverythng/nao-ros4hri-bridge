@@ -29,10 +29,16 @@ Standalone:
 ros2 launch nao_replay_motion nao_replay_motion.launch.py
 ```
 
-As part of the migrated stack:
+As part of the simulator stack:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py
+```
+
+Or on the real robot:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py nao_ip:=...
 ```
 
 ## Runtime Notes

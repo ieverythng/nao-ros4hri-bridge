@@ -45,6 +45,11 @@ DEFAULT_LABEL_CLASS_MAP = {
 }
 
 
+# -----------------------------------------------------------------------------
+# Shared normalized detector representation
+# -----------------------------------------------------------------------------
+
+
 @dataclass(frozen=True)
 class ObjectObservation:
     """Normalized detector observation used by the grounding node."""
@@ -64,6 +69,11 @@ class ObjectObservation:
         payload['center_x'] = round(float(self.center_x), 1)
         payload['center_y'] = round(float(self.center_y), 1)
         return payload
+
+
+# -----------------------------------------------------------------------------
+# Shared parsing and naming helpers
+# -----------------------------------------------------------------------------
 
 
 def coerce_str_list(value, fallback=None) -> list[str]:
@@ -124,6 +134,11 @@ def build_entity_id(
         tracker_slug = re.sub(r'[^A-Za-z0-9]+', '_', tracker_id).strip('_') or 'track'
         return f'{entity_prefix}_{label_slug}_{tracker_slug}'
     return f'{entity_prefix}_{label_slug}_{int(center_x)}_{int(center_y)}'
+
+
+# -----------------------------------------------------------------------------
+# Backend-specific adapters
+# -----------------------------------------------------------------------------
 
 
 class YoloRosDetectionAdapter:
@@ -201,6 +216,7 @@ class EmorobcareDetectionAdapter:
         self._source = str(source or 'emorobcare_cv').strip() or 'emorobcare_cv'
 
     def parse_detections(self, msg, min_score: float = 0.0) -> list[ObjectObservation]:
+        """Convert the emorobcare detector output into normalized observations."""
         observations: list[ObjectObservation] = []
         for detection in getattr(msg, 'detections', []):
             label = normalize_label(getattr(detection, 'label', ''))

@@ -330,27 +330,18 @@ Per Severin's note, the intended official robot-side path is to use the
 That path should become the reference for the real-robot demo because it gives
 us a cleaner RViz / TF / robot-camera bring-up.
 
-For the next pass, the launch surface should support both modes explicitly:
+The launch surface now supports both modes explicitly through the demo wrappers:
 
-- simulator webcam mode
-- real robot camera / TF / RViz mode
+- `nao_chatbot_sim.launch.py`
+- `nao_chatbot_sim_asr.launch.py`
+- `nao_chatbot_robot.launch.py`
+- `nao_chatbot_robot_asr.launch.py`
 
-Recommended launch-level additions for that phase:
+The current robot-facing image and overlay topics in the packaged stack are:
 
-- a parameter or launch arg for image topic
-- a parameter or launch arg for camera info topic
-- a parameter or launch arg for camera frame
-- a `start_rviz` flag
-- an RViz config preloaded for robot camera + TF + HRI overlays
-
-The expected robot-facing topics will likely be namespaced under `nao_robot`,
-for example:
-
-- `/nao_robot/camera/front/image_raw`
-- `/nao_robot/camera/front/camera_info`
-
-Those exact topics should be confirmed against the actual `nao_robot` runtime
-when we switch the launch.
+- `/camera/front/image_raw`
+- `/camera/front/camera_info`
+- `/image/hri_overlay/compressed`
 
 ## Interaction Sim Vs Real Robot
 

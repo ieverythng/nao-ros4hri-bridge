@@ -6,3 +6,11 @@
     reset_yaw: 0.0
     reset_pitch: 0.0
     default_speed: 0.2
+    look_from_frame: "CameraTop_frame"
+    fallback_look_from_frame: "base_link"
+    tf_lookup_timeout_sec: 0.2
+    glance_hold_sec: 0.7
+    minimum_target_distance_m: 0.05
+    max_yaw_abs: 1.5
+    min_pitch: -0.67
+    max_pitch: 0.51

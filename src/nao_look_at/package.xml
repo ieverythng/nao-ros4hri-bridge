@@ -2,7 +2,7 @@
 <package format="3">
   <name>nao_look_at</name>
   <version>0.1.0</version>
-  <description>NAO-specific scaffold for the ROS4HRI look_at skill.</description>
+  <description>NAO-side implementation of the upstream interaction_skills look_at contract.</description>
 
   <maintainer email="juanbeck@icloud.com">juanbeck</maintainer>
   <license>Apache-2.0</license>
@@ -16,6 +16,7 @@
   <depend>interaction_skills</depend>
   <depend>std_skills</depend>
   <depend>naoqi_bridge_msgs</depend>
+  <depend>tf2_ros</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

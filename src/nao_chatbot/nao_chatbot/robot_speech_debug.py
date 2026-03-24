@@ -1,3 +1,5 @@
+"""Small operator node that mirrors speech events into readable ROS logs."""
+
 from __future__ import annotations
 
 import time
@@ -51,6 +53,10 @@ class RobotSpeechDebugNode(Node):
             % (debug_speech_topic, closed_captions_topic)
         )
 
+    # -------------------------------------------------------------------------
+    # Topic callbacks
+    # -------------------------------------------------------------------------
+
     def _on_debug_speech(self, msg: String) -> None:
         self._log_robot_text(msg.data, source="debug_speech")
 
@@ -65,6 +71,7 @@ class RobotSpeechDebugNode(Node):
         self._log_text(text, label="ROBOT OUTPUT", source=source)
 
     def _log_text(self, text: str, label: str, source: str) -> None:
+        """Dedupe repeated captions before printing them into operator logs."""
         clean_text = str(text).strip()
         if not clean_text:
             return
@@ -85,6 +92,7 @@ class RobotSpeechDebugNode(Node):
 
 
 def main(args: list[str] | None = None) -> None:
+    """Run the debug node until ROS shutdown or keyboard interrupt."""
     rclpy.init(args=args)
     node = RobotSpeechDebugNode()
     try:

@@ -13,14 +13,16 @@ WORKDIR /home/ubuntu/ws
 # Remove base-image source tree first so deleted files are not kept as stale leftovers.
 RUN rm -rf /home/ubuntu/ws/src && mkdir -p /home/ubuntu/ws/src
 
-# Overlay repository sources into the runtime workspace.
+# Overlay repository sources into the runtime workspace. External packages kept
+# out of the monorepo history, such as interaction_skills and the emorobcare
+# detector stack, are copied too when they are present under src/.
 COPY src/ /home/ubuntu/ws/src/
-COPY ref_src/interaction_skills/ /home/ubuntu/ws/src/interaction_skills/
 
 # Most overlay rebuilds reuse a prepared base image, so only install runtime
 # dependencies when they are genuinely missing.
 RUN bash -lc 'set -euo pipefail; \
     packages=( \
+      ros-jazzy-cv-bridge \
       ros-jazzy-gscam \
       ros-jazzy-image-transport-plugins \
       ros-jazzy-rosbridge-server \
@@ -29,7 +31,9 @@ RUN bash -lc 'set -euo pipefail; \
       gstreamer1.0-plugins-good \
       gstreamer1.0-pulseaudio \
       gstreamer1.0-tools \
+      python3-colcon-common-extensions \
       python3-gi \
+      python3-opencv \
       python3-pip \
       python3-yaml \
       ros-jazzy-rqt-console \
@@ -72,8 +76,8 @@ RUN bash -lc 'set -euo pipefail; \
       apt-get install -y --no-install-recommends "${missing[@]}" && \
       rm -rf /var/lib/apt/lists/*; \
     fi; \
-    python3 -c "import importlib.util, sys; missing=[name for name in (\"vosk\", \"asyncore\", \"asynchat\") if importlib.util.find_spec(name) is None]; sys.exit(0 if not missing else 1)" \
-      || python3 -m pip install --no-cache-dir --break-system-packages vosk pyasyncore pyasynchat'
+    python3 -c "import importlib.util, sys; missing=[name for name in (\"vosk\", \"asyncore\", \"asynchat\", \"ultralytics\") if importlib.util.find_spec(name) is None]; sys.exit(0 if not missing else 1)" \
+      || python3 -m pip install --no-cache-dir --break-system-packages vosk pyasyncore pyasynchat ultralytics'
 
 # Rebuild the migrated local workspace packages on top of the validated base.
 RUN bash -c "source /opt/ros/jazzy/setup.bash && \
@@ -86,13 +90,17 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       /home/ubuntu/ws/build/chatbot_llm \
       /home/ubuntu/ws/build/interaction_skills \
       /home/ubuntu/ws/build/kb_skills \
+      /home/ubuntu/ws/build/motions_skills \
       /home/ubuntu/ws/build/nao_skills \
       /home/ubuntu/ws/build/nao_chatbot \
       /home/ubuntu/ws/build/nao_look_at \
       /home/ubuntu/ws/build/nao_orchestrator \
       /home/ubuntu/ws/build/nao_replay_motion \
       /home/ubuntu/ws/build/nao_say_skill \
+      /home/ubuntu/ws/build/nao_scene_grounding \
       /home/ubuntu/ws/build/simple_audio_capture \
+      /home/ubuntu/ws/build/emorobcare_cv_msgs \
+      /home/ubuntu/ws/build/emorobcare_cv_object_detection \
       /home/ubuntu/ws/install/std_skills \
       /home/ubuntu/ws/install/communication_skills \
       /home/ubuntu/ws/install/dialogue_manager \
@@ -100,18 +108,23 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       /home/ubuntu/ws/install/chatbot_llm \
       /home/ubuntu/ws/install/interaction_skills \
       /home/ubuntu/ws/install/kb_skills \
+      /home/ubuntu/ws/install/motions_skills \
       /home/ubuntu/ws/install/nao_skills \
       /home/ubuntu/ws/install/nao_chatbot \
       /home/ubuntu/ws/install/nao_look_at \
       /home/ubuntu/ws/install/nao_orchestrator \
       /home/ubuntu/ws/install/nao_replay_motion \
       /home/ubuntu/ws/install/nao_say_skill \
-      /home/ubuntu/ws/install/simple_audio_capture && \
-    colcon build --symlink-install --packages-select \
+      /home/ubuntu/ws/install/nao_scene_grounding \
+      /home/ubuntu/ws/install/simple_audio_capture \
+      /home/ubuntu/ws/install/emorobcare_cv_msgs \
+      /home/ubuntu/ws/install/emorobcare_cv_object_detection && \
+    build_packages=( \
       std_skills \
       communication_skills \
       interaction_skills \
       kb_skills \
+      motions_skills \
       nao_skills \
       dialogue_manager \
       asr_vosk \
@@ -120,8 +133,16 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
       nao_replay_motion \
       nao_look_at \
       nao_orchestrator \
+      nao_scene_grounding \
       nao_chatbot \
-      simple_audio_capture"
+      simple_audio_capture \
+    ); \
+    for optional_pkg in emorobcare_cv_msgs emorobcare_cv_object_detection; do \
+      if [ -d \"/home/ubuntu/ws/src/${optional_pkg}\" ]; then \
+        build_packages+=(\"${optional_pkg}\"); \
+      fi; \
+    done; \
+    colcon build --symlink-install --packages-select \"${build_packages[@]}\""
 
 # Keep entrypoint from this repo for deterministic sourcing behavior.
 COPY docker/ros_entrypoint.sh /

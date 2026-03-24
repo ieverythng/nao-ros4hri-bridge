@@ -15,7 +15,7 @@ fi
 # Print ROS environment
 echo "ROS_DISTRO: $ROS_DISTRO"
 echo "Available packages:"
-ros2 pkg list | grep -E "(asr_vosk|chatbot_llm|dialogue_manager|naoqi|nao_(chatbot|look_at|orchestrator|replay_motion|say_skill|skills)|simple_audio_capture)" || \
+ros2 pkg list | grep -E "(asr_vosk|chatbot_llm|dialogue_manager|interaction_skills|naoqi|nao_(chatbot|look_at|orchestrator|replay_motion|say_skill|scene_grounding|skills)|simple_audio_capture|emorobcare_cv_(msgs|object_detection))" || \
   echo "No expected nao-related packages found"
 
 exec "$@"

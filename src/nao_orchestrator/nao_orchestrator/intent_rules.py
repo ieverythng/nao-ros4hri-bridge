@@ -111,6 +111,11 @@ _POSTURE_TOPIC_FALLBACKS = {
 _PLAN_STEP_TYPES = {'say', 'skill', 'look_at', 'noop'}
 
 
+# -----------------------------------------------------------------------------
+# Input parsing helpers
+# -----------------------------------------------------------------------------
+
+
 def parse_intent_data(raw_data: str) -> dict:
     """Parse JSON payloads carried by `hri_actions_msgs/Intent.data`."""
     if not raw_data:
@@ -120,6 +125,11 @@ def parse_intent_data(raw_data: str) -> dict:
     except json.JSONDecodeError:
         return {'raw': raw_data}
     return parsed if isinstance(parsed, dict) else {'raw': raw_data}
+
+
+# -----------------------------------------------------------------------------
+# Intent normalization
+# -----------------------------------------------------------------------------
 
 
 def normalize_legacy_intent(
@@ -190,6 +200,11 @@ def normalize_incoming_intent(
     return clean_name, payload
 
 
+# -----------------------------------------------------------------------------
+# Downstream routing helpers
+# -----------------------------------------------------------------------------
+
+
 def resolve_say_text(
     intent_name: str,
     data: dict,
@@ -229,6 +244,11 @@ def resolve_ack_text(
     if explicit_ack:
         return explicit_ack
     return resolve_say_text(intent_name, payload, default_greeting)
+
+
+# -----------------------------------------------------------------------------
+# Structured execution-plan helpers
+# -----------------------------------------------------------------------------
 
 
 def parse_execution_plan(data: dict) -> list[dict]:

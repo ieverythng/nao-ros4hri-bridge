@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Lifecycle orchestrator for ROS4HRI intents."""
+"""Lifecycle orchestrator for ROS4HRI intents.
+
+This node is intentionally downstream-only: it receives normalized intents from
+the dialogue stack, deduplicates them, and dispatches the corresponding NAO
+skill endpoints without taking over prompt or dialogue ownership.
+"""
 
 from __future__ import annotations
 
@@ -8,6 +13,7 @@ import time
 
 from communication_skills.action import Say
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
+from geometry_msgs.msg import PointStamped
 from hri_actions_msgs.msg import Intent
 from interaction_skills.action import LookAt
 from kb_skills.intent_labels import KB_QUERY_INTENTS
@@ -143,7 +149,12 @@ class NaoOrchestrator(Node):
         self._head_motion_client = None
         self._look_at_client = None
 
+    # -------------------------------------------------------------------------
+    # Lifecycle configuration
+    # -------------------------------------------------------------------------
+
     def on_configure(self, _state: State) -> TransitionCallbackReturn:
+        """Create action clients, diagnostics, and topic fallbacks."""
         self._destroy_runtime_interfaces()
         self._say_client = ActionClient(self, Say, self.nao_say_action)
         self._replay_motion_client = ActionClient(
@@ -188,6 +199,7 @@ class NaoOrchestrator(Node):
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
+        """Start intent subscriptions once the lifecycle node becomes active."""
         self._is_active = True
         self._intent_sub = self.create_subscription(
             Intent,
@@ -206,6 +218,7 @@ class NaoOrchestrator(Node):
         return super().on_activate(state)
 
     def on_deactivate(self, state: State) -> TransitionCallbackReturn:
+        """Stop subscriptions while keeping the configured action clients alive."""
         self._is_active = False
         if self._intent_sub is not None:
             self.destroy_subscription(self._intent_sub)
@@ -229,6 +242,7 @@ class NaoOrchestrator(Node):
         return TransitionCallbackReturn.SUCCESS
 
     def _destroy_runtime_interfaces(self) -> None:
+        """Tear down publishers, subscriptions, timers, and action clients."""
         if self._intent_sub is not None:
             self.destroy_subscription(self._intent_sub)
             self._intent_sub = None
@@ -260,7 +274,12 @@ class NaoOrchestrator(Node):
         self._head_motion_client = None
         self._look_at_client = None
 
+    # -------------------------------------------------------------------------
+    # Intent ingestion
+    # -------------------------------------------------------------------------
+
     def _on_legacy_intent(self, msg: String) -> None:
+        """Normalize the old `/chatbot/intent` bridge onto the new routing path."""
         intent_name, data = normalize_legacy_intent(
             msg.data,
             default_greeting=self.default_greeting,
@@ -272,6 +291,7 @@ class NaoOrchestrator(Node):
         )
 
     def _on_intent(self, msg: Intent) -> None:
+        """Normalize canonical `hri_actions_msgs/Intent` messages for dispatch."""
         data = parse_intent_data(msg.data)
         intent_name, normalized_data = normalize_incoming_intent(
             intent_name=msg.intent,
@@ -285,6 +305,7 @@ class NaoOrchestrator(Node):
         )
 
     def _handle_intent(self, intent_name: str, data: dict, source: str) -> None:
+        """Route one normalized intent through planned or legacy dispatch paths."""
         if not self._is_active:
             return
 
@@ -368,6 +389,10 @@ class NaoOrchestrator(Node):
             % (intent_name, source, data)
         )
 
+    # -------------------------------------------------------------------------
+    # Structured plan execution
+    # -------------------------------------------------------------------------
+
     def _handle_planned_intent(
         self,
         *,
@@ -426,6 +451,7 @@ class NaoOrchestrator(Node):
             self._stats.dispatched_say += 1
 
     def _dispatch_plan_step(self, step: dict, fallback_data: dict) -> bool:
+        """Execute one step from the optional structured `Intent.data.plan`."""
         step_type = str(step.get('type', '')).strip().lower()
         step_name = str(step.get('name', '')).strip().lower()
         step_args = dict(step.get('args', {}))
@@ -479,6 +505,7 @@ class NaoOrchestrator(Node):
         return False
 
     def _dispatch_planned_look_at(self, step_name: str, step_args: dict) -> bool:
+        """Map a planned look-at step onto reset or target-frame dispatch."""
         policy = str(
             step_args.get('policy', step_args.get('object', step_name))
         ).strip().lower()
@@ -487,9 +514,26 @@ class NaoOrchestrator(Node):
                 self._stats.dispatched_look_at += 1
                 return True
             return False
+        target_frame = str(
+            step_args.get('target_frame', step_args.get('frame_id', ''))
+        ).strip()
+        if target_frame and self._dispatch_look_at_target(
+            frame_id=target_frame,
+            x_value=step_args.get('x', 0.0),
+            y_value=step_args.get('y', 0.0),
+            z_value=step_args.get('z', 0.0),
+            policy=policy,
+        ):
+            self._stats.dispatched_look_at += 1
+            return True
         return False
 
+    # -------------------------------------------------------------------------
+    # Skill dispatch helpers
+    # -------------------------------------------------------------------------
+
     def _dispatch_say(self, text: str, data: dict) -> bool:
+        """Send one text payload to the canonical `/nao/say` action."""
         clean_text = str(text).strip()
         if not clean_text:
             self._stats.dispatch_failures += 1
@@ -511,6 +555,7 @@ class NaoOrchestrator(Node):
         return True
 
     def _dispatch_replay_motion(self, motion_name: str) -> bool:
+        """Dispatch replay-motion or fall back to the legacy posture topic."""
         clean_motion = str(motion_name).strip()
         if not clean_motion:
             self._stats.dispatch_failures += 1
@@ -552,6 +597,7 @@ class NaoOrchestrator(Node):
         return False
 
     def _dispatch_head_motion(self, payload: dict) -> bool:
+        """Dispatch head motion or fall back to direct joint-angle publishing."""
         yaw = float(payload.get('yaw', 0.0))
         pitch = float(payload.get('pitch', 0.0))
         relative = bool(payload.get('relative', False))
@@ -595,6 +641,7 @@ class NaoOrchestrator(Node):
         return False
 
     def _dispatch_look_at_reset(self) -> bool:
+        """Prefer the upstream look-at action and fall back to a head reset."""
         if (
             self._look_at_client is not None
             and self._look_at_client.wait_for_server(timeout_sec=self.look_at_wait_sec)
@@ -614,7 +661,52 @@ class NaoOrchestrator(Node):
             }
         )
 
+    def _dispatch_look_at_target(
+        self,
+        *,
+        frame_id: str,
+        x_value,
+        y_value,
+        z_value,
+        policy: str = '',
+    ) -> bool:
+        """Dispatch a target-frame gaze request through `/skill/look_at`."""
+        clean_frame = str(frame_id).strip()
+        if not clean_frame:
+            self._stats.dispatch_failures += 1
+            self.get_logger().warn('No target frame resolved for look_at dispatch')
+            return False
+        if (
+            self._look_at_client is None
+            or not self._look_at_client.wait_for_server(timeout_sec=self.look_at_wait_sec)
+        ):
+            self._stats.dispatch_failures += 1
+            self.get_logger().warn('look_at action server unavailable for target dispatch')
+            return False
+
+        goal = LookAt.Goal()
+        goal.policy = str(policy).strip().lower()
+        target = PointStamped()
+        target.header.frame_id = clean_frame
+        target.point.x = float(x_value)
+        target.point.y = float(y_value)
+        target.point.z = float(z_value)
+        goal.target = target
+        self._look_at_client.send_goal_async(goal)
+        self.get_logger().info(
+            'ORCH LOOK_AT_DISPATCH | policy=%s frame=%s x=%.3f y=%.3f z=%.3f'
+            % (
+                goal.policy or 'track',
+                clean_frame,
+                float(target.point.x),
+                float(target.point.y),
+                float(target.point.z),
+            )
+        )
+        return True
+
     def _is_duplicate(self, signature: str) -> bool:
+        """Drop repeated intents that arrive inside the configured dedupe window."""
         now = time.monotonic()
         if (
             signature
@@ -626,6 +718,10 @@ class NaoOrchestrator(Node):
         self._last_intent_signature = signature
         self._last_intent_ts = now
         return False
+
+    # -------------------------------------------------------------------------
+    # Diagnostics
+    # -------------------------------------------------------------------------
 
     def _publish_diagnostics(self) -> None:
         if self._diag_pub is None:

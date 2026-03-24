@@ -41,7 +41,7 @@ Current local delta in `src/dialogue_manager`:
 
 - active runtime has been reset to the upstream baseline and now passes the
   upstream-focused local test suite
-- migration launch overrides the upstream `chatbot` parameter to
+- the shared NAO launch profiles override the upstream `chatbot` parameter to
   `chatbot_llm`
 
 Migration rule:

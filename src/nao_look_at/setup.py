@@ -12,7 +12,7 @@ setup(
     name=NAME,
     version="0.1.0",
     license="Apache-2.0",
-    description="NAO-specific scaffold for the ROS4HRI look_at skill",
+    description="NAO-side implementation of the upstream interaction_skills look_at contract",
     author="juanbeck",
     author_email="juanbeck@icloud.com",
     packages=find_packages(exclude=["test"]),

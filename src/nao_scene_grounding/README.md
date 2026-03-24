@@ -104,36 +104,80 @@ Most useful knobs:
 
 ## Launch From The Main Stack
 
-Colleague detector path:
+Simulator + emorobcare object detection:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv
+```
+
+Real robot + RViz + emorobcare object detection:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=emorobcare_cv \
-  scene_grounding_detector_topic:=/detected_objects
+  nao_ip:=172.26.112.62
 ```
 
-Fallback `yolo_ros` path:
+## Docker Demo Path
+
+Preferred rebuild for the detector demo:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_ros4hri_migration.launch.py \
+docker build -f docker/Dockerfile \
+  --build-arg BASE_IMAGE=iiia:nao \
+  -t nao-ros4hri-bridge:demo .
+```
+
+Primary laptop-camera validation:
+
+```bash
+docker run --rm -it \
+  --network host \
+  --ipc host \
+  --device /dev/video0 \
+  -e DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  nao-ros4hri-bridge:demo
+```
+
+Then launch:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   start_object_detection:=true \
   start_scene_grounding:=true \
-  object_detection_backend:=yolo_ros \
-  scene_grounding_detector_topic:=/yolo/tracking
+  object_detection_backend:=emorobcare_cv
+```
+
+For the follow-up robot phase:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
+  nao_ip:=172.26.112.62 \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv
 ```
 
 ## Demo Notes
 
-- Keep `use_knowledge_base: false` in the colleague detector package if you
+- Keep `use_knowledge_base: false` in the emorobcare object detection package if you
   want this node to remain the single writer of detector-derived KB facts.
-- Turn `draw_image: true` on in the colleague detector package when you want
+- Turn `draw_image: true` on in the emorobcare object detection package when you want
   the `/debug/object_detection` image in RViz or `rqt_image_view`.
-- Keep `use_human_radar: false` in the colleague detector unless you
+- Keep `use_human_radar: false` in the emorobcare object detection package unless you
   intentionally want its older radar integration active.
 - On the laptop, `cpu` is the safest default. GPU acceleration can be explored
   later on the Linux machine if available.
 - The current model is still biased toward labels such as blueberry, corn,
   pear, tomato, and zucchini, so unusual demo props may require model or label
   configuration updates before the run.
+- The current detector package still expects `emorobcare_cv_msgs` plus some
+  detector-side runtime imports to be available. For tomorrow's demo, the
+  overlay image on top of `iiia:nao` is the safer path than a from-scratch
+  container rebuild.

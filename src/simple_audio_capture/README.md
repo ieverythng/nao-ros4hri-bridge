@@ -49,7 +49,8 @@ ros2 launch simple_audio_capture audio_capture.launch.py \
 
 ## Notes
 
-- `nao_chatbot_asr_only.launch.py` and `nao_chatbot_ros4hri_with_asr.launch.py`
-  use this package as the microphone source for `asr_vosk`
+- `nao_chatbot_asr_only.launch.py`, `nao_chatbot_sim_asr.launch.py`, and
+  `nao_chatbot_robot_asr.launch.py` use this package as the microphone source
+  for `asr_vosk`
 - this is still a local utility package, not the final upstream ROS4HRI ASR
   ingestion path
