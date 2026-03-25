@@ -137,11 +137,57 @@ def build_entity_id(
 
 
 # -----------------------------------------------------------------------------
-# Backend-specific adapters
+# Shared adapter base
 # -----------------------------------------------------------------------------
 
 
-class YoloRosDetectionAdapter:
+class _BaseDetectionAdapter:
+    """Common label filtering and observation-building helpers."""
+
+    def __init__(
+        self,
+        *,
+        allowed_labels,
+        label_class_map: dict[str, str],
+        entity_prefix: str,
+        source: str,
+    ) -> None:
+        self._allowed_labels = {normalize_label(item) for item in allowed_labels if item}
+        self._label_class_map = dict(label_class_map)
+        self._entity_prefix = str(entity_prefix or 'detected').strip() or 'detected'
+        self._source = str(source or 'detector').strip() or 'detector'
+
+    def _allows_label(self, label: str) -> bool:
+        return not self._allowed_labels or label in self._allowed_labels
+
+    def _build_observation(
+        self,
+        *,
+        label: str,
+        score: float,
+        tracker_id: str,
+        center_x: float,
+        center_y: float,
+    ) -> ObjectObservation:
+        return ObjectObservation(
+            entity_id=build_entity_id(
+                entity_prefix=self._entity_prefix,
+                label=label,
+                tracker_id=tracker_id,
+                center_x=center_x,
+                center_y=center_y,
+            ),
+            label=label,
+            kb_class=self._label_class_map.get(label, sanitize_kb_class(label)),
+            score=score,
+            tracker_id=tracker_id,
+            source=self._source,
+            center_x=center_x,
+            center_y=center_y,
+        )
+
+
+class YoloRosDetectionAdapter(_BaseDetectionAdapter):
     """Translate `yolo_ros` detection messages into normalized observations."""
 
     def __init__(
@@ -152,10 +198,12 @@ class YoloRosDetectionAdapter:
         entity_prefix: str = 'detected',
         source: str = 'yolo_ros',
     ) -> None:
-        self._allowed_labels = {normalize_label(item) for item in allowed_labels if item}
-        self._label_class_map = dict(label_class_map)
-        self._entity_prefix = str(entity_prefix or 'detected').strip() or 'detected'
-        self._source = str(source or 'yolo_ros').strip() or 'yolo_ros'
+        super().__init__(
+            allowed_labels=allowed_labels,
+            label_class_map=label_class_map,
+            entity_prefix=entity_prefix,
+            source=source,
+        )
 
     def parse_detections(self, msg, min_score: float = 0.0) -> list[ObjectObservation]:
         """Convert a `yolo_msgs/DetectionArray` message to normalized observations."""
@@ -165,7 +213,7 @@ class YoloRosDetectionAdapter:
             label = normalize_label(getattr(detection, 'class_name', ''))
             if not label:
                 continue
-            if self._allowed_labels and label not in self._allowed_labels:
+            if not self._allows_label(label):
                 continue
 
             score = float(getattr(detection, 'score', 0.0))
@@ -177,21 +225,11 @@ class YoloRosDetectionAdapter:
             center_x = float(getattr(center, 'x', 0.0))
             center_y = float(getattr(center, 'y', 0.0))
             tracker_id = str(getattr(detection, 'id', '')).strip()
-            kb_class = self._label_class_map.get(label, sanitize_kb_class(label))
             observations.append(
-                ObjectObservation(
-                    entity_id=build_entity_id(
-                        entity_prefix=self._entity_prefix,
-                        label=label,
-                        tracker_id=tracker_id,
-                        center_x=center_x,
-                        center_y=center_y,
-                    ),
+                self._build_observation(
                     label=label,
-                    kb_class=kb_class,
                     score=score,
                     tracker_id=tracker_id,
-                    source=self._source,
                     center_x=center_x,
                     center_y=center_y,
                 )
@@ -199,7 +237,7 @@ class YoloRosDetectionAdapter:
         return observations
 
 
-class EmorobcareDetectionAdapter:
+class EmorobcareDetectionAdapter(_BaseDetectionAdapter):
     """Translate `emorobcare_cv_msgs/ObjectDetections` messages into observations."""
 
     def __init__(
@@ -210,10 +248,12 @@ class EmorobcareDetectionAdapter:
         entity_prefix: str = 'detected',
         source: str = 'emorobcare_cv',
     ) -> None:
-        self._allowed_labels = {normalize_label(item) for item in allowed_labels if item}
-        self._label_class_map = dict(label_class_map)
-        self._entity_prefix = str(entity_prefix or 'detected').strip() or 'detected'
-        self._source = str(source or 'emorobcare_cv').strip() or 'emorobcare_cv'
+        super().__init__(
+            allowed_labels=allowed_labels,
+            label_class_map=label_class_map,
+            entity_prefix=entity_prefix,
+            source=source,
+        )
 
     def parse_detections(self, msg, min_score: float = 0.0) -> list[ObjectObservation]:
         """Convert the emorobcare detector output into normalized observations."""
@@ -222,7 +262,7 @@ class EmorobcareDetectionAdapter:
             label = normalize_label(getattr(detection, 'label', ''))
             if not label:
                 continue
-            if self._allowed_labels and label not in self._allowed_labels:
+            if not self._allows_label(label):
                 continue
 
             score = float(getattr(detection, 'confidence', 0.0))
@@ -235,21 +275,11 @@ class EmorobcareDetectionAdapter:
             y2 = float(getattr(detection, 'y2', 0.0))
             center_x = (x1 + x2) / 2.0
             center_y = (y1 + y2) / 2.0
-            kb_class = self._label_class_map.get(label, sanitize_kb_class(label))
             observations.append(
-                ObjectObservation(
-                    entity_id=build_entity_id(
-                        entity_prefix=self._entity_prefix,
-                        label=label,
-                        tracker_id='',
-                        center_x=center_x,
-                        center_y=center_y,
-                    ),
+                self._build_observation(
                     label=label,
-                    kb_class=kb_class,
                     score=score,
                     tracker_id='',
-                    source=self._source,
                     center_x=center_x,
                     center_y=center_y,
                 )

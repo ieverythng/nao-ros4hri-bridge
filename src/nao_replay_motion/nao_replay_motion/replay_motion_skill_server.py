@@ -155,30 +155,40 @@ class ReplayMotionSkillServer(Node):
         return self._connect_naoqi()
 
     def replay_goal_callback(self, goal_request: ReplayMotion.Goal) -> GoalResponse:
-        if self._execution_lock.locked():
-            return GoalResponse.REJECT
-        resolved_motion = self._resolve_motion(goal_request.motion_name)
-        speed = self._resolve_speed(goal_request.speed)
-        if resolved_motion is None or speed is None:
-            return GoalResponse.REJECT
-        if not self._ensure_connection() and not self.fallback_to_posture_topic:
+        if not self._can_accept_motion_goal(
+            requested_name=goal_request.motion_name,
+            requested_speed=goal_request.speed,
+        ):
             return GoalResponse.REJECT
         return GoalResponse.ACCEPT
 
     def posture_goal_callback(self, goal_request: DoPosture.Goal) -> GoalResponse:
-        if self._execution_lock.locked():
-            return GoalResponse.REJECT
-        resolved_motion = self._resolve_motion(goal_request.posture_name)
-        speed = self._resolve_speed(goal_request.speed)
-        if resolved_motion is None or speed is None:
-            return GoalResponse.REJECT
-        if not self._ensure_connection() and not self.fallback_to_posture_topic:
+        if not self._can_accept_motion_goal(
+            requested_name=goal_request.posture_name,
+            requested_speed=goal_request.speed,
+        ):
             return GoalResponse.REJECT
         return GoalResponse.ACCEPT
 
     def cancel_callback(self, _goal_handle) -> CancelResponse:
         self.get_logger().info("Received cancel request for replay motion goal")
         return CancelResponse.ACCEPT
+
+    def _can_accept_motion_goal(
+        self,
+        *,
+        requested_name: str,
+        requested_speed: float,
+    ) -> bool:
+        if self._execution_lock.locked():
+            return False
+        if self._resolve_motion(requested_name) is None:
+            return False
+        if self._resolve_speed(requested_speed) is None:
+            return False
+        if not self._ensure_connection() and not self.fallback_to_posture_topic:
+            return False
+        return True
 
     async def execute_replay_callback(self, goal_handle):
         if not self._execution_lock.acquire(blocking=False):

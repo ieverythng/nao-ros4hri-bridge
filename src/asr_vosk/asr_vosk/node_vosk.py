@@ -67,21 +67,21 @@ class NodeVosk(Node):
 
     def on_parameter_change(self, params):
         for param in params:
-            if param.name == "microphone_topic" and param.type_ == Parameter.Type.STRING:
-                new_topic = param.value
-                if new_topic != self.microphone_topic:
-                    self.get_logger().info(f"Changing microphone topic to: {new_topic}")
-                    # Unsubscribe from old topic
-                    if self.audio_data_sub:
-                        self.destroy_subscription(self.audio_data_sub)
-                    # Subscribe to new topic
-                    self.audio_data_sub = self.create_subscription(
-                        AudioData, new_topic, self.on_audio_data, 10)
-                    self.microphone_topic = new_topic
-                else:
-                    return SetParametersResult(successful=False, reason="Topic is the same as current.")
-            else:
-                return SetParametersResult(successful=False, reason="Invalid parameter change. Types do not match.")
+            if param.name != "microphone_topic" or param.type_ != Parameter.Type.STRING:
+                return SetParametersResult(
+                    successful=False,
+                    reason="Invalid parameter change. Types do not match.",
+                )
+
+            new_topic = str(param.value)
+            if new_topic == self.microphone_topic:
+                return SetParametersResult(
+                    successful=False,
+                    reason="Topic is the same as current.",
+                )
+
+            self.get_logger().info(f"Changing microphone topic to: {new_topic}")
+            self._replace_audio_subscription(new_topic)
         return SetParametersResult(successful=True)
 
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
@@ -90,26 +90,7 @@ class NodeVosk(Node):
         return super().on_cleanup(state)
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.audio_rate = self.get_parameter('audio_rate').value
-        self.model = self.get_parameter('model').value
-        self.microphone_topic = self.get_parameter('microphone_topic').value
-        self.start_listening = self.get_parameter('start_listening').value
-        self.output_speech_topic = self.get_parameter('output_speech_topic').value
-        self.speech_locale = self.get_parameter('speech_locale').value
-        self.publish_partials = self.get_parameter('publish_partials').value
-        self.min_final_chars = self.get_parameter('min_final_chars').value
-        self.min_final_words = self.get_parameter('min_final_words').value
-        self.min_final_confidence = self.get_parameter('min_final_confidence').value
-        self.ignore_single_token_fillers = self.get_parameter(
-            'ignore_single_token_fillers'
-        ).value
-        fillers_csv = self.get_parameter('single_token_fillers_csv').value
-        self.single_token_fillers = {
-            token.strip().lower() for token in str(fillers_csv).split(',') if token.strip()
-        }
-        self.debug_log_results = self.get_parameter('debug_log_results').value
-        self.push_to_talk_enabled = self.get_parameter('push_to_talk_enabled').value
-        self.push_to_talk_topic = self.get_parameter('push_to_talk_topic').value
+        self._load_runtime_parameters()
 
         loaded_model, _ = self.load_model(self.model)
         if not loaded_model:
@@ -164,8 +145,7 @@ class NodeVosk(Node):
             Bool, "/humans/voices/anonymous_speaker/is_speaking", 10)
 
         # Subscribe to microphone topic
-        self.audio_data_sub = self.create_subscription(
-            AudioData, self.microphone_topic, self.on_audio_data, 10)
+        self._replace_audio_subscription(self.microphone_topic)
 
         self.voice_detected_sub = self.create_subscription(
             Bool, "audio/voice_detected", self.on_voice_detected, 1)
@@ -221,16 +201,55 @@ class NodeVosk(Node):
         self.destroy_publisher(self.voice_audio_pub)
         self.destroy_publisher(self.is_speaking_pub)
 
+    def _load_runtime_parameters(self):
+        self.audio_rate = self.get_parameter('audio_rate').value
+        self.model = self.get_parameter('model').value
+        self.microphone_topic = self.get_parameter('microphone_topic').value
+        self.start_listening = self.get_parameter('start_listening').value
+        self.output_speech_topic = self.get_parameter('output_speech_topic').value
+        self.speech_locale = self.get_parameter('speech_locale').value
+        self.publish_partials = self.get_parameter('publish_partials').value
+        self.min_final_chars = self.get_parameter('min_final_chars').value
+        self.min_final_words = self.get_parameter('min_final_words').value
+        self.min_final_confidence = self.get_parameter('min_final_confidence').value
+        self.ignore_single_token_fillers = self.get_parameter(
+            'ignore_single_token_fillers'
+        ).value
+        fillers_csv = self.get_parameter('single_token_fillers_csv').value
+        self.single_token_fillers = self._parse_fillers_csv(fillers_csv)
+        self.debug_log_results = self.get_parameter('debug_log_results').value
+        self.push_to_talk_enabled = self.get_parameter('push_to_talk_enabled').value
+        self.push_to_talk_topic = self.get_parameter('push_to_talk_topic').value
+
+    @staticmethod
+    def _parse_fillers_csv(fillers_csv):
+        return {
+            token.strip().lower()
+            for token in str(fillers_csv).split(',')
+            if token.strip()
+        }
+
+    def _replace_audio_subscription(self, topic):
+        if self.audio_data_sub is not None:
+            self.destroy_subscription(self.audio_data_sub)
+        self.audio_data_sub = self.create_subscription(
+            AudioData,
+            topic,
+            self.on_audio_data,
+            10,
+        )
+        self.microphone_topic = topic
+
     def load_model(self, model):
         try:
-            model = Model(str(model))
+            model_instance = Model(str(model))
             self.get_logger().info(f'Loaded {self.model}')
         except Exception as e:  # vosk Model raises generic exceptions :/
             error_msg = f'Failed to load {self.model}: {str(e)}'
             self.get_logger().error(error_msg)
             return False, error_msg
 
-        self.recognizer = KaldiRecognizer(model, self.audio_rate)
+        self.recognizer = KaldiRecognizer(model_instance, self.audio_rate)
         return True, ""
 
     def on_voice_detected(self, msg):

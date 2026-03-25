@@ -19,6 +19,7 @@ from std_msgs.msg import String
 
 from nao_scene_grounding.detector_adapters import DEFAULT_ALLOWED_LABELS
 from nao_scene_grounding.detector_adapters import EmorobcareDetectionAdapter
+from nao_scene_grounding.detector_adapters import ObjectObservation
 from nao_scene_grounding.detector_adapters import YoloRosDetectionAdapter
 from nao_scene_grounding.detector_adapters import coerce_str_list
 from nao_scene_grounding.detector_adapters import load_label_class_map
@@ -39,6 +40,31 @@ except ImportError:  # pragma: no cover - runtime dependency
     EmorobcareObjectDetections = None
 
 
+@dataclass(frozen=True, slots=True)
+class _BackendSpec:
+    adapter_class: type
+    message_type: object
+    missing_dependency_message: str
+
+
+_BACKEND_SPECS = {
+    'yolo_ros': _BackendSpec(
+        adapter_class=YoloRosDetectionAdapter,
+        message_type=YoloDetectionArray,
+        missing_dependency_message=(
+            'yolo_msgs is unavailable; yolo_ros detections cannot be subscribed yet'
+        ),
+    ),
+    'emorobcare_cv': _BackendSpec(
+        adapter_class=EmorobcareDetectionAdapter,
+        message_type=EmorobcareObjectDetections,
+        missing_dependency_message=(
+            'emorobcare_cv_msgs is unavailable; emorobcare detections cannot be subscribed yet'
+        ),
+    ),
+}
+
+
 @dataclass(slots=True)
 class _TrackedObject:
     entity_id: str
@@ -51,6 +77,38 @@ class _TrackedObject:
     center_y: float
     last_seen_sec: float
     last_revised_sec: float = 0.0
+
+    @classmethod
+    def from_observation(
+        cls,
+        observation: ObjectObservation,
+        now_sec: float,
+    ) -> '_TrackedObject':
+        return cls(
+            entity_id=observation.entity_id,
+            label=observation.label,
+            kb_class=observation.kb_class,
+            score=observation.score,
+            tracker_id=observation.tracker_id,
+            source=observation.source,
+            center_x=observation.center_x,
+            center_y=observation.center_y,
+            last_seen_sec=now_sec,
+        )
+
+    def update_from_observation(
+        self,
+        observation: ObjectObservation,
+        now_sec: float,
+    ) -> None:
+        self.label = observation.label
+        self.kb_class = observation.kb_class
+        self.score = observation.score
+        self.tracker_id = observation.tracker_id
+        self.source = observation.source
+        self.center_x = observation.center_x
+        self.center_y = observation.center_y
+        self.last_seen_sec = now_sec
 
     def summary_dict(self) -> dict:
         return {
@@ -129,6 +187,7 @@ class NaoSceneGrounding(Node):
             self._knowledge_lifespan_sec,
             float(self.get_parameter('local_stale_after_sec').value),
         )
+        self._backend_spec = _BACKEND_SPECS.get(self._detector_backend)
 
         # Create publishers and service clients before subscriptions so early
         # detections can immediately publish summaries and revise KB facts.
@@ -168,37 +227,24 @@ class NaoSceneGrounding(Node):
 
     def _create_detector_subscription(self) -> None:
         """Subscribe to the selected detector backend if its message types exist."""
-        if self._detector_backend == 'yolo_ros':
-            if YoloDetectionArray is None:
-                self._log_missing_dependency_once(
-                    'yolo_msgs is unavailable; yolo_ros detections cannot be subscribed yet'
-                )
-                return
-            self.create_subscription(
-                YoloDetectionArray,
-                self._detector_topic,
-                self._on_detections,
-                10,
+        if self._backend_spec is None:
+            self.get_logger().warn(
+                'Unsupported detector_backend=%s. Supported backends are yolo_ros and emorobcare_cv.'
+                % self._detector_backend
             )
             return
 
-        if self._detector_backend == 'emorobcare_cv':
-            if EmorobcareObjectDetections is None:
-                self._log_missing_dependency_once(
-                    'emorobcare_cv_msgs is unavailable; emorobcare detections cannot be subscribed yet'
-                )
-                return
-            self.create_subscription(
-                EmorobcareObjectDetections,
-                self._detector_topic,
-                self._on_detections,
-                10,
+        if self._backend_spec.message_type is None:
+            self._log_missing_dependency_once(
+                self._backend_spec.missing_dependency_message
             )
             return
 
-        self.get_logger().warn(
-            'Unsupported detector_backend=%s. Supported backends are yolo_ros and emorobcare_cv.'
-            % self._detector_backend
+        self.create_subscription(
+            self._backend_spec.message_type,
+            self._detector_topic,
+            self._on_detections,
+            10,
         )
 
     def _make_adapter(self):
@@ -209,11 +255,9 @@ class NaoSceneGrounding(Node):
             'entity_prefix': self._entity_prefix,
             'source': self._detector_backend,
         }
-        if self._detector_backend == 'yolo_ros':
-            return YoloRosDetectionAdapter(**adapter_kwargs)
-        if self._detector_backend == 'emorobcare_cv':
-            return EmorobcareDetectionAdapter(**adapter_kwargs)
-        return YoloRosDetectionAdapter(**adapter_kwargs)
+        if self._backend_spec is None:
+            return _UnsupportedDetectionAdapter()
+        return self._backend_spec.adapter_class(**adapter_kwargs)
 
     # -------------------------------------------------------------------------
     # Detection ingestion and KB refresh
@@ -228,35 +272,26 @@ class NaoSceneGrounding(Node):
         )
         revised_any = False
         for observation in observations:
-            tracked = self._tracked_objects.get(observation.entity_id)
-            if tracked is None:
-                tracked = _TrackedObject(
-                    entity_id=observation.entity_id,
-                    label=observation.label,
-                    kb_class=observation.kb_class,
-                    score=observation.score,
-                    tracker_id=observation.tracker_id,
-                    source=observation.source,
-                    center_x=observation.center_x,
-                    center_y=observation.center_y,
-                    last_seen_sec=now_sec,
-                )
-                self._tracked_objects[observation.entity_id] = tracked
-            else:
-                tracked.label = observation.label
-                tracked.kb_class = observation.kb_class
-                tracked.score = observation.score
-                tracked.tracker_id = observation.tracker_id
-                tracked.source = observation.source
-                tracked.center_x = observation.center_x
-                tracked.center_y = observation.center_y
-                tracked.last_seen_sec = now_sec
+            tracked = self._upsert_tracked_object(observation, now_sec)
 
             if now_sec - tracked.last_revised_sec >= self._knowledge_refresh_interval_sec:
                 revised_any = self._revise_observation(tracked, now_sec) or revised_any
 
         if observations or revised_any:
             self._publish_summary()
+
+    def _upsert_tracked_object(
+        self,
+        observation: ObjectObservation,
+        now_sec: float,
+    ) -> _TrackedObject:
+        tracked = self._tracked_objects.get(observation.entity_id)
+        if tracked is None:
+            tracked = _TrackedObject.from_observation(observation, now_sec)
+            self._tracked_objects[observation.entity_id] = tracked
+            return tracked
+        tracked.update_from_observation(observation, now_sec)
+        return tracked
 
     def _revise_observation(self, tracked: _TrackedObject, now_sec: float) -> bool:
         """Refresh transient KnowledgeCore facts for one tracked object."""
@@ -338,6 +373,14 @@ class NaoSceneGrounding(Node):
     def _clock_now_sec(self) -> float:
         now_msg = self.get_clock().now().to_msg()
         return float(now_msg.sec) + float(now_msg.nanosec) / 1_000_000_000.0
+
+
+class _UnsupportedDetectionAdapter:
+    """Fallback adapter used when a configured backend is unknown."""
+
+    def parse_detections(self, _msg, min_score: float = 0.0) -> list[ObjectObservation]:
+        del min_score
+        return []
 
 
 def main(args=None) -> None:
