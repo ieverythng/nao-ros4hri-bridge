@@ -2,6 +2,7 @@ from nao_chatbot.stack_launch import generate_profile_launch_description
 
 
 _SIM_ASR_PROFILE_DEFAULTS = {
+    "ollama_model": "gpt-oss:120b-cloud",
     "start_naoqi_driver": "false",
     "start_nao_robot": "false",
     "start_nao_robot_hri_visualization": "false",
@@ -11,6 +12,7 @@ _SIM_ASR_PROFILE_DEFAULTS = {
     "start_interaction_sim": "true",
     "start_interaction_sim_perception": "true",
     "start_interaction_sim_tools": "true",
+    "start_interaction_sim_expressive_face": "false",
     "start_interaction_sim_ui": "false",
     "start_rqt_console": "true",
 }

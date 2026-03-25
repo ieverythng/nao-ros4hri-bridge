@@ -12,6 +12,8 @@ import json
 import math
 
 import rclpy
+from rclpy.executors import ExternalShutdownException
+from rclpy.exceptions import ParameterUninitializedException
 from rclpy.node import Node
 from std_msgs.msg import String
 
@@ -82,7 +84,7 @@ class NaoSceneGrounding(Node):
         self.declare_parameter('observer_name', 'myself')
         self.declare_parameter('knowledge_enabled', True)
         self.declare_parameter('knowledge_revise_service_name', '/kb/revise')
-        self.declare_parameter('knowledge_models', [])
+        self.declare_parameter('knowledge_models', ['default'])
         self.declare_parameter('knowledge_lifespan_sec', 4.0)
         self.declare_parameter('knowledge_refresh_interval_sec', 1.0)
         self.declare_parameter('local_stale_after_sec', 4.5)
@@ -107,9 +109,13 @@ class NaoSceneGrounding(Node):
         self._knowledge_revise_service_name = str(
             self.get_parameter('knowledge_revise_service_name').value
         ).strip() or '/kb/revise'
+        try:
+            raw_knowledge_models = self.get_parameter('knowledge_models').value
+        except ParameterUninitializedException:
+            raw_knowledge_models = ['default']
         self._knowledge_models = coerce_str_list(
-            self.get_parameter('knowledge_models').value,
-            fallback=[],
+            raw_knowledge_models,
+            fallback=['default'],
         )
         self._knowledge_lifespan_sec = max(
             0.5,
@@ -340,8 +346,9 @@ def main(args=None) -> None:
     node = NaoSceneGrounding()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:  # pragma: no cover - manual shutdown
+    except (KeyboardInterrupt, ExternalShutdownException):  # pragma: no cover - manual shutdown
         pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()

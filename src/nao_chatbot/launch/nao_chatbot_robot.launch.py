@@ -2,6 +2,8 @@ from nao_chatbot.stack_launch import generate_profile_launch_description
 
 
 _ROBOT_PROFILE_DEFAULTS = {
+    "nao_ip": "172.26.112.62",
+    "ollama_model": "gpt-oss:120b-cloud",
     "start_naoqi_driver": "false",
     "start_nao_robot": "true",
     "start_nao_robot_hri_visualization": "true",

@@ -113,6 +113,14 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   object_detection_backend:=emorobcare_cv
 ```
 
+The sim wrappers keep `expressive_face` disabled by default now so the webcam +
+HRI + detector path stays lean and does not spawn an extra simulator-side TTS
+action server. If you explicitly want the simulator face UI back, add:
+
+```bash
+start_interaction_sim_expressive_face:=true
+```
+
 Real robot + RViz + emorobcare object detection:
 
 ```bash
@@ -164,6 +172,88 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   object_detection_backend:=emorobcare_cv
 ```
 
+## Launch `nao_scene_grounding` On Its Own
+
+This is the fastest way to debug detector-to-KB grounding without the rest of
+`chatbot_llm`, `dialogue_manager`, or the robot wrappers.
+
+1. Start the detector by itself:
+
+```bash
+ros2 run emorobcare_cv_object_detection object_detector_node
+```
+
+2. In a second terminal, start the grounding bridge:
+
+```bash
+ros2 run nao_scene_grounding start_node --ros-args \
+  -p detector_backend:=emorobcare_cv \
+  -p detector_topic:=/detected_objects \
+  -p summary_topic:=/scene/summary
+```
+
+3. In a third terminal, watch the runtime outputs:
+
+```bash
+ros2 node list | egrep 'object_detector_node|nao_scene_grounding'
+ros2 topic list | egrep '/detected_objects|/debug/object_detection|/scene/summary'
+ros2 topic echo /scene/summary
+```
+
+If you want to inspect grounding without touching KnowledgeCore, add:
+
+```bash
+-p knowledge_enabled:=false
+```
+
+to the `nao_scene_grounding` command.
+
+## Debug Checklist
+
+If the object-detect nodes do not appear in the graph, check these in order:
+
+1. Package discovery:
+
+```bash
+ros2 pkg list | egrep 'emorobcare_cv_object_detection|emorobcare_cv_msgs|nao_scene_grounding'
+```
+
+2. Detector Python runtime:
+
+```bash
+python3 -c "import ultralytics"
+```
+
+3. Detector node exposure:
+
+```bash
+ros2 node list | egrep 'object_detector_node|nao_scene_grounding'
+```
+
+4. Detector topics:
+
+```bash
+ros2 topic list | egrep '/detected_objects|/debug/object_detection|/scene/summary'
+```
+
+5. Message flow:
+
+```bash
+ros2 topic hz /detected_objects
+ros2 topic echo /scene/summary
+```
+
+If the detector source is present under `src/` but `ros2 pkg list` does not
+show `emorobcare_cv_object_detection` or `emorobcare_cv_msgs`, the workspace
+has not been rebuilt yet. Mounting the source tree into the container is not
+enough by itself; rebuild the workspace or rebuild the overlay image so those
+packages exist under `install/`.
+
+If `object_detector_node` starts and exits immediately with `ModuleNotFoundError:
+No module named 'ultralytics'`, you are running in an environment that has not
+installed the detector runtime yet. Use the rebuilt overlay image from this repo
+or install the CPU detector dependencies before launching.
+
 ## Demo Notes
 
 - Keep `use_knowledge_base: false` in the emorobcare object detection package if you
@@ -177,6 +267,9 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
 - The current model is still biased toward labels such as blueberry, corn,
   pear, tomato, and zucchini, so unusual demo props may require model or label
   configuration updates before the run.
+- If you only need one or two demo objects, tomato and pear are the safest
+  first props to try, with zucchini, corn, and blueberry as the next most
+  likely labels based on the current detector-side configuration.
 - The current detector package still expects `emorobcare_cv_msgs` plus some
   detector-side runtime imports to be available. In the default
   `use_knowledge_base: false` and `use_human_radar: false` setup, the important

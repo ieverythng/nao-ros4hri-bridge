@@ -417,7 +417,7 @@ def generate_profile_launch_description(
     )
     nao_ip_arg = DeclareLaunchArgument(
         "nao_ip",
-        default_value="172.26.112.62",
+        default_value=_profile_default(profile_defaults, "nao_ip", "172.26.112.62"),
         description="NAO robot IP passed to replay motion nodes and naoqi_driver.",
     )
     nao_port_arg = DeclareLaunchArgument(
@@ -584,6 +584,19 @@ def generate_profile_launch_description(
         ),
         description="Launch interaction_sim support tools such as rosbridge and ui_server.",
     )
+    start_interaction_sim_expressive_face_arg = DeclareLaunchArgument(
+        "start_interaction_sim_expressive_face",
+        default_value=_profile_default(
+            profile_defaults,
+            "start_interaction_sim_expressive_face",
+            "true",
+        ),
+        description=(
+            "Launch the simulator expressive_face node. Disable it when you only "
+            "need webcam/HRI perception and want to avoid duplicate TTS action "
+            "servers in the sim stack."
+        ),
+    )
     start_interaction_sim_ui_arg = DeclareLaunchArgument(
         "start_interaction_sim_ui",
         default_value=_profile_default(profile_defaults, "start_interaction_sim_ui", "false"),
@@ -661,13 +674,13 @@ def generate_profile_launch_description(
     )
     chatbot_model_arg = DeclareLaunchArgument(
         "chatbot_model",
-        default_value="llama3.2:1b",
-        description="Model used by chatbot_llm for response generation.",
+        default_value=_profile_default(profile_defaults, "chatbot_model", ""),
+        description="Legacy explicit model argument for chatbot_llm; prefer ollama_model.",
     )
     ollama_model_arg = DeclareLaunchArgument(
         "ollama_model",
-        default_value="",
-        description="Backward-compatible alias for chatbot_model.",
+        default_value=_profile_default(profile_defaults, "ollama_model", "gpt-oss:120b-cloud"),
+        description="Preferred public model argument used by chatbot_llm for response generation.",
     )
     chatbot_intent_model_arg = DeclareLaunchArgument(
         "chatbot_intent_model",
@@ -1225,6 +1238,7 @@ def generate_profile_launch_description(
             start_interaction_sim_arg,
             start_interaction_sim_perception_arg,
             start_interaction_sim_tools_arg,
+            start_interaction_sim_expressive_face_arg,
             start_interaction_sim_ui_arg,
             start_nao_orchestrator_arg,
             start_nao_say_skill_arg,

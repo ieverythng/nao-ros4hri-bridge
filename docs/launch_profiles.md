@@ -32,6 +32,15 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py --show-args
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py
 ```
 
+Default notes:
+
+- `ollama_model` now defaults to `gpt-oss:120b-cloud` on the kept sim/robot wrappers.
+- `chatbot_model` remains available as a legacy override, but it is no longer
+  seeded with the old local `llama3.2:1b` default.
+- `start_interaction_sim_expressive_face` defaults to `false` on the kept sim
+  wrappers so object-detection testing does not also start the simulator face
+  TTS server.
+
 With emorobcare object detection:
 
 ```bash
@@ -145,8 +154,13 @@ ros2 run nao_chatbot asr_push_to_talk_cli
 - `start_interaction_sim`
 - `start_interaction_sim_perception`
 - `start_interaction_sim_tools`
+- `start_interaction_sim_expressive_face`
 - `start_interaction_sim_ui`
 - `dialogue_manager_chatbot`
+- `ollama_model`
+- `chatbot_model`
+- `chatbot_intent_model`
+- `ollama_intent_model`
 - `start_object_detection`
 - `object_detection_backend`
 - `start_scene_grounding`
@@ -165,6 +179,8 @@ ros2 run nao_chatbot asr_push_to_talk_cli
 ### Robot integration toggles
 
 - `start_naoqi_driver`: include/exclude `naoqi_driver`.
+- `nao_ip`: profile-aware robot IP forwarded into real-robot launch surfaces
+  such as `naoqi_driver`, `nao_robot`, and replay-motion nodes.
 - `start_nao_robot`: include/exclude the packaged `nao_robot` bring-up. This is
   the preferred real-robot camera path because it already wires `naoqi_driver`,
   `/camera/front/*`, and `hri_face_detect_yunet`.
@@ -192,6 +208,10 @@ ros2 run nao_chatbot asr_push_to_talk_cli
   perception path on or off.
 - `start_interaction_sim_tools`: toggle simulator-side tools such as rosbridge
   and `ui_server` on or off.
+- `start_interaction_sim_expressive_face`: optionally restore the simulator
+  `expressive_face` node when you want the face UI. The kept sim wrappers leave
+  it off by default to avoid duplicate TTS action servers while testing object
+  detection.
 - `start_interaction_sim_ui`: start `ui_server` when simulator tools are
   enabled.
 - `posture_command_topic`: temporary transition topic used by

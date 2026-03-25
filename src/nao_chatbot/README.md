@@ -27,6 +27,16 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   object_detection_backend:=emorobcare_cv
 ```
 
+The kept simulator wrappers leave `start_interaction_sim_expressive_face:=false`
+by default so the webcam/object-detection path avoids duplicate simulator-side
+TTS servers and extra node-name noise. Re-enable it only if you want the
+simulator face UI:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_interaction_sim_expressive_face:=true
+```
+
 Simulator stack with ASR:
 
 ```bash
@@ -197,6 +207,9 @@ For the emorobcare object detection path specifically:
 
 - keep `emorobcare_cv_object_detection` and `emorobcare_cv_msgs` built in the
   workspace when `object_detection_backend:=emorobcare_cv`
+- if those packages are only present under `src/` but missing from
+  `ros2 pkg list`, rebuild the workspace or the overlay image before launching;
+  mounting source alone is not enough
 - keep `use_knowledge_base: false` in the detector package so
   `nao_scene_grounding` remains the single KB writer for detections
 - keep `use_human_radar: false` unless you explicitly want that legacy path
@@ -204,6 +217,8 @@ For the emorobcare object detection path specifically:
   `rqt_image_view`
 - prefer `cpu` on the laptop unless you have already validated a GPU path
 - on the real robot, feed the detector from `/camera/front/image_raw`
+- the current detector is most likely to recognize tomato, pear, zucchini,
+  corn, and blueberry; tomato and pear are the best first demo props
 
 ## Provenance
 

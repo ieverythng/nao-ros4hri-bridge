@@ -32,9 +32,16 @@ RUN bash -lc 'set -euo pipefail; \
       gstreamer1.0-pulseaudio \
       gstreamer1.0-tools \
       python3-colcon-common-extensions \
+      python3-cpuinfo \
       python3-gi \
+      python3-matplotlib \
       python3-opencv \
+      python3-pil \
       python3-pip \
+      python3-psutil \
+      python3-requests \
+      python3-scipy \
+      python3-tqdm \
       python3-yaml \
       ros-jazzy-rqt-console \
       ros-jazzy-rqt-gui \
@@ -76,63 +83,25 @@ RUN bash -lc 'set -euo pipefail; \
       apt-get install -y --no-install-recommends "${missing[@]}" && \
       rm -rf /var/lib/apt/lists/*; \
     fi; \
-    python3 -c "import importlib.util, sys; missing=[name for name in (\"vosk\", \"asyncore\", \"asynchat\", \"ultralytics\") if importlib.util.find_spec(name) is None]; sys.exit(0 if not missing else 1)" \
-      || python3 -m pip install --no-cache-dir --break-system-packages vosk pyasyncore pyasynchat ultralytics'
+    python3 -c "import importlib.util, sys; missing=[name for name in (\"vosk\", \"asyncore\", \"asynchat\", \"ultralytics\", \"torch\", \"torchvision\") if importlib.util.find_spec(name) is None]; sys.exit(0 if not missing else 1)" \
+      || ( \
+        python3 -m pip install --no-cache-dir --break-system-packages vosk pyasyncore pyasynchat && \
+        python3 -m pip install --no-cache-dir --break-system-packages \
+          --index-url https://download.pytorch.org/whl/cpu \
+          torch torchvision && \
+        python3 -m pip install --no-cache-dir --break-system-packages --no-deps \
+          ultralytics ultralytics-thop \
+      )'
 
 # Rebuild the migrated local workspace packages on top of the validated base.
-RUN bash -c "source /opt/ros/jazzy/setup.bash && \
+RUN bash -lc 'source /opt/ros/jazzy/setup.bash && \
     cd /home/ubuntu/ws && \
-    rm -rf \
-      /home/ubuntu/ws/build/std_skills \
-      /home/ubuntu/ws/build/communication_skills \
-      /home/ubuntu/ws/build/dialogue_manager \
-      /home/ubuntu/ws/build/asr_vosk \
-      /home/ubuntu/ws/build/chatbot_llm \
-      /home/ubuntu/ws/build/interaction_skills \
-      /home/ubuntu/ws/build/kb_skills \
-      /home/ubuntu/ws/build/motions_skills \
-      /home/ubuntu/ws/build/nao_skills \
-      /home/ubuntu/ws/build/nao_chatbot \
-      /home/ubuntu/ws/build/nao_look_at \
-      /home/ubuntu/ws/build/nao_orchestrator \
-      /home/ubuntu/ws/build/nao_replay_motion \
-      /home/ubuntu/ws/build/nao_say_skill \
-      /home/ubuntu/ws/build/nao_scene_grounding \
-      /home/ubuntu/ws/build/simple_audio_capture \
-      /home/ubuntu/ws/build/emorobcare_cv_msgs \
-      /home/ubuntu/ws/build/emorobcare_cv_object_detection \
-      /home/ubuntu/ws/build/my_game_interface \
-      /home/ubuntu/ws/install/std_skills \
-      /home/ubuntu/ws/install/communication_skills \
-      /home/ubuntu/ws/install/dialogue_manager \
-      /home/ubuntu/ws/install/asr_vosk \
-      /home/ubuntu/ws/install/chatbot_llm \
-      /home/ubuntu/ws/install/interaction_skills \
-      /home/ubuntu/ws/install/kb_skills \
-      /home/ubuntu/ws/install/motions_skills \
-      /home/ubuntu/ws/install/nao_skills \
-      /home/ubuntu/ws/install/nao_chatbot \
-      /home/ubuntu/ws/install/nao_look_at \
-      /home/ubuntu/ws/install/nao_orchestrator \
-      /home/ubuntu/ws/install/nao_replay_motion \
-      /home/ubuntu/ws/install/nao_say_skill \
-      /home/ubuntu/ws/install/nao_scene_grounding \
-      /home/ubuntu/ws/install/simple_audio_capture \
-      /home/ubuntu/ws/install/emorobcare_cv_msgs \
-      /home/ubuntu/ws/install/emorobcare_cv_object_detection \
-      /home/ubuntu/ws/install/my_game_interface && \
-    build_packages=( \
-      std_skills \
-      communication_skills \
-      interaction_skills \
+    rebuild_packages=( \
       kb_skills \
-      motions_skills \
-      nao_skills \
       dialogue_manager \
       asr_vosk \
       chatbot_llm \
       nao_say_skill \
-      nao_replay_motion \
       nao_look_at \
       nao_orchestrator \
       nao_scene_grounding \
@@ -141,10 +110,13 @@ RUN bash -c "source /opt/ros/jazzy/setup.bash && \
     ); \
     for optional_pkg in emorobcare_cv_msgs emorobcare_cv_object_detection my_game_interface; do \
       if [ -d \"/home/ubuntu/ws/src/${optional_pkg}\" ]; then \
-        build_packages+=(\"${optional_pkg}\"); \
+        rebuild_packages+=(\"${optional_pkg}\"); \
       fi; \
     done; \
-    colcon build --symlink-install --packages-select \"${build_packages[@]}\""
+    for pkg in "${rebuild_packages[@]}"; do \
+      rm -rf "/home/ubuntu/ws/build/${pkg}" "/home/ubuntu/ws/install/${pkg}"; \
+    done; \
+    colcon build --symlink-install --packages-up-to "${rebuild_packages[@]}"'
 
 # Keep entrypoint from this repo for deterministic sourcing behavior.
 COPY docker/ros_entrypoint.sh /

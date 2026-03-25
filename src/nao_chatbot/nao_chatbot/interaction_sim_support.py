@@ -23,7 +23,6 @@ from launch_ros.substitutions import FindPackageShare
 
 _PERCEPTION_PACKAGES = (
     "interaction_sim",
-    "expressive_face",
     "gscam",
     "hri_emotion_recognizer",
     "hri_face_detect_yunet",
@@ -56,6 +55,7 @@ def build_interaction_sim_actions(context):
 
     start_perception = _as_bool(context, "start_interaction_sim_perception")
     start_tools = _as_bool(context, "start_interaction_sim_tools")
+    start_expressive_face = _as_bool(context, "start_interaction_sim_expressive_face")
     if not start_perception and not start_tools:
         return [
             LogInfo(
@@ -70,6 +70,8 @@ def build_interaction_sim_actions(context):
     required_packages = []
     if start_perception:
         required_packages.extend(_PERCEPTION_PACKAGES)
+        if start_expressive_face:
+            required_packages.append("expressive_face")
     if start_tools:
         required_packages.extend(_TOOLS_PACKAGES)
 
@@ -98,20 +100,29 @@ def build_interaction_sim_actions(context):
             [
                 SetRemap(src="image", dst="/camera/image_raw"),
                 SetRemap(src="camera_info", dst="/camera/camera_info"),
-                SetRemap(
-                    src="/expressive_face/tts",
-                    dst=LaunchConfiguration("debug_tts_action_name"),
-                ),
-                IncludeLaunchDescription(
-                    PythonLaunchDescriptionSource(
-                        os.path.join(
-                            get_package_share_directory("expressive_face"),
-                            "launch",
-                            "expressive_face.launch.py",
-                        )
+            ]
+        )
+        if start_expressive_face:
+            scoped_actions.extend(
+                [
+                    SetRemap(
+                        src="/expressive_face/tts",
+                        dst=LaunchConfiguration("debug_tts_action_name"),
                     ),
-                    launch_arguments={"headless": "true"}.items(),
-                ),
+                    IncludeLaunchDescription(
+                        PythonLaunchDescriptionSource(
+                            os.path.join(
+                                get_package_share_directory("expressive_face"),
+                                "launch",
+                                "expressive_face.launch.py",
+                            )
+                        ),
+                        launch_arguments={"headless": "true"}.items(),
+                    ),
+                ]
+            )
+        scoped_actions.extend(
+            [
                 IncludeLaunchDescription(
                     PythonLaunchDescriptionSource(
                         os.path.join(
@@ -252,6 +263,12 @@ def build_interaction_sim_actions(context):
                 msg=(
                     "The interaction_sim perspective is available at "
                     f"{os.path.join(interaction_sim_share, 'config', 'simulator.perspective')}"
+                )
+            ),
+            LogInfo(
+                msg=(
+                    "interaction_sim expressive_face is %s."
+                    % ("enabled" if start_expressive_face else "disabled")
                 )
             ),
         ]
