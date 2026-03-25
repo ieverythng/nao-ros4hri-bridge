@@ -3,6 +3,9 @@
 `nao_scene_grounding` is the local bridge between detector outputs and the
 symbolic scene state used by the rest of the NAO ROS4HRI stack.
 
+For a demo-focused summary of the current runtime, grounded-scene flow, and
+ROS contracts, see [`docs/demo_status_and_contracts.md`](../../docs/demo_status_and_contracts.md).
+
 It keeps object detection modular on purpose:
 
 - detector backends can change without rewriting KB logic

@@ -6,6 +6,9 @@ This document describes the active migrated runtime. The old
 `mission_controller`, `ollama_chatbot`, and `nao_skill_servers` flow has been
 removed from the workspace.
 
+For the current demo-oriented status summary, message contracts, and grounded
+scene examples, see [demo_status_and_contracts.md](./demo_status_and_contracts.md).
+
 ## Runtime Summary
 
 Primary runtime:

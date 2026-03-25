@@ -199,6 +199,7 @@ Current robot-camera and overlay topics in the packaged stack:
 
 Quick reference:
 
+- [docs/demo_status_and_contracts.md](docs/demo_status_and_contracts.md)
 - [docs/launch_profiles.md](docs/launch_profiles.md)
 - [docs/current_workflow.md](docs/current_workflow.md)
 - [docs/node_interactions_map.md](docs/node_interactions_map.md)
