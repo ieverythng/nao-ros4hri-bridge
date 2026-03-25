@@ -77,18 +77,23 @@ class RobotSpeechDebugNode(Node):
             return
 
         now = time.monotonic()
-        if (
-            label == self._last_label
-            and
-            clean_text == self._last_text
-            and (now - self._last_timestamp) <= self._dedupe_window_sec
-        ):
+        if self._is_duplicate_line(label=label, text=clean_text, now=now):
             return
 
-        self._last_label = label
-        self._last_text = clean_text
-        self._last_timestamp = now
+        self._remember_logged_line(label=label, text=clean_text, now=now)
         self.get_logger().info(f'[{label}] ({source}) "{clean_text}"')
+
+    def _is_duplicate_line(self, *, label: str, text: str, now: float) -> bool:
+        return (
+            label == self._last_label
+            and text == self._last_text
+            and (now - self._last_timestamp) <= self._dedupe_window_sec
+        )
+
+    def _remember_logged_line(self, *, label: str, text: str, now: float) -> None:
+        self._last_label = label
+        self._last_text = text
+        self._last_timestamp = now
 
 
 def main(args: list[str] | None = None) -> None:

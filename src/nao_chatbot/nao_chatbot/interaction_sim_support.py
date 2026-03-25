@@ -48,6 +48,97 @@ def _as_bool(context, name: str) -> bool:
     return str(LaunchConfiguration(name).perform(context)).strip().lower() == "true"
 
 
+def _required_packages(
+    *,
+    start_perception: bool,
+    start_tools: bool,
+    start_expressive_face: bool,
+) -> list[str]:
+    required_packages: list[str] = []
+    if start_perception:
+        required_packages.extend(_PERCEPTION_PACKAGES)
+        if start_expressive_face:
+            required_packages.append("expressive_face")
+    if start_tools:
+        required_packages.extend(_TOOLS_PACKAGES)
+    return required_packages
+
+
+def _missing_packages(package_names: list[str]) -> list[str]:
+    missing_packages = []
+    for package_name in package_names:
+        try:
+            get_package_share_directory(package_name)
+        except PackageNotFoundError:
+            missing_packages.append(package_name)
+    return sorted(set(missing_packages))
+
+
+def _include_python_launch(
+    package_name: str,
+    launch_file_name: str,
+    *,
+    launch_arguments: dict[str, str] | None = None,
+):
+    source = PythonLaunchDescriptionSource(
+        os.path.join(
+            get_package_share_directory(package_name),
+            "launch",
+            launch_file_name,
+        )
+    )
+    if launch_arguments is None:
+        return IncludeLaunchDescription(source)
+    return IncludeLaunchDescription(
+        source,
+        launch_arguments=launch_arguments.items(),
+    )
+
+
+def _interaction_sim_mode_description(
+    *,
+    start_perception: bool,
+    start_tools: bool,
+) -> str:
+    if start_perception and start_tools:
+        return "perception + tools"
+    if start_perception:
+        return "perception-only"
+    return "tools-only"
+
+
+def _interaction_sim_summary_logs(
+    *,
+    mode_description: str,
+    start_expressive_face: bool,
+) -> list[LogInfo]:
+    return [
+        # These log lines give operators a quick summary of which simulator
+        # layer is active without reading the full launch file.
+        LogInfo(
+            msg=(
+                "interaction_sim %s layer enabled. "
+                "This keeps simulator utilities separate from "
+                "chatbot_llm, dialogue_manager, and knowledge_core."
+            )
+            % mode_description
+        ),
+        LogInfo(
+            msg=(
+                "The nao_chatbot sim profile loads a debug-ready rqt "
+                "perspective with /debug/object_detection prewired into "
+                "the spare image view."
+            )
+        ),
+        LogInfo(
+            msg=(
+                "interaction_sim expressive_face is %s."
+                % ("enabled" if start_expressive_face else "disabled")
+            )
+        ),
+    ]
+
+
 def build_interaction_sim_actions(context):
     """Return the optional interaction_sim actions for the current profile."""
     if not _as_bool(context, "start_interaction_sim"):
@@ -67,27 +158,19 @@ def build_interaction_sim_actions(context):
             )
         ]
 
-    required_packages = []
-    if start_perception:
-        required_packages.extend(_PERCEPTION_PACKAGES)
-        if start_expressive_face:
-            required_packages.append("expressive_face")
-    if start_tools:
-        required_packages.extend(_TOOLS_PACKAGES)
-
-    missing_packages = []
-    for package_name in required_packages:
-        try:
-            get_package_share_directory(package_name)
-        except PackageNotFoundError:
-            missing_packages.append(package_name)
+    required_packages = _required_packages(
+        start_perception=start_perception,
+        start_tools=start_tools,
+        start_expressive_face=start_expressive_face,
+    )
+    missing_packages = _missing_packages(required_packages)
 
     if missing_packages:
         return [
             LogInfo(
                 msg=(
                     "interaction_sim bring-up skipped because the following official "
-                    f"packages are missing: {', '.join(sorted(set(missing_packages)))}"
+                    f"packages are missing: {', '.join(missing_packages)}"
                 )
             )
         ]
@@ -108,50 +191,30 @@ def build_interaction_sim_actions(context):
                         src="/expressive_face/tts",
                         dst=LaunchConfiguration("debug_tts_action_name"),
                     ),
-                    IncludeLaunchDescription(
-                        PythonLaunchDescriptionSource(
-                            os.path.join(
-                                get_package_share_directory("expressive_face"),
-                                "launch",
-                                "expressive_face.launch.py",
-                            )
-                        ),
-                        launch_arguments={"headless": "true"}.items(),
+                    _include_python_launch(
+                        "expressive_face",
+                        "expressive_face.launch.py",
+                        launch_arguments={"headless": "true"},
                     ),
                 ]
             )
         scoped_actions.extend(
             [
-                IncludeLaunchDescription(
-                    PythonLaunchDescriptionSource(
-                        os.path.join(
-                            get_package_share_directory("hri_person_manager"),
-                            "launch",
-                            "person_manager.launch.py",
-                        )
-                    ),
+                _include_python_launch(
+                    "hri_person_manager",
+                    "person_manager.launch.py",
                     launch_arguments={
                         "reference_frame": "camera",
                         "robot_reference_frame": "sellion_link",
-                    }.items(),
+                    },
                 ),
-                IncludeLaunchDescription(
-                    PythonLaunchDescriptionSource(
-                        os.path.join(
-                            get_package_share_directory("hri_face_detect_yunet"),
-                            "launch",
-                            "hri_face_detect_yunet.launch.py",
-                        )
-                    )
+                _include_python_launch(
+                    "hri_face_detect_yunet",
+                    "hri_face_detect_yunet.launch.py",
                 ),
-                IncludeLaunchDescription(
-                    PythonLaunchDescriptionSource(
-                        os.path.join(
-                            get_package_share_directory("hri_emotion_recognizer"),
-                            "launch",
-                            "emotion_recognizer.launch.py",
-                        )
-                    )
+                _include_python_launch(
+                    "hri_emotion_recognizer",
+                    "emotion_recognizer.launch.py",
                 ),
                 Node(
                     package="gscam",
@@ -169,14 +232,9 @@ def build_interaction_sim_actions(context):
                     ],
                     output="screen",
                 ),
-                IncludeLaunchDescription(
-                    PythonLaunchDescriptionSource(
-                        os.path.join(
-                            get_package_share_directory("hri_visualization"),
-                            "launch",
-                            "hri_visualization.launch.py",
-                        )
-                    )
+                _include_python_launch(
+                    "hri_visualization",
+                    "hri_visualization.launch.py",
                 ),
                 Node(
                     package="tf2_ros",
@@ -240,38 +298,14 @@ def build_interaction_sim_actions(context):
             ]
         )
 
-    mode_description = "tools-only"
-    if start_perception and start_tools:
-        mode_description = "perception + tools"
-    elif start_perception:
-        mode_description = "perception-only"
-
     scoped_actions.extend(
-        [
-            # These log lines give operators a quick summary of which simulator
-            # layer is active without reading the full launch file.
-            LogInfo(
-                msg=(
-                    "interaction_sim %s layer enabled. "
-                    "This keeps simulator utilities separate from "
-                    "chatbot_llm, dialogue_manager, and knowledge_core."
-                )
-                % mode_description
+        _interaction_sim_summary_logs(
+            mode_description=_interaction_sim_mode_description(
+                start_perception=start_perception,
+                start_tools=start_tools,
             ),
-            LogInfo(
-                msg=(
-                    "The nao_chatbot sim profile loads a debug-ready rqt "
-                    "perspective with /debug/object_detection prewired into "
-                    "the spare image view."
-                )
-            ),
-            LogInfo(
-                msg=(
-                    "interaction_sim expressive_face is %s."
-                    % ("enabled" if start_expressive_face else "disabled")
-                )
-            ),
-        ]
+            start_expressive_face=start_expressive_face,
+        )
     )
 
     return [GroupAction(scoped=True, actions=scoped_actions)]

@@ -120,6 +120,15 @@ def _print_state(enabled: bool) -> None:
     sys.stdout.flush()
 
 
+def _publish_and_print_state(publisher, enabled: bool) -> None:
+    _publish_state(publisher, enabled)
+    _print_state(enabled)
+
+
+def _sleep_after_publish(duration_sec: float) -> None:
+    time.sleep(max(0.0, float(duration_sec)))
+
+
 # -----------------------------------------------------------------------------
 # Interactive runtime
 # -----------------------------------------------------------------------------
@@ -137,9 +146,8 @@ def _run_interactive(node, publisher, close_on_exit: bool) -> int:
         return 2
 
     state = False
-    _publish_state(publisher, state)
+    _publish_and_print_state(publisher, state)
     sys.stdout.write(INTERACTIVE_HELP + "\n")
-    _print_state(state)
 
     fd = sys.stdin.fileno()
     old_settings = termios.tcgetattr(fd)
@@ -160,16 +168,35 @@ def _run_interactive(node, publisher, close_on_exit: bool) -> int:
                 continue
             if action.state != state:
                 state = action.state
-                _publish_state(publisher, state)
-                _print_state(state)
+                _publish_and_print_state(publisher, state)
             if action.should_exit:
                 break
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         if close_on_exit and state:
-            _publish_state(publisher, False)
-            _print_state(False)
+            _publish_and_print_state(publisher, False)
 
+    return 0
+
+
+def _run_one_shot_mode(args, publisher) -> int | None:
+    if args.open:
+        _publish_and_print_state(publisher, True)
+        _sleep_after_publish(args.sleep_after_publish)
+        return 0
+
+    if args.close:
+        _publish_and_print_state(publisher, False)
+        _sleep_after_publish(args.sleep_after_publish)
+        return 0
+
+    if args.pulse is None:
+        return None
+
+    _publish_and_print_state(publisher, True)
+    _sleep_after_publish(args.pulse)
+    _publish_and_print_state(publisher, False)
+    _sleep_after_publish(args.sleep_after_publish)
     return 0
 
 
@@ -184,27 +211,9 @@ def main(argv: list[str] | None = None) -> int:
     publisher = node.create_publisher(Bool, args.topic, 1)
 
     try:
-        if args.open:
-            _publish_state(publisher, True)
-            _print_state(True)
-            time.sleep(max(0.0, float(args.sleep_after_publish)))
-            return 0
-
-        if args.close:
-            _publish_state(publisher, False)
-            _print_state(False)
-            time.sleep(max(0.0, float(args.sleep_after_publish)))
-            return 0
-
-        if args.pulse is not None:
-            duration = max(0.0, float(args.pulse))
-            _publish_state(publisher, True)
-            _print_state(True)
-            time.sleep(duration)
-            _publish_state(publisher, False)
-            _print_state(False)
-            time.sleep(max(0.0, float(args.sleep_after_publish)))
-            return 0
+        one_shot_exit_code = _run_one_shot_mode(args, publisher)
+        if one_shot_exit_code is not None:
+            return one_shot_exit_code
 
         return _run_interactive(node, publisher, args.close_on_exit)
     finally:

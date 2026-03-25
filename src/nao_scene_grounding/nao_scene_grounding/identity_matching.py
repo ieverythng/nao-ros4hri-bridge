@@ -49,10 +49,7 @@ def reconcile_observation_entity_ids(
     claimed_entity_ids: set[str] = set()
     reconciled: list[ObjectObservation] = []
 
-    for observation in sorted(
-        observations,
-        key=lambda item: (not bool(item.tracker_id), -float(item.score), item.entity_id),
-    ):
+    for observation in sorted(observations, key=_reconciliation_order):
         entity_id = observation.entity_id
         if not observation.tracker_id:
             matched = match_observation_to_tracked(
@@ -74,6 +71,15 @@ def reconcile_observation_entity_ids(
     return reconciled
 
 
+def _reconciliation_order(observation: ObjectObservation) -> tuple[bool, float, str]:
+    """Prefer tracker-backed and higher-confidence observations first."""
+    return (
+        not bool(observation.tracker_id),
+        -float(observation.score),
+        observation.entity_id,
+    )
+
+
 def match_observation_to_tracked(
     observation: ObjectObservation,
     tracked_objects: Iterable[TrackedObservationLike],
@@ -91,33 +97,56 @@ def match_observation_to_tracked(
     best_match = None
     best_score = None
     for tracked in tracked_objects:
-        if tracked.entity_id in claimed_entity_ids:
-            continue
-        if tracked.label != observation.label:
-            continue
-        if tracked.kb_class != observation.kb_class:
-            continue
-        if tracked.source != observation.source:
-            continue
-
-        age_sec = max(0.0, float(now_sec) - float(tracked.last_seen_sec))
-        if age_sec > float(max_match_age_sec):
-            continue
-
-        distance_px = hypot(
-            float(observation.center_x) - float(tracked.center_x),
-            float(observation.center_y) - float(tracked.center_y),
+        candidate_score = _match_score(
+            observation,
+            tracked,
+            claimed_entity_ids=claimed_entity_ids,
+            now_sec=now_sec,
+            max_match_distance_px=max_match_distance_px,
+            max_match_age_sec=max_match_age_sec,
         )
-        if distance_px > float(max_match_distance_px):
+        if candidate_score is None:
             continue
 
-        candidate_score = (
-            round(distance_px, 6),
-            age_sec,
-            tracked.entity_id,
-        )
         if best_score is None or candidate_score < best_score:
             best_match = tracked
             best_score = candidate_score
 
     return best_match
+
+
+def _match_score(
+    observation: ObjectObservation,
+    tracked: TrackedObservationLike,
+    *,
+    claimed_entity_ids: set[str],
+    now_sec: float,
+    max_match_distance_px: float,
+    max_match_age_sec: float,
+) -> tuple[float, float, str] | None:
+    """Return the ranking tuple for one candidate match, or `None` if invalid."""
+    if tracked.entity_id in claimed_entity_ids:
+        return None
+    if tracked.label != observation.label:
+        return None
+    if tracked.kb_class != observation.kb_class:
+        return None
+    if tracked.source != observation.source:
+        return None
+
+    age_sec = max(0.0, float(now_sec) - float(tracked.last_seen_sec))
+    if age_sec > float(max_match_age_sec):
+        return None
+
+    distance_px = hypot(
+        float(observation.center_x) - float(tracked.center_x),
+        float(observation.center_y) - float(tracked.center_y),
+    )
+    if distance_px > float(max_match_distance_px):
+        return None
+
+    return (
+        round(distance_px, 6),
+        age_sec,
+        tracked.entity_id,
+    )
