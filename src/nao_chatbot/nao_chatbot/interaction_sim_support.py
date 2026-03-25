@@ -92,7 +92,6 @@ def build_interaction_sim_actions(context):
             )
         ]
 
-    interaction_sim_share = get_package_share_directory("interaction_sim")
     scoped_actions = []
 
     if start_perception:
@@ -261,8 +260,9 @@ def build_interaction_sim_actions(context):
             ),
             LogInfo(
                 msg=(
-                    "The interaction_sim perspective is available at "
-                    f"{os.path.join(interaction_sim_share, 'config', 'simulator.perspective')}"
+                    "The nao_chatbot sim profile loads a debug-ready rqt "
+                    "perspective with /debug/object_detection prewired into "
+                    "the spare image view."
                 )
             ),
             LogInfo(

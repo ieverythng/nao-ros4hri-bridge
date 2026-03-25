@@ -299,6 +299,11 @@ def _optional_object_detection_launch(context):
                 executable="object_detector_node",
                 output="screen",
                 emulate_tty=True,
+                arguments=[
+                    "--ros-args",
+                    "--log-level",
+                    LaunchConfiguration("object_detection_log_level"),
+                ],
                 remappings=[
                     ("/camera/image_raw", LaunchConfiguration("object_detection_input_image_topic")),
                 ],
@@ -507,6 +512,14 @@ def generate_profile_launch_description(
         default_value="cpu",
         description="Detector device forwarded to yolo_ros, for example cpu or cuda:0.",
     )
+    object_detection_log_level_arg = DeclareLaunchArgument(
+        "object_detection_log_level",
+        default_value=_profile_default(profile_defaults, "object_detection_log_level", "warn"),
+        description=(
+            "ROS log level used for the emorobcare detector node. "
+            "Override to info or debug when diagnosing detector startup."
+        ),
+    )
     object_detection_threshold_arg = DeclareLaunchArgument(
         "object_detection_threshold",
         default_value="0.35",
@@ -630,7 +643,10 @@ def generate_profile_launch_description(
     start_rqt_console_arg = DeclareLaunchArgument(
         "start_rqt_console",
         default_value=_profile_default(profile_defaults, "start_rqt_console", "true"),
-        description="Launch a single remapped rqt shell; when interaction_sim is enabled it loads the official simulator perspective.",
+        description=(
+            "Launch a single remapped rqt shell; when interaction_sim is enabled "
+            "it loads the nao_chatbot debug-ready simulator perspective."
+        ),
     )
     start_rqt_chat_arg = DeclareLaunchArgument(
         "start_rqt_chat",
@@ -1030,10 +1046,15 @@ def generate_profile_launch_description(
                 "echo 'rqt is not installed in this environment'; "
                 "elif ! ros2 pkg prefix interaction_sim >/dev/null 2>&1; then "
                 "echo 'interaction_sim is not installed in this environment'; "
+                "elif ! ros2 pkg prefix nao_chatbot >/dev/null 2>&1; then "
+                "echo 'nao_chatbot is not installed in this environment'; "
                 "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
                 "echo 'rqt launch skipped: DISPLAY/WAYLAND_DISPLAY is not set'; "
                 "else "
+                "perspective=\"$(ros2 pkg prefix nao_chatbot)/share/nao_chatbot/config/interaction_sim_debug.perspective\"; "
+                "if [ ! -f \"$perspective\" ]; then "
                 "perspective=\"$(ros2 pkg prefix interaction_sim)/share/interaction_sim/config/simulator.perspective\"; "
+                "fi; "
                 "exec rqt --clear-config --perspective-file \"$perspective\" --ros-args -r /tts_engine/tts:=",
                 LaunchConfiguration("debug_tts_action_name"),
                 "; "
@@ -1267,6 +1288,7 @@ def generate_profile_launch_description(
             object_detection_namespace_arg,
             object_detection_model_arg,
             object_detection_device_arg,
+            object_detection_log_level_arg,
             object_detection_threshold_arg,
             object_detection_input_image_topic_arg,
             object_detection_image_reliability_arg,

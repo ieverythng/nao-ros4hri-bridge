@@ -12,6 +12,44 @@ else
   echo "Workspace not built yet"
 fi
 
+maybe_build_optional_detector_stack() {
+  if [ "${AUTO_BUILD_OPTIONAL_WS_PACKAGES:-1}" = "0" ]; then
+    return
+  fi
+
+  local detector_packages=(
+    emorobcare_cv_msgs
+    my_game_interface
+    emorobcare_cv_object_detection
+  )
+  local source_present=()
+  local install_missing=()
+
+  for pkg in "${detector_packages[@]}"; do
+    if [ -d "/home/ubuntu/ws/src/${pkg}" ]; then
+      source_present+=("${pkg}")
+      if ! ros2 pkg prefix "${pkg}" >/dev/null 2>&1; then
+        install_missing+=("${pkg}")
+      fi
+    fi
+  done
+
+  if [ "${#source_present[@]}" -eq 0 ] || [ "${#install_missing[@]}" -eq 0 ]; then
+    return
+  fi
+
+  echo "Optional detector sources are present but not installed: ${install_missing[*]}"
+  echo "Building detector workspace slice: ${source_present[*]}"
+  (
+    cd /home/ubuntu/ws
+    colcon build --symlink-install --packages-select "${source_present[@]}"
+  )
+  source /home/ubuntu/ws/install/setup.bash
+  echo "Optional detector workspace slice built and sourced"
+}
+
+maybe_build_optional_detector_stack
+
 # Print ROS environment
 echo "ROS_DISTRO: $ROS_DISTRO"
 echo "Available packages:"

@@ -207,9 +207,8 @@ For the emorobcare object detection path specifically:
 
 - keep `emorobcare_cv_object_detection` and `emorobcare_cv_msgs` built in the
   workspace when `object_detection_backend:=emorobcare_cv`
-- if those packages are only present under `src/` but missing from
-  `ros2 pkg list`, rebuild the workspace or the overlay image before launching;
-  mounting source alone is not enough
+- if those packages are present under `src/` but missing from `ros2 pkg list`,
+  the Docker entrypoint now auto-builds that detector slice before launch
 - keep `use_knowledge_base: false` in the detector package so
   `nao_scene_grounding` remains the single KB writer for detections
 - keep `use_human_radar: false` unless you explicitly want that legacy path
@@ -241,9 +240,12 @@ For the emorobcare object detection path specifically:
 - the migrated launch enables default chat by default so incoming speech is
   routed to `chatbot_llm` immediately
 - `start_rqt_console:=true` opens a single remapped `rqt` shell; with
-  `start_interaction_sim:=true` it loads the official `interaction_sim`
-  perspective so `rqt_console`, `rqt_chat`, `rqt_human_radar`, and the image
-  views are available in one window
+  `start_interaction_sim:=true` it loads the `nao_chatbot` debug-ready
+  simulator perspective so `rqt_console`, `rqt_chat`, `rqt_human_radar`, the
+  HRI overlay image, and `/debug/object_detection` are available in one window
+- `object_detection_log_level:=warn` is the default so detector heartbeat/frame
+  logs do not drown out turn tracing in that shared console; set it to `info`
+  when detector startup details matter more than chat logs
 - `start_rqt_chat:=true` is now optional and only needed if you want a separate
   dedicated `rqt_chat` window when the simulator perspective is not in use
 - `start_interaction_sim:=true` enables the local wrapper around the official

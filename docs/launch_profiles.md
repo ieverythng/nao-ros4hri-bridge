@@ -236,11 +236,17 @@ Before using `object_detection_backend:=emorobcare_cv`, check:
 
 - `emorobcare_cv_object_detection` and `emorobcare_cv_msgs` are both present in
   the workspace and built
+- if those sources are present under `src/` but not yet visible in
+  `ros2 pkg list`, the Docker entrypoint now auto-builds the emorobcare
+  detector slice before launch
 - the detector package keeps `use_knowledge_base: false` so
   `nao_scene_grounding` stays the single writer of detector-derived KB facts
 - `use_human_radar: false` unless you intentionally want that older path active
 - `draw_image: true` if you want `/debug/object_detection` in RViz or
   `rqt_image_view`
+- `object_detection_log_level:=warn` keeps the shared `rqt_console` readable
+  during demos; temporarily switch to `info` when you need detector startup
+  details
 - `yolo_device: cpu` is set when the laptop path should prefer stability over
   acceleration
 - the current model is still biased toward labels such as blueberry, corn,
@@ -292,6 +298,9 @@ Notes:
 
 - the overlay Dockerfile now uses `src/interaction_skills` directly and also
   rebuilds `nao_scene_grounding`
+- the sim `rqt` profile now prewires `/debug/object_detection` into the spare
+  image-view panel so detector debug frames appear without manual topic
+  selection
 - `start_nao_look_at` stays enabled by default on the robot wrappers, so the
   next day's wiring work can focus on better target-frame usage rather than
   another launch toggle

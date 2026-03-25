@@ -23,6 +23,7 @@ from nao_scene_grounding.detector_adapters import ObjectObservation
 from nao_scene_grounding.detector_adapters import YoloRosDetectionAdapter
 from nao_scene_grounding.detector_adapters import coerce_str_list
 from nao_scene_grounding.detector_adapters import load_label_class_map
+from nao_scene_grounding.identity_matching import reconcile_observation_entity_ids
 
 try:  # pragma: no cover - runtime dependency
     from kb_msgs.srv import Revise
@@ -146,6 +147,8 @@ class NaoSceneGrounding(Node):
         self.declare_parameter('knowledge_lifespan_sec', 4.0)
         self.declare_parameter('knowledge_refresh_interval_sec', 1.0)
         self.declare_parameter('local_stale_after_sec', 4.5)
+        self.declare_parameter('fallback_match_distance_px', 64.0)
+        self.declare_parameter('fallback_match_max_age_sec', 2.0)
 
         self._detector_backend = str(self.get_parameter('detector_backend').value).strip()
         self._detector_topic = str(self.get_parameter('detector_topic').value).strip()
@@ -186,6 +189,14 @@ class NaoSceneGrounding(Node):
         self._local_stale_after_sec = max(
             self._knowledge_lifespan_sec,
             float(self.get_parameter('local_stale_after_sec').value),
+        )
+        self._fallback_match_distance_px = max(
+            0.0,
+            float(self.get_parameter('fallback_match_distance_px').value),
+        )
+        self._fallback_match_max_age_sec = max(
+            0.0,
+            float(self.get_parameter('fallback_match_max_age_sec').value),
         )
         self._backend_spec = _BACKEND_SPECS.get(self._detector_backend)
 
@@ -269,6 +280,13 @@ class NaoSceneGrounding(Node):
         observations = self._adapter.parse_detections(
             msg,
             min_score=self._min_detection_score,
+        )
+        observations = reconcile_observation_entity_ids(
+            observations,
+            self._tracked_objects.values(),
+            now_sec=now_sec,
+            max_match_distance_px=self._fallback_match_distance_px,
+            max_match_age_sec=self._fallback_match_max_age_sec,
         )
         revised_any = False
         for observation in observations:
