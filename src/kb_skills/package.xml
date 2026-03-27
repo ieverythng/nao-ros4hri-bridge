@@ -56,5 +56,105 @@
             type: string
             description: Error string returned by KnowledgeCore on failure.
     </skill>
+
+    <skill content-type="yaml">
+      id: kb_revise
+      version: 1.0.0
+      description: |
+        Update or revise symbolic state in KnowledgeCore through the canonical
+        `/kb/revise` service. This is the main planner-facing mutation seam for
+        refreshing world facts without exposing raw ROS transport details.
+      interface: service
+      default_interface_path: /kb/revise
+      datatype: kb_msgs/srv/Revise
+      functional_domains:
+        - knowledge
+        - planning
+      parameters:
+        in:
+          - name: statements
+            type: string[]
+            required: true
+            description: Statements to update in KnowledgeCore.
+          - name: models
+            type: string[]
+            default: []
+            description: Optional model scope used by the mutation.
+          - name: lifespan_sec
+            type: float
+            default: 0.0
+            description: Optional lifespan used for transient grounded facts.
+        out:
+          - name: success
+            type: boolean
+            description: True if the revise request succeeded.
+          - name: error_msg
+            type: string
+            description: Error string returned by KnowledgeCore on failure.
+    </skill>
+
+    <skill content-type="yaml">
+      id: kb_add
+      version: 1.0.0
+      description: |
+        Add new symbolic facts through `/kb/revise` using the `add` mutation
+        operation. This is intended for planner- or tool-driven persistent KB
+        assertions.
+      interface: service
+      default_interface_path: /kb/revise
+      datatype: kb_msgs/srv/Revise
+      functional_domains:
+        - knowledge
+        - planning
+      parameters:
+        in:
+          - name: statements
+            type: string[]
+            required: true
+            description: Statements to add to KnowledgeCore.
+          - name: models
+            type: string[]
+            default: []
+            description: Optional model scope used by the mutation.
+        out:
+          - name: success
+            type: boolean
+            description: True if the add request succeeded.
+          - name: error_msg
+            type: string
+            description: Error string returned by KnowledgeCore on failure.
+    </skill>
+
+    <skill content-type="yaml">
+      id: kb_remove
+      version: 1.0.0
+      description: |
+        Remove symbolic facts through `/kb/revise` using the `remove`
+        operation. This is the planner-facing seam for retracting obsolete or
+        invalidated symbolic state.
+      interface: service
+      default_interface_path: /kb/revise
+      datatype: kb_msgs/srv/Revise
+      functional_domains:
+        - knowledge
+        - planning
+      parameters:
+        in:
+          - name: statements
+            type: string[]
+            required: true
+            description: Statements to retract from KnowledgeCore.
+          - name: models
+            type: string[]
+            default: []
+            description: Optional model scope used by the mutation.
+        out:
+          - name: success
+            type: boolean
+            description: True if the remove request succeeded.
+          - name: error_msg
+            type: string
+            description: Error string returned by KnowledgeCore on failure.
+    </skill>
   </export>
 </package>

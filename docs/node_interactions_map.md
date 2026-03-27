@@ -1,69 +1,54 @@
 # Node Interactions Map
 
-Last updated: 2026-03-24
+Last updated: 2026-03-25
 
-This map reflects the active migrated stack.
+This is now the short architecture map for the active stack.
+
+For detailed runtime contracts and examples, see
+[demo_status_and_contracts.md](./demo_status_and_contracts.md).
+For the thesis-facing next-stage architecture, see
+[thesis_planning_handoff.md](./thesis_planning_handoff.md).
+For launch behavior, see [launch_profiles.md](./launch_profiles.md).
 
 ## Active Nodes
 
 | Node | Package | Role |
 | --- | --- | --- |
-| `dialogue_manager` | `dialogue_manager` | Canonical communication-skill runtime and dialogue tracking |
-| `chatbot_llm` | `chatbot_llm` | Backend dialogue service/action provider |
-| `nao_orchestrator` | `nao_orchestrator` | Consumes `/intents` and dispatches robot actions |
-| `nao_say_skill` | `nao_say_skill` | Robot-specific speech execution |
-| `nao_look_at` | `nao_look_at` | NAO implementation of `interaction_skills/look_at` |
-| `nao_scene_grounding` | `nao_scene_grounding` | Detector-to-KB bridge and compact scene summary publisher |
-| `replay_motion_skill_server` | `nao_replay_motion` | Replay-motion execution |
-| `head_motion_skill_server` | `nao_replay_motion` | Transitional head-motion execution |
-| `nao_posture_bridge_node` | `nao_replay_motion` | Transitional posture topic bridge |
-| `asr_vosk` | `asr_vosk` | Transitional ASR lifecycle node |
-| `simple_audio_capture` | `simple_audio_capture` | Laptop microphone capture |
+| `dialogue_manager` | `dialogue_manager` | entry point for speech/text dialogue |
+| `chatbot_llm` | `chatbot_llm` | grounded response and intent generation |
+| `knowledge_core` | upstream package | symbolic world state |
+| `nao_scene_grounding` | `nao_scene_grounding` | detector-to-KB bridge and `/scene/summary` publisher |
+| `nao_orchestrator` | `nao_orchestrator` | deterministic intent execution |
+| `nao_say_skill` | `nao_say_skill` | robot speech execution |
+| `nao_replay_motion` | `nao_replay_motion` | motion and posture execution |
+| `nao_look_at` | `nao_look_at` | upstream-style gaze execution |
+| `asr_vosk` | `asr_vosk` | transitional ASR path |
 
 ## Main Runtime Graph
 
 ```mermaid
 graph LR
-    Speech["/humans/voices/*/speech"] --> DM["dialogue_manager"]
-    DM -->|chatbot_msgs/Dialogue + DialogueInteraction| CB["chatbot_llm"]
-    CB -->|"/kb/query via kb_skills"| KB["knowledge_core"]
-    DM -->|/intents| ORCH["nao_orchestrator"]
-    DET["detector backend"] --> SG["nao_scene_grounding"]
-    SG -->|/kb/revise| KB["knowledge_core"]
-    SG -->|/scene/summary| SCENE["scene summary consumers"]
-    KB -->|/kb/query| CB
-    ORCH --> SAY["/nao/say"]
-    ORCH --> RM["/skill/replay_motion"]
-    ORCH --> HM["/skill/do_head_motion"]
-    ORCH --> LA["/skill/look_at"]
-    DM -->|/skill/say| TTS["TTS engine"]
+    speech["/humans/voices/*/speech"] --> dm["dialogue_manager"]
+    dm --> chatbot["chatbot_llm"]
+    detector["detector_backend"] --> grounding["nao_scene_grounding"]
+    grounding -->|/kb/revise| kb["knowledge_core"]
+    kb -->|/kb/query via kb_skills| chatbot
+    grounding -->|/scene/summary| summary["scene_summary_consumers"]
+    dm -->|/intents| orch["nao_orchestrator"]
+    orch -->|/planner/execution_feedback| planner["planner_or_wme_consumers"]
+    orch --> say["/nao/say"]
+    orch --> motion["/skill/replay_motion"]
+    orch --> head["/skill/do_head_motion"]
+    orch --> look["/skill/look_at"]
 ```
 
-## ASR Isolation Graph
+## Architecture Notes
 
-```mermaid
-graph LR
-    MIC["simple_audio_capture"] --> ASR["asr_vosk"]
-    ASR --> SPEECH["/humans/voices/anonymous_speaker/speech"]
-```
-
-## Transitional Notes
-
-- `nao_orchestrator` can still subscribe to `/chatbot/intent` while older
-  producers exist.
-- `kb_skills` is the dedicated local package boundary for KnowledgeCore reads
-  today and future KB writes/revisions later; `chatbot_llm` decides when to use
-  it, while `nao_orchestrator` remains downstream-only.
-- `nao_replay_motion` still exposes `/skill/do_posture` as a compatibility
-  adapter onto `/skill/replay_motion`.
-- `nao_look_at` now supports reset plus target-frame tracking; richer social
-  gaze policies are still deferred.
-- detector backends are intentionally pluggable; the current launch surface can
-  start either `emorobcare_cv_object_detection` or `yolo_ros`, both funneled
-  into the same `nao_scene_grounding` contract.
-- `chatbot_llm` stays detector-agnostic: object detections become prompt
-  context only after `nao_scene_grounding` refreshes KB facts and
-  `chatbot_llm` reads them back through `/kb/query`.
-- enriched intent metadata such as `ack_text`, `ack_mode`, `scene_targets`, and
-  `plan` flows downstream in `Intent.data` so `nao_orchestrator` can stay a
-  pure execution consumer.
+- `chatbot_llm` stays detector-agnostic and only consumes grounded symbolic state.
+- `nao_scene_grounding` is the semantic bridge from raw detections into the KB.
+- `nao_orchestrator` remains downstream-only and should evolve into the
+  deterministic validation and execution layer for future planner work.
+- planner-facing execution feedback is published separately so later planner or
+  world-model components can react without taking over skill dispatch.
+- `kb_skills` is the intended long-term boundary for both KB reads and future KB
+  mutations.

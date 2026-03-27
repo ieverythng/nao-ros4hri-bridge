@@ -2,7 +2,6 @@ from kb_skills.intent_labels import KB_QUERY_INTENTS
 from kb_skills.intent_labels import KB_QUERY_SCENE_CHANGE
 from kb_skills.intent_labels import KB_QUERY_VISIBLE_OBJECTS
 from kb_skills.intent_labels import KB_QUERY_VISIBLE_PEOPLE
-from kb_skills.mutation_client import KnowledgeCoreMutationClient
 from kb_skills.query_client import KnowledgeCoreQueryClient
 
 
@@ -40,16 +39,3 @@ def test_kb_query_intents_are_shared_constants():
         KB_QUERY_VISIBLE_OBJECTS,
         KB_QUERY_SCENE_CHANGE,
     )
-
-
-def test_mutation_client_methods_are_explicitly_not_implemented():
-    client = KnowledgeCoreMutationClient()
-
-    for method_name in ("add_fact", "revise_fact", "remove_fact"):
-        method = getattr(client, method_name)
-        try:
-            method("test")
-        except NotImplementedError as err:
-            assert "Phase 2" in str(err)
-        else:  # pragma: no cover - defensive assertion
-            raise AssertionError(f"{method_name} should raise NotImplementedError")

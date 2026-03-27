@@ -9,13 +9,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
-import math
 
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.exceptions import ParameterUninitializedException
 from rclpy.node import Node
 from std_msgs.msg import String
+from kb_skills.mutation_client import KnowledgeCoreMutationClient
 
 from nao_scene_grounding.detector_adapters import DEFAULT_ALLOWED_LABELS
 from nao_scene_grounding.detector_adapters import EmorobcareDetectionAdapter
@@ -24,11 +24,6 @@ from nao_scene_grounding.detector_adapters import YoloRosDetectionAdapter
 from nao_scene_grounding.detector_adapters import coerce_str_list
 from nao_scene_grounding.detector_adapters import load_label_class_map
 from nao_scene_grounding.identity_matching import reconcile_observation_entity_ids
-
-try:  # pragma: no cover - runtime dependency
-    from kb_msgs.srv import Revise
-except ImportError:  # pragma: no cover - runtime dependency
-    Revise = None
 
 try:  # pragma: no cover - runtime dependency
     from yolo_msgs.msg import DetectionArray as YoloDetectionArray
@@ -203,15 +198,13 @@ class NaoSceneGrounding(Node):
         # Create publishers and service clients before subscriptions so early
         # detections can immediately publish summaries and revise KB facts.
         self._summary_pub = self.create_publisher(String, self._summary_topic, 10)
-        self._revise_client = None
-        if self._knowledge_enabled and Revise is not None:
-            self._revise_client = self.create_client(
-                Revise,
-                self._knowledge_revise_service_name,
-            )
-        elif self._knowledge_enabled:
-            self.get_logger().warn(
-                'kb_msgs is unavailable; KnowledgeCore revise writes are disabled'
+        self._mutation_client = None
+        if self._knowledge_enabled:
+            self._mutation_client = KnowledgeCoreMutationClient(
+                node=self,
+                callback_group=None,
+                service_name=self._knowledge_revise_service_name,
+                timeout_sec=0.5,
             )
 
         self._tracked_objects: dict[str, _TrackedObject] = {}
@@ -313,29 +306,26 @@ class NaoSceneGrounding(Node):
 
     def _revise_observation(self, tracked: _TrackedObject, now_sec: float) -> bool:
         """Refresh transient KnowledgeCore facts for one tracked object."""
-        if not self._knowledge_enabled or self._revise_client is None or Revise is None:
+        if not self._knowledge_enabled or self._mutation_client is None:
             tracked.last_revised_sec = now_sec
             return False
-        if not self._revise_client.service_is_ready():
-            self._log_missing_dependency_once(
-                'KnowledgeCore revise service is not ready yet; object facts will start once it appears'
-            )
-            return False
 
-        request = Revise.Request()
-        request.method = 'update'
-        request.statements = [
-            f'{self._observer_name} sees {tracked.entity_id}',
-            f'{tracked.entity_id} rdf:type {tracked.kb_class}',
-        ]
-        request.models = list(self._knowledge_models)
-        request.lifespan.sec = int(math.floor(self._knowledge_lifespan_sec))
-        request.lifespan.nanosec = int(
-            (self._knowledge_lifespan_sec - request.lifespan.sec) * 1_000_000_000
+        result = self._mutation_client.revise_facts(
+            [
+                f'{self._observer_name} sees {tracked.entity_id}',
+                f'{tracked.entity_id} rdf:type {tracked.kb_class}',
+            ],
+            models=list(self._knowledge_models),
+            lifespan_sec=self._knowledge_lifespan_sec,
+            wait_for_result=False,
         )
-        self._revise_client.call_async(request)
         tracked.last_revised_sec = now_sec
-        return True
+        if result.success:
+            return True
+        self._log_missing_dependency_once(
+            'KnowledgeCore revise service is not ready yet; object facts will start once it appears'
+        )
+        return False
 
     # -------------------------------------------------------------------------
     # Local housekeeping and operator-facing summary output

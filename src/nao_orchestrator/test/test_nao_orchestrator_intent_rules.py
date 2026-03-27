@@ -1,17 +1,19 @@
 import json
 
-from hri_actions_msgs.msg import Intent
 from kb_skills.intent_labels import KB_QUERY_VISIBLE_PEOPLE
 
 from nao_orchestrator.intent_rules import classify_motion_target
+from nao_orchestrator.intent_rules import Intent
 from nao_orchestrator.intent_rules import make_intent_signature
 from nao_orchestrator.intent_rules import normalize_incoming_intent
 from nao_orchestrator.intent_rules import normalize_legacy_intent
+from nao_orchestrator.intent_rules import parse_plan_envelope
 from nao_orchestrator.intent_rules import parse_execution_plan
 from nao_orchestrator.intent_rules import parse_intent_data
 from nao_orchestrator.intent_rules import posture_topic_fallback_for_motion
 from nao_orchestrator.intent_rules import resolve_ack_text
 from nao_orchestrator.intent_rules import resolve_say_text
+from nao_orchestrator.intent_rules import validate_execution_plan
 
 
 def test_parse_intent_data_returns_dict_for_valid_json() -> None:
@@ -104,10 +106,48 @@ def test_parse_execution_plan_filters_unknown_steps() -> None:
     )
     assert plan == [
         {
+            'id': 'step_1',
             'type': 'skill',
             'name': 'perform_motion',
             'args': {'object': 'stand'},
+            'requires': [],
+            'on_failure': 'fail',
+            'retry_budget': 0,
         }
+    ]
+
+
+def test_parse_plan_envelope_accepts_dict_style_plan_metadata() -> None:
+    envelope = parse_plan_envelope(
+        {
+            'plan': {
+                'plan_id': 'plan-42',
+                'validation_status': 'draft',
+                'steps': [
+                    {'type': 'say', 'args': {'text': 'hello'}},
+                ],
+            },
+            'scene_targets': ['cup'],
+        }
+    )
+    assert envelope['plan_id'] == 'plan-42'
+    assert envelope['validation_status'] == 'draft'
+    assert envelope['scene_targets'] == ['cup']
+    assert envelope['steps'][0]['id'] == 'step_1'
+
+
+def test_validate_execution_plan_rejects_invalid_look_at_step() -> None:
+    envelope = validate_execution_plan(
+        Intent.PRESENT_CONTENT,
+        {
+            'plan': [
+                {'type': 'look_at', 'args': {}},
+            ]
+        },
+    )
+    assert envelope['steps'] == []
+    assert envelope['errors'] == [
+        'step_1: look_at step is missing target_frame or reset policy'
     ]
 
 

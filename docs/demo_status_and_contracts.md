@@ -6,12 +6,17 @@ This note is the high-level demo brief for the current migration checkpoint.
 It focuses on what is live today, how the grounded scene reaches the LLM, and
 the exact runtime contracts that matter during a walkthrough or review.
 
+For the concise thesis-facing architecture summary and next-stage planning
+direction, see [thesis_planning_handoff.md](./thesis_planning_handoff.md).
+For launch commands and profile toggles, see
+[launch_profiles.md](./launch_profiles.md).
+
 ## Executive Summary
 
 The stack now demonstrates four major capabilities working together:
 
-1. `knowledge_core` is part of the live dialogue path through a dedicated
-   `kb_skills` read boundary.
+1. `knowledge_core` is part of the live dialogue and planner path through a
+   dedicated `kb_skills` boundary for query and revise operations.
 2. object detection is live through the emorobcare backend and is grounded into
    transient KB facts by `nao_scene_grounding`.
 3. `chatbot_llm` injects a bounded symbolic scene snapshot into both the
@@ -32,7 +37,7 @@ The main architectural point for the demo is this:
 | Area | Current status | Why it matters in the demo |
 | --- | --- | --- |
 | KB-aware chatbot turns | live | the robot can answer perception questions from grounded state instead of guessing |
-| Read-side KB client boundary | live in `kb_skills` | keeps KnowledgeCore transport out of LLM prompt code |
+| Shared KB client boundary | live in `kb_skills` | keeps KnowledgeCore transport out of LLM prompt code and future planner logic |
 | Object detection backend | live through `emorobcare_cv` | lets us show live object grounding on the laptop camera |
 | Detector-to-KB bridge | live in `nao_scene_grounding` | detector output becomes symbolic scene facts |
 | Scene summary output | live contract in `/scene/summary` | gives operators and future consumers a compact world-state feed |
@@ -98,7 +103,7 @@ sequenceDiagram
 | `emorobcare_cv_object_detection` | raw detector inference and debug image publishing |
 | `nao_scene_grounding` | detector normalization, identity stabilization, transient KB writes, `/scene/summary` |
 | `knowledge_core` | symbolic world-state store |
-| `kb_skills` | reusable read-only KB query boundary and KB intent labels |
+| `kb_skills` | reusable KB query/mutation boundary and KB intent labels |
 | `chatbot_llm` | prompt building, knowledge snapshot injection, recent scene memory, response + intent generation |
 | `dialogue_manager` | dialogue lifecycle and speaking ownership |
 | `nao_orchestrator` | downstream intent normalization and NAO skill dispatch |
@@ -173,7 +178,8 @@ For emorobcare specifically:
 
 ## KnowledgeCore Write Contract
 
-`nao_scene_grounding` writes transient facts through `/kb/revise`.
+`nao_scene_grounding` writes transient facts through
+`kb_skills.KnowledgeCoreMutationClient`, which forwards to `/kb/revise`.
 
 Service contract:
 
@@ -399,6 +405,11 @@ Current useful keys:
 - `ack_text`
 - `ack_mode`
 - `scene_targets`
+- `plan_id`
+- `validation_status`
+- `failure_reason`
+- `replan_hint`
+- `retry_budget`
 - `plan`
 
 Example KB-query intent payload:
@@ -466,6 +477,10 @@ Current downstream behavior:
 - `look_at` supports reset or target-frame dispatch
 - `ack_text` is used as a spoken acknowledgement when speech dispatch is enabled
 - `ack_mode` is currently informational, with `say` as the active convention
+- planner-facing metadata can now carry validation and retry hints without
+  changing the ROS message type
+- `nao_orchestrator` publishes structured execution feedback on
+  `/planner/execution_feedback` for future planner or world-model consumers
 
 ## Grounding Defaults In `nao_scene_grounding`
 
@@ -521,8 +536,8 @@ A short story that matches the current stack well:
 - `ack_mode` is present in the contract, but only `say` is currently meaningful
 - `/scene/summary` is published as JSON in a `std_msgs/String`, not a custom
   typed scene message yet
-- `kb_skills` is intentionally read-only in Phase 1; detector writes are
-  currently owned by `nao_scene_grounding`
+- planner-facing KB mutation support now lives in `kb_skills`, while
+  `nao_scene_grounding` still owns the semantics of detector-derived writes
 
 ## Quick Validation Commands
 

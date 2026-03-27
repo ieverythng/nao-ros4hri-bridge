@@ -602,7 +602,7 @@ def generate_profile_launch_description(
         default_value=_profile_default(
             profile_defaults,
             "start_interaction_sim_expressive_face",
-            "true",
+            "false",
         ),
         description=(
             "Launch the simulator expressive_face node. Disable it when you only "

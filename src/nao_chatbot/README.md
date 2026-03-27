@@ -27,10 +27,10 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   object_detection_backend:=emorobcare_cv
 ```
 
-The kept simulator wrappers leave `start_interaction_sim_expressive_face:=false`
-by default so the webcam/object-detection path avoids duplicate simulator-side
-TTS servers and extra node-name noise. Re-enable it only if you want the
-simulator face UI:
+The launch surface now leaves `start_interaction_sim_expressive_face:=false` by
+default so the webcam/object-detection path avoids duplicate simulator-side TTS
+servers and extra node-name noise. Re-enable it only if you want the simulator
+face UI:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py \

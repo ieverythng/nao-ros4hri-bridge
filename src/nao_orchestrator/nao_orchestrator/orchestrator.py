@@ -9,6 +9,7 @@ skill endpoints without taking over prompt or dialogue ownership.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 import time
 
 from communication_skills.action import Say
@@ -27,11 +28,13 @@ from nao_orchestrator.intent_rules import (
     make_intent_signature,
     normalize_incoming_intent,
     normalize_legacy_intent,
+    parse_plan_envelope,
     parse_execution_plan,
     parse_intent_data,
     posture_topic_fallback_for_motion,
     resolve_ack_text,
     resolve_say_text,
+    validate_execution_plan,
 )
 
 try:  # pragma: no cover - runtime dependency
@@ -44,6 +47,9 @@ except ImportError:  # pragma: no cover - runtime dependency
 class _RuntimeStats:
     intents_received: int = 0
     duplicates_ignored: int = 0
+    plans_started: int = 0
+    plans_succeeded: int = 0
+    plans_failed: int = 0
     dispatched_say: int = 0
     dispatched_replay_motion: int = 0
     dispatched_head_motion: int = 0
@@ -51,6 +57,8 @@ class _RuntimeStats:
     dispatch_failures: int = 0
     last_intent: str = ''
     last_route: str = ''
+    last_plan_id: str = ''
+    last_plan_status: str = ''
 
 
 class NaoOrchestrator(Node):
@@ -78,6 +86,7 @@ class NaoOrchestrator(Node):
         self.declare_parameter('fallback_to_posture_topic', True)
         self.declare_parameter('head_motion_joint_angles_topic', '/joint_angles')
         self.declare_parameter('fallback_to_joint_angles_topic', True)
+        self.declare_parameter('planner_feedback_topic', '/planner/execution_feedback')
         self.declare_parameter('dedupe_window_sec', 0.8)
         self.declare_parameter('default_greeting', 'Hello! Nice to meet you.')
 
@@ -127,6 +136,9 @@ class NaoOrchestrator(Node):
         self.fallback_to_joint_angles_topic = bool(
             self.get_parameter('fallback_to_joint_angles_topic').value
         )
+        self.planner_feedback_topic = str(
+            self.get_parameter('planner_feedback_topic').value
+        )
         self.dedupe_window_sec = max(
             0.0,
             float(self.get_parameter('dedupe_window_sec').value),
@@ -139,6 +151,7 @@ class NaoOrchestrator(Node):
         self._diag_timer = None
         self._posture_command_pub = None
         self._joint_angles_pub = None
+        self._planner_feedback_pub = None
         self._is_active = False
         self._stats = _RuntimeStats()
         self._last_intent_signature = ''
@@ -173,6 +186,11 @@ class NaoOrchestrator(Node):
         self._posture_command_pub = self.create_publisher(
             String,
             self.posture_command_topic,
+            10,
+        )
+        self._planner_feedback_pub = self.create_publisher(
+            String,
+            self.planner_feedback_topic,
             10,
         )
         if JointAnglesWithSpeed is not None:
@@ -261,6 +279,9 @@ class NaoOrchestrator(Node):
         if self._joint_angles_pub is not None:
             self.destroy_publisher(self._joint_angles_pub)
             self._joint_angles_pub = None
+        if self._planner_feedback_pub is not None:
+            self.destroy_publisher(self._planner_feedback_pub)
+            self._planner_feedback_pub = None
         for client in (
             self._say_client,
             self._replay_motion_client,
@@ -326,10 +347,12 @@ class NaoOrchestrator(Node):
             return
 
         plan = parse_execution_plan(data)
+        plan_context = validate_execution_plan(intent_name, data) if plan else None
         if plan and self._handle_planned_intent(
             intent_name=intent_name,
             data=data,
             plan=plan,
+            plan_context=plan_context or parse_plan_envelope(data),
             source=source,
         ):
             return
@@ -387,8 +410,37 @@ class NaoOrchestrator(Node):
         intent_name: str,
         data: dict,
         plan: list[dict],
+        plan_context: dict,
         source: str,
     ) -> bool:
+        plan_id = self._resolve_plan_id(plan_context)
+        self._stats.plans_started += 1
+        self._stats.last_plan_id = plan_id
+
+        if plan_context.get('errors'):
+            self._stats.plans_failed += 1
+            self._stats.last_plan_status = 'invalid'
+            self._stats.last_route = 'planned:invalid'
+            self._publish_plan_feedback(
+                intent_name=intent_name,
+                source=source,
+                plan_context=plan_context,
+                status='invalid',
+                reason='; '.join(plan_context['errors']),
+                validation_errors=plan_context['errors'],
+            )
+            self.get_logger().warn(
+                'Planned intent validation failed | intent=%s source=%s plan_id=%s errors=%s'
+                % (intent_name, source, plan_id, plan_context['errors'])
+            )
+            return False
+
+        self._publish_plan_feedback(
+            intent_name=intent_name,
+            source=source,
+            plan_context=plan_context,
+            status='accepted',
+        )
         self._maybe_dispatch_acknowledgement(
             intent_name=intent_name,
             data=data,
@@ -397,20 +449,55 @@ class NaoOrchestrator(Node):
 
         executed_any = False
         for step in plan:
-            if self._dispatch_plan_step(step, fallback_data=data):
+            self._publish_plan_feedback(
+                intent_name=intent_name,
+                source=source,
+                plan_context=plan_context,
+                status='running',
+                step=step,
+            )
+            step_ok, reason = self._dispatch_plan_step(step, fallback_data=data)
+            if step_ok:
                 executed_any = True
                 continue
 
             self._stats.last_route = 'planned:failed'
+            self._stats.plans_failed += 1
+            self._stats.last_plan_status = 'failed'
+            self._publish_plan_feedback(
+                intent_name=intent_name,
+                source=source,
+                plan_context=plan_context,
+                status='failed',
+                reason=reason,
+                step=step,
+            )
             self.get_logger().warn(
-                'Planned intent step failed | intent=%s source=%s step=%s'
-                % (intent_name, source, step)
+                'Planned intent step failed | intent=%s source=%s plan_id=%s step=%s reason=%s'
+                % (intent_name, source, plan_id, step, reason)
             )
             return False
 
         if executed_any:
             self._stats.last_route = 'planned'
+            self._stats.plans_succeeded += 1
+            self._stats.last_plan_status = 'completed'
+            self._publish_plan_feedback(
+                intent_name=intent_name,
+                source=source,
+                plan_context=plan_context,
+                status='completed',
+            )
             return True
+        self._stats.plans_failed += 1
+        self._stats.last_plan_status = 'empty'
+        self._publish_plan_feedback(
+            intent_name=intent_name,
+            source=source,
+            plan_context=plan_context,
+            status='failed',
+            reason='plan contained no executable steps',
+        )
         return False
 
     def _maybe_dispatch_acknowledgement(
@@ -437,14 +524,14 @@ class NaoOrchestrator(Node):
         if self._dispatch_say(ack_text, data):
             self._stats.dispatched_say += 1
 
-    def _dispatch_plan_step(self, step: dict, fallback_data: dict) -> bool:
+    def _dispatch_plan_step(self, step: dict, fallback_data: dict) -> tuple[bool, str]:
         """Execute one step from the optional structured `Intent.data.plan`."""
         step_type = str(step.get('type', '')).strip().lower()
         step_name = str(step.get('name', '')).strip().lower()
         step_args = dict(step.get('args', {}))
 
         if step_type == 'noop':
-            return True
+            return True, ''
 
         if step_type == 'say':
             text = resolve_say_text(
@@ -461,8 +548,8 @@ class NaoOrchestrator(Node):
             )
             if self._dispatch_say(text, {**fallback_data, **step_args}):
                 self._stats.dispatched_say += 1
-                return True
-            return False
+                return True, ''
+            return False, 'say dispatch failed'
 
         if step_type == 'look_at':
             return self._dispatch_planned_look_at(step_name, step_args)
@@ -473,15 +560,21 @@ class NaoOrchestrator(Node):
                     step_args,
                     count_unsupported_failure=True,
                 )
-                return dispatched
+                if dispatched:
+                    return True, ''
+                return False, 'motion dispatch failed'
             if step_name == 'look_at':
                 return self._dispatch_planned_look_at(step_name, step_args)
 
         self._stats.dispatch_failures += 1
         self.get_logger().warn('Unsupported planned step: %s' % step)
-        return False
+        return False, 'unsupported planned step'
 
-    def _dispatch_planned_look_at(self, step_name: str, step_args: dict) -> bool:
+    def _dispatch_planned_look_at(
+        self,
+        step_name: str,
+        step_args: dict,
+    ) -> tuple[bool, str]:
         """Map a planned look-at step onto reset or target-frame dispatch."""
         policy = str(
             step_args.get('policy', step_args.get('object', step_name))
@@ -489,8 +582,8 @@ class NaoOrchestrator(Node):
         if policy in ('reset', 'look_at_reset'):
             if self._dispatch_look_at_reset():
                 self._stats.dispatched_look_at += 1
-                return True
-            return False
+                return True, ''
+            return False, 'look_at reset dispatch failed'
         target_frame = str(
             step_args.get('target_frame', step_args.get('frame_id', ''))
         ).strip()
@@ -500,7 +593,7 @@ class NaoOrchestrator(Node):
                 'Planned look_at step is missing a target frame or reset policy: %s'
                 % step_args
             )
-            return False
+            return False, 'look_at step missing target frame or reset policy'
 
         if self._dispatch_look_at_target(
             frame_id=target_frame,
@@ -510,8 +603,50 @@ class NaoOrchestrator(Node):
             policy=policy,
         ):
             self._stats.dispatched_look_at += 1
-            return True
-        return False
+            return True, ''
+        return False, 'look_at target dispatch failed'
+
+    def _resolve_plan_id(self, plan_context: dict) -> str:
+        plan_id = str(plan_context.get('plan_id', '')).strip()
+        if plan_id:
+            return plan_id
+        return 'plan_%d' % int(time.time() * 1000)
+
+    def _publish_plan_feedback(
+        self,
+        *,
+        intent_name: str,
+        source: str,
+        plan_context: dict,
+        status: str,
+        reason: str = '',
+        step: dict | None = None,
+        validation_errors: list[str] | None = None,
+    ) -> None:
+        if self._planner_feedback_pub is None:
+            return
+        payload = {
+            'intent': str(intent_name).strip(),
+            'source': str(source).strip(),
+            'plan_id': self._resolve_plan_id(plan_context),
+            'status': str(status).strip().lower(),
+            'reason': str(reason).strip(),
+            'validation_status': str(plan_context.get('validation_status', '')).strip(),
+            'replan_hint': str(plan_context.get('replan_hint', '')).strip(),
+            'retry_budget': int(plan_context.get('retry_budget', 0) or 0),
+            'scene_targets': list(plan_context.get('scene_targets', [])),
+            'validation_errors': list(validation_errors or []),
+            'timestamp_sec': round(time.time(), 3),
+        }
+        if step is not None:
+            payload['step'] = {
+                'id': str(step.get('id', '')).strip(),
+                'type': str(step.get('type', '')).strip(),
+                'name': str(step.get('name', '')).strip(),
+            }
+        msg = String()
+        msg.data = json.dumps(payload, sort_keys=True, separators=(',', ':'))
+        self._planner_feedback_pub.publish(msg)
 
     def _dispatch_motion_payload(
         self,
@@ -772,8 +907,19 @@ class NaoOrchestrator(Node):
                     key='dispatch_failures',
                     value=str(self._stats.dispatch_failures),
                 ),
+                KeyValue(key='plans_started', value=str(self._stats.plans_started)),
+                KeyValue(
+                    key='plans_succeeded',
+                    value=str(self._stats.plans_succeeded),
+                ),
+                KeyValue(key='plans_failed', value=str(self._stats.plans_failed)),
                 KeyValue(key='last_intent', value=self._stats.last_intent),
                 KeyValue(key='last_route', value=self._stats.last_route),
+                KeyValue(key='last_plan_id', value=self._stats.last_plan_id),
+                KeyValue(
+                    key='last_plan_status',
+                    value=self._stats.last_plan_status,
+                ),
             ],
         )
         msg = DiagnosticArray()

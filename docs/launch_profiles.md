@@ -4,6 +4,11 @@ Last updated: 2026-03-24
 
 This is the quick execution guide for the active launch files in this repo.
 
+For the canonical grounded-runtime contracts, see
+[demo_status_and_contracts.md](./demo_status_and_contracts.md).
+For the thesis-facing architectural summary and next implementation direction,
+see [thesis_planning_handoff.md](./thesis_planning_handoff.md).
+
 ## Profile Matrix
 
 | Launch file | What it enables by default | What it disables by default |
@@ -37,9 +42,9 @@ Default notes:
 - `ollama_model` now defaults to `gpt-oss:120b-cloud` on the kept sim/robot wrappers.
 - `chatbot_model` remains available as a legacy override, but it is no longer
   seeded with the old local `llama3.2:1b` default.
-- `start_interaction_sim_expressive_face` defaults to `false` on the kept sim
-  wrappers so object-detection testing does not also start the simulator face
-  TTS server.
+- `start_interaction_sim_expressive_face` now defaults to `false` so
+  object-detection testing does not also start the simulator face TTS server
+  unless explicitly requested.
 
 With emorobcare object detection:
 

@@ -111,8 +111,9 @@ def _interaction_sim_summary_logs(
     *,
     mode_description: str,
     start_expressive_face: bool,
+    start_nao_say_skill: bool,
 ) -> list[LogInfo]:
-    return [
+    logs = [
         # These log lines give operators a quick summary of which simulator
         # layer is active without reading the full launch file.
         LogInfo(
@@ -137,6 +138,17 @@ def _interaction_sim_summary_logs(
             )
         ),
     ]
+    if start_expressive_face and start_nao_say_skill:
+        logs.append(
+            LogInfo(
+                msg=(
+                    "interaction_sim expressive_face and nao_say_skill are both enabled. "
+                    "If the simulator face exports /tts_engine/tts you may see duplicate "
+                    "TTS action-server warnings."
+                )
+            )
+        )
+    return logs
 
 
 def build_interaction_sim_actions(context):
@@ -305,6 +317,7 @@ def build_interaction_sim_actions(context):
                 start_tools=start_tools,
             ),
             start_expressive_face=start_expressive_face,
+            start_nao_say_skill=_as_bool(context, "start_nao_say_skill"),
         )
     )
 

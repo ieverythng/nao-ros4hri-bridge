@@ -75,6 +75,9 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py nao_ip:=...
 - `dialogue_manager` talks to this package through `/tts_engine/tts`
 - operator tools such as `rqt_chat` can expose their own TTS server on
   `/debug/say` without conflicting with the canonical speech path
+- simulator-side `expressive_face` TTS should stay disabled unless explicitly
+  needed, otherwise the ROS graph may contain more than one `/tts_engine/tts`
+  server and clients can warn about unexpected goal responses
 - when no downstream TTS action is configured, the package falls back to
   publishing the utterance on `/speech` for the robot driver
 - if no node is subscribed to `/speech` at runtime, the utterance is still

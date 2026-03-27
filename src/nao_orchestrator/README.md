@@ -134,6 +134,15 @@ Current planned-step behavior:
   look-at reset
 - `look_at`: supports reset or target-frame dispatch through `/skill/look_at`
 - `noop`: explicit no-op placeholder
+- plan metadata such as `plan_id`, `validation_status`, `replan_hint`, and
+  `retry_budget` can accompany those steps inside `Intent.data`
+
+The orchestrator now also publishes structured execution feedback on:
+
+- `/planner/execution_feedback`
+
+That topic is intended for the future planner layer and world-model consumers,
+not for direct user dialogue ownership.
 
 If no valid `plan` exists, the package keeps the legacy migrated behavior for
 speech, posture, head motion, look-at reset, and KB query intent observation.
