@@ -28,8 +28,6 @@ from nao_orchestrator.intent_rules import (
     make_intent_signature,
     normalize_incoming_intent,
     normalize_legacy_intent,
-    parse_plan_envelope,
-    parse_execution_plan,
     parse_intent_data,
     posture_topic_fallback_for_motion,
     resolve_ack_text,
@@ -346,13 +344,12 @@ class NaoOrchestrator(Node):
             )
             return
 
-        plan = parse_execution_plan(data)
-        plan_context = validate_execution_plan(intent_name, data) if plan else None
-        if plan and self._handle_planned_intent(
+        plan_context = self._validated_plan_context(intent_name, data)
+        if plan_context and self._handle_planned_intent(
             intent_name=intent_name,
             data=data,
-            plan=plan,
-            plan_context=plan_context or parse_plan_envelope(data),
+            plan=plan_context['steps'],
+            plan_context=plan_context,
             source=source,
         ):
             return
@@ -403,6 +400,12 @@ class NaoOrchestrator(Node):
     # -------------------------------------------------------------------------
     # Structured plan execution
     # -------------------------------------------------------------------------
+
+    @staticmethod
+    def _validated_plan_context(intent_name: str, data: dict) -> dict | None:
+        if not isinstance(data, dict) or 'plan' not in data:
+            return None
+        return validate_execution_plan(intent_name, data)
 
     def _handle_planned_intent(
         self,

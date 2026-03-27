@@ -275,102 +275,52 @@ def parse_execution_plan(data: dict) -> list[dict]:
     if not isinstance(data, dict):
         return []
 
-    raw_plan = data.get('plan', [])
-    if isinstance(raw_plan, str):
-        try:
-            raw_plan = json.loads(raw_plan)
-        except json.JSONDecodeError:
-            raw_plan = []
-    if isinstance(raw_plan, dict):
-        raw_plan = raw_plan.get('steps', [])
-
-    if not isinstance(raw_plan, list):
-        return []
-
     parsed_steps: list[dict] = []
-    for index, step in enumerate(raw_plan, start=1):
-        if not isinstance(step, dict):
-            continue
-        step_type = str(step.get('type', '')).strip().lower()
-        if step_type not in _PLAN_STEP_TYPES:
-            continue
-        retry_budget = _coerce_nonnegative_int(
-            step.get('retry_budget', step.get('retries', 0))
-        )
-        on_failure = str(
-            step.get('on_failure', step.get('failure_policy', 'fail'))
-        ).strip().lower()
-        if on_failure not in _PLAN_FAILURE_POLICIES:
-            on_failure = 'fail'
-        parsed_steps.append(
-            {
-                'id': _first_non_empty(
-                    step.get('id', ''),
-                    step.get('step_id', ''),
-                    f'step_{index}',
-                ),
-                'type': step_type,
-                'name': str(step.get('name', '')).strip().lower(),
-                'args': _clean_payload(step.get('args', {})),
-                'requires': _coerce_str_list(
-                    step.get('requires', step.get('preconditions', []))
-                ),
-                'on_failure': on_failure,
-                'retry_budget': retry_budget,
-            }
-        )
+    for index, step in enumerate(_plan_steps(data), start=1):
+        normalized_step = _normalize_plan_step(step, index=index)
+        if normalized_step is not None:
+            parsed_steps.append(normalized_step)
     return parsed_steps
 
 
 def parse_plan_envelope(data: dict) -> dict:
     """Normalize planner metadata carried alongside or inside `plan`."""
     if not isinstance(data, dict):
-        return {
-            'plan_id': '',
-            'validation_status': '',
-            'failure_reason': '',
-            'replan_hint': '',
-            'retry_budget': 0,
-            'scene_targets': [],
-            'steps': [],
-            'has_explicit_plan': False,
-        }
+        return _empty_plan_envelope()
 
-    raw_plan = data.get('plan', [])
-    parsed_plan_dict = {}
-    if isinstance(raw_plan, str):
-        try:
-            parsed = json.loads(raw_plan)
-        except json.JSONDecodeError:
-            parsed = None
-        if isinstance(parsed, dict):
-            parsed_plan_dict = parsed
-    elif isinstance(raw_plan, dict):
-        parsed_plan_dict = raw_plan
-
-    def _from_plan_or_data(*keys: str):
-        for key in keys:
-            if key in parsed_plan_dict:
-                return parsed_plan_dict.get(key)
-            if key in data:
-                return data.get(key)
-        return None
+    parsed_plan_dict, _raw_plan = _parsed_plan_value(data)
 
     return {
         'plan_id': _first_non_empty(
-            _from_plan_or_data('plan_id', 'id', 'planId'),
+            _plan_metadata_value(data, parsed_plan_dict, 'plan_id', 'id', 'planId'),
             '',
         ),
         'validation_status': str(
-            _from_plan_or_data('validation_status', 'status') or ''
+            _plan_metadata_value(data, parsed_plan_dict, 'validation_status', 'status')
+            or ''
         ).strip().lower(),
         'failure_reason': str(
-            _from_plan_or_data('failure_reason', 'plan_failure_reason') or ''
+            _plan_metadata_value(
+                data,
+                parsed_plan_dict,
+                'failure_reason',
+                'plan_failure_reason',
+            )
+            or ''
         ).strip(),
-        'replan_hint': str(_from_plan_or_data('replan_hint') or '').strip(),
-        'retry_budget': _coerce_nonnegative_int(_from_plan_or_data('retry_budget')),
+        'replan_hint': str(
+            _plan_metadata_value(data, parsed_plan_dict, 'replan_hint') or ''
+        ).strip(),
+        'retry_budget': _coerce_nonnegative_int(
+            _plan_metadata_value(data, parsed_plan_dict, 'retry_budget')
+        ),
         'scene_targets': _coerce_str_list(
-            _from_plan_or_data('scene_targets', 'expected_scene_targets')
+            _plan_metadata_value(
+                data,
+                parsed_plan_dict,
+                'scene_targets',
+                'expected_scene_targets',
+            )
         ),
         'steps': parse_execution_plan(data),
         'has_explicit_plan': 'plan' in data,
@@ -394,39 +344,10 @@ def validate_execution_plan(intent_name: str, data: dict) -> dict:
             continue
         seen_step_ids.add(step_id)
 
-        step_type = step.get('type', '')
-        step_name = step.get('name', '')
-        step_args = dict(step.get('args', {}))
-
-        if step_type == 'say':
-            if not _first_non_empty(step_args.get('text', ''), step_args.get('object', '')):
-                errors.append(f'{step_id}: say step is missing text')
-                continue
-
-        elif step_type == 'look_at':
-            if _plan_look_at_error(step_args):
-                errors.append(f'{step_id}: {_plan_look_at_error(step_args)}')
-                continue
-
-        elif step_type == 'skill':
-            if step_name not in _SUPPORTED_SKILL_PLAN_NAMES:
-                errors.append(f'{step_id}: unsupported skill step "{step_name}"')
-                continue
-            if step_name == 'look_at':
-                error = _plan_look_at_error(step_args)
-                if error:
-                    errors.append(f'{step_id}: {error}')
-                    continue
-            else:
-                route, _resolved_payload = classify_motion_target(
-                    intent_name or Intent.PERFORM_MOTION,
-                    step_args,
-                )
-                if route == 'unsupported':
-                    errors.append(
-                        f'{step_id}: unsupported motion payload {json.dumps(step_args, sort_keys=True)}'
-                    )
-                    continue
+        error = _plan_step_validation_error(intent_name, step)
+        if error:
+            errors.append(f'{step_id}: {error}')
+            continue
 
         validated_steps.append(step)
 
@@ -518,4 +439,113 @@ def _first_non_empty(*values: str) -> str:
         clean = str(value).strip()
         if clean:
             return clean
+    return ''
+
+
+def _empty_plan_envelope() -> dict:
+    return {
+        'plan_id': '',
+        'validation_status': '',
+        'failure_reason': '',
+        'replan_hint': '',
+        'retry_budget': 0,
+        'scene_targets': [],
+        'steps': [],
+        'has_explicit_plan': False,
+    }
+
+
+def _parsed_plan_value(data: dict) -> tuple[dict, list]:
+    raw_plan = data.get('plan', [])
+    if isinstance(raw_plan, str):
+        try:
+            raw_plan = json.loads(raw_plan)
+        except json.JSONDecodeError:
+            raw_plan = []
+
+    if isinstance(raw_plan, dict):
+        raw_steps = raw_plan.get('steps', [])
+        return raw_plan, raw_steps if isinstance(raw_steps, list) else []
+    if isinstance(raw_plan, list):
+        return {}, raw_plan
+    return {}, []
+
+
+def _plan_steps(data: dict) -> list[dict]:
+    _parsed_plan_dict, raw_steps = _parsed_plan_value(data)
+    return [step for step in raw_steps if isinstance(step, dict)]
+
+
+def _plan_metadata_value(data: dict, plan_data: dict, *keys: str):
+    for key in keys:
+        if key in plan_data:
+            return plan_data.get(key)
+        if key in data:
+            return data.get(key)
+    return None
+
+
+def _normalize_plan_step(step: dict, *, index: int) -> dict | None:
+    step_type = str(step.get('type', '')).strip().lower()
+    if step_type not in _PLAN_STEP_TYPES:
+        return None
+
+    return {
+        'id': _first_non_empty(
+            step.get('id', ''),
+            step.get('step_id', ''),
+            f'step_{index}',
+        ),
+        'type': step_type,
+        'name': str(step.get('name', '')).strip().lower(),
+        'args': _clean_payload(step.get('args', {})),
+        'requires': _coerce_str_list(
+            step.get('requires', step.get('preconditions', []))
+        ),
+        'on_failure': _coerce_failure_policy(
+            step.get('on_failure', step.get('failure_policy', 'fail'))
+        ),
+        'retry_budget': _coerce_nonnegative_int(
+            step.get('retry_budget', step.get('retries', 0))
+        ),
+    }
+
+
+def _coerce_failure_policy(value) -> str:
+    clean_value = str(value).strip().lower()
+    if clean_value in _PLAN_FAILURE_POLICIES:
+        return clean_value
+    return 'fail'
+
+
+def _plan_step_validation_error(intent_name: str, step: dict) -> str:
+    step_type = step.get('type', '')
+    step_name = step.get('name', '')
+    step_args = dict(step.get('args', {}))
+
+    if step_type == 'say':
+        if _first_non_empty(step_args.get('text', ''), step_args.get('object', '')):
+            return ''
+        return 'say step is missing text'
+
+    if step_type == 'look_at':
+        return _plan_look_at_error(step_args)
+
+    if step_type != 'skill':
+        return ''
+
+    if step_name not in _SUPPORTED_SKILL_PLAN_NAMES:
+        return f'unsupported skill step "{step_name}"'
+    if step_name == 'look_at':
+        return _plan_look_at_error(step_args)
+
+    route, _resolved_payload = classify_motion_target(
+        intent_name or Intent.PERFORM_MOTION,
+        step_args,
+    )
+    if route == 'unsupported':
+        return 'unsupported motion payload %s' % json.dumps(
+            step_args,
+            sort_keys=True,
+        )
     return ''

@@ -136,6 +136,15 @@ def test_parse_plan_envelope_accepts_dict_style_plan_metadata() -> None:
     assert envelope['steps'][0]['id'] == 'step_1'
 
 
+def test_validate_execution_plan_marks_explicit_empty_plan_invalid() -> None:
+    envelope = validate_execution_plan(
+        Intent.PRESENT_CONTENT,
+        {'plan': []},
+    )
+    assert envelope['steps'] == []
+    assert envelope['errors'] == ['plan contains no valid executable steps']
+
+
 def test_validate_execution_plan_rejects_invalid_look_at_step() -> None:
     envelope = validate_execution_plan(
         Intent.PRESENT_CONTENT,
@@ -149,6 +158,30 @@ def test_validate_execution_plan_rejects_invalid_look_at_step() -> None:
     assert envelope['errors'] == [
         'step_1: look_at step is missing target_frame or reset policy'
     ]
+
+
+def test_validate_execution_plan_rejects_duplicate_plan_step_ids() -> None:
+    envelope = validate_execution_plan(
+        Intent.PERFORM_MOTION,
+        {
+            'plan': [
+                {
+                    'id': 'wave',
+                    'type': 'skill',
+                    'name': 'perform_motion',
+                    'args': {'object': 'stand'},
+                },
+                {
+                    'id': 'wave',
+                    'type': 'skill',
+                    'name': 'perform_motion',
+                    'args': {'object': 'sit'},
+                },
+            ]
+        },
+    )
+    assert [step['id'] for step in envelope['steps']] == ['wave']
+    assert envelope['errors'] == ['duplicate plan step id: wave']
 
 
 def test_posture_topic_fallback_for_motion_preserves_legacy_bridge_names() -> None:
