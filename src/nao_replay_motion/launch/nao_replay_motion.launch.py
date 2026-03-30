@@ -2,6 +2,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
@@ -10,6 +11,18 @@ def generate_launch_description():
     posture_command_topic_arg = DeclareLaunchArgument(
         "posture_command_topic",
         default_value="/chatbot/posture_command",
+    )
+    posture_bridge_connect_on_startup_arg = DeclareLaunchArgument(
+        "posture_bridge_connect_on_startup",
+        default_value="true",
+    )
+    posture_bridge_disable_autonomous_life_on_connect_arg = DeclareLaunchArgument(
+        "posture_bridge_disable_autonomous_life_on_connect",
+        default_value="false",
+    )
+    posture_bridge_wake_up_on_connect_arg = DeclareLaunchArgument(
+        "posture_bridge_wake_up_on_connect",
+        default_value="false",
     )
 
     replay_motion = Node(
@@ -46,6 +59,20 @@ def generate_launch_description():
                 "nao_ip": LaunchConfiguration("nao_ip"),
                 "nao_port": LaunchConfiguration("nao_port"),
                 "posture_command_topic": LaunchConfiguration("posture_command_topic"),
+                "connect_on_startup": ParameterValue(
+                    LaunchConfiguration("posture_bridge_connect_on_startup"),
+                    value_type=bool,
+                ),
+                "disable_autonomous_life_on_connect": ParameterValue(
+                    LaunchConfiguration(
+                        "posture_bridge_disable_autonomous_life_on_connect"
+                    ),
+                    value_type=bool,
+                ),
+                "wake_up_on_connect": ParameterValue(
+                    LaunchConfiguration("posture_bridge_wake_up_on_connect"),
+                    value_type=bool,
+                ),
             }
         ],
     )
@@ -55,6 +82,9 @@ def generate_launch_description():
             nao_ip_arg,
             nao_port_arg,
             posture_command_topic_arg,
+            posture_bridge_connect_on_startup_arg,
+            posture_bridge_disable_autonomous_life_on_connect_arg,
+            posture_bridge_wake_up_on_connect_arg,
             replay_motion,
             head_motion,
             posture_bridge,

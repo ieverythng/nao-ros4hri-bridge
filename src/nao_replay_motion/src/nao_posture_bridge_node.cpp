@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cctype>
+#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -16,6 +17,7 @@ public:
   NaoPostureBridge()
   : Node("nao_posture_bridge")
   {
+    declare_parameter("connect_on_startup", true);
     declare_parameter("posture_command_topic", "/chatbot/posture_command");
     declare_parameter("nao_ip", "172.26.112.62");
     declare_parameter("nao_port", 9559);
@@ -26,10 +28,11 @@ public:
     declare_parameter("kneel_speed", 0.8);
     declare_parameter("sit_speed", 0.8);
     declare_parameter("command_dedupe_window_sec", 1.5);
-    declare_parameter("disable_autonomous_life_on_connect", true);
-    declare_parameter("wake_up_on_connect", true);
+    declare_parameter("disable_autonomous_life_on_connect", false);
+    declare_parameter("wake_up_on_connect", false);
     declare_parameter("reconnect_on_failure", true);
 
+    connect_on_startup_ = get_parameter("connect_on_startup").as_bool();
     posture_command_topic_ = get_parameter("posture_command_topic").as_string();
     nao_ip_ = get_parameter("nao_ip").as_string();
     nao_port_ = get_parameter("nao_port").as_int();
@@ -52,7 +55,7 @@ public:
 
     RCLCPP_INFO(
       get_logger(),
-      "nao_posture_bridge ready | topic:%s nao:%s:%d default_speed:%.2f stand:%s@%.2f kneel:%s@%.2f sit@%.2f dedupe:%.2fs",
+      "nao_posture_bridge ready | topic:%s nao:%s:%d default_speed:%.2f stand:%s@%.2f kneel:%s@%.2f sit@%.2f dedupe:%.2fs connect_on_startup:%s disable_life_on_connect:%s wake_up_on_connect:%s reconnect:%s",
       posture_command_topic_.c_str(),
       nao_ip_.c_str(),
       static_cast<int>(nao_port_),
@@ -62,45 +65,147 @@ public:
       kneel_posture_name_.c_str(),
       kneel_speed_,
       sit_speed_,
-      command_dedupe_window_sec_);
+      command_dedupe_window_sec_,
+      bool_to_string(connect_on_startup_),
+      bool_to_string(disable_autonomous_life_on_connect_),
+      bool_to_string(wake_up_on_connect_),
+      bool_to_string(reconnect_on_failure_));
 
-    (void)connect_session();
+    if (connect_on_startup_) {
+      (void)connect_session("startup");
+    }
   }
 
 private:
-  bool connect_session()
+  static const char * bool_to_string(const bool value)
   {
-    const std::string url = "tcp://" + nao_ip_ + ":" + std::to_string(nao_port_);
-    try {
-      posture_service_ = qi::AnyObject();
-      session_.reset();
-      session_ = qi::makeSession();
-      session_->connect(url).value();
-      posture_service_ = session_->service("ALRobotPosture").value();
+    return value ? "true" : "false";
+  }
 
-      if (disable_autonomous_life_on_connect_) {
-        try {
-          auto life = session_->service("ALAutonomousLife").value();
-          life.call<void>("setState", std::string("disabled"));
-        } catch (const std::exception & e) {
-          RCLCPP_WARN(get_logger(), "Could not disable ALAutonomousLife: %s", e.what());
-        }
-      }
-      if (wake_up_on_connect_) {
-        try {
-          auto motion = session_->service("ALMotion").value();
-          motion.call<void>("wakeUp");
-        } catch (const std::exception & e) {
-          RCLCPP_WARN(get_logger(), "Could not call ALMotion.wakeUp: %s", e.what());
-        }
-      }
+  void reset_connection_state()
+  {
+    posture_service_ = qi::AnyObject();
+    session_.reset();
+    connected_ = false;
+  }
 
-      RCLCPP_INFO(get_logger(), "Connected to NAOqi at %s", url.c_str());
-      return true;
-    } catch (const std::exception & e) {
-      RCLCPP_ERROR(get_logger(), "Failed to connect to NAOqi (%s): %s", url.c_str(), e.what());
+  bool get_autonomous_life_state(std::string & state_name)
+  {
+    if (!session_) {
       return false;
     }
+    try {
+      auto life = session_->service("ALAutonomousLife").value();
+      state_name = life.call<std::string>("getState");
+      return true;
+    } catch (const std::exception & e) {
+      RCLCPP_WARN(get_logger(), "Could not read ALAutonomousLife state: %s", e.what());
+      return false;
+    }
+  }
+
+  void log_robot_state_snapshot(const std::string & context)
+  {
+    std::string posture_name = "unknown";
+    std::string autonomous_life_state = "unknown";
+
+    std::string current_posture;
+    if (get_current_posture(current_posture)) {
+      posture_name = current_posture;
+    }
+
+    std::string life_state;
+    if (get_autonomous_life_state(life_state)) {
+      autonomous_life_state = life_state;
+    }
+
+    RCLCPP_INFO(
+      get_logger(),
+      "NAO state snapshot (%s) | posture:%s autonomous_life:%s",
+      context.c_str(),
+      posture_name.c_str(),
+      autonomous_life_state.c_str());
+  }
+
+  void apply_connect_policy()
+  {
+    bool changed_state = false;
+
+    if (disable_autonomous_life_on_connect_) {
+      try {
+        auto life = session_->service("ALAutonomousLife").value();
+        const std::string current_state = life.call<std::string>("getState");
+        if (normalize(current_state) == "disabled") {
+          RCLCPP_INFO(get_logger(), "ALAutonomousLife already disabled on connect");
+        } else {
+          RCLCPP_WARN(
+            get_logger(),
+            "Disabling ALAutonomousLife on connect because disable_autonomous_life_on_connect=true");
+          life.call<void>("setState", std::string("disabled"));
+          changed_state = true;
+        }
+      } catch (const std::exception & e) {
+        RCLCPP_WARN(get_logger(), "Could not disable ALAutonomousLife: %s", e.what());
+      }
+    }
+
+    if (wake_up_on_connect_) {
+      try {
+        auto motion = session_->service("ALMotion").value();
+        RCLCPP_WARN(
+          get_logger(),
+          "Calling ALMotion.wakeUp on connect because wake_up_on_connect=true");
+        motion.call<void>("wakeUp");
+        changed_state = true;
+      } catch (const std::exception & e) {
+        RCLCPP_WARN(get_logger(), "Could not call ALMotion.wakeUp: %s", e.what());
+      }
+    }
+
+    if (changed_state) {
+      log_robot_state_snapshot("after connect policy");
+    }
+  }
+
+  bool connect_session(const std::string & reason)
+  {
+    const std::string url = "tcp://" + nao_ip_ + ":" + std::to_string(nao_port_);
+    reset_connection_state();
+    try {
+      auto session = qi::makeSession();
+      session->connect(url).value();
+      auto posture_service = session->service("ALRobotPosture").value();
+
+      session_ = session;
+      posture_service_ = posture_service;
+      connected_ = true;
+
+      RCLCPP_INFO(
+        get_logger(),
+        "Connected to NAOqi at %s for %s",
+        url.c_str(),
+        reason.c_str());
+      log_robot_state_snapshot("after connect");
+      apply_connect_policy();
+      return true;
+    } catch (const std::exception & e) {
+      reset_connection_state();
+      RCLCPP_ERROR(
+        get_logger(),
+        "Failed to connect to NAOqi (%s) for %s: %s",
+        url.c_str(),
+        reason.c_str(),
+        e.what());
+      return false;
+    }
+  }
+
+  bool ensure_session(const std::string & reason)
+  {
+    if (connected_) {
+      return true;
+    }
+    return connect_session(reason);
   }
 
   bool get_current_posture(std::string & posture_name)
@@ -204,10 +309,8 @@ private:
       };
 
     try {
-      if (!session_) {
-        if (!connect_session()) {
-          return false;
-        }
+      if (!ensure_session("posture command")) {
+        return false;
       }
       if (is_already_in_target_posture(posture_name)) {
         return true;
@@ -215,6 +318,7 @@ private:
       return run_call();
     } catch (const std::exception & e) {
       RCLCPP_ERROR(get_logger(), "Posture call failed: %s", e.what());
+      reset_connection_state();
       if (!reconnect_on_failure_) {
         return false;
       }
@@ -222,7 +326,7 @@ private:
 
     RCLCPP_WARN(get_logger(), "Retrying posture call after reconnect");
     try {
-      if (!connect_session()) {
+      if (!connect_session("posture retry")) {
         return false;
       }
       if (is_already_in_target_posture(posture_name)) {
@@ -282,6 +386,7 @@ private:
       posture_speed);
   }
 
+  bool connect_on_startup_;
   std::string posture_command_topic_;
   std::string nao_ip_;
   int64_t nao_port_;
@@ -298,6 +403,7 @@ private:
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr posture_subscription_;
   qi::AnyObject posture_service_;
   qi::SessionPtr session_;
+  bool connected_{false};
   std::string last_command_;
   rclcpp::Time last_command_time_{0, 0, RCL_ROS_TIME};
 };

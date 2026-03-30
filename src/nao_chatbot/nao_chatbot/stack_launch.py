@@ -663,6 +663,38 @@ def generate_profile_launch_description(
         default_value="/chatbot/posture_command",
         description="Temporary posture bridge topic used during migration.",
     )
+    posture_bridge_connect_on_startup_arg = DeclareLaunchArgument(
+        "posture_bridge_connect_on_startup",
+        default_value=_profile_default(
+            profile_defaults, "posture_bridge_connect_on_startup", "true"
+        ),
+        description=(
+            "Connect the temporary posture bridge to NAOqi during launch without "
+            "commanding a posture."
+        ),
+    )
+    posture_bridge_disable_autonomous_life_on_connect_arg = DeclareLaunchArgument(
+        "posture_bridge_disable_autonomous_life_on_connect",
+        default_value=_profile_default(
+            profile_defaults,
+            "posture_bridge_disable_autonomous_life_on_connect",
+            "false",
+        ),
+        description=(
+            "Explicitly disable ALAutonomousLife when the temporary posture bridge "
+            "connects."
+        ),
+    )
+    posture_bridge_wake_up_on_connect_arg = DeclareLaunchArgument(
+        "posture_bridge_wake_up_on_connect",
+        default_value=_profile_default(
+            profile_defaults, "posture_bridge_wake_up_on_connect", "false"
+        ),
+        description=(
+            "Explicitly call ALMotion.wakeUp when the temporary posture bridge "
+            "connects."
+        ),
+    )
     debug_tts_action_name_arg = DeclareLaunchArgument(
         "debug_tts_action_name",
         default_value="/debug/say",
@@ -843,6 +875,15 @@ def generate_profile_launch_description(
             "nao_ip": LaunchConfiguration("nao_ip"),
             "nao_port": LaunchConfiguration("nao_port"),
             "posture_command_topic": LaunchConfiguration("posture_command_topic"),
+            "posture_bridge_connect_on_startup": LaunchConfiguration(
+                "posture_bridge_connect_on_startup"
+            ),
+            "posture_bridge_disable_autonomous_life_on_connect": LaunchConfiguration(
+                "posture_bridge_disable_autonomous_life_on_connect"
+            ),
+            "posture_bridge_wake_up_on_connect": LaunchConfiguration(
+                "posture_bridge_wake_up_on_connect"
+            ),
         }.items(),
     )
 
@@ -1274,6 +1315,9 @@ def generate_profile_launch_description(
             network_interface_arg,
             qi_listen_url_arg,
             posture_command_topic_arg,
+            posture_bridge_connect_on_startup_arg,
+            posture_bridge_disable_autonomous_life_on_connect_arg,
+            posture_bridge_wake_up_on_connect_arg,
             debug_tts_action_name_arg,
             dialogue_manager_chatbot_arg,
             dialogue_manager_enable_default_chat_arg,
