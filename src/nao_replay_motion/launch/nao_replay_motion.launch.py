@@ -5,6 +5,10 @@ from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 
 
+def _bool_launch_config(name):
+    return ParameterValue(LaunchConfiguration(name), value_type=bool)
+
+
 def generate_launch_description():
     nao_ip_arg = DeclareLaunchArgument("nao_ip", default_value="172.26.112.62")
     nao_port_arg = DeclareLaunchArgument("nao_port", default_value="9559")
@@ -59,19 +63,14 @@ def generate_launch_description():
                 "nao_ip": LaunchConfiguration("nao_ip"),
                 "nao_port": LaunchConfiguration("nao_port"),
                 "posture_command_topic": LaunchConfiguration("posture_command_topic"),
-                "connect_on_startup": ParameterValue(
-                    LaunchConfiguration("posture_bridge_connect_on_startup"),
-                    value_type=bool,
+                "connect_on_startup": _bool_launch_config(
+                    "posture_bridge_connect_on_startup"
                 ),
-                "disable_autonomous_life_on_connect": ParameterValue(
-                    LaunchConfiguration(
-                        "posture_bridge_disable_autonomous_life_on_connect"
-                    ),
-                    value_type=bool,
+                "disable_autonomous_life_on_connect": _bool_launch_config(
+                    "posture_bridge_disable_autonomous_life_on_connect"
                 ),
-                "wake_up_on_connect": ParameterValue(
-                    LaunchConfiguration("posture_bridge_wake_up_on_connect"),
-                    value_type=bool,
+                "wake_up_on_connect": _bool_launch_config(
+                    "posture_bridge_wake_up_on_connect"
                 ),
             }
         ],

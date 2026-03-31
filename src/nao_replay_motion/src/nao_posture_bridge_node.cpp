@@ -2,6 +2,7 @@
 #include <cctype>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 
@@ -77,6 +78,12 @@ public:
   }
 
 private:
+  struct ResolvedCommand
+  {
+    std::string posture_name;
+    double posture_speed;
+  };
+
   static const char * bool_to_string(const bool value)
   {
     return value ? "true" : "false";
@@ -247,12 +254,9 @@ private:
     return out;
   }
 
-  bool resolve_command(
-    const std::string & command,
-    std::string & posture_name,
-    double & posture_speed) const
+  std::optional<std::string> resolve_posture_name(
+    const std::string & normalized_command) const
   {
-    const std::string normalized = normalize(command);
     static const std::unordered_map<std::string, std::string> direct_map = {
       {"sit", "Sit"},
       {"crouch", "Crouch"},
@@ -263,50 +267,87 @@ private:
       {"lyingback", "LyingBack"},
       {"lyingbelly", "LyingBelly"},
     };
-    auto it = direct_map.find(normalized);
+    auto it = direct_map.find(normalized_command);
     if (it != direct_map.end()) {
-      posture_name = it->second;
-    } else if (normalized == "kneel") {
-      posture_name = kneel_posture_name_;
-    } else if (normalized == "stand") {
-      posture_name = stand_posture_name_;
-    } else {
+      return it->second;
+    }
+    if (normalized_command == "kneel") {
+      return kneel_posture_name_;
+    }
+    if (normalized_command == "stand") {
+      return stand_posture_name_;
+    }
+    return std::nullopt;
+  }
+
+  double resolve_posture_speed(const std::string & normalized_command) const
+  {
+    if (
+      normalized_command == "stand" || normalized_command == "standinit" ||
+      normalized_command == "standfull" || normalized_command == "standzero")
+    {
+      return stand_speed_;
+    }
+    if (normalized_command == "kneel" || normalized_command == "crouch") {
+      return kneel_speed_;
+    }
+    if (normalized_command == "sit" || normalized_command == "sitrelax") {
+      return sit_speed_;
+    }
+    return posture_speed_;
+  }
+
+  std::optional<ResolvedCommand> resolve_normalized_command(
+    const std::string & normalized_command) const
+  {
+    const auto posture_name = resolve_posture_name(normalized_command);
+    if (!posture_name) {
+      return std::nullopt;
+    }
+    return ResolvedCommand{*posture_name, resolve_posture_speed(normalized_command)};
+  }
+
+  bool should_ignore_duplicate_command(
+    const std::string & normalized_command,
+    const rclcpp::Time & now,
+    const std::string & original_command) const
+  {
+    if (last_command_.empty() || normalized_command != last_command_) {
       return false;
     }
 
-    if (
-      normalized == "stand" || normalized == "standinit" || normalized == "standfull" ||
-      normalized == "standzero")
-    {
-      posture_speed = stand_speed_;
-      return true;
-    }
-    if (normalized == "kneel" || normalized == "crouch") {
-      posture_speed = kneel_speed_;
-      return true;
-    }
-    if (normalized == "sit" || normalized == "sitrelax") {
-      posture_speed = sit_speed_;
-      return true;
+    const double elapsed_sec = (now - last_command_time_).seconds();
+    if (elapsed_sec < 0.0 || elapsed_sec >= command_dedupe_window_sec_) {
+      return false;
     }
 
-    posture_speed = posture_speed_;
+    RCLCPP_WARN(
+      get_logger(),
+      "Ignored duplicate posture command '%s' within %.2fs window",
+      original_command.c_str(),
+      command_dedupe_window_sec_);
     return true;
+  }
+
+  void remember_command(const std::string & normalized_command, const rclcpp::Time & now)
+  {
+    last_command_ = normalized_command;
+    last_command_time_ = now;
   }
 
   bool execute_posture(const std::string & posture_name, const double posture_speed)
   {
     auto run_call = [&]() -> bool {
-        bool ok = posture_service_.call<bool>("goToPosture", posture_name, posture_speed);
-        if (!ok) {
-          RCLCPP_WARN(
-            get_logger(),
-            "ALRobotPosture.goToPosture(%s, %.2f) returned false",
-            posture_name.c_str(),
-            posture_speed);
-        }
-        return ok;
-      };
+      bool ok = posture_service_.call<bool>("goToPosture", posture_name, posture_speed);
+      if (!ok) {
+        RCLCPP_WARN(
+          get_logger(),
+          "ALRobotPosture.goToPosture(%s, %.2f) returned false",
+          posture_name.c_str(),
+          posture_speed);
+      }
+      return ok;
+    };
 
     try {
       if (!ensure_session("posture command")) {
@@ -345,36 +386,27 @@ private:
     if (command.empty()) {
       return;
     }
+
     const std::string normalized_command = normalize(command);
-    const auto now = this->get_clock()->now();
-    if (!last_command_.empty() && normalized_command == last_command_) {
-      const double elapsed_sec = (now - last_command_time_).seconds();
-      if (elapsed_sec >= 0.0 && elapsed_sec < command_dedupe_window_sec_) {
-        RCLCPP_WARN(
-          get_logger(),
-          "Ignored duplicate posture command '%s' within %.2fs window",
-          command.c_str(),
-          command_dedupe_window_sec_);
-        return;
-      }
+    const auto now = get_clock()->now();
+    if (should_ignore_duplicate_command(normalized_command, now, command)) {
+      return;
     }
 
-    std::string posture_name;
-    double posture_speed = posture_speed_;
-    if (!resolve_command(command, posture_name, posture_speed)) {
+    const auto resolved_command = resolve_normalized_command(normalized_command);
+    if (!resolved_command) {
       RCLCPP_WARN(get_logger(), "Unknown posture command: '%s'", command.c_str());
       return;
     }
 
-    last_command_ = normalized_command;
-    last_command_time_ = now;
+    remember_command(normalized_command, now);
 
-    if (!execute_posture(posture_name, posture_speed)) {
+    if (!execute_posture(resolved_command->posture_name, resolved_command->posture_speed)) {
       RCLCPP_ERROR(
         get_logger(),
         "Failed to execute posture command '%s' -> '%s'",
         command.c_str(),
-        posture_name.c_str());
+        resolved_command->posture_name.c_str());
       return;
     }
 
@@ -382,8 +414,8 @@ private:
       get_logger(),
       "Executed posture command '%s' -> '%s' @ %.2f",
       command.c_str(),
-      posture_name.c_str(),
-      posture_speed);
+      resolved_command->posture_name.c_str(),
+      resolved_command->posture_speed);
   }
 
   bool connect_on_startup_;
