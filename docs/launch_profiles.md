@@ -1,6 +1,6 @@
 # Launch Profiles
 
-Last updated: 2026-03-24
+Last updated: 2026-04-06
 
 This is the quick execution guide for the active launch files in this repo.
 
@@ -17,6 +17,7 @@ see [thesis_planning_handoff.md](./thesis_planning_handoff.md).
 | `nao_chatbot_sim_asr.launch.py` | Simulator stack plus `simple_audio_capture` and `asr_vosk` | RViz |
 | `nao_chatbot_robot.launch.py` | Real robot camera, RViz, HRI overlays | Local ASR, simulator perception |
 | `nao_chatbot_robot_asr.launch.py` | Real robot camera, RViz, HRI overlays, local ASR | Simulator perception |
+| `nao_chatbot_planner_local.launch.py` | Local planner/orchestrator wiring without robot dependencies | Dialogue, chatbot_llm, robot skills, sim perception |
 | `nao_chatbot_asr_only.launch.py` | Isolated ASR pipeline (`simple_audio_capture` + `asr_vosk`) | Dialogue/mission/chat/robot nodes |
 
 ## Show Arguments
@@ -26,6 +27,7 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py --show-args
 ros2 launch nao_chatbot nao_chatbot_sim_asr.launch.py --show-args
 ros2 launch nao_chatbot nao_chatbot_robot.launch.py --show-args
 ros2 launch nao_chatbot nao_chatbot_robot_asr.launch.py --show-args
+ros2 launch nao_chatbot nao_chatbot_planner_local.launch.py --show-args
 ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py --show-args
 ```
 
@@ -109,6 +111,32 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   nao_ip:=172.26.112.62
 ```
 
+### Planner-local profile
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_planner_local.launch.py
+```
+
+This profile starts:
+
+- `planner_llm`
+- `nao_orchestrator`
+
+And leaves disabled by default:
+
+- `chatbot_llm`
+- `dialogue_manager`
+- robot action skills
+- detector stacks
+- KnowledgeCore launch
+
+Useful with the local fixture publisher:
+
+```bash
+ros2 run planner_llm publish_fixture request
+ros2 run planner_llm publish_fixture feedback
+```
+
 ### ASR-only profile
 
 ```bash
@@ -169,6 +197,16 @@ ros2 run nao_chatbot asr_push_to_talk_cli
 - `start_object_detection`
 - `object_detection_backend`
 - `start_scene_grounding`
+- `start_planner_llm`
+- `planner_request_topic`
+- `planner_llm_provider`
+- `planner_llm_model`
+- `planner_llm_base_url`
+- `planner_llm_temperature`
+- `planner_llm_max_tokens`
+- `planner_llm_timeout_sec`
+- `planner_llm_default_retry_budget`
+- `planner_llm_auto_replan`
 - `object_detection_namespace`
 - `object_detection_model`
 - `object_detection_device`
