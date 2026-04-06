@@ -194,11 +194,13 @@ ros2 run nao_chatbot asr_push_to_talk_cli
 - `chatbot_model`
 - `chatbot_intent_model`
 - `ollama_intent_model`
+- `chatbot_planner_mode_enabled`
 - `start_object_detection`
 - `object_detection_backend`
 - `start_scene_grounding`
 - `start_planner_llm`
 - `planner_request_topic`
+- `planner_request_intent`
 - `planner_llm_provider`
 - `planner_llm_model`
 - `planner_llm_base_url`

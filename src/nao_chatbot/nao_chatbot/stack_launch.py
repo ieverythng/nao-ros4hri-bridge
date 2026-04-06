@@ -559,6 +559,11 @@ def generate_profile_launch_description(
         default_value="/planner/request",
         description="Planner ingress topic consumed by planner_llm.",
     )
+    planner_request_intent_arg = DeclareLaunchArgument(
+        "planner_request_intent",
+        default_value="planner_request",
+        description="Intent label used on planner ingress messages.",
+    )
     scene_grounding_allowed_labels_arg = DeclareLaunchArgument(
         "scene_grounding_allowed_labels",
         default_value="bottle,cup,book,cell phone,backpack,remote,laptop,keyboard,mouse,chair,blueberry,corn,pear,tomato,zucchini",
@@ -755,6 +760,11 @@ def generate_profile_launch_description(
         default_value="http://localhost:11434/api/chat",
         description="Backend HTTP endpoint used by chatbot_llm.",
     )
+    chatbot_planner_mode_enabled_arg = DeclareLaunchArgument(
+        "chatbot_planner_mode_enabled",
+        default_value=_profile_default(profile_defaults, "chatbot_planner_mode_enabled", "false"),
+        description="Enable planner-mode handoff in chatbot_llm so execution-oriented turns publish to /planner/request.",
+    )
     planner_llm_provider_arg = DeclareLaunchArgument(
         "planner_llm_provider",
         default_value=_profile_default(profile_defaults, "planner_llm_provider", "ollama"),
@@ -845,6 +855,24 @@ def generate_profile_launch_description(
             {
                 "server_url": ParameterValue(
                     LaunchConfiguration("chatbot_server_url"),
+                    value_type=str,
+                )
+            },
+            {
+                "planner_mode_enabled": ParameterValue(
+                    LaunchConfiguration("chatbot_planner_mode_enabled"),
+                    value_type=bool,
+                )
+            },
+            {
+                "planner_request_topic": ParameterValue(
+                    LaunchConfiguration("planner_request_topic"),
+                    value_type=str,
+                )
+            },
+            {
+                "planner_request_intent": ParameterValue(
+                    LaunchConfiguration("planner_request_intent"),
                     value_type=str,
                 )
             },
@@ -1450,7 +1478,9 @@ def generate_profile_launch_description(
             chatbot_intent_model_arg,
             ollama_intent_model_arg,
             chatbot_server_url_arg,
+            chatbot_planner_mode_enabled_arg,
             planner_request_topic_arg,
+            planner_request_intent_arg,
             planner_llm_provider_arg,
             planner_llm_model_arg,
             planner_llm_base_url_arg,
