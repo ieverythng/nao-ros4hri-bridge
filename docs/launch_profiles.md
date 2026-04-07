@@ -1,6 +1,6 @@
 # Launch Profiles
 
-Last updated: 2026-04-06
+Last updated: 2026-04-07
 
 This is the quick execution guide for the active launch files in this repo.
 
@@ -55,6 +55,14 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=emorobcare_cv
+```
+
+With planner handoff enabled:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_planner_llm:=true \
+  chatbot_planner_mode_enabled:=true
 ```
 
 ### Simulator stack with ASR
@@ -135,6 +143,13 @@ Useful with the local fixture publisher:
 ```bash
 ros2 run planner_llm publish_fixture request
 ros2 run planner_llm publish_fixture feedback
+```
+
+To capture planner logs in `rqt_console`, either launch it separately or enable:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_planner_local.launch.py \
+  start_rqt_console:=true
 ```
 
 ### ASR-only profile

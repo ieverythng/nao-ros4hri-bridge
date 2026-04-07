@@ -119,6 +119,15 @@ class PlannerNode(Node):
                 % (msg.intent, self._planner_request_topic)
             )
         planner_request = PlannerRequest.from_payload(msg.data)
+        self.get_logger().info(
+            'planner_llm request received | request_id=%s intents=%s scene_targets=%s source=%s'
+            % (
+                planner_request.request_id,
+                list(planner_request.normalized_intents),
+                list(planner_request.scene_targets),
+                str(getattr(msg, 'source', '') or 'unknown'),
+            )
+        )
         decision = self._engine.plan_request(
             planner_request,
             world_model_text=self._world_text,
@@ -130,6 +139,17 @@ class PlannerNode(Node):
 
     def _on_feedback(self, msg: String) -> None:
         feedback = ExecutionFeedback.from_payload(msg.data)
+        self.get_logger().info(
+            'planner_llm feedback received | plan_id=%s status=%s step=%s/%s retry_budget=%s reason=%s'
+            % (
+                feedback.plan_id,
+                feedback.status,
+                feedback.step_type,
+                feedback.step_name,
+                feedback.retry_budget,
+                feedback.reason,
+            )
+        )
 
         if feedback.status == 'completed':
             self._active_requests.pop(feedback.plan_id, None)
@@ -141,6 +161,9 @@ class PlannerNode(Node):
 
         planner_request = self._active_requests.pop(feedback.plan_id, None)
         if planner_request is None:
+            self.get_logger().debug(
+                'planner_llm feedback ignored because plan_id=%s is not active' % feedback.plan_id
+            )
             return
 
         decision = self._engine.plan_request(
@@ -159,6 +182,19 @@ class PlannerNode(Node):
         msg.source = str(source or 'planner_llm')
         msg.data = json.dumps(decision.payload, sort_keys=True, separators=(',', ':'))
         self._intent_pub.publish(msg)
+        plan_payload = decision.payload.get('plan', {})
+        steps = plan_payload.get('steps', [])
+        validation_status = plan_payload.get('validation_status', '')
+        self.get_logger().info(
+            'planner_llm published decision | plan_id=%s mode=%s steps=%s validation=%s intent=%s'
+            % (
+                decision.plan_id,
+                decision.mode,
+                len(steps) if isinstance(steps, list) else 0,
+                validation_status,
+                decision.intent_name,
+            )
+        )
 
 
 def main(args=None) -> None:
