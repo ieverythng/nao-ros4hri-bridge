@@ -62,6 +62,26 @@ def test_planner_engine_uses_provider_for_non_rule_request() -> None:
     assert provider.messages[0]['role'] == 'system'
 
 
+def test_planner_engine_accepts_nested_plan_steps_from_model() -> None:
+    provider = _FakeProvider(
+        '{"ack_text":"I will inspect the scene.","plan":{"steps":[{"type":"look_at","name":"look_at","args":{"target_frame":"cup_frame"},"requires":[],"on_failure":"replan","retry_budget":0}]}}'
+    )
+    engine = PlannerEngine(provider, default_retry_budget=2)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_nested',
+            'user_text': 'look at the cup',
+            'normalized_intents': ['inspect_scene'],
+            'scene_targets': ['cup'],
+        }
+    )
+
+    decision = engine.plan_request(request)
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['steps'][0]['type'] == 'look_at'
+    assert provider.messages[0]['role'] == 'system'
+
+
 def test_planner_engine_clarifies_when_retry_budget_is_exhausted() -> None:
     provider = _FakeProvider('{}')
     engine = PlannerEngine(provider, default_retry_budget=2)
