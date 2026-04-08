@@ -1,6 +1,6 @@
 # Node Interactions Map
 
-Last updated: 2026-04-07
+Last updated: 2026-04-09
 
 This is now the short architecture map for the active stack.
 
@@ -48,7 +48,9 @@ graph LR
 ## Architecture Notes
 
 - `chatbot_llm` stays detector-agnostic and only consumes grounded symbolic state.
-- planner mode is optional; the direct `chatbot_llm -> /intents` path still exists for fallback.
+- planner mode is optional; in planner mode `chatbot_llm` emits `/planner/request`
+  for execution turns, while the direct `chatbot_llm -> /intents` path still
+  exists for non-planner fallback.
 - `planner_llm` owns structured plan generation and replanning, but it does not execute robot actions directly.
 - `nao_scene_grounding` is the semantic bridge from raw detections into the KB.
 - `nao_orchestrator` remains downstream-only and should evolve into the

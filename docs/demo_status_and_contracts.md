@@ -1,6 +1,6 @@
 # Demo Status And Runtime Contracts
 
-Last updated: 2026-04-07
+Last updated: 2026-04-09
 
 This note is the high-level demo brief for the current migration checkpoint.
 It focuses on what is live today, how the grounded scene reaches the LLM, and
@@ -19,8 +19,8 @@ The stack now demonstrates five major capabilities working together:
    dedicated `kb_skills` boundary for query and revise operations.
 2. object detection is live through the emorobcare backend and is grounded into
    transient KB facts by `nao_scene_grounding`.
-3. `chatbot_llm` injects a bounded symbolic scene snapshot into both the
-   response and intent LLM stages.
+3. `chatbot_llm` injects a bounded symbolic scene snapshot into the response
+   stage and planner/direct routing path.
 4. `nao_orchestrator` consumes richer `Intent.data` payloads, including
    `ack_text`, `ack_mode`, `scene_targets`, and optional structured `plan`
    steps.
@@ -99,7 +99,7 @@ sequenceDiagram
     KB-->>C: JSON bindings
     C->>C: format knowledge snapshot + recent scene memory
     C->>C: response LLM stage
-    C->>C: intent LLM stage
+    C->>C: planner-aware route or direct intent stage
     C-->>DM: verbal_ack + HRI intents
     DM->>O: /intents
     O-->>DM: optional downstream dispatch
@@ -165,6 +165,9 @@ Relevant fields consumed by `planner_llm`:
   }
 }
 ```
+
+`normalized_intents` remain best-effort metadata. `planner_llm` should still
+interpret `user_text` as the authoritative execution request.
 
 Planner logs are emitted through standard `rclpy` logging, so they are visible
 in terminal output, `~/.ros/log`, and `rqt_console`.
@@ -386,10 +389,10 @@ Key design point:
 
 ## Exact LLM Injection Point
 
-`chatbot_llm` injects the scene context into both prompt stages:
+`chatbot_llm` injects the scene context into:
 
 1. response generation
-2. intent extraction
+2. direct intent extraction when the turn stays in non-planner mode
 
 The prompt builder labels the block as:
 

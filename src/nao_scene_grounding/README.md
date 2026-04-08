@@ -105,6 +105,13 @@ Most useful knobs:
 - `knowledge_lifespan_sec`
 - `knowledge_refresh_interval_sec`
 
+The most useful operator-facing tuning knobs for noisy small objects are:
+
+- `min_detection_score`
+- `allowed_labels`
+- `knowledge_lifespan_sec`
+- `knowledge_refresh_interval_sec`
+
 ## Launch From The Main Stack
 
 Simulator + emorobcare object detection:
@@ -131,7 +138,7 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=emorobcare_cv \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
 
 ## Docker Demo Path
@@ -169,7 +176,7 @@ For the follow-up robot phase:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
-  nao_ip:=172.26.112.62 \
+  nao_ip:=<robot_ip> \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=emorobcare_cv
@@ -258,6 +265,15 @@ installed the detector runtime yet. Use the rebuilt overlay image from this repo
 or install the CPU detector dependencies before launching.
 
 ## Demo Notes
+
+- `emorobcare_cv` is still tracker-less from the grounding node's point of
+  view, so nearby small detections can occasionally churn entity ids under
+  cluttered backgrounds.
+- `/scene/summary` is the best operator view of the current grounded state; it
+  is intentionally more compact than the raw detector stream.
+- if one object keeps being duplicated, raise `min_detection_score` first and
+  then shorten `knowledge_lifespan_sec` or `knowledge_refresh_interval_sec`
+  before broadening the allowed label set.
 
 - Keep `use_knowledge_base: false` in the emorobcare object detection package if you
   want this node to remain the single writer of detector-derived KB facts.

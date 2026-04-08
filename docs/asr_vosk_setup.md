@@ -21,7 +21,7 @@ cutover is still pending, so ASR is not yet part of the primary migrated stack.
 - Full simulator stack with ASR:
   - `ros2 launch nao_chatbot nao_chatbot_sim_asr.launch.py`
 - Full robot stack with ASR:
-  - `ros2 launch nao_chatbot nao_chatbot_robot_asr.launch.py nao_ip:=...`
+  - `ros2 launch nao_chatbot nao_chatbot_robot_asr.launch.py nao_ip:=<robot_ip>`
 
 Both launch paths run `asr_vosk` as a lifecycle node and automatically trigger:
 

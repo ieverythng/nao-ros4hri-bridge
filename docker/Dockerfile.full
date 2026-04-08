@@ -96,6 +96,7 @@ RUN bash -lc 'source /opt/ros/jazzy/setup.bash && \
       planner_common \
       planner_llm \
       nao_say_skill \
+      nao_replay_motion \
       nao_look_at \
       nao_orchestrator \
       nao_scene_grounding \

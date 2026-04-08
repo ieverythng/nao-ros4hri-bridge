@@ -26,7 +26,7 @@ Fork-tracked upstream runtime repos carried locally:
 - `dialogue_manager`: canonical owner of `/skill/chat`, `/skill/ask`, and
   `/skill/say`
 - `chatbot_llm`: backend dialogue contract using the local Ollama-based
-  response and intent pipeline
+  response pipeline plus direct-or-planner routing
 
 Interface-only packages shipped in the workspace:
 
@@ -57,7 +57,7 @@ speech input -> dialogue_manager -> chatbot_llm
     -> /nao/say | /skill/replay_motion | /skill/do_head_motion | /skill/look_at
 ```
 
-Optional planner-enabled flow on `feat/TFM-LLM_planner`:
+Optional planner-enabled flow:
 
 ```text
 speech input -> dialogue_manager -> chatbot_llm
@@ -70,11 +70,20 @@ speech input -> dialogue_manager -> chatbot_llm
 This split is deliberate:
 
 - `dialogue_manager` owns dialogue state and canonical communication skills
-- `chatbot_llm` owns model interaction, grounded dialogue turns, and planner handoff
+- `chatbot_llm` owns model interaction, grounded dialogue turns, and planner-mode routing
 - `planner_llm` owns planner request interpretation, executable plan generation, and replan decisions
 - `nao_orchestrator` stays downstream-only and dispatches robot-side intents
 - `knowledge_core` remains an upstream symbolic store accessed through public
   ROS APIs
+
+Planner mode currently needs two launch flags together:
+
+- `start_planner_llm:=true`
+- `chatbot_planner_mode_enabled:=true`
+
+`nao_ip` is the canonical robot-IP argument in the launch surface. It is the
+single override forwarded to `naoqi_driver`, the replay-motion launch, and the
+temporary posture bridge.
 
 Knowledge grounding is local to `chatbot_llm`, not to `knowledge_core`
 itself:
@@ -179,6 +188,17 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   chatbot_planner_mode_enabled:=true
 ```
 
+Simulator stack with planner handoff plus object grounding:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_planner_llm:=true \
+  chatbot_planner_mode_enabled:=true \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv
+```
+
 Planner-only local harness:
 
 ```bash
@@ -191,14 +211,14 @@ Real robot + RViz:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
 
 Real robot + RViz + ASR:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_robot_asr.launch.py \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
 
 Real robot + RViz + emorobcare object detection:
@@ -208,7 +228,7 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=emorobcare_cv \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
 
 Real robot + RViz + simulator-side operator tools only:
@@ -218,8 +238,20 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   start_interaction_sim:=true \
   start_interaction_sim_perception:=false \
   start_interaction_sim_tools:=true \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
+
+Real robot with a passive posture bridge on connect:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
+  nao_ip:=<robot_ip> \
+  posture_bridge_disable_autonomous_life_on_connect:=false \
+  posture_bridge_wake_up_on_connect:=false
+```
+
+Those bridge defaults are already safe in the shipped launch wrappers. Override
+them only when you intentionally want connect-time state changes on the robot.
 
 Current robot-camera and overlay topics in the packaged stack:
 
@@ -313,7 +345,7 @@ Real-robot object-detection follow-up:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
-  nao_ip:=172.26.112.62 \
+  nao_ip:=<robot_ip> \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=emorobcare_cv

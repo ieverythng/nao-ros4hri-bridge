@@ -38,7 +38,7 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py
 Or on the real robot:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_robot.launch.py nao_ip:=...
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py nao_ip:=<robot_ip>
 ```
 
 ## Runtime Notes
@@ -50,6 +50,9 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py nao_ip:=...
   the existing head-motion path remains stable
 - the fallback bridge still uses `/chatbot/posture_command` until the full ASR
   and orchestration cleanup is complete
+- the shared launch wrappers now keep the posture bridge passive on connect by
+  default: no `ALAutonomousLife` disable and no `ALMotion.wakeUp` unless those
+  connect-time flags are explicitly enabled
 
 ## Test Surface
 
