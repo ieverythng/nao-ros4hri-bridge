@@ -42,7 +42,9 @@ _SYSTEM_PROMPT = (
     'Return fields ack_text, ack_mode, decision, validation_status, failure_reason, '
     'replan_hint, retry_budget, scene_targets, and steps. Each step must contain '
     'type, name, args, requires, on_failure, and retry_budget. Use only the allowed '
-    'step types and skill names. Prefer short executable plans. If the task is ambiguous '
+    'step types and skill names. Prefer short executable plans. normalized_intents may be '
+    'empty or partial, so infer the executable request from user_text, context, and any '
+    'planner hints instead of requiring a perfect upstream label. If the task is ambiguous '
     'or blocked, set decision to clarify and include clarification_text.'
 )
 
@@ -238,6 +240,16 @@ class PlannerEngine:
         *,
         feedback: ExecutionFeedback | None,
     ) -> PlannerDecision | None:
+        if str(request.planner_mode or '').strip().lower() in (
+            'multi_step',
+            'multistep',
+            'composite',
+            'sequenced',
+        ):
+            return None
+        if len(request.normalized_intents) > 1:
+            return None
+
         retry_budget = self._resolved_retry_budget({}, feedback)
         scene_targets = self._scene_targets_for_decision(request, feedback, {})
 

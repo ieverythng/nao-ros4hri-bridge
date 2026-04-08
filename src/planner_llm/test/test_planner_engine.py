@@ -103,6 +103,26 @@ def test_planner_engine_clarifies_when_retry_budget_is_exhausted() -> None:
     assert provider.messages == []
 
 
+def test_planner_engine_uses_provider_for_multi_step_requests_even_with_rule_intent() -> None:
+    provider = _FakeProvider(
+        '{"ack_text":"Moving my head up, then sitting down.","steps":[{"type":"skill","name":"perform_motion","args":{"object":"head_look_up"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"perform_motion","args":{"object":"sit"},"requires":[],"on_failure":"replan","retry_budget":0}]}'
+    )
+    engine = PlannerEngine(provider, default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_multi',
+            'user_text': 'move your head up and then sit down',
+            'normalized_intents': ['head_look_up'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request)
+    assert decision.mode == 'plan'
+    assert len(decision.payload['plan']['steps']) == 2
+    assert provider.messages[0]['role'] == 'system'
+
+
 def test_provider_factory_selects_openai_compatible_adapter() -> None:
     provider = build_provider(
         PlannerProviderConfig(provider='openai', model='qwen', base_url='http://localhost:8080')
