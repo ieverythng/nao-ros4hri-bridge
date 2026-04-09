@@ -8,6 +8,8 @@ the exact runtime contracts that matter during a walkthrough or review.
 
 For the concise thesis-facing architecture summary and next-stage planning
 direction, see [thesis_planning_handoff.md](./thesis_planning_handoff.md).
+For the live supervisor validation checklist used on the laptop/container path,
+see [planner_supervisor_phase_c_handoff.md](./planner_supervisor_phase_c_handoff.md).
 For launch commands and profile toggles, see
 [launch_profiles.md](./launch_profiles.md).
 
@@ -25,7 +27,8 @@ The stack now demonstrates five major capabilities working together:
    `ack_text`, `ack_mode`, `scene_targets`, and optional structured `plan`
    steps.
 5. `planner_llm` now provides an optional planner ingress on `/planner/request`
-   and emits executable `/intents` plus bounded replanning decisions from
+   and acts as a goal-level supervisor: it emits executable `/intents`,
+   planner-owned `/planner/dialogue_act`, and bounded replanning decisions from
    `/planner/execution_feedback`.
 
 The main architectural point for the demo is this:
@@ -36,6 +39,7 @@ The main architectural point for the demo is this:
 - the LLM therefore reasons over a bounded, symbolic, grounded scene view
 - when planner mode is enabled, `chatbot_llm` hands execution-oriented turns to
   `planner_llm`, while `nao_orchestrator` remains the deterministic executor
+  and feedback source
 
 ## What Is Implemented
 
@@ -114,7 +118,7 @@ sequenceDiagram
 | `knowledge_core` | symbolic world-state store |
 | `kb_skills` | reusable KB query/mutation boundary and KB intent labels |
 | `chatbot_llm` | prompt building, knowledge snapshot injection, recent scene memory, response generation, planner handoff |
-| `planner_llm` | structured plan generation, bounded retry/replan decisions, planner-to-orchestrator intent emission |
+| `planner_llm` | goal supervision, structured plan generation, planner dialogue-act emission, bounded retry/replan decisions |
 | `dialogue_manager` | dialogue lifecycle and speaking ownership |
 | `nao_orchestrator` | downstream intent normalization and NAO skill dispatch |
 
@@ -130,6 +134,8 @@ Expected planner-facing payload fields inside `Intent.data`:
 ```json
 {
   "request_id": "turn_123",
+  "goal_id": "goal_123",
+  "request_kind": "new_goal",
   "user_text": "bring me the cup",
   "normalized_intents": ["bring_object"],
   "ack_text": "I will try to bring you the cup.",
@@ -137,9 +143,13 @@ Expected planner-facing payload fields inside `Intent.data`:
   "scene_targets": ["cup"],
   "dialogue_context": [],
   "grounded_context": {
-    "knowledge_snapshot": {}
+    "knowledge_snapshot": {},
+    "scene_summary": {},
+    "world_model_snapshot": {},
+    "world_model_text": ""
   },
-  "planner_mode": "default"
+  "planner_mode": "default",
+  "interaction_mode": "default"
 }
 ```
 
@@ -152,11 +162,17 @@ Relevant fields consumed by `planner_llm`:
 
 ```json
 {
+  "goal_id": "goal_123",
   "plan_id": "plan_1",
+  "plan_version": 2,
+  "event_type": "step_failed",
   "status": "failed",
   "reason": "target not found",
   "replan_hint": "scene_changed",
   "retry_budget": 1,
+  "blocking": true,
+  "needs_user_input": false,
+  "unmet_preconditions": [],
   "scene_targets": ["cup"],
   "step": {
     "id": "step_2",
@@ -171,6 +187,32 @@ interpret `user_text` as the authoritative execution request.
 
 Planner logs are emitted through standard `rclpy` logging, so they are visible
 in terminal output, `~/.ros/log`, and `rqt_console`.
+
+### Planner Dialogue Act Contract
+
+When the supervisor needs the dialogue layer to react without sending a new
+executable plan, `planner_llm` publishes `/planner/dialogue_act` as JSON
+`std_msgs/msg/String`.
+
+Relevant fields:
+
+```json
+{
+  "goal_id": "goal_123",
+  "plan_id": "plan_1",
+  "plan_version": 2,
+  "act": "ask_clarification",
+  "priority": "normal",
+  "await_user_response": true,
+  "reason": "missing target object",
+  "text_hint": "Which cup do you mean?",
+  "slots_needed": ["target_object"],
+  "context": {
+    "scene_targets": ["cup"],
+    "status": "waiting_user"
+  }
+}
+```
 
 ## Runtime Contracts
 

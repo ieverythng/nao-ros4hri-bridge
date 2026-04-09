@@ -16,7 +16,7 @@ For launch behavior, see [launch_profiles.md](./launch_profiles.md).
 | --- | --- | --- |
 | `dialogue_manager` | `dialogue_manager` | entry point for speech/text dialogue |
 | `chatbot_llm` | `chatbot_llm` | grounded response generation and planner handoff |
-| `planner_llm` | `planner_llm` | planner request intake, plan generation, and replanning |
+| `planner_llm` | `planner_llm` | goal supervision, plan generation, dialogue-act emission, and replanning |
 | `knowledge_core` | upstream package | symbolic world state |
 | `nao_scene_grounding` | `nao_scene_grounding` | detector-to-KB bridge and `/scene/summary` publisher |
 | `nao_orchestrator` | `nao_orchestrator` | deterministic intent execution |
@@ -32,6 +32,7 @@ graph LR
     speech["/humans/voices/*/speech"] --> dm["dialogue_manager"]
     dm --> chatbot["chatbot_llm"]
     chatbot -->|"/planner/request"| planner["planner_llm"]
+    planner -->|"/planner/dialogue_act"| chatbot
     detector["detector_backend"] --> grounding["nao_scene_grounding"]
     grounding -->|/kb/revise| kb["knowledge_core"]
     kb -->|/kb/query via kb_skills| chatbot
@@ -51,11 +52,14 @@ graph LR
 - planner mode is optional; in planner mode `chatbot_llm` emits `/planner/request`
   for execution turns, while the direct `chatbot_llm -> /intents` path still
   exists for non-planner fallback.
-- `planner_llm` owns structured plan generation and replanning, but it does not execute robot actions directly.
+- `planner_llm` owns goal supervision, structured plan generation, replanning,
+  and planner-side communication decisions, but it does not execute robot
+  actions directly.
 - `nao_scene_grounding` is the semantic bridge from raw detections into the KB.
 - `nao_orchestrator` remains downstream-only and should evolve into the
   deterministic validation and execution layer for planner work.
-- planner-facing execution feedback is published separately so planner
-  components can react without taking over skill dispatch.
+- planner-facing execution feedback and dialogue acts are published separately
+  so planner components can react without taking over skill dispatch or speech
+  lifecycle.
 - `kb_skills` is the intended long-term boundary for both KB reads and future KB
   mutations.

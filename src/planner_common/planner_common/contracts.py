@@ -1,4 +1,4 @@
-"""Shared JSON contracts and normalization helpers for planner/WME nodes."""
+"""Shared JSON contracts and normalization helpers for planner-related nodes."""
 
 from __future__ import annotations
 
@@ -10,7 +10,53 @@ import time
 
 DEFAULT_PLANNER_REQUEST_INTENT = 'planner_request'
 PLAN_STEP_TYPES = ('noop', 'say', 'skill', 'look_at')
-PLAN_FAILURE_POLICIES = ('fail', 'continue', 'replan', 'clarify')
+PLAN_FAILURE_POLICIES = (
+    'fail',
+    'continue',
+    'replan',
+    'clarify',
+    'ask_user',
+    'ignore',
+)
+PLANNER_REQUEST_KINDS = (
+    'new_goal',
+    'goal_update',
+    'clarification_answer',
+    'cancel_request',
+)
+SUPERVISOR_STATUSES = (
+    'idle',
+    'planning',
+    'executing',
+    'blocked',
+    'waiting_user',
+    'replanning',
+    'completed',
+    'failed',
+    'cancelled',
+    'superseded',
+)
+PLANNER_DIALOGUE_ACTS = (
+    'acknowledge',
+    'progress_update',
+    'ask_clarification',
+    'ask_for_help',
+    'explain_failure',
+    'notify_completion',
+    'notify_cancellation',
+)
+_DEFAULT_GROUNDED_CONTEXT = {
+    'knowledge_snapshot': {},
+    'scene_summary': {},
+    'world_model_snapshot': {},
+    'world_model_text': '',
+}
+_DEFAULT_COMMUNICATION_POLICY = {
+    'emit_acknowledge': False,
+    'emit_progress': False,
+    'emit_completion': True,
+    'emit_failure': True,
+}
 
 _FROZEN_DATACLASS_KWARGS = {'frozen': True}
 if sys.version_info >= (3, 10):  # pragma: no branch - local macOS uses Python 3.9
@@ -46,10 +92,8 @@ def extract_json_object(payload) -> dict:
     if direct:
         return direct
 
-    fenced_text = text
-    if '```' in fenced_text:
-        parts = fenced_text.split('```')
-        for part in parts:
+    if '```' in text:
+        for part in text.split('```'):
             candidate = part.strip()
             if candidate.startswith('json'):
                 candidate = candidate[4:].strip()
@@ -83,6 +127,18 @@ def coerce_str_list(value) -> list[str]:
     if not isinstance(value, (list, tuple)):
         return []
     return [clean for clean in (str(item).strip() for item in value) if clean]
+
+
+def coerce_bool(value) -> bool:
+    """Normalize common JSON-ish boolean representations."""
+    if isinstance(value, bool):
+        return value
+    clean_value = str(value or '').strip().lower()
+    if clean_value in ('1', 'true', 'yes', 'on'):
+        return True
+    if clean_value in ('0', 'false', 'no', 'off'):
+        return False
+    return bool(value)
 
 
 def _coerce_failure_policy(value) -> str:
@@ -125,9 +181,53 @@ def _clean_payload(value) -> dict:
     }
 
 
+def _normalize_choice(value: str, allowed: tuple[str, ...], fallback: str) -> str:
+    clean_value = str(value or '').strip().lower()
+    if clean_value in allowed:
+        return clean_value
+    return fallback
+
+
+def make_runtime_id(prefix: str) -> str:
+    """Create one traceable runtime identifier."""
+    clean_prefix = str(prefix or '').strip() or 'id'
+    return '%s_%d' % (clean_prefix, int(time.time() * 1000))
+
+
 def make_plan_id(prefix: str = 'plan') -> str:
     """Create a plan identifier stable enough for local tracing."""
-    return '%s_%d' % (str(prefix or 'plan').strip() or 'plan', int(time.time() * 1000))
+    return make_runtime_id(prefix or 'plan')
+
+
+def make_goal_id(prefix: str = 'goal') -> str:
+    """Create a goal identifier stable enough for local tracing."""
+    return make_runtime_id(prefix or 'goal')
+
+
+def normalize_grounded_context(value) -> dict:
+    """Normalize the planner-facing grounded context envelope."""
+    payload = dict(_DEFAULT_GROUNDED_CONTEXT)
+    raw_payload = parse_json_object(value) if isinstance(value, str) else value
+    if not isinstance(raw_payload, dict):
+        return payload
+
+    for key in ('knowledge_snapshot', 'scene_summary', 'world_model_snapshot'):
+        item = raw_payload.get(key, {})
+        payload[key] = item if isinstance(item, dict) else {}
+    payload['world_model_text'] = str(raw_payload.get('world_model_text', '')).strip()
+    return payload
+
+
+def normalize_communication_policy(value) -> dict:
+    """Normalize plan communication flags into a stable dict."""
+    policy = dict(_DEFAULT_COMMUNICATION_POLICY)
+    if not isinstance(value, dict):
+        return policy
+
+    for key in policy:
+        if key in value:
+            policy[key] = coerce_bool(value.get(key))
+    return policy
 
 
 def normalize_plan_steps(steps) -> list[dict]:
@@ -144,7 +244,11 @@ def normalize_plan_steps(steps) -> list[dict]:
             continue
         normalized_steps.append(
             {
-                'id': _first_non_empty(step.get('id', ''), step.get('step_id', ''), f'step_{index}'),
+                'id': _first_non_empty(
+                    step.get('id', ''),
+                    step.get('step_id', ''),
+                    f'step_{index}',
+                ),
                 'type': step_type,
                 'name': str(step.get('name', '')).strip().lower(),
                 'args': _clean_payload(step.get('args', {})),
@@ -172,23 +276,115 @@ def build_plan_payload(
     retry_budget: int = 0,
     scene_targets: list[str] | None = None,
     plan_id: str = '',
+    goal_id: str = '',
+    plan_version: int = 1,
+    status: str = 'draft',
+    communication_policy: dict | None = None,
 ) -> dict:
     """Build one planner result payload using the shared envelope shape."""
     resolved_scene_targets = list(scene_targets or getattr(request, 'scene_targets', []))
+    resolved_goal_id = str(goal_id or getattr(request, 'goal_id', '')).strip()
+    resolved_plan_id = str(plan_id or make_plan_id()).strip()
+    resolved_ack_text = str(ack_text or getattr(request, 'ack_text', '')).strip()
+    resolved_ack_mode = str(ack_mode or getattr(request, 'ack_mode', '')).strip()
+    resolved_policy = normalize_communication_policy(communication_policy)
+
     return {
-        'ack_text': str(ack_text or getattr(request, 'ack_text', '')).strip(),
-        'ack_mode': str(ack_mode or getattr(request, 'ack_mode', '')).strip(),
+        'goal_id': resolved_goal_id,
+        'ack_text': resolved_ack_text,
+        'ack_mode': resolved_ack_mode,
         'scene_targets': resolved_scene_targets,
+        'grounded_context': normalize_grounded_context(
+            getattr(request, 'grounded_context', {})
+        ),
         'plan': {
-            'plan_id': str(plan_id or make_plan_id()).strip(),
-            'validation_status': str(validation_status or '').strip(),
+            'goal_id': resolved_goal_id,
+            'plan_id': resolved_plan_id,
+            'plan_version': max(1, int(plan_version or 1)),
+            'status': str(status or '').strip().lower() or 'draft',
+            'validation_status': str(validation_status or '').strip().lower(),
             'failure_reason': str(failure_reason or '').strip(),
             'replan_hint': str(replan_hint or '').strip(),
             'retry_budget': _coerce_nonnegative_int(retry_budget),
             'scene_targets': resolved_scene_targets,
+            'communication_policy': resolved_policy,
             'steps': normalize_plan_steps(list(steps or [])),
         },
     }
+
+
+def build_dialogue_act_payload(
+    *,
+    goal_id: str,
+    act: str,
+    plan_id: str = '',
+    plan_version: int = 0,
+    priority: str = 'normal',
+    await_user_response: bool = False,
+    reason: str = '',
+    text_hint: str = '',
+    slots_needed: list[str] | None = None,
+    context: dict | None = None,
+) -> dict:
+    """Build one planner dialogue act payload."""
+    return {
+        'goal_id': str(goal_id or '').strip(),
+        'plan_id': str(plan_id or '').strip(),
+        'plan_version': max(0, int(plan_version or 0)),
+        'act': _normalize_choice(act, PLANNER_DIALOGUE_ACTS, 'progress_update'),
+        'priority': str(priority or 'normal').strip().lower() or 'normal',
+        'await_user_response': bool(await_user_response),
+        'reason': str(reason or '').strip(),
+        'text_hint': str(text_hint or '').strip(),
+        'slots_needed': coerce_str_list(slots_needed or []),
+        'context': _clean_payload(context or {}),
+    }
+
+
+def build_execution_feedback_payload(
+    *,
+    intent: str,
+    source: str,
+    plan_context: dict,
+    status: str,
+    event_type: str = '',
+    reason: str = '',
+    step: dict | None = None,
+    blocking: bool = False,
+    unmet_preconditions: list[str] | None = None,
+    needs_user_input: bool = False,
+    validation_errors: list[str] | None = None,
+    timestamp_sec: float = 0.0,
+) -> dict:
+    """Build one normalized planner feedback payload."""
+    payload = {
+        'goal_id': str(plan_context.get('goal_id', '')).strip(),
+        'plan_id': str(plan_context.get('plan_id', '')).strip(),
+        'plan_version': max(0, _coerce_nonnegative_int(plan_context.get('plan_version', 0))),
+        'intent': str(intent or '').strip(),
+        'source': str(source or '').strip(),
+        'event_type': str(
+            event_type or _default_feedback_event_type(status)
+        ).strip().lower(),
+        'status': str(status or '').strip().lower(),
+        'reason': str(reason or '').strip(),
+        'validation_status': str(plan_context.get('validation_status', '')).strip().lower(),
+        'replan_hint': str(plan_context.get('replan_hint', '')).strip(),
+        'retry_budget': _coerce_nonnegative_int(plan_context.get('retry_budget', 0)),
+        'blocking': bool(blocking),
+        'unmet_preconditions': coerce_str_list(unmet_preconditions or []),
+        'needs_user_input': bool(needs_user_input),
+        'scene_targets': coerce_str_list(plan_context.get('scene_targets', [])),
+        'validation_errors': coerce_str_list(validation_errors or []),
+        'timestamp_sec': _coerce_float(timestamp_sec, time.time()),
+    }
+    if step is not None:
+        payload['step'] = {
+            'id': str(step.get('id', '')).strip(),
+            'type': str(step.get('type', '')).strip().lower(),
+            'name': str(step.get('name', '')).strip().lower(),
+        }
+    return payload
 
 
 @dataclass(**_FROZEN_DATACLASS_KWARGS)
@@ -196,6 +392,10 @@ class PlannerRequest:
     """Normalized planner ingress payload."""
 
     request_id: str
+    goal_id: str
+    parent_goal_id: str
+    supersedes_goal_id: str
+    request_kind: str
     user_text: str
     normalized_intents: tuple[str, ...]
     ack_text: str
@@ -204,6 +404,8 @@ class PlannerRequest:
     dialogue_context: tuple[str, ...]
     grounded_context: dict
     planner_mode: str
+    interaction_mode: str
+    dialogue_turn_id: str
 
     @classmethod
     def from_payload(cls, payload) -> 'PlannerRequest':
@@ -212,20 +414,29 @@ class PlannerRequest:
         if isinstance(dialogue_context, str):
             dialogue_context = [dialogue_context]
 
-        grounded_context = data.get('grounded_context', {})
-        if not isinstance(grounded_context, dict):
-            grounded_context = {}
+        request_id = _first_non_empty(data.get('request_id', ''), make_runtime_id('request'))
+        goal_id = _first_non_empty(data.get('goal_id', ''), make_goal_id())
 
         return cls(
-            request_id=_first_non_empty(data.get('request_id', ''), make_plan_id('request')),
+            request_id=request_id,
+            goal_id=goal_id,
+            parent_goal_id=str(data.get('parent_goal_id', '')).strip(),
+            supersedes_goal_id=str(data.get('supersedes_goal_id', '')).strip(),
+            request_kind=_normalize_choice(
+                data.get('request_kind', 'new_goal'),
+                PLANNER_REQUEST_KINDS,
+                'new_goal',
+            ),
             user_text=str(data.get('user_text', '')).strip(),
             normalized_intents=tuple(coerce_str_list(data.get('normalized_intents', []))),
             ack_text=str(data.get('ack_text', '')).strip(),
             ack_mode=str(data.get('ack_mode', '')).strip(),
             scene_targets=tuple(coerce_str_list(data.get('scene_targets', []))),
             dialogue_context=tuple(coerce_str_list(dialogue_context)),
-            grounded_context=grounded_context,
+            grounded_context=normalize_grounded_context(data.get('grounded_context', {})),
             planner_mode=str(data.get('planner_mode', 'default')).strip() or 'default',
+            interaction_mode=str(data.get('interaction_mode', '')).strip() or 'default',
+            dialogue_turn_id=str(data.get('dialogue_turn_id', '')).strip(),
         )
 
 
@@ -283,11 +494,25 @@ class SceneSummary:
         )
 
 
+def _default_feedback_event_type(status: str) -> str:
+    mapping = {
+        'accepted': 'plan_accepted',
+        'running': 'step_started',
+        'completed': 'plan_completed',
+        'invalid': 'plan_invalid',
+        'failed': 'step_failed',
+    }
+    return mapping.get(str(status or '').strip().lower(), '')
+
+
 @dataclass(**_FROZEN_DATACLASS_KWARGS)
 class ExecutionFeedback:
     """Normalized planner/executor feedback payload."""
 
+    goal_id: str
     plan_id: str
+    plan_version: int
+    event_type: str
     status: str
     intent: str
     source: str
@@ -295,6 +520,9 @@ class ExecutionFeedback:
     validation_status: str
     replan_hint: str
     retry_budget: int
+    blocking: bool
+    unmet_preconditions: tuple[str, ...]
+    needs_user_input: bool
     scene_targets: tuple[str, ...]
     validation_errors: tuple[str, ...]
     step_id: str
@@ -308,21 +536,64 @@ class ExecutionFeedback:
         step_payload = data.get('step', {})
         if not isinstance(step_payload, dict):
             step_payload = {}
+        status = str(data.get('status', '')).strip().lower()
         return cls(
+            goal_id=str(data.get('goal_id', '')).strip(),
             plan_id=str(data.get('plan_id', '')).strip(),
-            status=str(data.get('status', '')).strip().lower(),
+            plan_version=max(0, _coerce_nonnegative_int(data.get('plan_version', 0))),
+            event_type=str(
+                data.get('event_type', _default_feedback_event_type(status))
+            ).strip().lower(),
+            status=status,
             intent=str(data.get('intent', '')).strip(),
             source=str(data.get('source', '')).strip(),
             reason=str(data.get('reason', '')).strip(),
             validation_status=str(data.get('validation_status', '')).strip().lower(),
             replan_hint=str(data.get('replan_hint', '')).strip(),
             retry_budget=_coerce_nonnegative_int(data.get('retry_budget', 0)),
+            blocking=coerce_bool(data.get('blocking', False)),
+            unmet_preconditions=tuple(
+                coerce_str_list(data.get('unmet_preconditions', []))
+            ),
+            needs_user_input=coerce_bool(data.get('needs_user_input', False)),
             scene_targets=tuple(coerce_str_list(data.get('scene_targets', []))),
             validation_errors=tuple(coerce_str_list(data.get('validation_errors', []))),
             step_id=str(step_payload.get('id', '')).strip(),
             step_type=str(step_payload.get('type', '')).strip().lower(),
             step_name=str(step_payload.get('name', '')).strip().lower(),
             timestamp_sec=_coerce_float(data.get('timestamp_sec', 0.0)),
+        )
+
+
+@dataclass(**_FROZEN_DATACLASS_KWARGS)
+class PlannerDialogueAct:
+    """Normalized planner-owned dialogue act payload."""
+
+    goal_id: str
+    plan_id: str
+    plan_version: int
+    act: str
+    priority: str
+    await_user_response: bool
+    reason: str
+    text_hint: str
+    slots_needed: tuple[str, ...]
+    context: dict
+
+    @classmethod
+    def from_payload(cls, payload) -> 'PlannerDialogueAct':
+        data = parse_json_object(payload)
+        return cls(
+            goal_id=str(data.get('goal_id', '')).strip(),
+            plan_id=str(data.get('plan_id', '')).strip(),
+            plan_version=max(0, _coerce_nonnegative_int(data.get('plan_version', 0))),
+            act=_normalize_choice(data.get('act', ''), PLANNER_DIALOGUE_ACTS, 'progress_update'),
+            priority=str(data.get('priority', 'normal')).strip().lower() or 'normal',
+            await_user_response=coerce_bool(data.get('await_user_response', False)),
+            reason=str(data.get('reason', '')).strip(),
+            text_hint=str(data.get('text_hint', '')).strip(),
+            slots_needed=tuple(coerce_str_list(data.get('slots_needed', []))),
+            context=_clean_payload(data.get('context', {})),
         )
 
 
@@ -411,7 +682,9 @@ def build_world_model_text(
         f'- backend: {snapshot.backend or "unknown"}',
     ]
     if snapshot.active_plan_id:
-        lines.append(f'- active plan: {snapshot.active_plan_id} ({snapshot.execution_status or "unknown"})')
+        lines.append(
+            f'- active plan: {snapshot.active_plan_id} ({snapshot.execution_status or "unknown"})'
+        )
     if snapshot.execution_reason:
         lines.append(f'- execution note: {snapshot.execution_reason}')
     if snapshot.scene_targets:

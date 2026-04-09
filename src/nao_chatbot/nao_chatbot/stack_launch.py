@@ -564,6 +564,16 @@ def generate_profile_launch_description(
         default_value="planner_request",
         description="Intent label used on planner ingress messages.",
     )
+    planner_dialogue_act_topic_arg = DeclareLaunchArgument(
+        "planner_dialogue_act_topic",
+        default_value="/planner/dialogue_act",
+        description="Planner-owned dialogue act topic published by planner_llm.",
+    )
+    planner_skill_registry_path_arg = DeclareLaunchArgument(
+        "planner_skill_registry_path",
+        default_value="",
+        description="Optional absolute path to a planner_llm skill-registry JSON file.",
+    )
     scene_grounding_allowed_labels_arg = DeclareLaunchArgument(
         "scene_grounding_allowed_labels",
         default_value="bottle,cup,book,cell phone,backpack,remote,laptop,keyboard,mouse,chair,blueberry,corn,pear,tomato,zucchini",
@@ -1161,6 +1171,18 @@ def generate_profile_launch_description(
                 )
             },
             {
+                "planner_dialogue_act_topic": ParameterValue(
+                    LaunchConfiguration("planner_dialogue_act_topic"),
+                    value_type=str,
+                )
+            },
+            {
+                "skill_registry_path": ParameterValue(
+                    LaunchConfiguration("planner_skill_registry_path"),
+                    value_type=str,
+                )
+            },
+            {
                 "provider": ParameterValue(
                     LaunchConfiguration("planner_llm_provider"),
                     value_type=str,
@@ -1506,6 +1528,8 @@ def generate_profile_launch_description(
             chatbot_planner_mode_enabled_arg,
             planner_request_topic_arg,
             planner_request_intent_arg,
+            planner_dialogue_act_topic_arg,
+            planner_skill_registry_path_arg,
             planner_llm_provider_arg,
             planner_llm_model_arg,
             planner_llm_base_url_arg,

@@ -33,21 +33,35 @@ _SAMPLE_SCENE = {
 
 _SAMPLE_REQUEST = {
     'request_id': 'fixture_request_1',
+    'goal_id': 'goal_fixture_1',
+    'request_kind': 'new_goal',
     'user_text': 'look at the cup',
     'normalized_intents': ['inspect_scene'],
     'ack_text': 'I will inspect the scene.',
     'ack_mode': 'auto',
     'scene_targets': ['cup'],
     'dialogue_context': ['User asked me to inspect the cup.'],
-    'grounded_context': {'target': 'cup'},
+    'grounded_context': {
+        'knowledge_snapshot': {'target': 'cup'},
+        'scene_summary': {'objects': ['cup']},
+        'world_model_snapshot': {},
+        'world_model_text': '',
+    },
     'planner_mode': 'default',
+    'interaction_mode': 'default',
 }
 
 _SAMPLE_FEEDBACK = {
+    'goal_id': 'goal_fixture_1',
     'plan_id': 'fixture_plan_1',
+    'plan_version': 1,
+    'event_type': 'step_failed',
     'status': 'failed',
     'reason': 'target left the field of view',
     'retry_budget': 1,
+    'blocking': False,
+    'needs_user_input': False,
+    'unmet_preconditions': [],
     'scene_targets': ['cup'],
     'step': {'id': 'step_1', 'type': 'look_at', 'name': 'look_at'},
     'timestamp_sec': 0.0,

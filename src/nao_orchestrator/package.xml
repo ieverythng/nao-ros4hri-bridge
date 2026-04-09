@@ -21,6 +21,7 @@
   <depend>kb_skills</depend>
   <depend>nao_skills</depend>
   <depend>naoqi_bridge_msgs</depend>
+  <depend>planner_common</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

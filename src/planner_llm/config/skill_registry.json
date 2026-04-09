@@ -1,0 +1,39 @@
+{
+  "step_types": ["noop", "say", "skill", "look_at"],
+  "skills": [
+    {
+      "name": "perform_motion",
+      "aliases": ["motion"],
+      "category": "embodiment",
+      "params": ["object", "speed", "relative", "yaw", "pitch"],
+      "required_params": ["object"],
+      "preconditions": [],
+      "expected_effects": ["robot posture or head orientation changes"],
+      "observable_success": ["planner feedback accepted", "planner feedback completed"],
+      "failure_modes": ["unsupported motion payload", "motion dispatch failed"],
+      "retryable": true,
+      "can_request_user_help": false,
+      "can_request_clarification": true,
+      "timeout_hint": 10.0,
+      "safety_flags": ["motion"],
+      "robot_adapter_mapping": "nao_orchestrator.perform_motion"
+    },
+    {
+      "name": "look_at",
+      "aliases": [],
+      "category": "attention",
+      "params": ["target_frame", "frame_id", "policy", "x", "y", "z"],
+      "required_params": [],
+      "preconditions": [],
+      "expected_effects": ["robot gaze is redirected or reset"],
+      "observable_success": ["planner feedback step_started", "planner feedback completed"],
+      "failure_modes": ["look_at step missing target frame or reset policy", "look_at target dispatch failed"],
+      "retryable": true,
+      "can_request_user_help": false,
+      "can_request_clarification": true,
+      "timeout_hint": 8.0,
+      "safety_flags": ["attention"],
+      "robot_adapter_mapping": "nao_orchestrator.look_at"
+    }
+  ]
+}

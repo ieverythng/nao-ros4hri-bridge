@@ -19,6 +19,7 @@ from hri_actions_msgs.msg import Intent
 from interaction_skills.action import LookAt
 from kb_skills.intent_labels import KB_QUERY_INTENTS
 from nao_skills.action import DoHeadMotion, ReplayMotion
+from planner_common import build_execution_feedback_payload
 from rclpy.action import ActionClient
 from rclpy.lifecycle import Node, State, TransitionCallbackReturn
 from std_msgs.msg import String
@@ -429,7 +430,11 @@ class NaoOrchestrator(Node):
                 source=source,
                 plan_context=plan_context,
                 status='invalid',
+                event_type='plan_invalid',
                 reason='; '.join(plan_context['errors']),
+                blocking=True,
+                unmet_preconditions=plan_context['errors'],
+                needs_user_input=False,
                 validation_errors=plan_context['errors'],
             )
             self.get_logger().warn(
@@ -443,11 +448,13 @@ class NaoOrchestrator(Node):
             source=source,
             plan_context=plan_context,
             status='accepted',
+            event_type='plan_accepted',
         )
         self._maybe_dispatch_acknowledgement(
             intent_name=intent_name,
             data=data,
             plan=plan,
+            plan_context=plan_context,
         )
 
         executed_any = False
@@ -457,11 +464,20 @@ class NaoOrchestrator(Node):
                 source=source,
                 plan_context=plan_context,
                 status='running',
+                event_type='step_started',
                 step=step,
             )
             step_ok, reason = self._dispatch_plan_step(step, fallback_data=data)
             if step_ok:
                 executed_any = True
+                self._publish_plan_feedback(
+                    intent_name=intent_name,
+                    source=source,
+                    plan_context=plan_context,
+                    status='running',
+                    event_type='step_succeeded',
+                    step=step,
+                )
                 continue
 
             self._stats.last_route = 'planned:failed'
@@ -472,8 +488,12 @@ class NaoOrchestrator(Node):
                 source=source,
                 plan_context=plan_context,
                 status='failed',
+                event_type='step_failed',
                 reason=reason,
                 step=step,
+                blocking=True,
+                unmet_preconditions=list(step.get('requires', [])),
+                needs_user_input=str(step.get('on_failure', '')).strip().lower() in ('ask_user', 'clarify'),
             )
             self.get_logger().warn(
                 'Planned intent step failed | intent=%s source=%s plan_id=%s step=%s reason=%s'
@@ -490,6 +510,7 @@ class NaoOrchestrator(Node):
                 source=source,
                 plan_context=plan_context,
                 status='completed',
+                event_type='plan_completed',
             )
             return True
         self._stats.plans_failed += 1
@@ -499,7 +520,9 @@ class NaoOrchestrator(Node):
             source=source,
             plan_context=plan_context,
             status='failed',
+            event_type='plan_invalid',
             reason='plan contained no executable steps',
+            blocking=True,
         )
         return False
 
@@ -509,10 +532,14 @@ class NaoOrchestrator(Node):
         intent_name: str,
         data: dict,
         plan: list[dict],
+        plan_context: dict,
     ) -> None:
         if not self.dispatch_speech_intents:
             return
         if intent_name in (Intent.GREET, Intent.SAY):
+            return
+        communication_policy = dict(plan_context.get('communication_policy', {}))
+        if not bool(communication_policy.get('emit_acknowledge', False)):
             return
         if any(step.get('type') == 'say' for step in plan):
             return
@@ -622,31 +649,32 @@ class NaoOrchestrator(Node):
         source: str,
         plan_context: dict,
         status: str,
+        event_type: str = '',
         reason: str = '',
         step: dict | None = None,
+        blocking: bool = False,
+        unmet_preconditions: list[str] | None = None,
+        needs_user_input: bool = False,
         validation_errors: list[str] | None = None,
     ) -> None:
         if self._planner_feedback_pub is None:
             return
-        payload = {
-            'intent': str(intent_name).strip(),
-            'source': str(source).strip(),
-            'plan_id': self._resolve_plan_id(plan_context),
-            'status': str(status).strip().lower(),
-            'reason': str(reason).strip(),
-            'validation_status': str(plan_context.get('validation_status', '')).strip(),
-            'replan_hint': str(plan_context.get('replan_hint', '')).strip(),
-            'retry_budget': int(plan_context.get('retry_budget', 0) or 0),
-            'scene_targets': list(plan_context.get('scene_targets', [])),
-            'validation_errors': list(validation_errors or []),
-            'timestamp_sec': round(time.time(), 3),
-        }
-        if step is not None:
-            payload['step'] = {
-                'id': str(step.get('id', '')).strip(),
-                'type': str(step.get('type', '')).strip(),
-                'name': str(step.get('name', '')).strip(),
-            }
+        normalized_plan_context = dict(plan_context)
+        normalized_plan_context['plan_id'] = self._resolve_plan_id(plan_context)
+        payload = build_execution_feedback_payload(
+            intent=str(intent_name).strip(),
+            source=str(source).strip(),
+            plan_context=normalized_plan_context,
+            status=str(status).strip().lower(),
+            event_type=event_type,
+            reason=str(reason).strip(),
+            step=step,
+            blocking=blocking,
+            unmet_preconditions=list(unmet_preconditions or []),
+            needs_user_input=needs_user_input,
+            validation_errors=list(validation_errors or []),
+            timestamp_sec=round(time.time(), 3),
+        )
         msg = String()
         msg.data = json.dumps(payload, sort_keys=True, separators=(',', ':'))
         self._planner_feedback_pub.publish(msg)

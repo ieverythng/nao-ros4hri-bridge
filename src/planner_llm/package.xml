@@ -10,6 +10,7 @@
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
   <depend>hri_actions_msgs</depend>
+  <depend>ament_index_python</depend>
   <depend>planner_common</depend>
 
   <test_depend>ament_copyright</test_depend>

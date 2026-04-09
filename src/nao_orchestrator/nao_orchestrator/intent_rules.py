@@ -127,7 +127,7 @@ _POSTURE_TOPIC_FALLBACKS = {
 
 _PLAN_STEP_TYPES = {'say', 'skill', 'look_at', 'noop'}
 _SUPPORTED_SKILL_PLAN_NAMES = {'', 'perform_motion', 'motion', 'look_at'}
-_PLAN_FAILURE_POLICIES = {'fail', 'replan', 'ask_user', 'ignore'}
+_PLAN_FAILURE_POLICIES = {'fail', 'replan', 'ask_user', 'clarify', 'ignore'}
 
 
 # -----------------------------------------------------------------------------
@@ -291,10 +291,21 @@ def parse_plan_envelope(data: dict) -> dict:
     parsed_plan_dict, _raw_plan = _parsed_plan_value(data)
 
     return {
+        'goal_id': _first_non_empty(
+            _plan_metadata_value(data, parsed_plan_dict, 'goal_id', 'goalId'),
+            '',
+        ),
         'plan_id': _first_non_empty(
             _plan_metadata_value(data, parsed_plan_dict, 'plan_id', 'id', 'planId'),
             '',
         ),
+        'plan_version': _coerce_nonnegative_int(
+            _plan_metadata_value(data, parsed_plan_dict, 'plan_version', 'version')
+        ),
+        'status': str(
+            _plan_metadata_value(data, parsed_plan_dict, 'status')
+            or ''
+        ).strip().lower(),
         'validation_status': str(
             _plan_metadata_value(data, parsed_plan_dict, 'validation_status', 'status')
             or ''
@@ -321,6 +332,9 @@ def parse_plan_envelope(data: dict) -> dict:
                 'scene_targets',
                 'expected_scene_targets',
             )
+        ),
+        'communication_policy': _normalize_communication_policy(
+            _plan_metadata_value(data, parsed_plan_dict, 'communication_policy')
         ),
         'steps': parse_execution_plan(data),
         'has_explicit_plan': 'plan' in data,
@@ -444,12 +458,16 @@ def _first_non_empty(*values: str) -> str:
 
 def _empty_plan_envelope() -> dict:
     return {
+        'goal_id': '',
         'plan_id': '',
+        'plan_version': 0,
+        'status': '',
         'validation_status': '',
         'failure_reason': '',
         'replan_hint': '',
         'retry_budget': 0,
         'scene_targets': [],
+        'communication_policy': _normalize_communication_policy({}),
         'steps': [],
         'has_explicit_plan': False,
     }
@@ -516,6 +534,22 @@ def _coerce_failure_policy(value) -> str:
     if clean_value in _PLAN_FAILURE_POLICIES:
         return clean_value
     return 'fail'
+
+
+def _normalize_communication_policy(value) -> dict:
+    if not isinstance(value, dict):
+        return {
+            'emit_acknowledge': False,
+            'emit_progress': False,
+            'emit_completion': True,
+            'emit_failure': True,
+        }
+    return {
+        'emit_acknowledge': bool(value.get('emit_acknowledge', False)),
+        'emit_progress': bool(value.get('emit_progress', False)),
+        'emit_completion': bool(value.get('emit_completion', True)),
+        'emit_failure': bool(value.get('emit_failure', True)),
+    }
 
 
 def _plan_step_validation_error(intent_name: str, step: dict) -> str:

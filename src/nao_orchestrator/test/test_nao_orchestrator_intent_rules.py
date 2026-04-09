@@ -121,8 +121,12 @@ def test_parse_plan_envelope_accepts_dict_style_plan_metadata() -> None:
     envelope = parse_plan_envelope(
         {
             'plan': {
+                'goal_id': 'goal-7',
                 'plan_id': 'plan-42',
+                'plan_version': 3,
+                'status': 'executing',
                 'validation_status': 'draft',
+                'communication_policy': {'emit_acknowledge': False},
                 'steps': [
                     {'type': 'say', 'args': {'text': 'hello'}},
                 ],
@@ -130,9 +134,13 @@ def test_parse_plan_envelope_accepts_dict_style_plan_metadata() -> None:
             'scene_targets': ['cup'],
         }
     )
+    assert envelope['goal_id'] == 'goal-7'
     assert envelope['plan_id'] == 'plan-42'
+    assert envelope['plan_version'] == 3
+    assert envelope['status'] == 'executing'
     assert envelope['validation_status'] == 'draft'
     assert envelope['scene_targets'] == ['cup']
+    assert envelope['communication_policy']['emit_acknowledge'] is False
     assert envelope['steps'][0]['id'] == 'step_1'
 
 
@@ -158,6 +166,24 @@ def test_validate_execution_plan_rejects_invalid_look_at_step() -> None:
     assert envelope['errors'] == [
         'step_1: look_at step is missing target_frame or reset policy'
     ]
+
+
+def test_validate_execution_plan_accepts_clarify_failure_policy() -> None:
+    envelope = validate_execution_plan(
+        Intent.PERFORM_MOTION,
+        {
+            'plan': [
+                {
+                    'type': 'skill',
+                    'name': 'perform_motion',
+                    'args': {'object': 'stand'},
+                    'on_failure': 'clarify',
+                }
+            ]
+        },
+    )
+    assert envelope['errors'] == []
+    assert envelope['steps'][0]['on_failure'] == 'clarify'
 
 
 def test_validate_execution_plan_rejects_duplicate_plan_step_ids() -> None:

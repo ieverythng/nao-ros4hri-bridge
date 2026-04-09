@@ -232,6 +232,8 @@ ros2 run nao_chatbot asr_push_to_talk_cli
 - `start_planner_llm`
 - `planner_request_topic`
 - `planner_request_intent`
+- `planner_dialogue_act_topic`
+- `planner_skill_registry_path`
 - `planner_llm_provider`
 - `planner_llm_model`
 - `planner_llm_base_url`
