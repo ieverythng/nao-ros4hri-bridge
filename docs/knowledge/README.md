@@ -27,3 +27,5 @@ Notes:
 - run `scripts/bootstrap_socialminds_sources.sh` before indexing if you want the graph to include the upstream KB stack and the lightweight ROS4HRI workspace contracts
 - if the GitNexus UI/backend is already running, avoid direct local CLI graph calls against the same repo database; reindex first, then restart the server or use the HTTP-backed MCP path
 - once multiple repos are indexed, the same GitNexus registry can expose all of them and the UI can switch projects without a separate install per repo
+- `tools/knowledge/generate_ros_graph_proxy.py` generates tracked ROS runtime proxy artifacts in `docs/knowledge/ROS_RUNTIME_GRAPH.md`, `docs/knowledge/ros_runtime_graph.json`, and `docs/knowledge/ros_runtime_proxy.py` so GitNexus can visualize ROS topics, services, and actions more explicitly
+- `tools/knowledge/ros_graph_overrides.json` is the repo-owned seam for launch/runtime hints that static code analysis cannot infer reliably, such as namespaced services or cross-package endpoint rewrites

@@ -3,84 +3,6 @@
   "source": "git-ls-files fallback",
   "children": [
     {
-      "name": ".claude",
-      "type": "directory",
-      "children": [
-        {
-          "name": "skills",
-          "type": "directory",
-          "children": [
-            {
-              "name": "gitnexus",
-              "type": "directory",
-              "children": [
-                {
-                  "name": "gitnexus-cli",
-                  "type": "directory",
-                  "children": [
-                    {
-                      "name": "SKILL.md",
-                      "type": "file"
-                    }
-                  ]
-                },
-                {
-                  "name": "gitnexus-debugging",
-                  "type": "directory",
-                  "children": [
-                    {
-                      "name": "SKILL.md",
-                      "type": "file"
-                    }
-                  ]
-                },
-                {
-                  "name": "gitnexus-exploring",
-                  "type": "directory",
-                  "children": [
-                    {
-                      "name": "SKILL.md",
-                      "type": "file"
-                    }
-                  ]
-                },
-                {
-                  "name": "gitnexus-guide",
-                  "type": "directory",
-                  "children": [
-                    {
-                      "name": "SKILL.md",
-                      "type": "file"
-                    }
-                  ]
-                },
-                {
-                  "name": "gitnexus-impact-analysis",
-                  "type": "directory",
-                  "children": [
-                    {
-                      "name": "SKILL.md",
-                      "type": "file"
-                    }
-                  ]
-                },
-                {
-                  "name": "gitnexus-refactoring",
-                  "type": "directory",
-                  "children": [
-                    {
-                      "name": "SKILL.md",
-                      "type": "file"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
       "name": ".codex",
       "type": "directory",
       "children": [
@@ -211,11 +133,23 @@
               "type": "file"
             },
             {
+              "name": "ROS_RUNTIME_GRAPH.md",
+              "type": "file"
+            },
+            {
               "name": "WORKFLOWS.md",
               "type": "file"
             },
             {
               "name": "module_tree.json",
+              "type": "file"
+            },
+            {
+              "name": "ros_runtime_graph.json",
+              "type": "file"
+            },
+            {
+              "name": "ros_runtime_proxy.py",
               "type": "file"
             },
             {
@@ -1477,6 +1411,10 @@
               "type": "file"
             },
             {
+              "name": "generate_ros_graph_proxy.py",
+              "type": "file"
+            },
+            {
               "name": "generate_wiki.sh",
               "type": "file"
             },
@@ -1498,6 +1436,10 @@
             },
             {
               "name": "pre_commit_advisory.sh",
+              "type": "file"
+            },
+            {
+              "name": "ros_graph_overrides.json",
               "type": "file"
             },
             {

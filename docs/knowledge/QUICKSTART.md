@@ -30,6 +30,8 @@ Source coverage note:
 - this repo intentionally keeps several graph-relevant packages ignored in git
 - `tools/knowledge/index_repo.sh` uses `.gitnexusignore` instead of `.gitignore` so GitNexus still includes those source trees
 - `scripts/bootstrap_socialminds_sources.sh` clones reference-only upstream packages under `ref_src/knowledge_sources/` and lightweight ROS4HRI contracts under `src/`
+- `tools/knowledge/index_repo.sh` also regenerates `docs/knowledge/ros_runtime_proxy.py` and related ROS graph artifacts before each analyze run
+- `tools/knowledge/ros_graph_overrides.json` lets this repo pin runtime-specific ROS endpoint rewrites when the launch surface differs from what raw source alone would suggest
 
 Wiki generation needs an OpenAI-compatible API key or saved GitNexus config.
 

@@ -1,0 +1,13 @@
+{
+  "packages": {
+    "dialogue_manager": {
+      "endpoint_rewrites": {
+        "/*/dialogue_interaction": "/chatbot_llm/dialogue_interaction",
+        "/*/start_dialogue": "/chatbot_llm/start_dialogue"
+      }
+    },
+    "knowledge_core": {
+      "namespace": "kb"
+    }
+  }
+}
