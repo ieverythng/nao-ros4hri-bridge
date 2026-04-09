@@ -22,9 +22,11 @@
   <exec_depend>nao_robot</exec_depend>
   <exec_depend>nao_look_at</exec_depend>
   <exec_depend>nao_orchestrator</exec_depend>
+  <exec_depend>nao_world_model_enricher</exec_depend>
   <exec_depend>nao_replay_motion</exec_depend>
   <exec_depend>nao_scene_grounding</exec_depend>
   <exec_depend>nao_say_skill</exec_depend>
+  <exec_depend>planner_llm</exec_depend>
   <exec_depend>rqt_chat</exec_depend>
   <exec_depend>rqt_image_view</exec_depend>
   <exec_depend>rviz2</exec_depend>

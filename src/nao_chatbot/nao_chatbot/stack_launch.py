@@ -497,6 +497,16 @@ def generate_profile_launch_description(
         default_value="false",
         description="Launch the local object-to-KnowledgeCore grounding node.",
     )
+    start_world_model_enricher_arg = DeclareLaunchArgument(
+        "start_world_model_enricher",
+        default_value=_profile_default(profile_defaults, "start_world_model_enricher", "false"),
+        description="Launch the planner-facing world-model enricher node.",
+    )
+    start_planner_llm_arg = DeclareLaunchArgument(
+        "start_planner_llm",
+        default_value=_profile_default(profile_defaults, "start_planner_llm", "false"),
+        description="Launch the planner_llm node that converts planner requests into executable plans.",
+    )
     object_detection_namespace_arg = DeclareLaunchArgument(
         "object_detection_namespace",
         default_value="yolo",
@@ -548,6 +558,21 @@ def generate_profile_launch_description(
         "scene_grounding_summary_topic",
         default_value="/scene/summary",
         description="JSON summary topic published by nao_scene_grounding.",
+    )
+    world_model_enricher_snapshot_topic_arg = DeclareLaunchArgument(
+        "world_model_enricher_snapshot_topic",
+        default_value="/world_model/enriched_snapshot",
+        description="Planner-facing JSON snapshot published by nao_world_model_enricher.",
+    )
+    world_model_enricher_text_topic_arg = DeclareLaunchArgument(
+        "world_model_enricher_text_topic",
+        default_value="/world_model/enriched_text",
+        description="Planner-facing bounded text summary published by nao_world_model_enricher.",
+    )
+    world_model_enricher_knowledge_enabled_arg = DeclareLaunchArgument(
+        "world_model_enricher_knowledge_enabled",
+        default_value="true",
+        description="Enable KnowledgeCore reads from nao_world_model_enricher.",
     )
     scene_grounding_allowed_labels_arg = DeclareLaunchArgument(
         "scene_grounding_allowed_labels",
@@ -744,6 +769,55 @@ def generate_profile_launch_description(
         "chatbot_server_url",
         default_value="http://localhost:11434/api/chat",
         description="Backend HTTP endpoint used by chatbot_llm.",
+    )
+    planner_request_topic_arg = DeclareLaunchArgument(
+        "planner_request_topic",
+        default_value="/planner/request",
+        description="Planner ingress topic consumed by planner_llm.",
+    )
+    planner_llm_provider_arg = DeclareLaunchArgument(
+        "planner_llm_provider",
+        default_value=_profile_default(profile_defaults, "planner_llm_provider", "ollama"),
+        description="Planner backend provider: ollama or openai-compatible.",
+    )
+    planner_llm_model_arg = DeclareLaunchArgument(
+        "planner_llm_model",
+        default_value=_profile_default(
+            profile_defaults,
+            "planner_llm_model",
+            _profile_default(profile_defaults, "ollama_model", "gpt-oss:120b-cloud"),
+        ),
+        description="Planner model name used by planner_llm.",
+    )
+    planner_llm_base_url_arg = DeclareLaunchArgument(
+        "planner_llm_base_url",
+        default_value=_profile_default(profile_defaults, "planner_llm_base_url", "http://127.0.0.1:11434"),
+        description="Planner backend base URL. For Ollama this is the server root, not /api/chat.",
+    )
+    planner_llm_temperature_arg = DeclareLaunchArgument(
+        "planner_llm_temperature",
+        default_value="0.1",
+        description="Temperature forwarded to planner_llm.",
+    )
+    planner_llm_max_tokens_arg = DeclareLaunchArgument(
+        "planner_llm_max_tokens",
+        default_value="800",
+        description="Maximum output tokens requested from planner_llm backends.",
+    )
+    planner_llm_timeout_sec_arg = DeclareLaunchArgument(
+        "planner_llm_timeout_sec",
+        default_value="20.0",
+        description="Planner backend timeout in seconds.",
+    )
+    planner_llm_default_retry_budget_arg = DeclareLaunchArgument(
+        "planner_llm_default_retry_budget",
+        default_value="1",
+        description="Default retry budget added to initial planner-generated plans.",
+    )
+    planner_llm_auto_replan_arg = DeclareLaunchArgument(
+        "planner_llm_auto_replan",
+        default_value="true",
+        description="Automatically trigger replanning when nao_orchestrator reports failed or invalid plans.",
     )
     asr_launch_args = []
     if include_asr:
@@ -1037,6 +1111,126 @@ def generate_profile_launch_description(
         ],
         condition=IfCondition(LaunchConfiguration("start_scene_grounding")),
     )
+    nao_world_model_enricher_node = Node(
+        package="nao_world_model_enricher",
+        executable="start_node",
+        name="nao_world_model_enricher",
+        output="screen",
+        emulate_tty=True,
+        parameters=[
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("nao_world_model_enricher"),
+                    "config",
+                    "00-defaults.yml",
+                ]
+            ),
+            {
+                "scene_summary_topic": ParameterValue(
+                    LaunchConfiguration("scene_grounding_summary_topic"),
+                    value_type=str,
+                )
+            },
+            {
+                "enriched_snapshot_topic": ParameterValue(
+                    LaunchConfiguration("world_model_enricher_snapshot_topic"),
+                    value_type=str,
+                )
+            },
+            {
+                "enriched_text_topic": ParameterValue(
+                    LaunchConfiguration("world_model_enricher_text_topic"),
+                    value_type=str,
+                )
+            },
+            {
+                "knowledge_enabled": ParameterValue(
+                    LaunchConfiguration("world_model_enricher_knowledge_enabled"),
+                    value_type=bool,
+                )
+            },
+        ],
+        condition=IfCondition(LaunchConfiguration("start_world_model_enricher")),
+    )
+    planner_llm_node = Node(
+        package="planner_llm",
+        executable="start_node",
+        name="planner_llm",
+        output="screen",
+        emulate_tty=True,
+        parameters=[
+            PathJoinSubstitution(
+                [FindPackageShare("planner_llm"), "config", "00-defaults.yml"]
+            ),
+            {
+                "planner_request_topic": ParameterValue(
+                    LaunchConfiguration("planner_request_topic"),
+                    value_type=str,
+                )
+            },
+            {
+                "enriched_snapshot_topic": ParameterValue(
+                    LaunchConfiguration("world_model_enricher_snapshot_topic"),
+                    value_type=str,
+                )
+            },
+            {
+                "enriched_text_topic": ParameterValue(
+                    LaunchConfiguration("world_model_enricher_text_topic"),
+                    value_type=str,
+                )
+            },
+            {
+                "provider": ParameterValue(
+                    LaunchConfiguration("planner_llm_provider"),
+                    value_type=str,
+                )
+            },
+            {
+                "model": ParameterValue(
+                    LaunchConfiguration("planner_llm_model"),
+                    value_type=str,
+                )
+            },
+            {
+                "base_url": ParameterValue(
+                    LaunchConfiguration("planner_llm_base_url"),
+                    value_type=str,
+                )
+            },
+            {
+                "temperature": ParameterValue(
+                    LaunchConfiguration("planner_llm_temperature"),
+                    value_type=float,
+                )
+            },
+            {
+                "max_tokens": ParameterValue(
+                    LaunchConfiguration("planner_llm_max_tokens"),
+                    value_type=int,
+                )
+            },
+            {
+                "timeout_sec": ParameterValue(
+                    LaunchConfiguration("planner_llm_timeout_sec"),
+                    value_type=float,
+                )
+            },
+            {
+                "default_retry_budget": ParameterValue(
+                    LaunchConfiguration("planner_llm_default_retry_budget"),
+                    value_type=int,
+                )
+            },
+            {
+                "auto_replan": ParameterValue(
+                    LaunchConfiguration("planner_llm_auto_replan"),
+                    value_type=bool,
+                )
+            },
+        ],
+        condition=IfCondition(LaunchConfiguration("start_planner_llm")),
+    )
 
     rqt_console = ExecuteProcess(
         condition=IfCondition(
@@ -1294,6 +1488,8 @@ def generate_profile_launch_description(
             start_object_detection_arg,
             object_detection_backend_arg,
             start_scene_grounding_arg,
+            start_world_model_enricher_arg,
+            start_planner_llm_arg,
             start_chatbot_llm_arg,
             start_knowledge_core_arg,
             start_dialogue_manager_arg,
@@ -1338,9 +1534,21 @@ def generate_profile_launch_description(
             object_detection_image_reliability_arg,
             scene_grounding_detector_topic_arg,
             scene_grounding_summary_topic_arg,
+            world_model_enricher_snapshot_topic_arg,
+            world_model_enricher_text_topic_arg,
+            world_model_enricher_knowledge_enabled_arg,
             scene_grounding_allowed_labels_arg,
             scene_grounding_knowledge_lifespan_sec_arg,
             scene_grounding_knowledge_refresh_interval_sec_arg,
+            planner_request_topic_arg,
+            planner_llm_provider_arg,
+            planner_llm_model_arg,
+            planner_llm_base_url_arg,
+            planner_llm_temperature_arg,
+            planner_llm_max_tokens_arg,
+            planner_llm_timeout_sec_arg,
+            planner_llm_default_retry_budget_arg,
+            planner_llm_auto_replan_arg,
             naoqi_driver_launch,
             nao_robot_note,
             robot_perception_note,
@@ -1415,6 +1623,8 @@ def generate_profile_launch_description(
             nao_replay_motion_launch,
             *nao_look_at_bundle,
             nao_scene_grounding_node,
+            nao_world_model_enricher_node,
+            planner_llm_node,
             *( [asr_launch] if asr_launch is not None else [] ),
         ]
     )

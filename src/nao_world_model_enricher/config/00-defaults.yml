@@ -1,0 +1,22 @@
+/nao_world_model_enricher:
+  ros__parameters:
+    scene_summary_topic: "/scene/summary"
+    planner_feedback_topic: "/planner/execution_feedback"
+    enriched_snapshot_topic: "/world_model/enriched_snapshot"
+    enriched_text_topic: "/world_model/enriched_text"
+    observer_name: "myself"
+    publish_interval_sec: 0.5
+    recent_after_sec: 4.0
+    occluded_after_sec: 10.0
+    stale_after_sec: 45.0
+    max_kb_rows: 12
+    summary_max_chars: 2400
+    knowledge_enabled: true
+    knowledge_query_service_name: "/kb/query"
+    knowledge_models: ["default"]
+    knowledge_query_interval_sec: 1.5
+    knowledge_query_patterns:
+      - "{observer} sees ?entity"
+      - "?entity rdf:type ?type"
+    knowledge_query_vars: ["entity", "type"]
+    mirror_runtime_facts: false

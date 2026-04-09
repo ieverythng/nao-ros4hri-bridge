@@ -1,6 +1,6 @@
 # Node Interactions Map
 
-Last updated: 2026-03-25
+Last updated: 2026-04-02
 
 This is now the short architecture map for the active stack.
 
@@ -18,6 +18,8 @@ For launch behavior, see [launch_profiles.md](./launch_profiles.md).
 | `chatbot_llm` | `chatbot_llm` | grounded response and intent generation |
 | `knowledge_core` | upstream package | symbolic world state |
 | `nao_scene_grounding` | `nao_scene_grounding` | detector-to-KB bridge and `/scene/summary` publisher |
+| `nao_world_model_enricher` | `nao_world_model_enricher` | planner-facing short-horizon world model and enrichment summaries |
+| `planner_llm` | `planner_llm` | request-to-plan generation and bounded replanning |
 | `nao_orchestrator` | `nao_orchestrator` | deterministic intent execution |
 | `nao_say_skill` | `nao_say_skill` | robot speech execution |
 | `nao_replay_motion` | `nao_replay_motion` | motion and posture execution |
@@ -33,9 +35,13 @@ graph LR
     detector["detector_backend"] --> grounding["nao_scene_grounding"]
     grounding -->|/kb/revise| kb["knowledge_core"]
     kb -->|/kb/query via kb_skills| chatbot
-    grounding -->|/scene/summary| summary["scene_summary_consumers"]
-    dm -->|/intents| orch["nao_orchestrator"]
-    orch -->|/planner/execution_feedback| planner["planner_or_wme_consumers"]
+    grounding -->|/scene/summary| wme["nao_world_model_enricher"]
+    wme -->|/world_model/enriched_*| planner["planner_llm"]
+    chatbot -->|current /intents| orch["nao_orchestrator"]
+    chatbot -->|future /planner/request| planner
+    planner -->|/intents| orch["nao_orchestrator"]
+    orch -->|/planner/execution_feedback| planner
+    orch -->|/planner/execution_feedback| wme
     orch --> say["/nao/say"]
     orch --> motion["/skill/replay_motion"]
     orch --> head["/skill/do_head_motion"]
@@ -48,7 +54,7 @@ graph LR
 - `nao_scene_grounding` is the semantic bridge from raw detections into the KB.
 - `nao_orchestrator` remains downstream-only and should evolve into the
   deterministic validation and execution layer for future planner work.
-- planner-facing execution feedback is published separately so later planner or
-  world-model components can react without taking over skill dispatch.
+- planner-facing execution feedback is published separately so `planner_llm` and
+  `nao_world_model_enricher` can react without taking over skill dispatch.
 - `kb_skills` is the intended long-term boundary for both KB reads and future KB
   mutations.

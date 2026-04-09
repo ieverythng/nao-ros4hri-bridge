@@ -1,0 +1,18 @@
+/planner_llm:
+  ros__parameters:
+    planner_request_topic: "/planner/request"
+    intent_topic: "/intents"
+    planner_feedback_topic: "/planner/execution_feedback"
+    enriched_snapshot_topic: "/world_model/enriched_snapshot"
+    enriched_text_topic: "/world_model/enriched_text"
+    planner_request_intent: "planner_request"
+    default_intent_name: "raw_user_input"
+    provider: "ollama"
+    model: "gpt-oss:120b-cloud"
+    base_url: "http://127.0.0.1:11434"
+    api_key_env: "OPENAI_API_KEY"
+    temperature: 0.1
+    max_tokens: 800
+    timeout_sec: 20.0
+    default_retry_budget: 1
+    auto_replan: true
