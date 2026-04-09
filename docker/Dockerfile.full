@@ -93,7 +93,11 @@ RUN bash -lc 'source /opt/ros/jazzy/setup.bash && \
       dialogue_manager \
       asr_vosk \
       chatbot_llm \
+      planner_common \
+      planner_llm \
+      nao_world_model_enricher \
       nao_say_skill \
+      nao_replay_motion \
       nao_look_at \
       nao_orchestrator \
       nao_scene_grounding \

@@ -53,11 +53,9 @@ class OllamaPlannerProvider(BasePlannerProvider):
             timeout_sec=self.config.timeout_sec,
             headers={},
         )
-        message = response.get('message', {})
-        if isinstance(message, dict):
-            content = str(message.get('content', '')).strip()
-            if content:
-                return content
+        content = _message_content(response.get('message', {}))
+        if content:
+            return content
         raise PlannerProviderError('Ollama response did not include message.content')
 
 
@@ -65,11 +63,6 @@ class OpenAICompatiblePlannerProvider(BasePlannerProvider):
     """Chat adapter for OpenAI-compatible endpoints such as WatsonOW."""
 
     def generate(self, messages: list[dict[str, str]]) -> str:
-        headers = {}
-        api_key = os.environ.get(self.config.api_key_env, '').strip()
-        if api_key:
-            headers['Authorization'] = 'Bearer %s' % api_key
-
         payload = {
             'model': self.config.model,
             'messages': messages,
@@ -80,16 +73,14 @@ class OpenAICompatiblePlannerProvider(BasePlannerProvider):
             _join_url(self.config.base_url, '/v1/chat/completions'),
             payload,
             timeout_sec=self.config.timeout_sec,
-            headers=headers,
+            headers=_authorization_headers(self.config.api_key_env),
         )
         choices = response.get('choices', [])
         if not isinstance(choices, list) or not choices:
             raise PlannerProviderError('OpenAI-compatible response contained no choices')
-        message = choices[0].get('message', {})
-        if isinstance(message, dict):
-            content = str(message.get('content', '')).strip()
-            if content:
-                return content
+        content = _message_content(choices[0].get('message', {}))
+        if content:
+            return content
         raise PlannerProviderError('OpenAI-compatible response did not include message.content')
 
 
@@ -104,6 +95,19 @@ def build_provider(config: PlannerProviderConfig) -> BasePlannerProvider:
 
 def _join_url(base_url: str, path: str) -> str:
     return str(base_url or '').rstrip('/') + path
+
+
+def _authorization_headers(api_key_env: str) -> dict[str, str]:
+    api_key = os.environ.get(api_key_env, '').strip()
+    if not api_key:
+        return {}
+    return {'Authorization': 'Bearer %s' % api_key}
+
+
+def _message_content(message) -> str:
+    if not isinstance(message, dict):
+        return ''
+    return str(message.get('content', '')).strip()
 
 
 def _post_json(url: str, payload: dict, *, timeout_sec: float, headers: dict[str, str]) -> dict:

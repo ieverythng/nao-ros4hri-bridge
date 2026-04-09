@@ -1,6 +1,6 @@
 # Node Interactions Map
 
-Last updated: 2026-04-02
+Last updated: 2026-04-09
 
 This is now the short architecture map for the active stack.
 
@@ -15,11 +15,11 @@ For launch behavior, see [launch_profiles.md](./launch_profiles.md).
 | Node | Package | Role |
 | --- | --- | --- |
 | `dialogue_manager` | `dialogue_manager` | entry point for speech/text dialogue |
-| `chatbot_llm` | `chatbot_llm` | grounded response and intent generation |
+| `chatbot_llm` | `chatbot_llm` | grounded response generation and planner handoff |
+| `planner_llm` | `planner_llm` | planner request intake, plan generation, and replanning |
 | `knowledge_core` | upstream package | symbolic world state |
 | `nao_scene_grounding` | `nao_scene_grounding` | detector-to-KB bridge and `/scene/summary` publisher |
-| `nao_world_model_enricher` | `nao_world_model_enricher` | planner-facing short-horizon world model and enrichment summaries |
-| `planner_llm` | `planner_llm` | request-to-plan generation and bounded replanning |
+| `nao_world_model_enricher` | `nao_world_model_enricher` | action-conditioned short-horizon world model for planner-facing summaries |
 | `nao_orchestrator` | `nao_orchestrator` | deterministic intent execution |
 | `nao_say_skill` | `nao_say_skill` | robot speech execution |
 | `nao_replay_motion` | `nao_replay_motion` | motion and posture execution |
@@ -32,14 +32,16 @@ For launch behavior, see [launch_profiles.md](./launch_profiles.md).
 graph LR
     speech["/humans/voices/*/speech"] --> dm["dialogue_manager"]
     dm --> chatbot["chatbot_llm"]
+    chatbot -->|"/planner/request"| planner["planner_llm"]
     detector["detector_backend"] --> grounding["nao_scene_grounding"]
     grounding -->|/kb/revise| kb["knowledge_core"]
     kb -->|/kb/query via kb_skills| chatbot
     grounding -->|/scene/summary| wme["nao_world_model_enricher"]
-    wme -->|/world_model/enriched_*| planner["planner_llm"]
-    chatbot -->|current /intents| orch["nao_orchestrator"]
-    chatbot -->|future /planner/request| planner
-    planner -->|/intents| orch["nao_orchestrator"]
+    kb -->|optional /kb/query via kb_skills| wme
+    dm -. direct mode .->|/intents| orch["nao_orchestrator"]
+    wme -->|/world_model/enriched_snapshot| planner
+    wme -->|/world_model/enriched_text| planner
+    planner -->|/intents| orch
     orch -->|/planner/execution_feedback| planner
     orch -->|/planner/execution_feedback| wme
     orch --> say["/nao/say"]
@@ -51,10 +53,18 @@ graph LR
 ## Architecture Notes
 
 - `chatbot_llm` stays detector-agnostic and only consumes grounded symbolic state.
+- planner mode is optional; in planner mode `chatbot_llm` emits `/planner/request`
+  for execution turns, while the direct `chatbot_llm -> /intents` path still
+  exists for non-planner fallback.
+- `planner_llm` owns structured plan generation and replanning, but it does not execute robot actions directly.
 - `nao_scene_grounding` is the semantic bridge from raw detections into the KB.
+- `nao_world_model_enricher` reconciles grounded scene state, executor feedback,
+  and optional KB reads into one planner-facing snapshot without owning
+  execution or grounding.
 - `nao_orchestrator` remains downstream-only and should evolve into the
-  deterministic validation and execution layer for future planner work.
-- planner-facing execution feedback is published separately so `planner_llm` and
-  `nao_world_model_enricher` can react without taking over skill dispatch.
+  deterministic validation and execution layer for planner work.
+- planner-facing execution feedback is published separately so both
+  `planner_llm` and `nao_world_model_enricher` can react without taking over
+  skill dispatch.
 - `kb_skills` is the intended long-term boundary for both KB reads and future KB
   mutations.

@@ -1,6 +1,6 @@
 # Thesis Planning Handoff
 
-Last updated: 2026-03-25
+Last updated: 2026-04-09
 
 This document is the concise high-level brief for the current state of the
 project and the next implementation direction. It is intended as the main
@@ -13,23 +13,29 @@ The stack already demonstrates a grounded dialogue loop in which perception is
 converted into symbolic state before reaching the LLM: detector outputs are
 normalized by `nao_scene_grounding`, written as transient facts into
 `knowledge_core`, queried through `kb_skills`, and injected by `chatbot_llm`
-into both response and intent generation. `nao_orchestrator` remains the
-deterministic downstream executor for robot skills. The next stage is to evolve
-this from grounded single-turn interaction into a modular planning architecture
-where a planner layer can reason over multi-intent input, query and revise the
-KB, generate executable plans, react to failures, and replan through structured
-feedback from the orchestrator without tying the design to NAO-specific logic.
+into response generation plus direct-or-planner routing. `nao_orchestrator`
+remains the deterministic downstream executor for robot skills, and a first
+`planner_llm` scaffold is now live behind launch flags. The next stage is to
+evolve this from grounded single-turn interaction into a modular planning
+architecture where a planner layer can reason over multi-intent input, query
+and revise the KB, generate executable plans, react to failures, and replan
+through structured feedback from the orchestrator without tying the design to
+NAO-specific logic.
 
 ## Where The Project Stands Now
 
 ### Live architecture
 
 - `dialogue_manager` owns dialogue flow and speaking lifecycle.
-- `chatbot_llm` owns grounded response generation and intent extraction.
+- `chatbot_llm` owns grounded response generation and direct-or-planner routing.
 - `knowledge_core` is the symbolic world-state store.
 - `kb_skills` is the current read-side boundary for `/kb/query`.
 - `nao_scene_grounding` bridges object detections into symbolic KB facts and
   publishes `/scene/summary`.
+- `nao_world_model_enricher` now exists on the research branch as a short-horizon
+  action-conditioned world model for planner-facing summaries.
+- `planner_llm` now accepts `/planner/request` and produces executable
+  `Intent.data.plan` envelopes for `nao_orchestrator`.
 - `nao_orchestrator` consumes `/intents` and dispatches validated robot skills.
 
 ### Current grounded reasoning path
@@ -53,6 +59,10 @@ flowchart LR
 - A compact `/scene/summary` output for debug and future consumers.
 - Richer `Intent.data` payloads including `ack_text`, `ack_mode`,
   `scene_targets`, and optional `plan`.
+- A planner scaffold with provider adapters, a planner-local launch profile,
+  and planner feedback consumption on `/planner/execution_feedback`.
+- A first world-model enricher runtime that can fuse `/scene/summary`, KB rows,
+  and execution feedback into planner-facing snapshot/text outputs.
 - A deterministic orchestrator that executes allowed downstream actions.
 
 ### Main current limitations
@@ -156,9 +166,10 @@ flowchart LR
 - Keep low-level KnowledgeCore transport out of planner prompts and executor
   code.
 
-### 3. Add the planner scaffold
+### 3. Extend the planner scaffold
 
-- Keep multi-intent detection in `chatbot_llm`.
+- Keep dialogue ownership in `chatbot_llm` while letting planner mode hand
+  execution-oriented turns to `planner_llm`.
 - Introduce a planner contract for structured plan generation.
 - Extend the current `Intent.data.plan` shape into something that can support
   plan ids, step ids, preconditions, failure reasons, and replan hints.

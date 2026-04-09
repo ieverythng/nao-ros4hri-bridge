@@ -3,6 +3,8 @@
 # Canonical overlay strategy:
 # - Reuse a validated runtime image (default: iiia:nao)
 # - Overlay repository sources (src/) and rebuild local packages
+# - The base image is still expected to provide the validated NAOqi runtime
+#   stack; this overlay only refreshes the repo-owned packages on top of it.
 ARG BASE_IMAGE=iiia:nao
 FROM ${BASE_IMAGE}
 
@@ -44,6 +46,7 @@ RUN bash -lc 'set -euo pipefail; \
       python3-tqdm \
       python3-yaml \
       ros-jazzy-rqt-console \
+      ros-jazzy-rqt \
       ros-jazzy-rqt-gui \
       ros-jazzy-rqt-gui-py \
       ros-jazzy-rqt-image-view \
@@ -101,7 +104,11 @@ RUN bash -lc 'source /opt/ros/jazzy/setup.bash && \
       dialogue_manager \
       asr_vosk \
       chatbot_llm \
+      planner_common \
+      planner_llm \
+      nao_world_model_enricher \
       nao_say_skill \
+      nao_replay_motion \
       nao_look_at \
       nao_orchestrator \
       nao_scene_grounding \

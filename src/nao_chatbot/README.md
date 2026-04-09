@@ -27,6 +27,25 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   object_detection_backend:=emorobcare_cv
 ```
 
+Simulator stack with planner mode enabled:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_planner_llm:=true \
+  chatbot_planner_mode_enabled:=true
+```
+
+Planner mode plus object grounding:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_planner_llm:=true \
+  chatbot_planner_mode_enabled:=true \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv
+```
+
 The launch surface now leaves `start_interaction_sim_expressive_face:=false` by
 default so the webcam/object-detection path avoids duplicate simulator-side TTS
 servers and extra node-name noise. Re-enable it only if you want the simulator
@@ -48,14 +67,14 @@ Real-robot camera + RViz:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
 
 Real-robot camera + RViz + ASR:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_robot_asr.launch.py \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
 
 Real robot + object detection + scene grounding:
@@ -65,7 +84,7 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=emorobcare_cv \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
 
 Real robot + simulator tools-only overlay:
@@ -75,7 +94,7 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   start_interaction_sim:=true \
   start_interaction_sim_perception:=false \
   start_interaction_sim_tools:=true \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
 
 Fallback detector profile with `yolo_ros`:
@@ -88,7 +107,7 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   scene_grounding_detector_topic:=/yolo/tracking \
   object_detection_model:=yolov8n.pt \
   object_detection_device:=cpu \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
 
 ASR-only utility profile:
@@ -140,7 +159,7 @@ Then move to the robot path:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
-  nao_ip:=172.26.112.62 \
+  nao_ip:=<robot_ip> \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=emorobcare_cv
@@ -149,6 +168,10 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
 `nao_look_at` does not need a separate demo-specific flag here: the robot
 wrapper already starts it by default, and it now exists as the NAO
 implementation of the upstream `interaction_skills/look_at` contract.
+
+`nao_ip` is the canonical real-robot override in this package. It is forwarded
+through the shared launch builder into `naoqi_driver`, `nao_replay_motion`, and
+the temporary posture bridge.
 
 ## Operator Utility
 
@@ -252,7 +275,9 @@ For the emorobcare object detection path specifically:
   simulator support launch without duplicating `chatbot_llm`,
   `dialogue_manager`, or `knowledge_core`
 - `start_interaction_sim_perception:=true` launches the simulator-side webcam,
-  face/person/emotion, visualization, expressive_face, and simulator TF path
+  face/person/emotion, visualization, and simulator TF path
+- `start_interaction_sim_expressive_face:=true` adds simulator
+  `expressive_face` on top of that perception layer when you explicitly want it
 - `start_interaction_sim_tools:=true` launches the simulator-side support tools
   such as rosbridge and optional `ui_server`; this is the intended mode to pair
   `rqt_human_radar` with `start_nao_robot:=true`
@@ -261,6 +286,9 @@ For the emorobcare object detection path specifically:
 - `start_nao_robot:=true` launches the packaged real-robot bring-up from the
   SocialMinds apt repository; it already includes `naoqi_driver`, the NAO front
   camera topics, and `hri_face_detect_yunet`
+- the posture bridge stays passive by default on connect:
+  `posture_bridge_disable_autonomous_life_on_connect:=false` and
+  `posture_bridge_wake_up_on_connect:=false`
 - `start_nao_robot_hri_visualization:=true` keeps the packaged
   `hri_visualization` overlays enabled for the real-robot path and now remaps
   its camera input onto `/camera/front/image_raw`
@@ -283,6 +311,9 @@ For the emorobcare object detection path specifically:
   between `nao_say_skill` and `rqt_chat`
 - the Docker images install `rqt_chat` from the `socialminds-ros-jazzy-rqt-chat`
   system package; the repo does not vendor that package in `src/`
+- the Docker overlay rebuild now refreshes `nao_replay_motion` as part of the
+  repo-owned stack, so posture-bridge changes are picked up without rebuilding
+  the full upstream base manually
 - `KnowledgeCore` is consumed unchanged as the shared symbolic store; the
   migrated NAO stack reads it via `chatbot_llm` but does not write to it
 - in the current Docker test path, `kb_msgs`, `knowledge_core`, `oro`,

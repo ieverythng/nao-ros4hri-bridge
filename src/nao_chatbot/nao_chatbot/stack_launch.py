@@ -442,7 +442,7 @@ def generate_profile_launch_description(
     )
     start_chatbot_llm_arg = DeclareLaunchArgument(
         "start_chatbot_llm",
-        default_value="true",
+        default_value=_profile_default(profile_defaults, "start_chatbot_llm", "true"),
         description="Launch the upstream-aligned chatbot_llm backend.",
     )
     start_nao_robot_arg = DeclareLaunchArgument(
@@ -484,7 +484,7 @@ def generate_profile_launch_description(
     )
     start_object_detection_arg = DeclareLaunchArgument(
         "start_object_detection",
-        default_value="false",
+        default_value=_profile_default(profile_defaults, "start_object_detection", "false"),
         description="Optionally launch the configured external object detector backend.",
     )
     object_detection_backend_arg = DeclareLaunchArgument(
@@ -494,7 +494,7 @@ def generate_profile_launch_description(
     )
     start_scene_grounding_arg = DeclareLaunchArgument(
         "start_scene_grounding",
-        default_value="false",
+        default_value=_profile_default(profile_defaults, "start_scene_grounding", "false"),
         description="Launch the local object-to-KnowledgeCore grounding node.",
     )
     start_world_model_enricher_arg = DeclareLaunchArgument(
@@ -574,6 +574,16 @@ def generate_profile_launch_description(
         default_value="true",
         description="Enable KnowledgeCore reads from nao_world_model_enricher.",
     )
+    planner_request_topic_arg = DeclareLaunchArgument(
+        "planner_request_topic",
+        default_value="/planner/request",
+        description="Planner ingress topic consumed by planner_llm.",
+    )
+    planner_request_intent_arg = DeclareLaunchArgument(
+        "planner_request_intent",
+        default_value="planner_request",
+        description="Intent label used on planner ingress messages.",
+    )
     scene_grounding_allowed_labels_arg = DeclareLaunchArgument(
         "scene_grounding_allowed_labels",
         default_value="bottle,cup,book,cell phone,backpack,remote,laptop,keyboard,mouse,chair,blueberry,corn,pear,tomato,zucchini",
@@ -591,12 +601,12 @@ def generate_profile_launch_description(
     )
     start_knowledge_core_arg = DeclareLaunchArgument(
         "start_knowledge_core",
-        default_value="true",
+        default_value=_profile_default(profile_defaults, "start_knowledge_core", "true"),
         description="Optionally launch KnowledgeCore for chatbot_llm grounding when it is installed in the environment.",
     )
     start_dialogue_manager_arg = DeclareLaunchArgument(
         "start_dialogue_manager",
-        default_value="true",
+        default_value=_profile_default(profile_defaults, "start_dialogue_manager", "true"),
         description="Launch the upstream dialogue_manager lifecycle node.",
     )
     start_interaction_sim_arg = DeclareLaunchArgument(
@@ -647,22 +657,22 @@ def generate_profile_launch_description(
     )
     start_nao_orchestrator_arg = DeclareLaunchArgument(
         "start_nao_orchestrator",
-        default_value="true",
+        default_value=_profile_default(profile_defaults, "start_nao_orchestrator", "true"),
         description="Launch the NAO orchestrator scaffold.",
     )
     start_nao_say_skill_arg = DeclareLaunchArgument(
         "start_nao_say_skill",
-        default_value="true",
+        default_value=_profile_default(profile_defaults, "start_nao_say_skill", "true"),
         description="Launch the dedicated NAO say skill.",
     )
     start_nao_replay_motion_arg = DeclareLaunchArgument(
         "start_nao_replay_motion",
-        default_value="true",
+        default_value=_profile_default(profile_defaults, "start_nao_replay_motion", "true"),
         description="Launch replay_motion and retained head-motion servers.",
     )
     start_nao_look_at_arg = DeclareLaunchArgument(
         "start_nao_look_at",
-        default_value="true",
+        default_value=_profile_default(profile_defaults, "start_nao_look_at", "true"),
         description="Launch the NAO look_at skill.",
     )
     start_rqt_console_arg = DeclareLaunchArgument(
@@ -680,7 +690,7 @@ def generate_profile_launch_description(
     )
     start_robot_speech_debug_arg = DeclareLaunchArgument(
         "start_robot_speech_debug",
-        default_value="true",
+        default_value=_profile_default(profile_defaults, "start_robot_speech_debug", "true"),
         description="Launch a logger that mirrors robot speech into ROS logs.",
     )
     posture_command_topic_arg = DeclareLaunchArgument(
@@ -770,10 +780,10 @@ def generate_profile_launch_description(
         default_value="http://localhost:11434/api/chat",
         description="Backend HTTP endpoint used by chatbot_llm.",
     )
-    planner_request_topic_arg = DeclareLaunchArgument(
-        "planner_request_topic",
-        default_value="/planner/request",
-        description="Planner ingress topic consumed by planner_llm.",
+    chatbot_planner_mode_enabled_arg = DeclareLaunchArgument(
+        "chatbot_planner_mode_enabled",
+        default_value=_profile_default(profile_defaults, "chatbot_planner_mode_enabled", "false"),
+        description="Enable planner-mode handoff in chatbot_llm so execution-oriented turns publish to /planner/request.",
     )
     planner_llm_provider_arg = DeclareLaunchArgument(
         "planner_llm_provider",
@@ -865,6 +875,24 @@ def generate_profile_launch_description(
             {
                 "server_url": ParameterValue(
                     LaunchConfiguration("chatbot_server_url"),
+                    value_type=str,
+                )
+            },
+            {
+                "planner_mode_enabled": ParameterValue(
+                    LaunchConfiguration("chatbot_planner_mode_enabled"),
+                    value_type=bool,
+                )
+            },
+            {
+                "planner_request_topic": ParameterValue(
+                    LaunchConfiguration("planner_request_topic"),
+                    value_type=str,
+                )
+            },
+            {
+                "planner_request_intent": ParameterValue(
+                    LaunchConfiguration("planner_request_intent"),
                     value_type=str,
                 )
             },
@@ -1035,6 +1063,31 @@ def generate_profile_launch_description(
             "start_nao_robot is enabled together with interaction_sim tools-only mode. "
             "This is the intended path for combining the real robot camera/TF with "
             "simulator-side operator tools such as rosbridge, rqt_human_radar, and UI helpers."
+        ),
+    )
+    driver_perception_note = LogInfo(
+        condition=IfCondition(
+            PythonExpression(
+                [
+                    '"',
+                    LaunchConfiguration("start_naoqi_driver"),
+                    '" == "true" and "',
+                    LaunchConfiguration("start_nao_robot"),
+                    '" != "true" and "',
+                    LaunchConfiguration("start_interaction_sim"),
+                    '" == "true" and "',
+                    LaunchConfiguration("start_interaction_sim_perception"),
+                    '" == "true"',
+                ]
+            )
+        ),
+        msg=(
+            "start_naoqi_driver is enabled together with interaction_sim perception. "
+            "This keeps simulator perception on /camera/image_raw while the real robot "
+            "camera stays on /camera/front/image_raw. Prefer "
+            "start_interaction_sim_perception:=false for robot-camera validation, "
+            "or override object_detection_input_image_topic and "
+            "hri_visualization_image_topic to /camera/front/image_raw."
         ),
     )
 
@@ -1524,6 +1577,17 @@ def generate_profile_launch_description(
             chatbot_intent_model_arg,
             ollama_intent_model_arg,
             chatbot_server_url_arg,
+            chatbot_planner_mode_enabled_arg,
+            planner_request_topic_arg,
+            planner_request_intent_arg,
+            planner_llm_provider_arg,
+            planner_llm_model_arg,
+            planner_llm_base_url_arg,
+            planner_llm_temperature_arg,
+            planner_llm_max_tokens_arg,
+            planner_llm_timeout_sec_arg,
+            planner_llm_default_retry_budget_arg,
+            planner_llm_auto_replan_arg,
             *asr_launch_args,
             object_detection_namespace_arg,
             object_detection_model_arg,
@@ -1540,19 +1604,11 @@ def generate_profile_launch_description(
             scene_grounding_allowed_labels_arg,
             scene_grounding_knowledge_lifespan_sec_arg,
             scene_grounding_knowledge_refresh_interval_sec_arg,
-            planner_request_topic_arg,
-            planner_llm_provider_arg,
-            planner_llm_model_arg,
-            planner_llm_base_url_arg,
-            planner_llm_temperature_arg,
-            planner_llm_max_tokens_arg,
-            planner_llm_timeout_sec_arg,
-            planner_llm_default_retry_budget_arg,
-            planner_llm_auto_replan_arg,
             naoqi_driver_launch,
             nao_robot_note,
             robot_perception_note,
             robot_tools_only_note,
+            driver_perception_note,
             rqt_console,
             interaction_sim_rqt,
             interaction_sim_rqt_chat_note,

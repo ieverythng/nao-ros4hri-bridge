@@ -1,10 +1,50 @@
 # WME And Planner Alignment
 
-Last updated: 2026-03-25
+Last updated: 2026-04-09
 
 This note is the handoff document for Codex work on the world model enricher
 (`WME`). Its goal is to prevent duplicated effort while the planner, KB, and
 orchestrator work is landing in this repo.
+
+## Runtime Flow
+
+```mermaid
+flowchart LR
+    user[User] --> dm[dialogue_manager]
+    dm --> chatbot[chatbot_llm]
+    chatbot -->|/planner/request| planner[planner_llm]
+
+    detector[detector backend] --> grounding[nao_scene_grounding]
+    grounding -->|/kb/revise| kb[knowledge_core]
+    grounding -->|/scene/summary| wme[nao_world_model_enricher]
+    kb -->|optional /kb/query via kb_skills| wme
+
+    orch[nao_orchestrator] -->|/planner/execution_feedback| planner
+    orch -->|/planner/execution_feedback| wme
+
+    wme -->|/world_model/enriched_snapshot| planner
+    wme -->|/world_model/enriched_text| planner
+    planner -->|/intents| orch
+    orch --> skills[robot skill layer]
+```
+
+## Current Implemented WME Ingestion By `planner_llm`
+
+The current planner-facing ingestion path is:
+
+- `planner_llm` subscribes to `/world_model/enriched_snapshot`
+- `planner_llm` subscribes to `/world_model/enriched_text`
+- `planner_llm` includes both payloads in its planning prompt alongside:
+  - the normalized planner request
+  - bounded dialogue context
+  - grounded context already supplied by `chatbot_llm`
+  - structured execution feedback when replanning
+
+This means the planner is already wired for a layered world representation:
+
+- symbolic KB-grounded context from `chatbot_llm`
+- short-horizon action-conditioned context from `WME`
+- execution-state context from `nao_orchestrator`
 
 ## What This Branch Is Establishing
 
@@ -39,6 +79,39 @@ The current planner-facing direction in this repo is:
   `nao_scene_grounding`
 
 ## Current Planner And Executor Contracts
+
+### Shared world-state contract direction
+
+The longer-term direction should be one normalized context envelope that every
+LLM-facing node in this repo can consume, even if each role uses different
+fields.
+
+Recommended shape:
+
+```json
+{
+  "grounded_context": {
+    "knowledge_snapshot": {},
+    "scene_summary": {},
+    "world_model_snapshot": {},
+    "world_model_text": ""
+  }
+}
+```
+
+Practical split:
+
+- `chatbot_llm`
+  - authoritative today for `knowledge_snapshot`
+  - can keep using a bounded symbolic read from `kb_skills`
+- `planner_llm`
+  - should consume `knowledge_snapshot` plus `world_model_snapshot` and
+    `world_model_text`
+- future LLM/VLM helpers
+  - should emit into this envelope rather than inventing parallel prompt-only
+    context shapes
+
+This keeps the nodes role-specific while making the context contract reusable.
 
 ### KB boundary
 

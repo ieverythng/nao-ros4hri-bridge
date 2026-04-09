@@ -55,12 +55,12 @@ Supported `plan` step types:
 - `noop`
 
 This keeps the top-level ROS contract stable while allowing richer downstream
-execution plans to arrive from `chatbot_llm`.
+execution plans to arrive from either `chatbot_llm` or `planner_llm`.
 
 High-level downstream flow:
 
-1. `chatbot_llm` emits canonical HRI intents plus optional `ack_text`,
-   `ack_mode`, `scene_targets`, and `plan`
+1. `chatbot_llm` emits canonical HRI intents directly in non-planner mode, or
+   `planner_llm` emits them after `/planner/request` handoff in planner mode
 2. `nao_orchestrator` parses that metadata from `Intent.data`
 3. if a valid `plan` is present, the orchestrator tries to execute it first
 4. if there is no valid plan, the package falls back to the migrated legacy
@@ -141,8 +141,19 @@ The orchestrator now also publishes structured execution feedback on:
 
 - `/planner/execution_feedback`
 
-That topic is intended for the future planner layer and world-model consumers,
-not for direct user dialogue ownership.
+That topic is intended for the active planner layer and future world-model
+consumers, not for direct user dialogue ownership.
+
+Planner-facing feedback currently includes:
+
+- `plan_id`
+- `status`
+- `reason`
+- `validation_status`
+- `replan_hint`
+- `retry_budget`
+- `scene_targets`
+- optional `step` metadata for the failing/running step
 
 If no valid `plan` exists, the package keeps the legacy migrated behavior for
 speech, posture, head motion, look-at reset, and KB query intent observation.

@@ -12,6 +12,9 @@ Robot-side runtime packages in this repo:
 - `nao_chatbot`: launch surfaces and operator utilities
 - `nao_orchestrator`: downstream `/intents` consumer and NAO skill dispatcher
 - `kb_skills`: dedicated KnowledgeCore client boundary and KB skill metadata
+- `planner_common`: shared planner request, plan-envelope, and feedback contracts
+- `planner_llm`: planner node that turns `/planner/request` into executable `/intents`
+- `nao_world_model_enricher`: planner-facing action-conditioned world model that turns scene summaries, KB rows, and execution feedback into enriched context
 - `nao_say_skill`: NAO-specific `/nao/say` execution bridge
 - `nao_replay_motion`: replay-motion, posture compatibility, and head motion
 - `nao_look_at`: NAO implementation of `interaction_skills/look_at`
@@ -24,7 +27,7 @@ Fork-tracked upstream runtime repos carried locally:
 - `dialogue_manager`: canonical owner of `/skill/chat`, `/skill/ask`, and
   `/skill/say`
 - `chatbot_llm`: backend dialogue contract using the local Ollama-based
-  response and intent pipeline
+  response pipeline plus direct-or-planner routing
 
 Interface-only packages shipped in the workspace:
 
@@ -47,7 +50,7 @@ reference-only copies into `ref_src/knowledge_sources/`.
 
 ## Dialogue And KB Grounding
 
-Current migrated flow:
+Current migrated direct-execution flow:
 
 ```text
 speech input -> dialogue_manager -> chatbot_llm
@@ -55,13 +58,36 @@ speech input -> dialogue_manager -> chatbot_llm
     -> /nao/say | /skill/replay_motion | /skill/do_head_motion | /skill/look_at
 ```
 
+Optional planner-enabled flow:
+
+```text
+speech input -> dialogue_manager -> chatbot_llm
+    -> /planner/request -> planner_llm
+scene grounding + KB + execution feedback -> nao_world_model_enricher
+    -> /world_model/enriched_snapshot + /world_model/enriched_text -> planner_llm
+    -> /intents -> nao_orchestrator
+    -> /planner/execution_feedback -> planner_llm + nao_world_model_enricher
+    -> /nao/say | /skill/replay_motion | /skill/do_head_motion | /skill/look_at
+```
+
 This split is deliberate:
 
 - `dialogue_manager` owns dialogue state and canonical communication skills
-- `chatbot_llm` owns model interaction and prompt construction
+- `chatbot_llm` owns model interaction, grounded dialogue turns, and planner-mode routing
+- `nao_world_model_enricher` owns short-horizon world-state enrichment for planner-facing context
+- `planner_llm` owns planner request interpretation, executable plan generation, and replan decisions
 - `nao_orchestrator` stays downstream-only and dispatches robot-side intents
 - `knowledge_core` remains an upstream symbolic store accessed through public
   ROS APIs
+
+Planner mode currently needs two launch flags together:
+
+- `start_planner_llm:=true`
+- `chatbot_planner_mode_enabled:=true`
+
+`nao_ip` is the canonical robot-IP argument in the launch surface. It is the
+single override forwarded to `naoqi_driver`, the replay-motion launch, and the
+temporary posture bridge.
 
 Knowledge grounding is local to `chatbot_llm`, not to `knowledge_core`
 itself:
@@ -138,6 +164,7 @@ Primary operator-facing launch files live in `src/nao_chatbot/launch/`:
 - `nao_chatbot_sim_asr.launch.py`: simulator stack plus local ASR
 - `nao_chatbot_robot.launch.py`: real-robot camera, RViz, and HRI overlays
 - `nao_chatbot_robot_asr.launch.py`: real-robot camera, RViz, HRI overlays, and local ASR
+- `nao_chatbot_planner_local.launch.py`: local WME/planner harness with `nao_world_model_enricher`, `planner_llm`, and `nao_orchestrator`
 - `nao_chatbot_asr_only.launch.py`: isolated local ASR pipeline
 
 Useful launch combinations:
@@ -157,18 +184,46 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   object_detection_backend:=emorobcare_cv
 ```
 
+Simulator stack with planner handoff enabled:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_planner_llm:=true \
+  chatbot_planner_mode_enabled:=true
+```
+
+Simulator stack with planner handoff plus object grounding:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_planner_llm:=true \
+  chatbot_planner_mode_enabled:=true \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv
+```
+
+Planner-only local harness:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_planner_local.launch.py
+ros2 run planner_llm publish_fixture scene
+ros2 run planner_llm publish_fixture request
+ros2 run planner_llm publish_fixture feedback
+```
+
 Real robot + RViz:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
 
 Real robot + RViz + ASR:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_robot_asr.launch.py \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
 
 Real robot + RViz + emorobcare object detection:
@@ -178,7 +233,7 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=emorobcare_cv \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
 
 Real robot + RViz + simulator-side operator tools only:
@@ -188,8 +243,20 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   start_interaction_sim:=true \
   start_interaction_sim_perception:=false \
   start_interaction_sim_tools:=true \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
+
+Real robot with a passive posture bridge on connect:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
+  nao_ip:=<robot_ip> \
+  posture_bridge_disable_autonomous_life_on_connect:=false \
+  posture_bridge_wake_up_on_connect:=false
+```
+
+Those bridge defaults are already safe in the shipped launch wrappers. Override
+them only when you intentionally want connect-time state changes on the robot.
 
 Current robot-camera and overlay topics in the packaged stack:
 
@@ -216,7 +283,7 @@ Build the local packages shipped in this repo:
 source /opt/ros/jazzy/setup.bash
 colcon build --symlink-install --packages-select \
   std_skills communication_skills motions_skills kb_skills nao_skills \
-  chatbot_llm dialogue_manager nao_orchestrator nao_say_skill \
+  planner_common planner_llm nao_world_model_enricher chatbot_llm dialogue_manager nao_orchestrator nao_say_skill \
   nao_replay_motion nao_look_at nao_scene_grounding nao_chatbot \
   asr_vosk simple_audio_capture
 ```
@@ -241,7 +308,7 @@ docker build -f docker/Dockerfile \
 Why this is the preferred path:
 
 - it overlays the repo on top of the validated `iiia:nao` runtime image
-- it now rebuilds `nao_scene_grounding` and the kept launch surfaces
+- it now rebuilds `planner_common`, `planner_llm`, `nao_world_model_enricher`, `nao_scene_grounding`, and the kept launch surfaces
 - it picks up `src/interaction_skills` directly instead of relying on the old
   `ref_src/interaction_skills` copy path
 - it will also build `emorobcare_cv_msgs` and
@@ -259,9 +326,20 @@ docker run --rm -it \
   nao-ros4hri-bridge:demo
 ```
 
+Planner logs are standard ROS 2 node logs. They are visible in terminal output,
+log files under `~/.ros/log`, and `rqt_console` when you
+launch it or start the stack with `start_rqt_console:=true`.
+
 Inside the container:
 
 ```bash
+ros2 launch nao_chatbot nao_chatbot_planner_local.launch.py \
+  start_rqt_console:=true
+
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_planner_llm:=true \
+  chatbot_planner_mode_enabled:=true
+
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   start_object_detection:=true \
   start_scene_grounding:=true \
@@ -272,7 +350,7 @@ Real-robot object-detection follow-up:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
-  nao_ip:=172.26.112.62 \
+  nao_ip:=<robot_ip> \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=emorobcare_cv

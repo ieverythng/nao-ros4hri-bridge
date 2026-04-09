@@ -1,6 +1,6 @@
 # Launch Profiles
 
-Last updated: 2026-04-02
+Last updated: 2026-04-09
 
 This is the quick execution guide for the active launch files in this repo.
 
@@ -57,6 +57,30 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   object_detection_backend:=emorobcare_cv
 ```
 
+With planner handoff enabled:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_planner_llm:=true \
+  chatbot_planner_mode_enabled:=true
+```
+
+Those two flags are the current planner-mode pair:
+
+- `start_planner_llm:=true` starts the planner node itself
+- `chatbot_planner_mode_enabled:=true` makes `chatbot_llm` publish `/planner/request`
+
+With planner mode plus object grounding:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_planner_llm:=true \
+  chatbot_planner_mode_enabled:=true \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv
+```
+
 ### Simulator stack with ASR
 
 ```bash
@@ -68,14 +92,14 @@ ros2 launch nao_chatbot nao_chatbot_sim_asr.launch.py \
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
 
 ### Robot stack with ASR
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_robot_asr.launch.py \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
 
 With simulator tools only on top of the robot path:
@@ -85,7 +109,7 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   start_interaction_sim:=true \
   start_interaction_sim_perception:=false \
   start_interaction_sim_tools:=true \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
 
 With real-robot object grounding through emorobcare object detection:
@@ -95,7 +119,7 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=emorobcare_cv \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
 
 With fallback object grounding through `yolo_ros`:
@@ -108,7 +132,7 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
   scene_grounding_detector_topic:=/yolo/tracking \
   object_detection_model:=yolov8n.pt \
   object_detection_device:=cpu \
-  nao_ip:=172.26.112.62
+  nao_ip:=<robot_ip>
 ```
 
 ### Planner-local profile
@@ -137,6 +161,13 @@ Useful with the local fixture publisher:
 ros2 run planner_llm publish_fixture scene
 ros2 run planner_llm publish_fixture request
 ros2 run planner_llm publish_fixture feedback
+```
+
+To capture planner logs in `rqt_console`, either launch it separately or enable:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_planner_local.launch.py \
+  start_rqt_console:=true
 ```
 
 ### ASR-only profile
@@ -196,12 +227,14 @@ ros2 run nao_chatbot asr_push_to_talk_cli
 - `chatbot_model`
 - `chatbot_intent_model`
 - `ollama_intent_model`
+- `chatbot_planner_mode_enabled`
 - `start_object_detection`
 - `object_detection_backend`
 - `start_scene_grounding`
 - `start_world_model_enricher`
 - `start_planner_llm`
 - `planner_request_topic`
+- `planner_request_intent`
 - `world_model_enricher_snapshot_topic`
 - `world_model_enricher_text_topic`
 - `world_model_enricher_knowledge_enabled`
@@ -230,6 +263,8 @@ ros2 run nao_chatbot asr_push_to_talk_cli
 - `start_naoqi_driver`: include/exclude `naoqi_driver`.
 - `nao_ip`: profile-aware robot IP forwarded into real-robot launch surfaces
   such as `naoqi_driver`, `nao_robot`, and replay-motion nodes.
+- `nao_ip` is the canonical robot-IP override; use it instead of patching per-node
+  defaults when switching between robots.
 - `start_nao_robot`: include/exclude the packaged `nao_robot` bring-up. This is
   the preferred real-robot camera path because it already wires `naoqi_driver`,
   `/camera/front/*`, and `hri_face_detect_yunet`.
@@ -247,6 +282,14 @@ ros2 run nao_chatbot asr_push_to_talk_cli
 - `object_detection_input_image_topic`: image topic passed into the detector.
 - `scene_grounding_detector_topic`: detector output topic consumed by
   `nao_scene_grounding`.
+- `posture_bridge_disable_autonomous_life_on_connect`: optional connect-time
+  bridge override for disabling `ALAutonomousLife`.
+- `posture_bridge_wake_up_on_connect`: optional connect-time bridge override
+  for calling `ALMotion.wakeUp`.
+
+The posture bridge is intentionally passive by default in the shared wrappers.
+Only enable those connect-time flags when you explicitly want startup state
+changes on the robot.
 - `start_scene_grounding`: start the detector-to-KnowledgeCore bridge node.
 - `scene_grounding_summary_topic`: JSON scene summary output topic.
 - `scene_grounding_allowed_labels`: comma-separated grounded object allowlist.
@@ -337,7 +380,7 @@ Then move to the robot path:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
-  nao_ip:=172.26.112.62 \
+  nao_ip:=<robot_ip> \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=emorobcare_cv
@@ -346,7 +389,7 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
 Notes:
 
 - the overlay Dockerfile now uses `src/interaction_skills` directly and also
-  rebuilds `nao_scene_grounding`
+  rebuilds both `nao_scene_grounding` and `nao_replay_motion`
 - the sim `rqt` profile now prewires `/debug/object_detection` into the spare
   image-view panel so detector debug frames appear without manual topic
   selection

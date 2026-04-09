@@ -62,6 +62,26 @@ def test_planner_engine_uses_provider_for_non_rule_request() -> None:
     assert provider.messages[0]['role'] == 'system'
 
 
+def test_planner_engine_accepts_nested_plan_steps_from_model() -> None:
+    provider = _FakeProvider(
+        '{"ack_text":"I will inspect the scene.","plan":{"steps":[{"type":"look_at","name":"look_at","args":{"target_frame":"cup_frame"},"requires":[],"on_failure":"replan","retry_budget":0}]}}'
+    )
+    engine = PlannerEngine(provider, default_retry_budget=2)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_nested',
+            'user_text': 'look at the cup',
+            'normalized_intents': ['inspect_scene'],
+            'scene_targets': ['cup'],
+        }
+    )
+
+    decision = engine.plan_request(request)
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['steps'][0]['type'] == 'look_at'
+    assert provider.messages[0]['role'] == 'system'
+
+
 def test_planner_engine_clarifies_when_retry_budget_is_exhausted() -> None:
     provider = _FakeProvider('{}')
     engine = PlannerEngine(provider, default_retry_budget=2)
@@ -81,6 +101,26 @@ def test_planner_engine_clarifies_when_retry_budget_is_exhausted() -> None:
     assert decision.payload['plan']['steps'][0]['type'] == 'say'
     assert decision.payload['plan']['replan_hint'] == 'clarify_user'
     assert provider.messages == []
+
+
+def test_planner_engine_uses_provider_for_multi_step_requests_even_with_rule_intent() -> None:
+    provider = _FakeProvider(
+        '{"ack_text":"Moving my head up, then sitting down.","steps":[{"type":"skill","name":"perform_motion","args":{"object":"head_look_up"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"perform_motion","args":{"object":"sit"},"requires":[],"on_failure":"replan","retry_budget":0}]}'
+    )
+    engine = PlannerEngine(provider, default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_multi',
+            'user_text': 'move your head up and then sit down',
+            'normalized_intents': ['head_look_up'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request)
+    assert decision.mode == 'plan'
+    assert len(decision.payload['plan']['steps']) == 2
+    assert provider.messages[0]['role'] == 'system'
 
 
 def test_provider_factory_selects_openai_compatible_adapter() -> None:
