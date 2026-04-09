@@ -109,6 +109,20 @@
       "type": "file"
     },
     {
+      "name": ".gitnexus",
+      "type": "directory",
+      "children": [
+        {
+          "name": "lbug",
+          "type": "file"
+        },
+        {
+          "name": "meta.json",
+          "type": "file"
+        }
+      ]
+    },
+    {
       "name": ".gitnexusignore",
       "type": "file"
     },
@@ -673,6 +687,10 @@
                       "type": "file"
                     },
                     {
+                      "name": "test_launch_profiles.py",
+                      "type": "file"
+                    },
+                    {
                       "name": "test_robot_speech_debug.py",
                       "type": "file"
                     }
@@ -1224,6 +1242,10 @@
           "name": "planner_llm",
           "type": "directory",
           "children": [
+            {
+              "name": "README.md",
+              "type": "file"
+            },
             {
               "name": "config",
               "type": "directory",
