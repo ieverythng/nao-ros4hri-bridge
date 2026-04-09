@@ -37,7 +37,7 @@ raise SystemExit(0 if importlib.util.find_spec(module_name) is not None else 1)
 PY
 }
 
-echo "[1/9] Syntax checks"
+echo "[1/10] Syntax checks"
 python3 - <<'PY'
 from pathlib import Path
 import py_compile
@@ -49,6 +49,8 @@ for pattern in (
     "src/chatbot_llm/chatbot_llm/*.py",
     "src/kb_skills/kb_skills/*.py",
     "src/dialogue_manager/dialogue_manager/*.py",
+    "src/planner_common/planner_common/*.py",
+    "src/planner_llm/planner_llm/*.py",
     "src/asr_vosk/launch/*.launch.py",
     "src/asr_vosk/asr_vosk/*.py",
     "src/nao_look_at/nao_look_at/*.py",
@@ -69,16 +71,21 @@ for path in paths:
 print(f"Compiled {compiled} python files")
 PY
 
-echo "[2/9] nao_chatbot unit tests"
+echo "[2/10] nao_chatbot unit tests"
 PYTHONPATH="src/nao_chatbot:${PYTHONPATH:-}" python3 -m pytest -q \
   src/nao_chatbot/test/unit/test_asr_push_to_talk_cli.py \
   src/nao_chatbot/test/unit/test_robot_speech_debug.py
 
-echo "[3/9] kb_skills unit tests"
+echo "[3/10] kb_skills unit tests"
 PYTHONPATH="src/kb_skills:${PYTHONPATH:-}" python3 -m pytest -q \
   src/kb_skills/test/test_query_client.py
 
-echo "[4/9] chatbot_llm unit tests"
+echo "[4/10] planner package unit tests"
+PYTHONPATH="src/planner_common:src/planner_llm:${PYTHONPATH:-}" python3 -m pytest -q \
+  src/planner_common/test/test_contracts.py \
+  src/planner_llm/test/test_planner_engine.py
+
+echo "[5/10] chatbot_llm unit tests"
 if have_python_module hri_actions_msgs && have_python_module chatbot_msgs; then
   PYTHONPATH="src/kb_skills:src/chatbot_llm:${PYTHONPATH:-}" python3 -m pytest -q \
     src/chatbot_llm/test/test_intent_adapter.py \
@@ -89,7 +96,7 @@ else
   echo "Skipping chatbot_llm ROS contract tests because required ROS message modules are unavailable."
 fi
 
-echo "[5/9] dialogue_manager unit tests"
+echo "[6/10] dialogue_manager unit tests"
 if have_python_module numpy; then
   PYTHONPATH="src/dialogue_manager:${PYTHONPATH:-}" python3 -m pytest -q \
     src/dialogue_manager/test/test_chatbot_client.py \
@@ -103,31 +110,32 @@ else
   echo "Skipping dialogue_manager unit tests because python3 module 'numpy' is unavailable."
 fi
 
-echo "[6/9] asr_vosk unit tests"
+echo "[7/10] asr_vosk unit tests"
 PYTHONPATH="src/asr_vosk:${PYTHONPATH:-}" python3 -m pytest -q src/asr_vosk/test/unit
 
-echo "[7/9] simple_audio_capture unit tests"
+echo "[8/10] simple_audio_capture unit tests"
 PYTHONPATH="src/simple_audio_capture:${PYTHONPATH:-}" python3 -m pytest -q src/simple_audio_capture/test/unit
 
-echo "[8/9] migration package unit tests"
+echo "[9/10] migration package unit tests"
 if have_python_module numpy; then
-  PYTHONPATH="src/kb_skills:src/nao_look_at:src/nao_orchestrator:src/nao_replay_motion:src/nao_say_skill:${PYTHONPATH:-}" python3 -m pytest -q \
+  PYTHONPATH="src/planner_common:src/kb_skills:src/nao_look_at:src/nao_orchestrator:src/nao_replay_motion:src/nao_say_skill:${PYTHONPATH:-}" python3 -m pytest -q \
     src/nao_look_at/test/test_nao_look_at_unit.py \
     src/nao_orchestrator/test/test_nao_orchestrator_intent_rules.py \
     src/nao_replay_motion/test/test_nao_replay_motion_unit.py \
     src/nao_say_skill/test/test_nao_say_skill_unit.py
 else
   echo "Skipping ROS action-based migration unit tests because python3 module 'numpy' is unavailable."
-  PYTHONPATH="src/kb_skills:src/nao_orchestrator:${PYTHONPATH:-}" python3 -m pytest -q \
+  PYTHONPATH="src/planner_common:src/kb_skills:src/nao_orchestrator:${PYTHONPATH:-}" python3 -m pytest -q \
     src/nao_orchestrator/test/test_nao_orchestrator_intent_rules.py
 fi
 
-echo "[9/9] launch smoke"
+echo "[10/10] launch smoke"
 if [[ -f install/setup.bash ]]; then
   ros2 launch nao_chatbot nao_chatbot_sim.launch.py --show-args >/dev/null
   ros2 launch nao_chatbot nao_chatbot_sim_asr.launch.py --show-args >/dev/null
   ros2 launch nao_chatbot nao_chatbot_robot.launch.py --show-args >/dev/null
   ros2 launch nao_chatbot nao_chatbot_robot_asr.launch.py --show-args >/dev/null
+  ros2 launch nao_chatbot nao_chatbot_planner_local.launch.py --show-args >/dev/null
   ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py --show-args >/dev/null
 else
   echo "Skipping launch smoke because install/setup.bash is not available."

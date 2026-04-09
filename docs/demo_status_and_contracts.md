@@ -1,6 +1,6 @@
 # Demo Status And Runtime Contracts
 
-Last updated: 2026-03-25
+Last updated: 2026-04-09
 
 This note is the high-level demo brief for the current migration checkpoint.
 It focuses on what is live today, how the grounded scene reaches the LLM, and
@@ -13,17 +13,20 @@ For launch commands and profile toggles, see
 
 ## Executive Summary
 
-The stack now demonstrates four major capabilities working together:
+The stack now demonstrates five major capabilities working together:
 
 1. `knowledge_core` is part of the live dialogue and planner path through a
    dedicated `kb_skills` boundary for query and revise operations.
 2. object detection is live through the emorobcare backend and is grounded into
    transient KB facts by `nao_scene_grounding`.
-3. `chatbot_llm` injects a bounded symbolic scene snapshot into both the
-   response and intent LLM stages.
+3. `chatbot_llm` injects a bounded symbolic scene snapshot into the response
+   stage and planner/direct routing path.
 4. `nao_orchestrator` consumes richer `Intent.data` payloads, including
    `ack_text`, `ack_mode`, `scene_targets`, and optional structured `plan`
    steps.
+5. `planner_llm` now provides an optional planner ingress on `/planner/request`
+   and emits executable `/intents` plus bounded replanning decisions from
+   `/planner/execution_feedback`.
 
 The main architectural point for the demo is this:
 
@@ -31,6 +34,8 @@ The main architectural point for the demo is this:
 - `nao_scene_grounding` turns raw detections into symbolic scene facts
 - `chatbot_llm` reads those facts through `/kb/query`
 - the LLM therefore reasons over a bounded, symbolic, grounded scene view
+- when planner mode is enabled, `chatbot_llm` hands execution-oriented turns to
+  `planner_llm`, while `nao_orchestrator` remains the deterministic executor
 
 ## What Is Implemented
 
@@ -43,6 +48,7 @@ The main architectural point for the demo is this:
 | Scene summary output | live contract in `/scene/summary` | gives operators and future consumers a compact world-state feed |
 | Cross-turn scene memory | live in `chatbot_llm` | lets the robot talk about what changed across recent turns |
 | Structured downstream intent metadata | live | supports acknowledgements and future plan-driven execution |
+| Planner ingress and replan loop | live behind launch flags | lets us test structured plans without changing dialogue ownership |
 | `look_at` downstream seam | live at orchestrator/skill level | ready for follow-up target-frame grounding work |
 
 ## End-To-End Picture
@@ -54,8 +60,11 @@ flowchart LR
     U[User speech/text] --> DM[dialogue_manager]
     DM --> CLLM[chatbot_llm]
     KC[knowledge_core] -->|/kb/query| CLLM
-    CLLM -->|spoken reply + intents| DM
-    DM -->|/intents| ORCH[nao_orchestrator]
+    CLLM -->|spoken reply + direct intents| DM
+    CLLM -->|/planner/request| PLLM[planner_llm]
+    DM -->|/intents in direct mode| ORCH[nao_orchestrator]
+    PLLM -->|/intents in planner mode| ORCH
+    ORCH -->|/planner/execution_feedback| PLLM
     ORCH --> SAY[/nao/say]
     ORCH --> RM[/skill/replay_motion]
     ORCH --> HM[/skill/do_head_motion]
@@ -90,7 +99,7 @@ sequenceDiagram
     KB-->>C: JSON bindings
     C->>C: format knowledge snapshot + recent scene memory
     C->>C: response LLM stage
-    C->>C: intent LLM stage
+    C->>C: planner-aware route or direct intent stage
     C-->>DM: verbal_ack + HRI intents
     DM->>O: /intents
     O-->>DM: optional downstream dispatch
@@ -104,9 +113,64 @@ sequenceDiagram
 | `nao_scene_grounding` | detector normalization, identity stabilization, transient KB writes, `/scene/summary` |
 | `knowledge_core` | symbolic world-state store |
 | `kb_skills` | reusable KB query/mutation boundary and KB intent labels |
-| `chatbot_llm` | prompt building, knowledge snapshot injection, recent scene memory, response + intent generation |
+| `chatbot_llm` | prompt building, knowledge snapshot injection, recent scene memory, response generation, planner handoff |
+| `planner_llm` | structured plan generation, bounded retry/replan decisions, planner-to-orchestrator intent emission |
 | `dialogue_manager` | dialogue lifecycle and speaking ownership |
 | `nao_orchestrator` | downstream intent normalization and NAO skill dispatch |
+
+## Planner Runtime Contracts
+
+### Planner Request Contract
+
+When `chatbot_planner_mode_enabled=true`, execution-oriented turns are published
+to `/planner/request` as `hri_actions_msgs/msg/Intent`.
+
+Expected planner-facing payload fields inside `Intent.data`:
+
+```json
+{
+  "request_id": "turn_123",
+  "user_text": "bring me the cup",
+  "normalized_intents": ["bring_object"],
+  "ack_text": "I will try to bring you the cup.",
+  "ack_mode": "say",
+  "scene_targets": ["cup"],
+  "dialogue_context": [],
+  "grounded_context": {
+    "knowledge_snapshot": {}
+  },
+  "planner_mode": "default"
+}
+```
+
+### Planner Feedback Contract
+
+`nao_orchestrator` publishes planner-facing feedback on
+`/planner/execution_feedback` as JSON `std_msgs/msg/String`.
+
+Relevant fields consumed by `planner_llm`:
+
+```json
+{
+  "plan_id": "plan_1",
+  "status": "failed",
+  "reason": "target not found",
+  "replan_hint": "scene_changed",
+  "retry_budget": 1,
+  "scene_targets": ["cup"],
+  "step": {
+    "id": "step_2",
+    "type": "look_at",
+    "name": "look_at"
+  }
+}
+```
+
+`normalized_intents` remain best-effort metadata. `planner_llm` should still
+interpret `user_text` as the authoritative execution request.
+
+Planner logs are emitted through standard `rclpy` logging, so they are visible
+in terminal output, `~/.ros/log`, and `rqt_console`.
 
 ## Runtime Contracts
 
@@ -325,10 +389,10 @@ Key design point:
 
 ## Exact LLM Injection Point
 
-`chatbot_llm` injects the scene context into both prompt stages:
+`chatbot_llm` injects the scene context into:
 
 1. response generation
-2. intent extraction
+2. direct intent extraction when the turn stays in non-planner mode
 
 The prompt builder labels the block as:
 

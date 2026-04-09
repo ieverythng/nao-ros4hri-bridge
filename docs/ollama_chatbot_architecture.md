@@ -1,6 +1,6 @@
 # chatbot_llm Backend Architecture
 
-Last updated: 2026-03-13
+Last updated: 2026-04-09
 
 The old `ollama_chatbot` action server has been replaced by the migrated
 `chatbot_llm` backend package. This document keeps the historical filename but
@@ -25,7 +25,7 @@ dialogue_manager request
   -> skill_catalog
   -> chat_history
   -> ollama_transport
-  -> intent_rules / intent_adapter
+  -> planner-aware route or intent_rules / intent_adapter
   -> DialogueInteraction response
 ```
 
@@ -34,7 +34,7 @@ dialogue_manager request
 | Module | Purpose |
 | --- | --- |
 | `node_impl.py` | Lifecycle node, ROS contract, request handling |
-| `turn_engine.py` | Two-stage response and intent production |
+| `turn_engine.py` | Response generation plus planner-aware routing |
 | `ollama_transport.py` | HTTP transport to the configured model server |
 | `prompt_pack.py` | YAML prompt-pack loading |
 | `prompt_builders.py` | Response and intent prompt construction |
@@ -42,6 +42,7 @@ dialogue_manager request
 | `chat_history.py` | History trimming and role/message translation |
 | `intent_rules.py` | Rule fallback for deterministic intent extraction |
 | `intent_adapter.py` | Conversion into the upstream `chatbot_msgs` contract |
+| `planner_request_adapter.py` | `/planner/request` payload construction for planner mode |
 
 ## Runtime Contract
 
@@ -49,9 +50,11 @@ Steady-state flow:
 
 1. `dialogue_manager` opens a dialogue via `start_dialogue`
 2. `dialogue_manager` sends user turns through `dialogue_interaction`
-3. `chatbot_llm` returns assistant text plus structured intent data
-4. `dialogue_manager` publishes `/intents`
-5. `nao_orchestrator` decides what robot-side skill to invoke
+3. `chatbot_llm` returns assistant text plus either direct intents or a planner
+   handoff request, depending on route
+4. `dialogue_manager` publishes `/intents` in direct mode
+5. `planner_llm` publishes `/intents` in planner mode
+6. `nao_orchestrator` decides what robot-side skill to invoke
 
 ## Operational Notes
 

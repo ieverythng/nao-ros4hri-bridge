@@ -1,6 +1,6 @@
 # Current Workflow
 
-Last updated: 2026-03-25
+Last updated: 2026-04-09
 
 This is now the compact runtime snapshot for the active migrated stack.
 
@@ -17,6 +17,8 @@ For launch commands and profile toggles, see
 /humans/voices/*/speech
   -> dialogue_manager
   -> chatbot_llm
+  -> direct /intents or /planner/request
+  -> planner_llm
   -> /intents
   -> nao_orchestrator
   -> /nao/say | /skill/replay_motion | /skill/do_head_motion | /skill/look_at
@@ -44,7 +46,8 @@ simple_audio_capture -> asr_vosk -> /humans/voices/anonymous_speaker/speech
 | Package | Owns |
 | --- | --- |
 | `dialogue_manager` | dialogue lifecycle and speaking ownership |
-| `chatbot_llm` | grounded response and intent generation |
+| `chatbot_llm` | grounded response plus direct-or-planner routing |
+| `planner_llm` | planner request intake, plan generation, and replanning |
 | `knowledge_core` | symbolic world state |
 | `kb_skills` | KnowledgeCore query and mutation boundary |
 | `nao_scene_grounding` | detector-to-KB grounding and `/scene/summary` |
@@ -63,5 +66,8 @@ ros2 action list -t
 ros2 service list -t
 ros2 lifecycle get /dialogue_manager
 ros2 lifecycle get /chatbot_llm
+ros2 lifecycle get /planner_llm
 ros2 lifecycle get /nao_orchestrator
+ros2 topic info /planner/request
+ros2 topic info /planner/execution_feedback
 ```

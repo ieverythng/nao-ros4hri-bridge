@@ -49,37 +49,28 @@ class PlannerNode(Node):
         self.declare_parameter('default_retry_budget', 1)
         self.declare_parameter('auto_replan', True)
 
-        self._planner_request_topic = str(self.get_parameter('planner_request_topic').value).strip()
-        self._intent_topic = str(self.get_parameter('intent_topic').value).strip()
-        self._planner_feedback_topic = str(
-            self.get_parameter('planner_feedback_topic').value
-        ).strip()
-        self._enriched_snapshot_topic = str(
-            self.get_parameter('enriched_snapshot_topic').value
-        ).strip()
-        self._enriched_text_topic = str(self.get_parameter('enriched_text_topic').value).strip()
-        self._planner_request_intent = str(
-            self.get_parameter('planner_request_intent').value
-        ).strip() or DEFAULT_PLANNER_REQUEST_INTENT
-        self._default_intent_name = str(
-            self.get_parameter('default_intent_name').value
-        ).strip() or Intent.RAW_USER_INPUT
-        self._auto_replan = bool(self.get_parameter('auto_replan').value)
-
-        provider_config = PlannerProviderConfig(
-            provider=str(self.get_parameter('provider').value).strip() or 'ollama',
-            model=str(self.get_parameter('model').value).strip() or 'gpt-oss:120b-cloud',
-            base_url=str(self.get_parameter('base_url').value).strip() or 'http://127.0.0.1:11434',
-            api_key_env=str(self.get_parameter('api_key_env').value).strip() or 'OPENAI_API_KEY',
-            temperature=float(self.get_parameter('temperature').value),
-            max_tokens=int(self.get_parameter('max_tokens').value),
-            timeout_sec=float(self.get_parameter('timeout_sec').value),
+        self._planner_request_topic = self._text_parameter('planner_request_topic')
+        self._intent_topic = self._text_parameter('intent_topic')
+        self._planner_feedback_topic = self._text_parameter('planner_feedback_topic')
+        self._enriched_snapshot_topic = self._text_parameter('enriched_snapshot_topic')
+        self._enriched_text_topic = self._text_parameter('enriched_text_topic')
+        self._planner_request_intent = self._text_parameter(
+            'planner_request_intent',
+            DEFAULT_PLANNER_REQUEST_INTENT,
         )
+        self._default_intent_name = self._text_parameter(
+            'default_intent_name',
+            Intent.RAW_USER_INPUT,
+        )
+        self._auto_replan = bool(self.get_parameter('auto_replan').value)
+        default_retry_budget = int(self.get_parameter('default_retry_budget').value)
+
+        provider_config = self._provider_config()
         provider = build_provider(provider_config)
         self._engine = PlannerEngine(
             provider,
             default_intent_name=self._default_intent_name,
-            default_retry_budget=int(self.get_parameter('default_retry_budget').value),
+            default_retry_budget=default_retry_budget,
         )
 
         self._intent_pub = self.create_publisher(Intent, self._intent_topic, 10)
@@ -112,6 +103,20 @@ class PlannerNode(Node):
     def _on_world_text(self, msg: String) -> None:
         self._world_text = str(msg.data or '').strip()
 
+    def _text_parameter(self, name: str, fallback: str = '') -> str:
+        return str(self.get_parameter(name).value).strip() or str(fallback or '')
+
+    def _provider_config(self) -> PlannerProviderConfig:
+        return PlannerProviderConfig(
+            provider=self._text_parameter('provider', 'ollama'),
+            model=self._text_parameter('model', 'gpt-oss:120b-cloud'),
+            base_url=self._text_parameter('base_url', 'http://127.0.0.1:11434'),
+            api_key_env=self._text_parameter('api_key_env', 'OPENAI_API_KEY'),
+            temperature=float(self.get_parameter('temperature').value),
+            max_tokens=int(self.get_parameter('max_tokens').value),
+            timeout_sec=float(self.get_parameter('timeout_sec').value),
+        )
+
     def _on_planner_request(self, msg: Intent) -> None:
         if msg.intent and str(msg.intent).strip() != self._planner_request_intent:
             self.get_logger().warn(
@@ -119,6 +124,15 @@ class PlannerNode(Node):
                 % (msg.intent, self._planner_request_topic)
             )
         planner_request = PlannerRequest.from_payload(msg.data)
+        self.get_logger().info(
+            'planner_llm request received | request_id=%s intents=%s scene_targets=%s source=%s'
+            % (
+                planner_request.request_id,
+                list(planner_request.normalized_intents),
+                list(planner_request.scene_targets),
+                str(getattr(msg, 'source', '') or 'unknown'),
+            )
+        )
         decision = self._engine.plan_request(
             planner_request,
             world_model_text=self._world_text,
@@ -130,6 +144,17 @@ class PlannerNode(Node):
 
     def _on_feedback(self, msg: String) -> None:
         feedback = ExecutionFeedback.from_payload(msg.data)
+        self.get_logger().info(
+            'planner_llm feedback received | plan_id=%s status=%s step=%s/%s retry_budget=%s reason=%s'
+            % (
+                feedback.plan_id,
+                feedback.status,
+                feedback.step_type,
+                feedback.step_name,
+                feedback.retry_budget,
+                feedback.reason,
+            )
+        )
 
         if feedback.status == 'completed':
             self._active_requests.pop(feedback.plan_id, None)
@@ -141,6 +166,9 @@ class PlannerNode(Node):
 
         planner_request = self._active_requests.pop(feedback.plan_id, None)
         if planner_request is None:
+            self.get_logger().debug(
+                'planner_llm feedback ignored because plan_id=%s is not active' % feedback.plan_id
+            )
             return
 
         decision = self._engine.plan_request(
@@ -159,6 +187,19 @@ class PlannerNode(Node):
         msg.source = str(source or 'planner_llm')
         msg.data = json.dumps(decision.payload, sort_keys=True, separators=(',', ':'))
         self._intent_pub.publish(msg)
+        plan_payload = decision.payload.get('plan', {})
+        steps = plan_payload.get('steps', [])
+        validation_status = plan_payload.get('validation_status', '')
+        self.get_logger().info(
+            'planner_llm published decision | plan_id=%s mode=%s steps=%s validation=%s intent=%s'
+            % (
+                decision.plan_id,
+                decision.mode,
+                len(steps) if isinstance(steps, list) else 0,
+                validation_status,
+                decision.intent_name,
+            )
+        )
 
 
 def main(args=None) -> None:

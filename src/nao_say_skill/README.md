@@ -53,7 +53,7 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py
 Or on the real robot:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_robot.launch.py nao_ip:=...
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py nao_ip:=<robot_ip>
 ```
 
 ## Provenance

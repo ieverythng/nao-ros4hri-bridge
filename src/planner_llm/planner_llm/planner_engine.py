@@ -34,6 +34,20 @@ _RULE_BASED_MOTIONS = {
     'posture_kneel': 'kneel',
 }
 
+_ALLOWED_STEP_TYPES = ('noop', 'say', 'skill', 'look_at')
+_ALLOWED_SKILL_NAMES = ('perform_motion', 'motion', 'look_at')
+_ALLOWED_MOTION_OBJECTS = tuple(_RULE_BASED_MOTIONS.values())
+_SYSTEM_PROMPT = (
+    'You are planner_llm for a ROS4HRI robot. Reply with one JSON object only. '
+    'Return fields ack_text, ack_mode, decision, validation_status, failure_reason, '
+    'replan_hint, retry_budget, scene_targets, and steps. Each step must contain '
+    'type, name, args, requires, on_failure, and retry_budget. Use only the allowed '
+    'step types and skill names. Prefer short executable plans. normalized_intents may be '
+    'empty or partial, so infer the executable request from user_text, context, and any '
+    'planner hints instead of requiring a perfect upstream label. If the task is ambiguous '
+    'or blocked, set decision to clarify and include clarification_text.'
+)
+
 
 @dataclass(frozen=True)
 class PlannerDecision:
@@ -118,60 +132,19 @@ class PlannerEngine:
         world_model_snapshot: dict,
         feedback: ExecutionFeedback | None,
     ) -> list[dict[str, str]]:
-        feedback_payload = {}
-        if feedback is not None:
-            feedback_payload = {
-                'plan_id': feedback.plan_id,
-                'status': feedback.status,
-                'reason': feedback.reason,
-                'replan_hint': feedback.replan_hint,
-                'retry_budget': feedback.retry_budget,
-                'scene_targets': list(feedback.scene_targets),
-                'step_id': feedback.step_id,
-                'step_type': feedback.step_type,
-                'step_name': feedback.step_name,
-            }
-
-        request_payload = {
-            'request_id': request.request_id,
-            'user_text': request.user_text,
-            'normalized_intents': list(request.normalized_intents),
-            'ack_text': request.ack_text,
-            'ack_mode': request.ack_mode,
-            'scene_targets': list(request.scene_targets),
-            'dialogue_context': list(request.dialogue_context),
-            'grounded_context': request.grounded_context,
-            'planner_mode': request.planner_mode,
-        }
         prompt = {
-            'request': request_payload,
+            'request': self._request_payload(request),
             'world_model_text': str(world_model_text or '').strip(),
             'world_model_snapshot': world_model_snapshot,
-            'execution_feedback': feedback_payload,
-            'allowed_step_types': ['noop', 'say', 'skill', 'look_at'],
-            'allowed_skill_names': ['perform_motion', 'motion', 'look_at'],
-            'allowed_motion_objects': [
-                'stand',
-                'sit',
-                'kneel',
-                'head_center',
-                'head_look_left',
-                'head_look_right',
-                'head_look_up',
-                'head_look_down',
-            ],
+            'execution_feedback': self._feedback_payload(feedback),
+            'allowed_step_types': list(_ALLOWED_STEP_TYPES),
+            'allowed_skill_names': list(_ALLOWED_SKILL_NAMES),
+            'allowed_motion_objects': list(_ALLOWED_MOTION_OBJECTS),
         }
         return [
             {
                 'role': 'system',
-                'content': (
-                    'You are planner_llm for a ROS4HRI robot. Reply with one JSON object only. '
-                    'Return fields ack_text, ack_mode, decision, validation_status, failure_reason, '
-                    'replan_hint, retry_budget, scene_targets, and steps. Each step must contain '
-                    'type, name, args, requires, on_failure, and retry_budget. Use only the allowed '
-                    'step types and skill names. Prefer short executable plans. If the task is ambiguous '
-                    'or blocked, set decision to clarify and include clarification_text.'
-                ),
+                'content': _SYSTEM_PROMPT,
             },
             {
                 'role': 'user',
@@ -209,31 +182,22 @@ class PlannerEngine:
                 mode='fail',
             )
 
-        steps = parsed.get('steps', [])
-        if not isinstance(steps, list):
-            plan_payload = parsed.get('plan', {})
-            if isinstance(plan_payload, dict):
-                steps = plan_payload.get('steps', [])
-        if not isinstance(steps, list) or not steps:
+        steps = self._extract_plan_steps(parsed)
+        if not steps:
             return None
 
-        scene_targets = self._scene_targets_for_decision(request, feedback, parsed)
-        payload = build_plan_payload(
+        return self._build_decision(
             request=request,
+            feedback=feedback,
+            steps=steps,
             ack_text=str(parsed.get('ack_text', '')).strip(),
             ack_mode=str(parsed.get('ack_mode', request.ack_mode)).strip(),
             validation_status=str(parsed.get('validation_status', 'draft')).strip() or 'draft',
             failure_reason=str(parsed.get('failure_reason', '')).strip(),
             replan_hint=str(parsed.get('replan_hint', '')).strip(),
             retry_budget=self._resolved_retry_budget(parsed, feedback),
-            scene_targets=scene_targets,
-            steps=steps,
+            scene_targets=self._scene_targets_for_decision(request, feedback, parsed),
             plan_id=str(parsed.get('plan_id', parsed.get('id', ''))).strip(),
-        )
-        return PlannerDecision(
-            intent_name=self._default_intent_name,
-            payload=payload,
-            plan_id=payload['plan']['plan_id'],
             raw_model_output=raw_model_output,
             mode='replan' if feedback is not None else 'plan',
         )
@@ -248,8 +212,17 @@ class PlannerEngine:
         mode: str = 'clarify',
     ) -> PlannerDecision:
         clean_reason = str(reason or '').strip() or 'I need a bit more detail before I can continue.'
-        payload = build_plan_payload(
+        return self._build_decision(
             request=request,
+            feedback=feedback,
+            steps=[
+                self._step(
+                    step_type='say',
+                    name='say',
+                    args={'text': clean_reason},
+                    on_failure='fail',
+                )
+            ],
             ack_text=request.ack_text,
             ack_mode=request.ack_mode,
             validation_status='draft',
@@ -257,21 +230,6 @@ class PlannerEngine:
             replan_hint='clarify_user',
             retry_budget=0,
             scene_targets=self._scene_targets_for_decision(request, feedback, {}),
-            steps=[
-                {
-                    'type': 'say',
-                    'name': 'say',
-                    'args': {'text': clean_reason},
-                    'requires': [],
-                    'on_failure': 'fail',
-                    'retry_budget': 0,
-                }
-            ],
-        )
-        return PlannerDecision(
-            intent_name=self._default_intent_name,
-            payload=payload,
-            plan_id=payload['plan']['plan_id'],
             raw_model_output=raw_model_output,
             mode=mode,
         )
@@ -282,60 +240,158 @@ class PlannerEngine:
         *,
         feedback: ExecutionFeedback | None,
     ) -> PlannerDecision | None:
+        if str(request.planner_mode or '').strip().lower() in (
+            'multi_step',
+            'multistep',
+            'composite',
+            'sequenced',
+        ):
+            return None
+        if len(request.normalized_intents) > 1:
+            return None
+
+        retry_budget = self._resolved_retry_budget({}, feedback)
+        scene_targets = self._scene_targets_for_decision(request, feedback, {})
+
         for normalized_intent in request.normalized_intents:
             motion_name = _RULE_BASED_MOTIONS.get(normalized_intent)
             if motion_name:
-                payload = build_plan_payload(
+                return self._build_decision(
                     request=request,
+                    feedback=feedback,
+                    steps=[
+                        self._step(
+                            step_type='skill',
+                            name='perform_motion',
+                            args={'object': motion_name},
+                            on_failure='replan',
+                        )
+                    ],
                     ack_text=request.ack_text,
                     ack_mode=request.ack_mode,
                     validation_status='draft',
-                    retry_budget=self._resolved_retry_budget({}, feedback),
-                    scene_targets=self._scene_targets_for_decision(request, feedback, {}),
-                    steps=[
-                        {
-                            'type': 'skill',
-                            'name': 'perform_motion',
-                            'args': {'object': motion_name},
-                            'requires': [],
-                            'on_failure': 'replan',
-                            'retry_budget': 0,
-                        }
-                    ],
-                )
-                return PlannerDecision(
-                    intent_name=self._default_intent_name,
-                    payload=payload,
-                    plan_id=payload['plan']['plan_id'],
+                    retry_budget=retry_budget,
+                    scene_targets=scene_targets,
                     mode='rule',
                 )
 
         if any(intent_name in ('greet', Intent.GREET) for intent_name in request.normalized_intents):
-            payload = build_plan_payload(
+            return self._build_decision(
                 request=request,
+                feedback=feedback,
+                steps=[
+                    self._step(
+                        step_type='say',
+                        name='say',
+                        args={'text': request.ack_text or 'Hello!'},
+                    )
+                ],
                 ack_text=request.ack_text,
                 ack_mode=request.ack_mode,
                 validation_status='draft',
-                retry_budget=self._resolved_retry_budget({}, feedback),
-                scene_targets=self._scene_targets_for_decision(request, feedback, {}),
-                steps=[
-                    {
-                        'type': 'say',
-                        'name': 'say',
-                        'args': {'text': request.ack_text or 'Hello!'},
-                        'requires': [],
-                        'on_failure': 'fail',
-                        'retry_budget': 0,
-                    }
-                ],
-            )
-            return PlannerDecision(
-                intent_name=self._default_intent_name,
-                payload=payload,
-                plan_id=payload['plan']['plan_id'],
+                retry_budget=retry_budget,
+                scene_targets=scene_targets,
                 mode='rule',
             )
         return None
+
+    @staticmethod
+    def _request_payload(request: PlannerRequest) -> dict:
+        return {
+            'request_id': request.request_id,
+            'user_text': request.user_text,
+            'normalized_intents': list(request.normalized_intents),
+            'ack_text': request.ack_text,
+            'ack_mode': request.ack_mode,
+            'scene_targets': list(request.scene_targets),
+            'dialogue_context': list(request.dialogue_context),
+            'grounded_context': request.grounded_context,
+            'planner_mode': request.planner_mode,
+        }
+
+    @staticmethod
+    def _feedback_payload(feedback: ExecutionFeedback | None) -> dict:
+        if feedback is None:
+            return {}
+        return {
+            'plan_id': feedback.plan_id,
+            'status': feedback.status,
+            'reason': feedback.reason,
+            'replan_hint': feedback.replan_hint,
+            'retry_budget': feedback.retry_budget,
+            'scene_targets': list(feedback.scene_targets),
+            'step_id': feedback.step_id,
+            'step_type': feedback.step_type,
+            'step_name': feedback.step_name,
+        }
+
+    @staticmethod
+    def _extract_plan_steps(parsed: dict) -> list[dict]:
+        steps = parsed.get('steps')
+        if isinstance(steps, list) and steps:
+            return steps
+        plan_payload = parsed.get('plan', {})
+        if not isinstance(plan_payload, dict):
+            return steps if isinstance(steps, list) else []
+        nested_steps = plan_payload.get('steps', [])
+        if isinstance(nested_steps, list):
+            return nested_steps
+        return steps if isinstance(steps, list) else []
+
+    @staticmethod
+    def _step(
+        *,
+        step_type: str,
+        name: str,
+        args: dict,
+        on_failure: str = 'fail',
+        retry_budget: int = 0,
+    ) -> dict:
+        return {
+            'type': step_type,
+            'name': name,
+            'args': args,
+            'requires': [],
+            'on_failure': on_failure,
+            'retry_budget': retry_budget,
+        }
+
+    def _build_decision(
+        self,
+        *,
+        request: PlannerRequest,
+        feedback: ExecutionFeedback | None,
+        steps: list[dict],
+        ack_text: str,
+        ack_mode: str,
+        validation_status: str,
+        failure_reason: str = '',
+        replan_hint: str = '',
+        retry_budget: int = 0,
+        scene_targets: list[str] | None = None,
+        plan_id: str = '',
+        raw_model_output: str = '',
+        mode: str = 'plan',
+    ) -> PlannerDecision:
+        payload = build_plan_payload(
+            request=request,
+            ack_text=ack_text,
+            ack_mode=ack_mode,
+            validation_status=validation_status,
+            failure_reason=failure_reason,
+            replan_hint=replan_hint,
+            retry_budget=retry_budget,
+            scene_targets=scene_targets or self._scene_targets_for_decision(request, feedback, {}),
+            steps=steps,
+            plan_id=plan_id,
+        )
+        return PlannerDecision(
+            intent_name=self._default_intent_name,
+            payload=payload,
+            plan_id=payload['plan']['plan_id'],
+            raw_model_output=raw_model_output,
+            mode=mode,
+        )
 
     def _resolved_retry_budget(self, parsed: dict, feedback: ExecutionFeedback | None) -> int:
         if 'retry_budget' in parsed:
