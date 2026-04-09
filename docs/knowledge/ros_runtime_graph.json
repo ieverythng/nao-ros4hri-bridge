@@ -1,0 +1,889 @@
+{
+  "endpoints": {
+    "/audio": {
+      "publishers": [
+        "simple_audio_capture"
+      ]
+    },
+    "/audio/voice_detected": {
+      "subscribers": [
+        "asr_vosk"
+      ]
+    },
+    "/audio_info": {
+      "publishers": [
+        "simple_audio_capture"
+      ]
+    },
+    "/audio_stamped": {
+      "publishers": [
+        "simple_audio_capture"
+      ]
+    },
+    "/chatbot/intent": {
+      "subscribers": [
+        "nao_orchestrator"
+      ]
+    },
+    "/chatbot/posture_command": {
+      "publishers": [
+        "nao_orchestrator",
+        "nao_replay_motion"
+      ]
+    },
+    "/chatbot_llm/dialogue_interaction": {
+      "service_clients": [
+        "dialogue_manager"
+      ],
+      "service_servers": [
+        "chatbot_llm"
+      ]
+    },
+    "/chatbot_llm/get_supported_locales": {
+      "service_servers": [
+        "chatbot_llm"
+      ]
+    },
+    "/chatbot_llm/set_default_locale": {
+      "action_servers": [
+        "chatbot_llm"
+      ]
+    },
+    "/chatbot_llm/start_dialogue": {
+      "action_clients": [
+        "dialogue_manager"
+      ],
+      "action_servers": [
+        "chatbot_llm"
+      ]
+    },
+    "/debug/nao_say/speech": {
+      "publishers": [
+        "nao_say_skill"
+      ],
+      "subscribers": [
+        "nao_chatbot"
+      ]
+    },
+    "/debug/say": {
+      "action_clients": [
+        "nao_say_skill"
+      ]
+    },
+    "/detected_objects": {
+      "subscribers": [
+        "nao_scene_grounding"
+      ]
+    },
+    "/diagnostics": {
+      "publishers": [
+        "asr_vosk",
+        "chatbot_llm",
+        "dialogue_manager",
+        "knowledge_core",
+        "nao_look_at",
+        "nao_orchestrator",
+        "nao_say_skill"
+      ]
+    },
+    "/dialogue_manager/closed_captions": {
+      "publishers": [
+        "dialogue_manager"
+      ],
+      "subscribers": [
+        "nao_chatbot"
+      ]
+    },
+    "/dialogue_manager/currently_waiting_for_chatbot_response": {
+      "publishers": [
+        "dialogue_manager"
+      ]
+    },
+    "/dialogue_manager/robot_speech": {
+      "publishers": [
+        "dialogue_manager"
+      ]
+    },
+    "/humans/voices/*/speech": {
+      "subscribers": [
+        "dialogue_manager"
+      ]
+    },
+    "/humans/voices/anonymous_speaker/audio": {
+      "publishers": [
+        "asr_vosk"
+      ]
+    },
+    "/humans/voices/anonymous_speaker/is_speaking": {
+      "publishers": [
+        "asr_vosk"
+      ]
+    },
+    "/humans/voices/tracked": {
+      "publishers": [
+        "asr_vosk"
+      ],
+      "subscribers": [
+        "dialogue_manager"
+      ]
+    },
+    "/intents": {
+      "publishers": [
+        "dialogue_manager",
+        "planner_llm"
+      ],
+      "subscribers": [
+        "nao_orchestrator"
+      ]
+    },
+    "/joint_angles": {
+      "publishers": [
+        "nao_look_at",
+        "nao_orchestrator",
+        "nao_replay_motion"
+      ]
+    },
+    "/kb/about": {
+      "service_servers": [
+        "knowledge_core"
+      ]
+    },
+    "/kb/active_concepts": {
+      "publishers": [
+        "knowledge_core"
+      ],
+      "subscribers": [
+        "knowledge_core"
+      ]
+    },
+    "/kb/add_fact": {
+      "subscribers": [
+        "knowledge_core"
+      ]
+    },
+    "/kb/details": {
+      "service_servers": [
+        "knowledge_core"
+      ]
+    },
+    "/kb/events": {
+      "service_servers": [
+        "knowledge_core"
+      ]
+    },
+    "/kb/label": {
+      "service_servers": [
+        "knowledge_core"
+      ]
+    },
+    "/kb/lookup": {
+      "service_servers": [
+        "knowledge_core"
+      ]
+    },
+    "/kb/manage": {
+      "service_servers": [
+        "knowledge_core"
+      ]
+    },
+    "/kb/query": {
+      "contract_kinds": [
+        "service"
+      ],
+      "contracts": [
+        "kb_skills"
+      ],
+      "service_clients": [
+        "kb_skills"
+      ],
+      "service_servers": [
+        "knowledge_core"
+      ]
+    },
+    "/kb/remove_fact": {
+      "subscribers": [
+        "knowledge_core"
+      ]
+    },
+    "/kb/revise": {
+      "contract_kinds": [
+        "service"
+      ],
+      "contracts": [
+        "kb_skills"
+      ],
+      "service_clients": [
+        "kb_skills"
+      ],
+      "service_servers": [
+        "knowledge_core"
+      ]
+    },
+    "/kb/sparql": {
+      "service_servers": [
+        "knowledge_core"
+      ]
+    },
+    "/nao/say": {
+      "action_clients": [
+        "nao_orchestrator"
+      ],
+      "action_servers": [
+        "nao_say_skill"
+      ],
+      "contract_kinds": [
+        "action"
+      ],
+      "contracts": [
+        "nao_say_skill"
+      ]
+    },
+    "/nao_scene_grounding/summary": {
+      "publishers": [
+        "nao_scene_grounding"
+      ]
+    },
+    "/planner/execution_feedback": {
+      "publishers": [
+        "nao_orchestrator"
+      ],
+      "subscribers": [
+        "planner_llm"
+      ]
+    },
+    "/planner/request": {
+      "subscribers": [
+        "planner_llm"
+      ]
+    },
+    "/robot_speaking": {
+      "subscribers": [
+        "asr_vosk"
+      ]
+    },
+    "/skill/ask": {
+      "action_servers": [
+        "dialogue_manager"
+      ],
+      "contract_kinds": [
+        "action"
+      ],
+      "contracts": [
+        "communication_skills"
+      ]
+    },
+    "/skill/chat": {
+      "action_servers": [
+        "dialogue_manager"
+      ],
+      "contract_kinds": [
+        "action"
+      ],
+      "contracts": [
+        "communication_skills"
+      ]
+    },
+    "/skill/do_head_motion": {
+      "action_clients": [
+        "nao_orchestrator"
+      ],
+      "action_servers": [
+        "nao_replay_motion"
+      ],
+      "contract_kinds": [
+        "action"
+      ],
+      "contracts": [
+        "nao_skills"
+      ]
+    },
+    "/skill/do_led_effect": {
+      "contract_kinds": [
+        "action"
+      ],
+      "contracts": [
+        "interaction_skills"
+      ]
+    },
+    "/skill/do_posture": {
+      "action_servers": [
+        "nao_replay_motion"
+      ],
+      "contract_kinds": [
+        "action"
+      ],
+      "contracts": [
+        "nao_skills"
+      ]
+    },
+    "/skill/execute_cartesian_trajectory": {
+      "contract_kinds": [
+        "action"
+      ],
+      "contracts": [
+        "motions_skills"
+      ]
+    },
+    "/skill/execute_joint_trajectory": {
+      "contract_kinds": [
+        "action"
+      ],
+      "contracts": [
+        "motions_skills"
+      ]
+    },
+    "/skill/look_at": {
+      "action_clients": [
+        "nao_orchestrator"
+      ],
+      "action_servers": [
+        "nao_look_at"
+      ],
+      "contract_kinds": [
+        "action"
+      ],
+      "contracts": [
+        "interaction_skills"
+      ]
+    },
+    "/skill/replay_motion": {
+      "action_clients": [
+        "nao_orchestrator"
+      ],
+      "action_servers": [
+        "nao_replay_motion"
+      ],
+      "contract_kinds": [
+        "action"
+      ],
+      "contracts": [
+        "nao_skills"
+      ]
+    },
+    "/skill/say": {
+      "action_servers": [
+        "dialogue_manager"
+      ],
+      "contract_kinds": [
+        "action"
+      ],
+      "contracts": [
+        "communication_skills"
+      ]
+    },
+    "/skill/set_expression": {
+      "contract_kinds": [
+        "topic"
+      ],
+      "contracts": [
+        "interaction_skills"
+      ]
+    },
+    "/speech": {
+      "publishers": [
+        "nao_say_skill"
+      ]
+    },
+    "/tts_engine/tts": {
+      "action_servers": [
+        "nao_say_skill"
+      ]
+    },
+    "/world_model/enriched_snapshot": {
+      "subscribers": [
+        "planner_llm"
+      ]
+    },
+    "/world_model/enriched_text": {
+      "subscribers": [
+        "planner_llm"
+      ]
+    }
+  },
+  "generatedAt": "2026-04-07T03:19:12.577145+00:00",
+  "packages": [
+    {
+      "actionClients": [],
+      "actionServers": [],
+      "contracts": [],
+      "files": [
+        "src/asr_vosk/asr_vosk/__init__.py",
+        "src/asr_vosk/asr_vosk/node_vosk.py",
+        "src/asr_vosk/launch/asr_vosk.launch.py",
+        "src/asr_vosk/setup.py"
+      ],
+      "name": "asr_vosk",
+      "nodeNames": [
+        "asr_vosk"
+      ],
+      "publishes": [
+        "/diagnostics",
+        "/humans/voices/anonymous_speaker/audio",
+        "/humans/voices/anonymous_speaker/is_speaking",
+        "/humans/voices/tracked"
+      ],
+      "root": "src/asr_vosk",
+      "serviceClients": [],
+      "serviceServers": [],
+      "subscribes": [
+        "/audio/voice_detected",
+        "/robot_speaking"
+      ]
+    },
+    {
+      "actionClients": [],
+      "actionServers": [
+        "/chatbot_llm/set_default_locale",
+        "/chatbot_llm/start_dialogue"
+      ],
+      "contracts": [],
+      "files": [
+        "src/chatbot_llm/chatbot_llm/__init__.py",
+        "src/chatbot_llm/chatbot_llm/backend_config.py",
+        "src/chatbot_llm/chatbot_llm/chat_history.py",
+        "src/chatbot_llm/chatbot_llm/intent_adapter.py",
+        "src/chatbot_llm/chatbot_llm/intent_rules.py",
+        "src/chatbot_llm/chatbot_llm/knowledge_snapshot.py",
+        "src/chatbot_llm/chatbot_llm/knowledge_snapshot_client.py",
+        "src/chatbot_llm/chatbot_llm/node_impl.py",
+        "src/chatbot_llm/chatbot_llm/ollama_transport.py",
+        "src/chatbot_llm/chatbot_llm/prompt_builders.py",
+        "src/chatbot_llm/chatbot_llm/prompt_pack.py",
+        "src/chatbot_llm/chatbot_llm/skill_catalog.py",
+        "src/chatbot_llm/chatbot_llm/start_node.py",
+        "src/chatbot_llm/chatbot_llm/turn_engine.py",
+        "src/chatbot_llm/launch/chatbot_llm.launch.py",
+        "src/chatbot_llm/setup.py"
+      ],
+      "name": "chatbot_llm",
+      "nodeNames": [
+        "chatbot_llm"
+      ],
+      "publishes": [
+        "/diagnostics"
+      ],
+      "root": "src/chatbot_llm",
+      "serviceClients": [],
+      "serviceServers": [
+        "/chatbot_llm/dialogue_interaction",
+        "/chatbot_llm/get_supported_locales"
+      ],
+      "subscribes": []
+    },
+    {
+      "actionClients": [],
+      "actionServers": [],
+      "contracts": [
+        "/skill/ask",
+        "/skill/chat",
+        "/skill/say"
+      ],
+      "files": [],
+      "name": "communication_skills",
+      "nodeNames": [],
+      "publishes": [],
+      "root": "src/communication_skills",
+      "serviceClients": [],
+      "serviceServers": [],
+      "subscribes": []
+    },
+    {
+      "actionClients": [
+        "/chatbot_llm/start_dialogue"
+      ],
+      "actionServers": [
+        "/skill/ask",
+        "/skill/chat",
+        "/skill/say"
+      ],
+      "contracts": [],
+      "files": [
+        "src/dialogue_manager/dialogue_manager/__init__.py",
+        "src/dialogue_manager/dialogue_manager/chatbot_client.py",
+        "src/dialogue_manager/dialogue_manager/dialogue.py",
+        "src/dialogue_manager/dialogue_manager/manager_node.py",
+        "src/dialogue_manager/dialogue_manager/skill_servers.py",
+        "src/dialogue_manager/dialogue_manager/speech_handler.py",
+        "src/dialogue_manager/dialogue_manager/start_manager.py",
+        "src/dialogue_manager/dialogue_manager/tts_client.py",
+        "src/dialogue_manager/launch/dialogue_manager.launch.py",
+        "src/dialogue_manager/setup.py"
+      ],
+      "name": "dialogue_manager",
+      "nodeNames": [
+        "dialogue_manager"
+      ],
+      "publishes": [
+        "/diagnostics",
+        "/dialogue_manager/closed_captions",
+        "/dialogue_manager/currently_waiting_for_chatbot_response",
+        "/dialogue_manager/robot_speech",
+        "/intents"
+      ],
+      "root": "src/dialogue_manager",
+      "serviceClients": [
+        "/chatbot_llm/dialogue_interaction"
+      ],
+      "serviceServers": [],
+      "subscribes": [
+        "/humans/voices/*/speech",
+        "/humans/voices/tracked"
+      ]
+    },
+    {
+      "actionClients": [],
+      "actionServers": [],
+      "contracts": [
+        "/skill/do_led_effect",
+        "/skill/look_at",
+        "/skill/set_expression"
+      ],
+      "files": [],
+      "name": "interaction_skills",
+      "nodeNames": [],
+      "publishes": [],
+      "root": "src/interaction_skills",
+      "serviceClients": [],
+      "serviceServers": [],
+      "subscribes": []
+    },
+    {
+      "actionClients": [],
+      "actionServers": [],
+      "contracts": [
+        "/kb/query",
+        "/kb/revise"
+      ],
+      "files": [
+        "src/kb_skills/kb_skills/__init__.py",
+        "src/kb_skills/kb_skills/intent_labels.py",
+        "src/kb_skills/kb_skills/mutation_client.py",
+        "src/kb_skills/kb_skills/query_client.py",
+        "src/kb_skills/setup.py"
+      ],
+      "name": "kb_skills",
+      "nodeNames": [],
+      "publishes": [],
+      "root": "src/kb_skills",
+      "serviceClients": [
+        "/kb/query",
+        "/kb/revise"
+      ],
+      "serviceServers": [],
+      "subscribes": []
+    },
+    {
+      "actionClients": [],
+      "actionServers": [],
+      "contracts": [],
+      "files": [
+        "ref_src/knowledge_sources/knowledge_core/examples/kb_events_ros.py",
+        "ref_src/knowledge_sources/knowledge_core/launch/knowledge_core.launch.py",
+        "ref_src/knowledge_sources/knowledge_core/launch/knowledge_viewer.launch.py",
+        "ref_src/knowledge_sources/knowledge_core/setup.py",
+        "ref_src/knowledge_sources/knowledge_core/src/knowledge_core/__init__.py",
+        "ref_src/knowledge_sources/knowledge_core/src/knowledge_core/ansistrm.py",
+        "ref_src/knowledge_sources/knowledge_core/src/knowledge_core/api/__init__.py",
+        "ref_src/knowledge_sources/knowledge_core/src/knowledge_core/exceptions.py",
+        "ref_src/knowledge_sources/knowledge_core/src/knowledge_core/helpers.py",
+        "ref_src/knowledge_sources/knowledge_core/src/knowledge_core/kb.py",
+        "ref_src/knowledge_sources/knowledge_core/src/knowledge_core/knowledge_core_ros.py"
+      ],
+      "name": "knowledge_core",
+      "nodeNames": [
+        "knowledge_core",
+        "knowledge_viewer"
+      ],
+      "publishes": [
+        "/diagnostics",
+        "/kb/active_concepts"
+      ],
+      "root": "ref_src/knowledge_sources/knowledge_core",
+      "serviceClients": [],
+      "serviceServers": [
+        "/kb/about",
+        "/kb/details",
+        "/kb/events",
+        "/kb/label",
+        "/kb/lookup",
+        "/kb/manage",
+        "/kb/query",
+        "/kb/revise",
+        "/kb/sparql"
+      ],
+      "subscribes": [
+        "/kb/active_concepts",
+        "/kb/add_fact",
+        "/kb/remove_fact"
+      ]
+    },
+    {
+      "actionClients": [],
+      "actionServers": [],
+      "contracts": [
+        "/skill/execute_cartesian_trajectory",
+        "/skill/execute_joint_trajectory"
+      ],
+      "files": [],
+      "name": "motions_skills",
+      "nodeNames": [],
+      "publishes": [],
+      "root": "src/motions_skills",
+      "serviceClients": [],
+      "serviceServers": [],
+      "subscribes": []
+    },
+    {
+      "actionClients": [],
+      "actionServers": [],
+      "contracts": [],
+      "files": [
+        "src/nao_chatbot/launch/nao_chatbot_asr_only.launch.py",
+        "src/nao_chatbot/launch/nao_chatbot_planner_local.launch.py",
+        "src/nao_chatbot/launch/nao_chatbot_robot.launch.py",
+        "src/nao_chatbot/launch/nao_chatbot_robot_asr.launch.py",
+        "src/nao_chatbot/launch/nao_chatbot_sim.launch.py",
+        "src/nao_chatbot/launch/nao_chatbot_sim_asr.launch.py",
+        "src/nao_chatbot/nao_chatbot/__init__.py",
+        "src/nao_chatbot/nao_chatbot/asr_push_to_talk_cli.py",
+        "src/nao_chatbot/nao_chatbot/interaction_sim_support.py",
+        "src/nao_chatbot/nao_chatbot/robot_speech_debug.py",
+        "src/nao_chatbot/nao_chatbot/speech_debug_labels.py",
+        "src/nao_chatbot/nao_chatbot/stack_launch.py",
+        "src/nao_chatbot/setup.py"
+      ],
+      "name": "nao_chatbot",
+      "nodeNames": [
+        "robot_speech_debug"
+      ],
+      "publishes": [],
+      "root": "src/nao_chatbot",
+      "serviceClients": [],
+      "serviceServers": [],
+      "subscribes": [
+        "/debug/nao_say/speech",
+        "/dialogue_manager/closed_captions"
+      ]
+    },
+    {
+      "actionClients": [],
+      "actionServers": [
+        "/skill/look_at"
+      ],
+      "contracts": [],
+      "files": [
+        "src/nao_look_at/launch/nao_look_at.launch.py",
+        "src/nao_look_at/nao_look_at/__init__.py",
+        "src/nao_look_at/nao_look_at/skill_impl.py",
+        "src/nao_look_at/nao_look_at/start_skill.py",
+        "src/nao_look_at/setup.py"
+      ],
+      "name": "nao_look_at",
+      "nodeNames": [
+        "nao_look_at"
+      ],
+      "publishes": [
+        "/diagnostics",
+        "/joint_angles"
+      ],
+      "root": "src/nao_look_at",
+      "serviceClients": [],
+      "serviceServers": [],
+      "subscribes": []
+    },
+    {
+      "actionClients": [
+        "/nao/say",
+        "/skill/do_head_motion",
+        "/skill/look_at",
+        "/skill/replay_motion"
+      ],
+      "actionServers": [],
+      "contracts": [],
+      "files": [
+        "src/nao_orchestrator/launch/nao_orchestrator.launch.py",
+        "src/nao_orchestrator/nao_orchestrator/__init__.py",
+        "src/nao_orchestrator/nao_orchestrator/intent_rules.py",
+        "src/nao_orchestrator/nao_orchestrator/orchestrator.py",
+        "src/nao_orchestrator/nao_orchestrator/run_app.py",
+        "src/nao_orchestrator/setup.py"
+      ],
+      "name": "nao_orchestrator",
+      "nodeNames": [
+        "nao_orchestrator"
+      ],
+      "publishes": [
+        "/chatbot/posture_command",
+        "/diagnostics",
+        "/joint_angles",
+        "/planner/execution_feedback"
+      ],
+      "root": "src/nao_orchestrator",
+      "serviceClients": [],
+      "serviceServers": [],
+      "subscribes": [
+        "/chatbot/intent",
+        "/intents"
+      ]
+    },
+    {
+      "actionClients": [],
+      "actionServers": [
+        "/skill/do_head_motion",
+        "/skill/do_posture",
+        "/skill/replay_motion"
+      ],
+      "contracts": [],
+      "files": [
+        "src/nao_replay_motion/launch/nao_replay_motion.launch.py",
+        "src/nao_replay_motion/nao_replay_motion/__init__.py",
+        "src/nao_replay_motion/nao_replay_motion/head_motion_skill_client.py",
+        "src/nao_replay_motion/nao_replay_motion/head_motion_skill_server.py",
+        "src/nao_replay_motion/nao_replay_motion/replay_motion_client.py",
+        "src/nao_replay_motion/nao_replay_motion/replay_motion_skill_server.py"
+      ],
+      "name": "nao_replay_motion",
+      "nodeNames": [
+        "head_motion_skill_server",
+        "nao_posture_bridge",
+        "replay_motion_skill_server"
+      ],
+      "publishes": [
+        "/chatbot/posture_command",
+        "/joint_angles"
+      ],
+      "root": "src/nao_replay_motion",
+      "serviceClients": [],
+      "serviceServers": [],
+      "subscribes": []
+    },
+    {
+      "actionClients": [
+        "/debug/say"
+      ],
+      "actionServers": [
+        "/nao/say",
+        "/tts_engine/tts"
+      ],
+      "contracts": [
+        "/nao/say"
+      ],
+      "files": [
+        "src/nao_say_skill/launch/nao_say_skill.launch.py",
+        "src/nao_say_skill/nao_say_skill/__init__.py",
+        "src/nao_say_skill/nao_say_skill/skill_impl.py",
+        "src/nao_say_skill/nao_say_skill/start_skill.py",
+        "src/nao_say_skill/setup.py"
+      ],
+      "name": "nao_say_skill",
+      "nodeNames": [
+        "nao_say_skill"
+      ],
+      "publishes": [
+        "/debug/nao_say/speech",
+        "/diagnostics",
+        "/speech"
+      ],
+      "root": "src/nao_say_skill",
+      "serviceClients": [],
+      "serviceServers": [],
+      "subscribes": []
+    },
+    {
+      "actionClients": [],
+      "actionServers": [],
+      "contracts": [],
+      "files": [
+        "src/nao_scene_grounding/nao_scene_grounding/__init__.py",
+        "src/nao_scene_grounding/nao_scene_grounding/detector_adapters.py",
+        "src/nao_scene_grounding/nao_scene_grounding/identity_matching.py",
+        "src/nao_scene_grounding/nao_scene_grounding/scene_grounding_node.py",
+        "src/nao_scene_grounding/setup.py"
+      ],
+      "name": "nao_scene_grounding",
+      "nodeNames": [
+        "nao_scene_grounding"
+      ],
+      "publishes": [
+        "/nao_scene_grounding/summary"
+      ],
+      "root": "src/nao_scene_grounding",
+      "serviceClients": [],
+      "serviceServers": [],
+      "subscribes": [
+        "/detected_objects"
+      ]
+    },
+    {
+      "actionClients": [],
+      "actionServers": [],
+      "contracts": [
+        "/skill/do_head_motion",
+        "/skill/do_posture",
+        "/skill/replay_motion"
+      ],
+      "files": [],
+      "name": "nao_skills",
+      "nodeNames": [],
+      "publishes": [],
+      "root": "src/nao_skills",
+      "serviceClients": [],
+      "serviceServers": [],
+      "subscribes": []
+    },
+    {
+      "actionClients": [],
+      "actionServers": [],
+      "contracts": [],
+      "files": [
+        "src/planner_llm/planner_llm/__init__.py",
+        "src/planner_llm/planner_llm/fixture_publisher.py",
+        "src/planner_llm/planner_llm/planner_engine.py",
+        "src/planner_llm/planner_llm/planner_node.py",
+        "src/planner_llm/planner_llm/providers.py",
+        "src/planner_llm/setup.py"
+      ],
+      "name": "planner_llm",
+      "nodeNames": [
+        "planner_fixture_publisher",
+        "planner_llm"
+      ],
+      "publishes": [
+        "/intents"
+      ],
+      "root": "src/planner_llm",
+      "serviceClients": [],
+      "serviceServers": [],
+      "subscribes": [
+        "/planner/execution_feedback",
+        "/planner/request",
+        "/world_model/enriched_snapshot",
+        "/world_model/enriched_text"
+      ]
+    },
+    {
+      "actionClients": [],
+      "actionServers": [],
+      "contracts": [],
+      "files": [
+        "src/simple_audio_capture/launch/audio_capture.launch.py",
+        "src/simple_audio_capture/setup.py",
+        "src/simple_audio_capture/simple_audio_capture/__init__.py",
+        "src/simple_audio_capture/simple_audio_capture/audio_capture_node.py"
+      ],
+      "name": "simple_audio_capture",
+      "nodeNames": [
+        "simple_audio_capture"
+      ],
+      "publishes": [
+        "/audio",
+        "/audio_info",
+        "/audio_stamped"
+      ],
+      "root": "src/simple_audio_capture",
+      "serviceClients": [],
+      "serviceServers": [],
+      "subscribes": []
+    }
+  ]
+}

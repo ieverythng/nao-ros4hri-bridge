@@ -1,0 +1,17 @@
+.git/
+**/.git/
+.gitnexus/
+.venv/
+build/
+install/
+log/
+local_build/
+ref_src/**/.git/
+src/**/.git/
+**/.pytest_cache/
+**/__pycache__/
+**/*.pyc
+docker/*.tar.gz
+docker/keys/
+.cache-pre-commit/
+.cursor/
