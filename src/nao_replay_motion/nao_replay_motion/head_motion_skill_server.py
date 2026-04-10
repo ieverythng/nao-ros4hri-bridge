@@ -12,12 +12,37 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 
-from nao_skills.action import DoHeadMotion
+try:
+    from nao_skills.action import DoHeadMotion
+except ImportError:  # pragma: no cover - import-light unit tests
+    class DoHeadMotion:  # type: ignore[no-redef]
+        class Goal:
+            def __init__(self) -> None:
+                self.yaw = 0.0
+                self.pitch = 0.0
+                self.speed = 0.0
+                self.relative = False
+
+        class Feedback:
+            def __init__(self) -> None:
+                self.status = ""
+                self.progress = 0.0
+
+        class Result:
+            def __init__(self) -> None:
+                self.success = False
+                self.message = ""
+                self.duration = 0.0
 
 try:
     from naoqi_bridge_msgs.msg import JointAnglesWithSpeed
 except ImportError:  # pragma: no cover - depends on runtime environment
     JointAnglesWithSpeed = None
+
+try:
+    from sensor_msgs.msg import JointState
+except ImportError:  # pragma: no cover - depends on runtime environment
+    JointState = None
 
 
 class HeadMotionSkillServer(Node):
@@ -35,7 +60,11 @@ class HeadMotionSkillServer(Node):
         self.declare_parameter("pitch_min", -0.6720)
         self.declare_parameter("pitch_max", 0.5149)
         self.declare_parameter("joint_angles_topic", "/joint_angles")
+        self.declare_parameter("joint_states_topic", "/joint_states")
         self.declare_parameter("require_joint_angles_subscribers", False)
+        self.declare_parameter("joint_state_wait_sec", 1.0)
+        self.declare_parameter("convergence_timeout_sec", 3.0)
+        self.declare_parameter("convergence_tolerance_rad", 0.08)
 
         self.action_name = str(self.get_parameter("action_name").value)
         self.default_speed = float(self.get_parameter("default_speed").value)
@@ -44,19 +73,38 @@ class HeadMotionSkillServer(Node):
         self.pitch_min = float(self.get_parameter("pitch_min").value)
         self.pitch_max = float(self.get_parameter("pitch_max").value)
         self.joint_angles_topic = str(self.get_parameter("joint_angles_topic").value)
+        self.joint_states_topic = str(self.get_parameter("joint_states_topic").value)
         self.require_joint_angles_subscribers = bool(
             self.get_parameter("require_joint_angles_subscribers").value
         )
+        self.joint_state_wait_sec = max(
+            0.0, float(self.get_parameter("joint_state_wait_sec").value)
+        )
+        self.convergence_timeout_sec = max(
+            0.1, float(self.get_parameter("convergence_timeout_sec").value)
+        )
+        self.convergence_tolerance_rad = max(
+            1e-3, float(self.get_parameter("convergence_tolerance_rad").value)
+        )
 
-        if JointAnglesWithSpeed is None:
+        if JointAnglesWithSpeed is None or JointState is None:
             raise RuntimeError(
-                "naoqi_bridge_msgs.msg.JointAnglesWithSpeed is unavailable"
+                "HeadMotionSkillServer requires JointAnglesWithSpeed and JointState messages"
             )
 
         self._execution_lock = threading.Lock()
+        self._joint_state_lock = threading.Lock()
+        self._head_joint_positions: dict[str, float] = {}
+        self._head_joint_state_event = threading.Event()
         self._callback_group = ReentrantCallbackGroup()
         self._joint_angles_publisher = self.create_publisher(
             JointAnglesWithSpeed, self.joint_angles_topic, 10
+        )
+        self._joint_state_subscription = self.create_subscription(
+            JointState,
+            self.joint_states_topic,
+            self._on_joint_state,
+            10,
         )
         self._action_server = ActionServer(
             self,
@@ -133,8 +181,13 @@ class HeadMotionSkillServer(Node):
         relative = bool(goal.relative)
         speed = self._resolve_speed(goal.speed)
         validation_error = self._validate_angles(yaw, pitch, relative=relative)
+        self.get_logger().info(
+            "HEAD_MOTION goal received | yaw=%.3f pitch=%.3f speed=%.3f relative=%s"
+            % (yaw, pitch, speed or -1.0, relative)
+        )
 
         if speed is None or validation_error:
+            self.get_logger().warn("HEAD_MOTION rejected before execution | %s" % (validation_error or "Invalid speed"))
             goal_handle.abort()
             reason = validation_error or "Invalid speed"
             return self._result(
@@ -150,6 +203,35 @@ class HeadMotionSkillServer(Node):
                 time.monotonic() - start_time,
             )
 
+        current_state = self._wait_for_head_state(self.joint_state_wait_sec)
+        if current_state is None:
+            goal_handle.abort()
+            reason = (
+                f"No recent head joint state available on '{self.joint_states_topic}'"
+            )
+            self.get_logger().warn("HEAD_MOTION failed | %s" % reason)
+            return self._result(False, reason, time.monotonic() - start_time)
+
+        target_yaw, target_pitch = self._resolve_target_angles(
+            yaw=yaw,
+            pitch=pitch,
+            relative=relative,
+            current_state=current_state,
+        )
+        target_validation_error = self._validate_angles(
+            target_yaw,
+            target_pitch,
+            relative=False,
+        )
+        if target_validation_error:
+            goal_handle.abort()
+            self.get_logger().warn("HEAD_MOTION failed | %s" % target_validation_error)
+            return self._result(
+                False,
+                target_validation_error,
+                time.monotonic() - start_time,
+            )
+
         self._publish_feedback(goal_handle, "preparing", 0.0)
         if goal_handle.is_cancel_requested:
             goal_handle.canceled()
@@ -157,20 +239,126 @@ class HeadMotionSkillServer(Node):
 
         self._publish_feedback(goal_handle, "executing", 0.4)
         self._publish_joint_angles(yaw=yaw, pitch=pitch, speed=speed, relative=relative)
+        self.get_logger().info(
+            "HEAD_MOTION command published | target_yaw=%.3f target_pitch=%.3f speed=%.3f relative=%s"
+            % (target_yaw, target_pitch, speed, relative)
+        )
 
         if goal_handle.is_cancel_requested:
             duration = time.monotonic() - start_time
             goal_handle.canceled()
             return self._result(False, "Cancelled after command dispatch", duration)
 
+        if not self._wait_for_convergence(
+            goal_handle,
+            target_yaw=target_yaw,
+            target_pitch=target_pitch,
+            timeout_sec=self.convergence_timeout_sec,
+        ):
+            duration = time.monotonic() - start_time
+            if goal_handle.is_cancel_requested:
+                goal_handle.canceled()
+                return self._result(False, "Cancelled during convergence wait", duration)
+            latest_state = self._current_head_state() or {}
+            reason = (
+                "Head motion timed out before convergence "
+                f"(target_yaw={target_yaw:.3f}, target_pitch={target_pitch:.3f}, "
+                f"latest_yaw={latest_state.get('HeadYaw', float('nan')):.3f}, "
+                f"latest_pitch={latest_state.get('HeadPitch', float('nan')):.3f})"
+            )
+            self.get_logger().warn("HEAD_MOTION failed | %s" % reason)
+            goal_handle.abort()
+            return self._result(False, reason, duration)
+
         self._publish_feedback(goal_handle, "completing", 1.0)
         duration = time.monotonic() - start_time
         goal_handle.succeed()
         mode = "relative" if relative else "absolute"
+        self.get_logger().info(
+            "HEAD_MOTION converged | target_yaw=%.3f target_pitch=%.3f duration=%.3fs"
+            % (target_yaw, target_pitch, duration)
+        )
         return self._result(
             True,
-            f"Published head motion to '{self.joint_angles_topic}' ({mode})",
+            f"Head motion converged on '{self.joint_angles_topic}' ({mode})",
             duration,
+        )
+
+    def _on_joint_state(self, msg: JointState) -> None:
+        updated = False
+        with self._joint_state_lock:
+            for index, joint_name in enumerate(msg.name):
+                if joint_name not in self._HEAD_JOINTS or index >= len(msg.position):
+                    continue
+                self._head_joint_positions[joint_name] = float(msg.position[index])
+                updated = True
+        if updated:
+            self._head_joint_state_event.set()
+
+    def _current_head_state(self) -> Optional[dict[str, float]]:
+        with self._joint_state_lock:
+            if any(joint_name not in self._head_joint_positions for joint_name in self._HEAD_JOINTS):
+                return None
+            return {
+                joint_name: float(self._head_joint_positions[joint_name])
+                for joint_name in self._HEAD_JOINTS
+            }
+
+    def _wait_for_head_state(self, timeout_sec: float) -> Optional[dict[str, float]]:
+        deadline = time.monotonic() + max(0.0, float(timeout_sec))
+        while True:
+            current_state = self._current_head_state()
+            if current_state is not None:
+                return current_state
+            remaining = deadline - time.monotonic()
+            if remaining <= 0.0:
+                return None
+            self._head_joint_state_event.wait(timeout=min(0.1, remaining))
+            self._head_joint_state_event.clear()
+
+    def _resolve_target_angles(
+        self,
+        *,
+        yaw: float,
+        pitch: float,
+        relative: bool,
+        current_state: dict[str, float],
+    ) -> tuple[float, float]:
+        if not relative:
+            return float(yaw), float(pitch)
+        return (
+            float(current_state.get("HeadYaw", 0.0)) + float(yaw),
+            float(current_state.get("HeadPitch", 0.0)) + float(pitch),
+        )
+
+    def _wait_for_convergence(
+        self,
+        goal_handle,
+        *,
+        target_yaw: float,
+        target_pitch: float,
+        timeout_sec: float,
+    ) -> bool:
+        deadline = time.monotonic() + max(0.0, float(timeout_sec))
+        while time.monotonic() <= deadline:
+            if goal_handle.is_cancel_requested:
+                return False
+            if self._has_reached_target(target_yaw, target_pitch):
+                return True
+            remaining = deadline - time.monotonic()
+            if remaining <= 0.0:
+                break
+            self._head_joint_state_event.wait(timeout=min(0.1, remaining))
+            self._head_joint_state_event.clear()
+        return self._has_reached_target(target_yaw, target_pitch)
+
+    def _has_reached_target(self, target_yaw: float, target_pitch: float) -> bool:
+        current_state = self._current_head_state()
+        if current_state is None:
+            return False
+        return (
+            abs(current_state["HeadYaw"] - float(target_yaw)) <= self.convergence_tolerance_rad
+            and abs(current_state["HeadPitch"] - float(target_pitch)) <= self.convergence_tolerance_rad
         )
 
     def _publish_joint_angles(self, *, yaw: float, pitch: float, speed: float, relative: bool) -> None:

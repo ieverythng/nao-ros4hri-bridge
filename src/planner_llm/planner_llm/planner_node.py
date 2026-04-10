@@ -76,7 +76,10 @@ class PlannerNode(Node):
 
         provider_config = self._provider_config()
         provider = build_provider(provider_config)
-        skill_registry = SkillRegistry.load(self._text_parameter('skill_registry_path'))
+        skill_registry = SkillRegistry.load(
+            self._text_parameter('skill_registry_path'),
+            logger=self.get_logger(),
+        )
         engine = PlannerEngine(
             provider,
             skill_registry,

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+import threading
 import time
 
 from communication_skills.action import Say
@@ -60,6 +61,13 @@ class _RuntimeStats:
     last_plan_status: str = ''
 
 
+@dataclass(slots=True)
+class _ActionExecutionResult:
+    accepted: bool
+    success: bool
+    reason: str = ''
+
+
 class NaoOrchestrator(Node):
     """Dispatch ROS4HRI intents to NAO-specific skill endpoints."""
 
@@ -73,14 +81,18 @@ class NaoOrchestrator(Node):
         self.declare_parameter('nao_say_action', '/nao/say')
         self.declare_parameter('dispatch_speech_intents', False)
         self.declare_parameter('nao_say_wait_sec', 0.2)
+        self.declare_parameter('nao_say_result_timeout_sec', 8.0)
         self.declare_parameter('replay_motion_action', '/skill/replay_motion')
         self.declare_parameter('replay_motion_speed', 0.8)
         self.declare_parameter('replay_motion_wait_sec', 0.2)
+        self.declare_parameter('replay_motion_result_timeout_sec', 12.0)
         self.declare_parameter('head_motion_action', '/skill/do_head_motion')
         self.declare_parameter('head_motion_speed', 0.25)
         self.declare_parameter('head_motion_wait_sec', 0.2)
+        self.declare_parameter('head_motion_result_timeout_sec', 6.0)
         self.declare_parameter('look_at_action', '/skill/look_at')
         self.declare_parameter('look_at_wait_sec', 0.2)
+        self.declare_parameter('look_at_result_timeout_sec', 8.0)
         self.declare_parameter('posture_command_topic', '/chatbot/posture_command')
         self.declare_parameter('fallback_to_posture_topic', True)
         self.declare_parameter('head_motion_joint_angles_topic', '/joint_angles')
@@ -102,6 +114,10 @@ class NaoOrchestrator(Node):
             0.0,
             float(self.get_parameter('nao_say_wait_sec').value),
         )
+        self.nao_say_result_timeout_sec = max(
+            0.1,
+            float(self.get_parameter('nao_say_result_timeout_sec').value),
+        )
         self.replay_motion_action = str(self.get_parameter('replay_motion_action').value)
         self.replay_motion_speed = float(
             self.get_parameter('replay_motion_speed').value
@@ -109,6 +125,10 @@ class NaoOrchestrator(Node):
         self.replay_motion_wait_sec = max(
             0.0,
             float(self.get_parameter('replay_motion_wait_sec').value),
+        )
+        self.replay_motion_result_timeout_sec = max(
+            0.1,
+            float(self.get_parameter('replay_motion_result_timeout_sec').value),
         )
         self.head_motion_action = str(self.get_parameter('head_motion_action').value)
         self.head_motion_speed = float(
@@ -118,10 +138,18 @@ class NaoOrchestrator(Node):
             0.0,
             float(self.get_parameter('head_motion_wait_sec').value),
         )
+        self.head_motion_result_timeout_sec = max(
+            0.1,
+            float(self.get_parameter('head_motion_result_timeout_sec').value),
+        )
         self.look_at_action = str(self.get_parameter('look_at_action').value)
         self.look_at_wait_sec = max(
             0.0,
             float(self.get_parameter('look_at_wait_sec').value),
+        )
+        self.look_at_result_timeout_sec = max(
+            0.1,
+            float(self.get_parameter('look_at_result_timeout_sec').value),
         )
         self.posture_command_topic = str(
             self.get_parameter('posture_command_topic').value
@@ -456,75 +484,21 @@ class NaoOrchestrator(Node):
             plan=plan,
             plan_context=plan_context,
         )
-
-        executed_any = False
-        for step in plan:
-            self._publish_plan_feedback(
-                intent_name=intent_name,
-                source=source,
-                plan_context=plan_context,
-                status='running',
-                event_type='step_started',
-                step=step,
-            )
-            step_ok, reason = self._dispatch_plan_step(step, fallback_data=data)
-            if step_ok:
-                executed_any = True
-                self._publish_plan_feedback(
-                    intent_name=intent_name,
-                    source=source,
-                    plan_context=plan_context,
-                    status='running',
-                    event_type='step_succeeded',
-                    step=step,
-                )
-                continue
-
-            self._stats.last_route = 'planned:failed'
-            self._stats.plans_failed += 1
-            self._stats.last_plan_status = 'failed'
-            self._publish_plan_feedback(
-                intent_name=intent_name,
-                source=source,
-                plan_context=plan_context,
-                status='failed',
-                event_type='step_failed',
-                reason=reason,
-                step=step,
-                blocking=True,
-                unmet_preconditions=list(step.get('requires', [])),
-                needs_user_input=str(step.get('on_failure', '')).strip().lower() in ('ask_user', 'clarify'),
-            )
-            self.get_logger().warn(
-                'Planned intent step failed | intent=%s source=%s plan_id=%s step=%s reason=%s'
-                % (intent_name, source, plan_id, step, reason)
-            )
-            return False
-
-        if executed_any:
-            self._stats.last_route = 'planned'
-            self._stats.plans_succeeded += 1
-            self._stats.last_plan_status = 'completed'
-            self._publish_plan_feedback(
-                intent_name=intent_name,
-                source=source,
-                plan_context=plan_context,
-                status='completed',
-                event_type='plan_completed',
-            )
-            return True
-        self._stats.plans_failed += 1
-        self._stats.last_plan_status = 'empty'
-        self._publish_plan_feedback(
-            intent_name=intent_name,
-            source=source,
-            plan_context=plan_context,
-            status='failed',
-            event_type='plan_invalid',
-            reason='plan contained no executable steps',
-            blocking=True,
+        self._stats.last_route = 'planned:running'
+        self._stats.last_plan_status = 'running'
+        worker = threading.Thread(
+            target=self._execute_planned_intent,
+            kwargs={
+                'intent_name': intent_name,
+                'data': dict(data),
+                'plan': list(plan),
+                'plan_context': dict(plan_context),
+                'source': source,
+            },
+            daemon=True,
         )
-        return False
+        worker.start()
+        return True
 
     def _maybe_dispatch_acknowledgement(
         self,
@@ -554,47 +528,147 @@ class NaoOrchestrator(Node):
         if self._dispatch_say(ack_text, data):
             self._stats.dispatched_say += 1
 
-    def _dispatch_plan_step(self, step: dict, fallback_data: dict) -> tuple[bool, str]:
+    def _execute_planned_intent(
+        self,
+        *,
+        intent_name: str,
+        data: dict,
+        plan: list[dict],
+        plan_context: dict,
+        source: str,
+    ) -> None:
+        """Execute a validated plan in a background worker so action results can be awaited."""
+        plan_id = self._resolve_plan_id(plan_context)
+        executed_any = False
+
+        for step in plan:
+            step_started = False
+
+            def _mark_step_started() -> None:
+                nonlocal step_started
+                if step_started:
+                    return
+                step_started = True
+                self._publish_plan_feedback(
+                    intent_name=intent_name,
+                    source=source,
+                    plan_context=plan_context,
+                    status='running',
+                    event_type='step_started',
+                    step=step,
+                )
+
+            step_ok, reason = self._dispatch_plan_step(
+                step,
+                fallback_data=data,
+                on_started=_mark_step_started,
+            )
+            if step_ok:
+                executed_any = True
+                if not step_started:
+                    _mark_step_started()
+                self._publish_plan_feedback(
+                    intent_name=intent_name,
+                    source=source,
+                    plan_context=plan_context,
+                    status='running',
+                    event_type='step_succeeded',
+                    step=step,
+                )
+                continue
+
+            self._stats.last_route = 'planned:failed'
+            self._stats.plans_failed += 1
+            self._stats.last_plan_status = 'failed'
+            self._publish_plan_feedback(
+                intent_name=intent_name,
+                source=source,
+                plan_context=plan_context,
+                status='failed',
+                event_type='step_failed',
+                reason=reason,
+                step=step,
+                blocking=True,
+                unmet_preconditions=list(step.get('requires', [])),
+                needs_user_input=str(step.get('on_failure', '')).strip().lower() in (
+                    'ask_user',
+                    'clarify',
+                ),
+            )
+            self.get_logger().warn(
+                'Planned intent step failed | intent=%s source=%s plan_id=%s step=%s reason=%s'
+                % (intent_name, source, plan_id, step, reason)
+            )
+            return
+
+        if executed_any:
+            self._stats.last_route = 'planned'
+            self._stats.plans_succeeded += 1
+            self._stats.last_plan_status = 'completed'
+            self._publish_plan_feedback(
+                intent_name=intent_name,
+                source=source,
+                plan_context=plan_context,
+                status='completed',
+                event_type='plan_completed',
+            )
+            return
+
+        self._stats.plans_failed += 1
+        self._stats.last_plan_status = 'empty'
+        self._publish_plan_feedback(
+            intent_name=intent_name,
+            source=source,
+            plan_context=plan_context,
+            status='failed',
+            event_type='plan_invalid',
+            reason='plan contained no executable steps',
+            blocking=True,
+        )
+
+    def _dispatch_plan_step(
+        self,
+        step: dict,
+        fallback_data: dict,
+        *,
+        on_started=None,
+    ) -> tuple[bool, str]:
         """Execute one step from the optional structured `Intent.data.plan`."""
         step_type = str(step.get('type', '')).strip().lower()
         step_name = str(step.get('name', '')).strip().lower()
         step_args = dict(step.get('args', {}))
 
         if step_type == 'noop':
+            if on_started is not None:
+                on_started()
             return True, ''
 
         if step_type == 'say':
-            text = resolve_say_text(
-                intent_name=Intent.SAY,
-                data={
-                    'object': step_args.get('text', step_args.get('object', '')),
-                    'suggested_response': step_args.get('text', ''),
-                    'recipient': step_args.get(
-                        'recipient',
-                        fallback_data.get('recipient', ''),
-                    ),
-                },
-                default_greeting=self.default_greeting,
+            return self._execute_say_plan_step(
+                step_args,
+                fallback_data,
+                on_started=on_started,
             )
-            if self._dispatch_say(text, {**fallback_data, **step_args}):
-                self._stats.dispatched_say += 1
-                return True, ''
-            return False, 'say dispatch failed'
 
         if step_type == 'look_at':
-            return self._dispatch_planned_look_at(step_name, step_args)
+            return self._dispatch_planned_look_at(
+                step_name,
+                step_args,
+                on_started=on_started,
+            )
 
         if step_type == 'skill':
             if step_name in ('perform_motion', 'motion', ''):
-                dispatched, _route_name = self._dispatch_motion_payload(
+                return self._execute_motion_plan_step(
                     step_args,
-                    count_unsupported_failure=True,
+                    on_started=on_started,
                 )
-                if dispatched:
-                    return True, ''
-                return False, 'motion dispatch failed'
             if step_name == 'look_at':
-                return self._dispatch_planned_look_at(step_name, step_args)
+                return self._dispatch_planned_look_at(
+                    step_name,
+                    step_args,
+                    on_started=on_started,
+                )
 
         self._stats.dispatch_failures += 1
         self.get_logger().warn('Unsupported planned step: %s' % step)
@@ -604,13 +678,15 @@ class NaoOrchestrator(Node):
         self,
         step_name: str,
         step_args: dict,
+        *,
+        on_started=None,
     ) -> tuple[bool, str]:
         """Map a planned look-at step onto reset or target-frame dispatch."""
         policy = str(
             step_args.get('policy', step_args.get('object', step_name))
         ).strip().lower()
         if policy in ('reset', 'look_at_reset'):
-            if self._dispatch_look_at_reset():
+            if self._execute_look_at_reset_step(on_started=on_started):
                 self._stats.dispatched_look_at += 1
                 return True, ''
             return False, 'look_at reset dispatch failed'
@@ -625,16 +701,384 @@ class NaoOrchestrator(Node):
             )
             return False, 'look_at step missing target frame or reset policy'
 
-        if self._dispatch_look_at_target(
+        if self._execute_look_at_target_step(
             frame_id=target_frame,
             x_value=step_args.get('x', 0.0),
             y_value=step_args.get('y', 0.0),
             z_value=step_args.get('z', 0.0),
             policy=policy,
+            on_started=on_started,
         ):
             self._stats.dispatched_look_at += 1
             return True, ''
         return False, 'look_at target dispatch failed'
+
+    def _execute_say_plan_step(
+        self,
+        step_args: dict,
+        fallback_data: dict,
+        *,
+        on_started=None,
+    ) -> tuple[bool, str]:
+        text = resolve_say_text(
+            intent_name=Intent.SAY,
+            data={
+                'object': step_args.get('text', step_args.get('object', '')),
+                'suggested_response': step_args.get('text', ''),
+                'recipient': step_args.get(
+                    'recipient',
+                    fallback_data.get('recipient', ''),
+                ),
+            },
+            default_greeting=self.default_greeting,
+        )
+        clean_text = str(text).strip()
+        if not clean_text:
+            self._stats.dispatch_failures += 1
+            return False, 'say dispatch failed: empty text'
+
+        goal = Say.Goal()
+        goal.input = clean_text
+        goal.person_id = str(
+            step_args.get('recipient', fallback_data.get('recipient', ''))
+        ).strip()
+        result = self._execute_action_step(
+            client=self._say_client,
+            goal=goal,
+            wait_sec=self.nao_say_wait_sec,
+            result_timeout_sec=self.nao_say_result_timeout_sec,
+            description='nao_say',
+            on_started=on_started,
+        )
+        if result.success:
+            self._stats.dispatched_say += 1
+            self.get_logger().info('ORCH SAY_DISPATCH | %s' % clean_text)
+            return True, ''
+        return False, result.reason or 'say dispatch failed'
+
+    def _execute_motion_plan_step(
+        self,
+        step_args: dict,
+        *,
+        on_started=None,
+    ) -> tuple[bool, str]:
+        route, resolved_payload = classify_motion_target(Intent.PERFORM_MOTION, step_args)
+        if route == 'replay_motion':
+            motion_name = resolved_payload['motion_name']
+            if self._execute_replay_motion_step(motion_name, on_started=on_started):
+                self._stats.dispatched_replay_motion += 1
+                return True, ''
+            return False, 'motion dispatch failed'
+
+        if route == 'head_motion':
+            if self._execute_head_motion_step(resolved_payload, on_started=on_started):
+                self._stats.dispatched_head_motion += 1
+                return True, ''
+            return False, 'motion dispatch failed'
+
+        if route == 'look_at_reset':
+            if self._execute_look_at_reset_step(on_started=on_started):
+                self._stats.dispatched_look_at += 1
+                return True, ''
+            return False, 'look_at reset dispatch failed'
+
+        self._stats.dispatch_failures += 1
+        self.get_logger().warn('Unsupported motion payload: %s' % step_args)
+        return False, 'unsupported motion payload'
+
+    def _execute_replay_motion_step(
+        self,
+        motion_name: str,
+        *,
+        on_started=None,
+    ) -> bool:
+        clean_motion = str(motion_name).strip()
+        if not clean_motion:
+            self._stats.dispatch_failures += 1
+            return False
+        goal = ReplayMotion.Goal()
+        goal.motion_name = clean_motion
+        goal.speed = float(self.replay_motion_speed)
+        result = self._execute_action_step(
+            client=self._replay_motion_client,
+            goal=goal,
+            wait_sec=self.replay_motion_wait_sec,
+            result_timeout_sec=self.replay_motion_result_timeout_sec,
+            description='replay_motion',
+            on_started=on_started,
+        )
+        if result.success:
+            self.get_logger().info('ORCH REPLAY_DISPATCH | %s' % clean_motion)
+            return True
+
+        if (
+            not result.accepted
+            and self.fallback_to_posture_topic
+            and self._posture_command_pub is not None
+        ):
+            fallback_command = posture_topic_fallback_for_motion(clean_motion)
+            if fallback_command:
+                if on_started is not None:
+                    on_started()
+                msg = String()
+                msg.data = fallback_command
+                self._posture_command_pub.publish(msg)
+                self.get_logger().warn(
+                    'ORCH REPLAY_TOPIC_FALLBACK | motion=%s command=%s topic=%s'
+                    % (
+                        clean_motion,
+                        fallback_command,
+                        self.posture_command_topic,
+                    )
+                )
+                return True
+        return False
+
+    def _execute_head_motion_step(
+        self,
+        payload: dict,
+        *,
+        on_started=None,
+    ) -> bool:
+        yaw = float(payload.get('yaw', 0.0))
+        pitch = float(payload.get('pitch', 0.0))
+        relative = bool(payload.get('relative', False))
+        goal = DoHeadMotion.Goal()
+        goal.yaw = yaw
+        goal.pitch = pitch
+        goal.speed = float(self.head_motion_speed)
+        goal.relative = relative
+        result = self._execute_action_step(
+            client=self._head_motion_client,
+            goal=goal,
+            wait_sec=self.head_motion_wait_sec,
+            result_timeout_sec=self.head_motion_result_timeout_sec,
+            description='head_motion',
+            on_started=on_started,
+        )
+        if result.success:
+            self.get_logger().info(
+                'ORCH HEAD_DISPATCH | yaw=%.3f pitch=%.3f relative=%s'
+                % (yaw, pitch, relative)
+            )
+            return True
+
+        if (
+            not result.accepted
+            and self.fallback_to_joint_angles_topic
+            and self._joint_angles_pub is not None
+        ):
+            if on_started is not None:
+                on_started()
+            msg = JointAnglesWithSpeed()
+            msg.header.stamp = self.get_clock().now().to_msg()
+            msg.joint_names = ['HeadYaw', 'HeadPitch']
+            msg.joint_angles = [yaw, pitch]
+            msg.speed = float(self.head_motion_speed)
+            msg.relative = 1 if relative else 0
+            self._joint_angles_pub.publish(msg)
+            self.get_logger().warn(
+                'ORCH HEAD_TOPIC_FALLBACK | yaw=%.3f pitch=%.3f topic=%s'
+                % (yaw, pitch, self.head_motion_joint_angles_topic)
+            )
+            return True
+        return False
+
+    def _execute_look_at_reset_step(self, *, on_started=None) -> bool:
+        goal = LookAt.Goal()
+        goal.policy = LookAt.Goal.RESET
+        result = self._execute_action_step(
+            client=self._look_at_client,
+            goal=goal,
+            wait_sec=self.look_at_wait_sec,
+            result_timeout_sec=self.look_at_result_timeout_sec,
+            description='look_at_reset',
+            on_started=on_started,
+        )
+        if result.success:
+            self.get_logger().info('ORCH LOOK_AT_DISPATCH | policy=reset')
+            return True
+
+        if not result.accepted:
+            self.get_logger().warn('look_at action server unavailable; falling back to head reset')
+            return self._execute_head_motion_step(
+                {
+                    'yaw': 0.0,
+                    'pitch': 0.0,
+                    'relative': False,
+                },
+                on_started=on_started,
+            )
+        return False
+
+    def _execute_look_at_target_step(
+        self,
+        *,
+        frame_id: str,
+        x_value,
+        y_value,
+        z_value,
+        policy: str = '',
+        on_started=None,
+    ) -> bool:
+        clean_frame = str(frame_id).strip()
+        if not clean_frame:
+            self._stats.dispatch_failures += 1
+            self.get_logger().warn('No target frame resolved for look_at dispatch')
+            return False
+
+        goal = LookAt.Goal()
+        goal.policy = str(policy).strip().lower()
+        target = PointStamped()
+        target.header.frame_id = clean_frame
+        target.point.x = float(x_value)
+        target.point.y = float(y_value)
+        target.point.z = float(z_value)
+        goal.target = target
+        result = self._execute_action_step(
+            client=self._look_at_client,
+            goal=goal,
+            wait_sec=self.look_at_wait_sec,
+            result_timeout_sec=self.look_at_result_timeout_sec,
+            description='look_at_target',
+            on_started=on_started,
+        )
+        if result.success:
+            self.get_logger().info(
+                'ORCH LOOK_AT_DISPATCH | policy=%s frame=%s x=%.3f y=%.3f z=%.3f'
+                % (
+                    goal.policy or 'track',
+                    clean_frame,
+                    float(target.point.x),
+                    float(target.point.y),
+                    float(target.point.z),
+                )
+            )
+            return True
+        return False
+
+    def _execute_action_step(
+        self,
+        *,
+        client,
+        goal,
+        wait_sec: float,
+        result_timeout_sec: float,
+        description: str,
+        on_started=None,
+    ) -> _ActionExecutionResult:
+        if client is None:
+            self._stats.dispatch_failures += 1
+            return _ActionExecutionResult(
+                accepted=False,
+                success=False,
+                reason='%s action client unavailable' % description,
+            )
+        if not client.wait_for_server(timeout_sec=wait_sec):
+            self._stats.dispatch_failures += 1
+            return _ActionExecutionResult(
+                accepted=False,
+                success=False,
+                reason='%s action server unavailable' % description,
+            )
+
+        acceptance_event = threading.Event()
+        result_event = threading.Event()
+        outcome = {
+            'accepted': False,
+            'success': False,
+            'reason': '%s result timed out' % description,
+        }
+
+        def _goal_response_callback(future) -> None:
+            try:
+                goal_handle = future.result()
+            except Exception as err:  # pragma: no cover - ROS action transport failure
+                outcome['reason'] = '%s goal response failed: %s' % (description, err)
+                acceptance_event.set()
+                result_event.set()
+                return
+
+            if goal_handle is None or not goal_handle.accepted:
+                outcome['reason'] = '%s goal rejected' % description
+                acceptance_event.set()
+                result_event.set()
+                return
+
+            outcome['accepted'] = True
+            acceptance_event.set()
+            if on_started is not None:
+                try:
+                    on_started()
+                except Exception:
+                    pass
+            result_future = goal_handle.get_result_async()
+            result_future.add_done_callback(_result_callback)
+
+        def _result_callback(future) -> None:
+            try:
+                wrapped_result = future.result()
+                action_result = getattr(wrapped_result, 'result', None)
+                success, reason = self._action_result_status(action_result)
+                outcome['success'] = success
+                outcome['reason'] = reason
+            except Exception as err:  # pragma: no cover - ROS action transport failure
+                outcome['success'] = False
+                outcome['reason'] = '%s result retrieval failed: %s' % (description, err)
+            finally:
+                result_event.set()
+
+        goal_future = client.send_goal_async(goal)
+        goal_future.add_done_callback(_goal_response_callback)
+
+        goal_response_timeout = max(float(wait_sec), 1.0)
+        if not acceptance_event.wait(timeout=goal_response_timeout):
+            self._stats.dispatch_failures += 1
+            return _ActionExecutionResult(
+                accepted=False,
+                success=False,
+                reason='%s goal response timed out' % description,
+            )
+        if not outcome['accepted']:
+            self._stats.dispatch_failures += 1
+            return _ActionExecutionResult(
+                accepted=False,
+                success=False,
+                reason=str(outcome['reason']).strip(),
+            )
+        if not result_event.wait(timeout=max(float(result_timeout_sec), 0.1)):
+            self._stats.dispatch_failures += 1
+            return _ActionExecutionResult(
+                accepted=True,
+                success=False,
+                reason='%s result timed out' % description,
+            )
+        if not outcome['success']:
+            self._stats.dispatch_failures += 1
+        return _ActionExecutionResult(
+            accepted=True,
+            success=bool(outcome['success']),
+            reason=str(outcome['reason']).strip(),
+        )
+
+    @staticmethod
+    def _action_result_status(action_result) -> tuple[bool, str]:
+        if action_result is None:
+            return False, 'action returned no result'
+        if hasattr(action_result, 'success'):
+            success = bool(getattr(action_result, 'success', False))
+            message = str(getattr(action_result, 'message', '')).strip()
+            if success:
+                return True, message
+            return False, message or 'action reported failure'
+        standard_result = getattr(action_result, 'result', None)
+        if standard_result is not None:
+            error_code = int(getattr(standard_result, 'error_code', 0))
+            error_msg = str(getattr(standard_result, 'error_msg', '')).strip()
+            if error_code == 0:
+                return True, error_msg
+            return False, error_msg or 'action failed with error code %d' % error_code
+        return True, ''
 
     def _resolve_plan_id(self, plan_context: dict) -> str:
         plan_id = str(plan_context.get('plan_id', '')).strip()

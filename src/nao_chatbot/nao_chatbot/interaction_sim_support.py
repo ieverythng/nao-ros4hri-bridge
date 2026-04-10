@@ -8,17 +8,27 @@ import os
 
 from ament_index_python.packages import PackageNotFoundError
 from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch.actions import EmitEvent
 from launch.actions import GroupAction
 from launch.actions import IncludeLaunchDescription
 from launch.actions import LogInfo
+from launch.actions import RegisterEventHandler
+from launch.actions import Shutdown
 from launch.conditions import IfCondition
+from launch.events import matches_action
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import PathJoinSubstitution
 from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
+from launch_pal import get_pal_configuration
+from launch_ros.actions import LifecycleNode
 from launch_ros.actions import Node
 from launch_ros.actions import SetRemap
+from launch_ros.event_handlers import OnStateTransition
+from launch_ros.events.lifecycle import ChangeState
 from launch_ros.substitutions import FindPackageShare
+from lifecycle_msgs.msg import Transition
 
 
 _PERCEPTION_PACKAGES = (
@@ -36,6 +46,10 @@ _TOOLS_PACKAGES = (
     "rosbridge_server",
     "ui_server",
 )
+_HRI_LOG_LEVELS_BY_PROFILE = {
+    "quiet": "warn",
+    "debug": "info",
+}
 
 
 # -----------------------------------------------------------------------------
@@ -95,6 +109,80 @@ def _include_python_launch(
     )
 
 
+def _planner_friendly_hri_log_level(context) -> str:
+    profile = str(
+        LaunchConfiguration("interaction_sim_hri_log_profile").perform(context)
+    ).strip().lower()
+    return _HRI_LOG_LEVELS_BY_PROFILE.get(profile, "warn")
+
+
+def _build_hri_lifecycle_actions(
+    *,
+    package_name: str,
+    node_name: str,
+    executable: str,
+    log_level: str,
+    shutdown_on_exit: bool = True,
+) -> list:
+    temp_ld = LaunchDescription()
+    config = get_pal_configuration(pkg=package_name, node=node_name, ld=temp_ld)
+    arguments = list(config["arguments"])
+    if log_level:
+        arguments.extend(["--ros-args", "--log-level", log_level])
+
+    lifecycle_kwargs = {
+        "package": package_name,
+        "executable": executable,
+        "namespace": "",
+        "name": node_name,
+        "parameters": config["parameters"],
+        "remappings": config["remappings"],
+        "arguments": arguments,
+        "output": "both",
+        "emulate_tty": True,
+    }
+    if shutdown_on_exit:
+        lifecycle_kwargs["on_exit"] = Shutdown()
+
+    node = LifecycleNode(**lifecycle_kwargs)
+    configure_event = EmitEvent(
+        event=ChangeState(
+            lifecycle_node_matcher=matches_action(node),
+            transition_id=Transition.TRANSITION_CONFIGURE,
+        )
+    )
+    activate_event = RegisterEventHandler(
+        OnStateTransition(
+            target_lifecycle_node=node,
+            goal_state="inactive",
+            entities=[
+                EmitEvent(
+                    event=ChangeState(
+                        lifecycle_node_matcher=matches_action(node),
+                        transition_id=Transition.TRANSITION_ACTIVATE,
+                    )
+                )
+            ],
+            handle_once=True,
+        )
+    )
+    analyzer = Node(
+        package="diagnostic_aggregator",
+        executable="add_analyzer",
+        namespace=package_name,
+        output="screen",
+        emulate_tty=True,
+        parameters=[
+            os.path.join(
+                get_package_share_directory(package_name),
+                "config",
+                f"{package_name}_analyzers.yaml",
+            )
+        ],
+    )
+    return [node, configure_event, activate_event, analyzer]
+
+
 def _interaction_sim_mode_description(
     *,
     start_perception: bool,
@@ -112,6 +200,7 @@ def _interaction_sim_summary_logs(
     mode_description: str,
     start_expressive_face: bool,
     start_nao_say_skill: bool,
+    hri_log_profile: str,
 ) -> list[LogInfo]:
     logs = [
         # These log lines give operators a quick summary of which simulator
@@ -137,6 +226,12 @@ def _interaction_sim_summary_logs(
                 % ("enabled" if start_expressive_face else "disabled")
             )
         ),
+        LogInfo(
+            msg=(
+                "interaction_sim HRI perception log profile is %s."
+                % hri_log_profile
+            )
+        ),
     ]
     if start_expressive_face and start_nao_say_skill:
         logs.append(
@@ -159,6 +254,10 @@ def build_interaction_sim_actions(context):
     start_perception = _as_bool(context, "start_interaction_sim_perception")
     start_tools = _as_bool(context, "start_interaction_sim_tools")
     start_expressive_face = _as_bool(context, "start_interaction_sim_expressive_face")
+    hri_log_profile = str(
+        LaunchConfiguration("interaction_sim_hri_log_profile").perform(context)
+    ).strip().lower() or "quiet"
+    hri_log_level = _planner_friendly_hri_log_level(context)
     if not start_perception and not start_tools:
         return [
             LogInfo(
@@ -212,21 +311,26 @@ def build_interaction_sim_actions(context):
             )
         scoped_actions.extend(
             [
-                _include_python_launch(
-                    "hri_person_manager",
-                    "person_manager.launch.py",
-                    launch_arguments={
-                        "reference_frame": "camera",
-                        "robot_reference_frame": "sellion_link",
-                    },
+                *_build_hri_lifecycle_actions(
+                    package_name="hri_person_manager",
+                    node_name="hri_person_manager",
+                    executable="hri_person_manager",
+                    log_level=hri_log_level,
+                    shutdown_on_exit=True,
                 ),
-                _include_python_launch(
-                    "hri_face_detect_yunet",
-                    "hri_face_detect_yunet.launch.py",
+                *_build_hri_lifecycle_actions(
+                    package_name="hri_face_detect_yunet",
+                    node_name="hri_face_detect_yunet",
+                    executable="hri_face_detect_yunet",
+                    log_level=hri_log_level,
+                    shutdown_on_exit=True,
                 ),
-                _include_python_launch(
-                    "hri_emotion_recognizer",
-                    "emotion_recognizer.launch.py",
+                *_build_hri_lifecycle_actions(
+                    package_name="hri_emotion_recognizer",
+                    node_name="hri_emotion_recognizer",
+                    executable="hri_emotion_recognizer",
+                    log_level=hri_log_level,
+                    shutdown_on_exit=False,
                 ),
                 Node(
                     package="gscam",
@@ -318,6 +422,7 @@ def build_interaction_sim_actions(context):
             ),
             start_expressive_face=start_expressive_face,
             start_nao_say_skill=_as_bool(context, "start_nao_say_skill"),
+            hri_log_profile=hri_log_profile,
         )
     )
 

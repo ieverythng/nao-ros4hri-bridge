@@ -422,7 +422,7 @@ def generate_profile_launch_description(
     )
     nao_ip_arg = DeclareLaunchArgument(
         "nao_ip",
-        default_value=_profile_default(profile_defaults, "nao_ip", "172.26.112.62"),
+        default_value=_profile_default(profile_defaults, "nao_ip", "127.0.0.1"),
         description="NAO robot IP passed to replay motion nodes and naoqi_driver.",
     )
     nao_port_arg = DeclareLaunchArgument(
@@ -589,6 +589,30 @@ def generate_profile_launch_description(
         default_value="1.0",
         description="Minimum interval between grounding refreshes for the same tracked object.",
     )
+    scene_grounding_fallback_match_distance_px_arg = DeclareLaunchArgument(
+        "scene_grounding_fallback_match_distance_px",
+        default_value=_profile_default(
+            profile_defaults,
+            "scene_grounding_fallback_match_distance_px",
+            "64.0",
+        ),
+        description=(
+            "Maximum pixel distance used by nao_scene_grounding to reconcile "
+            "tracker-less detections into one stable entity."
+        ),
+    )
+    scene_grounding_fallback_match_max_age_sec_arg = DeclareLaunchArgument(
+        "scene_grounding_fallback_match_max_age_sec",
+        default_value=_profile_default(
+            profile_defaults,
+            "scene_grounding_fallback_match_max_age_sec",
+            "2.0",
+        ),
+        description=(
+            "Maximum age of a stale tracker-less detection that can still be "
+            "matched to a new detection."
+        ),
+    )
     start_knowledge_core_arg = DeclareLaunchArgument(
         "start_knowledge_core",
         default_value=_profile_default(profile_defaults, "start_knowledge_core", "true"),
@@ -639,6 +663,18 @@ def generate_profile_launch_description(
         "start_interaction_sim_ui",
         default_value=_profile_default(profile_defaults, "start_interaction_sim_ui", "false"),
         description="Start ui_server together with interaction_sim support tools.",
+    )
+    interaction_sim_hri_log_profile_arg = DeclareLaunchArgument(
+        "interaction_sim_hri_log_profile",
+        default_value=_profile_default(
+            profile_defaults,
+            "interaction_sim_hri_log_profile",
+            "quiet",
+        ),
+        description=(
+            "Verbosity profile for interaction_sim HRI perception nodes. "
+            "Use quiet for demos and debug for full face/person/emotion logs."
+        ),
     )
     interaction_sim_gscam_config_arg = DeclareLaunchArgument(
         "interaction_sim_gscam_config",
@@ -919,6 +955,12 @@ def generate_profile_launch_description(
                     value_type=str,
                 )
             },
+            {
+                "planner_dialogue_act_topic": ParameterValue(
+                    LaunchConfiguration("planner_dialogue_act_topic"),
+                    value_type=str,
+                )
+            },
         ],
     )
 
@@ -1142,6 +1184,18 @@ def generate_profile_launch_description(
             {
                 "knowledge_refresh_interval_sec": ParameterValue(
                     LaunchConfiguration("scene_grounding_knowledge_refresh_interval_sec"),
+                    value_type=float,
+                )
+            },
+            {
+                "fallback_match_distance_px": ParameterValue(
+                    LaunchConfiguration("scene_grounding_fallback_match_distance_px"),
+                    value_type=float,
+                )
+            },
+            {
+                "fallback_match_max_age_sec": ParameterValue(
+                    LaunchConfiguration("scene_grounding_fallback_match_max_age_sec"),
                     value_type=float,
                 )
             },
@@ -1499,6 +1553,7 @@ def generate_profile_launch_description(
             start_interaction_sim_tools_arg,
             start_interaction_sim_expressive_face_arg,
             start_interaction_sim_ui_arg,
+            interaction_sim_hri_log_profile_arg,
             start_nao_orchestrator_arg,
             start_nao_say_skill_arg,
             start_nao_replay_motion_arg,
@@ -1551,6 +1606,8 @@ def generate_profile_launch_description(
             scene_grounding_allowed_labels_arg,
             scene_grounding_knowledge_lifespan_sec_arg,
             scene_grounding_knowledge_refresh_interval_sec_arg,
+            scene_grounding_fallback_match_distance_px_arg,
+            scene_grounding_fallback_match_max_age_sec_arg,
             naoqi_driver_launch,
             nao_robot_note,
             robot_perception_note,

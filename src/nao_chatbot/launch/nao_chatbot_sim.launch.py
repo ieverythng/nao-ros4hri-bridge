@@ -14,6 +14,12 @@ _SIM_PROFILE_DEFAULTS = {
     "start_interaction_sim_tools": "true",
     "start_interaction_sim_expressive_face": "false",
     "start_interaction_sim_ui": "false",
+    "interaction_sim_hri_log_profile": "quiet",
+    "object_detection_threshold": "0.40",
+    "scene_grounding_knowledge_lifespan_sec": "3.0",
+    "scene_grounding_knowledge_refresh_interval_sec": "0.75",
+    "scene_grounding_fallback_match_distance_px": "40.0",
+    "scene_grounding_fallback_match_max_age_sec": "1.2",
     "start_rqt_console": "true",
 }
 

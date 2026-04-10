@@ -104,7 +104,7 @@ class _ClarifyEngine(_StubEngine):
         )
 
 
-def test_supervisor_creates_new_goal_session_and_ack_dialogue_act() -> None:
+def test_supervisor_creates_new_goal_session_without_duplicate_ack_dialogue_act() -> None:
     supervisor = PlannerSupervisor(_StubEngine(), auto_replan=True)
     request = PlannerRequest.from_payload(
         {
@@ -121,8 +121,7 @@ def test_supervisor_creates_new_goal_session_and_ack_dialogue_act() -> None:
     assert outcome.decision is not None
     assert outcome.decision.payload['plan']['goal_id'] == 'goal_1'
     assert outcome.decision.payload['plan']['plan_version'] == 1
-    assert len(outcome.dialogue_acts) == 1
-    assert outcome.dialogue_acts[0].act == 'acknowledge'
+    assert outcome.dialogue_acts == ()
 
 
 def test_supervisor_marks_superseded_goal_before_new_plan() -> None:

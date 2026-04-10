@@ -203,10 +203,16 @@ class PlannerEngine:
 
         decision_mode = str(parsed.get('decision', parsed.get('mode', 'plan'))).strip().lower()
         if decision_mode in ('clarify', 'clarification'):
+            clarify_reason = str(
+                parsed.get(
+                    'user_facing_reason',
+                    parsed.get('clarification_text', parsed.get('failure_reason', '')),
+                )
+            ).strip()
             return self._clarification_decision(
                 request,
                 feedback=feedback,
-                reason=str(parsed.get('clarification_text', parsed.get('failure_reason', ''))).strip(),
+                reason=clarify_reason,
                 raw_model_output=raw_model_output,
                 mode='clarify',
                 goal_id=goal_id,
@@ -216,10 +222,16 @@ class PlannerEngine:
             )
 
         if decision_mode == 'fail':
+            fail_reason = str(
+                parsed.get(
+                    'user_facing_reason',
+                    parsed.get('failure_reason', 'Unable to continue safely.'),
+                )
+            ).strip()
             return self._clarification_decision(
                 request,
                 feedback=feedback,
-                reason=str(parsed.get('failure_reason', 'Unable to continue safely.')).strip(),
+                reason=fail_reason,
                 raw_model_output=raw_model_output,
                 mode='fail',
                 goal_id=goal_id,
@@ -240,6 +252,7 @@ class PlannerEngine:
             ack_mode=str(parsed.get('ack_mode', request.ack_mode)).strip(),
             validation_status=str(parsed.get('validation_status', 'draft')).strip() or 'draft',
             failure_reason=str(parsed.get('failure_reason', '')).strip(),
+            user_facing_reason=str(parsed.get('user_facing_reason', '')).strip(),
             replan_hint=str(parsed.get('replan_hint', '')).strip(),
             retry_budget=self._resolved_retry_budget(parsed, feedback),
             scene_targets=self._scene_targets_for_decision(request, feedback, parsed),
@@ -281,6 +294,7 @@ class PlannerEngine:
             ack_mode='',
             validation_status='draft',
             failure_reason=clean_reason if mode == 'fail' else '',
+            user_facing_reason=clean_reason,
             replan_hint='clarify_user',
             retry_budget=0,
             scene_targets=self._scene_targets_for_decision(request, feedback, {}),
@@ -446,6 +460,7 @@ class PlannerEngine:
         ack_mode: str,
         validation_status: str,
         failure_reason: str = '',
+        user_facing_reason: str = '',
         replan_hint: str = '',
         retry_budget: int = 0,
         scene_targets: list[str] | None = None,
@@ -463,6 +478,7 @@ class PlannerEngine:
             ack_mode=ack_mode,
             validation_status=validation_status,
             failure_reason=failure_reason,
+            user_facing_reason=user_facing_reason,
             replan_hint=replan_hint,
             retry_budget=retry_budget,
             scene_targets=scene_targets or self._scene_targets_for_decision(request, feedback, {}),

@@ -20,7 +20,7 @@ public:
   {
     declare_parameter("connect_on_startup", true);
     declare_parameter("posture_command_topic", "/chatbot/posture_command");
-    declare_parameter("nao_ip", "172.26.112.62");
+    declare_parameter("nao_ip", "127.0.0.1");
     declare_parameter("nao_port", 9559);
     declare_parameter("posture_speed", 0.8);
     declare_parameter("stand_posture_name", "Stand");
