@@ -174,20 +174,8 @@ class PlannerSupervisor:
         state.current_status = 'executing'
         state.awaiting_user_response = False
         self._plan_to_goal[state.active_plan_id] = state.goal_id
-
-        dialogue_acts: list[PlannerDialogueAct] = []
-        if request.ack_text:
-            dialogue_acts.append(
-                self._dialogue_act(
-                    state,
-                    act='acknowledge',
-                    text_hint=request.ack_text,
-                )
-            )
-
         return SupervisorOutcome(
             decision=decision,
-            dialogue_acts=tuple(dialogue_acts),
         )
 
     def _handle_failure_feedback(
@@ -330,6 +318,12 @@ class PlannerSupervisor:
     @staticmethod
     def _decision_reason(decision: PlannerDecision) -> str:
         plan_payload = dict(decision.payload.get('plan', {}))
+        user_facing_reason = str(
+            plan_payload.get('user_facing_reason', '')
+            or decision.payload.get('user_facing_reason', '')
+        ).strip()
+        if user_facing_reason:
+            return user_facing_reason
         steps = plan_payload.get('steps', [])
         if isinstance(steps, list) and steps:
             first_step = steps[0]

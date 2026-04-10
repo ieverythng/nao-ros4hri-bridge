@@ -66,3 +66,15 @@ def test_sim_profile_keeps_interaction_sim_enabled_without_planner():
     assert defaults["start_interaction_sim_tools"] == "true"
     assert defaults["start_rqt_console"] == "true"
     assert defaults["start_planner_llm"] == "false"
+    assert defaults["interaction_sim_hri_log_profile"] == "quiet"
+    assert defaults["scene_grounding_fallback_match_distance_px"] == "40.0"
+    assert defaults["scene_grounding_fallback_match_max_age_sec"] == "1.2"
+
+
+def test_robot_profile_enables_planner_mode_by_default():
+    defaults = _launch_defaults(
+        "launch/nao_chatbot_robot.launch.py",
+        "nao_chatbot_robot_launch_test",
+    )
+    assert defaults["start_planner_llm"] == "true"
+    assert defaults["chatbot_planner_mode_enabled"] == "true"

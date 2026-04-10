@@ -14,6 +14,7 @@
   <depend>rclpy</depend>
   <depend>action_msgs</depend>
   <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
   <depend>std_skills</depend>
   <depend>naoqi_libqi</depend>
   <depend>naoqi_bridge_msgs</depend>

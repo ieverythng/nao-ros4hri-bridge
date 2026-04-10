@@ -2,10 +2,12 @@ from nao_chatbot.stack_launch import generate_profile_launch_description
 
 
 _ROBOT_ASR_PROFILE_DEFAULTS = {
-    "nao_ip": "172.26.112.62",
+    "nao_ip": "127.0.0.1",
     "ollama_model": "gpt-oss:120b-cloud",
     "start_naoqi_driver": "false",
     "start_nao_robot": "true",
+    "start_planner_llm": "true",
+    "chatbot_planner_mode_enabled": "true",
     "start_nao_robot_hri_visualization": "true",
     "start_rviz": "true",
     "hri_visualization_image_topic": "/camera/front/image_raw",

@@ -272,6 +272,7 @@ def build_plan_payload(
     ack_mode: str = '',
     validation_status: str = 'draft',
     failure_reason: str = '',
+    user_facing_reason: str = '',
     replan_hint: str = '',
     retry_budget: int = 0,
     scene_targets: list[str] | None = None,
@@ -293,6 +294,7 @@ def build_plan_payload(
         'goal_id': resolved_goal_id,
         'ack_text': resolved_ack_text,
         'ack_mode': resolved_ack_mode,
+        'user_facing_reason': str(user_facing_reason or '').strip(),
         'scene_targets': resolved_scene_targets,
         'grounded_context': normalize_grounded_context(
             getattr(request, 'grounded_context', {})
@@ -304,6 +306,7 @@ def build_plan_payload(
             'status': str(status or '').strip().lower() or 'draft',
             'validation_status': str(validation_status or '').strip().lower(),
             'failure_reason': str(failure_reason or '').strip(),
+            'user_facing_reason': str(user_facing_reason or '').strip(),
             'replan_hint': str(replan_hint or '').strip(),
             'retry_budget': _coerce_nonnegative_int(retry_budget),
             'scene_targets': resolved_scene_targets,

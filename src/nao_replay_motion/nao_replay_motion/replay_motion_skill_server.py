@@ -14,7 +14,42 @@ from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from std_msgs.msg import String
 
-from nao_skills.action import DoPosture, ReplayMotion
+try:
+    from nao_skills.action import DoPosture, ReplayMotion
+except ImportError:  # pragma: no cover - import-light unit tests
+    class ReplayMotion:  # type: ignore[no-redef]
+        class Goal:
+            def __init__(self) -> None:
+                self.motion_name = ""
+                self.speed = 0.0
+
+        class Feedback:
+            def __init__(self) -> None:
+                self.status = ""
+                self.progress = 0.0
+
+        class Result:
+            def __init__(self) -> None:
+                self.success = False
+                self.message = ""
+                self.duration = 0.0
+
+    class DoPosture:  # type: ignore[no-redef]
+        class Goal:
+            def __init__(self) -> None:
+                self.posture_name = ""
+                self.speed = 0.0
+
+        class Feedback:
+            def __init__(self) -> None:
+                self.status = ""
+                self.progress = 0.0
+
+        class Result:
+            def __init__(self) -> None:
+                self.success = False
+                self.message = ""
+                self.duration = 0.0
 
 try:
     import qi
@@ -41,7 +76,7 @@ class ReplayMotionSkillServer(Node):
     def __init__(self) -> None:
         super().__init__("replay_motion_skill_server")
 
-        self.declare_parameter("nao_ip", "172.26.112.62")
+        self.declare_parameter("nao_ip", "127.0.0.1")
         self.declare_parameter("nao_port", 9559)
         self.declare_parameter("action_name", "/skill/replay_motion")
         self.declare_parameter("posture_compat_action_name", "/skill/do_posture")

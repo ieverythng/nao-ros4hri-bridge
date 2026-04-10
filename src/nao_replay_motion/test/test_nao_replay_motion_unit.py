@@ -17,3 +17,24 @@ def test_head_motion_validation_rejects_out_of_range_absolute_motion():
     server.pitch_max = 0.5
     assert server._validate_angles(2.0, 0.0, relative=False) is not None
     assert server._validate_angles(0.0, 0.0, relative=False) is None
+
+
+def test_head_motion_resolves_relative_targets_from_current_state():
+    server = HeadMotionSkillServer.__new__(HeadMotionSkillServer)
+    resolved = server._resolve_target_angles(
+        yaw=0.2,
+        pitch=-0.1,
+        relative=True,
+        current_state={"HeadYaw": 0.5, "HeadPitch": 0.25},
+    )
+
+    assert resolved == (0.7, 0.15)
+
+
+def test_head_motion_reaches_target_within_tolerance():
+    server = HeadMotionSkillServer.__new__(HeadMotionSkillServer)
+    server.convergence_tolerance_rad = 0.05
+    server._current_head_state = lambda: {"HeadYaw": 0.48, "HeadPitch": -0.02}
+
+    assert server._has_reached_target(0.5, 0.0) is True
+    assert server._has_reached_target(0.6, 0.0) is False
