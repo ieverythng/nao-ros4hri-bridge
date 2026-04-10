@@ -104,6 +104,16 @@
         "dialogue_manager"
       ]
     },
+    "/enriched_snapshot_topic": {
+      "subscribers": [
+        "planner_llm"
+      ]
+    },
+    "/enriched_text_topic": {
+      "subscribers": [
+        "planner_llm"
+      ]
+    },
     "/humans/voices/*/speech": {
       "subscribers": [
         "dialogue_manager"
@@ -127,10 +137,14 @@
         "dialogue_manager"
       ]
     },
+    "/intent_topic": {
+      "publishers": [
+        "planner_llm"
+      ]
+    },
     "/intents": {
       "publishers": [
-        "dialogue_manager",
-        "planner_llm"
+        "dialogue_manager"
       ],
       "subscribers": [
         "nao_orchestrator"
@@ -140,6 +154,11 @@
       "publishers": [
         "nao_look_at",
         "nao_orchestrator",
+        "nao_replay_motion"
+      ]
+    },
+    "/joint_states": {
+      "subscribers": [
         "nao_replay_motion"
       ]
     },
@@ -246,12 +265,19 @@
     "/planner/execution_feedback": {
       "publishers": [
         "nao_orchestrator"
-      ],
+      ]
+    },
+    "/planner_dialogue_act_topic": {
+      "publishers": [
+        "planner_llm"
+      ]
+    },
+    "/planner_feedback_topic": {
       "subscribers": [
         "planner_llm"
       ]
     },
-    "/planner/request": {
+    "/planner_request_topic": {
       "subscribers": [
         "planner_llm"
       ]
@@ -388,19 +414,9 @@
       "action_servers": [
         "nao_say_skill"
       ]
-    },
-    "/world_model/enriched_snapshot": {
-      "subscribers": [
-        "planner_llm"
-      ]
-    },
-    "/world_model/enriched_text": {
-      "subscribers": [
-        "planner_llm"
-      ]
     }
   },
-  "generatedAt": "2026-04-07T03:19:12.577145+00:00",
+  "generatedAt": "2026-04-10T16:35:40.386138+00:00",
   "packages": [
     {
       "actionClients": [],
@@ -447,6 +463,7 @@
         "src/chatbot_llm/chatbot_llm/knowledge_snapshot_client.py",
         "src/chatbot_llm/chatbot_llm/node_impl.py",
         "src/chatbot_llm/chatbot_llm/ollama_transport.py",
+        "src/chatbot_llm/chatbot_llm/planner_request_adapter.py",
         "src/chatbot_llm/chatbot_llm/prompt_builders.py",
         "src/chatbot_llm/chatbot_llm/prompt_pack.py",
         "src/chatbot_llm/chatbot_llm/skill_catalog.py",
@@ -755,7 +772,9 @@
       "root": "src/nao_replay_motion",
       "serviceClients": [],
       "serviceServers": [],
-      "subscribes": []
+      "subscribes": [
+        "/joint_states"
+      ]
     },
     {
       "actionClients": [
@@ -841,6 +860,8 @@
         "src/planner_llm/planner_llm/planner_engine.py",
         "src/planner_llm/planner_llm/planner_node.py",
         "src/planner_llm/planner_llm/providers.py",
+        "src/planner_llm/planner_llm/skill_registry.py",
+        "src/planner_llm/planner_llm/supervisor.py",
         "src/planner_llm/setup.py"
       ],
       "name": "planner_llm",
@@ -849,16 +870,17 @@
         "planner_llm"
       ],
       "publishes": [
-        "/intents"
+        "/intent_topic",
+        "/planner_dialogue_act_topic"
       ],
       "root": "src/planner_llm",
       "serviceClients": [],
       "serviceServers": [],
       "subscribes": [
-        "/planner/execution_feedback",
-        "/planner/request",
-        "/world_model/enriched_snapshot",
-        "/world_model/enriched_text"
+        "/enriched_snapshot_topic",
+        "/enriched_text_topic",
+        "/planner_feedback_topic",
+        "/planner_request_topic"
       ]
     },
     {

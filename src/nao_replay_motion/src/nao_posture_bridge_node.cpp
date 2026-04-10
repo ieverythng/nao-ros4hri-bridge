@@ -20,7 +20,7 @@ public:
   {
     declare_parameter("connect_on_startup", true);
     declare_parameter("posture_command_topic", "/chatbot/posture_command");
-    declare_parameter("nao_ip", "127.0.0.1");
+    declare_parameter("nao_ip", "");
     declare_parameter("nao_port", 9559);
     declare_parameter("posture_speed", 0.8);
     declare_parameter("stand_posture_name", "Stand");
@@ -176,6 +176,14 @@ private:
 
   bool connect_session(const std::string & reason)
   {
+    if (nao_ip_.empty()) {
+      reset_connection_state();
+      RCLCPP_ERROR(
+        get_logger(),
+        "Parameter 'nao_ip' is empty; cannot connect to NAOqi for %s. Set it from the launch file or with --ros-args -p nao_ip:=...",
+        reason.c_str());
+      return false;
+    }
     const std::string url = "tcp://" + nao_ip_ + ":" + std::to_string(nao_port_);
     reset_connection_state();
     try {

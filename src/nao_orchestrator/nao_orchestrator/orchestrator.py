@@ -984,6 +984,7 @@ class NaoOrchestrator(Node):
 
         acceptance_event = threading.Event()
         result_event = threading.Event()
+        active_goal_handle = {'value': None}
         outcome = {
             'accepted': False,
             'success': False,
@@ -1005,13 +1006,16 @@ class NaoOrchestrator(Node):
                 result_event.set()
                 return
 
+            active_goal_handle['value'] = goal_handle
             outcome['accepted'] = True
             acceptance_event.set()
             if on_started is not None:
                 try:
                     on_started()
-                except Exception:
-                    pass
+                except Exception as err:
+                    self.get_logger().debug(
+                        '%s start callback failed: %s' % (description, err)
+                    )
             result_future = goal_handle.get_result_async()
             result_future.add_done_callback(_result_callback)
 
@@ -1047,6 +1051,15 @@ class NaoOrchestrator(Node):
                 reason=str(outcome['reason']).strip(),
             )
         if not result_event.wait(timeout=max(float(result_timeout_sec), 0.1)):
+            goal_handle = active_goal_handle.get('value')
+            if goal_handle is not None:
+                try:
+                    goal_handle.cancel_goal_async()
+                except Exception as err:
+                    self.get_logger().warn(
+                        '%s timed out and cancel request failed: %s'
+                        % (description, err)
+                    )
             self._stats.dispatch_failures += 1
             return _ActionExecutionResult(
                 accepted=True,

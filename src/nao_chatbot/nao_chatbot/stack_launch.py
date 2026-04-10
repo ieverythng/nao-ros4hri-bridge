@@ -422,7 +422,7 @@ def generate_profile_launch_description(
     )
     nao_ip_arg = DeclareLaunchArgument(
         "nao_ip",
-        default_value=_profile_default(profile_defaults, "nao_ip", "127.0.0.1"),
+        default_value=_profile_default(profile_defaults, "nao_ip", ""),
         description="NAO robot IP passed to replay motion nodes and naoqi_driver.",
     )
     nao_port_arg = DeclareLaunchArgument(
