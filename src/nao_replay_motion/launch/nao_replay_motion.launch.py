@@ -10,7 +10,7 @@ def _bool_launch_config(name):
 
 
 def generate_launch_description():
-    nao_ip_arg = DeclareLaunchArgument("nao_ip", default_value="127.0.0.1")
+    nao_ip_arg = DeclareLaunchArgument("nao_ip", default_value="172.26.112.62")
     nao_port_arg = DeclareLaunchArgument("nao_port", default_value="9559")
     posture_command_topic_arg = DeclareLaunchArgument(
         "posture_command_topic",

@@ -73,6 +73,14 @@ def ros_topic_dialogue_manager_robot_speech():
     """ROS topic endpoint /dialogue_manager/robot_speech."""
     return "/dialogue_manager/robot_speech"
 
+def ros_topic_enriched_snapshot_topic():
+    """ROS topic endpoint /enriched_snapshot_topic."""
+    return "/enriched_snapshot_topic"
+
+def ros_topic_enriched_text_topic():
+    """ROS topic endpoint /enriched_text_topic."""
+    return "/enriched_text_topic"
+
 def ros_topic_humans_voices_any_speech():
     """ROS topic endpoint /humans/voices/*/speech."""
     return "/humans/voices/*/speech"
@@ -89,6 +97,10 @@ def ros_topic_humans_voices_tracked():
     """ROS topic endpoint /humans/voices/tracked."""
     return "/humans/voices/tracked"
 
+def ros_topic_intent_topic():
+    """ROS topic endpoint /intent_topic."""
+    return "/intent_topic"
+
 def ros_topic_intents():
     """ROS topic endpoint /intents."""
     return "/intents"
@@ -96,6 +108,10 @@ def ros_topic_intents():
 def ros_topic_joint_angles():
     """ROS topic endpoint /joint_angles."""
     return "/joint_angles"
+
+def ros_topic_joint_states():
+    """ROS topic endpoint /joint_states."""
+    return "/joint_states"
 
 def ros_service_kb_about():
     """ROS service endpoint /kb/about."""
@@ -157,9 +173,17 @@ def ros_topic_planner_execution_feedback():
     """ROS topic endpoint /planner/execution_feedback."""
     return "/planner/execution_feedback"
 
-def ros_topic_planner_request():
-    """ROS topic endpoint /planner/request."""
-    return "/planner/request"
+def ros_topic_planner_dialogue_act_topic():
+    """ROS topic endpoint /planner_dialogue_act_topic."""
+    return "/planner_dialogue_act_topic"
+
+def ros_topic_planner_feedback_topic():
+    """ROS topic endpoint /planner_feedback_topic."""
+    return "/planner_feedback_topic"
+
+def ros_topic_planner_request_topic():
+    """ROS topic endpoint /planner_request_topic."""
+    return "/planner_request_topic"
 
 def ros_topic_robot_speaking():
     """ROS topic endpoint /robot_speaking."""
@@ -216,14 +240,6 @@ def ros_topic_speech():
 def ros_action_tts_engine_tts():
     """ROS action endpoint /tts_engine/tts."""
     return "/tts_engine/tts"
-
-def ros_topic_world_model_enriched_snapshot():
-    """ROS topic endpoint /world_model/enriched_snapshot."""
-    return "/world_model/enriched_snapshot"
-
-def ros_topic_world_model_enriched_text():
-    """ROS topic endpoint /world_model/enriched_text."""
-    return "/world_model/enriched_text"
 
 def ros_contract_asr_vosk():
     """Interface contracts exported by asr_vosk."""
@@ -373,6 +389,7 @@ def ros_node_nao_replay_motion():
     """Runtime ROS proxy for package/node nao_replay_motion."""
     ros_topic_chatbot_posture_command()
     ros_topic_joint_angles()
+    ros_topic_joint_states()
     ros_action_skill_do_head_motion()
     ros_action_skill_do_posture()
     ros_action_skill_replay_motion()
@@ -415,11 +432,12 @@ def ros_contract_planner_llm():
 
 def ros_node_planner_llm():
     """Runtime ROS proxy for package/node planner_llm."""
-    ros_topic_intents()
-    ros_topic_planner_execution_feedback()
-    ros_topic_planner_request()
-    ros_topic_world_model_enriched_snapshot()
-    ros_topic_world_model_enriched_text()
+    ros_topic_intent_topic()
+    ros_topic_planner_dialogue_act_topic()
+    ros_topic_enriched_snapshot_topic()
+    ros_topic_enriched_text_topic()
+    ros_topic_planner_feedback_topic()
+    ros_topic_planner_request_topic()
 
 def ros_contract_simple_audio_capture():
     """Interface contracts exported by simple_audio_capture."""
@@ -464,7 +482,6 @@ def ros_flow_topic_humans_voices_tracked():
 def ros_flow_topic_intents():
     """Publisher/subscriber flow for /intents."""
     ros_node_dialogue_manager()
-    ros_node_planner_llm()
     ros_topic_intents()
     ros_node_nao_orchestrator()
 
@@ -491,12 +508,6 @@ def ros_flow_action_nao_say():
     ros_node_nao_say_skill()
     ros_action_nao_say()
     ros_node_nao_orchestrator()
-
-def ros_flow_topic_planner_execution_feedback():
-    """Publisher/subscriber flow for /planner/execution_feedback."""
-    ros_node_nao_orchestrator()
-    ros_topic_planner_execution_feedback()
-    ros_node_planner_llm()
 
 def ros_flow_action_skill_do_head_motion():
     """Action server/client flow for /skill/do_head_motion."""

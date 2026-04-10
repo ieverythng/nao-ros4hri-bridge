@@ -4,7 +4,7 @@ This file is generated from the repository source to make ROS runtime
 publish/subscribe, service, and action seams explicit for humans and for
 GitNexus indexing.
 
-Generated at: 2026-04-07T03:19:12.587658+00:00
+Generated at: 2026-04-10T16:35:40.392349+00:00
 
 ## Packages
 
@@ -21,11 +21,11 @@ Generated at: 2026-04-07T03:19:12.587658+00:00
 | nao_chatbot | - | /debug/nao_say/speech<br>/dialogue_manager/closed_captions | - | - | - | - | - |
 | nao_look_at | /diagnostics<br>/joint_angles | - | - | - | - | /skill/look_at | - |
 | nao_orchestrator | /chatbot/posture_command<br>/diagnostics<br>/joint_angles<br>/planner/execution_feedback | /chatbot/intent<br>/intents | - | - | /nao/say<br>/skill/do_head_motion<br>/skill/look_at<br>/skill/replay_motion | - | - |
-| nao_replay_motion | /chatbot/posture_command<br>/joint_angles | - | - | - | - | /skill/do_head_motion<br>/skill/do_posture<br>/skill/replay_motion | - |
+| nao_replay_motion | /chatbot/posture_command<br>/joint_angles | /joint_states | - | - | - | /skill/do_head_motion<br>/skill/do_posture<br>/skill/replay_motion | - |
 | nao_say_skill | /debug/nao_say/speech<br>/diagnostics<br>/speech | - | - | - | /debug/say | /nao/say<br>/tts_engine/tts | /nao/say |
 | nao_scene_grounding | /nao_scene_grounding/summary | /detected_objects | - | - | - | - | - |
 | nao_skills | - | - | - | - | - | - | /skill/do_head_motion<br>/skill/do_posture<br>/skill/replay_motion |
-| planner_llm | /intents | /planner/execution_feedback<br>/planner/request<br>/world_model/enriched_snapshot<br>/world_model/enriched_text | - | - | - | - | - |
+| planner_llm | /intent_topic<br>/planner_dialogue_act_topic | /enriched_snapshot_topic<br>/enriched_text_topic<br>/planner_feedback_topic<br>/planner_request_topic | - | - | - | - | - |
 | simple_audio_capture | /audio<br>/audio_info<br>/audio_stamped | - | - | - | - | - | - |
 
 ## Shared Runtime Endpoints
@@ -102,6 +102,14 @@ Generated at: 2026-04-07T03:19:12.587658+00:00
 
 - Publishers: dialogue_manager
 
+### `/enriched_snapshot_topic`
+
+- Subscribers: planner_llm
+
+### `/enriched_text_topic`
+
+- Subscribers: planner_llm
+
 ### `/humans/voices/*/speech`
 
 - Subscribers: dialogue_manager
@@ -119,14 +127,22 @@ Generated at: 2026-04-07T03:19:12.587658+00:00
 - Publishers: asr_vosk
 - Subscribers: dialogue_manager
 
+### `/intent_topic`
+
+- Publishers: planner_llm
+
 ### `/intents`
 
-- Publishers: dialogue_manager, planner_llm
+- Publishers: dialogue_manager
 - Subscribers: nao_orchestrator
 
 ### `/joint_angles`
 
 - Publishers: nao_look_at, nao_orchestrator, nao_replay_motion
+
+### `/joint_states`
+
+- Subscribers: nao_replay_motion
 
 ### `/kb/about`
 
@@ -194,9 +210,16 @@ Generated at: 2026-04-07T03:19:12.587658+00:00
 ### `/planner/execution_feedback`
 
 - Publishers: nao_orchestrator
+
+### `/planner_dialogue_act_topic`
+
+- Publishers: planner_llm
+
+### `/planner_feedback_topic`
+
 - Subscribers: planner_llm
 
-### `/planner/request`
+### `/planner_request_topic`
 
 - Subscribers: planner_llm
 
@@ -265,11 +288,3 @@ Generated at: 2026-04-07T03:19:12.587658+00:00
 ### `/tts_engine/tts`
 
 - Action Servers: nao_say_skill
-
-### `/world_model/enriched_snapshot`
-
-- Subscribers: planner_llm
-
-### `/world_model/enriched_text`
-
-- Subscribers: planner_llm

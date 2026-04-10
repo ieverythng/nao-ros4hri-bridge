@@ -76,5 +76,6 @@ def test_robot_profile_enables_planner_mode_by_default():
         "launch/nao_chatbot_robot.launch.py",
         "nao_chatbot_robot_launch_test",
     )
+    assert defaults["nao_ip"] == "172.26.112.62"
     assert defaults["start_planner_llm"] == "true"
     assert defaults["chatbot_planner_mode_enabled"] == "true"

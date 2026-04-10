@@ -32,6 +32,7 @@ from lifecycle_msgs.msg import Transition
 
 
 _PERCEPTION_PACKAGES = (
+    "diagnostic_aggregator",
     "interaction_sim",
     "gscam",
     "hri_emotion_recognizer",
