@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deslop Refactor"
+  short_description: "Deslop AI-generated code and tighten repo structure"
+  default_prompt: "Use $deslop-refactor to clean up this codebase without changing intended behavior."
