@@ -1,0 +1,7 @@
+interface:
+  display_name: "IIIA ROS4HRI Check"
+  short_description: "ROS4HRI guardrail pass for ROS changes."
+  default_prompt: "Use $iiia-ros4hri-check to review this ROS/ROS4HRI change set, enforce repo guardrails, and flag ownership, lifecycle, interface, or packaging issues before merging."
+
+policy:
+  allow_implicit_invocation: true
