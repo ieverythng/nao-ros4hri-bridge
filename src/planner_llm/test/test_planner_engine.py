@@ -140,6 +140,40 @@ def test_planner_engine_uses_provider_for_multi_step_requests_even_with_rule_int
     assert provider.messages[0]['role'] == 'system'
 
 
+def test_planner_engine_falls_back_to_requested_plan_when_model_output_is_invalid() -> None:
+    provider = _FakeProvider('{}')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_hint',
+            'goal_id': 'goal_hint',
+            'user_text': 'look up and then sit down',
+            'normalized_intents': ['head_look_up'],
+            'requested_plan': [
+                {
+                    'type': 'skill',
+                    'name': 'perform_motion',
+                    'args': {'object': 'head_look_up'},
+                },
+                {
+                    'type': 'skill',
+                    'name': 'perform_motion',
+                    'args': {'object': 'sit'},
+                },
+            ],
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_hint', plan_version=1)
+
+    assert decision.mode == 'hint'
+    assert [step['args']['object'] for step in decision.payload['plan']['steps']] == [
+        'head_look_up',
+        'sit',
+    ]
+    assert provider.messages[1]['content'].find('"requested_plan"') != -1
+
+
 def test_provider_factory_selects_openai_compatible_adapter() -> None:
     provider = build_provider(
         PlannerProviderConfig(provider='openai', model='qwen', base_url='http://localhost:8080')

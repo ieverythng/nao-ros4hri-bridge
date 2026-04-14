@@ -16,6 +16,10 @@ def generate_launch_description():
         "posture_command_topic",
         default_value="/chatbot/posture_command",
     )
+    posture_result_topic_arg = DeclareLaunchArgument(
+        "posture_result_topic",
+        default_value="/chatbot/posture_command_result",
+    )
     posture_bridge_connect_on_startup_arg = DeclareLaunchArgument(
         "posture_bridge_connect_on_startup",
         default_value="true",
@@ -27,6 +31,14 @@ def generate_launch_description():
     posture_bridge_wake_up_on_connect_arg = DeclareLaunchArgument(
         "posture_bridge_wake_up_on_connect",
         default_value="false",
+    )
+    head_motion_retry_on_convergence_timeout_arg = DeclareLaunchArgument(
+        "head_motion_retry_on_convergence_timeout",
+        default_value="true",
+    )
+    head_motion_retry_convergence_timeout_sec_arg = DeclareLaunchArgument(
+        "head_motion_retry_convergence_timeout_sec",
+        default_value="1.5",
     )
 
     replay_motion = Node(
@@ -40,6 +52,7 @@ def generate_launch_description():
                 "nao_ip": LaunchConfiguration("nao_ip"),
                 "nao_port": LaunchConfiguration("nao_port"),
                 "posture_command_topic": LaunchConfiguration("posture_command_topic"),
+                "posture_result_topic": LaunchConfiguration("posture_result_topic"),
             }
         ],
     )
@@ -50,6 +63,16 @@ def generate_launch_description():
         name="head_motion_skill_server",
         output="screen",
         emulate_tty=True,
+        parameters=[
+            {
+                "retry_on_convergence_timeout": _bool_launch_config(
+                    "head_motion_retry_on_convergence_timeout"
+                ),
+                "retry_convergence_timeout_sec": LaunchConfiguration(
+                    "head_motion_retry_convergence_timeout_sec"
+                ),
+            }
+        ],
     )
 
     posture_bridge = Node(
@@ -63,6 +86,7 @@ def generate_launch_description():
                 "nao_ip": LaunchConfiguration("nao_ip"),
                 "nao_port": LaunchConfiguration("nao_port"),
                 "posture_command_topic": LaunchConfiguration("posture_command_topic"),
+                "posture_result_topic": LaunchConfiguration("posture_result_topic"),
                 "connect_on_startup": _bool_launch_config(
                     "posture_bridge_connect_on_startup"
                 ),
@@ -81,9 +105,12 @@ def generate_launch_description():
             nao_ip_arg,
             nao_port_arg,
             posture_command_topic_arg,
+            posture_result_topic_arg,
             posture_bridge_connect_on_startup_arg,
             posture_bridge_disable_autonomous_life_on_connect_arg,
             posture_bridge_wake_up_on_connect_arg,
+            head_motion_retry_on_convergence_timeout_arg,
+            head_motion_retry_convergence_timeout_sec_arg,
             replay_motion,
             head_motion,
             posture_bridge,

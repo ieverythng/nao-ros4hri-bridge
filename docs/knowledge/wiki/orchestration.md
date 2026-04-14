@@ -16,7 +16,7 @@ flowchart TB
         DM[dialogue_manager]
         CL[chatbot_llm/planner_llm]
     end
-    
+
     subgraph Orchestrator["nao_orchestrator"]
         INT[/intents/]
         LEGACY[/chatbot/intent/]
@@ -24,19 +24,19 @@ flowchart TB
         OR[NaoOrchestrator]
         FB[/planner/execution_feedback/]
     end
-    
+
     subgraph Skills["Skill Actions"]
         SAY[/nao/say/]
         REPLAY[/skill/replay_motion/]
         HEAD[/skill/do_head_motion/]
         LOOK[/skill/look_at/]
     end
-    
+
     subgraph Fallbacks["Legacy Fallbacks"]
         POSTURE[/chatbot/posture_command/]
         JOINT[/joint_angles/]
     end
-    
+
     DM --> INT
     CL --> INT
     LEGACY -.->|optional| OR
@@ -111,21 +111,21 @@ def _handle_intent(intent_name, data, source):
     # Priority 1: Structured plan execution
     if has_valid_plan(data):
         return _handle_planned_intent(...)
-    
+
     # Priority 2: Speech intents (only if dispatch_speech_intents=True)
     if intent_name in (GREET, SAY):
         if dispatch_speech_intents:
             return _dispatch_say(...)
         return  # Ignored: speech owned by dialogue_manager
-    
+
     # Priority 3: Motion dispatch
     if intent_name == PERFORM_MOTION:
         return _dispatch_motion_payload(...)
-    
+
     # Priority 4: KB query observation
     if intent_name in KB_QUERY_INTENTS:
         return  # Logged but not dispatched
-    
+
     # Priority 5: Unhandled
     log_warning(...)
 ```

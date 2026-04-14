@@ -3,6 +3,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 
@@ -20,6 +21,7 @@ public:
   {
     declare_parameter("connect_on_startup", true);
     declare_parameter("posture_command_topic", "/chatbot/posture_command");
+    declare_parameter("posture_result_topic", "/chatbot/posture_command_result");
     declare_parameter("nao_ip", "");
     declare_parameter("nao_port", 9559);
     declare_parameter("posture_speed", 0.8);
@@ -35,6 +37,7 @@ public:
 
     connect_on_startup_ = get_parameter("connect_on_startup").as_bool();
     posture_command_topic_ = get_parameter("posture_command_topic").as_string();
+    posture_result_topic_ = get_parameter("posture_result_topic").as_string();
     nao_ip_ = get_parameter("nao_ip").as_string();
     nao_port_ = get_parameter("nao_port").as_int();
     posture_speed_ = get_parameter("posture_speed").as_double();
@@ -53,11 +56,13 @@ public:
       posture_command_topic_,
       10,
       std::bind(&NaoPostureBridge::on_posture_command, this, std::placeholders::_1));
+    posture_result_publisher_ = create_publisher<std_msgs::msg::String>(posture_result_topic_, 10);
 
     RCLCPP_INFO(
       get_logger(),
-      "nao_posture_bridge ready | topic:%s nao:%s:%d default_speed:%.2f stand:%s@%.2f kneel:%s@%.2f sit@%.2f dedupe:%.2fs connect_on_startup:%s disable_life_on_connect:%s wake_up_on_connect:%s reconnect:%s",
+      "nao_posture_bridge ready | command_topic:%s result_topic:%s nao:%s:%d default_speed:%.2f stand:%s@%.2f kneel:%s@%.2f sit@%.2f dedupe:%.2fs connect_on_startup:%s disable_life_on_connect:%s wake_up_on_connect:%s reconnect:%s",
       posture_command_topic_.c_str(),
+      posture_result_topic_.c_str(),
       nao_ip_.c_str(),
       static_cast<int>(nao_port_),
       posture_speed_,
@@ -87,6 +92,62 @@ private:
   static const char * bool_to_string(const bool value)
   {
     return value ? "true" : "false";
+  }
+
+  static std::string json_escape(const std::string & value)
+  {
+    std::ostringstream escaped;
+    for (const unsigned char ch : value) {
+      switch (ch) {
+        case '\\':
+          escaped << "\\\\";
+          break;
+        case '"':
+          escaped << "\\\"";
+          break;
+        case '\n':
+          escaped << "\\n";
+          break;
+        case '\r':
+          escaped << "\\r";
+          break;
+        case '\t':
+          escaped << "\\t";
+          break;
+        default:
+          if (ch < 0x20) {
+            escaped << '?';
+          } else {
+            escaped << static_cast<char>(ch);
+          }
+          break;
+      }
+    }
+    return escaped.str();
+  }
+
+  void publish_result(
+    const std::string & command,
+    const std::string & normalized_command,
+    const std::string & posture_name,
+    const bool success,
+    const std::string & message)
+  {
+    if (!posture_result_publisher_) {
+      return;
+    }
+
+    std_msgs::msg::String result_msg;
+    std::ostringstream payload;
+    payload << "{"
+            << "\"command\":\"" << json_escape(command) << "\","
+            << "\"normalized_command\":\"" << json_escape(normalized_command) << "\","
+            << "\"posture_name\":\"" << json_escape(posture_name) << "\","
+            << "\"success\":" << (success ? "true" : "false") << ","
+            << "\"message\":\"" << json_escape(message) << "\""
+            << "}";
+    result_msg.data = payload.str();
+    posture_result_publisher_->publish(result_msg);
   }
 
   void reset_connection_state()
@@ -398,12 +459,19 @@ private:
     const std::string normalized_command = normalize(command);
     const auto now = get_clock()->now();
     if (should_ignore_duplicate_command(normalized_command, now, command)) {
+      publish_result(
+        command,
+        normalized_command,
+        "",
+        false,
+        "Ignored duplicate posture command within the dedupe window");
       return;
     }
 
     const auto resolved_command = resolve_normalized_command(normalized_command);
     if (!resolved_command) {
       RCLCPP_WARN(get_logger(), "Unknown posture command: '%s'", command.c_str());
+      publish_result(command, normalized_command, "", false, "Unknown posture command");
       return;
     }
 
@@ -415,6 +483,12 @@ private:
         "Failed to execute posture command '%s' -> '%s'",
         command.c_str(),
         resolved_command->posture_name.c_str());
+      publish_result(
+        command,
+        normalized_command,
+        resolved_command->posture_name,
+        false,
+        "Failed to execute posture command");
       return;
     }
 
@@ -424,10 +498,17 @@ private:
       command.c_str(),
       resolved_command->posture_name.c_str(),
       resolved_command->posture_speed);
+    publish_result(
+      command,
+      normalized_command,
+      resolved_command->posture_name,
+      true,
+      "Executed posture command");
   }
 
   bool connect_on_startup_;
   std::string posture_command_topic_;
+  std::string posture_result_topic_;
   std::string nao_ip_;
   int64_t nao_port_;
   double posture_speed_;
@@ -441,6 +522,7 @@ private:
   bool wake_up_on_connect_;
   bool reconnect_on_failure_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr posture_subscription_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr posture_result_publisher_;
   qi::AnyObject posture_service_;
   qi::SessionPtr session_;
   bool connected_{false};

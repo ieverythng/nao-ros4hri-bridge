@@ -20,26 +20,26 @@ graph TB
         SRC[ROS Packages]
         REF[Reference Sources]
     end
-    
+
     subgraph "Knowledge Layer"
         GN[GitNexus Backend]
         IDX[index_repo.sh]
         STATUS[status.sh]
         WIKI[generate_wiki.sh]
     end
-    
+
     subgraph "Generated Artifacts"
         RTG[ros_runtime_graph.json]
         RTM[ROS_RUNTIME_GRAPH.md]
         RPY[ros_runtime_proxy.py]
     end
-    
+
     subgraph "Agent Interfaces"
         CLI[gitnexus.sh CLI]
         HTTP[serve_http_mcp.sh]
         CODEX[codex_with_gitnexus.sh]
     end
-    
+
     SRC --> IDX
     REF --> IDX
     IDX --> GN

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import threading
 import time
 from typing import Optional
@@ -84,6 +85,8 @@ class ReplayMotionSkillServer(Node):
         self.declare_parameter("reconnect_on_failure", True)
         self.declare_parameter("fallback_to_posture_topic", True)
         self.declare_parameter("posture_command_topic", "/chatbot/posture_command")
+        self.declare_parameter("posture_result_topic", "/chatbot/posture_command_result")
+        self.declare_parameter("posture_result_timeout_sec", 12.0)
 
         self.nao_ip = str(self.get_parameter("nao_ip").value)
         self.nao_port = int(self.get_parameter("nao_port").value)
@@ -101,13 +104,29 @@ class ReplayMotionSkillServer(Node):
         self.posture_command_topic = str(
             self.get_parameter("posture_command_topic").value
         )
+        self.posture_result_topic = str(
+            self.get_parameter("posture_result_topic").value
+        )
+        self.posture_result_timeout_sec = max(
+            0.1,
+            float(self.get_parameter("posture_result_timeout_sec").value),
+        )
 
         self._session = None
         self._posture_proxy = None
         self._execution_lock = threading.Lock()
+        self._posture_result_lock = threading.Lock()
+        self._posture_result_event = threading.Event()
+        self._latest_posture_result: dict | None = None
         self._callback_group = ReentrantCallbackGroup()
         self._posture_command_publisher = self.create_publisher(
             String, self.posture_command_topic, 10
+        )
+        self._posture_result_subscription = self.create_subscription(
+            String,
+            self.posture_result_topic,
+            self._on_posture_result,
+            10,
         )
         has_naoqi_connection = self._connect_naoqi()
 
@@ -134,11 +153,12 @@ class ReplayMotionSkillServer(Node):
         if not has_naoqi_connection:
             mode = "topic_fallback" if self.fallback_to_posture_topic else "disconnected"
         self.get_logger().info(
-            "replay_motion_skill_server ready | action:%s posture_compat:%s mode:%s"
+            "replay_motion_skill_server ready | action:%s posture_compat:%s mode:%s result_topic:%s"
             % (
                 self.action_name,
                 self.posture_compat_action_name,
                 mode,
+                self.posture_result_topic,
             )
         )
 
@@ -286,10 +306,11 @@ class ReplayMotionSkillServer(Node):
         feedback_builder(goal_handle, "executing", 0.4)
         try:
             execution_mode = "direct_naoqi"
+            execution_note = ""
             if self._ensure_connection():
                 self._execute_posture_with_retry(posture_name, speed)
             else:
-                self._execute_posture_via_topic_fallback(posture_name)
+                execution_note = self._execute_posture_via_topic_fallback(posture_name)
                 execution_mode = "topic_fallback"
         except Exception as exc:  # pragma: no cover - runtime bound
             duration = time.monotonic() - start_time
@@ -314,7 +335,11 @@ class ReplayMotionSkillServer(Node):
         goal_handle.succeed()
         return result_builder(
             True,
-            f"Executed motion '{motion_name}' via {execution_mode}",
+            self._success_message(
+                motion_name=motion_name,
+                execution_mode=execution_mode,
+                execution_note=execution_note,
+            ),
             duration,
         )
 
@@ -338,12 +363,58 @@ class ReplayMotionSkillServer(Node):
         if not ok:
             raise RuntimeError("ALRobotPosture.goToPosture returned false after reconnect")
 
-    def _execute_posture_via_topic_fallback(self, posture_name: str) -> None:
+    def _execute_posture_via_topic_fallback(self, posture_name: str) -> str:
         if not self.fallback_to_posture_topic:
             raise RuntimeError("Fallback to posture topic is disabled")
+        with self._posture_result_lock:
+            self._latest_posture_result = None
+        self._posture_result_event.clear()
         msg = String()
         msg.data = posture_name
         self._posture_command_publisher.publish(msg)
+        deadline = time.monotonic() + self.posture_result_timeout_sec
+        while time.monotonic() <= deadline:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0.0:
+                break
+            self._posture_result_event.wait(timeout=min(0.1, remaining))
+            self._posture_result_event.clear()
+            with self._posture_result_lock:
+                result_payload = dict(self._latest_posture_result or {})
+            if not _posture_result_matches(result_payload, posture_name):
+                continue
+            if bool(result_payload.get("success", False)):
+                return str(result_payload.get("message", "")).strip()
+            raise RuntimeError(
+                str(result_payload.get("message", "")).strip()
+                or f"Posture bridge reported failure for '{posture_name}'"
+            )
+        raise RuntimeError(
+            f"Timed out waiting for posture bridge result on '{self.posture_result_topic}'"
+        )
+
+    def _on_posture_result(self, msg: String) -> None:
+        payload = _parse_posture_result_message(msg.data)
+        if not payload:
+            return
+        with self._posture_result_lock:
+            self._latest_posture_result = payload
+        self._posture_result_event.set()
+
+    @staticmethod
+    def _success_message(
+        *,
+        motion_name: str,
+        execution_mode: str,
+        execution_note: str,
+    ) -> str:
+        clean_note = str(execution_note or "").strip()
+        if execution_mode == "topic_fallback" and clean_note:
+            return (
+                f"Executed motion '{motion_name}' via {execution_mode}"
+                f" ({clean_note})"
+            )
+        return f"Executed motion '{motion_name}' via {execution_mode}"
 
     @staticmethod
     def _publish_replay_feedback(goal_handle, status: str, progress: float) -> None:
@@ -374,6 +445,32 @@ class ReplayMotionSkillServer(Node):
         result.message = message
         result.duration = float(duration)
         return result
+
+
+def _parse_posture_result_message(payload: str) -> dict:
+    try:
+        parsed = json.loads(str(payload or "").strip())
+    except json.JSONDecodeError:
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _posture_result_matches(result_payload: dict, posture_name: str) -> bool:
+    if not isinstance(result_payload, dict):
+        return False
+    expected = ReplayMotionSkillServer._normalize_name(posture_name)
+    if not expected:
+        return False
+    candidates = (
+        result_payload.get("posture_name", ""),
+        result_payload.get("normalized_command", ""),
+        result_payload.get("command", ""),
+    )
+    return any(
+        ReplayMotionSkillServer._normalize_name(candidate) == expected
+        for candidate in candidates
+        if str(candidate).strip()
+    )
 
 
 def main(args=None) -> None:

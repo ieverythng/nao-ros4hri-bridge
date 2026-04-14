@@ -20,19 +20,19 @@ flowchart TB
         GROUNDING[Scene Grounding]
         CHATBOT[Chatbot]
     end
-    
+
     subgraph kb_skills["kb_skills"]
         QC[KnowledgeCoreQueryClient]
         MC[KnowledgeCoreMutationClient]
         SKILLS[Skill Registry]
     end
-    
+
     subgraph knowledge_sources["knowledge_sources"]
         KB_MSGS[kb_msgs<br/>ROS Interfaces]
         KB_CORE[knowledge_core<br/>RDFlib + OWL2 RL]
         SIM[interaction_sim]
     end
-    
+
     Clients --> QC & MC
     QC & MC --> KB_MSGS
     SKILLS -.->|discovers| PLANNER

@@ -21,20 +21,20 @@ flowchart TD
         README["README.md<br/>Human entry point"]
         AGENTS["AGENTS.md<br/>Agent entry point"]
     end
-    
+
     subgraph Reference["Reference Layer"]
         DOCS["docs/<br/>Contracts & profiles"]
     end
-    
+
     subgraph Intelligence["Intelligence Layer"]
         KNOWLEDGE["knowledge/<br/>Semantic graph"]
     end
-    
+
     README --> DOCS
     README --> KNOWLEDGE
     AGENTS --> KNOWLEDGE
     DOCS --> KNOWLEDGE
-    
+
     style README fill:#e1f5fe
     style AGENTS fill:#f3e5f5
     style DOCS fill:#e8f5e9

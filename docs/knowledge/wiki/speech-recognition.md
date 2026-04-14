@@ -11,30 +11,30 @@ flowchart LR
     subgraph Input
         MIC[Microphone]
     end
-    
+
     subgraph simple_audio_capture
         GST[GStreamer Pipeline]
         AC[AudioCaptureNode]
     end
-    
+
     subgraph asr_vosk
         VOSK[Vosk Model]
         NV[NodeVosk]
     end
-    
+
     subgraph Output
         SPEECH[LiveSpeech]
         DIAG[Diagnostics]
         VOICE[Voice Tracking]
     end
-    
+
     MIC --> GST
     GST --> AC
     AC -->|AudioData| NV
     NV -->|LiveSpeech| SPEECH
     NV -->|Diagnostics| DIAG
     NV -->|IdsList| VOICE
-    
+
     PTT[Push-to-Talk] -.->|Bool| NV
     ROBOT[Robot State] -.->|robot_speaking| NV
 ```

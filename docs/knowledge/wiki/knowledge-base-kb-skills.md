@@ -19,18 +19,18 @@ flowchart TB
         MC[KnowledgeCoreMutationClient]
         IL[Intent Labels]
     end
-    
+
     subgraph KnowledgeCore
         KBQ[/kb/query]
         KBR[/kb/revise]
     end
-    
+
     subgraph Consumers
         SG[nao_scene_grounding]
         CB[chatbot_llm]
         PL[planner_llm]
     end
-    
+
     SG -->|write transient facts| MC
     MC -->|add/update/remove| KBR
     CB -->|read scene state| QC

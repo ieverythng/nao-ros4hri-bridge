@@ -5,9 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 from pathlib import Path
-import textwrap
 import warnings
-import xml.etree.ElementTree as ET
+
+from planner_common import ExportedSkillManifest
+from planner_common import load_exported_skill_manifests
 
 try:  # pragma: no cover - runtime dependency
     from ament_index_python.packages import PackageNotFoundError
@@ -18,12 +19,6 @@ except ImportError:  # pragma: no cover - import-light unit tests
 
     def get_package_share_directory(_package_name: str) -> str:
         raise PackageNotFoundError('ament_index_python is unavailable')
-
-try:  # pragma: no cover - optional dependency
-    import yaml
-except ImportError:  # pragma: no cover - import-light unit tests
-    yaml = None
-
 
 _DEFAULT_SKILL_REGISTRY_FILE = 'skill_registry.json'
 _DEFAULT_STEP_TYPES = ('noop', 'say', 'skill', 'look_at')
@@ -137,21 +132,6 @@ class PlannerSkill:
         }
 
 
-@dataclass(frozen=True)
-class ExportedSkillManifest:
-    """One skill manifest exported by a package.xml file."""
-
-    package: str
-    skill_id: str
-    interface_path: str
-    datatype: str
-    description: str
-    input_names: tuple[str, ...]
-    output_names: tuple[str, ...]
-    feedback_names: tuple[str, ...]
-    functional_domains: tuple[str, ...]
-
-
 class SkillRegistry:
     """Load and validate planner-facing skill metadata."""
 
@@ -175,10 +155,13 @@ class SkillRegistry:
                 'falling back to source-tree metadata',
             )
 
-        exported_skills = _load_exported_skill_manifests(
-            _DEFAULT_SKILL_PACKAGES,
-            logger=logger,
-        )
+        exported_skills = {
+            manifest.skill_id: manifest
+            for manifest in load_exported_skill_manifests(
+                _DEFAULT_SKILL_PACKAGES,
+                logger=logger,
+            )
+        }
         overlay_skills = overlay_payload.get('skills', [])
         if not isinstance(overlay_skills, list):
             overlay_skills = []
@@ -322,94 +305,6 @@ def _derived_payload_from_manifests(
     if description:
         payload['expected_effects'] = [description]
     return payload
-
-
-def _load_exported_skill_manifests(
-    package_names: tuple[str, ...],
-    *,
-    logger=None,
-) -> dict[str, ExportedSkillManifest]:
-    manifests: dict[str, ExportedSkillManifest] = {}
-    for package_name in package_names:
-        package_xml = _resolve_package_xml(package_name)
-        if package_xml is None:
-            continue
-        for manifest in _package_skill_manifests(package_name, package_xml, logger=logger):
-            manifests[manifest.skill_id] = manifest
-    return manifests
-
-
-def _package_skill_manifests(
-    package_name: str,
-    package_xml: Path,
-    *,
-    logger=None,
-) -> list[ExportedSkillManifest]:
-    try:
-        root = ET.parse(package_xml).getroot()
-    except Exception as err:
-        _warn(logger, 'Could not parse %s: %s' % (package_xml, err))
-        return []
-
-    manifests: list[ExportedSkillManifest] = []
-    for skill_elem in root.findall('.//skill'):
-        if str(skill_elem.attrib.get('content-type', '')).strip().lower() != 'yaml':
-            continue
-
-        manifest_text = textwrap.dedent(skill_elem.text or '').strip()
-        if not manifest_text:
-            continue
-        manifest_payload = _parse_yaml_manifest(manifest_text, logger=logger)
-        if not manifest_payload:
-            continue
-
-        skill_id = str(manifest_payload.get('id', '')).strip().lower()
-        if not skill_id:
-            continue
-        manifests.append(
-            ExportedSkillManifest(
-                package=package_name,
-                skill_id=skill_id,
-                interface_path=str(manifest_payload.get('default_interface_path', '')).strip(),
-                datatype=str(manifest_payload.get('datatype', '')).strip(),
-                description=' '.join(
-                    str(manifest_payload.get('description', '')).split()
-                ).strip(),
-                input_names=_parameter_names(manifest_payload, 'in'),
-                output_names=_parameter_names(manifest_payload, 'out'),
-                feedback_names=_parameter_names(manifest_payload, 'feedback'),
-                functional_domains=_coerce_tuple(manifest_payload.get('functional_domains', [])),
-            )
-        )
-    return manifests
-
-
-def _parse_yaml_manifest(payload: str, *, logger=None) -> dict:
-    if yaml is None:
-        _warn(logger, 'PyYAML is unavailable; planner skill metadata parsing is degraded')
-        return {}
-    try:
-        parsed = yaml.safe_load(payload)
-    except Exception as err:
-        _warn(logger, 'Skill manifest YAML parse failed: %s' % err)
-        return {}
-    return dict(parsed) if isinstance(parsed, dict) else {}
-
-
-def _parameter_names(payload: dict, section: str) -> tuple[str, ...]:
-    parameters = payload.get('parameters', {})
-    if not isinstance(parameters, dict):
-        return ()
-    raw_section = parameters.get(section, [])
-    if not isinstance(raw_section, list):
-        return ()
-    return tuple(
-        str(item.get('name', '')).strip()
-        for item in raw_section
-        if isinstance(item, dict) and str(item.get('name', '')).strip()
-    )
-
-
 def _load_registry_overlay(registry_path: Path | None) -> dict:
     if registry_path is None or not registry_path.exists():
         return {}
@@ -438,30 +333,6 @@ def _resolve_registry_path(path: str) -> tuple[Path | None, bool]:
         return source_candidate, install_candidate is not None
 
     return install_candidate or source_candidate, install_candidate is not None
-
-
-def _resolve_package_xml(package_name: str) -> Path | None:
-    candidates: list[Path] = []
-    try:
-        share_dir = Path(get_package_share_directory(package_name))
-        candidates.append(share_dir / 'package.xml')
-    except PackageNotFoundError:
-        pass
-
-    repo_root = Path(__file__).resolve().parents[3]
-    candidates.extend(
-        [
-            repo_root / 'src' / package_name / 'package.xml',
-            Path.cwd() / 'src' / package_name / 'package.xml',
-        ]
-    )
-
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-    return None
-
-
 def _ordered_unique(values) -> list[str]:
     seen: set[str] = set()
     ordered: list[str] = []

@@ -31,23 +31,23 @@ flowchart LR
         CAM[Camera] --> DET[Detector Backend]
         DET --> SG[nao_scene_grounding]
     end
-    
+
     subgraph Knowledge
         SG -->|/kb/revise| KC[knowledge_core]
         KC -->|/kb/query| KBS[kb_skills]
     end
-    
+
     subgraph Dialogue
         USER[User Speech/Text] --> DM[dialogue_manager]
         DM --> CL[chatbot_llm]
         KBS --> CL
     end
-    
+
     subgraph Planning
         CL -->|/planner/request| PL[planner_llm]
         PL -->|/intents| ORCH[nao_orchestrator]
     end
-    
+
     subgraph Execution
         ORCH --> SAY[/nao/say]
         ORCH --> MOT[/skill/replay_motion]

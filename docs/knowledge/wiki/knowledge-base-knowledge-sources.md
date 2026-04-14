@@ -19,22 +19,22 @@ graph TB
         ROS[ROS 2 Node<br/>knowledge_core]
         SOCKET[TCP Socket Server]
     end
-    
+
     subgraph Core
         KB[KnowledgeCore<br/>knowledge_core.kb]
         REASONER[reasonable<br/>OWL2 RL Reasoner]
         RDFLIB[rdflib<br/>Triple Store]
     end
-    
+
     subgraph Messages
         MSGS[kb_msgs]
     end
-    
+
     subgraph Visualization
         EXPLORER[KB Explorer<br/>Web UI]
         ROSBRIDGE[rosbridge_server]
     end
-    
+
     API --> KB
     ROS --> MSGS
     ROS --> KB
@@ -404,28 +404,28 @@ graph LR
     subgraph Input
         CAM[gscam<br/>Camera]
     end
-    
+
     subgraph Perception
         FACE[hri_face_detect_yunet]
         EMOTION[hri_emotion_recognizer]
         PERSON[hri_person_manager]
     end
-    
+
     subgraph Knowledge
         KB[knowledge_core]
         VIEWER[knowledge_viewer]
     end
-    
+
     subgraph Interaction
         DIALOGUE[dialogue_manager]
         CHATBOT[chatbot_llm]
         FACE[expressive_face]
     end
-    
+
     subgraph Visualization
         RQT[rqt<br/>perspective]
     end
-    
+
     CAM --> FACE
     FACE --> PERSON
     PERSON --> EMOTION

@@ -11,6 +11,39 @@ from planner_common import build_dialogue_act_payload
 from planner_llm.planner_engine import PlannerDecision
 from planner_llm.planner_engine import PlannerEngine
 
+_MOTION_PROGRESS_TEXT = {
+    'stand': 'standing up',
+    'standinit': 'standing up',
+    'posture_stand': 'standing up',
+    'head_center': 'looking straight ahead',
+    'head_look_left': 'looking to the left',
+    'head_look_right': 'looking to the right',
+    'head_look_up': 'looking up',
+    'head_look_down': 'looking down',
+    'sit': 'sitting down',
+    'sitrelax': 'sitting down',
+    'posture_sit': 'sitting down',
+    'kneel': 'kneeling down',
+    'crouch': 'kneeling down',
+    'posture_kneel': 'kneeling down',
+}
+_MOTION_COMPLETION_TEXT = {
+    'stand': 'I am standing now.',
+    'standinit': 'I am standing now.',
+    'posture_stand': 'I am standing now.',
+    'head_center': 'I am looking straight ahead now.',
+    'head_look_left': 'I am looking to the left now.',
+    'head_look_right': 'I am looking to the right now.',
+    'head_look_up': 'I am looking up now.',
+    'head_look_down': 'I am looking down now.',
+    'sit': 'I am sitting now.',
+    'sitrelax': 'I am sitting now.',
+    'posture_sit': 'I am sitting now.',
+    'kneel': 'I am kneeling now.',
+    'crouch': 'I am kneeling now.',
+    'posture_kneel': 'I am kneeling now.',
+}
+
 
 @dataclass
 class SupervisorState:
@@ -27,6 +60,7 @@ class SupervisorState:
     last_execution_feedback: ExecutionFeedback | None = None
     awaiting_user_response: bool = False
     active_scene_targets: tuple[str, ...] = ()
+    active_plan_steps: tuple[dict, ...] = ()
     communication_policy: dict = field(default_factory=dict)
     last_request: PlannerRequest | None = None
 
@@ -94,7 +128,35 @@ class PlannerSupervisor:
         if feedback.timestamp_sec > 0:
             state.latest_world_timestamp_sec = feedback.timestamp_sec
 
-        if feedback.event_type in ('plan_accepted', 'step_started', 'step_succeeded'):
+        if feedback.event_type == 'plan_accepted':
+            state.current_status = 'executing'
+            state.retry_budget_remaining = feedback.retry_budget
+            if self._emit_acknowledge(state):
+                return SupervisorOutcome(
+                    dialogue_acts=(self._dialogue_act(
+                        state,
+                        act='acknowledge',
+                        reason=feedback.reason or 'goal accepted',
+                        text_hint=self._acknowledgement_text(state),
+                    ),)
+                )
+            return SupervisorOutcome()
+
+        if feedback.event_type == 'step_started':
+            state.current_status = 'executing'
+            state.retry_budget_remaining = feedback.retry_budget
+            if self._emit_progress(state):
+                return SupervisorOutcome(
+                    dialogue_acts=(self._dialogue_act(
+                        state,
+                        act='progress_update',
+                        reason=feedback.reason or 'step started',
+                        text_hint=self._progress_text(state, feedback),
+                    ),)
+                )
+            return SupervisorOutcome()
+
+        if feedback.event_type == 'step_succeeded':
             state.current_status = 'executing'
             state.retry_budget_remaining = feedback.retry_budget
             return SupervisorOutcome()
@@ -110,7 +172,7 @@ class PlannerSupervisor:
                         state,
                         act='notify_completion',
                         reason=feedback.reason or 'goal completed',
-                        text_hint='Task completed.',
+                        text_hint=self._completion_text(state),
                     ),)
                 )
             return SupervisorOutcome()
@@ -137,6 +199,7 @@ class PlannerSupervisor:
         state.supersedes_goal_id = request.supersedes_goal_id
         state.current_status = 'planning'
         state.awaiting_user_response = False
+        state.active_plan_steps = ()
         state.last_request = request
         if not state.communication_policy:
             state.communication_policy = {}
@@ -155,6 +218,9 @@ class PlannerSupervisor:
         state.active_plan_id = str(plan_payload.get('plan_id', '')).strip()
         state.retry_budget_remaining = int(plan_payload.get('retry_budget', 0) or 0)
         state.active_scene_targets = tuple(plan_payload.get('scene_targets', []))
+        state.active_plan_steps = tuple(
+            step for step in plan_payload.get('steps', []) if isinstance(step, dict)
+        )
         state.communication_policy = dict(plan_payload.get('communication_policy', {}))
 
         if decision.mode in ('clarify', 'fail'):
@@ -255,6 +321,7 @@ class PlannerSupervisor:
         state.awaiting_user_response = False
         self._forget_plan(state.active_plan_id)
         state.active_plan_id = ''
+        state.active_plan_steps = ()
         self._states[state.goal_id] = state
         return SupervisorOutcome(
             dialogue_acts=(self._dialogue_act(
@@ -273,6 +340,7 @@ class PlannerSupervisor:
         state.awaiting_user_response = False
         self._forget_plan(state.active_plan_id)
         state.active_plan_id = ''
+        state.active_plan_steps = ()
 
     def _state_for_feedback(self, feedback: ExecutionFeedback) -> SupervisorState | None:
         goal_id = feedback.goal_id or self._plan_to_goal.get(feedback.plan_id, '')
@@ -306,14 +374,126 @@ class PlannerSupervisor:
             slots_needed=slots_needed,
             context={
                 'scene_targets': list(state.active_scene_targets),
+                'plan_step_count': len(state.active_plan_steps),
+                'requested_intents': list(state.last_request.normalized_intents)
+                if state.last_request is not None
+                else [],
+                'user_text': state.last_request.user_text if state.last_request is not None else '',
                 'status': state.current_status,
             },
         )
         return PlannerDialogueAct.from_payload(payload)
 
     def _emit_completion(self, state: SupervisorState) -> bool:
+        if (
+            len(state.active_plan_steps) == 1
+            and state.active_plan_steps[0].get('type') == 'say'
+        ):
+            return False
         policy = dict(state.communication_policy or {})
         return bool(policy.get('emit_completion', False))
+
+    def _emit_acknowledge(self, state: SupervisorState) -> bool:
+        policy = dict(state.communication_policy or {})
+        return bool(policy.get('emit_acknowledge', False))
+
+    def _emit_progress(self, state: SupervisorState) -> bool:
+        policy = dict(state.communication_policy or {})
+        return bool(policy.get('emit_progress', False))
+
+    def _acknowledgement_text(self, state: SupervisorState) -> str:
+        if state.last_request is not None and state.last_request.ack_text:
+            return state.last_request.ack_text
+        return 'Okay, I am starting now.'
+
+    def _progress_text(
+        self,
+        state: SupervisorState,
+        feedback: ExecutionFeedback,
+    ) -> str:
+        step = self._step_for_feedback(state, feedback)
+        summary = self._step_summary(step, scene_targets=state.active_scene_targets)
+        if summary:
+            return 'I am %s.' % summary
+        return 'I am working on it now.'
+
+    def _completion_text(self, state: SupervisorState) -> str:
+        if len(state.active_plan_steps) > 1:
+            return 'I finished that sequence.'
+        if state.active_plan_steps:
+            step_text = self._completion_text_for_step(
+                state.active_plan_steps[0],
+                scene_targets=state.active_scene_targets,
+            )
+            if step_text:
+                return step_text
+        if state.last_request is not None and len(state.last_request.normalized_intents) == 1:
+            intent_name = state.last_request.normalized_intents[0]
+            step_text = self._completion_text_for_step(
+                {
+                    'type': 'skill',
+                    'name': 'perform_motion',
+                    'args': {'object': intent_name},
+                },
+                scene_targets=state.active_scene_targets,
+            )
+            if step_text:
+                return step_text
+        return 'I finished that task.'
+
+    @staticmethod
+    def _step_for_feedback(state: SupervisorState, feedback: ExecutionFeedback) -> dict:
+        for step in state.active_plan_steps:
+            if not isinstance(step, dict):
+                continue
+            if feedback.step_id and str(step.get('id', '')).strip() == feedback.step_id:
+                return step
+        if len(state.active_plan_steps) == 1:
+            return state.active_plan_steps[0]
+        return {}
+
+    @staticmethod
+    def _step_summary(step: dict, *, scene_targets: tuple[str, ...]) -> str:
+        if not isinstance(step, dict):
+            return ''
+        step_type = str(step.get('type', '')).strip().lower()
+        step_name = str(step.get('name', '')).strip().lower()
+        step_args = dict(step.get('args', {}))
+
+        if step_type == 'look_at' or step_name == 'look_at':
+            if scene_targets:
+                return 'looking at %s' % ', '.join(scene_targets)
+            if step_args.get('target_frame'):
+                return 'looking at the requested target'
+            if str(step_args.get('policy', '')).strip().lower() == 'reset':
+                return 'resetting my gaze'
+
+        if step_type == 'skill' and step_name in ('', 'motion', 'perform_motion'):
+            motion_name = str(step_args.get('object', '')).strip().lower()
+            return _MOTION_PROGRESS_TEXT.get(motion_name, '')
+
+        return ''
+
+    @staticmethod
+    def _completion_text_for_step(step: dict, *, scene_targets: tuple[str, ...]) -> str:
+        if not isinstance(step, dict):
+            return ''
+        step_type = str(step.get('type', '')).strip().lower()
+        step_name = str(step.get('name', '')).strip().lower()
+        step_args = dict(step.get('args', {}))
+
+        if step_type == 'look_at' or step_name == 'look_at':
+            if scene_targets:
+                return 'I am looking at %s now.' % ', '.join(scene_targets)
+            if str(step_args.get('policy', '')).strip().lower() == 'reset':
+                return 'I am looking straight ahead now.'
+            return 'I finished redirecting my gaze.'
+
+        if step_type == 'skill' and step_name in ('', 'motion', 'perform_motion'):
+            motion_name = str(step_args.get('object', '')).strip().lower()
+            return _MOTION_COMPLETION_TEXT.get(motion_name, '')
+
+        return ''
 
     @staticmethod
     def _decision_reason(decision: PlannerDecision) -> str:

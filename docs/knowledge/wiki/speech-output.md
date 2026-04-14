@@ -19,19 +19,19 @@ flowchart LR
         DM[dialogue_manager]
         OP[operator tools<br/>rqt_chat]
     end
-    
+
     subgraph nao_say_skill
         SAY["/nao/say<br/>(Say action)"]
         TTS["/tts_engine/tts<br/>(TTS action)"]
         EXEC[Execution Core]
     end
-    
+
     subgraph Outputs
         BACKEND[TTS Backend<br/>/tts_engine/tts]
         SPEECH["/speech<br/>(topic fallback)"]
         DEBUG["/debug/nao_say/speech<br/>(mirror)"]
     end
-    
+
     DM --> TTS
     OP --> SAY
     SAY --> EXEC

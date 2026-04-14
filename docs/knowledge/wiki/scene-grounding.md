@@ -16,11 +16,11 @@ flowchart LR
         A[emorobcare_cv] --> |/detected_objects| B
         C[yolo_ros] --> |/yolo/tracking| B
     end
-    
+
     B[nao_scene_grounding] --> |/kb/revise| D[KnowledgeCore]
     B --> |/scene/summary| E[Consumers]
     D --> |/kb/query| F[chatbot_llm]
-    
+
     style B fill:#4a9eff,color:#fff
     style D fill:#6b8e23,color:#fff
 ```

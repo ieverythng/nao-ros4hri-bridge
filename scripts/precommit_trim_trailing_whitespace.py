@@ -19,11 +19,18 @@ def _trim_text(text: str, is_markdown: bool) -> tuple[str, bool]:
 
         stripped = body.rstrip(" \t")
         if stripped != body:
-            if is_markdown and body.endswith("  ") and not body.endswith("\t"):
-                body = stripped + "  "
-            else:
-                body = stripped
-            changed = True
+            # Preserve markdown hard breaks on non-empty lines, but trim
+            # meaningless whitespace-only spacer lines.
+            preserve_hard_break = (
+                is_markdown
+                and bool(stripped)
+                and body.endswith("  ")
+                and not body.endswith("\t")
+            )
+            updated_body = stripped + "  " if preserve_hard_break else stripped
+            if updated_body != body:
+                body = updated_body
+                changed = True
 
         output_lines.append(body + ending)
 

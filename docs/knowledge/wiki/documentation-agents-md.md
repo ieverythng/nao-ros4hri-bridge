@@ -27,22 +27,22 @@ flowchart TB
         SERVE[serve_http_mcp.sh]
         WIKI[generate_wiki.sh]
     end
-    
+
     subgraph Bootstrap
         BOOT[bootstrap_socialminds_sources.sh]
     end
-    
+
     subgraph Agent Tools
         QUERY[query]
         CTX[context]
         IMPACT[impact]
     end
-    
+
     BOOT --> INDEX
     INDEX --> STATUS
     INDEX --> SERVE
     INDEX --> WIKI
-    
+
     QUERY --> INDEX
     CTX --> INDEX
     IMPACT --> INDEX

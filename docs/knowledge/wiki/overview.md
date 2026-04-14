@@ -24,24 +24,24 @@ flowchart TB
         SR[Speech Recognition]
         SG[Scene Grounding]
     end
-    
+
     subgraph Dialogue
         DM[Dialogue Management]
         CB[LLM Chatbot]
     end
-    
+
     subgraph Planning
         PL[Planner]
         OR[Orchestration]
     end
-    
+
     subgraph Execution
         SO[Speech Output]
         RM[Robot Motion Skills]
     end
-    
+
     KB[(Knowledge Base)]
-    
+
     SR --> DM
     SG --> KB
     DM <--> CB

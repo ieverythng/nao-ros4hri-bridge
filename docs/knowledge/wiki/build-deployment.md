@@ -26,7 +26,7 @@ flowchart TD
         D --> E[Rebuild local packages]
         E --> F[Overlay Image<br/>iiia:nao-overlay]
     end
-    
+
     subgraph Full["Full Build (Release)"]
         G[ros:jazzy-ros-base] --> H[Add SocialMinds repo]
         H --> I[Install all deps]

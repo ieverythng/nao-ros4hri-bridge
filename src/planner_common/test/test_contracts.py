@@ -20,6 +20,7 @@ def test_planner_request_defaults_missing_fields() -> None:
     assert request.goal_id.startswith('goal_')
     assert request.request_kind == 'new_goal'
     assert request.normalized_intents == ()
+    assert request.requested_plan == ()
     assert request.scene_targets == ()
     assert request.grounded_context == {
         'knowledge_snapshot': {},
@@ -44,6 +45,13 @@ def test_planner_request_keeps_supervisor_metadata() -> None:
                 'scene_summary': {'objects': ['cup']},
                 'world_model_text': 'cup visible',
             },
+            'requested_plan': [
+                {
+                    'type': 'skill',
+                    'name': 'perform_motion',
+                    'args': {'object': 'stand'},
+                }
+            ],
         }
     )
     assert request.goal_id == 'goal_7'
@@ -56,6 +64,17 @@ def test_planner_request_keeps_supervisor_metadata() -> None:
     assert request.grounded_context['scene_summary'] == {'objects': ['cup']}
     assert request.grounded_context['world_model_snapshot'] == {}
     assert request.grounded_context['world_model_text'] == 'cup visible'
+    assert request.requested_plan == (
+        {
+            'id': 'step_1',
+            'type': 'skill',
+            'name': 'perform_motion',
+            'args': {'object': 'stand'},
+            'requires': [],
+            'on_failure': 'fail',
+            'retry_budget': 0,
+        },
+    )
 
 
 def test_scene_summary_accepts_grounding_payload() -> None:

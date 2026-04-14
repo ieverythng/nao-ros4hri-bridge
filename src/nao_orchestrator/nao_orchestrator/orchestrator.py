@@ -32,7 +32,6 @@ from nao_orchestrator.intent_rules import (
     normalize_legacy_intent,
     parse_intent_data,
     posture_topic_fallback_for_motion,
-    resolve_ack_text,
     resolve_say_text,
     validate_execution_plan,
 )
@@ -94,6 +93,11 @@ class NaoOrchestrator(Node):
         self.declare_parameter('look_at_wait_sec', 0.2)
         self.declare_parameter('look_at_result_timeout_sec', 8.0)
         self.declare_parameter('posture_command_topic', '/chatbot/posture_command')
+        self.declare_parameter(
+            'posture_command_result_topic',
+            '/chatbot/posture_command_result',
+        )
+        self.declare_parameter('posture_command_result_timeout_sec', 12.0)
         self.declare_parameter('fallback_to_posture_topic', True)
         self.declare_parameter('head_motion_joint_angles_topic', '/joint_angles')
         self.declare_parameter('fallback_to_joint_angles_topic', True)
@@ -154,6 +158,13 @@ class NaoOrchestrator(Node):
         self.posture_command_topic = str(
             self.get_parameter('posture_command_topic').value
         )
+        self.posture_command_result_topic = str(
+            self.get_parameter('posture_command_result_topic').value
+        )
+        self.posture_command_result_timeout_sec = max(
+            0.1,
+            float(self.get_parameter('posture_command_result_timeout_sec').value),
+        )
         self.fallback_to_posture_topic = bool(
             self.get_parameter('fallback_to_posture_topic').value
         )
@@ -174,6 +185,7 @@ class NaoOrchestrator(Node):
 
         self._intent_sub = None
         self._legacy_intent_sub = None
+        self._posture_result_sub = None
         self._diag_pub = None
         self._diag_timer = None
         self._posture_command_pub = None
@@ -188,6 +200,9 @@ class NaoOrchestrator(Node):
         self._replay_motion_client = None
         self._head_motion_client = None
         self._look_at_client = None
+        self._posture_result_lock = threading.Lock()
+        self._posture_result_event = threading.Event()
+        self._latest_posture_result: dict | None = None
 
     # -------------------------------------------------------------------------
     # Lifecycle configuration
@@ -213,6 +228,12 @@ class NaoOrchestrator(Node):
         self._posture_command_pub = self.create_publisher(
             String,
             self.posture_command_topic,
+            10,
+        )
+        self._posture_result_sub = self.create_subscription(
+            String,
+            self.posture_command_result_topic,
+            self._on_posture_command_result,
             10,
         )
         self._planner_feedback_pub = self.create_publisher(
@@ -294,6 +315,9 @@ class NaoOrchestrator(Node):
         if self._legacy_intent_sub is not None:
             self.destroy_subscription(self._legacy_intent_sub)
             self._legacy_intent_sub = None
+        if self._posture_result_sub is not None:
+            self.destroy_subscription(self._posture_result_sub)
+            self._posture_result_sub = None
         if self._diag_timer is not None:
             self.destroy_timer(self._diag_timer)
             self._diag_timer = None
@@ -508,25 +532,10 @@ class NaoOrchestrator(Node):
         plan: list[dict],
         plan_context: dict,
     ) -> None:
-        if not self.dispatch_speech_intents:
-            return
-        if intent_name in (Intent.GREET, Intent.SAY):
-            return
-        communication_policy = dict(plan_context.get('communication_policy', {}))
-        if not bool(communication_policy.get('emit_acknowledge', False)):
-            return
-        if any(step.get('type') == 'say' for step in plan):
-            return
-
-        ack_text = resolve_ack_text(
-            intent_name=intent_name,
-            data=data,
-            default_greeting=self.default_greeting,
-        )
-        if not ack_text:
-            return
-        if self._dispatch_say(ack_text, data):
-            self._stats.dispatched_say += 1
+        _ = (intent_name, data, plan, plan_context)
+        # Planner acknowledgement speech is realized through planner dialogue acts so
+        # the executor stays focused on deterministic skill dispatch only.
+        return
 
     def _execute_planned_intent(
         self,
@@ -686,10 +695,11 @@ class NaoOrchestrator(Node):
             step_args.get('policy', step_args.get('object', step_name))
         ).strip().lower()
         if policy in ('reset', 'look_at_reset'):
-            if self._execute_look_at_reset_step(on_started=on_started):
+            success, reason = self._execute_look_at_reset_step(on_started=on_started)
+            if success:
                 self._stats.dispatched_look_at += 1
                 return True, ''
-            return False, 'look_at reset dispatch failed'
+            return False, reason or 'look_at reset dispatch failed'
         target_frame = str(
             step_args.get('target_frame', step_args.get('frame_id', ''))
         ).strip()
@@ -701,17 +711,18 @@ class NaoOrchestrator(Node):
             )
             return False, 'look_at step missing target frame or reset policy'
 
-        if self._execute_look_at_target_step(
+        success, reason = self._execute_look_at_target_step(
             frame_id=target_frame,
             x_value=step_args.get('x', 0.0),
             y_value=step_args.get('y', 0.0),
             z_value=step_args.get('z', 0.0),
             policy=policy,
             on_started=on_started,
-        ):
+        )
+        if success:
             self._stats.dispatched_look_at += 1
             return True, ''
-        return False, 'look_at target dispatch failed'
+        return False, reason or 'look_at target dispatch failed'
 
     def _execute_say_plan_step(
         self,
@@ -765,22 +776,33 @@ class NaoOrchestrator(Node):
         route, resolved_payload = classify_motion_target(Intent.PERFORM_MOTION, step_args)
         if route == 'replay_motion':
             motion_name = resolved_payload['motion_name']
-            if self._execute_replay_motion_step(motion_name, on_started=on_started):
+            success, reason = self._execute_replay_motion_step(
+                motion_name,
+                on_started=on_started,
+            )
+            if success:
                 self._stats.dispatched_replay_motion += 1
                 return True, ''
-            return False, 'motion dispatch failed'
+            return False, reason or 'motion dispatch failed'
 
         if route == 'head_motion':
-            if self._execute_head_motion_step(resolved_payload, on_started=on_started):
+            success, reason = self._execute_head_motion_step(
+                resolved_payload,
+                on_started=on_started,
+            )
+            if success:
                 self._stats.dispatched_head_motion += 1
                 return True, ''
-            return False, 'motion dispatch failed'
+            return False, reason or 'motion dispatch failed'
 
         if route == 'look_at_reset':
-            if self._execute_look_at_reset_step(on_started=on_started):
+            success, reason = self._execute_look_at_reset_step(
+                on_started=on_started,
+            )
+            if success:
                 self._stats.dispatched_look_at += 1
                 return True, ''
-            return False, 'look_at reset dispatch failed'
+            return False, reason or 'look_at reset dispatch failed'
 
         self._stats.dispatch_failures += 1
         self.get_logger().warn('Unsupported motion payload: %s' % step_args)
@@ -791,11 +813,11 @@ class NaoOrchestrator(Node):
         motion_name: str,
         *,
         on_started=None,
-    ) -> bool:
+    ) -> tuple[bool, str]:
         clean_motion = str(motion_name).strip()
         if not clean_motion:
             self._stats.dispatch_failures += 1
-            return False
+            return False, 'replay motion dispatch failed: empty motion name'
         goal = ReplayMotion.Goal()
         goal.motion_name = clean_motion
         goal.speed = float(self.replay_motion_speed)
@@ -809,37 +831,28 @@ class NaoOrchestrator(Node):
         )
         if result.success:
             self.get_logger().info('ORCH REPLAY_DISPATCH | %s' % clean_motion)
-            return True
+            return True, ''
 
         if (
             not result.accepted
             and self.fallback_to_posture_topic
             and self._posture_command_pub is not None
         ):
-            fallback_command = posture_topic_fallback_for_motion(clean_motion)
-            if fallback_command:
-                if on_started is not None:
-                    on_started()
-                msg = String()
-                msg.data = fallback_command
-                self._posture_command_pub.publish(msg)
-                self.get_logger().warn(
-                    'ORCH REPLAY_TOPIC_FALLBACK | motion=%s command=%s topic=%s'
-                    % (
-                        clean_motion,
-                        fallback_command,
-                        self.posture_command_topic,
-                    )
-                )
-                return True
-        return False
+            fallback_ok, fallback_reason = self._execute_posture_topic_fallback(
+                clean_motion,
+                on_started=on_started,
+            )
+            if fallback_ok:
+                return True, ''
+            return False, fallback_reason or 'posture fallback failed'
+        return False, result.reason or 'replay motion dispatch failed'
 
     def _execute_head_motion_step(
         self,
         payload: dict,
         *,
         on_started=None,
-    ) -> bool:
+    ) -> tuple[bool, str]:
         yaw = float(payload.get('yaw', 0.0))
         pitch = float(payload.get('pitch', 0.0))
         relative = bool(payload.get('relative', False))
@@ -861,7 +874,7 @@ class NaoOrchestrator(Node):
                 'ORCH HEAD_DISPATCH | yaw=%.3f pitch=%.3f relative=%s'
                 % (yaw, pitch, relative)
             )
-            return True
+            return True, ''
 
         if (
             not result.accepted
@@ -881,10 +894,10 @@ class NaoOrchestrator(Node):
                 'ORCH HEAD_TOPIC_FALLBACK | yaw=%.3f pitch=%.3f topic=%s'
                 % (yaw, pitch, self.head_motion_joint_angles_topic)
             )
-            return True
-        return False
+            return True, ''
+        return False, result.reason or 'head motion dispatch failed'
 
-    def _execute_look_at_reset_step(self, *, on_started=None) -> bool:
+    def _execute_look_at_reset_step(self, *, on_started=None) -> tuple[bool, str]:
         goal = LookAt.Goal()
         goal.policy = LookAt.Goal.RESET
         result = self._execute_action_step(
@@ -897,7 +910,7 @@ class NaoOrchestrator(Node):
         )
         if result.success:
             self.get_logger().info('ORCH LOOK_AT_DISPATCH | policy=reset')
-            return True
+            return True, ''
 
         if not result.accepted:
             self.get_logger().warn('look_at action server unavailable; falling back to head reset')
@@ -909,7 +922,7 @@ class NaoOrchestrator(Node):
                 },
                 on_started=on_started,
             )
-        return False
+        return False, result.reason or 'look_at reset dispatch failed'
 
     def _execute_look_at_target_step(
         self,
@@ -920,12 +933,12 @@ class NaoOrchestrator(Node):
         z_value,
         policy: str = '',
         on_started=None,
-    ) -> bool:
+    ) -> tuple[bool, str]:
         clean_frame = str(frame_id).strip()
         if not clean_frame:
             self._stats.dispatch_failures += 1
             self.get_logger().warn('No target frame resolved for look_at dispatch')
-            return False
+            return False, 'look_at target dispatch failed: missing target frame'
 
         goal = LookAt.Goal()
         goal.policy = str(policy).strip().lower()
@@ -954,8 +967,8 @@ class NaoOrchestrator(Node):
                     float(target.point.z),
                 )
             )
-            return True
-        return False
+            return True, ''
+        return False, result.reason or 'look_at target dispatch failed'
 
     def _execute_action_step(
         self,
@@ -1093,6 +1106,37 @@ class NaoOrchestrator(Node):
             return False, error_msg or 'action failed with error code %d' % error_code
         return True, ''
 
+    @staticmethod
+    def _parse_posture_result_message(payload: str) -> dict:
+        try:
+            parsed = json.loads(str(payload or '').strip())
+        except json.JSONDecodeError:
+            return {}
+        return parsed if isinstance(parsed, dict) else {}
+
+    @staticmethod
+    def _posture_result_matches(payload: dict, fallback_command: str) -> bool:
+        if not isinstance(payload, dict):
+            return False
+        expected = str(fallback_command or '').strip().lower()
+        if not expected:
+            return False
+        candidates = (
+            payload.get('normalized_command', ''),
+            payload.get('command', ''),
+            payload.get('posture_name', ''),
+        )
+        return any(
+            str(candidate or '').strip().lower() == expected
+            or str(candidate or '').strip().lower() == {
+                'stand': 'stand',
+                'sit': 'sit',
+                'kneel': 'crouch',
+            }.get(expected, expected)
+            for candidate in candidates
+            if str(candidate or '').strip()
+        )
+
     def _resolve_plan_id(self, plan_context: dict) -> str:
         plan_id = str(plan_context.get('plan_id', '')).strip()
         if plan_id:
@@ -1135,6 +1179,76 @@ class NaoOrchestrator(Node):
         msg = String()
         msg.data = json.dumps(payload, sort_keys=True, separators=(',', ':'))
         self._planner_feedback_pub.publish(msg)
+
+    def _on_posture_command_result(self, msg: String) -> None:
+        payload = self._parse_posture_result_message(msg.data)
+        if not payload:
+            return
+        with self._posture_result_lock:
+            self._latest_posture_result = payload
+        self._posture_result_event.set()
+
+    def _execute_posture_topic_fallback(
+        self,
+        motion_name: str,
+        *,
+        on_started=None,
+    ) -> tuple[bool, str]:
+        if self._posture_command_pub is None:
+            self._stats.dispatch_failures += 1
+            return False, 'posture fallback publisher unavailable'
+
+        fallback_command = posture_topic_fallback_for_motion(motion_name)
+        if not fallback_command:
+            self._stats.dispatch_failures += 1
+            return False, 'no posture fallback is defined for %s' % motion_name
+
+        with self._posture_result_lock:
+            self._latest_posture_result = None
+        self._posture_result_event.clear()
+
+        if on_started is not None:
+            on_started()
+
+        msg = String()
+        msg.data = fallback_command
+        self._posture_command_pub.publish(msg)
+        self.get_logger().warn(
+            'ORCH REPLAY_TOPIC_FALLBACK | motion=%s command=%s topic=%s result_topic=%s'
+            % (
+                motion_name,
+                fallback_command,
+                self.posture_command_topic,
+                self.posture_command_result_topic,
+            )
+        )
+        return self._wait_for_posture_fallback_result(fallback_command)
+
+    def _wait_for_posture_fallback_result(self, fallback_command: str) -> tuple[bool, str]:
+        deadline = time.monotonic() + self.posture_command_result_timeout_sec
+        while time.monotonic() <= deadline:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0.0:
+                break
+            self._posture_result_event.wait(timeout=min(0.1, remaining))
+            self._posture_result_event.clear()
+            with self._posture_result_lock:
+                payload = dict(self._latest_posture_result or {})
+            if not self._posture_result_matches(payload, fallback_command):
+                continue
+            success = bool(payload.get('success', False))
+            reason = str(payload.get('message', '')).strip()
+            if success:
+                return True, reason or 'posture bridge reported success'
+            self._stats.dispatch_failures += 1
+            return False, reason or 'posture bridge reported failure'
+
+        self._stats.dispatch_failures += 1
+        return (
+            False,
+            'Timed out waiting for posture fallback result on %s'
+            % self.posture_command_result_topic,
+        )
 
     def _dispatch_motion_payload(
         self,
@@ -1213,20 +1327,14 @@ class NaoOrchestrator(Node):
             return True
 
         if self.fallback_to_posture_topic and self._posture_command_pub is not None:
-            fallback_command = posture_topic_fallback_for_motion(clean_motion)
-            if fallback_command:
-                msg = String()
-                msg.data = fallback_command
-                self._posture_command_pub.publish(msg)
-                self.get_logger().warn(
-                    'ORCH REPLAY_TOPIC_FALLBACK | motion=%s command=%s topic=%s'
-                    % (
-                        clean_motion,
-                        fallback_command,
-                        self.posture_command_topic,
-                    )
-                )
+            fallback_ok, fallback_reason = self._execute_posture_topic_fallback(clean_motion)
+            if fallback_ok:
                 return True
+            self.get_logger().warn(
+                'Replay motion fallback failed for %s: %s'
+                % (clean_motion, fallback_reason)
+            )
+            return False
 
         self._stats.dispatch_failures += 1
         self.get_logger().warn(

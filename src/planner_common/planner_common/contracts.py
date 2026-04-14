@@ -405,6 +405,7 @@ class PlannerRequest:
     ack_mode: str
     scene_targets: tuple[str, ...]
     dialogue_context: tuple[str, ...]
+    requested_plan: tuple[dict, ...]
     grounded_context: dict
     planner_mode: str
     interaction_mode: str
@@ -419,6 +420,11 @@ class PlannerRequest:
 
         request_id = _first_non_empty(data.get('request_id', ''), make_runtime_id('request'))
         goal_id = _first_non_empty(data.get('goal_id', ''), make_goal_id())
+        requested_plan = tuple(
+            normalize_plan_steps(
+                data.get('requested_plan', data.get('plan', []))
+            )
+        )
 
         return cls(
             request_id=request_id,
@@ -436,6 +442,7 @@ class PlannerRequest:
             ack_mode=str(data.get('ack_mode', '')).strip(),
             scene_targets=tuple(coerce_str_list(data.get('scene_targets', []))),
             dialogue_context=tuple(coerce_str_list(dialogue_context)),
+            requested_plan=requested_plan,
             grounded_context=normalize_grounded_context(data.get('grounded_context', {})),
             planner_mode=str(data.get('planner_mode', 'default')).strip() or 'default',
             interaction_mode=str(data.get('interaction_mode', '')).strip() or 'default',

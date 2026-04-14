@@ -24,27 +24,27 @@ flowchart TD
     subgraph Input
         A[speech input]
     end
-    
+
     subgraph Dialogue Layer
         B[dialogue_manager]
         C[chatbot_llm]
     end
-    
+
     subgraph Planning Layer
         D[planner_llm]
     end
-    
+
     subgraph Orchestration
         E[nao_orchestrator]
     end
-    
+
     subgraph Skills
         F[/nao/say/]
         G[/skill/replay_motion/]
         H[/skill/do_head_motion/]
         I[/skill/look_at/]
     end
-    
+
     A --> B
     B --> C
     C -->|direct mode| E

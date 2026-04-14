@@ -24,12 +24,16 @@ from planner_common.contracts import normalize_communication_policy
 from planner_common.contracts import normalize_grounded_context
 from planner_common.contracts import normalize_plan_steps
 from planner_common.contracts import parse_json_object
+from planner_common.skill_manifest import ExportedSkillManifest
+from planner_common.skill_manifest import load_exported_skill_manifests
+from planner_common.skill_manifest import resolve_package_xml
 from planner_common.contracts import truncate_text
 
 __all__ = [
     'DEFAULT_PLANNER_REQUEST_INTENT',
     'EnrichedEntity',
     'EnrichedSnapshot',
+    'ExportedSkillManifest',
     'ExecutionFeedback',
     'PlannerDialogueAct',
     'PlannerRequest',
@@ -45,11 +49,13 @@ __all__ = [
     'coerce_bool',
     'coerce_str_list',
     'extract_json_object',
+    'load_exported_skill_manifests',
     'make_goal_id',
     'make_plan_id',
     'normalize_communication_policy',
     'normalize_grounded_context',
     'normalize_plan_steps',
     'parse_json_object',
+    'resolve_package_xml',
     'truncate_text',
 ]

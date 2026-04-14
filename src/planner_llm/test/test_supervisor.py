@@ -104,6 +104,13 @@ class _ClarifyEngine(_StubEngine):
         )
 
 
+class _AckEngine(_StubEngine):
+    def plan_request(self, request, **kwargs):
+        decision = super().plan_request(request, **kwargs)
+        decision.payload['plan']['communication_policy']['emit_acknowledge'] = True
+        return decision
+
+
 def test_supervisor_creates_new_goal_session_without_duplicate_ack_dialogue_act() -> None:
     supervisor = PlannerSupervisor(_StubEngine(), auto_replan=True)
     request = PlannerRequest.from_payload(
@@ -244,3 +251,33 @@ def test_supervisor_emits_completion_dialogue_act_when_policy_allows_it() -> Non
     assert outcome.decision is None
     assert len(outcome.dialogue_acts) == 1
     assert outcome.dialogue_acts[0].act == 'notify_completion'
+    assert outcome.dialogue_acts[0].text_hint == 'I am looking straight ahead now.'
+
+
+def test_supervisor_emits_acknowledgement_dialogue_act_when_policy_allows_it() -> None:
+    supervisor = PlannerSupervisor(_AckEngine(), auto_replan=True)
+    request = PlannerRequest.from_payload(
+        {
+            'goal_id': 'goal_ack',
+            'request_id': 'turn_1',
+            'user_text': 'look ahead',
+            'ack_text': 'Okay, I am starting now.',
+        }
+    )
+    first_outcome = supervisor.handle_request(request)
+    feedback = ExecutionFeedback.from_payload(
+        {
+            'goal_id': 'goal_ack',
+            'plan_id': first_outcome.decision.plan_id,
+            'plan_version': 1,
+            'event_type': 'plan_accepted',
+            'status': 'accepted',
+        }
+    )
+
+    outcome = supervisor.handle_feedback(feedback)
+
+    assert outcome.decision is None
+    assert len(outcome.dialogue_acts) == 1
+    assert outcome.dialogue_acts[0].act == 'acknowledge'
+    assert outcome.dialogue_acts[0].text_hint == 'Okay, I am starting now.'

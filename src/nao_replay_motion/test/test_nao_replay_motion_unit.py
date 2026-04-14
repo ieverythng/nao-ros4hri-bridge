@@ -1,5 +1,7 @@
 from nao_replay_motion.head_motion_skill_server import HeadMotionSkillServer
 from nao_replay_motion.replay_motion_skill_server import ReplayMotionSkillServer
+from nao_replay_motion.replay_motion_skill_server import _parse_posture_result_message
+from nao_replay_motion.replay_motion_skill_server import _posture_result_matches
 
 
 def test_replay_motion_aliases_are_stable():
@@ -38,3 +40,14 @@ def test_head_motion_reaches_target_within_tolerance():
 
     assert server._has_reached_target(0.5, 0.0) is True
     assert server._has_reached_target(0.6, 0.0) is False
+
+
+def test_posture_result_helpers_match_bridge_payload():
+    payload = _parse_posture_result_message(
+        '{"command":"stand","normalized_command":"stand","posture_name":"Stand","success":true,"message":"Executed posture command"}'
+    )
+
+    assert payload["success"] is True
+    assert _posture_result_matches(payload, "stand") is True
+    assert _posture_result_matches(payload, "Stand") is True
+    assert _parse_posture_result_message("not-json") == {}

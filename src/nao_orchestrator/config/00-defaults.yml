@@ -15,6 +15,8 @@
     look_at_action: "/skill/look_at"
     look_at_wait_sec: 0.2
     posture_command_topic: "/chatbot/posture_command"
+    posture_command_result_topic: "/chatbot/posture_command_result"
+    posture_command_result_timeout_sec: 12.0
     fallback_to_posture_topic: true
     head_motion_joint_angles_topic: "/joint_angles"
     fallback_to_joint_angles_topic: true

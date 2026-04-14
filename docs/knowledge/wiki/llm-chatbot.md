@@ -18,18 +18,18 @@ flowchart TB
         Node[LLMChatbot Node]
         TE[TurnEngine]
         OT[OllamaTransport]
-        
+
         subgraph Prompt Assembly
             PB[prompt_builders.py]
             PP[prompt_pack.py]
             SC[skill_catalog.py]
         end
-        
+
         subgraph Knowledge
             KSC[KnowledgeSnapshotClient]
             KS[knowledge_snapshot.py]
         end
-        
+
         subgraph Intent Pipeline
             IR[intent_rules.py]
             IA[intent_adapter.py]

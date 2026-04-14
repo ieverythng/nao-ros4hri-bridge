@@ -12,18 +12,18 @@ graph LR
         DM[dialogue_manager]
         CB[chatbot_llm]
     end
-    
+
     subgraph planner_llm
         PN[PlannerNode]
         PS[PlannerSupervisor]
         PE[PlannerEngine]
         SR[SkillRegistry]
     end
-    
+
     subgraph Downstream
         NO[nao_orchestrator]
     end
-    
+
     DM --> CB
     CB -->|/planner/request| PN
     PN --> PS

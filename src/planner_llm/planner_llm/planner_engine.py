@@ -42,7 +42,9 @@ _SYSTEM_PROMPT = (
     'Plan only over the supplied abstract skill registry and allowed step types. '
     'Do not reference robot-specific topics, NAOqi APIs, or direct hardware calls. '
     'normalized_intents may be incomplete, so infer the executable request from user_text, '
-    'grounded context, and execution feedback. If the task is ambiguous or blocked, set '
+    'grounded context, requested_plan hints, and execution feedback. When '
+    'request.requested_plan is present, preserve its safe executable ordering unless you have '
+    'a clear reason to clarify, fail, or replan. If the task is ambiguous or blocked, set '
     'decision to clarify and include clarification_text. If no safe continuation exists, '
     'set decision to fail and explain why.'
 )
@@ -124,6 +126,17 @@ class PlannerEngine:
                 )
             )
         except PlannerProviderError as err:
+            requested_plan_decision = self._requested_plan_decision(
+                request,
+                feedback=feedback,
+                goal_id=resolved_goal_id,
+                plan_version=resolved_plan_version,
+                status=status,
+                communication_policy=resolved_policy,
+                raw_model_output='planner backend unavailable: %s' % err,
+            )
+            if requested_plan_decision is not None:
+                return requested_plan_decision
             return self._clarification_decision(
                 request,
                 feedback=feedback,
@@ -146,6 +159,18 @@ class PlannerEngine:
         )
         if decision is not None:
             return decision
+
+        requested_plan_decision = self._requested_plan_decision(
+            request,
+            feedback=feedback,
+            goal_id=resolved_goal_id,
+            plan_version=resolved_plan_version,
+            status=status,
+            communication_policy=resolved_policy,
+            raw_model_output=raw_model_output,
+        )
+        if requested_plan_decision is not None:
+            return requested_plan_decision
 
         return self._clarification_decision(
             request,
@@ -323,6 +348,8 @@ class PlannerEngine:
             'sequenced',
         ):
             return None
+        if len(request.requested_plan) > 1:
+            return None
         if len(request.normalized_intents) > 1:
             return None
 
@@ -380,6 +407,43 @@ class PlannerEngine:
             )
         return None
 
+    def _requested_plan_decision(
+        self,
+        request: PlannerRequest,
+        *,
+        feedback: ExecutionFeedback | None,
+        goal_id: str,
+        plan_version: int,
+        status: str,
+        communication_policy: dict,
+        raw_model_output: str = '',
+    ) -> PlannerDecision | None:
+        if feedback is not None or not request.requested_plan:
+            return None
+
+        steps = self._skill_registry.filter_supported_steps(
+            [dict(step) for step in request.requested_plan]
+        )
+        if not steps:
+            return None
+
+        return self._build_decision(
+            request=request,
+            feedback=feedback,
+            steps=steps,
+            ack_text=request.ack_text,
+            ack_mode=request.ack_mode,
+            validation_status='draft',
+            retry_budget=self._default_retry_budget,
+            scene_targets=self._scene_targets_for_decision(request, feedback, {}),
+            raw_model_output=raw_model_output,
+            mode='hint',
+            goal_id=goal_id,
+            plan_version=plan_version,
+            status=status,
+            communication_policy=communication_policy,
+        )
+
     @staticmethod
     def _request_payload(request: PlannerRequest) -> dict:
         return {
@@ -394,6 +458,7 @@ class PlannerEngine:
             'ack_mode': request.ack_mode,
             'scene_targets': list(request.scene_targets),
             'dialogue_context': list(request.dialogue_context),
+            'requested_plan': list(request.requested_plan),
             'grounded_context': request.grounded_context,
             'planner_mode': request.planner_mode,
             'interaction_mode': request.interaction_mode,

@@ -12,28 +12,28 @@ graph TB
         NA[nao_skills<br/>Action Definitions]
         MS[motions_skills<br/>Generic Motion Interfaces]
     end
-    
+
     subgraph "Implementation Layer"
         RM[nao_replay_motion<br/>ReplayMotionSkillServer]
         HM[HeadMotionSkillServer]
         PB[nao_posture_bridge_node<br/>C++ Bridge]
         LA[nao_look_at<br/>LookAt Implementation]
     end
-    
+
     subgraph "External"
         NAO[NAOqi/ALRobotPosture]
         JA[/joint_angles topic]
         JS[/joint_states topic]
         TF[TF2]
     end
-    
+
     ORC[nao_orchestrator] --> NA
     ORC --> MS
-    
+
     NA --> RM
     NA --> HM
     MS --> LA
-    
+
     RM --> NAO
     RM --> JA
     HM --> JA

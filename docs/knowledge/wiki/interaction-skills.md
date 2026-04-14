@@ -24,25 +24,25 @@ graph TB
         M[Message Definitions]
         S[Skill Manifests]
     end
-    
+
     subgraph "Actions"
         A1[AskHumanForHelp]
         A2[DoLedEffect]
         A3[LookAt]
         A4[LookFor]
     end
-    
+
     subgraph "Messages"
         M1[LedColor]
         M2[SetExpression]
     end
-    
+
     subgraph "Dependencies"
         STD[std_skills<br/>Meta/Result/Feedback]
         HRI[hri_msgs<br/>Expression]
         GEO[geometry_msgs<br/>PointStamped]
     end
-    
+
     A --> STD
     M --> STD
     M --> HRI

@@ -20,7 +20,7 @@ graph TB
         NB[Payload Builders]
         NP[JSON Normalizers]
     end
-    
+
     subgraph planner_llm["planner_llm (Processing Layer)"]
         PN[PlannerNode]
         PS[PlannerSupervisor]
@@ -28,12 +28,12 @@ graph TB
         SR[SkillRegistry]
         PR[Providers]
     end
-    
+
     subgraph External
         CB[chatbot_llm]
         NO[nao_orchestrator]
     end
-    
+
     CB -->|request| PN
     PN --> PS
     PS --> PE
@@ -43,7 +43,7 @@ graph TB
     PS -->|plan| NO
     NO -->|feedback| PN
     PS -->|dialogue_act| CB
-    
+
     NB -.->|payloads| PN
     NP -.->|normalized data| PE
 ```

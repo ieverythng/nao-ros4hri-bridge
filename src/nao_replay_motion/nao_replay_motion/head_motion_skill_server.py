@@ -65,6 +65,8 @@ class HeadMotionSkillServer(Node):
         self.declare_parameter("joint_state_wait_sec", 1.0)
         self.declare_parameter("convergence_timeout_sec", 3.0)
         self.declare_parameter("convergence_tolerance_rad", 0.08)
+        self.declare_parameter("retry_on_convergence_timeout", True)
+        self.declare_parameter("retry_convergence_timeout_sec", 1.5)
 
         self.action_name = str(self.get_parameter("action_name").value)
         self.default_speed = float(self.get_parameter("default_speed").value)
@@ -86,6 +88,13 @@ class HeadMotionSkillServer(Node):
         self.convergence_tolerance_rad = max(
             1e-3, float(self.get_parameter("convergence_tolerance_rad").value)
         )
+        self.retry_on_convergence_timeout = bool(
+            self.get_parameter("retry_on_convergence_timeout").value
+        )
+        self.retry_convergence_timeout_sec = max(
+            0.1,
+            float(self.get_parameter("retry_convergence_timeout_sec").value),
+        )
 
         if JointAnglesWithSpeed is None or JointState is None:
             raise RuntimeError(
@@ -95,6 +104,7 @@ class HeadMotionSkillServer(Node):
         self._execution_lock = threading.Lock()
         self._joint_state_lock = threading.Lock()
         self._head_joint_positions: dict[str, float] = {}
+        self._last_joint_state_monotonic = 0.0
         self._head_joint_state_event = threading.Event()
         self._callback_group = ReentrantCallbackGroup()
         self._joint_angles_publisher = self.create_publisher(
@@ -218,6 +228,15 @@ class HeadMotionSkillServer(Node):
             relative=relative,
             current_state=current_state,
         )
+        joint_state_age = self._joint_state_age_sec()
+        self.get_logger().info(
+            "HEAD_MOTION state before command | current_yaw=%.3f current_pitch=%.3f joint_state_age=%.3fs"
+            % (
+                current_state.get("HeadYaw", float("nan")),
+                current_state.get("HeadPitch", float("nan")),
+                joint_state_age if joint_state_age is not None else -1.0,
+            )
+        )
         target_validation_error = self._validate_angles(
             target_yaw,
             target_pitch,
@@ -255,20 +274,51 @@ class HeadMotionSkillServer(Node):
             target_pitch=target_pitch,
             timeout_sec=self.convergence_timeout_sec,
         ):
-            duration = time.monotonic() - start_time
-            if goal_handle.is_cancel_requested:
-                goal_handle.canceled()
-                return self._result(False, "Cancelled during convergence wait", duration)
-            latest_state = self._current_head_state() or {}
-            reason = (
-                "Head motion timed out before convergence "
-                f"(target_yaw={target_yaw:.3f}, target_pitch={target_pitch:.3f}, "
-                f"latest_yaw={latest_state.get('HeadYaw', float('nan')):.3f}, "
-                f"latest_pitch={latest_state.get('HeadPitch', float('nan')):.3f})"
+            initial_reason = self._convergence_timeout_reason(
+                target_yaw=target_yaw,
+                target_pitch=target_pitch,
             )
-            self.get_logger().warn("HEAD_MOTION failed | %s" % reason)
-            goal_handle.abort()
-            return self._result(False, reason, duration)
+            if self.retry_on_convergence_timeout and not goal_handle.is_cancel_requested:
+                self.get_logger().warn(
+                    "HEAD_MOTION retrying after convergence timeout | %s" % initial_reason
+                )
+                self._publish_feedback(goal_handle, "retrying", 0.7)
+                self._publish_joint_angles(
+                    yaw=yaw,
+                    pitch=pitch,
+                    speed=speed,
+                    relative=relative,
+                )
+                if self._wait_for_convergence(
+                    goal_handle,
+                    target_yaw=target_yaw,
+                    target_pitch=target_pitch,
+                    timeout_sec=self.retry_convergence_timeout_sec,
+                ):
+                    self.get_logger().info(
+                        "HEAD_MOTION converged after retry | target_yaw=%.3f target_pitch=%.3f"
+                        % (target_yaw, target_pitch)
+                    )
+                else:
+                    duration = time.monotonic() - start_time
+                    if goal_handle.is_cancel_requested:
+                        goal_handle.canceled()
+                        return self._result(False, "Cancelled during convergence wait", duration)
+                    reason = self._convergence_timeout_reason(
+                        target_yaw=target_yaw,
+                        target_pitch=target_pitch,
+                    )
+                    self.get_logger().warn("HEAD_MOTION failed | %s" % reason)
+                    goal_handle.abort()
+                    return self._result(False, reason, duration)
+            else:
+                duration = time.monotonic() - start_time
+                if goal_handle.is_cancel_requested:
+                    goal_handle.canceled()
+                    return self._result(False, "Cancelled during convergence wait", duration)
+                self.get_logger().warn("HEAD_MOTION failed | %s" % initial_reason)
+                goal_handle.abort()
+                return self._result(False, initial_reason, duration)
 
         self._publish_feedback(goal_handle, "completing", 1.0)
         duration = time.monotonic() - start_time
@@ -291,6 +341,7 @@ class HeadMotionSkillServer(Node):
                 if joint_name not in self._HEAD_JOINTS or index >= len(msg.position):
                     continue
                 self._head_joint_positions[joint_name] = float(msg.position[index])
+                self._last_joint_state_monotonic = time.monotonic()
                 updated = True
         if updated:
             self._head_joint_state_event.set()
@@ -359,6 +410,28 @@ class HeadMotionSkillServer(Node):
         return (
             abs(current_state["HeadYaw"] - float(target_yaw)) <= self.convergence_tolerance_rad
             and abs(current_state["HeadPitch"] - float(target_pitch)) <= self.convergence_tolerance_rad
+        )
+
+    def _joint_state_age_sec(self) -> Optional[float]:
+        with self._joint_state_lock:
+            if self._last_joint_state_monotonic <= 0.0:
+                return None
+            return max(0.0, time.monotonic() - self._last_joint_state_monotonic)
+
+    def _convergence_timeout_reason(self, *, target_yaw: float, target_pitch: float) -> str:
+        latest_state = self._current_head_state() or {}
+        joint_state_age = self._joint_state_age_sec()
+        joint_state_age_text = (
+            "unknown"
+            if joint_state_age is None
+            else f"{joint_state_age:.3f}s"
+        )
+        return (
+            "Head motion timed out before convergence "
+            f"(target_yaw={target_yaw:.3f}, target_pitch={target_pitch:.3f}, "
+            f"latest_yaw={latest_state.get('HeadYaw', float('nan')):.3f}, "
+            f"latest_pitch={latest_state.get('HeadPitch', float('nan')):.3f}, "
+            f"joint_state_age={joint_state_age_text})"
         )
 
     def _publish_joint_angles(self, *, yaw: float, pitch: float, speed: float, relative: bool) -> None:

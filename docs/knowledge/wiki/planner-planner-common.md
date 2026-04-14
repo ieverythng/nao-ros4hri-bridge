@@ -26,16 +26,16 @@ graph LR
         NP[normalize_plan_steps]
         BP[build_plan_payload]
     end
-    
+
     subgraph planner_llm
         PE[planner_engine]
         SV[supervisor]
     end
-    
+
     subgraph nao_orchestrator
         OR[orchestrator]
     end
-    
+
     PE --> BP
     PE --> NP
     SV --> PDA
@@ -189,7 +189,7 @@ Normalizes plan communication flags:
 from planner_common import normalize_communication_policy
 
 policy = normalize_communication_policy({'emit_progress': True})
-# Returns: {'emit_acknowledge': False, 'emit_progress': True, 
+# Returns: {'emit_acknowledge': False, 'emit_progress': True,
 #           'emit_completion': True, 'emit_failure': True}
 ```
 
