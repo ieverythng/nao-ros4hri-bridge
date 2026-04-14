@@ -35,4 +35,9 @@ Source coverage note:
 
 Wiki generation needs an OpenAI-compatible API key or saved GitNexus config.
 
+If `~/.gitnexus/config.json` is already configured, both of these work:
+
+- `tools/knowledge/generate_wiki.sh`
+- `tools/knowledge/gitnexus.sh wiki --provider openai --base-url http://<host>:11434/v1 --api-key dummy --model <model-name>`
+
 For graph-guided agent playbooks, read `docs/knowledge/WORKFLOWS.md`.
