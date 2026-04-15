@@ -219,6 +219,38 @@ def test_supervisor_replans_after_retryable_failure() -> None:
     assert outcome.decision.payload['plan']['plan_version'] == 2
 
 
+def test_supervisor_does_not_replan_when_step_failure_policy_is_fail() -> None:
+    engine = _StubEngine()
+    supervisor = PlannerSupervisor(engine, auto_replan=True)
+    request = PlannerRequest.from_payload(
+        {'goal_id': 'goal_fail', 'request_id': 'turn_1', 'user_text': 'look at the cup'}
+    )
+    first_outcome = supervisor.handle_request(request)
+    feedback = ExecutionFeedback.from_payload(
+        {
+            'goal_id': 'goal_fail',
+            'plan_id': first_outcome.decision.plan_id,
+            'plan_version': 1,
+            'event_type': 'step_failed',
+            'status': 'failed',
+            'reason': 'motion controller ignored the command',
+            'retry_budget': 2,
+            'step': {
+                'id': 'step_1',
+                'type': 'skill',
+                'name': 'perform_motion',
+                'on_failure': 'fail',
+                'retry_budget': 2,
+            },
+        }
+    )
+
+    outcome = supervisor.handle_feedback(feedback)
+    assert outcome.decision is None
+    assert len(outcome.dialogue_acts) == 1
+    assert outcome.dialogue_acts[0].act == 'explain_failure'
+
+
 def test_supervisor_emits_dialogue_act_instead_of_intent_for_clarification() -> None:
     supervisor = PlannerSupervisor(_ClarifyEngine(), auto_replan=True)
     request = PlannerRequest.from_payload(

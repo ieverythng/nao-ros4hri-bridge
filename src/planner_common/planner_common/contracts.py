@@ -360,6 +360,13 @@ def build_execution_feedback_payload(
     timestamp_sec: float = 0.0,
 ) -> dict:
     """Build one normalized planner feedback payload."""
+    resolved_step = step if isinstance(step, dict) else None
+    resolved_retry_budget = _coerce_nonnegative_int(plan_context.get('retry_budget', 0))
+    if resolved_step is not None:
+        resolved_retry_budget = _coerce_nonnegative_int(
+            resolved_step.get('retry_budget', resolved_retry_budget)
+        )
+
     payload = {
         'goal_id': str(plan_context.get('goal_id', '')).strip(),
         'plan_id': str(plan_context.get('plan_id', '')).strip(),
@@ -373,7 +380,7 @@ def build_execution_feedback_payload(
         'reason': str(reason or '').strip(),
         'validation_status': str(plan_context.get('validation_status', '')).strip().lower(),
         'replan_hint': str(plan_context.get('replan_hint', '')).strip(),
-        'retry_budget': _coerce_nonnegative_int(plan_context.get('retry_budget', 0)),
+        'retry_budget': resolved_retry_budget,
         'blocking': bool(blocking),
         'unmet_preconditions': coerce_str_list(unmet_preconditions or []),
         'needs_user_input': bool(needs_user_input),
@@ -381,11 +388,20 @@ def build_execution_feedback_payload(
         'validation_errors': coerce_str_list(validation_errors or []),
         'timestamp_sec': _coerce_float(timestamp_sec, time.time()),
     }
-    if step is not None:
+    if resolved_step is not None:
         payload['step'] = {
-            'id': str(step.get('id', '')).strip(),
-            'type': str(step.get('type', '')).strip().lower(),
-            'name': str(step.get('name', '')).strip().lower(),
+            'id': str(resolved_step.get('id', '')).strip(),
+            'type': str(resolved_step.get('type', '')).strip().lower(),
+            'name': str(resolved_step.get('name', '')).strip().lower(),
+            'retry_budget': _coerce_nonnegative_int(
+                resolved_step.get('retry_budget', resolved_retry_budget)
+            ),
+            'on_failure': _coerce_failure_policy(
+                resolved_step.get('on_failure', resolved_step.get('failure_policy', 'fail'))
+            ),
+            'requires': coerce_str_list(
+                resolved_step.get('requires', resolved_step.get('preconditions', []))
+            ),
         }
     return payload
 
@@ -538,6 +554,9 @@ class ExecutionFeedback:
     step_id: str
     step_type: str
     step_name: str
+    step_retry_budget: int
+    step_on_failure: str
+    step_requires: tuple[str, ...]
     timestamp_sec: float
 
     @classmethod
@@ -546,6 +565,8 @@ class ExecutionFeedback:
         step_payload = data.get('step', {})
         if not isinstance(step_payload, dict):
             step_payload = {}
+        step_failure_policy = step_payload.get('on_failure', step_payload.get('failure_policy', ''))
+        clean_step_failure_policy = str(step_failure_policy or '').strip().lower()
         status = str(data.get('status', '')).strip().lower()
         return cls(
             goal_id=str(data.get('goal_id', '')).strip(),
@@ -571,6 +592,17 @@ class ExecutionFeedback:
             step_id=str(step_payload.get('id', '')).strip(),
             step_type=str(step_payload.get('type', '')).strip().lower(),
             step_name=str(step_payload.get('name', '')).strip().lower(),
+            step_retry_budget=_coerce_nonnegative_int(step_payload.get('retry_budget', 0)),
+            step_on_failure=(
+                _coerce_failure_policy(step_failure_policy)
+                if clean_step_failure_policy
+                else ''
+            ),
+            step_requires=tuple(
+                coerce_str_list(
+                    step_payload.get('requires', step_payload.get('preconditions', []))
+                )
+            ),
             timestamp_sec=_coerce_float(data.get('timestamp_sec', 0.0)),
         )
 

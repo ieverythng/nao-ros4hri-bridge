@@ -277,6 +277,7 @@ class HeadMotionSkillServer(Node):
             initial_reason = self._convergence_timeout_reason(
                 target_yaw=target_yaw,
                 target_pitch=target_pitch,
+                initial_state=current_state,
             )
             if self.retry_on_convergence_timeout and not goal_handle.is_cancel_requested:
                 self.get_logger().warn(
@@ -307,6 +308,7 @@ class HeadMotionSkillServer(Node):
                     reason = self._convergence_timeout_reason(
                         target_yaw=target_yaw,
                         target_pitch=target_pitch,
+                        initial_state=current_state,
                     )
                     self.get_logger().warn("HEAD_MOTION failed | %s" % reason)
                     goal_handle.abort()
@@ -418,7 +420,13 @@ class HeadMotionSkillServer(Node):
                 return None
             return max(0.0, time.monotonic() - self._last_joint_state_monotonic)
 
-    def _convergence_timeout_reason(self, *, target_yaw: float, target_pitch: float) -> str:
+    def _convergence_timeout_reason(
+        self,
+        *,
+        target_yaw: float,
+        target_pitch: float,
+        initial_state: Optional[dict[str, float]] = None,
+    ) -> str:
         latest_state = self._current_head_state() or {}
         joint_state_age = self._joint_state_age_sec()
         joint_state_age_text = (
@@ -426,13 +434,36 @@ class HeadMotionSkillServer(Node):
             if joint_state_age is None
             else f"{joint_state_age:.3f}s"
         )
-        return (
+        reason = (
             "Head motion timed out before convergence "
             f"(target_yaw={target_yaw:.3f}, target_pitch={target_pitch:.3f}, "
             f"latest_yaw={latest_state.get('HeadYaw', float('nan')):.3f}, "
             f"latest_pitch={latest_state.get('HeadPitch', float('nan')):.3f}, "
             f"joint_state_age={joint_state_age_text})"
         )
+        if self._joint_state_unchanged_since(initial_state, latest_state):
+            return (
+                reason
+                + " The head joint state did not change after publishing to "
+                + self.joint_angles_topic
+                + "."
+            )
+        return reason
+
+    def _joint_state_unchanged_since(
+        self,
+        initial_state: Optional[dict[str, float]],
+        latest_state: dict[str, float],
+    ) -> bool:
+        if not initial_state or not latest_state:
+            return False
+        tolerance = min(max(self.convergence_tolerance_rad / 4.0, 1e-3), 0.02)
+        for joint_name in self._HEAD_JOINTS:
+            if joint_name not in initial_state or joint_name not in latest_state:
+                return False
+            if abs(float(latest_state[joint_name]) - float(initial_state[joint_name])) > tolerance:
+                return False
+        return True
 
     def _publish_joint_angles(self, *, yaw: float, pitch: float, speed: float, relative: bool) -> None:
         msg = JointAnglesWithSpeed()

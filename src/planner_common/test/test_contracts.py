@@ -88,7 +88,7 @@ def test_scene_summary_accepts_grounding_payload() -> None:
 
 def test_execution_feedback_parses_nested_step_and_supervisor_fields() -> None:
     feedback = ExecutionFeedback.from_payload(
-        '{"goal_id":"goal_1","plan_id":"plan_1","plan_version":2,"event_type":"step_failed","status":"failed","blocking":true,"needs_user_input":true,"unmet_preconditions":["cup_visible"],"scene_targets":["cup"],"step":{"id":"step_2","type":"skill","name":"perform_motion"}}'
+        '{"goal_id":"goal_1","plan_id":"plan_1","plan_version":2,"event_type":"step_failed","status":"failed","blocking":true,"needs_user_input":true,"unmet_preconditions":["cup_visible"],"scene_targets":["cup"],"step":{"id":"step_2","type":"skill","name":"perform_motion","retry_budget":1,"on_failure":"replan","requires":["cup_visible"]}}'
     )
     assert feedback.goal_id == 'goal_1'
     assert feedback.plan_id == 'plan_1'
@@ -99,6 +99,9 @@ def test_execution_feedback_parses_nested_step_and_supervisor_fields() -> None:
     assert feedback.unmet_preconditions == ('cup_visible',)
     assert feedback.scene_targets == ('cup',)
     assert feedback.step_id == 'step_2'
+    assert feedback.step_retry_budget == 1
+    assert feedback.step_on_failure == 'replan'
+    assert feedback.step_requires == ('cup_visible',)
 
 
 def test_planner_dialogue_act_payload_round_trips() -> None:
@@ -151,6 +154,9 @@ def test_execution_feedback_builder_keeps_supervisor_shape() -> None:
     assert feedback.unmet_preconditions == ('cup_visible',)
     assert feedback.needs_user_input is True
     assert feedback.validation_errors == ('step_1: missing target frame',)
+    assert feedback.step_retry_budget == 1
+    assert feedback.step_on_failure == 'fail'
+    assert feedback.step_requires == ()
 
 
 def test_extract_json_object_accepts_fenced_json() -> None:

@@ -38,24 +38,32 @@ The current branch covers the planner-supervisor foundation through Phases A-C:
 - `nao_orchestrator`
   - owns validation, execution, and lifecycle execution feedback
 - `dialogue_manager`
-  - unchanged
+  - still owns speech/TTS realization and now subscribes to `/planner/dialogue_act`
+    so planner-side asynchronous updates can be spoken without moving speaking
+    ownership into `planner_llm`
 
 ## Important current limitation
 
-`/planner/dialogue_act` is now fully implemented on the planner side, but the dialogue side is still only partially integrated.
+`/planner/dialogue_act` is now fully implemented on the planner side, and the
+dialogue side is minimally integrated in `dialogue_manager`.
 
 What that means in practice:
 
 - `chatbot_llm` now sends the richer supervisor ingress payload correctly.
 - `planner_llm` now emits `/planner/dialogue_act`.
-- `chatbot_llm` does **not yet asynchronously realize** planner dialogue acts into spoken output on its own.
+- `dialogue_manager` realizes planner dialogue acts through its existing TTS
+  ownership seam.
+- `chatbot_llm` still does **not** asynchronously realize planner dialogue
+  acts on its own, which keeps planner progress/failure speech out of the
+  chatbot backend for now.
 
 So tomorrow’s live test should treat planner dialogue acts as a **first-class observable runtime output**:
 
 - inspect them with `ros2 topic echo /planner/dialogue_act`
 - or inspect them in `rqt_console`
 
-This is enough to validate Phase B/C behavior without modifying `dialogue_manager`.
+This is enough to validate Phase B/C behavior while keeping speaking ownership
+inside `dialogue_manager`.
 
 ## Expected end-to-end path
 
@@ -222,8 +230,10 @@ ros2 run planner_llm publish_fixture feedback
 
 ## Tomorrow’s decision point
 
-If the live test shows that `/planner/dialogue_act` is behaving well, the next follow-up should be:
+If the live test shows that `/planner/dialogue_act` is behaving well, the next
+follow-up should be:
 
-1. add the dialogue-side realization seam in `chatbot_llm`
-2. keep `dialogue_manager` unchanged
+1. decide whether planner dialogue text should stay planner-owned or move
+   behind a chatbot phrasing adapter
+2. keep `dialogue_manager` as the speaking/TTS owner either way
 3. only after that, reintroduce WME as Phase D

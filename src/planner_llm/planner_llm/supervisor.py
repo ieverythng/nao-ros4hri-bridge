@@ -254,8 +254,9 @@ class PlannerSupervisor:
     ) -> SupervisorOutcome:
         state.current_status = 'blocked'
         state.retry_budget_remaining = feedback.retry_budget
+        failure_policy = str(feedback.step_on_failure or '').strip().lower()
 
-        if feedback.needs_user_input:
+        if feedback.needs_user_input or failure_policy == 'clarify':
             state.current_status = 'waiting_user'
             state.awaiting_user_response = True
             return SupervisorOutcome(
@@ -265,11 +266,11 @@ class PlannerSupervisor:
                     reason=feedback.reason or 'planner needs more detail',
                     text_hint=feedback.reason or 'I need a bit more detail before I continue.',
                     await_user_response=True,
-                    slots_needed=list(feedback.unmet_preconditions),
+                    slots_needed=list(feedback.unmet_preconditions or feedback.step_requires),
                 ),)
             )
 
-        if feedback.blocking and feedback.unmet_preconditions:
+        if failure_policy == 'ask_user' or (feedback.blocking and feedback.unmet_preconditions):
             state.current_status = 'waiting_user'
             state.awaiting_user_response = True
             return SupervisorOutcome(
@@ -279,11 +280,17 @@ class PlannerSupervisor:
                     reason=feedback.reason or 'execution is blocked',
                     text_hint=feedback.reason or 'I need help to continue this task.',
                     await_user_response=True,
-                    slots_needed=list(feedback.unmet_preconditions),
+                    slots_needed=list(feedback.unmet_preconditions or feedback.step_requires),
                 ),)
             )
 
-        if not self._auto_replan or feedback.retry_budget <= 0 or state.last_request is None:
+        should_replan = (
+            self._auto_replan
+            and state.last_request is not None
+            and feedback.retry_budget > 0
+            and failure_policy not in ('fail', 'ask_user', 'clarify', 'ignore')
+        )
+        if not should_replan:
             state.current_status = 'failed'
             state.awaiting_user_response = False
             self._forget_plan(feedback.plan_id)

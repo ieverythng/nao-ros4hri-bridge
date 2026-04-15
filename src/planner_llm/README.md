@@ -10,7 +10,7 @@ enabled:
 ```text
 dialogue_manager -> chatbot_llm -> /planner/request -> planner_llm
 planner_llm -> /intents -> nao_orchestrator
-planner_llm -> /planner/dialogue_act -> chatbot_llm/dialogue layer
+planner_llm -> /planner/dialogue_act -> dialogue_manager/TTS seam
 nao_orchestrator -> /planner/execution_feedback -> planner_llm
 ```
 
@@ -214,8 +214,8 @@ pytest src/planner_common/test/test_contracts.py src/planner_llm/test/test_plann
 ## Design Notes
 
 - `planner_llm` is now supervisor-facing rather than a stateless planner shim.
-- `chatbot_llm` and `dialogue_manager` still own final phrasing and speech
-  lifecycle.
+- `chatbot_llm` still owns the synchronous user-facing acknowledgement path.
+- `dialogue_manager` still owns final speech realization and TTS lifecycle.
 - `nao_orchestrator` remains the deterministic execution layer.
 - World-model inputs are optional and currently arrive through enriched snapshot
   topics, not through direct detector subscriptions.

@@ -42,6 +42,23 @@ def test_head_motion_reaches_target_within_tolerance():
     assert server._has_reached_target(0.6, 0.0) is False
 
 
+def test_head_motion_timeout_reason_flags_unchanged_joint_state():
+    server = HeadMotionSkillServer.__new__(HeadMotionSkillServer)
+    server._HEAD_JOINTS = ("HeadYaw", "HeadPitch")
+    server.convergence_tolerance_rad = 0.08
+    server.joint_angles_topic = "/joint_angles"
+    server._current_head_state = lambda: {"HeadYaw": -0.42, "HeadPitch": 0.05}
+    server._joint_state_age_sec = lambda: 0.3
+
+    reason = server._convergence_timeout_reason(
+        target_yaw=0.45,
+        target_pitch=0.0,
+        initial_state={"HeadYaw": -0.42, "HeadPitch": 0.05},
+    )
+
+    assert "did not change after publishing" in reason
+
+
 def test_posture_result_helpers_match_bridge_payload():
     payload = _parse_posture_result_message(
         '{"command":"stand","normalized_command":"stand","posture_name":"Stand","success":true,"message":"Executed posture command"}'
