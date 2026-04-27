@@ -56,6 +56,7 @@ def test_planner_engine_uses_provider_for_non_rule_request() -> None:
         {
             'request_id': 'r2',
             'goal_id': 'goal_2',
+            'goal_text': 'inspect the visible cup',
             'user_text': 'look at the cup',
             'normalized_intents': ['inspect_scene'],
             'scene_targets': ['cup'],
@@ -75,6 +76,8 @@ def test_planner_engine_uses_provider_for_non_rule_request() -> None:
     assert decision.payload['plan']['scene_targets'] == ['cup']
     assert decision.payload['plan']['plan_version'] == 2
     assert provider.messages[0]['role'] == 'system'
+    assert '"goal_text": "inspect the visible cup"' in provider.messages[1]['content']
+    assert '"user_text"' not in provider.messages[1]['content']
 
 
 def test_planner_engine_filters_unsupported_model_skills() -> None:

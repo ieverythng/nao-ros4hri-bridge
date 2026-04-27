@@ -1,73 +1,109 @@
 # Current Workflow
 
-Last updated: 2026-04-09
+Last updated: 2026-04-24
 
-This is now the compact runtime snapshot for the active migrated stack.
+This is the canonical workflow map for the active NAO ROS4HRI bridge. Historical
+handoffs and old integration notes live in `docs/artifacts/`.
 
-For the full grounded-runtime contract, see
-[demo_status_and_contracts.md](./demo_status_and_contracts.md).
-For the thesis-facing architecture and next-stage planning direction, see
-[thesis_planning_handoff.md](./thesis_planning_handoff.md).
-For launch commands and profile toggles, see
-[launch_profiles.md](./launch_profiles.md).
+## Ownership
 
-## Runtime Summary
+| Layer | Owner | Responsibility |
+| --- | --- | --- |
+| Dialogue | `dialogue_manager` | Dialogue lifecycle and speaking ownership |
+| LLM dialogue | `chatbot_llm` | Response generation, intent declaration, planner routing, KB snapshot formatting |
+| Planning | `planner_llm` | Goal supervision, plan generation, replanning, planner dialogue acts |
+| Contracts | `planner_common` | JSON contract normalization and helpers |
+| Execution | `nao_orchestrator` | Deterministic intent validation, ordered skill execution, execution feedback |
+| Knowledge | `kb_skills` | KnowledgeCore query/revise boundary |
+| Object grounding | `nao_scene_grounding` | Detector-to-KB object facts and `/scene/summary` |
+| Launch | `nao_chatbot` | Demo and robot launch profiles |
 
-```text
-/humans/voices/*/speech
-  -> dialogue_manager
-  -> chatbot_llm
-  -> direct /intents or /planner/request
-  -> planner_llm
-  -> /intents
-  -> nao_orchestrator
-  -> /nao/say | /skill/replay_motion | /skill/do_head_motion | /skill/look_at
+## Main Runtime Graph
+
+```mermaid
+flowchart LR
+    speech["/humans/voices/*/speech"] --> dm["dialogue_manager"]
+    dm --> chatbot["chatbot_llm"]
+    chatbot -->|direct mode /intents| orch["nao_orchestrator"]
+    chatbot -->|planner mode /planner/request| planner["planner_llm"]
+    planner -->|/intents| orch
+    orch -->|/planner/execution_feedback| planner
+    planner -->|/planner/dialogue_act| dm
+    orch --> say["/nao/say"]
+    orch --> replay["/skill/replay_motion"]
+    orch --> head["/skill/do_head_motion"]
+    orch --> look["/skill/look_at"]
 ```
 
-Grounded scene path:
+## Grounded Scene Flow
 
-```text
-detector backend
-  -> nao_scene_grounding
-  -> /kb/revise
-  -> knowledge_core
-  -> /kb/query via kb_skills
-  -> chatbot_llm
+```mermaid
+flowchart LR
+    cam["camera image"] --> detector["detector backend"]
+    detector --> grounding["nao_scene_grounding"]
+    grounding -->|/kb/revise| kb["knowledge_core"]
+    grounding -->|/scene/summary| summary["debug/operator consumers"]
+    kb -->|/kb/query via kb_skills| chatbot["chatbot_llm"]
+    chatbot -->|grounded_context| planner["planner_llm"]
 ```
 
-Transitional ASR path:
+`nao_scene_grounding` does not directly control planning. It turns detector
+observations into transient symbolic state and a compact summary. `chatbot_llm`
+and future world-model enrichment consume that state through explicit contracts.
 
-```text
-simple_audio_capture -> asr_vosk -> /humans/voices/anonymous_speaker/speech
+## Planner Loop
+
+```mermaid
+sequenceDiagram
+    participant C as chatbot_llm
+    participant P as planner_llm
+    participant O as nao_orchestrator
+    participant S as skill/mock skill
+
+    C->>P: /planner/request
+    P->>O: /intents with Intent.data.plan
+    O->>P: /planner/execution_feedback plan_accepted
+    O->>S: action goal for step
+    S-->>O: action result
+    O->>P: /planner/execution_feedback step_succeeded or step_failed
+    O->>P: /planner/execution_feedback plan_completed
+    P-->>C: optional /planner/dialogue_act via dialogue owner
 ```
 
-## Responsibility Split
+The Monday diagnostic should prove this loop with the smallest safe skill target
+before adding richer demo behavior.
 
-| Package | Owns |
-| --- | --- |
-| `dialogue_manager` | dialogue lifecycle and speaking ownership |
-| `chatbot_llm` | grounded response plus direct-or-planner routing |
-| `planner_llm` | planner request intake, plan generation, and replanning |
-| `knowledge_core` | symbolic world state |
-| `kb_skills` | KnowledgeCore query and mutation boundary |
-| `nao_scene_grounding` | detector-to-KB grounding and `/scene/summary` |
-| `nao_orchestrator` | deterministic downstream execution |
+## Contract Currency
 
-## Transitional Interfaces Still Present
+The important runtime currencies are:
 
-- `/chatbot/posture_command`
-- `/joint_angles`
-- optional legacy `/chatbot/intent` bridge in `nao_orchestrator`
+- `/planner/request`: task ingress from `chatbot_llm` to `planner_llm`.
+- `/intents`: executable downstream intent/plan from `planner_llm` or direct mode.
+- `/planner/execution_feedback`: executor status back to the planner.
+- `/planner/dialogue_act`: planner communication request without direct execution.
+- `knowledge_snapshot`: chatbot prompt context from KnowledgeCore.
+- `/scene/summary`: detector-grounded object summary for operators/future consumers.
+
+The full shapes are in `docs/contracts.md`.
 
 ## Minimal Verification
 
 ```bash
+ros2 topic info /planner/request
+ros2 topic info /intents
+ros2 topic info /planner/execution_feedback
+ros2 topic info /planner/dialogue_act
 ros2 action list -t
 ros2 service list -t
-ros2 lifecycle get /dialogue_manager
-ros2 lifecycle get /chatbot_llm
-ros2 lifecycle get /planner_llm
-ros2 lifecycle get /nao_orchestrator
-ros2 topic info /planner/request
-ros2 topic info /planner/execution_feedback
+```
+
+Focused source-level tests:
+
+```bash
+PYTHONPATH=src/planner_common:src/planner_llm:src/nao_orchestrator:src/kb_skills \
+python3 -m pytest -q \
+  src/planner_common/test/test_contracts.py \
+  src/planner_llm/test/test_planner_engine.py \
+  src/planner_llm/test/test_supervisor.py \
+  src/nao_orchestrator/test/test_nao_orchestrator_intent_rules.py
 ```

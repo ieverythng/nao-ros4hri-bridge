@@ -64,6 +64,7 @@ RUN bash -lc 'set -euo pipefail; \
       socialminds-ros-jazzy-interaction-sim \
       socialminds-ros-jazzy-kb-msgs \
       socialminds-ros-jazzy-knowledge-core \
+      socialminds-ros-jazzy-launch-tui \
       socialminds-ros-jazzy-oro \
       socialminds-ros-jazzy-pyhri \
       socialminds-ros-jazzy-rqt-chat \
@@ -94,7 +95,10 @@ RUN bash -lc 'set -euo pipefail; \
           torch torchvision && \
         python3 -m pip install --no-cache-dir --break-system-packages --no-deps \
           ultralytics ultralytics-thop \
-      )'
+      ); \
+    # launch_tui requires a newer Textual API than Ubuntu 24.04 ships.
+    python3 -m pip install --no-cache-dir --break-system-packages --ignore-installed \
+      "textual>=0.50,<1"'
 
 # Rebuild the migrated local workspace packages on top of the validated base.
 RUN bash -lc 'source /opt/ros/jazzy/setup.bash && \

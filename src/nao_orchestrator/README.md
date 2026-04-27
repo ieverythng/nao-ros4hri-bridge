@@ -1,103 +1,51 @@
 # nao_orchestrator
 
-`nao_orchestrator` is the lifecycle orchestration package for NAO in the
-migrated ROS4HRI stack.
+`nao_orchestrator` is the deterministic executor for downstream
+`hri_actions_msgs/msg/Intent` messages. It validates structured plans, executes
+steps in order, and publishes planner feedback.
 
-Steady-state target:
+## Owns
 
-- consume `/intents`
-- dispatch canonical and NAO-specific skills
-- replace the local mission-controller role previously hosted in `nao_chatbot`
+- `/intents` subscription
+- structured `Intent.data.plan` validation
+- ordered execution of supported plan steps
+- action clients for NAO speech, replay motion, head motion, and look-at
+- `/planner/execution_feedback`
 
-What moved out of the old `mission_controller` on purpose:
+It does not own user dialogue, LLM prompting, planner policy, detector
+subscriptions, or KnowledgeCore transport.
 
-- user-text ingestion now belongs to `dialogue_manager`
-- chatbot turn execution now belongs to `dialogue_manager` + `chatbot_llm`
-- assistant-text generation/history no longer lives in the orchestrator
-- `nao_orchestrator` only owns downstream intent normalization and robot-skill dispatch
+## Public ROS Interfaces
 
-Transition support:
+| Direction | Interface | Type | Purpose |
+| --- | --- | --- | --- |
+| subscribe | `/intents` | `hri_actions_msgs/msg/Intent` | Direct or planner-generated intents |
+| optional subscribe | `/chatbot/intent` | `std_msgs/msg/String` | Legacy bridge, disabled by default |
+| publish | `/planner/execution_feedback` | `std_msgs/msg/String` | Plan lifecycle feedback |
+| action client | `/nao/say` | `communication_skills/action/Say` | Speech step execution |
+| action client | `/skill/replay_motion` | `nao_skills/action/ReplayMotion` | Motion/posture execution |
+| action client | `/skill/do_head_motion` | `nao_skills/action/DoHeadMotion` | Head motion execution |
+| action client | `/skill/look_at` | `interaction_skills/action/LookAt` | Gaze execution |
 
-- optional subscription to the older string topic `/chatbot/intent`
-- direct dispatch to `/nao/say`, `/skill/replay_motion`, `/skill/do_head_motion`,
-  and `/skill/look_at` from the upstream `interaction_skills/look_at` contract
-- topic fallbacks matching the old mission-controller flow:
-  `/chatbot/posture_command` and `/joint_angles`
-- duplicate-intent suppression to avoid double-dispatch while legacy and new paths coexist
+Temporary fallbacks:
 
-Current migration boundary:
+- `/chatbot/posture_command`
+- `/joint_angles`
 
-- `nao_orchestrator` already covers the old mission-controller execution side:
-  say dispatch, posture/replay-motion dispatch, retained head motion, and
-  look-at reset or target-frame dispatch
-- conversational speech intents are ignored by default because spoken chatbot
-  replies are already owned by `dialogue_manager -> /tts_engine/tts -> nao_say_skill`
-- `kb_query_visible_people`, `kb_query_visible_objects`, and
-  `kb_query_scene_change` are preserved as distinct intent labels from
-  `chatbot_llm`, but the orchestrator currently only logs and ignores them so
-  dialogue ownership stays upstream
-- `chatbot_llm` does not connect directly to `nao_orchestrator` in steady state
-  because the canonical flow is `dialogue_manager -> /intents -> nao_orchestrator`
-- the older `/chatbot/intent` adapter is available but disabled by default
+## Supported Plan Steps
 
-Structured intent metadata now also passes through `Intent.data` when present:
+- `noop`: explicit no-op.
+- `say`: dispatches through `/nao/say` when speech dispatch is enabled.
+- `skill` with `perform_motion` or `motion`: replay/head/look-at-reset routing.
+- `skill` with `look_at`: target-frame or reset gaze routing.
+- `look_at`: target-frame or reset gaze routing.
 
-- `ack_text`: preferred acknowledgement text for the turn
-- `ack_mode`: acknowledgement mode hint, currently informational
-- `scene_targets`: grounded entities or labels relevant to the request
-- `plan`: optional ordered execution steps for the orchestrator
+Unsupported steps should produce validation or step-failure feedback rather than
+becoming silent behavior.
 
-Supported `plan` step types:
+## Important Parameters
 
-- `say`
-- `skill`
-- `look_at`
-- `noop`
-
-This keeps the top-level ROS contract stable while allowing richer downstream
-execution plans to arrive from either `chatbot_llm` or `planner_llm`.
-
-High-level downstream flow:
-
-1. `chatbot_llm` emits canonical HRI intents directly in non-planner mode, or
-   `planner_llm` emits them after `/planner/request` handoff in planner mode
-2. `nao_orchestrator` parses that metadata from `Intent.data`
-3. if a valid `plan` is present, the orchestrator tries to execute it first
-4. if there is no valid plan, the package falls back to the migrated legacy
-   routing for speech, motion, and conservative look-at fallbacks
-
-The orchestrator still does not own KB prompting or detector subscriptions; it
-only consumes the enriched downstream contract.
-
-Manual smoke examples:
-
-```bash
-ros2 topic pub --once /chatbot/intent std_msgs/msg/String "{data: 'posture_stand'}"
-ros2 topic pub --once /chatbot/intent std_msgs/msg/String "{data: 'head_look_left'}"
-ros2 topic pub --once /chatbot/intent std_msgs/msg/String "{data: '{\"intent\":\"__intent_say__\",\"object\":\"Testing migrated say dispatch.\"}'}"
-```
-
-```bash
-ros2 topic pub --once /intents hri_actions_msgs/msg/Intent "{intent: 'perform_motion', data: '{\"object\":\"stand\"}'}"
-```
-
-## Provenance
-
-- package type: local lifecycle orchestration node, not a forked upstream repo
-- scaffold basis: `rpk` mission-controller/lifecycle template
-- architecture style: hybrid replacement
-  - replaces the old local `mission_controller` execution role
-  - aligns steady-state I/O to the migrated ROS4HRI flow: `/intents` in,
-    skill actions out
-  - retains a small compatibility layer for legacy intent/topic bridges while
-    migration cleanup completes
-- design constraint: this package must stay downstream-only and must not grow
-  back into a chatbot or dialogue runtime
-
-## Parameters
-
-The package defaults are in `config/00-defaults.yml`. The most important knobs
-are:
+Defaults live in `config/00-defaults.yml`.
 
 - `intent_topic`
 - `enable_legacy_intent_bridge`
@@ -108,58 +56,24 @@ are:
 - `head_motion_action`
 - `look_at_action`
 - `posture_command_topic`
+- `planner_feedback_topic`
 - `dedupe_window_sec`
 
-Effective defaults from `config/00-defaults.yml`:
+## Launch And Tests
 
-- `/intents` is the primary subscribed topic
-- `/chatbot/intent` stays available as an optional legacy bridge
-- `/nao/say` stays disabled for conversational replies unless
-  `dispatch_speech_intents:=true`
-- `/skill/replay_motion`, `/skill/do_head_motion`, and `/skill/look_at` remain
-  the canonical downstream skill routes
-- `/chatbot/posture_command` and `/joint_angles` remain temporary topic
-  fallbacks during migration cleanup
+```bash
+ros2 launch nao_chatbot nao_chatbot_planner_local.launch.py
+```
 
-## Planned Intent Handling
+Focused tests:
 
-When a structured `plan` is present in `Intent.data`, `nao_orchestrator` tries
-to execute those steps in order before falling back to the older intent routing
-rules.
-
-Current planned-step behavior:
-
-- `say`: dispatch speech through `/nao/say`
-- `skill`: currently supports motion-oriented routes such as replay motion and
-  look-at reset
-- `look_at`: supports reset or target-frame dispatch through `/skill/look_at`
-- `noop`: explicit no-op placeholder
-- plan metadata such as `plan_id`, `validation_status`, `replan_hint`, and
-  `retry_budget` can accompany those steps inside `Intent.data`
-
-The orchestrator now also publishes structured execution feedback on:
-
-- `/planner/execution_feedback`
-
-That topic is intended for the active planner layer and future world-model
-consumers, not for direct user dialogue ownership.
-
-Planner-facing feedback currently includes:
-
-- `plan_id`
-- `status`
-- `reason`
-- `validation_status`
-- `replan_hint`
-- `retry_budget`
-- `scene_targets`
-- optional `step` metadata for the failing/running step
-
-If no valid `plan` exists, the package keeps the legacy migrated behavior for
-speech, posture, head motion, look-at reset, and KB query intent observation.
+```bash
+PYTHONPATH=src/planner_common:src/nao_orchestrator:src/kb_skills \
+python3 -m pytest -q src/nao_orchestrator/test
+```
 
 ## Design Rule
 
-`nao_orchestrator` should stay downstream-only. It must not grow back into a
-dialogue or chatbot node. User-turn ingestion belongs to `dialogue_manager`,
-and model interaction belongs to `chatbot_llm`.
+Keep this package downstream-only. Planner decisions belong in `planner_llm`,
+dialogue and speaking policy belong in `dialogue_manager`/`chatbot_llm`, and KB
+transport belongs in `kb_skills`.

@@ -124,9 +124,13 @@ def _build_hri_lifecycle_actions(
     executable: str,
     log_level: str,
     shutdown_on_exit: bool = True,
+    parameter_overrides: dict[str, object] | None = None,
 ) -> list:
     temp_ld = LaunchDescription()
     config = get_pal_configuration(pkg=package_name, node=node_name, ld=temp_ld)
+    parameters = list(config["parameters"])
+    if parameter_overrides:
+        parameters.append(dict(parameter_overrides))
     arguments = list(config["arguments"])
     if log_level:
         arguments.extend(["--ros-args", "--log-level", log_level])
@@ -136,7 +140,7 @@ def _build_hri_lifecycle_actions(
         "executable": executable,
         "namespace": "",
         "name": node_name,
-        "parameters": config["parameters"],
+        "parameters": parameters,
         "remappings": config["remappings"],
         "arguments": arguments,
         "output": "both",
@@ -318,6 +322,10 @@ def build_interaction_sim_actions(context):
                     executable="hri_person_manager",
                     log_level=hri_log_level,
                     shutdown_on_exit=True,
+                    parameter_overrides={
+                        "reference_frame": "base_link",
+                        "robot_reference_frame": "base_link",
+                    },
                 ),
                 *_build_hri_lifecycle_actions(
                     package_name="hri_face_detect_yunet",

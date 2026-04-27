@@ -1,60 +1,87 @@
 # nao_replay_motion
 
-`nao_replay_motion` is the NAO-specific motion execution package introduced by
-the ROS4HRI refactor.
+`nao_replay_motion` owns the local NAO motion execution adapters used by the
+planner/orchestrator stack. It is first-party code and is safe to evolve when a
+demo needs deterministic robot-side motion behavior.
 
-It provides:
+The package currently exposes posture replay, a temporary posture compatibility
+action, and the retained head-motion action. It does not own planning policy;
+`nao_orchestrator` decides which action to call.
 
-- `/skill/replay_motion` using `nao_skills/action/ReplayMotion`
-- temporary `/skill/do_posture` compatibility on top of replay-motion
-- retained `/skill/do_head_motion` using `nao_skills/action/DoHeadMotion`
-- posture fallback bridge executable `nao_posture_bridge_node`
+## Public ROS Interfaces
 
-The initial replay-motion catalog is posture-oriented:
+| Interface | Type | Role |
+| --- | --- | --- |
+| `/skill/replay_motion` | `nao_skills/action/ReplayMotion` | Canonical local named motion/posture action. |
+| `/skill/do_posture` | `nao_skills/action/DoPosture` | Transitional compatibility action mapped onto replay-motion behavior. |
+| `/skill/do_head_motion` | `nao_skills/action/DoHeadMotion` | Retained head yaw/pitch action used by older planner routes. |
+| `/joint_angles` | `naoqi_bridge_msgs/msg/JointAnglesWithSpeed` | Head-motion command output. |
+| `/joint_states` | `sensor_msgs/msg/JointState` | Optional convergence feedback for head motion. |
+| `/chatbot/posture_command` | `std_msgs/msg/String` | Fallback posture command topic when NAOqi is unavailable. |
+| `/chatbot/posture_command_result` | `std_msgs/msg/String` | Fallback posture result topic. |
 
-- `stand`
-- `standinit`
-- `sit`
-- `kneel`
-- `crouch`
+## Important Parameters
 
-Additional motion primitives can be added later without changing the canonical
-replay-motion entry point.
+Replay/posture parameters:
 
-## Launch
+| Parameter | Default | Purpose |
+| --- | --- | --- |
+| `nao_ip` | `127.0.0.1` in node, `172.26.112.62` in launch | NAOqi host. |
+| `nao_port` | `9559` | NAOqi port. |
+| `action_name` | `/skill/replay_motion` | Replay-motion action name. |
+| `posture_compat_action_name` | `/skill/do_posture` | Temporary posture action name. |
+| `default_speed` | `0.8` | Speed used when the request omits one. |
+| `fallback_to_posture_topic` | `true` | Use topic bridge when NAOqi is unavailable. |
+| `posture_result_timeout_sec` | `12.0` | Wait time for fallback posture result. |
 
-Standalone:
+Head-motion parameters:
+
+| Parameter | Default | Purpose |
+| --- | --- | --- |
+| `action_name` | `/skill/do_head_motion` | Head-motion action name. |
+| `default_speed` | `0.2` | Default joint command speed. |
+| `yaw_min` / `yaw_max` | `-2.0857` / `2.0857` | Head yaw clamp. |
+| `pitch_min` / `pitch_max` | `-0.6720` / `0.5149` | Head pitch clamp. |
+| `require_joint_angles_subscribers` | `false` | Fail when no joint controller is subscribed. |
+| `convergence_timeout_sec` | `3.0` | Wait time for joint-state convergence. |
+| `retry_on_convergence_timeout` | `true` | Retry once on convergence timeout. |
+
+## Planner Contract Role
+
+`nao_orchestrator` can execute planner steps with `type: "skill"` and
+`name: "perform_motion"` / `"motion"` by sending action goals into this package.
+For Monday demo work, this package is useful as a real interface reference, but
+mock/demo behavior should live in first-party demo code rather than modifying
+`motions_skills`.
+
+Supported replay names are normalized aliases such as `stand`, `standinit`,
+`sit`, `kneel`, and `crouch`.
+
+## Launch And Test
 
 ```bash
 ros2 launch nao_replay_motion nao_replay_motion.launch.py
 ```
 
-As part of the simulator stack:
+With robot details:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_sim.launch.py
+ros2 launch nao_replay_motion nao_replay_motion.launch.py \
+  nao_ip:=<robot_ip> nao_port:=9559
 ```
 
-Or on the real robot:
+Targeted unit check:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_robot.launch.py nao_ip:=<robot_ip>
+python3 -m pytest -q src/nao_replay_motion/test/test_nao_replay_motion_unit.py
 ```
 
-## Runtime Notes
+## Notes
 
-- direct NAOqi posture execution and topic fallback are both supported
-- `/skill/do_posture` remains temporary and simply maps posture names onto the
-  replay-motion action
-- `DoHeadMotion` intentionally stays in this package during the migration so
-  the existing head-motion path remains stable
-- the fallback bridge still uses `/chatbot/posture_command` until the full ASR
-  and orchestration cleanup is complete
-- the shared launch wrappers now keep the posture bridge passive on connect by
-  default: no `ALAutonomousLife` disable and no `ALMotion.wakeUp` unless those
-  connect-time flags are explicitly enabled
-
-## Test Surface
-
-- unit tests cover motion-name normalization and the compatibility layer
-- launch verification is done through the migrated stack smoke tests
+- First-party NAO adapter package.
+- `/skill/do_posture` is transitional and should not become the long-term
+  planner-facing surface.
+- Head motion is still useful for simple demos, but hardware convergence can be
+  unreliable; mock skills are safer for planner-loop diagnosis.
+- Connect-time autonomous-life disable and wake-up behavior are opt-in through
+  launch parameters.

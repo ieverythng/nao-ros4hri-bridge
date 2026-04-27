@@ -1,103 +1,67 @@
 # nao_say_skill
 
-`nao_say_skill` is the NAO-specific speech execution package introduced during
-the ROS4HRI refactor.
+`nao_say_skill` owns the NAO-side speech execution hook. It intentionally
+exposes `/nao/say`, not canonical `/skill/say`; dialogue ownership remains in
+`dialogue_manager`, and planner/executor routing should treat this package as a
+robot adapter.
 
-It intentionally exposes `/nao/say`, not the canonical `/skill/say`
-endpoint. The canonical communication skill remains owned by
-`dialogue_manager`; this package is the robot-side execution hook.
+## Public ROS Interfaces
 
-## ROS API
+| Interface | Type | Role |
+| --- | --- | --- |
+| `/nao/say` | `communication_skills/action/Say` | NAO-specific speech action. |
+| `/tts_engine/tts` | `communication_skills/action/Say` | Compatibility TTS action used by `dialogue_manager`. |
+| `/debug/say` | `communication_skills/action/Say` | Optional operator/debug TTS action. |
+| `/speech` | `std_msgs/msg/String` | Direct robot speech fallback topic. |
+| `/debug/nao_say/speech` | `std_msgs/msg/String` | Debug speech mirror. |
+| `/diagnostics` | `diagnostic_msgs/msg/DiagnosticArray` | Runtime diagnostics. |
 
-- action: `/nao/say`
-- type: `communication_skills/action/Say`
-- compatibility TTS action: `/tts_engine/tts`
-- debug TTS action: `/debug/say`
-- downstream TTS action: optional `tts_backend_action_name`
-- direct speech topic fallback: `/speech`
-- debug mirror topic: `/debug/nao_say/speech`
-
-## Parameters
+## Important Parameters
 
 | Parameter | Default | Purpose |
 | --- | --- | --- |
-| `say_action_name` | `/nao/say` | NAO-specific speech action endpoint |
-| `tts_action_name` | `/tts_engine/tts` | TTS action endpoint exposed for `dialogue_manager` |
-| `debug_tts_action_name` | `/debug/say` | Debug-only TTS action used by `rqt_chat` or similar operator tools |
-| `tts_backend_action_name` | `""` | Optional downstream TTS action server used behind the compatibility endpoint |
-| `speech_topic` | `/speech` | Direct robot speech topic used for fallback execution |
-| `debug_speech_topic` | `/debug/nao_say/speech` | Debug-only speech mirror |
-| `default_language` | `en-US` | Default language used for outgoing TTS goals |
-| `default_volume` | `1.0` | Default TTS volume |
-| `tts_server_wait_sec` | `0.5` | Wait time before considering the TTS server unavailable |
-| `debug_tts_server_wait_sec` | `0.1` | Best-effort wait before deciding the debug TTS action is unavailable |
-| `fallback_to_speech_topic` | `true` | Publish to `/speech` if no downstream TTS action is available |
-| `also_publish_debug_topic` | `true` | Mirror successful speech requests to the debug topic |
-| `forward_debug_tts_action` | `true` | Forward each utterance to the debug TTS action when it exists |
-| `fallback_to_debug_topic` | `true` | Publish to the debug topic if TTS is unavailable |
+| `say_action_name` | `/nao/say` | NAO-specific action endpoint. |
+| `tts_action_name` | `/tts_engine/tts` | Compatibility TTS action endpoint. |
+| `tts_backend_action_name` | `""` | Optional downstream TTS action server. |
+| `debug_tts_action_name` | `/debug/say` | Debug action endpoint. |
+| `speech_topic` | `/speech` | Direct speech fallback. |
+| `debug_speech_topic` | `/debug/nao_say/speech` | Debug mirror topic. |
+| `default_language` | `en-US` | Default language metadata. |
+| `default_volume` | `1.0` | Default volume metadata. |
+| `tts_server_wait_sec` | `0.5` | Wait for downstream TTS server. |
+| `fallback_to_speech_topic` | `true` | Publish to `/speech` when TTS is unavailable. |
+| `forward_debug_tts_action` | `true` | Forward utterances to debug TTS when available. |
+| `fallback_to_debug_topic` | `true` | Publish debug text when TTS is unavailable. |
 
-## Launch
+## Planner Contract Role
 
-Standalone:
+Planner steps should normally request `type: "say"` and let
+`nao_orchestrator` route deterministic speech behavior. This package is the
+final robot-side speech executor; it should not parse planner goals or own
+dialogue policy.
+
+## Launch And Test
 
 ```bash
 ros2 launch nao_say_skill nao_say_skill.launch.py
 ```
 
-As part of the simulator stack:
+As part of the full stack:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py
-```
-
-Or on the real robot:
-
-```bash
 ros2 launch nao_chatbot nao_chatbot_robot.launch.py nao_ip:=<robot_ip>
 ```
 
-## Provenance
+Targeted unit check:
 
-- package type: local NAO-specific lifecycle skill, not a fork of an upstream
-  runtime repo
-- scaffold basis: `rpk` `skills/say_python` template
-- architecture style: hybrid
-  - public speech contracts stay ROS4HRI-compatible through `/tts_engine/tts`
-    and `communication_skills/action/Say`
-  - execution is NAO-specific through `/nao/say`, `/speech`, and the debug
-    speech surfaces
-- review boundary: canonical `/skill/say` ownership remains in
-  `dialogue_manager`; this package is the robot-side execution hook only
-
-## Expected Behavior
-
-- when the TTS action server is available, `/nao/say` forwards the request to it
-- `dialogue_manager` talks to this package through `/tts_engine/tts`
-- operator tools such as `rqt_chat` can expose their own TTS server on
-  `/debug/say` without conflicting with the canonical speech path
-- simulator-side `expressive_face` TTS should stay disabled unless explicitly
-  needed, otherwise the ROS graph may contain more than one `/tts_engine/tts`
-  server and clients can warn about unexpected goal responses
-- when no downstream TTS action is configured, the package falls back to
-  publishing the utterance on `/speech` for the robot driver
-- if no node is subscribed to `/speech` at runtime, the utterance is still
-  mirrored to the debug channels but the robot will not actually speak
-- the debug topic remains available alongside the robot speech path and is
-  mirrored by `nao_chatbot/robot_speech_debug` into `rqt_console`
-- this package never claims canonical `/skill/say`; that remains the
-  responsibility of `dialogue_manager`
-
-## Review Notes
-
-- package-local config lives in `config/00-defaults.yml`
-- lifecycle bring-up is provided by `launch/nao_say_skill.launch.py`
-- the implementation is in `nao_say_skill/skill_impl.py`
-- unit coverage currently focuses on goal metadata handling and small utility
-  helpers; runtime forwarding is exercised through launch/integration smoke
-  tests rather than mocked end-to-end TTS responses
+```bash
+python3 -m pytest -q src/nao_say_skill/test/test_nao_say_skill_unit.py
+```
 
 ## Notes
 
-- when TTS is available, the skill forwards to the configured TTS action
-- when TTS is unavailable, it can optionally fall back to debug-topic output
-- the package is a lifecycle node and ships its own launch/config/module files
+- First-party lifecycle skill package based on the local `rpk` pattern.
+- Do not claim `/skill/say`; that remains a dialogue-manager contract.
+- Simulator-side TTS should stay disabled unless explicitly needed to avoid
+  multiple `/tts_engine/tts` servers.

@@ -16,6 +16,7 @@ from planner_common.contracts import truncate_text
 def test_planner_request_defaults_missing_fields() -> None:
     request = PlannerRequest.from_payload('{"user_text":"find the cup"}')
     assert request.user_text == 'find the cup'
+    assert request.goal_text == ''
     assert request.request_id.startswith('request_')
     assert request.goal_id.startswith('goal_')
     assert request.request_kind == 'new_goal'
@@ -28,6 +29,21 @@ def test_planner_request_defaults_missing_fields() -> None:
         'world_model_snapshot': {},
         'world_model_text': '',
     }
+
+
+def test_planner_request_parses_goal_text_aliases() -> None:
+    request = PlannerRequest.from_payload(
+        {
+            'goal_text': 'inspect the cup and report completion',
+            'user_text': 'can you inspect the cup and tell me when done',
+        }
+    )
+
+    assert request.goal_text == 'inspect the cup and report completion'
+    assert request.user_text == 'can you inspect the cup and tell me when done'
+
+    alias_request = PlannerRequest.from_payload({'goal': 'look at the book'})
+    assert alias_request.goal_text == 'look at the book'
 
 
 def test_planner_request_keeps_supervisor_metadata() -> None:

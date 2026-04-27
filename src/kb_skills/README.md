@@ -1,65 +1,53 @@
 # kb_skills
 
-`kb_skills` is the dedicated local boundary for KnowledgeCore interactions.
+`kb_skills` is the local KnowledgeCore boundary. It provides reusable clients
+and skill metadata for KB reads and writes so planner/chatbot/executor code does
+not embed raw KnowledgeCore transport details.
 
-Current scope:
+## Owns
 
-- formalize the read-only `/kb/query` capability behind a reusable client
-- formalize the write-side `/kb/revise` capability behind reusable add/update/remove helpers
-- surface both read and write KB capabilities through package-level skill metadata
-- keep `chatbot_llm` responsible for deciding when to query and how to inject
-  the result into prompts
+- `KnowledgeCoreQueryClient`
+- `KnowledgeCoreMutationClient`
+- canonical KB query intent labels
+- package skill metadata for KB query/revise capability
 
-Current role in the grounded stack:
+It does not decide what the robot should say or execute.
 
-1. `nao_scene_grounding` writes transient detector-derived facts into
-   `knowledge_core` through the shared mutation boundary
-2. `chatbot_llm` reads those facts through `/kb/query`
-3. `kb_skills` provides the reusable read-side query client and canonical KB
-   intent labels used by the local stack
-4. future planner-facing work can use the same package for `add`, `update`, and
-   `remove` mutations instead of embedding KnowledgeCore transport logic in the
-   planner or executor
+## Public ROS Services Used
+
+| Service | Type | Purpose |
+| --- | --- | --- |
+| `/kb/query` | `kb_msgs/srv/Query` | Read symbolic facts |
+| `/kb/revise` | `kb_msgs/srv/Revise` | Add/update/remove symbolic facts |
 
 ## Query Surface
 
-- `KnowledgeCoreQueryClient.query_rows(...)`
-- package skill metadata: `kb_query`
+- `query_rows(...)`
+
+Used by `chatbot_llm` to build `knowledge_snapshot` prompt context.
 
 ## Mutation Surface
-
-`KnowledgeCoreMutationClient` now exposes three explicit planner-facing helpers:
 
 - `add_facts(...)`
 - `revise_facts(...)`
 - `remove_facts(...)`
-
-Single-statement convenience wrappers also exist:
-
 - `add_fact(...)`
 - `revise_fact(...)`
 - `remove_fact(...)`
 
-All of them route through the same `/kb/revise` transport so mutation policy,
-timeouts, tracing, and error handling stay in one place.
+Used by `nao_scene_grounding` for transient detector-derived object facts.
 
-## Mutation Policy
+## Contract Role
 
-Recommended ownership split:
+Recommended split:
 
-- `nao_scene_grounding` remains the semantic owner of detector-derived transient
-  facts such as `myself sees detected_pear_320_240`
-- planner- or tool-driven KB updates should go through `kb_skills` rather than
-  talking to `knowledge_core` directly
-- `nao_orchestrator` should not become a raw KnowledgeCore client; it should
-  stay downstream-only and consume structured planner decisions
+- `nao_scene_grounding`: owns detector-derived facts.
+- `chatbot_llm`: owns prompt formatting and when to query.
+- `planner_llm`: may use this boundary later for planner-visible KB operations.
+- `nao_orchestrator`: should not become a raw KB client.
 
-Recommended method usage:
+## Tests
 
-- `add`: persistent or additive world assertions
-- `update`: refresh or revise transient grounded state
-- `remove`: retract invalidated or obsolete facts
-
-Transient grounded writes should provide a lifespan so they expire naturally.
-Longer-lived planner memory should omit the lifespan unless the fact is meant to
-be temporary.
+```bash
+PYTHONPATH=src/kb_skills python3 -m pytest -q src/kb_skills/test
+```

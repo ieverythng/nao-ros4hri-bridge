@@ -53,6 +53,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     socialminds-ros-jazzy-interaction-sim \
     socialminds-ros-jazzy-naoqi-bridge-msgs \
     socialminds-ros-jazzy-naoqi-driver \
+    socialminds-ros-jazzy-launch-tui \
     socialminds-ros-jazzy-oro \
     socialminds-ros-jazzy-pyhri \
     socialminds-ros-jazzy-tts-msgs \
@@ -79,7 +80,9 @@ RUN python3 -m pip install --no-cache-dir --break-system-packages \
     torchvision \
     && python3 -m pip install --no-cache-dir --break-system-packages --no-deps \
     ultralytics \
-    ultralytics-thop
+    ultralytics-thop \
+    && python3 -m pip install --no-cache-dir --break-system-packages --ignore-installed \
+    "textual>=0.50,<1"
 
 WORKDIR /home/ubuntu/ws
 RUN mkdir -p /home/ubuntu/ws/src

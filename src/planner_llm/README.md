@@ -1,184 +1,58 @@
 # planner_llm
 
-`planner_llm` is now the planner-facing supervisory ROS node. It tracks goals
-over time, emits executable plan envelopes on `/intents`, and publishes
-planner-owned dialogue acts on `/planner/dialogue_act`.
+`planner_llm` is the planner and goal supervisor. It consumes `/planner/request`,
+generates executable plan envelopes on `/intents`, listens to
+`/planner/execution_feedback`, and publishes `/planner/dialogue_act` when the
+dialogue side needs to speak, clarify, or report failure.
 
-It sits between `chatbot_llm` and `nao_orchestrator` when planner mode is
-enabled:
+## Owns
 
-```text
-dialogue_manager -> chatbot_llm -> /planner/request -> planner_llm
-planner_llm -> /intents -> nao_orchestrator
-planner_llm -> /planner/dialogue_act -> dialogue_manager/TTS seam
-nao_orchestrator -> /planner/execution_feedback -> planner_llm
-```
+- task planning over abstract skill metadata
+- goal IDs, plan IDs, and plan versions
+- retry/replan/clarification/failure decisions
+- planner dialogue acts
 
-The package does not own final user phrasing. It owns:
+It does not own:
 
-- goal supervision
-- structured plan generation
-- bounded replanning after downstream failure feedback
-- clarification and cancellation policy
-- planner-side communication decisions
-
-The package does not own:
-
-- text-to-speech lifecycle
+- final speech realization
 - robot skill execution
-- detector subscriptions
-- KnowledgeCore writes
+- raw detector subscriptions
+- direct KnowledgeCore transport
 
-## Topics
+## Public ROS Interfaces
 
-Primary ROS interfaces:
+| Direction | Topic | Type | Purpose |
+| --- | --- | --- | --- |
+| subscribe | `/planner/request` | `hri_actions_msgs/msg/Intent` | Planner ingress from `chatbot_llm` |
+| publish | `/intents` | `hri_actions_msgs/msg/Intent` | Executable downstream plan |
+| subscribe | `/planner/execution_feedback` | `std_msgs/msg/String` | Executor feedback from `nao_orchestrator` |
+| publish | `/planner/dialogue_act` | `std_msgs/msg/String` | Planner communication request |
+| subscribe | `/world_model/enriched_snapshot` | `std_msgs/msg/String` | Optional future WME snapshot |
+| subscribe | `/world_model/enriched_text` | `std_msgs/msg/String` | Optional future WME text |
 
-- subscribe: `/planner/request` as `hri_actions_msgs/msg/Intent`
-- publish: `/intents` as `hri_actions_msgs/msg/Intent`
-- publish: `/planner/dialogue_act` as `std_msgs/msg/String`
-- subscribe: `/planner/execution_feedback` as `std_msgs/msg/String`
-- subscribe: `/world_model/enriched_snapshot` as `std_msgs/msg/String`
-- subscribe: `/world_model/enriched_text` as `std_msgs/msg/String`
+## Contract Role
 
-## Planner Request Shape
+Planner input should be understood as:
 
-`chatbot_llm` publishes planner ingress requests with JSON in `Intent.data`.
+- `goal_text`, `normalized_intents`, `scene_targets`, and `grounded_context`
+  are the clean planner signals.
+- `requested_plan` is a hint/fallback, not the only way to make the planner work.
+- raw `user_text` is legacy input only and is not included in the model prompt
+  payload during normal operation.
 
-Expected fields:
+Planner output is an `Intent.data.plan` envelope with step types `noop`, `say`,
+`skill`, and `look_at`. Full examples are in `../../docs/contracts.md`.
 
-```json
-{
-  "request_id": "turn_123",
-  "goal_id": "goal_123",
-  "request_kind": "new_goal",
-  "user_text": "look left and then sit down",
-  "normalized_intents": ["head_look_left"],
-  "ack_text": "I will do that.",
-  "ack_mode": "say",
-  "scene_targets": [],
-  "dialogue_context": [],
-  "grounded_context": {
-    "knowledge_snapshot": {},
-    "scene_summary": {},
-    "world_model_snapshot": {},
-    "world_model_text": ""
-  },
-  "planner_mode": "multi_step",
-  "interaction_mode": "default",
-  "dialogue_turn_id": "dialogue_123"
-}
-```
+## Important Parameters
 
-Notes:
-
-- `normalized_intents` are best-effort hints, not the sole source of truth.
-- `user_text` remains the authoritative user request string.
-- `goal_id` is the supervisor key; replans and clarification answers should
-  reuse it.
-- `request_kind` differentiates new goals, clarification answers, updates, and
-  supervisor-local cancellation.
-
-## Output Shape
-
-`planner_llm` emits the normal downstream `Intent` contract on `/intents` when
-it has an executable plan. The executable structure lives inside
-`Intent.data.plan`.
-
-Typical output:
-
-```json
-{
-  "goal_id": "goal_123",
-  "ack_text": "",
-  "ack_mode": "",
-  "scene_targets": [],
-  "plan": {
-    "goal_id": "goal_123",
-    "plan_id": "plan_123",
-    "plan_version": 2,
-    "status": "replanning",
-    "validation_status": "draft",
-    "failure_reason": "",
-    "replan_hint": "",
-    "retry_budget": 1,
-    "scene_targets": [],
-    "communication_policy": {
-      "emit_acknowledge": false,
-      "emit_progress": false,
-      "emit_completion": true,
-      "emit_failure": true
-    },
-    "steps": [
-      {
-        "id": "step_1",
-        "type": "skill",
-        "name": "perform_motion",
-        "args": {"object": "head_look_left"},
-        "requires": [],
-        "on_failure": "replan",
-        "retry_budget": 0
-      },
-      {
-        "id": "step_2",
-        "type": "skill",
-        "name": "perform_motion",
-        "args": {"object": "sit"},
-        "requires": [],
-        "on_failure": "replan",
-        "retry_budget": 0
-      }
-    ]
-  }
-}
-```
-
-## Dialogue Act Shape
-
-When the supervisor decides something should be surfaced to the user without
-issuing a new executable plan, it publishes a dialogue act on
-`/planner/dialogue_act`.
-
-```json
-{
-  "goal_id": "goal_123",
-  "plan_id": "plan_123",
-  "plan_version": 2,
-  "act": "ask_clarification",
-  "priority": "normal",
-  "await_user_response": true,
-  "reason": "missing target object",
-  "text_hint": "Which cup do you mean?",
-  "slots_needed": ["target_object"],
-  "context": {
-    "scene_targets": ["cup"],
-    "status": "waiting_user"
-  }
-}
-```
-
-## Supervisor Loop
-
-`nao_orchestrator` publishes downstream execution feedback on
-`/planner/execution_feedback`. `planner_llm` uses that feedback to either:
-
-- keep the current goal executing
-- emit a revised plan version
-- publish a clarification/help/failure dialogue act
-- mark a goal completed or cancelled
-
-The planner therefore stays execution-aware without taking over robot skill
-ownership from `nao_orchestrator`.
-
-## Parameters
-
-Defaults live in [`config/00-defaults.yml`](./config/00-defaults.yml).
-
-Most important parameters:
+Defaults live in `config/00-defaults.yml`.
 
 - `planner_request_topic`
 - `intent_topic`
 - `planner_feedback_topic`
 - `planner_dialogue_act_topic`
+- `enriched_snapshot_topic`
+- `enriched_text_topic`
 - `skill_registry_path`
 - `provider`
 - `model`
@@ -189,36 +63,33 @@ Most important parameters:
 - `default_retry_budget`
 - `auto_replan`
 
-## Local Smoke Tests
-
-Planner-only harness:
+## Launch And Smoke Test
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_planner_local.launch.py
-```
-
-Fixture publisher:
-
-```bash
 ros2 run planner_llm publish_fixture request
 ros2 run planner_llm publish_fixture feedback
 ```
 
-Focused validation:
+Observe:
 
 ```bash
-colcon build --packages-select planner_common planner_llm
-pytest src/planner_common/test/test_contracts.py src/planner_llm/test/test_planner_engine.py
+ros2 topic echo /planner/request
+ros2 topic echo /intents
+ros2 topic echo /planner/execution_feedback
+ros2 topic echo /planner/dialogue_act
 ```
 
-## Design Notes
+## Tests
 
-- `planner_llm` is now supervisor-facing rather than a stateless planner shim.
-- `chatbot_llm` still owns the synchronous user-facing acknowledgement path.
-- `dialogue_manager` still owns final speech realization and TTS lifecycle.
-- `nao_orchestrator` remains the deterministic execution layer.
-- World-model inputs are optional and currently arrive through enriched snapshot
-  topics, not through direct detector subscriptions.
-- The skill registry in `config/skill_registry.json` is the planner-owned
-  abstract execution surface; the planner should not reason over raw robot
-  topics or NAOqi APIs.
+```bash
+PYTHONPATH=src/planner_common:src/planner_llm:src/kb_skills \
+python3 -m pytest -q src/planner_llm/test
+```
+
+## Current Limitations
+
+- Multi-step completeness needs direct diagnostic coverage.
+- Unsupported skill filtering can hide planner/model issues if not checked.
+- Preconditions are currently metadata and feedback labels, not full world-state
+  gates.

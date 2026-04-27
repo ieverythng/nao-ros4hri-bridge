@@ -41,7 +41,7 @@ _SYSTEM_PROMPT = (
     'Each step must contain type, name, args, requires, on_failure, and retry_budget. '
     'Plan only over the supplied abstract skill registry and allowed step types. '
     'Do not reference robot-specific topics, NAOqi APIs, or direct hardware calls. '
-    'normalized_intents may be incomplete, so infer the executable request from user_text, '
+    'normalized_intents may be incomplete, so infer the executable request from goal_text, '
     'grounded context, requested_plan hints, and execution feedback. When '
     'request.requested_plan is present, preserve its safe executable ordering unless you have '
     'a clear reason to clarify, fail, or replan. If the task is ambiguous or blocked, set '
@@ -452,7 +452,7 @@ class PlannerEngine:
             'parent_goal_id': request.parent_goal_id,
             'supersedes_goal_id': request.supersedes_goal_id,
             'request_kind': request.request_kind,
-            'user_text': request.user_text,
+            'goal_text': request.goal_text,
             'normalized_intents': list(request.normalized_intents),
             'ack_text': request.ack_text,
             'ack_mode': request.ack_mode,

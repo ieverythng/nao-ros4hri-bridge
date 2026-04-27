@@ -415,6 +415,7 @@ class PlannerRequest:
     parent_goal_id: str
     supersedes_goal_id: str
     request_kind: str
+    goal_text: str
     user_text: str
     normalized_intents: tuple[str, ...]
     ack_text: str
@@ -452,6 +453,9 @@ class PlannerRequest:
                 PLANNER_REQUEST_KINDS,
                 'new_goal',
             ),
+            goal_text=str(
+                data.get('goal_text', data.get('goal', data.get('task', '')))
+            ).strip(),
             user_text=str(data.get('user_text', '')).strip(),
             normalized_intents=tuple(coerce_str_list(data.get('normalized_intents', []))),
             ack_text=str(data.get('ack_text', '')).strip(),

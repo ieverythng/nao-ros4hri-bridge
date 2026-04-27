@@ -1,42 +1,51 @@
 # asr_vosk
 
-Runtime Vosk ASR package used by this workspace.
+`asr_vosk` owns local offline speech recognition for the workspace ASR path. It
+runs a ROS 2 lifecycle node that consumes microphone audio and publishes
+ROS4HRI `hri_msgs/msg/LiveSpeech`.
 
-This package runs a ROS2 lifecycle node (`asr_vosk`) that subscribes to
-`audio_common_msgs/AudioData` and publishes ROS4HRI `hri_msgs/LiveSpeech`.
+This package is a local runtime package, but its public surface is ROS4HRI
+speech-oriented and should remain compatible with the dialogue stack.
 
-## Runtime Contract
+## Public ROS Interfaces
 
-- Node: `asr_vosk` (lifecycle)
-- Input topic:
-  - `microphone_topic` (default: `/laptop/microphone0`)
-- Output topic:
-  - `output_speech_topic` (default: `/humans/voices/anonymous_speaker/speech`)
-- Extra published topics:
-  - `/humans/voices/tracked`
-  - `/humans/voices/anonymous_speaker/audio`
-  - `/humans/voices/anonymous_speaker/is_speaking`
-  - `/diagnostics`
+| Interface | Type | Role |
+| --- | --- | --- |
+| `/laptop/microphone0` by default | `audio_common_msgs/msg/AudioData` | Microphone audio input. |
+| `/humans/voices/anonymous_speaker/speech` | `hri_msgs/msg/LiveSpeech` | Final and optional partial ASR output. |
+| `/humans/voices/tracked` | `hri_msgs/msg/IdsList` | Anonymous voice tracking marker. |
+| `/humans/voices/anonymous_speaker/audio` | `audio_common_msgs/msg/AudioData` | Voice audio mirror. |
+| `/humans/voices/anonymous_speaker/is_speaking` | `std_msgs/msg/Bool` | Speaking state. |
+| `/asr_vosk/push_to_talk` | `std_msgs/msg/Bool` | Optional listening gate. |
+| `/diagnostics` | `diagnostic_msgs/msg/DiagnosticArray` | Runtime diagnostics. |
 
-## Parameters
+## Important Parameters
 
-- `audio_rate` (int, default: `16000`)
-- `model` (string, default: `/models/vosk-model-small-en-us-0.15`)
-- `microphone_topic` (string, default: `/laptop/microphone0`)
-- `start_listening` (bool, default: `true`)
-- `output_speech_topic` (string, default: `/humans/voices/anonymous_speaker/speech`)
-- `speech_locale` (string, default: `en_US`)
-- `publish_partials` (bool, default: `false`)
-- `min_final_chars` (int, default: `2`)
-- `min_final_words` (int, default: `1`)
-- `min_final_confidence` (float, default: `0.0`)
-- `ignore_single_token_fillers` (bool, default: `true`)
-- `single_token_fillers_csv` (string, default: `uh,um,hmm,huh,erm,ah,eh`)
-- `debug_log_results` (bool, default: `false`)
-- `push_to_talk_enabled` (bool, default: `false` in the standalone package config)
-- `push_to_talk_topic` (string, default: `/asr_vosk/push_to_talk`)
+| Parameter | Default | Purpose |
+| --- | --- | --- |
+| `audio_rate` | `16000` | Expected sample rate. |
+| `model` | `/models/vosk-model-small-en-us-0.15` | Vosk model directory. |
+| `microphone_topic` | `/laptop/microphone0` | Audio input topic. |
+| `start_listening` | `true` | Begin listening after activation. |
+| `output_speech_topic` | `/humans/voices/anonymous_speaker/speech` | LiveSpeech output topic. |
+| `speech_locale` | `en_US` | LiveSpeech locale metadata. |
+| `publish_partials` | `false` | Publish incremental hypotheses. |
+| `min_final_chars` | `2` | Drop shorter final hypotheses. |
+| `min_final_words` | `1` | Drop final hypotheses with fewer words. |
+| `min_final_confidence` | `0.0` | Minimum average confidence. |
+| `ignore_single_token_fillers` | `true` | Drop one-token fillers. |
+| `single_token_fillers_csv` | `uh,um,hmm,huh,erm,ah,eh` | Filler list. |
+| `debug_log_results` | `false` | Log ASR filtering decisions. |
+| `push_to_talk_enabled` | `false` | Require explicit listening gate. |
+| `push_to_talk_topic` | `/asr_vosk/push_to_talk` | Gate topic. |
 
-## Launch
+## Planner Contract Role
+
+This package does not talk to the planner directly. It feeds the dialogue side:
+audio becomes `LiveSpeech`, `dialogue_manager`/`chatbot_llm` interpret the text,
+and `chatbot_llm` publishes planner requests when needed.
+
+## Launch And Test
 
 ```bash
 ros2 launch asr_vosk asr_vosk.launch.py \
@@ -44,16 +53,17 @@ ros2 launch asr_vosk asr_vosk.launch.py \
   microphone_topic:=/laptop/microphone0
 ```
 
-The launch file automatically transitions lifecycle state:
+The launch file configures and activates the lifecycle node automatically.
 
-1. `CONFIGURE`
-2. `ACTIVATE`
+Targeted unit check:
 
-The higher-level `nao_chatbot` ASR launch surfaces usually override
-`push_to_talk_enabled:=true`, so the standalone package default and the
-application-level default are intentionally different.
+```bash
+python3 -m pytest -q src/asr_vosk/test/unit/test_node_vosk_unit.py
+```
 
-## Note on Models
+## Notes
 
-This repository does not vendor Vosk model binaries in `src/asr_vosk`.
-Provide models via mounted host path (for example `/models`) and set `model:=...`.
+- Vosk model binaries are not vendored in this package; mount/provide them at
+  runtime and set `model`.
+- Standalone defaults listen immediately, while higher-level `nao_chatbot` ASR
+  profiles may enable push-to-talk.
