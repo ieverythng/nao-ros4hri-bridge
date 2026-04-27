@@ -1,6 +1,6 @@
 # Current Workflow
 
-Last updated: 2026-04-24
+Last updated: 2026-04-27
 
 This is the canonical workflow map for the active NAO ROS4HRI bridge. Historical
 handoffs and old integration notes live in `docs/artifacts/`.
@@ -22,18 +22,29 @@ handoffs and old integration notes live in `docs/artifacts/`.
 
 ```mermaid
 flowchart LR
-    speech["/humans/voices/*/speech"] --> dm["dialogue_manager"]
-    dm --> chatbot["chatbot_llm"]
-    chatbot -->|direct mode /intents| orch["nao_orchestrator"]
-    chatbot -->|planner mode /planner/request| planner["planner_llm"]
-    planner -->|/intents| orch
-    orch -->|/planner/execution_feedback| planner
-    planner -->|/planner/dialogue_act| dm
+    user["User text<br/>/humans/voices/*/speech"] --> dm["dialogue_manager<br/>dialogue turn owner"]
+    dm -->|dialogue turn request| chatbot["chatbot_llm<br/>response + intent routing"]
+    chatbot --> route{"Direct or planner route"}
+
+    route -->|direct mode<br/>/intents| orch["nao_orchestrator<br/>deterministic executor"]
+    route -->|planner mode<br/>/planner/request| planner["planner_llm<br/>planner + supervisor"]
+
+    planner -->|executable plan<br/>/intents| orch
+    orch -.->|execution status<br/>/planner/execution_feedback| planner
+    planner -.->|clarify/report<br/>/planner/dialogue_act| dm
+
+    dm -->|robot response| speech_out["Robot speech<br/>dialogue output"]
     orch --> say["/nao/say"]
     orch --> replay["/skill/replay_motion"]
     orch --> head["/skill/do_head_motion"]
     orch --> look["/skill/look_at"]
 ```
+
+The interaction starts with user text on `/humans/voices/*/speech`.
+`dialogue_manager` owns the dialogue turn and calls `chatbot_llm`.
+`chatbot_llm` then chooses either direct execution through `/intents` or planner
+execution through `/planner/request`. The planner never speaks directly; it
+publishes `/planner/dialogue_act` back to `dialogue_manager`.
 
 ## Grounded Scene Flow
 
@@ -55,19 +66,31 @@ and future world-model enrichment consume that state through explicit contracts.
 
 ```mermaid
 sequenceDiagram
+    participant H as human speech
+    participant D as dialogue_manager
     participant C as chatbot_llm
     participant P as planner_llm
     participant O as nao_orchestrator
     participant S as skill/mock skill
 
-    C->>P: /planner/request
-    P->>O: /intents with Intent.data.plan
-    O->>P: /planner/execution_feedback plan_accepted
-    O->>S: action goal for step
-    S-->>O: action result
-    O->>P: /planner/execution_feedback step_succeeded or step_failed
-    O->>P: /planner/execution_feedback plan_completed
-    P-->>C: optional /planner/dialogue_act via dialogue owner
+    H->>D: /humans/voices/*/speech
+    D->>C: dialogue turn request
+    C-->>D: verbal response plus route decision
+    alt direct execution mode
+        C->>O: /intents direct intent
+        O->>S: action goal for command
+        S-->>O: action result
+    else planner mode
+        C->>P: /planner/request
+        P->>O: /intents with Intent.data.plan
+        O->>P: /planner/execution_feedback plan_accepted
+        O->>S: action goal for step
+        S-->>O: action result
+        O->>P: /planner/execution_feedback step_succeeded or step_failed
+        O->>P: /planner/execution_feedback plan_completed
+        P-->>D: /planner/dialogue_act if user-facing speech is needed
+    end
+    D-->>H: robot dialogue output
 ```
 
 The Monday diagnostic should prove this loop with the smallest safe skill target

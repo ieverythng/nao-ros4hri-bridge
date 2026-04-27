@@ -10,11 +10,12 @@
     default_intent_name: "raw_user_input"
     skill_registry_path: ""
     provider: "ollama"
-    model: "gpt-oss:120b-cloud"
+    model: "qwen3.5:397b-cloud"
     base_url: "http://127.0.0.1:11434"
     api_key_env: "OPENAI_API_KEY"
     temperature: 0.1
     max_tokens: 800
     timeout_sec: 20.0
+    think: false
     default_retry_budget: 1
     auto_replan: true

@@ -67,6 +67,8 @@ class HeadMotionSkillServer(Node):
         self.declare_parameter("convergence_tolerance_rad", 0.08)
         self.declare_parameter("retry_on_convergence_timeout", True)
         self.declare_parameter("retry_convergence_timeout_sec", 1.5)
+        self.declare_parameter("allow_open_loop_without_joint_state", False)
+        self.declare_parameter("assume_success_on_convergence_timeout", False)
 
         self.action_name = str(self.get_parameter("action_name").value)
         self.default_speed = float(self.get_parameter("default_speed").value)
@@ -94,6 +96,12 @@ class HeadMotionSkillServer(Node):
         self.retry_convergence_timeout_sec = max(
             0.1,
             float(self.get_parameter("retry_convergence_timeout_sec").value),
+        )
+        self.allow_open_loop_without_joint_state = bool(
+            self.get_parameter("allow_open_loop_without_joint_state").value
+        )
+        self.assume_success_on_convergence_timeout = bool(
+            self.get_parameter("assume_success_on_convergence_timeout").value
         )
 
         if JointAnglesWithSpeed is None or JointState is None:
@@ -215,6 +223,21 @@ class HeadMotionSkillServer(Node):
 
         current_state = self._wait_for_head_state(self.joint_state_wait_sec)
         if current_state is None:
+            if self.allow_open_loop_without_joint_state and not relative:
+                target_yaw, target_pitch = yaw, pitch
+                return self._execute_open_loop(
+                    goal_handle,
+                    start_time=start_time,
+                    yaw=yaw,
+                    pitch=pitch,
+                    speed=speed,
+                    relative=relative,
+                    target_yaw=target_yaw,
+                    target_pitch=target_pitch,
+                    reason=(
+                        f"No recent head joint state available on '{self.joint_states_topic}'"
+                    ),
+                )
             goal_handle.abort()
             reason = (
                 f"No recent head joint state available on '{self.joint_states_topic}'"
@@ -310,6 +333,14 @@ class HeadMotionSkillServer(Node):
                         target_pitch=target_pitch,
                         initial_state=current_state,
                     )
+                    if self.assume_success_on_convergence_timeout:
+                        return self._complete_open_loop_after_timeout(
+                            goal_handle,
+                            start_time=start_time,
+                            target_yaw=target_yaw,
+                            target_pitch=target_pitch,
+                            reason=reason,
+                        )
                     self.get_logger().warn("HEAD_MOTION failed | %s" % reason)
                     goal_handle.abort()
                     return self._result(False, reason, duration)
@@ -318,6 +349,14 @@ class HeadMotionSkillServer(Node):
                 if goal_handle.is_cancel_requested:
                     goal_handle.canceled()
                     return self._result(False, "Cancelled during convergence wait", duration)
+                if self.assume_success_on_convergence_timeout:
+                    return self._complete_open_loop_after_timeout(
+                        goal_handle,
+                        start_time=start_time,
+                        target_yaw=target_yaw,
+                        target_pitch=target_pitch,
+                        reason=initial_reason,
+                    )
                 self.get_logger().warn("HEAD_MOTION failed | %s" % initial_reason)
                 goal_handle.abort()
                 return self._result(False, initial_reason, duration)
@@ -334,6 +373,73 @@ class HeadMotionSkillServer(Node):
             True,
             f"Head motion converged on '{self.joint_angles_topic}' ({mode})",
             duration,
+        )
+
+    def _execute_open_loop(
+        self,
+        goal_handle,
+        *,
+        start_time: float,
+        yaw: float,
+        pitch: float,
+        speed: float,
+        relative: bool,
+        target_yaw: float,
+        target_pitch: float,
+        reason: str,
+    ):
+        target_validation_error = self._validate_angles(
+            target_yaw,
+            target_pitch,
+            relative=False,
+        )
+        if target_validation_error:
+            goal_handle.abort()
+            self.get_logger().warn("HEAD_MOTION failed | %s" % target_validation_error)
+            return self._result(
+                False,
+                target_validation_error,
+                time.monotonic() - start_time,
+            )
+        self.get_logger().warn("HEAD_MOTION using open-loop dispatch | %s" % reason)
+        self._publish_feedback(goal_handle, "executing_open_loop", 0.5)
+        self._publish_joint_angles(yaw=yaw, pitch=pitch, speed=speed, relative=relative)
+        if goal_handle.is_cancel_requested:
+            goal_handle.canceled()
+            return self._result(
+                False,
+                "Cancelled after open-loop dispatch",
+                time.monotonic() - start_time,
+            )
+        self._publish_feedback(goal_handle, "completing", 1.0)
+        goal_handle.succeed()
+        return self._result(
+            True,
+            f"Head motion command published open-loop on '{self.joint_angles_topic}' ({reason})",
+            time.monotonic() - start_time,
+        )
+
+    def _complete_open_loop_after_timeout(
+        self,
+        goal_handle,
+        *,
+        start_time: float,
+        target_yaw: float,
+        target_pitch: float,
+        reason: str,
+    ):
+        self.get_logger().warn(
+            "HEAD_MOTION accepting command despite convergence timeout | %s" % reason
+        )
+        self._publish_feedback(goal_handle, "completed_without_convergence", 1.0)
+        goal_handle.succeed()
+        return self._result(
+            True,
+            (
+                "Head motion command published but convergence was not observed "
+                f"(target_yaw={target_yaw:.3f}, target_pitch={target_pitch:.3f})"
+            ),
+            time.monotonic() - start_time,
         )
 
     def _on_joint_state(self, msg: JointState) -> None:

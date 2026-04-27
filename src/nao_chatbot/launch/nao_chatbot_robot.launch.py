@@ -3,7 +3,7 @@ from nao_chatbot.stack_launch import generate_profile_launch_description
 
 _ROBOT_PROFILE_DEFAULTS = {
     "nao_ip": "172.26.112.62",
-    "ollama_model": "gpt-oss:120b-cloud",
+    "ollama_model": "qwen3.5:397b-cloud",
     "start_naoqi_driver": "false",
     "start_nao_robot": "true",
     "start_planner_llm": "true",
@@ -20,6 +20,8 @@ _ROBOT_PROFILE_DEFAULTS = {
     "start_interaction_sim_tools": "true",
     "start_interaction_sim_ui": "false",
     "start_rqt_console": "false",
+    "chatbot_think": "false",
+    "planner_llm_think": "false",
 }
 
 

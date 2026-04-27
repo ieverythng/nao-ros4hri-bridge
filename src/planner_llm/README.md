@@ -60,8 +60,13 @@ Defaults live in `config/00-defaults.yml`.
 - `temperature`
 - `max_tokens`
 - `timeout_sec`
+- `think`: forwarded to Ollama-compatible backends; default is `false`.
 - `default_retry_budget`
 - `auto_replan`
+
+The default model is currently `qwen3.5:397b-cloud`. If its planner output is
+too variable for a demo, use the launch argument `planner_llm_model` to return
+to the previous known model.
 
 ## Launch And Smoke Test
 
@@ -91,5 +96,8 @@ python3 -m pytest -q src/planner_llm/test
 
 - Multi-step completeness needs direct diagnostic coverage.
 - Unsupported skill filtering can hide planner/model issues if not checked.
+- The current composite "look around for anyone" diagnostic produced a
+  clarification because the model response did not contain a valid executable
+  plan.
 - Preconditions are currently metadata and feedback labels, not full world-state
   gates.

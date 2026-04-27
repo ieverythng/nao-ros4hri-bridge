@@ -45,12 +45,13 @@ class PlannerNode(Node):
         self.declare_parameter('default_intent_name', Intent.RAW_USER_INPUT)
         self.declare_parameter('skill_registry_path', '')
         self.declare_parameter('provider', 'ollama')
-        self.declare_parameter('model', 'gpt-oss:120b-cloud')
+        self.declare_parameter('model', 'qwen3.5:397b-cloud')
         self.declare_parameter('base_url', 'http://127.0.0.1:11434')
         self.declare_parameter('api_key_env', 'OPENAI_API_KEY')
         self.declare_parameter('temperature', 0.1)
         self.declare_parameter('max_tokens', 800)
         self.declare_parameter('timeout_sec', 20.0)
+        self.declare_parameter('think', False)
         self.declare_parameter('default_retry_budget', 1)
         self.declare_parameter('auto_replan', True)
 
@@ -129,12 +130,13 @@ class PlannerNode(Node):
     def _provider_config(self) -> PlannerProviderConfig:
         return PlannerProviderConfig(
             provider=self._text_parameter('provider', 'ollama'),
-            model=self._text_parameter('model', 'gpt-oss:120b-cloud'),
+            model=self._text_parameter('model', 'qwen3.5:397b-cloud'),
             base_url=self._text_parameter('base_url', 'http://127.0.0.1:11434'),
             api_key_env=self._text_parameter('api_key_env', 'OPENAI_API_KEY'),
             temperature=float(self.get_parameter('temperature').value),
             max_tokens=int(self.get_parameter('max_tokens').value),
             timeout_sec=float(self.get_parameter('timeout_sec').value),
+            think=bool(self.get_parameter('think').value),
         )
 
     def _on_planner_request(self, msg: Intent) -> None:

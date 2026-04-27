@@ -40,6 +40,14 @@ def generate_launch_description():
         "head_motion_retry_convergence_timeout_sec",
         default_value="1.5",
     )
+    head_motion_allow_open_loop_without_joint_state_arg = DeclareLaunchArgument(
+        "head_motion_allow_open_loop_without_joint_state",
+        default_value="false",
+    )
+    head_motion_assume_success_on_convergence_timeout_arg = DeclareLaunchArgument(
+        "head_motion_assume_success_on_convergence_timeout",
+        default_value="false",
+    )
 
     replay_motion = Node(
         package="nao_replay_motion",
@@ -70,6 +78,12 @@ def generate_launch_description():
                 ),
                 "retry_convergence_timeout_sec": LaunchConfiguration(
                     "head_motion_retry_convergence_timeout_sec"
+                ),
+                "allow_open_loop_without_joint_state": _bool_launch_config(
+                    "head_motion_allow_open_loop_without_joint_state"
+                ),
+                "assume_success_on_convergence_timeout": _bool_launch_config(
+                    "head_motion_assume_success_on_convergence_timeout"
                 ),
             }
         ],
@@ -111,6 +125,8 @@ def generate_launch_description():
             posture_bridge_wake_up_on_connect_arg,
             head_motion_retry_on_convergence_timeout_arg,
             head_motion_retry_convergence_timeout_sec_arg,
+            head_motion_allow_open_loop_without_joint_state_arg,
+            head_motion_assume_success_on_convergence_timeout_arg,
             replay_motion,
             head_motion,
             posture_bridge,

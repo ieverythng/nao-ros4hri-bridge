@@ -1,6 +1,6 @@
 # Runtime Contracts
 
-Last updated: 2026-04-24
+Last updated: 2026-04-27
 
 This document is the richer reference for the JSON payloads that move task,
 scene, and execution state between nodes. The root README contains compact
@@ -14,6 +14,17 @@ Topic:
 - type: `hri_actions_msgs/msg/Intent`
 - publisher: `chatbot_llm`
 - consumer: `planner_llm`
+
+ROS envelope policy:
+
+- `Intent.priority` and `Intent.confidence` are part of
+  `hri_actions_msgs/msg/Intent`, so they will always appear in
+  `ros2 topic echo /planner/request`.
+- `chatbot_llm` now publishes planner requests with a deterministic priority
+  (`128`) and a bounded route confidence. Execution-routed turns with no model
+  confidence use a conservative floor rather than `0.0`.
+- Planner semantics live in `Intent.data`; do not duplicate priority or
+  confidence inside the JSON payload unless a planner policy genuinely needs it.
 
 Preferred payload:
 
@@ -186,7 +197,7 @@ Topic:
 - `/planner/dialogue_act`
 - type: `std_msgs/msg/String`
 - publisher: `planner_llm`
-- consumer: dialogue/speech side
+- consumer: `dialogue_manager`
 
 ```json
 {
@@ -230,6 +241,10 @@ Purpose:
 
 - prompt context for response and intent/planner routing stages.
 
+`knowledge_snapshot` is the chatbot's textual/symbolic view of KnowledgeCore
+facts. It is useful because it gives the LLM a compact fact set without exposing
+raw KB transport details.
+
 Default query group:
 
 ```text
@@ -254,10 +269,25 @@ Topic:
 - `/scene/summary`
 - type: `std_msgs/msg/String`
 - publisher: `nao_scene_grounding`
+- consumer: `chatbot_llm` and operator/debug tooling
 
 Purpose:
 
-- compact object-grounding feed for operators and future consumers.
+- transient detector-grounded observation summary.
+- carries detection metadata that is not yet represented as KB facts, including
+  labels/classes, scores, image positions, observer/source, and recency.
+- supports debugging and future `object_manager`/world-model work without
+  making the planner subscribe directly to detector output.
+
+Current policy:
+
+- Keep `/scene/summary` while the KB only stores the selected symbolic facts
+  needed for reasoning, such as `myself sees entity` and `entity rdf:type Type`.
+- If the KB/object-manager schema later stores confidence, position,
+  provenance, and recency directly, the scene summary can become mostly
+  operator/debug output.
+
+Example payload:
 
 ```json
 {

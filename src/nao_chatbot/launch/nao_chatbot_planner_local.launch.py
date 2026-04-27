@@ -18,8 +18,9 @@ _PLANNER_LOCAL_PROFILE_DEFAULTS = {
     "start_rqt_console": "false",
     "start_robot_speech_debug": "false",
     "planner_llm_provider": "ollama",
-    "planner_llm_model": "gpt-oss:120b-cloud",
+    "planner_llm_model": "qwen3.5:397b-cloud",
     "planner_llm_base_url": "http://127.0.0.1:11434",
+    "planner_llm_think": "false",
 }
 
 

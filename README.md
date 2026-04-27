@@ -8,7 +8,9 @@ test, and replace independently.
 The current focus is the planner loop:
 
 ```text
-dialogue_manager -> chatbot_llm -> /planner/request -> planner_llm
+/humans/voices/*/speech -> dialogue_manager <-> chatbot_llm
+chatbot_llm -> /intents -> nao_orchestrator -> robot or mock skills
+chatbot_llm -> /planner/request -> planner_llm
 planner_llm -> /intents -> nao_orchestrator -> robot or mock skills
 nao_orchestrator -> /planner/execution_feedback -> planner_llm
 planner_llm -> /planner/dialogue_act -> dialogue/speech owner
@@ -47,13 +49,15 @@ integration work.
 
 ```mermaid
 flowchart LR
-    speech["/humans/voices/*/speech"] --> dm["dialogue_manager"]
-    dm --> chatbot["chatbot_llm"]
-    chatbot -->|direct mode /intents| orch["nao_orchestrator"]
-    chatbot -->|planner mode /planner/request| planner["planner_llm"]
-    planner -->|/intents| orch
-    orch -->|/planner/execution_feedback| planner
-    planner -->|/planner/dialogue_act| dm
+    user["User text<br/>/humans/voices/*/speech"] --> dm["dialogue_manager<br/>dialogue turn owner"]
+    dm -->|dialogue turn request| chatbot["chatbot_llm<br/>response + intent routing"]
+    chatbot --> route{"Direct or planner route"}
+    route -->|direct mode<br/>/intents| orch["nao_orchestrator<br/>deterministic executor"]
+    route -->|planner mode<br/>/planner/request| planner["planner_llm<br/>planner + supervisor"]
+    planner -->|executable plan<br/>/intents| orch
+    orch -.->|execution status<br/>/planner/execution_feedback| planner
+    planner -.->|clarify/report<br/>/planner/dialogue_act| dm
+    dm -->|robot response| speech_out["Robot speech<br/>dialogue output"]
     orch --> say["/nao/say"]
     orch --> replay["/skill/replay_motion"]
     orch --> head["/skill/do_head_motion"]
@@ -236,7 +240,9 @@ Simulator with planner handoff:
 ```bash
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   start_planner_llm:=true \
-  chatbot_planner_mode_enabled:=true
+  chatbot_planner_mode_enabled:=true \
+  chatbot_think:=false \
+  planner_llm_think:=false
 ```
 
 Simulator with object grounding:
@@ -279,21 +285,31 @@ Current risks:
 - Multi-step completeness needs a focused diagnostic; unsupported-step filtering
   can hide a partial-plan failure.
 - Real head motion has been unreliable, so the Monday demo should use a minimal
-  mock/safe execution target until the current loop is understood.
+  mock/safe execution target or the explicit simulator fallback parameters.
 - Pre/post conditions should stay light until the simple loop is closed.
 
-Phase 2 container observations on 2026-04-24:
+Phase 2 container observations:
 
 - `/planner/request`, `/intents`, `/planner/execution_feedback`, and
   `/planner/dialogue_act` are wired in the live graph.
 - A `goal_text` request with no `user_text` and no `requested_plan` reached
   `planner_llm`.
 - Rule-backed `head_look_left` produced a valid `perform_motion` plan and
-  orchestrator feedback. Execution remains dependent on fresh `/joint_states`.
+  orchestrator feedback. On 2026-04-27, execution failed because the head joint
+  state did not change after publishing to `/joint_angles`; source now has
+  explicit simulator/demo open-loop fallback parameters.
 - Model-backed `inspect_scene` produced a `look_at` step with `args.target`
   instead of `args.target_frame`, so `nao_orchestrator` rejected the plan as a
   contract/schema failure and `planner_llm` emitted an `ask_for_help`
   dialogue act.
+- A qwen-backed composite request for “look around to see if you find anyone”
+  emitted a clarification instead of a plan because the model output did not
+  contain a valid executable plan.
+
+Current model defaults:
+
+- `chatbot_llm`: `qwen3.5:397b-cloud`, `think: false`.
+- `planner_llm`: `qwen3.5:397b-cloud`, `think: false`.
 
 ## Operational Details
 

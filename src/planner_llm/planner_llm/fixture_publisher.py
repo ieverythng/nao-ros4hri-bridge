@@ -35,7 +35,7 @@ _SAMPLE_REQUEST = {
     'request_id': 'fixture_request_1',
     'goal_id': 'goal_fixture_1',
     'request_kind': 'new_goal',
-    'user_text': 'look at the cup',
+    'goal_text': 'look at the cup',
     'normalized_intents': ['inspect_scene'],
     'ack_text': 'I will inspect the scene.',
     'ack_mode': 'auto',

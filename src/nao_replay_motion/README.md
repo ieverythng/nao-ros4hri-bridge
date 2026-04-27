@@ -45,6 +45,8 @@ Head-motion parameters:
 | `require_joint_angles_subscribers` | `false` | Fail when no joint controller is subscribed. |
 | `convergence_timeout_sec` | `3.0` | Wait time for joint-state convergence. |
 | `retry_on_convergence_timeout` | `true` | Retry once on convergence timeout. |
+| `allow_open_loop_without_joint_state` | `false` | Demo/sim fallback: publish absolute goals even before head joint state is available. |
+| `assume_success_on_convergence_timeout` | `false` | Demo/sim fallback: report success after publishing when convergence cannot be observed. |
 
 ## Planner Contract Role
 
@@ -61,6 +63,14 @@ Supported replay names are normalized aliases such as `stand`, `standinit`,
 
 ```bash
 ros2 launch nao_replay_motion nao_replay_motion.launch.py
+```
+
+Demo/simulator head-motion fallback:
+
+```bash
+ros2 launch nao_replay_motion nao_replay_motion.launch.py \
+  head_motion_allow_open_loop_without_joint_state:=true \
+  head_motion_assume_success_on_convergence_timeout:=true
 ```
 
 With robot details:
@@ -82,6 +92,7 @@ python3 -m pytest -q src/nao_replay_motion/test/test_nao_replay_motion_unit.py
 - `/skill/do_posture` is transitional and should not become the long-term
   planner-facing surface.
 - Head motion is still useful for simple demos, but hardware convergence can be
-  unreliable; mock skills are safer for planner-loop diagnosis.
+  unreliable. The open-loop parameters are intended for simulator/demo use, not
+  for claiming physical convergence on the robot.
 - Connect-time autonomous-life disable and wake-up behavior are opt-in through
   launch parameters.

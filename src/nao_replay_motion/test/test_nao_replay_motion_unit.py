@@ -4,6 +4,27 @@ from nao_replay_motion.replay_motion_skill_server import _parse_posture_result_m
 from nao_replay_motion.replay_motion_skill_server import _posture_result_matches
 
 
+class _FakeGoalHandle:
+    def __init__(self, cancel_requested=False):
+        self.is_cancel_requested = cancel_requested
+        self.feedback = []
+        self.succeeded = False
+        self.aborted = False
+        self.canceled_called = False
+
+    def publish_feedback(self, feedback):
+        self.feedback.append(feedback.status)
+
+    def succeed(self):
+        self.succeeded = True
+
+    def abort(self):
+        self.aborted = True
+
+    def canceled(self):
+        self.canceled_called = True
+
+
 def test_replay_motion_aliases_are_stable():
     server = ReplayMotionSkillServer.__new__(ReplayMotionSkillServer)
     assert server._resolve_motion(" Stand Init ") == ("standinit", "StandInit")
@@ -57,6 +78,68 @@ def test_head_motion_timeout_reason_flags_unchanged_joint_state():
     )
 
     assert "did not change after publishing" in reason
+
+
+def test_head_motion_open_loop_dispatch_succeeds_for_absolute_goal():
+    server = HeadMotionSkillServer.__new__(HeadMotionSkillServer)
+    server.yaw_min = -1.0
+    server.yaw_max = 1.0
+    server.pitch_min = -0.5
+    server.pitch_max = 0.5
+    server.joint_angles_topic = "/joint_angles"
+    server._publish_feedback = HeadMotionSkillServer._publish_feedback
+    server._result = HeadMotionSkillServer._result
+    server.get_logger = lambda: type("Logger", (), {"warn": lambda *_args: None})()
+    published = []
+    server._publish_joint_angles = lambda **kwargs: published.append(kwargs)
+
+    goal_handle = _FakeGoalHandle()
+    result = server._execute_open_loop(
+        goal_handle,
+        start_time=0.0,
+        yaw=0.4,
+        pitch=0.0,
+        speed=0.2,
+        relative=False,
+        target_yaw=0.4,
+        target_pitch=0.0,
+        reason="no joint state",
+    )
+
+    assert goal_handle.succeeded is True
+    assert goal_handle.aborted is False
+    assert goal_handle.feedback == ["executing_open_loop", "completing"]
+    assert result.success is True
+    assert published == [{"yaw": 0.4, "pitch": 0.0, "speed": 0.2, "relative": False}]
+
+
+def test_head_motion_open_loop_dispatch_still_validates_absolute_target():
+    server = HeadMotionSkillServer.__new__(HeadMotionSkillServer)
+    server.yaw_min = -0.2
+    server.yaw_max = 0.2
+    server.pitch_min = -0.5
+    server.pitch_max = 0.5
+    server._result = HeadMotionSkillServer._result
+    server.get_logger = lambda: type("Logger", (), {"warn": lambda *_args: None})()
+    server._publish_joint_angles = lambda **_kwargs: None
+
+    goal_handle = _FakeGoalHandle()
+    result = server._execute_open_loop(
+        goal_handle,
+        start_time=0.0,
+        yaw=0.4,
+        pitch=0.0,
+        speed=0.2,
+        relative=False,
+        target_yaw=0.4,
+        target_pitch=0.0,
+        reason="no joint state",
+    )
+
+    assert goal_handle.aborted is True
+    assert goal_handle.succeeded is False
+    assert result.success is False
+    assert "Yaw out of range" in result.message
 
 
 def test_posture_result_helpers_match_bridge_payload():

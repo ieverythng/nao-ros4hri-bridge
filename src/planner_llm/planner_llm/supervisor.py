@@ -385,7 +385,7 @@ class PlannerSupervisor:
                 'requested_intents': list(state.last_request.normalized_intents)
                 if state.last_request is not None
                 else [],
-                'user_text': state.last_request.user_text if state.last_request is not None else '',
+                'goal_text': state.last_request.goal_text if state.last_request is not None else '',
                 'status': state.current_status,
             },
         )

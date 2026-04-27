@@ -1,6 +1,6 @@
 # Monday Demo Checklist
 
-Last updated: 2026-04-24
+Last updated: 2026-04-27
 
 The Monday target is a visible, understandable planner loop. It is not a full
 robot-motion demo.
@@ -87,6 +87,18 @@ For each run, copy the important fields into `docs/planner_status.md`:
 
 ## Current Limitation
 
-Real head motion is not a reliable demo dependency yet. If the local diagnostic
-needs a safe executor target, use the smallest mock skill needed rather than
-turning the planner contract into a workaround for robot motion.
+Real head motion is not a reliable physical convergence proof in the current
+live runtime: the planner can emit a valid `head_look_left` plan, but the action
+may fail if `/joint_states` does not show the commanded change. Source now has
+explicit simulator/demo fallback parameters for head motion:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_planner_llm:=true \
+  chatbot_planner_mode_enabled:=true \
+  head_motion_allow_open_loop_without_joint_state:=true \
+  head_motion_assume_success_on_convergence_timeout:=true
+```
+
+Use that as a software-loop demo fallback after rebuild/relaunch. Do not present
+open-loop success as physical convergence.

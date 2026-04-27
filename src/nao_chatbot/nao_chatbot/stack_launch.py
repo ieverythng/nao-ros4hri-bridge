@@ -696,6 +696,24 @@ def generate_profile_launch_description(
         default_value=_profile_default(profile_defaults, "start_nao_replay_motion", "true"),
         description="Launch replay_motion and retained head-motion servers.",
     )
+    head_motion_allow_open_loop_without_joint_state_arg = DeclareLaunchArgument(
+        "head_motion_allow_open_loop_without_joint_state",
+        default_value=_profile_default(
+            profile_defaults,
+            "head_motion_allow_open_loop_without_joint_state",
+            "false",
+        ),
+        description="Allow absolute head-motion goals to publish even before a head JointState arrives.",
+    )
+    head_motion_assume_success_on_convergence_timeout_arg = DeclareLaunchArgument(
+        "head_motion_assume_success_on_convergence_timeout",
+        default_value=_profile_default(
+            profile_defaults,
+            "head_motion_assume_success_on_convergence_timeout",
+            "false",
+        ),
+        description="Treat a published head-motion command as successful when convergence is not observable.",
+    )
     start_nao_look_at_arg = DeclareLaunchArgument(
         "start_nao_look_at",
         default_value=_profile_default(profile_defaults, "start_nao_look_at", "true"),
@@ -788,8 +806,13 @@ def generate_profile_launch_description(
     )
     ollama_model_arg = DeclareLaunchArgument(
         "ollama_model",
-        default_value=_profile_default(profile_defaults, "ollama_model", "gpt-oss:120b-cloud"),
+        default_value=_profile_default(profile_defaults, "ollama_model", "qwen3.5:397b-cloud"),
         description="Preferred public model argument used by chatbot_llm for response generation.",
+    )
+    chatbot_think_arg = DeclareLaunchArgument(
+        "chatbot_think",
+        default_value=_profile_default(profile_defaults, "chatbot_think", "false"),
+        description="Forward Ollama think=false/true for chatbot_llm response and intent calls.",
     )
     chatbot_intent_model_arg = DeclareLaunchArgument(
         "chatbot_intent_model",
@@ -821,7 +844,7 @@ def generate_profile_launch_description(
         default_value=_profile_default(
             profile_defaults,
             "planner_llm_model",
-            _profile_default(profile_defaults, "ollama_model", "gpt-oss:120b-cloud"),
+            _profile_default(profile_defaults, "ollama_model", "qwen3.5:397b-cloud"),
         ),
         description="Planner model name used by planner_llm.",
     )
@@ -844,6 +867,11 @@ def generate_profile_launch_description(
         "planner_llm_timeout_sec",
         default_value="20.0",
         description="Planner backend timeout in seconds.",
+    )
+    planner_llm_think_arg = DeclareLaunchArgument(
+        "planner_llm_think",
+        default_value=_profile_default(profile_defaults, "planner_llm_think", "false"),
+        description="Forward Ollama think=false/true for planner_llm calls.",
     )
     planner_llm_default_retry_budget_arg = DeclareLaunchArgument(
         "planner_llm_default_retry_budget",
@@ -902,6 +930,12 @@ def generate_profile_launch_description(
                 "server_url": ParameterValue(
                     LaunchConfiguration("chatbot_server_url"),
                     value_type=str,
+                )
+            },
+            {
+                "think": ParameterValue(
+                    LaunchConfiguration("chatbot_think"),
+                    value_type=bool,
                 )
             },
             {
@@ -1017,6 +1051,12 @@ def generate_profile_launch_description(
             ),
             "posture_bridge_wake_up_on_connect": LaunchConfiguration(
                 "posture_bridge_wake_up_on_connect"
+            ),
+            "head_motion_allow_open_loop_without_joint_state": LaunchConfiguration(
+                "head_motion_allow_open_loop_without_joint_state"
+            ),
+            "head_motion_assume_success_on_convergence_timeout": LaunchConfiguration(
+                "head_motion_assume_success_on_convergence_timeout"
             ),
         }.items(),
     )
@@ -1270,6 +1310,12 @@ def generate_profile_launch_description(
                 "timeout_sec": ParameterValue(
                     LaunchConfiguration("planner_llm_timeout_sec"),
                     value_type=float,
+                )
+            },
+            {
+                "think": ParameterValue(
+                    LaunchConfiguration("planner_llm_think"),
+                    value_type=bool,
                 )
             },
             {
@@ -1557,6 +1603,8 @@ def generate_profile_launch_description(
             start_nao_orchestrator_arg,
             start_nao_say_skill_arg,
             start_nao_replay_motion_arg,
+            head_motion_allow_open_loop_without_joint_state_arg,
+            head_motion_assume_success_on_convergence_timeout_arg,
             start_nao_look_at_arg,
             start_rqt_console_arg,
             start_rqt_chat_arg,
@@ -1577,6 +1625,7 @@ def generate_profile_launch_description(
             dialogue_manager_default_chat_configuration_arg,
             chatbot_model_arg,
             ollama_model_arg,
+            chatbot_think_arg,
             chatbot_intent_model_arg,
             ollama_intent_model_arg,
             chatbot_server_url_arg,
@@ -1591,6 +1640,7 @@ def generate_profile_launch_description(
             planner_llm_temperature_arg,
             planner_llm_max_tokens_arg,
             planner_llm_timeout_sec_arg,
+            planner_llm_think_arg,
             planner_llm_default_retry_budget_arg,
             planner_llm_auto_replan_arg,
             *asr_launch_args,

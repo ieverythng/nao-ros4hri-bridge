@@ -2,7 +2,7 @@ from nao_chatbot.stack_launch import generate_profile_launch_description
 
 
 _SIM_ASR_PROFILE_DEFAULTS = {
-    "ollama_model": "gpt-oss:120b-cloud",
+    "ollama_model": "qwen3.5:397b-cloud",
     "start_naoqi_driver": "false",
     "start_nao_robot": "false",
     "start_nao_robot_hri_visualization": "false",
@@ -15,6 +15,10 @@ _SIM_ASR_PROFILE_DEFAULTS = {
     "start_interaction_sim_expressive_face": "false",
     "start_interaction_sim_ui": "false",
     "start_rqt_console": "true",
+    "head_motion_allow_open_loop_without_joint_state": "true",
+    "head_motion_assume_success_on_convergence_timeout": "true",
+    "chatbot_think": "false",
+    "planner_llm_think": "false",
 }
 
 

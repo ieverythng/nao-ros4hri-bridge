@@ -182,3 +182,20 @@ def test_provider_factory_selects_openai_compatible_adapter() -> None:
         PlannerProviderConfig(provider='openai', model='qwen', base_url='http://localhost:8080')
     )
     assert provider.__class__.__name__ == 'OpenAICompatiblePlannerProvider'
+
+
+def test_ollama_provider_payload_disables_thinking_by_default(monkeypatch) -> None:
+    captured = {}
+
+    def fake_post_json(url, payload, *, timeout_sec, headers):
+        captured['url'] = url
+        captured['payload'] = payload
+        return {'message': {'content': '{"steps":[]}'}}
+
+    monkeypatch.setattr('planner_llm.providers._post_json', fake_post_json)
+    provider = build_provider(
+        PlannerProviderConfig(provider='ollama', model='qwen3.5:397b-cloud')
+    )
+
+    assert provider.generate([{'role': 'user', 'content': 'plan'}]) == '{"steps":[]}'
+    assert captured['payload']['think'] is False

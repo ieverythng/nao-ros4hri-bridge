@@ -12,12 +12,13 @@ from urllib import request as url_request
 @dataclass(frozen=True)
 class PlannerProviderConfig:
     provider: str = 'ollama'
-    model: str = 'gpt-oss:120b-cloud'
+    model: str = 'qwen3.5:397b-cloud'
     base_url: str = 'http://127.0.0.1:11434'
     api_key_env: str = 'OPENAI_API_KEY'
     temperature: float = 0.1
     max_tokens: int = 800
     timeout_sec: float = 20.0
+    think: bool = False
 
 
 class PlannerProviderError(RuntimeError):
@@ -42,6 +43,7 @@ class OllamaPlannerProvider(BasePlannerProvider):
             'model': self.config.model,
             'messages': messages,
             'stream': False,
+            'think': bool(self.config.think),
             'options': {
                 'temperature': float(self.config.temperature),
                 'num_predict': int(self.config.max_tokens),
