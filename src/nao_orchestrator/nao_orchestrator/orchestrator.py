@@ -104,6 +104,12 @@ class NaoOrchestrator(Node):
         self.declare_parameter('planner_feedback_topic', '/planner/execution_feedback')
         self.declare_parameter('dedupe_window_sec', 0.8)
         self.declare_parameter('default_greeting', 'Hello! Nice to meet you.')
+        self.declare_parameter('enable_demo_mock_skills', False)
+        self.declare_parameter('mock_scan_scene_result_mode', 'success')
+        self.declare_parameter(
+            'mock_scan_scene_summary',
+            'I looked around and can report a simple demo scene summary.',
+        )
 
         self.intent_topic = str(self.get_parameter('intent_topic').value)
         self.enable_legacy_intent_bridge = bool(
@@ -182,6 +188,15 @@ class NaoOrchestrator(Node):
             float(self.get_parameter('dedupe_window_sec').value),
         )
         self.default_greeting = str(self.get_parameter('default_greeting').value)
+        self.enable_demo_mock_skills = bool(
+            self.get_parameter('enable_demo_mock_skills').value
+        )
+        self.mock_scan_scene_result_mode = str(
+            self.get_parameter('mock_scan_scene_result_mode').value
+        ).strip().lower()
+        self.mock_scan_scene_summary = str(
+            self.get_parameter('mock_scan_scene_summary').value
+        ).strip()
 
         self._intent_sub = None
         self._legacy_intent_sub = None
@@ -671,6 +686,11 @@ class NaoOrchestrator(Node):
                     step_args,
                     on_started=on_started,
                 )
+            if step_name in ('mock_scan_scene', 'scan_scene'):
+                return self._execute_mock_scan_scene_step(
+                    step_args,
+                    on_started=on_started,
+                )
 
         self._stats.dispatch_failures += 1
         self.get_logger().warn('Unsupported planned step: %s' % step)
@@ -800,6 +820,35 @@ class NaoOrchestrator(Node):
         self._stats.dispatch_failures += 1
         self.get_logger().warn('Unsupported motion payload: %s' % step_args)
         return False, 'unsupported motion payload'
+
+    def _execute_mock_scan_scene_step(
+        self,
+        step_args: dict,
+        *,
+        on_started=None,
+    ) -> tuple[bool, str]:
+        if not self.enable_demo_mock_skills:
+            self._stats.dispatch_failures += 1
+            return False, 'mock demo skills are disabled'
+
+        if on_started is not None:
+            on_started()
+
+        result_mode = str(
+            step_args.get('result_mode', self.mock_scan_scene_result_mode)
+        ).strip().lower()
+        target_kind = str(step_args.get('target_kind', 'scene')).strip() or 'scene'
+        summary = str(step_args.get('summary', self.mock_scan_scene_summary)).strip()
+
+        self.get_logger().info(
+            'ORCH MOCK_SCAN_SCENE | target_kind=%s result_mode=%s'
+            % (target_kind, result_mode or 'success')
+        )
+        if result_mode in ('fail', 'failed', 'failure'):
+            self._stats.dispatch_failures += 1
+            return False, 'mock scan scene requested failure for %s' % target_kind
+
+        return True, summary or 'mock scan scene completed'
 
     def _execute_replay_motion_step(
         self,

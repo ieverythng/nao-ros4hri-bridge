@@ -186,6 +186,24 @@ def test_validate_execution_plan_accepts_clarify_failure_policy() -> None:
     assert envelope['steps'][0]['on_failure'] == 'clarify'
 
 
+def test_validate_execution_plan_accepts_mock_scan_scene_skill() -> None:
+    envelope = validate_execution_plan(
+        Intent.PERFORM_MOTION,
+        {
+            'plan': [
+                {
+                    'type': 'skill',
+                    'name': 'mock_scan_scene',
+                    'args': {'target_kind': 'people', 'max_sweeps': 2},
+                    'on_failure': 'replan',
+                }
+            ]
+        },
+    )
+    assert envelope['errors'] == []
+    assert envelope['steps'][0]['name'] == 'mock_scan_scene'
+
+
 def test_validate_execution_plan_rejects_duplicate_plan_step_ids() -> None:
     envelope = validate_execution_plan(
         Intent.PERFORM_MOTION,

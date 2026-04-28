@@ -199,3 +199,29 @@ def test_ollama_provider_payload_disables_thinking_by_default(monkeypatch) -> No
 
     assert provider.generate([{'role': 'user', 'content': 'plan'}]) == '{"steps":[]}'
     assert captured['payload']['think'] is False
+
+
+def test_planner_engine_accepts_mock_scan_scene_steps_from_provider() -> None:
+    provider = _FakeProvider(
+        '{"ack_text":"I will look around and report what I find.","steps":[{"type":"skill","name":"perform_motion","args":{"object":"head_look_left"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"perform_motion","args":{"object":"head_look_right"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"mock_scan_scene","args":{"target_kind":"people","max_sweeps":2},"requires":[],"on_failure":"replan","retry_budget":0}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_scan',
+            'goal_id': 'goal_scan',
+            'goal_text': 'look around and tell me what you see',
+            'normalized_intents': ['inspect_scene'],
+            'scene_targets': ['people'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_scan', plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert [step['name'] for step in decision.payload['plan']['steps']] == [
+        'perform_motion',
+        'perform_motion',
+        'mock_scan_scene',
+    ]

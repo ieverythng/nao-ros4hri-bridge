@@ -126,7 +126,14 @@ _POSTURE_TOPIC_FALLBACKS = {
 }
 
 _PLAN_STEP_TYPES = {'say', 'skill', 'look_at', 'noop'}
-_SUPPORTED_SKILL_PLAN_NAMES = {'', 'perform_motion', 'motion', 'look_at'}
+_SUPPORTED_SKILL_PLAN_NAMES = {
+    '',
+    'perform_motion',
+    'motion',
+    'look_at',
+    'mock_scan_scene',
+    'scan_scene',
+}
 _PLAN_FAILURE_POLICIES = {'fail', 'replan', 'ask_user', 'clarify', 'ignore'}
 
 
@@ -572,6 +579,8 @@ def _plan_step_validation_error(intent_name: str, step: dict) -> str:
         return f'unsupported skill step "{step_name}"'
     if step_name == 'look_at':
         return _plan_look_at_error(step_args)
+    if step_name in ('mock_scan_scene', 'scan_scene'):
+        return ''
 
     route, _resolved_payload = classify_motion_target(
         intent_name or Intent.PERFORM_MOTION,
