@@ -32,7 +32,7 @@ Replay/posture parameters:
 | `posture_compat_action_name` | `/skill/do_posture` | Temporary posture action name. |
 | `default_speed` | `0.8` | Speed used when the request omits one. |
 | `fallback_to_posture_topic` | `true` | Use topic bridge when NAOqi is unavailable. |
-| `posture_result_timeout_sec` | `12.0` | Wait time for fallback posture result. |
+| `posture_result_timeout_sec` | `20.0` | Wait time for fallback posture result. |
 
 Head-motion parameters:
 

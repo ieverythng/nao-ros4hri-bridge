@@ -53,11 +53,19 @@ Defaults live in `config/00-defaults.yml`.
 - `nao_say_action`
 - `dispatch_speech_intents`
 - `replay_motion_action`
+- `replay_motion_result_timeout_sec`
 - `head_motion_action`
+- `head_motion_result_timeout_sec`
 - `look_at_action`
+- `look_at_result_timeout_sec`
 - `posture_command_topic`
+- `posture_command_result_timeout_sec`
 - `planner_feedback_topic`
 - `dedupe_window_sec`
+
+Replay/posture result waits default to `20.0s` because the NAO posture bridge can
+finish slightly after the old 12-second window under reconnect or posture-change
+latency.
 
 ## Launch And Tests
 

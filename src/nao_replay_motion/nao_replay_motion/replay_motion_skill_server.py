@@ -86,7 +86,7 @@ class ReplayMotionSkillServer(Node):
         self.declare_parameter("fallback_to_posture_topic", True)
         self.declare_parameter("posture_command_topic", "/chatbot/posture_command")
         self.declare_parameter("posture_result_topic", "/chatbot/posture_command_result")
-        self.declare_parameter("posture_result_timeout_sec", 12.0)
+        self.declare_parameter("posture_result_timeout_sec", 20.0)
 
         self.nao_ip = str(self.get_parameter("nao_ip").value)
         self.nao_port = int(self.get_parameter("nao_port").value)

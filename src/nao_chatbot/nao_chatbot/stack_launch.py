@@ -814,6 +814,16 @@ def generate_profile_launch_description(
         default_value=_profile_default(profile_defaults, "chatbot_think", "false"),
         description="Forward Ollama think=false/true for chatbot_llm response and intent calls.",
     )
+    chatbot_response_max_tokens_arg = DeclareLaunchArgument(
+        "chatbot_response_max_tokens",
+        default_value=_profile_default(profile_defaults, "chatbot_response_max_tokens", "64"),
+        description="Maximum response tokens requested from chatbot_llm Ollama calls.",
+    )
+    chatbot_intent_max_tokens_arg = DeclareLaunchArgument(
+        "chatbot_intent_max_tokens",
+        default_value=_profile_default(profile_defaults, "chatbot_intent_max_tokens", "64"),
+        description="Maximum intent tokens requested from chatbot_llm Ollama calls.",
+    )
     chatbot_intent_model_arg = DeclareLaunchArgument(
         "chatbot_intent_model",
         default_value="",
@@ -936,6 +946,18 @@ def generate_profile_launch_description(
                 "think": ParameterValue(
                     LaunchConfiguration("chatbot_think"),
                     value_type=bool,
+                )
+            },
+            {
+                "response_max_tokens": ParameterValue(
+                    LaunchConfiguration("chatbot_response_max_tokens"),
+                    value_type=int,
+                )
+            },
+            {
+                "intent_max_tokens": ParameterValue(
+                    LaunchConfiguration("chatbot_intent_max_tokens"),
+                    value_type=int,
                 )
             },
             {
@@ -1626,6 +1648,8 @@ def generate_profile_launch_description(
             chatbot_model_arg,
             ollama_model_arg,
             chatbot_think_arg,
+            chatbot_response_max_tokens_arg,
+            chatbot_intent_max_tokens_arg,
             chatbot_intent_model_arg,
             ollama_intent_model_arg,
             chatbot_server_url_arg,

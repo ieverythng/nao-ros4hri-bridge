@@ -149,11 +149,17 @@ Live container diagnostic on 2026-04-27:
 
 - Runtime model check:
   - `chatbot_llm` model: `qwen3.5:397b-cloud`.
-  - `planner_llm` was still running `gpt-oss:120b-cloud` until a live parameter
-    override set it to `qwen3.5:397b-cloud`; source/launch defaults now use
-    qwen for both.
-  - current live container did not yet expose the new `think` parameters because
-    those source changes require rebuild/relaunch.
+  - `planner_llm` model: `qwen3.5:397b-cloud`.
+  - both nodes use `think: false`.
+  - chatbot timeout failures were reproduced with uncapped Qwen generation: a
+    short greeting prompt ran to hundreds of generated tokens and exceeded the
+    runtime timeout.
+  - bounded Qwen probes with `num_predict: 64` returned in the low-single-digit
+    seconds, so the fix is generation control rather than increasing inherent
+    request latency.
+  - source defaults now expose `response_max_tokens: 64` and
+    `intent_max_tokens: 64`; launch also exposes
+    `chatbot_response_max_tokens` and `chatbot_intent_max_tokens`.
 - Rule-backed single-head-motion probe:
   - input goal: `look left`
   - request payload had `goal_text`, `normalized_intents: ["head_look_left"]`,
@@ -181,6 +187,24 @@ Live container diagnostic on 2026-04-27:
   - `6 passed`: `nao_replay_motion` unit tests in the ROS container.
   - `3 passed`: `nao_chatbot` launch-profile tests in the ROS container.
   - `python3 -m py_compile` passed for touched Python entrypoints.
+
+Head/replay motion probe on 2026-04-27:
+
+- Direct `/joint_angles` driver probe moved `HeadYaw` from near center to
+  about `-0.44` rad and back to near zero. Classification: `naoqi_driver`
+  command path works.
+- Direct `/skill/do_head_motion` action succeeded twice and reported
+  convergence in about `1.3-1.4s`. Classification: head-motion action server
+  works with current fallback/convergence settings.
+- Planner/orchestrator `head_look_left` probe produced `plan_accepted`,
+  `step_started`, `step_succeeded`, and `plan_completed`. Classification:
+  full head-motion software loop is closed.
+- Direct `/skill/replay_motion` with `motion_name: sit` succeeded through the
+  posture topic fallback. Previous replay failures were caused by result
+  timeout pressure, not by planner policy.
+- Source defaults and live params were adjusted to `20.0s` for replay/posture
+  result waits, and direct motion dispatch in `nao_orchestrator` now waits on
+  action results instead of treating goal submission as completion.
 
 Next ROS topic observations should be pasted here with:
 

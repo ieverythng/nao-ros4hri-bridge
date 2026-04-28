@@ -9,6 +9,7 @@
     replay_motion_action: "/skill/replay_motion"
     replay_motion_speed: 0.8
     replay_motion_wait_sec: 0.2
+    replay_motion_result_timeout_sec: 20.0
     head_motion_action: "/skill/do_head_motion"
     head_motion_speed: 0.25
     head_motion_wait_sec: 0.2
@@ -16,7 +17,7 @@
     look_at_wait_sec: 0.2
     posture_command_topic: "/chatbot/posture_command"
     posture_command_result_topic: "/chatbot/posture_command_result"
-    posture_command_result_timeout_sec: 12.0
+    posture_command_result_timeout_sec: 20.0
     fallback_to_posture_topic: true
     head_motion_joint_angles_topic: "/joint_angles"
     fallback_to_joint_angles_topic: true

@@ -84,7 +84,7 @@ class NaoOrchestrator(Node):
         self.declare_parameter('replay_motion_action', '/skill/replay_motion')
         self.declare_parameter('replay_motion_speed', 0.8)
         self.declare_parameter('replay_motion_wait_sec', 0.2)
-        self.declare_parameter('replay_motion_result_timeout_sec', 12.0)
+        self.declare_parameter('replay_motion_result_timeout_sec', 20.0)
         self.declare_parameter('head_motion_action', '/skill/do_head_motion')
         self.declare_parameter('head_motion_speed', 0.25)
         self.declare_parameter('head_motion_wait_sec', 0.2)
@@ -97,7 +97,7 @@ class NaoOrchestrator(Node):
             'posture_command_result_topic',
             '/chatbot/posture_command_result',
         )
-        self.declare_parameter('posture_command_result_timeout_sec', 12.0)
+        self.declare_parameter('posture_command_result_timeout_sec', 20.0)
         self.declare_parameter('fallback_to_posture_topic', True)
         self.declare_parameter('head_motion_joint_angles_topic', '/joint_angles')
         self.declare_parameter('fallback_to_joint_angles_topic', True)
@@ -426,14 +426,7 @@ class NaoOrchestrator(Node):
             return
 
         if intent_name == Intent.PERFORM_MOTION:
-            dispatched, route_name = self._dispatch_motion_payload(data)
-            if dispatched:
-                self._stats.last_route = route_name
-                return
-            if route_name == 'unsupported':
-                self._stats.dispatch_failures += 1
-                self._stats.last_route = 'ignored:unsupported_motion'
-                self.get_logger().warn('Unsupported motion payload: %s' % data)
+            self._start_direct_motion_dispatch(data)
             return
 
         if intent_name in KB_QUERY_INTENTS:
@@ -1259,27 +1252,47 @@ class NaoOrchestrator(Node):
         route, resolved_payload = classify_motion_target(Intent.PERFORM_MOTION, payload)
         if route == 'replay_motion':
             motion_name = resolved_payload['motion_name']
-            if self._dispatch_replay_motion(motion_name):
-                self._stats.dispatched_replay_motion += 1
-                return True, 'replay_motion:%s' % motion_name
-            return False, 'replay_motion'
+            success, reason = self._execute_replay_motion_step(motion_name)
+            return success, 'replay_motion:%s' % motion_name if success else reason
 
         if route == 'head_motion':
-            if self._dispatch_head_motion(resolved_payload):
-                self._stats.dispatched_head_motion += 1
-                return True, 'head_motion'
-            return False, 'head_motion'
+            success, reason = self._execute_head_motion_step(resolved_payload)
+            return success, 'head_motion' if success else reason
 
         if route == 'look_at_reset':
-            if self._dispatch_look_at_reset():
-                self._stats.dispatched_look_at += 1
-                return True, 'look_at_reset'
-            return False, 'look_at_reset'
+            success, reason = self._execute_look_at_reset_step()
+            return success, 'look_at_reset' if success else reason
 
         if count_unsupported_failure:
             self._stats.dispatch_failures += 1
             self.get_logger().warn('Unsupported motion payload: %s' % payload)
         return False, 'unsupported'
+
+    def _start_direct_motion_dispatch(self, payload: dict) -> None:
+        route, _resolved_payload = classify_motion_target(Intent.PERFORM_MOTION, payload)
+        if route == 'unsupported':
+            self._stats.dispatch_failures += 1
+            self._stats.last_route = 'ignored:unsupported_motion'
+            self.get_logger().warn('Unsupported motion payload: %s' % payload)
+            return
+
+        worker = threading.Thread(
+            target=self._execute_direct_motion_dispatch,
+            kwargs={'payload': dict(payload)},
+            daemon=True,
+        )
+        worker.start()
+
+    def _execute_direct_motion_dispatch(self, *, payload: dict) -> None:
+        dispatched, route_name = self._dispatch_motion_payload(payload)
+        if dispatched:
+            self._stats.last_route = route_name
+            return
+        self._stats.last_route = 'failed:%s' % (route_name or 'perform_motion')
+        self.get_logger().warn(
+            'Direct motion dispatch failed | payload=%s reason=%s'
+            % (payload, route_name)
+        )
 
     # -------------------------------------------------------------------------
     # Skill dispatch helpers
@@ -1308,105 +1321,40 @@ class NaoOrchestrator(Node):
         return True
 
     def _dispatch_replay_motion(self, motion_name: str) -> bool:
-        """Dispatch replay-motion or fall back to the legacy posture topic."""
+        """Dispatch replay-motion and wait for its action result."""
         clean_motion = str(motion_name).strip()
         if not clean_motion:
             self._stats.dispatch_failures += 1
             return False
-        if (
-            self._replay_motion_client is not None
-            and self._replay_motion_client.wait_for_server(
-                timeout_sec=self.replay_motion_wait_sec
-            )
-        ):
-            goal = ReplayMotion.Goal()
-            goal.motion_name = clean_motion
-            goal.speed = float(self.replay_motion_speed)
-            self._replay_motion_client.send_goal_async(goal)
-            self.get_logger().info('ORCH REPLAY_DISPATCH | %s' % clean_motion)
-            return True
-
-        if self.fallback_to_posture_topic and self._posture_command_pub is not None:
-            fallback_ok, fallback_reason = self._execute_posture_topic_fallback(clean_motion)
-            if fallback_ok:
-                return True
+        success, reason = self._execute_replay_motion_step(clean_motion)
+        if not success:
             self.get_logger().warn(
-                'Replay motion fallback failed for %s: %s'
-                % (clean_motion, fallback_reason)
+                'Replay motion dispatch failed for %s: %s'
+                % (clean_motion, reason)
             )
-            return False
-
-        self._stats.dispatch_failures += 1
-        self.get_logger().warn(
-            'Replay motion action server unavailable and no topic fallback for %s'
-            % clean_motion
-        )
-        return False
+        return success
 
     def _dispatch_head_motion(self, payload: dict) -> bool:
-        """Dispatch head motion or fall back to direct joint-angle publishing."""
+        """Dispatch head motion and wait for its action result."""
         yaw = float(payload.get('yaw', 0.0))
         pitch = float(payload.get('pitch', 0.0))
         relative = bool(payload.get('relative', False))
-
-        if (
-            self._head_motion_client is not None
-            and self._head_motion_client.wait_for_server(
-                timeout_sec=self.head_motion_wait_sec
-            )
-        ):
-            goal = DoHeadMotion.Goal()
-            goal.yaw = yaw
-            goal.pitch = pitch
-            goal.speed = float(self.head_motion_speed)
-            goal.relative = relative
-            self._head_motion_client.send_goal_async(goal)
-            self.get_logger().info(
-                'ORCH HEAD_DISPATCH | yaw=%.3f pitch=%.3f relative=%s'
-                % (yaw, pitch, relative)
-            )
-            return True
-
-        if self.fallback_to_joint_angles_topic and self._joint_angles_pub is not None:
-            msg = JointAnglesWithSpeed()
-            msg.header.stamp = self.get_clock().now().to_msg()
-            msg.joint_names = ['HeadYaw', 'HeadPitch']
-            msg.joint_angles = [yaw, pitch]
-            msg.speed = float(self.head_motion_speed)
-            msg.relative = 1 if relative else 0
-            self._joint_angles_pub.publish(msg)
-            self.get_logger().warn(
-                'ORCH HEAD_TOPIC_FALLBACK | yaw=%.3f pitch=%.3f topic=%s'
-                % (yaw, pitch, self.head_motion_joint_angles_topic)
-            )
-            return True
-
-        self._stats.dispatch_failures += 1
-        self.get_logger().warn(
-            'Head motion action server unavailable and joint-topic fallback is disabled'
+        success, reason = self._execute_head_motion_step(
+            {'yaw': yaw, 'pitch': pitch, 'relative': relative}
         )
-        return False
+        if not success:
+            self.get_logger().warn(
+                'Head motion dispatch failed | yaw=%.3f pitch=%.3f relative=%s reason=%s'
+                % (yaw, pitch, relative, reason)
+            )
+        return success
 
     def _dispatch_look_at_reset(self) -> bool:
-        """Prefer the upstream look-at action and fall back to a head reset."""
-        if (
-            self._look_at_client is not None
-            and self._look_at_client.wait_for_server(timeout_sec=self.look_at_wait_sec)
-        ):
-            goal = LookAt.Goal()
-            goal.policy = LookAt.Goal.RESET
-            self._look_at_client.send_goal_async(goal)
-            self.get_logger().info('ORCH LOOK_AT_DISPATCH | policy=reset')
-            return True
-
-        self.get_logger().warn('look_at action server unavailable; falling back to head reset')
-        return self._dispatch_head_motion(
-            {
-                'yaw': 0.0,
-                'pitch': 0.0,
-                'relative': False,
-            }
-        )
+        """Prefer the upstream look-at action and wait for the resulting action."""
+        success, reason = self._execute_look_at_reset_step()
+        if not success:
+            self.get_logger().warn('look_at reset dispatch failed: %s' % reason)
+        return success
 
     def _dispatch_look_at_target(
         self,
@@ -1417,40 +1365,22 @@ class NaoOrchestrator(Node):
         z_value,
         policy: str = '',
     ) -> bool:
-        """Dispatch a target-frame gaze request through `/skill/look_at`."""
+        """Dispatch a target-frame gaze request and wait for the action result."""
         clean_frame = str(frame_id).strip()
         if not clean_frame:
             self._stats.dispatch_failures += 1
             self.get_logger().warn('No target frame resolved for look_at dispatch')
             return False
-        if (
-            self._look_at_client is None
-            or not self._look_at_client.wait_for_server(timeout_sec=self.look_at_wait_sec)
-        ):
-            self._stats.dispatch_failures += 1
-            self.get_logger().warn('look_at action server unavailable for target dispatch')
-            return False
-
-        goal = LookAt.Goal()
-        goal.policy = str(policy).strip().lower()
-        target = PointStamped()
-        target.header.frame_id = clean_frame
-        target.point.x = float(x_value)
-        target.point.y = float(y_value)
-        target.point.z = float(z_value)
-        goal.target = target
-        self._look_at_client.send_goal_async(goal)
-        self.get_logger().info(
-            'ORCH LOOK_AT_DISPATCH | policy=%s frame=%s x=%.3f y=%.3f z=%.3f'
-            % (
-                goal.policy or 'track',
-                clean_frame,
-                float(target.point.x),
-                float(target.point.y),
-                float(target.point.z),
-            )
+        success, reason = self._execute_look_at_target_step(
+            frame_id=clean_frame,
+            x_value=x_value,
+            y_value=y_value,
+            z_value=z_value,
+            policy=policy,
         )
-        return True
+        if not success:
+            self.get_logger().warn('look_at target dispatch failed: %s' % reason)
+        return success
 
     def _is_duplicate(self, signature: str) -> bool:
         """Drop repeated intents that arrive inside the configured dedupe window."""

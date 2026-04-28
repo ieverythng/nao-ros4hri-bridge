@@ -308,7 +308,8 @@ Phase 2 container observations:
 
 Current model defaults:
 
-- `chatbot_llm`: `qwen3.5:397b-cloud`, `think: false`.
+- `chatbot_llm`: `qwen3.5:397b-cloud`, `think: false`,
+  `response_max_tokens: 64`, `intent_max_tokens: 64`.
 - `planner_llm`: `qwen3.5:397b-cloud`, `think: false`.
 
 ## Operational Details
