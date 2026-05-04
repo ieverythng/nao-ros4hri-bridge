@@ -2,7 +2,8 @@ from nao_chatbot.stack_launch import generate_profile_launch_description
 
 
 _SIM_PROFILE_DEFAULTS = {
-    "ollama_model": "qwen3.5:397b-cloud",
+    "ollama_model": "gemma4:31b-cloud",
+    "planner_llm_model": "gemma4:31b-cloud",
     "start_naoqi_driver": "false",
     "start_nao_robot": "false",
     "start_nao_robot_hri_visualization": "false",
@@ -25,6 +26,9 @@ _SIM_PROFILE_DEFAULTS = {
     "head_motion_assume_success_on_convergence_timeout": "true",
     "chatbot_think": "false",
     "planner_llm_think": "false",
+    "chatbot_preflight_required": "true",
+    "chatbot_preflight_keepalive_interval_sec": "180.0",
+    "planner_llm_preflight_required": "true",
 }
 
 

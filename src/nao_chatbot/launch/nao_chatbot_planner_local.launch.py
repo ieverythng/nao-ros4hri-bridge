@@ -18,9 +18,12 @@ _PLANNER_LOCAL_PROFILE_DEFAULTS = {
     "start_rqt_console": "false",
     "start_robot_speech_debug": "false",
     "planner_llm_provider": "ollama",
-    "planner_llm_model": "qwen3.5:397b-cloud",
+    "planner_llm_model": "gemma4:31b-cloud",
     "planner_llm_base_url": "http://127.0.0.1:11434",
     "planner_llm_think": "false",
+    "chatbot_preflight_required": "true",
+    "chatbot_preflight_keepalive_interval_sec": "180.0",
+    "planner_llm_preflight_required": "true",
 }
 
 

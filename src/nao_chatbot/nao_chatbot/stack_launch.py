@@ -11,6 +11,7 @@ from ament_index_python.packages import PackageNotFoundError
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
+from launch.actions import EmitEvent
 from launch.actions import ExecuteProcess
 from launch.actions import GroupAction
 from launch.actions import IncludeLaunchDescription
@@ -18,16 +19,19 @@ from launch.actions import LogInfo
 from launch.actions import OpaqueFunction
 from launch.actions import RegisterEventHandler
 from launch.conditions import IfCondition
+from launch.events import matches_action
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.event_handlers import OnProcessExit
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import PathJoinSubstitution
 from launch.substitutions import PythonExpression
 from launch_ros.actions import LifecycleNode
 from launch_ros.actions import Node
 from launch_ros.actions import SetRemap
+from launch_ros.event_handlers import OnStateTransition
+from launch_ros.events.lifecycle import ChangeState
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
+from lifecycle_msgs.msg import Transition
 
 from nao_chatbot.interaction_sim_support import build_interaction_sim_actions
 
@@ -112,7 +116,7 @@ def _standalone_naoqi_driver_condition():
     )
 
 
-def _lifecycle_bootstrap_script(node_name: str, timeout_sec: int = 30) -> str:
+def _lifecycle_bootstrap_script(node_name: str, timeout_sec: int = 120) -> str:
     """Generate a shell loop that configures and activates one lifecycle node."""
     normalized_name = f"/{str(node_name).lstrip('/')}"
     return f"""
@@ -161,6 +165,50 @@ while true; do
   sleep 0.2
 done
 """.strip()
+
+
+def _configure_lifecycle_node(node, *, condition=None):
+    """Emit a configure transition for a launch-managed lifecycle node."""
+    return EmitEvent(
+        event=ChangeState(
+            lifecycle_node_matcher=matches_action(node),
+            transition_id=Transition.TRANSITION_CONFIGURE,
+        ),
+        condition=condition,
+    )
+
+
+def _activate_lifecycle_node_on_inactive(node, *, condition=None):
+    """Activate a launch-managed lifecycle node after it reaches inactive."""
+    return RegisterEventHandler(
+        OnStateTransition(
+            target_lifecycle_node=node,
+            goal_state='inactive',
+            entities=[
+                EmitEvent(
+                    event=ChangeState(
+                        lifecycle_node_matcher=matches_action(node),
+                        transition_id=Transition.TRANSITION_ACTIVATE,
+                    )
+                )
+            ],
+            handle_once=True,
+        ),
+        condition=condition,
+    )
+
+
+def _configure_lifecycle_node_after_active(active_node, target_node, *, condition=None):
+    """Configure one lifecycle node only after another reaches active."""
+    return RegisterEventHandler(
+        OnStateTransition(
+            target_lifecycle_node=active_node,
+            goal_state='active',
+            entities=[_configure_lifecycle_node(target_node)],
+            handle_once=True,
+        ),
+        condition=condition,
+    )
 
 
 def _prefer_first_non_empty(*names: str):
@@ -574,6 +622,25 @@ def generate_profile_launch_description(
         default_value="",
         description="Optional absolute path to a planner_llm skill-registry JSON file.",
     )
+    enable_demo_scan_skill_arg = DeclareLaunchArgument(
+        "enable_demo_scan_skill",
+        default_value=_profile_default(profile_defaults, "enable_demo_scan_skill", "false"),
+        description="Enable the demo scan backend inside nao_orchestrator.",
+    )
+    demo_scan_result_mode_arg = DeclareLaunchArgument(
+        "demo_scan_result_mode",
+        default_value=_profile_default(profile_defaults, "demo_scan_result_mode", "success"),
+        description="Deterministic result mode for the demo scan backend.",
+    )
+    demo_scan_summary_arg = DeclareLaunchArgument(
+        "demo_scan_summary",
+        default_value=_profile_default(
+            profile_defaults,
+            "demo_scan_summary",
+            "I looked around and can report a simple demo scene summary.",
+        ),
+        description="Success summary returned by the demo scan backend.",
+    )
     scene_grounding_allowed_labels_arg = DeclareLaunchArgument(
         "scene_grounding_allowed_labels",
         default_value="bottle,cup,book,cell phone,backpack,remote,laptop,keyboard,mouse,chair,blueberry,corn,pear,tomato,zucchini",
@@ -806,7 +873,7 @@ def generate_profile_launch_description(
     )
     ollama_model_arg = DeclareLaunchArgument(
         "ollama_model",
-        default_value=_profile_default(profile_defaults, "ollama_model", "qwen3.5:397b-cloud"),
+        default_value=_profile_default(profile_defaults, "ollama_model", "gemma4:31b-cloud"),
         description="Preferred public model argument used by chatbot_llm for response generation.",
     )
     chatbot_think_arg = DeclareLaunchArgument(
@@ -839,6 +906,25 @@ def generate_profile_launch_description(
         default_value="http://localhost:11434/api/chat",
         description="Backend HTTP endpoint used by chatbot_llm.",
     )
+    chatbot_preflight_required_arg = DeclareLaunchArgument(
+        "chatbot_preflight_required",
+        default_value=_profile_default(profile_defaults, "chatbot_preflight_required", "false"),
+        description="Fail chatbot_llm configuration when its LLM preflight cannot return valid JSON.",
+    )
+    chatbot_preflight_timeout_sec_arg = DeclareLaunchArgument(
+        "chatbot_preflight_timeout_sec",
+        default_value=_profile_default(profile_defaults, "chatbot_preflight_timeout_sec", "45.0"),
+        description="Timeout for chatbot_llm warmup/preflight requests.",
+    )
+    chatbot_preflight_keepalive_interval_sec_arg = DeclareLaunchArgument(
+        "chatbot_preflight_keepalive_interval_sec",
+        default_value=_profile_default(
+            profile_defaults,
+            "chatbot_preflight_keepalive_interval_sec",
+            "0.0",
+        ),
+        description="Optional interval for low-cost chatbot_llm LLM keepalive pings; 0 disables it.",
+    )
     chatbot_planner_mode_enabled_arg = DeclareLaunchArgument(
         "chatbot_planner_mode_enabled",
         default_value=_profile_default(profile_defaults, "chatbot_planner_mode_enabled", "false"),
@@ -854,7 +940,7 @@ def generate_profile_launch_description(
         default_value=_profile_default(
             profile_defaults,
             "planner_llm_model",
-            _profile_default(profile_defaults, "ollama_model", "qwen3.5:397b-cloud"),
+            _profile_default(profile_defaults, "ollama_model", "gemma4:31b-cloud"),
         ),
         description="Planner model name used by planner_llm.",
     )
@@ -882,6 +968,16 @@ def generate_profile_launch_description(
         "planner_llm_think",
         default_value=_profile_default(profile_defaults, "planner_llm_think", "false"),
         description="Forward Ollama think=false/true for planner_llm calls.",
+    )
+    planner_llm_preflight_required_arg = DeclareLaunchArgument(
+        "planner_llm_preflight_required",
+        default_value=_profile_default(profile_defaults, "planner_llm_preflight_required", "false"),
+        description="Fail planner_llm startup when its model preflight cannot return valid JSON.",
+    )
+    planner_llm_preflight_timeout_sec_arg = DeclareLaunchArgument(
+        "planner_llm_preflight_timeout_sec",
+        default_value=_profile_default(profile_defaults, "planner_llm_preflight_timeout_sec", "45.0"),
+        description="Timeout for planner_llm model warmup/preflight requests.",
     )
     planner_llm_default_retry_budget_arg = DeclareLaunchArgument(
         "planner_llm_default_retry_budget",
@@ -967,6 +1063,24 @@ def generate_profile_launch_description(
                 )
             },
             {
+                "preflight_required": ParameterValue(
+                    LaunchConfiguration("chatbot_preflight_required"),
+                    value_type=bool,
+                )
+            },
+            {
+                "preflight_timeout_sec": ParameterValue(
+                    LaunchConfiguration("chatbot_preflight_timeout_sec"),
+                    value_type=float,
+                )
+            },
+            {
+                "preflight_keepalive_interval_sec": ParameterValue(
+                    LaunchConfiguration("chatbot_preflight_keepalive_interval_sec"),
+                    value_type=float,
+                )
+            },
+            {
                 "planner_request_topic": ParameterValue(
                     LaunchConfiguration("planner_request_topic"),
                     value_type=str,
@@ -1031,7 +1145,25 @@ def generate_profile_launch_description(
                     LaunchConfiguration("posture_command_topic"),
                     value_type=str,
                 )
-            }
+            },
+            {
+                "enable_demo_scan_skill": ParameterValue(
+                    LaunchConfiguration("enable_demo_scan_skill"),
+                    value_type=bool,
+                )
+            },
+            {
+                "demo_scan_result_mode": ParameterValue(
+                    LaunchConfiguration("demo_scan_result_mode"),
+                    value_type=str,
+                )
+            },
+            {
+                "demo_scan_summary": ParameterValue(
+                    LaunchConfiguration("demo_scan_summary"),
+                    value_type=str,
+                )
+            },
         ],
     )
 
@@ -1341,6 +1473,18 @@ def generate_profile_launch_description(
                 )
             },
             {
+                "preflight_required": ParameterValue(
+                    LaunchConfiguration("planner_llm_preflight_required"),
+                    value_type=bool,
+                )
+            },
+            {
+                "preflight_timeout_sec": ParameterValue(
+                    LaunchConfiguration("planner_llm_preflight_timeout_sec"),
+                    value_type=float,
+                )
+            },
+            {
                 "default_retry_budget": ParameterValue(
                     LaunchConfiguration("planner_llm_default_retry_budget"),
                     value_type=int,
@@ -1505,101 +1649,60 @@ def generate_profile_launch_description(
         )
 
     dialogue_manager_node = dialogue_manager_bundle[0]
-    dialogue_manager_bootstrap = dialogue_manager_bundle[1]
-    chatbot_llm_bootstrap_immediate = ExecuteProcess(
-        cmd=chatbot_llm_bundle[1].cmd,
-        output="screen",
-        condition=IfCondition(
-            PythonExpression(
-                [
-                    '"',
-                    LaunchConfiguration("start_chatbot_llm"),
-                    '" == "true" and "',
-                    LaunchConfiguration("start_knowledge_core"),
-                    '" != "true"',
-                ]
-            )
-        ),
-    )
-    knowledge_core_query_wait = ExecuteProcess(
-        cmd=["bash", "-lc", _service_wait_script("/kb/query")],
-        output="screen",
-        condition=IfCondition(
-            PythonExpression(
-                [
-                    '"',
-                    LaunchConfiguration("start_chatbot_llm"),
-                    '" == "true" and "',
-                    LaunchConfiguration("start_knowledge_core"),
-                    '" == "true"',
-                ]
-            )
-        ),
-    )
-    chatbot_llm_bootstrap_after_knowledge = ExecuteProcess(
-        cmd=chatbot_llm_bundle[1].cmd,
-        output="screen",
-        condition=IfCondition(
-            PythonExpression(
-                [
-                    '"',
-                    LaunchConfiguration("start_chatbot_llm"),
-                    '" == "true" and "',
-                    LaunchConfiguration("start_knowledge_core"),
-                    '" == "true"',
-                ]
-            )
-        ),
-    )
-
-    dialogue_manager_bootstrap_immediate = ExecuteProcess(
-        cmd=dialogue_manager_bootstrap.cmd,
-        output="screen",
-        condition=_not_launching_chatbot_llm_condition(),
-    )
-    chatbot_llm_bootstrap_after_knowledge_ready = RegisterEventHandler(
-        OnProcessExit(
-            target_action=knowledge_core_query_wait,
-            on_exit=[chatbot_llm_bootstrap_after_knowledge],
+    start_chatbot_condition = IfCondition(LaunchConfiguration("start_chatbot_llm"))
+    start_dialogue_without_chatbot_condition = _not_launching_chatbot_llm_condition()
+    start_dialogue_after_chatbot_condition = IfCondition(
+        PythonExpression(
+            [
+                '"',
+                LaunchConfiguration("start_dialogue_manager"),
+                '" == "true" and "',
+                LaunchConfiguration("start_chatbot_llm"),
+                '" == "true"',
+            ]
         )
     )
-    dialogue_manager_bootstrap_after_chatbot_immediate = RegisterEventHandler(
-        OnProcessExit(
-            target_action=chatbot_llm_bootstrap_immediate,
-            on_exit=[dialogue_manager_bootstrap],
-        ),
-        condition=IfCondition(
-            PythonExpression(
-                [
-                    '"',
-                    LaunchConfiguration("start_dialogue_manager"),
-                    '" == "true" and "',
-                    LaunchConfiguration("start_chatbot_llm"),
-                    '" == "true" and "',
-                    LaunchConfiguration("start_knowledge_core"),
-                    '" != "true"',
-                ]
-            )
-        ),
+    chatbot_llm_configure = _configure_lifecycle_node(
+        chatbot_llm_bundle[0],
+        condition=start_chatbot_condition,
     )
-    dialogue_manager_bootstrap_after_chatbot_delayed = RegisterEventHandler(
-        OnProcessExit(
-            target_action=chatbot_llm_bootstrap_after_knowledge,
-            on_exit=[dialogue_manager_bootstrap],
+    chatbot_llm_activate = _activate_lifecycle_node_on_inactive(
+        chatbot_llm_bundle[0],
+        condition=start_chatbot_condition,
+    )
+    dialogue_manager_configure_immediate = _configure_lifecycle_node(
+        dialogue_manager_node,
+        condition=start_dialogue_without_chatbot_condition,
+    )
+    dialogue_manager_configure_after_chatbot = _configure_lifecycle_node_after_active(
+        chatbot_llm_bundle[0],
+        dialogue_manager_node,
+        condition=start_dialogue_after_chatbot_condition,
+    )
+    dialogue_manager_activate = _activate_lifecycle_node_on_inactive(
+        dialogue_manager_node,
+        condition=IfCondition(LaunchConfiguration("start_dialogue_manager")),
+    )
+    stack_ready_after_dialogue = RegisterEventHandler(
+        OnStateTransition(
+            target_lifecycle_node=dialogue_manager_node,
+            goal_state='active',
+            entities=[
+                LogInfo(
+                    msg=[
+                        "[STACK READY] dialogue path active | chatbot_llm=",
+                        LaunchConfiguration("start_chatbot_llm"),
+                        " planner_llm=",
+                        LaunchConfiguration("start_planner_llm"),
+                        " planner_mode=",
+                        LaunchConfiguration("chatbot_planner_mode_enabled"),
+                        " dialogue_manager=/dialogue_manager",
+                    ]
+                )
+            ],
+            handle_once=True,
         ),
-        condition=IfCondition(
-            PythonExpression(
-                [
-                    '"',
-                    LaunchConfiguration("start_dialogue_manager"),
-                    '" == "true" and "',
-                    LaunchConfiguration("start_chatbot_llm"),
-                    '" == "true" and "',
-                    LaunchConfiguration("start_knowledge_core"),
-                    '" == "true"',
-                ]
-            )
-        ),
+        condition=IfCondition(LaunchConfiguration("start_dialogue_manager")),
     )
 
     return LaunchDescription(
@@ -1653,11 +1756,17 @@ def generate_profile_launch_description(
             chatbot_intent_model_arg,
             ollama_intent_model_arg,
             chatbot_server_url_arg,
+            chatbot_preflight_required_arg,
+            chatbot_preflight_timeout_sec_arg,
+            chatbot_preflight_keepalive_interval_sec_arg,
             chatbot_planner_mode_enabled_arg,
             planner_request_topic_arg,
             planner_request_intent_arg,
             planner_dialogue_act_topic_arg,
             planner_skill_registry_path_arg,
+            enable_demo_scan_skill_arg,
+            demo_scan_result_mode_arg,
+            demo_scan_summary_arg,
             planner_llm_provider_arg,
             planner_llm_model_arg,
             planner_llm_base_url_arg,
@@ -1665,6 +1774,8 @@ def generate_profile_launch_description(
             planner_llm_max_tokens_arg,
             planner_llm_timeout_sec_arg,
             planner_llm_think_arg,
+            planner_llm_preflight_required_arg,
+            planner_llm_preflight_timeout_sec_arg,
             planner_llm_default_retry_budget_arg,
             planner_llm_auto_replan_arg,
             *asr_launch_args,
@@ -1682,6 +1793,52 @@ def generate_profile_launch_description(
             scene_grounding_knowledge_refresh_interval_sec_arg,
             scene_grounding_fallback_match_distance_px_arg,
             scene_grounding_fallback_match_max_age_sec_arg,
+            LogInfo(
+                msg=[
+                    "[STACK] nao_chatbot launch | chatbot_model=",
+                    _prefer_first_non_empty("ollama_model", "chatbot_model"),
+                    " planner_model=",
+                    LaunchConfiguration("planner_llm_model"),
+                    " planner_mode=",
+                    LaunchConfiguration("chatbot_planner_mode_enabled"),
+                    " scan_demo=",
+                    LaunchConfiguration("enable_demo_scan_skill"),
+                ]
+            ),
+            LogInfo(
+                msg=[
+                    "[STACK] enabled nodes | chatbot_llm=",
+                    LaunchConfiguration("start_chatbot_llm"),
+                    " dialogue_manager=",
+                    LaunchConfiguration("start_dialogue_manager"),
+                    " planner_llm=",
+                    LaunchConfiguration("start_planner_llm"),
+                    " nao_orchestrator=",
+                    LaunchConfiguration("start_nao_orchestrator"),
+                    " scene_grounding=",
+                    LaunchConfiguration("start_scene_grounding"),
+                    " object_detection=",
+                    LaunchConfiguration("start_object_detection"),
+                ]
+            ),
+            LogInfo(
+                msg=[
+                    "[LLM PREFLIGHT] launch policy | chatbot_required=",
+                    LaunchConfiguration("chatbot_preflight_required"),
+                    " planner_required=",
+                    LaunchConfiguration("planner_llm_preflight_required"),
+                    " chatbot_timeout=",
+                    LaunchConfiguration("chatbot_preflight_timeout_sec"),
+                    " planner_timeout=",
+                    LaunchConfiguration("planner_llm_preflight_timeout_sec"),
+                ]
+            ),
+            LogInfo(
+                msg=(
+                    "[STACK] lifecycle sequencing | chatbot_llm configures before "
+                    "dialogue_manager; planner_llm and executor seams start independently"
+                )
+            ),
             naoqi_driver_launch,
             nao_robot_note,
             robot_perception_note,
@@ -1745,13 +1902,13 @@ def generate_profile_launch_description(
             ),
             OpaqueFunction(function=build_interaction_sim_actions),
             chatbot_llm_bundle[0],
-            chatbot_llm_bootstrap_immediate,
-            knowledge_core_query_wait,
-            chatbot_llm_bootstrap_after_knowledge_ready,
+            chatbot_llm_configure,
+            chatbot_llm_activate,
             dialogue_manager_node,
-            dialogue_manager_bootstrap_immediate,
-            dialogue_manager_bootstrap_after_chatbot_immediate,
-            dialogue_manager_bootstrap_after_chatbot_delayed,
+            dialogue_manager_configure_immediate,
+            dialogue_manager_configure_after_chatbot,
+            dialogue_manager_activate,
+            stack_ready_after_dialogue,
             *nao_orchestrator_bundle,
             *nao_say_skill_bundle,
             nao_replay_motion_launch,
