@@ -9,19 +9,13 @@ from planner_common import ExecutionFeedback
 from planner_common import PlannerRequest
 from planner_common import build_plan_payload
 from planner_common import extract_json_object
+from planner_common import IntentLabels
 from planner_common import normalize_communication_policy
 from planner_common import normalize_plan_steps
 
 from planner_llm.providers import BasePlannerProvider
 from planner_llm.providers import PlannerProviderError
 from planner_llm.skill_registry import SkillRegistry
-
-try:  # pragma: no cover - runtime dependency
-    from hri_actions_msgs.msg import Intent
-except ImportError:  # pragma: no cover - import-light unit tests
-    class Intent:  # type: ignore[no-redef]
-        RAW_USER_INPUT = 'raw_user_input'
-        GREET = 'greet'
 
 
 _RULE_BASED_MOTIONS = {
@@ -70,12 +64,12 @@ class PlannerEngine:
         provider: BasePlannerProvider,
         skill_registry: SkillRegistry,
         *,
-        default_intent_name: str = Intent.RAW_USER_INPUT,
+        default_intent_name: str = IntentLabels.RAW_USER_INPUT,
         default_retry_budget: int = 1,
     ) -> None:
         self._provider = provider
         self._skill_registry = skill_registry
-        self._default_intent_name = str(default_intent_name or Intent.RAW_USER_INPUT).strip()
+        self._default_intent_name = str(default_intent_name or IntentLabels.RAW_USER_INPUT).strip()
         self._default_retry_budget = max(0, int(default_retry_budget))
 
     def plan_request(
@@ -93,8 +87,9 @@ class PlannerEngine:
         resolved_goal_id = str(goal_id or request.goal_id).strip()
         resolved_plan_version = max(1, int(plan_version or 1))
         resolved_policy = normalize_communication_policy(communication_policy)
+        _next_budget, retry_exhausted = self._next_retry_budget({}, feedback)
 
-        if feedback is not None and feedback.status in ('failed', 'invalid') and feedback.retry_budget <= 0:
+        if retry_exhausted:
             return self._clarification_decision(
                 request,
                 feedback=feedback,
@@ -140,14 +135,12 @@ class PlannerEngine:
             )
             if requested_plan_decision is not None:
                 return requested_plan_decision
-            return self._clarification_decision(
+            return self._backend_unavailable_decision(
                 request,
                 feedback=feedback,
-                reason='planner backend unavailable: %s' % err,
-                mode='clarify',
+                raw_model_output='planner backend unavailable: %s' % err,
                 goal_id=resolved_goal_id,
                 plan_version=resolved_plan_version,
-                status='waiting_user',
                 communication_policy=resolved_policy,
             )
 
@@ -282,7 +275,7 @@ class PlannerEngine:
             failure_reason=str(parsed.get('failure_reason', '')).strip(),
             user_facing_reason=str(parsed.get('user_facing_reason', '')).strip(),
             replan_hint=str(parsed.get('replan_hint', '')).strip(),
-            retry_budget=self._resolved_retry_budget(parsed, feedback),
+            retry_budget=self._next_retry_budget(parsed, feedback)[0],
             scene_targets=self._scene_targets_for_decision(request, feedback, parsed),
             plan_id=str(parsed.get('plan_id', parsed.get('id', ''))).strip(),
             raw_model_output=raw_model_output,
@@ -315,7 +308,6 @@ class PlannerEngine:
                     step_type='say',
                     name='say',
                     args={'text': clean_reason},
-                    on_failure='fail',
                 )
             ],
             ack_text='',
@@ -331,6 +323,43 @@ class PlannerEngine:
             goal_id=goal_id,
             plan_version=plan_version,
             status=status,
+            communication_policy=communication_policy,
+        )
+
+    def _backend_unavailable_decision(
+        self,
+        request: PlannerRequest,
+        *,
+        feedback: ExecutionFeedback | None,
+        raw_model_output: str,
+        goal_id: str,
+        plan_version: int,
+        communication_policy: dict,
+    ) -> PlannerDecision:
+        reason = 'The planning model is not ready yet. Please try again in a moment.'
+        return self._build_decision(
+            request=request,
+            feedback=feedback,
+            steps=[
+                self._step(
+                    step_type='say',
+                    name='say',
+                    args={'text': reason},
+                )
+            ],
+            ack_text='',
+            ack_mode='',
+            validation_status='failed',
+            failure_reason=reason,
+            user_facing_reason=reason,
+            replan_hint='planner_backend_unavailable',
+            retry_budget=0,
+            scene_targets=self._scene_targets_for_decision(request, feedback, {}),
+            raw_model_output=raw_model_output,
+            mode='backend_unavailable',
+            goal_id=goal_id,
+            plan_version=plan_version,
+            status='failed',
             communication_policy=communication_policy,
         )
 
@@ -356,7 +385,7 @@ class PlannerEngine:
         if len(request.normalized_intents) > 1:
             return None
 
-        retry_budget = self._resolved_retry_budget({}, feedback)
+        retry_budget = self._next_retry_budget({}, feedback)[0]
         scene_targets = self._scene_targets_for_decision(request, feedback, {})
         motion_skill_name = self._first_supported_skill_name('perform_motion', 'motion')
 
@@ -386,7 +415,7 @@ class PlannerEngine:
                     communication_policy=communication_policy,
                 )
 
-        if any(intent_name in ('greet', Intent.GREET) for intent_name in request.normalized_intents):
+        if any(intent_name in ('greet', IntentLabels.GREET) for intent_name in request.normalized_intents):
             return self._build_decision(
                 request=request,
                 feedback=feedback,
@@ -427,6 +456,8 @@ class PlannerEngine:
         steps = self._skill_registry.filter_supported_steps(
             [dict(step) for step in request.requested_plan]
         )
+        if len(steps) != len(request.requested_plan):
+            return None
         if not steps:
             return None
 
@@ -488,6 +519,7 @@ class PlannerEngine:
             'step_id': feedback.step_id,
             'step_type': feedback.step_type,
             'step_name': feedback.step_name,
+            'result_summary': feedback.result_summary,
         }
 
     def _extract_plan_steps(self, parsed: dict) -> list[dict]:
@@ -498,7 +530,13 @@ class PlannerEngine:
                 steps = plan_payload.get('steps', [])
         if not isinstance(steps, list):
             return []
-        return self._skill_registry.filter_supported_steps(normalize_plan_steps(steps))
+        normalized_steps = normalize_plan_steps(steps)
+        supported_steps, rejected_steps = self._skill_registry.filter_supported_steps_with_rejections(
+            normalized_steps
+        )
+        if rejected_steps:
+            return []
+        return supported_steps
 
     @staticmethod
     def _step(
@@ -565,15 +603,30 @@ class PlannerEngine:
             mode=mode,
         )
 
-    def _resolved_retry_budget(self, parsed: dict, feedback: ExecutionFeedback | None) -> int:
-        if 'retry_budget' in parsed:
-            try:
-                return max(0, int(parsed.get('retry_budget', 0)))
-            except (TypeError, ValueError):
-                return 0
+    @staticmethod
+    def _parsed_retry_budget(parsed: dict) -> int | None:
+        if 'retry_budget' not in parsed:
+            return None
+        try:
+            return max(0, int(parsed.get('retry_budget', 0)))
+        except (TypeError, ValueError):
+            return 0
+
+    def _next_retry_budget(
+        self,
+        parsed: dict,
+        feedback: ExecutionFeedback | None,
+    ) -> tuple[int, bool]:
+        if feedback is not None and feedback.status in ('failed', 'invalid'):
+            exhausted = int(feedback.retry_budget) <= 0
+        else:
+            exhausted = False
+        explicit = self._parsed_retry_budget(parsed)
+        if explicit is not None:
+            return explicit, exhausted
         if feedback is not None:
-            return max(0, int(feedback.retry_budget) - 1)
-        return self._default_retry_budget
+            return max(0, int(feedback.retry_budget) - 1), exhausted
+        return self._default_retry_budget, exhausted
 
     @staticmethod
     def _resolved_communication_policy(parsed: dict, fallback: dict) -> dict:

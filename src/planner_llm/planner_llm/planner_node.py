@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 
 import rclpy
 from rclpy.executors import ExternalShutdownException
@@ -45,13 +46,17 @@ class PlannerNode(Node):
         self.declare_parameter('default_intent_name', Intent.RAW_USER_INPUT)
         self.declare_parameter('skill_registry_path', '')
         self.declare_parameter('provider', 'ollama')
-        self.declare_parameter('model', 'qwen3.5:397b-cloud')
+        self.declare_parameter('model', 'gemma4:31b-cloud')
         self.declare_parameter('base_url', 'http://127.0.0.1:11434')
         self.declare_parameter('api_key_env', 'OPENAI_API_KEY')
         self.declare_parameter('temperature', 0.1)
         self.declare_parameter('max_tokens', 800)
         self.declare_parameter('timeout_sec', 20.0)
         self.declare_parameter('think', False)
+        self.declare_parameter('preflight_enabled', True)
+        self.declare_parameter('preflight_required', False)
+        self.declare_parameter('preflight_timeout_sec', 45.0)
+        self.declare_parameter('preflight_max_tokens', 64)
         self.declare_parameter('default_retry_budget', 1)
         self.declare_parameter('auto_replan', True)
 
@@ -76,6 +81,22 @@ class PlannerNode(Node):
         default_retry_budget = int(self.get_parameter('default_retry_budget').value)
 
         provider_config = self._provider_config()
+        prov_lc = str(provider_config.provider or '').strip().lower()
+        if provider_config.think and prov_lc in ('openai', 'openai_compatible', 'watsonow'):
+            self.get_logger().warn(
+                'think=True has no effect for OpenAI-compatible planner providers '
+                '(only the Ollama adapter sends a think flag).'
+            )
+        if prov_lc in ('openai', 'openai_compatible', 'watsonow') and not str(
+            provider_config.model or ''
+        ).strip():
+            self.get_logger().warn(
+                'planner_llm model parameter is empty; set model to a concrete '
+                'OpenAI-compatible model id before relying on planning output.'
+            )
+        if not self._run_provider_preflight(provider_config):
+            raise RuntimeError('planner_llm provider preflight failed')
+
         provider = build_provider(provider_config)
         skill_registry = SkillRegistry.load(
             self._text_parameter('skill_registry_path'),
@@ -104,7 +125,7 @@ class PlannerNode(Node):
         self._world_text = ''
 
         self.get_logger().info(
-            'planner_llm ready | request=%s intents=%s feedback=%s dialogue_act=%s snapshot=%s text=%s provider=%s model=%s auto_replan=%s'
+            '[STACK READY] planner_llm ready | request=%s intents=%s feedback=%s dialogue_act=%s snapshot=%s text=%s provider=%s model=%s auto_replan=%s'
             % (
                 self._planner_request_topic,
                 self._intent_topic,
@@ -130,7 +151,7 @@ class PlannerNode(Node):
     def _provider_config(self) -> PlannerProviderConfig:
         return PlannerProviderConfig(
             provider=self._text_parameter('provider', 'ollama'),
-            model=self._text_parameter('model', 'qwen3.5:397b-cloud'),
+            model=self._text_parameter('model', 'gemma4:31b-cloud'),
             base_url=self._text_parameter('base_url', 'http://127.0.0.1:11434'),
             api_key_env=self._text_parameter('api_key_env', 'OPENAI_API_KEY'),
             temperature=float(self.get_parameter('temperature').value),
@@ -138,6 +159,47 @@ class PlannerNode(Node):
             timeout_sec=float(self.get_parameter('timeout_sec').value),
             think=bool(self.get_parameter('think').value),
         )
+
+    def _run_provider_preflight(self, provider_config: PlannerProviderConfig) -> bool:
+        enabled = bool(self.get_parameter('preflight_enabled').value)
+        required = bool(self.get_parameter('preflight_required').value)
+        timeout_sec = max(0.5, float(self.get_parameter('preflight_timeout_sec').value))
+        max_tokens = max(1, int(self.get_parameter('preflight_max_tokens').value))
+        if not enabled:
+            return True
+
+        self.get_logger().info(
+            '[LLM PREFLIGHT] planner starting | provider=%s model=%s timeout=%.1fs required=%s'
+            % (provider_config.provider, provider_config.model, timeout_sec, required)
+        )
+        preflight_config = replace(
+            provider_config,
+            timeout_sec=timeout_sec,
+            max_tokens=max_tokens,
+            temperature=0.0,
+        )
+        try:
+            text = build_provider(preflight_config).generate(
+                [
+                    {'role': 'system', 'content': 'Reply only with JSON. No prose.'},
+                    {'role': 'user', 'content': 'Return {"ready":true}.'},
+                ]
+            )
+        except Exception as err:
+            self.get_logger().error('[LLM PREFLIGHT] planner failed | error=%s' % err)
+            return not required
+
+        if _preflight_ready(text):
+            self.get_logger().info(
+                '[LLM PREFLIGHT] planner model ready | provider=%s model=%s'
+                % (provider_config.provider, provider_config.model)
+            )
+            return True
+        self.get_logger().error(
+            '[LLM PREFLIGHT] planner returned invalid readiness payload | payload=%s'
+            % _preview_text(text)
+        )
+        return not required
 
     def _on_planner_request(self, msg: Intent) -> None:
         if msg.intent and str(msg.intent).strip() != self._planner_request_intent:
@@ -264,3 +326,21 @@ def main(args=None) -> None:
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
+
+
+def _preflight_ready(text: str) -> bool:
+    clean_text = str(text or '').strip()
+    if not clean_text:
+        return False
+    try:
+        parsed = json.loads(clean_text)
+    except json.JSONDecodeError:
+        return '"ready"' in clean_text.lower() and 'true' in clean_text.lower()
+    return isinstance(parsed, dict) and parsed.get('ready') is True
+
+
+def _preview_text(text: str, max_len: int = 160) -> str:
+    clean_text = ' '.join(str(text or '').split())
+    if len(clean_text) <= max_len:
+        return clean_text
+    return clean_text[: max_len - 3] + '...'

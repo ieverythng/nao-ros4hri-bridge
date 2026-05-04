@@ -11,37 +11,22 @@ from planner_common import build_dialogue_act_payload
 from planner_llm.planner_engine import PlannerDecision
 from planner_llm.planner_engine import PlannerEngine
 
-_MOTION_PROGRESS_TEXT = {
-    'stand': 'standing up',
-    'standinit': 'standing up',
-    'posture_stand': 'standing up',
-    'head_center': 'looking straight ahead',
-    'head_look_left': 'looking to the left',
-    'head_look_right': 'looking to the right',
-    'head_look_up': 'looking up',
-    'head_look_down': 'looking down',
-    'sit': 'sitting down',
-    'sitrelax': 'sitting down',
-    'posture_sit': 'sitting down',
-    'kneel': 'kneeling down',
-    'crouch': 'kneeling down',
-    'posture_kneel': 'kneeling down',
-}
-_MOTION_COMPLETION_TEXT = {
-    'stand': 'I am standing now.',
-    'standinit': 'I am standing now.',
-    'posture_stand': 'I am standing now.',
-    'head_center': 'I am looking straight ahead now.',
-    'head_look_left': 'I am looking to the left now.',
-    'head_look_right': 'I am looking to the right now.',
-    'head_look_up': 'I am looking up now.',
-    'head_look_down': 'I am looking down now.',
-    'sit': 'I am sitting now.',
-    'sitrelax': 'I am sitting now.',
-    'posture_sit': 'I am sitting now.',
-    'kneel': 'I am kneeling now.',
-    'crouch': 'I am kneeling now.',
-    'posture_kneel': 'I am kneeling now.',
+# (progress phrase, completion sentence) for perform_motion-style skills
+_MOTION_DIALOGUE_COPY: dict[str, tuple[str, str]] = {
+    'stand': ('standing up', 'I am standing now.'),
+    'standinit': ('standing up', 'I am standing now.'),
+    'posture_stand': ('standing up', 'I am standing now.'),
+    'head_center': ('looking straight ahead', 'I am looking straight ahead now.'),
+    'head_look_left': ('looking to the left', 'I am looking to the left now.'),
+    'head_look_right': ('looking to the right', 'I am looking to the right now.'),
+    'head_look_up': ('looking up', 'I am looking up now.'),
+    'head_look_down': ('looking down', 'I am looking down now.'),
+    'sit': ('sitting down', 'I am sitting now.'),
+    'sitrelax': ('sitting down', 'I am sitting now.'),
+    'posture_sit': ('sitting down', 'I am sitting now.'),
+    'kneel': ('kneeling down', 'I am kneeling now.'),
+    'crouch': ('kneeling down', 'I am kneeling now.'),
+    'posture_kneel': ('kneeling down', 'I am kneeling now.'),
 }
 
 
@@ -131,7 +116,7 @@ class PlannerSupervisor:
         if feedback.event_type == 'plan_accepted':
             state.current_status = 'executing'
             state.retry_budget_remaining = feedback.retry_budget
-            if self._emit_acknowledge(state):
+            if self._communication_policy_allows(state, 'emit_acknowledge'):
                 return SupervisorOutcome(
                     dialogue_acts=(self._dialogue_act(
                         state,
@@ -145,7 +130,7 @@ class PlannerSupervisor:
         if feedback.event_type == 'step_started':
             state.current_status = 'executing'
             state.retry_budget_remaining = feedback.retry_budget
-            if self._emit_progress(state):
+            if self._communication_policy_allows(state, 'emit_progress'):
                 return SupervisorOutcome(
                     dialogue_acts=(self._dialogue_act(
                         state,
@@ -166,7 +151,7 @@ class PlannerSupervisor:
             state.active_plan_id = ''
             state.awaiting_user_response = False
             self._forget_plan(feedback.plan_id)
-            if self._emit_completion(state):
+            if self._communication_policy_allows(state, 'emit_completion'):
                 return SupervisorOutcome(
                     dialogue_acts=(self._dialogue_act(
                         state,
@@ -223,17 +208,18 @@ class PlannerSupervisor:
         )
         state.communication_policy = dict(plan_payload.get('communication_policy', {}))
 
-        if decision.mode in ('clarify', 'fail'):
-            state.current_status = 'waiting_user' if decision.mode == 'clarify' else 'failed'
-            state.awaiting_user_response = decision.mode == 'clarify'
+        if decision.mode in ('clarify', 'fail', 'backend_unavailable'):
+            awaiting_user = decision.mode == 'clarify'
+            state.current_status = 'waiting_user' if awaiting_user else 'failed'
+            state.awaiting_user_response = awaiting_user
             self._forget_plan(state.active_plan_id)
             return SupervisorOutcome(
                 dialogue_acts=(self._dialogue_act(
                     state,
-                    act='ask_clarification' if decision.mode == 'clarify' else 'explain_failure',
+                    act='ask_clarification' if awaiting_user else 'explain_failure',
                     reason=self._decision_reason(decision),
                     text_hint=self._decision_reason(decision),
-                    await_user_response=decision.mode == 'clarify',
+                    await_user_response=awaiting_user,
                 ),)
             )
 
@@ -391,22 +377,15 @@ class PlannerSupervisor:
         )
         return PlannerDialogueAct.from_payload(payload)
 
-    def _emit_completion(self, state: SupervisorState) -> bool:
-        if (
+    @staticmethod
+    def _communication_policy_allows(state: SupervisorState, flag: str) -> bool:
+        if flag == 'emit_completion' and (
             len(state.active_plan_steps) == 1
             and state.active_plan_steps[0].get('type') == 'say'
         ):
             return False
         policy = dict(state.communication_policy or {})
-        return bool(policy.get('emit_completion', False))
-
-    def _emit_acknowledge(self, state: SupervisorState) -> bool:
-        policy = dict(state.communication_policy or {})
-        return bool(policy.get('emit_acknowledge', False))
-
-    def _emit_progress(self, state: SupervisorState) -> bool:
-        policy = dict(state.communication_policy or {})
-        return bool(policy.get('emit_progress', False))
+        return bool(policy.get(flag, False))
 
     def _acknowledgement_text(self, state: SupervisorState) -> str:
         if state.last_request is not None and state.last_request.ack_text:
@@ -477,7 +456,8 @@ class PlannerSupervisor:
 
         if step_type == 'skill' and step_name in ('', 'motion', 'perform_motion'):
             motion_name = str(step_args.get('object', '')).strip().lower()
-            return _MOTION_PROGRESS_TEXT.get(motion_name, '')
+            copy = _MOTION_DIALOGUE_COPY.get(motion_name, ('', ''))
+            return copy[0]
 
         return ''
 
@@ -498,7 +478,8 @@ class PlannerSupervisor:
 
         if step_type == 'skill' and step_name in ('', 'motion', 'perform_motion'):
             motion_name = str(step_args.get('object', '')).strip().lower()
-            return _MOTION_COMPLETION_TEXT.get(motion_name, '')
+            copy = _MOTION_DIALOGUE_COPY.get(motion_name, ('', ''))
+            return copy[1]
 
         return ''
 

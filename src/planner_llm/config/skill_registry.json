@@ -34,23 +34,6 @@
       "timeout_hint": 8.0,
       "safety_flags": ["attention"],
       "robot_adapter_mapping": "nao_orchestrator.look_at"
-    },
-    {
-      "name": "mock_scan_scene",
-      "aliases": ["scan_scene"],
-      "category": "perception",
-      "params": ["target_kind", "max_sweeps", "result_mode", "summary"],
-      "required_params": [],
-      "preconditions": [],
-      "expected_effects": ["scene is scanned and a concise summary becomes available"],
-      "observable_success": ["planner feedback step_started", "planner feedback completed"],
-      "failure_modes": ["mock scan requested failure", "mock demo skills disabled"],
-      "retryable": true,
-      "can_request_user_help": false,
-      "can_request_clarification": true,
-      "timeout_hint": 3.0,
-      "safety_flags": ["perception", "demo_only"],
-      "robot_adapter_mapping": "nao_orchestrator.mock_scan_scene"
     }
   ]
 }

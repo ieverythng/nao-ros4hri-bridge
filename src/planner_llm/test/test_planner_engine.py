@@ -3,6 +3,7 @@ from planner_common import PlannerRequest
 
 from planner_llm.planner_engine import PlannerEngine
 from planner_llm.providers import PlannerProviderConfig
+from planner_llm.providers import PlannerProviderError
 from planner_llm.providers import build_provider
 from planner_llm.skill_registry import SkillRegistry
 
@@ -15,6 +16,11 @@ class _FakeProvider:
     def generate(self, messages):
         self.messages = list(messages)
         return self._response_text
+
+
+class _FailingProvider:
+    def generate(self, messages):
+        raise PlannerProviderError('timed out')
 
 
 def _engine_for_response(response_text: str, *, retry_budget: int = 1) -> PlannerEngine:
@@ -80,7 +86,7 @@ def test_planner_engine_uses_provider_for_non_rule_request() -> None:
     assert '"user_text"' not in provider.messages[1]['content']
 
 
-def test_planner_engine_filters_unsupported_model_skills() -> None:
+def test_planner_engine_rejects_unsupported_model_skills() -> None:
     provider = _FakeProvider(
         '{"ack_text":"Trying a custom action.","steps":[{"type":"skill","name":"dance","args":{"style":"wave"},"requires":[],"on_failure":"fail","retry_budget":0}]}'
     )
@@ -97,6 +103,47 @@ def test_planner_engine_filters_unsupported_model_skills() -> None:
     decision = engine.plan_request(request, goal_id='goal_bad', plan_version=1)
     assert decision.mode == 'clarify'
     assert decision.payload['plan']['replan_hint'] == 'clarify_user'
+
+
+def test_planner_engine_marks_provider_timeout_as_backend_unavailable() -> None:
+    engine = PlannerEngine(_FailingProvider(), SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_timeout',
+            'goal_id': 'goal_timeout',
+            'goal_text': 'scan the room',
+            'normalized_intents': ['inspect_scene'],
+            'requested_plan': [],
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_timeout', plan_version=1)
+
+    assert decision.mode == 'backend_unavailable'
+    assert decision.payload['plan']['status'] == 'failed'
+    assert decision.payload['plan']['replan_hint'] == 'planner_backend_unavailable'
+    assert 'timed out' in decision.raw_model_output
+
+
+def test_planner_engine_rejects_partial_model_plans_when_one_step_is_unsupported() -> None:
+    provider = _FakeProvider(
+        '{"ack_text":"Trying two actions.","steps":[{"type":"skill","name":"perform_motion","args":{"object":"stand"},"requires":[],"on_failure":"fail","retry_budget":0},{"type":"skill","name":"dance","args":{"style":"wave"},"requires":[],"on_failure":"fail","retry_budget":0}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_partial',
+            'goal_id': 'goal_partial',
+            'goal_text': 'stand up and dance',
+            'normalized_intents': ['multi_step_task'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_partial', plan_version=1)
+
+    assert decision.mode == 'clarify'
+    assert decision.payload['plan']['steps'][0]['type'] == 'say'
 
 
 def test_planner_engine_clarifies_when_retry_budget_is_exhausted() -> None:
@@ -177,11 +224,68 @@ def test_planner_engine_falls_back_to_requested_plan_when_model_output_is_invali
     assert provider.messages[1]['content'].find('"requested_plan"') != -1
 
 
+def test_planner_engine_does_not_use_partial_requested_plan_hints() -> None:
+    provider = _FakeProvider('{}')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_hint_partial',
+            'goal_id': 'goal_hint_partial',
+            'goal_text': 'stand up and dance',
+            'requested_plan': [
+                {
+                    'type': 'skill',
+                    'name': 'perform_motion',
+                    'args': {'object': 'stand'},
+                },
+                {
+                    'type': 'skill',
+                    'name': 'dance',
+                    'args': {'style': 'wave'},
+                },
+            ],
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_hint_partial', plan_version=1)
+
+    assert decision.mode == 'clarify'
+
+
 def test_provider_factory_selects_openai_compatible_adapter() -> None:
     provider = build_provider(
         PlannerProviderConfig(provider='openai', model='qwen', base_url='http://localhost:8080')
     )
     assert provider.__class__.__name__ == 'OpenAICompatiblePlannerProvider'
+
+
+def test_ollama_provider_requires_configured_model() -> None:
+    provider = build_provider(PlannerProviderConfig(provider='ollama', model=''))
+
+    try:
+        provider.generate([{'role': 'user', 'content': 'plan'}])
+    except PlannerProviderError as err:
+        assert 'model is not configured' in str(err)
+    else:  # pragma: no cover - defensive assertion
+        raise AssertionError('expected PlannerProviderError')
+
+
+def test_openai_provider_warns_when_think_is_enabled() -> None:
+    import warnings
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter('always')
+        provider = build_provider(
+            PlannerProviderConfig(
+                provider='openai',
+                model='qwen',
+                base_url='http://localhost:8080',
+                think=True,
+            )
+        )
+
+    assert provider.__class__.__name__ == 'OpenAICompatiblePlannerProvider'
+    assert any('think=True is ignored' in str(item.message) for item in caught)
 
 
 def test_ollama_provider_payload_disables_thinking_by_default(monkeypatch) -> None:
@@ -201,9 +305,25 @@ def test_ollama_provider_payload_disables_thinking_by_default(monkeypatch) -> No
     assert captured['payload']['think'] is False
 
 
-def test_planner_engine_accepts_mock_scan_scene_steps_from_provider() -> None:
+def test_ollama_provider_uses_thinking_when_content_is_empty(monkeypatch) -> None:
+    captured = {}
+
+    def fake_post_json(url, payload, *, timeout_sec, headers):
+        captured['payload'] = payload
+        return {'message': {'content': '', 'thinking': '{"steps":[]}'}}
+
+    monkeypatch.setattr('planner_llm.providers._post_json', fake_post_json)
+    provider = build_provider(
+        PlannerProviderConfig(provider='ollama', model='qwen3.5:397b-cloud')
+    )
+
+    assert provider.generate([{'role': 'system', 'content': 'Return JSON only.'}]) == '{"steps":[]}'
+    assert captured['payload']['messages'][0]['content'].startswith('/no_think')
+
+
+def test_planner_engine_accepts_scan_steps_from_provider() -> None:
     provider = _FakeProvider(
-        '{"ack_text":"I will look around and report what I find.","steps":[{"type":"skill","name":"perform_motion","args":{"object":"head_look_left"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"perform_motion","args":{"object":"head_look_right"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"mock_scan_scene","args":{"target_kind":"people","max_sweeps":2},"requires":[],"on_failure":"replan","retry_budget":0}]}'
+        '{"ack_text":"I will look around and report what I find.","steps":[{"type":"skill","name":"perform_motion","args":{"object":"head_look_left"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"perform_motion","args":{"object":"head_look_right"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"scan","args":{"target":"people","max_sweeps":2},"requires":[],"on_failure":"replan","retry_budget":0}]}'
     )
     engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
     request = PlannerRequest.from_payload(
@@ -223,5 +343,5 @@ def test_planner_engine_accepts_mock_scan_scene_steps_from_provider() -> None:
     assert [step['name'] for step in decision.payload['plan']['steps']] == [
         'perform_motion',
         'perform_motion',
-        'mock_scan_scene',
+        'scan',
     ]

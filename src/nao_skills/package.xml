@@ -154,5 +154,59 @@
             description: Progress value in [0.0, 1.0].
     </skill>
 
+    <skill content-type="yaml">
+      id: scan
+      version: 1.0.0
+      description: |
+        Run a robot-centric scene scan for an object, person, or the general
+        surroundings. This is a composite skill contract: implementations may
+        combine head/body motion, scene grounding, and KnowledgeCore revision
+        while preserving the planner/orchestrator boundary.
+      interface: composite
+      default_interface_path: /skill/scan
+      datatype: planner_common/CompositeSkill
+      functional_domains:
+        - perception
+        - motions
+      parameters:
+        in:
+          - name: target
+            type: string
+            default: scene
+            description: |
+              Target of the scan, such as scene, object, person, people, cup,
+              or another grounded label from the current task.
+          - name: target_kind
+            type: string
+            default: scene
+            description: Coarse target class for the scan.
+          - name: max_sweeps
+            type: integer
+            default: 2
+            description: Maximum number of gaze or body sweeps to attempt.
+          - name: kb_state
+            type: object
+            description: |
+              Current KnowledgeCore or grounded-context state used as a
+              precondition, for example whether the target is already visible.
+        out:
+          - name: target_detected
+            type: boolean
+            description: True if the scan detected the requested target.
+          - name: kb_revise
+            type: object
+            description: KB revision payload or summary produced by the scan.
+          - name: summary
+            type: string
+            description: Machine-readable concise scan result summary.
+        feedback:
+          - name: status
+            type: string
+            description: Scan phase (for example sweeping, grounding, revising).
+          - name: progress
+            type: float
+            description: Progress value in [0.0, 1.0].
+    </skill>
+
   </export>
 </package>

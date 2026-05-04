@@ -71,6 +71,34 @@ _DERIVED_SKILL_SPECS = {
             'robot_adapter_mapping': 'nao_orchestrator.look_at',
         },
     },
+    'scan': {
+        'source_skill_ids': ('scan',),
+        'default_payload': {
+            'name': 'scan',
+            'aliases': [],
+            'category': 'perception',
+            'params': ['target', 'target_kind', 'max_sweeps', 'kb_state'],
+            'required_params': [],
+            'preconditions': [
+                'current KB state may indicate whether the target is already visible',
+            ],
+            'expected_effects': [
+                'scene is scanned and KB-relevant perception output becomes available',
+            ],
+            'observable_success': [
+                'target_detected',
+                'kb_revise',
+                'planner feedback completed',
+            ],
+            'failure_modes': ['scan requested failure', 'demo scan backend disabled'],
+            'retryable': True,
+            'can_request_user_help': False,
+            'can_request_clarification': True,
+            'timeout_hint': 3.0,
+            'safety_flags': ['perception'],
+            'robot_adapter_mapping': 'nao_orchestrator.scan',
+        },
+    },
 }
 
 
@@ -121,14 +149,20 @@ class PlannerSkill:
     def prompt_summary(self) -> dict:
         return {
             'name': self.name,
+            'aliases': list(self.aliases),
             'category': self.category,
+            'params': list(self.params),
             'required_params': list(self.required_params),
             'preconditions': list(self.preconditions),
             'expected_effects': list(self.expected_effects),
+            'observable_success': list(self.observable_success),
             'failure_modes': list(self.failure_modes),
             'retryable': self.retryable,
             'can_request_user_help': self.can_request_user_help,
             'can_request_clarification': self.can_request_clarification,
+            'timeout_hint': self.timeout_hint,
+            'safety_flags': list(self.safety_flags),
+            'robot_adapter_mapping': self.robot_adapter_mapping,
         }
 
 
@@ -217,6 +251,19 @@ class SkillRegistry:
 
     def filter_supported_steps(self, steps: list[dict]) -> list[dict]:
         return [step for step in steps if self.supports_step(step)]
+
+    def filter_supported_steps_with_rejections(
+        self,
+        steps: list[dict],
+    ) -> tuple[list[dict], list[dict]]:
+        supported: list[dict] = []
+        rejected: list[dict] = []
+        for step in steps:
+            if self.supports_step(step):
+                supported.append(step)
+            else:
+                rejected.append(step)
+        return supported, rejected
 
     def prompt_manifest(self) -> list[dict]:
         return [skill.prompt_summary() for skill in self._skills]

@@ -104,6 +104,24 @@ class _ClarifyEngine(_StubEngine):
         )
 
 
+class _BackendUnavailableEngine(_ClarifyEngine):
+    def plan_request(self, request, **kwargs):
+        decision = super().plan_request(request, **kwargs)
+        payload = dict(decision.payload)
+        payload['plan'] = dict(decision.payload['plan'])
+        payload['plan']['status'] = 'failed'
+        payload['plan']['failure_reason'] = (
+            'The planning model is not ready yet. Please try again in a moment.'
+        )
+        payload['plan']['replan_hint'] = 'planner_backend_unavailable'
+        return PlannerDecision(
+            intent_name=decision.intent_name,
+            plan_id=decision.plan_id,
+            mode='backend_unavailable',
+            payload=payload,
+        )
+
+
 class _AckEngine(_StubEngine):
     def plan_request(self, request, **kwargs):
         decision = super().plan_request(request, **kwargs)
@@ -261,6 +279,20 @@ def test_supervisor_emits_dialogue_act_instead_of_intent_for_clarification() -> 
     assert outcome.decision is None
     assert len(outcome.dialogue_acts) == 1
     assert outcome.dialogue_acts[0].act == 'ask_clarification'
+
+
+def test_supervisor_reports_backend_unavailable_as_failure_not_clarification() -> None:
+    supervisor = PlannerSupervisor(_BackendUnavailableEngine(), auto_replan=True)
+    request = PlannerRequest.from_payload(
+        {'goal_id': 'goal_backend', 'request_id': 'turn_1', 'goal_text': 'scan the room'}
+    )
+
+    outcome = supervisor.handle_request(request)
+
+    assert outcome.decision is None
+    assert len(outcome.dialogue_acts) == 1
+    assert outcome.dialogue_acts[0].act == 'explain_failure'
+    assert outcome.dialogue_acts[0].await_user_response is False
 
 
 def test_supervisor_emits_completion_dialogue_act_when_policy_allows_it() -> None:
