@@ -79,6 +79,24 @@ Authoritative ROS4HRI and SocialMinds entry points:
 - Keep `chatbot_llm` and `dialogue_manager` changes minimal and seam-focused.
 - Prefer adding planner-facing hooks over rewriting the dialogue loop.
 
+### LLM readiness and failure visibility
+
+- Treat chatbot and planner LLM calls as ROS runtime dependencies, not hidden
+  implementation details, when a launch profile depends on them for demo or
+  operator use.
+- Demo-critical profiles should fail fast or visibly warn during preflight
+  before accepting the first user turn. Startup logs should name the selected
+  chatbot and planner models, required/optional preflight policy, and the node
+  that has become ready.
+- Chatbot LLM failures on execution-looking turns may publish a planner request
+  from the original goal text, but must not synthesize executable plans or speak
+  raw backend errors.
+- Planner backend failures should surface as planner failure dialogue acts, not
+  user clarifications. Clarification should remain reserved for ambiguous or
+  underspecified human requests.
+- Do not move speaking ownership into planner or executor packages; planner
+  dialogue acts remain hints consumed by `dialogue_manager`.
+
 ### Grounding and perception
 
 - Keep detector normalization and scene grounding in `nao_scene_grounding`.
