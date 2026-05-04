@@ -607,6 +607,36 @@ def generate_profile_launch_description(
         default_value="/planner/request",
         description="Planner ingress topic consumed by planner_llm.",
     )
+    chatbot_planner_request_topic_arg = DeclareLaunchArgument(
+        "chatbot_planner_request_topic",
+        default_value=_profile_default(
+            profile_defaults,
+            "chatbot_planner_request_topic",
+            "/planner/request",
+        ),
+        description=(
+            "Planner request topic used by chatbot_llm. Set this to the orchestrator "
+            "gate topic when enable_orchestrator_planner_gate is true."
+        ),
+    )
+    enable_orchestrator_planner_gate_arg = DeclareLaunchArgument(
+        "enable_orchestrator_planner_gate",
+        default_value=_profile_default(
+            profile_defaults,
+            "enable_orchestrator_planner_gate",
+            "false",
+        ),
+        description="Route chatbot planner requests through nao_orchestrator before planner_llm.",
+    )
+    orchestrator_planner_gate_topic_arg = DeclareLaunchArgument(
+        "orchestrator_planner_gate_topic",
+        default_value=_profile_default(
+            profile_defaults,
+            "orchestrator_planner_gate_topic",
+            "/nao_orchestrator/planner_request",
+        ),
+        description="Orchestrator-owned planner admission topic.",
+    )
     planner_request_intent_arg = DeclareLaunchArgument(
         "planner_request_intent",
         default_value="planner_request",
@@ -1082,7 +1112,7 @@ def generate_profile_launch_description(
             },
             {
                 "planner_request_topic": ParameterValue(
-                    LaunchConfiguration("planner_request_topic"),
+                    LaunchConfiguration("chatbot_planner_request_topic"),
                     value_type=str,
                 )
             },
@@ -1161,6 +1191,30 @@ def generate_profile_launch_description(
             {
                 "demo_scan_summary": ParameterValue(
                     LaunchConfiguration("demo_scan_summary"),
+                    value_type=str,
+                )
+            },
+            {
+                "enable_planner_gate": ParameterValue(
+                    LaunchConfiguration("enable_orchestrator_planner_gate"),
+                    value_type=bool,
+                )
+            },
+            {
+                "planner_gate_request_topic": ParameterValue(
+                    LaunchConfiguration("orchestrator_planner_gate_topic"),
+                    value_type=str,
+                )
+            },
+            {
+                "planner_request_topic": ParameterValue(
+                    LaunchConfiguration("planner_request_topic"),
+                    value_type=str,
+                )
+            },
+            {
+                "planner_dialogue_act_topic": ParameterValue(
+                    LaunchConfiguration("planner_dialogue_act_topic"),
                     value_type=str,
                 )
             },
@@ -1761,6 +1815,9 @@ def generate_profile_launch_description(
             chatbot_preflight_keepalive_interval_sec_arg,
             chatbot_planner_mode_enabled_arg,
             planner_request_topic_arg,
+            chatbot_planner_request_topic_arg,
+            enable_orchestrator_planner_gate_arg,
+            orchestrator_planner_gate_topic_arg,
             planner_request_intent_arg,
             planner_dialogue_act_topic_arg,
             planner_skill_registry_path_arg,
@@ -1801,6 +1858,8 @@ def generate_profile_launch_description(
                     LaunchConfiguration("planner_llm_model"),
                     " planner_mode=",
                     LaunchConfiguration("chatbot_planner_mode_enabled"),
+                    " planner_gate=",
+                    LaunchConfiguration("enable_orchestrator_planner_gate"),
                     " scan_demo=",
                     LaunchConfiguration("enable_demo_scan_skill"),
                 ]

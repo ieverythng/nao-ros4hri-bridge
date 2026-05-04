@@ -130,8 +130,9 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
 - The mock `scan` path proves planner/orchestrator routing, but the eventual
   production scan skill should revise KnowledgeCore through the scene-grounding
   contract once perception is stable.
-- The planner-gate migration in `nao_orchestrator` is still a follow-up pass:
-  today the chatbot publishes planner requests directly for the demo path.
+- The planner-gate migration in `nao_orchestrator` now has an initial
+  implementation. The remaining gap is live end-to-end validation of the gated
+  topic path under the full demo launch.
 
 ## Suggested commit slices
 

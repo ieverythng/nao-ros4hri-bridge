@@ -16,6 +16,8 @@ _SIM_ASR_PROFILE_DEFAULTS = {
     "start_interaction_sim_expressive_face": "false",
     "start_interaction_sim_ui": "false",
     "start_rqt_console": "true",
+    "enable_orchestrator_planner_gate": "true",
+    "chatbot_planner_request_topic": "/nao_orchestrator/planner_request",
     "head_motion_allow_open_loop_without_joint_state": "true",
     "head_motion_assume_success_on_convergence_timeout": "true",
     "chatbot_think": "false",

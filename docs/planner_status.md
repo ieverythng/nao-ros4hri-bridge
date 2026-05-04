@@ -283,6 +283,9 @@ Demo readiness update on 2026-05-05:
   planner instead of falling back to dialogue-only mode.
 - Planner provider timeout now becomes a backend-unavailable failure dialogue
   act, not an `ask_clarification` act.
+- `nao_orchestrator` now owns an optional planner gate on
+  `/nao_orchestrator/planner_request`, forwarding accepted requests to
+  `/planner/request` while rejecting duplicate or unsuperseded active goals.
 - See `docs/demo_ready_handoff_2026-05-05.md` for the meeting/demo narrative
   and `docs/nao_orchestrator_planner_gate_handoff.md` for the deferred
-  orchestrator planner-gate migration.
+  orchestrator planner-gate migration notes.

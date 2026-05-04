@@ -22,6 +22,8 @@ _SIM_PROFILE_DEFAULTS = {
     "scene_grounding_fallback_match_distance_px": "40.0",
     "scene_grounding_fallback_match_max_age_sec": "1.2",
     "start_rqt_console": "true",
+    "enable_orchestrator_planner_gate": "true",
+    "chatbot_planner_request_topic": "/nao_orchestrator/planner_request",
     "head_motion_allow_open_loop_without_joint_state": "true",
     "head_motion_assume_success_on_convergence_timeout": "true",
     "chatbot_think": "false",

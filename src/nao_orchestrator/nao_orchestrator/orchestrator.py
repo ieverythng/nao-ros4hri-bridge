@@ -36,6 +36,7 @@ from nao_orchestrator.intent_rules import (
     resolve_say_text,
     validate_execution_plan,
 )
+from nao_orchestrator.planner_gate import PlannerGate
 
 try:  # pragma: no cover - runtime dependency
     from naoqi_bridge_msgs.msg import JointAnglesWithSpeed
@@ -106,6 +107,10 @@ class NaoOrchestrator(Node):
         self.declare_parameter('head_motion_joint_angles_topic', '/joint_angles')
         self.declare_parameter('fallback_to_joint_angles_topic', True)
         self.declare_parameter('planner_feedback_topic', '/planner/execution_feedback')
+        self.declare_parameter('planner_dialogue_act_topic', '/planner/dialogue_act')
+        self.declare_parameter('enable_planner_gate', False)
+        self.declare_parameter('planner_gate_request_topic', '/nao_orchestrator/planner_request')
+        self.declare_parameter('planner_request_topic', '/planner/request')
         self.declare_parameter('dedupe_window_sec', 0.8)
         self.declare_parameter('default_greeting', 'Hello! Nice to meet you.')
         self.declare_parameter('enable_demo_scan_skill', False)
@@ -184,6 +189,14 @@ class NaoOrchestrator(Node):
         self.planner_feedback_topic = str(
             self.get_parameter('planner_feedback_topic').value
         )
+        self.planner_dialogue_act_topic = str(
+            self.get_parameter('planner_dialogue_act_topic').value
+        )
+        self.enable_planner_gate = bool(self.get_parameter('enable_planner_gate').value)
+        self.planner_gate_request_topic = str(
+            self.get_parameter('planner_gate_request_topic').value
+        )
+        self.planner_request_topic = str(self.get_parameter('planner_request_topic').value)
         self.dedupe_window_sec = max(
             0.0,
             float(self.get_parameter('dedupe_window_sec').value),
@@ -207,6 +220,9 @@ class NaoOrchestrator(Node):
         self._posture_command_pub = None
         self._joint_angles_pub = None
         self._planner_feedback_pub = None
+        self._planner_gate_sub = None
+        self._planner_dialogue_act_sub = None
+        self._planner_request_pub = None
         self._is_active = False
         self._stats = _RuntimeStats()
         self._last_intent_signature = ''
@@ -219,6 +235,7 @@ class NaoOrchestrator(Node):
         self._posture_result_lock = threading.Lock()
         self._posture_result_event = threading.Event()
         self._latest_posture_result: dict | None = None
+        self._planner_gate = PlannerGate()
 
     # -------------------------------------------------------------------------
     # Lifecycle configuration
@@ -257,6 +274,12 @@ class NaoOrchestrator(Node):
             self.planner_feedback_topic,
             10,
         )
+        if self.enable_planner_gate:
+            self._planner_request_pub = self.create_publisher(
+                Intent,
+                self.planner_request_topic,
+                10,
+            )
         if JointAnglesWithSpeed is not None:
             self._joint_angles_pub = self.create_publisher(
                 JointAnglesWithSpeed,
@@ -268,7 +291,7 @@ class NaoOrchestrator(Node):
                 'JointAnglesWithSpeed unavailable; joint-topic fallback is disabled'
             )
         self.get_logger().info(
-            'nao_orchestrator configured | intents:%s legacy:%s say:%s replay:%s head:%s look:%s'
+            'nao_orchestrator configured | intents:%s legacy:%s say:%s replay:%s head:%s look:%s planner_gate:%s->%s'
             % (
                 self.intent_topic,
                 self.legacy_intent_topic,
@@ -276,6 +299,8 @@ class NaoOrchestrator(Node):
                 self.replay_motion_action,
                 self.head_motion_action,
                 self.look_at_action,
+                self.planner_gate_request_topic if self.enable_planner_gate else 'disabled',
+                self.planner_request_topic,
             )
         )
         return TransitionCallbackReturn.SUCCESS
@@ -296,6 +321,19 @@ class NaoOrchestrator(Node):
                 self._on_legacy_intent,
                 10,
             )
+        if self.enable_planner_gate:
+            self._planner_gate_sub = self.create_subscription(
+                Intent,
+                self.planner_gate_request_topic,
+                self._on_planner_gate_request,
+                10,
+            )
+            self._planner_dialogue_act_sub = self.create_subscription(
+                String,
+                self.planner_dialogue_act_topic,
+                self._on_planner_dialogue_act,
+                10,
+            )
         self.get_logger().info('nao_orchestrator active')
         return super().on_activate(state)
 
@@ -308,6 +346,12 @@ class NaoOrchestrator(Node):
         if self._legacy_intent_sub is not None:
             self.destroy_subscription(self._legacy_intent_sub)
             self._legacy_intent_sub = None
+        if self._planner_gate_sub is not None:
+            self.destroy_subscription(self._planner_gate_sub)
+            self._planner_gate_sub = None
+        if self._planner_dialogue_act_sub is not None:
+            self.destroy_subscription(self._planner_dialogue_act_sub)
+            self._planner_dialogue_act_sub = None
         self.get_logger().info('nao_orchestrator inactive')
         return super().on_deactivate(state)
 
@@ -331,6 +375,12 @@ class NaoOrchestrator(Node):
         if self._legacy_intent_sub is not None:
             self.destroy_subscription(self._legacy_intent_sub)
             self._legacy_intent_sub = None
+        if self._planner_gate_sub is not None:
+            self.destroy_subscription(self._planner_gate_sub)
+            self._planner_gate_sub = None
+        if self._planner_dialogue_act_sub is not None:
+            self.destroy_subscription(self._planner_dialogue_act_sub)
+            self._planner_dialogue_act_sub = None
         if self._posture_result_sub is not None:
             self.destroy_subscription(self._posture_result_sub)
             self._posture_result_sub = None
@@ -349,6 +399,9 @@ class NaoOrchestrator(Node):
         if self._planner_feedback_pub is not None:
             self.destroy_publisher(self._planner_feedback_pub)
             self._planner_feedback_pub = None
+        if self._planner_request_pub is not None:
+            self.destroy_publisher(self._planner_request_pub)
+            self._planner_request_pub = None
         for client in (
             self._say_client,
             self._replay_motion_client,
@@ -391,6 +444,46 @@ class NaoOrchestrator(Node):
             data=normalized_data,
             source=str(msg.source or msg.modality or Intent.UNKNOWN),
         )
+
+    def _on_planner_gate_request(self, msg: Intent) -> None:
+        """Admit chatbot-originated planner requests before planner_llm sees them."""
+        if not self._is_active or self._planner_request_pub is None:
+            return
+
+        decision = self._planner_gate.decide(msg.data)
+        if not decision.accepted:
+            self._stats.last_route = 'planner_gate:rejected'
+            self.get_logger().warn(
+                'Planner gate rejected request | goal_id=%s kind=%s reason=%s'
+                % (
+                    decision.request.goal_id,
+                    decision.request.request_kind,
+                    decision.reason,
+                )
+            )
+            return
+
+        self._planner_request_pub.publish(msg)
+        self._stats.last_route = 'planner_gate:forwarded'
+        self.get_logger().info(
+            'Planner gate forwarded request | goal_id=%s kind=%s active_goal=%s topic=%s'
+            % (
+                decision.request.goal_id,
+                decision.request.request_kind,
+                self._planner_gate.active_goal_id or '-',
+                self.planner_request_topic,
+            )
+        )
+
+    def _on_planner_dialogue_act(self, msg: String) -> None:
+        """Observe non-speaking planner acts so gate state clears on planner failure."""
+        before = self._planner_gate.active_goal_id
+        self._planner_gate.observe_dialogue_act(msg.data)
+        after = self._planner_gate.active_goal_id
+        if before and not after:
+            self.get_logger().info(
+                'Planner gate cleared by planner dialogue act | goal_id=%s' % before
+            )
 
     def _handle_intent(self, intent_name: str, data: dict, source: str) -> None:
         """Route one normalized intent through planned or legacy dispatch paths."""
@@ -1244,6 +1337,7 @@ class NaoOrchestrator(Node):
         msg = String()
         msg.data = json.dumps(payload, sort_keys=True, separators=(',', ':'))
         self._planner_feedback_pub.publish(msg)
+        self._planner_gate.observe_feedback(payload)
 
     def _on_posture_command_result(self, msg: String) -> None:
         payload = self._parse_posture_result_message(msg.data)
@@ -1423,6 +1517,8 @@ class NaoOrchestrator(Node):
                     key='dispatch_speech_intents',
                     value=str(self.dispatch_speech_intents),
                 ),
+                KeyValue(key='planner_gate_enabled', value=str(self.enable_planner_gate)),
+                KeyValue(key='planner_gate_active_goal', value=self._planner_gate.active_goal_id),
                 KeyValue(
                     key='intents_received',
                     value=str(self._stats.intents_received),

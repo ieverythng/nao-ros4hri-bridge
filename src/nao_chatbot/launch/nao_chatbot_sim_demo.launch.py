@@ -12,6 +12,8 @@ _SIM_DEMO_PROFILE_DEFAULTS = {
     "object_detection_backend": "emorobcare_cv",
     "start_planner_llm": "true",
     "chatbot_planner_mode_enabled": "true",
+    "enable_orchestrator_planner_gate": "true",
+    "chatbot_planner_request_topic": "/nao_orchestrator/planner_request",
     "start_nao_robot": "false",
     "start_nao_robot_hri_visualization": "false",
     "start_rviz": "false",

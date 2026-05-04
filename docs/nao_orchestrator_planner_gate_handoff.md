@@ -1,6 +1,17 @@
 # `nao_orchestrator` Planner-Gate Handoff
 
-## Why this pass remains
+## Current status
+
+Implemented on 2026-05-05 as an orchestrator-owned admission gate over the
+existing `hri_actions_msgs/Intent` + `PlannerRequest` contract. No new ROS
+interfaces were added.
+
+Demo/sim/robot profiles now send chatbot-originated planner requests to
+`/nao_orchestrator/planner_request` when the planner gate is enabled. The
+orchestrator accepts, rejects, cancels, or supersedes requests and republishes
+accepted requests to `/planner/request` for `planner_llm`.
+
+## Original reason for the pass
 
 The current demo path is intentionally direct:
 
@@ -11,11 +22,10 @@ flowchart LR
   O -->|/planner/execution_feedback| P
 ```
 
-That is acceptable for the demo cleanup because it preserves the narrow chatbot
-contract and keeps planning in `planner_llm`. The next architecture pass should
-move the planner gate closer to `nao_orchestrator` so execution admission,
-active-goal ownership, and cancellation are centralized in the deterministic
-executor.
+That was acceptable for the demo cleanup because it preserved the narrow chatbot
+contract and kept planning in `planner_llm`. The current pass moves admission
+closer to `nao_orchestrator` so execution goal ownership and cancellation are
+centralized in the deterministic executor.
 
 ## Target shape
 
@@ -40,17 +50,17 @@ flowchart LR
 - No new `.msg`, `.srv`, or `.action` files should be added unless the existing
   intent/topic contracts cannot express the gate cleanly.
 
-## Proposed implementation steps
+## Implemented behavior
 
-1. Add a small planner-gate module inside `nao_orchestrator` that accepts
-   execution-oriented incoming intents and emits `PlannerRequest` payloads.
-2. Move goal id, parent/supersede, cancellation, and active-plan admission checks
-   from chatbot-side handoff assumptions into the gate.
-3. Keep `chatbot_llm` planner handoff behind a compatibility flag while the gate
-   is validated, then disable direct handoff in the demo profile once stable.
-4. Add tests for new-goal, cancel, supersede, clarification-answer, and duplicate
-   active goal behavior.
-5. Validate with the same live-container launch profiles and rqt log markers.
+- First `new_goal` is accepted and becomes the active planner goal.
+- Duplicate active goals are rejected.
+- A second new goal must explicitly supersede the active goal.
+- Matching `goal_update`, `clarification_answer`, and `cancel_request` are
+  accepted.
+- Completion, cancellation, invalid, or failed execution feedback clears the
+  active gate goal.
+- Rejections are logged by `nao_orchestrator`; the gate does not speak and does
+  not call the LLM.
 
 ## Non-goals
 
@@ -59,9 +69,9 @@ flowchart LR
 - Do not hardcode demo interactions in the gate.
 - Do not replace `planner_common` contracts with package-local copies.
 
-## Why it was not included in this final demo pass
+## Remaining follow-up
 
-The immediate demo risk was model availability and lifecycle readiness. Preflight
-and failure-mode cleanup are safer, smaller changes for tomorrow. Moving the
-planner gate changes active-goal ownership and deserves its own validation pass
-after the demo stack is stable.
+- Run a live end-to-end launch where chatbot publishes to the gate and confirm
+  `/planner/request` only receives accepted requests.
+- Consider publishing a non-speaking planner/dialogue diagnostic for rejected
+  gate requests if operator visibility is not enough through logs.

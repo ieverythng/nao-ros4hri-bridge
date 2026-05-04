@@ -9,6 +9,8 @@ _ROBOT_ASR_PROFILE_DEFAULTS = {
     "start_nao_robot": "true",
     "start_planner_llm": "true",
     "chatbot_planner_mode_enabled": "true",
+    "enable_orchestrator_planner_gate": "true",
+    "chatbot_planner_request_topic": "/nao_orchestrator/planner_request",
     "start_nao_robot_hri_visualization": "true",
     "start_rviz": "true",
     "hri_visualization_image_topic": "/camera/front/image_raw",

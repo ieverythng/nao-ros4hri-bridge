@@ -74,6 +74,8 @@ def test_sim_profile_keeps_interaction_sim_enabled_without_planner():
     assert defaults["planner_llm_model"] == "gemma4:31b-cloud"
     assert defaults["chatbot_preflight_required"] == "true"
     assert defaults["planner_llm_preflight_required"] == "true"
+    assert defaults["enable_orchestrator_planner_gate"] == "true"
+    assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
 
 
 def test_robot_profile_enables_planner_mode_by_default():
@@ -85,6 +87,8 @@ def test_robot_profile_enables_planner_mode_by_default():
     assert defaults["start_planner_llm"] == "true"
     assert defaults["chatbot_planner_mode_enabled"] == "true"
     assert defaults["planner_llm_model"] == "gemma4:31b-cloud"
+    assert defaults["enable_orchestrator_planner_gate"] == "true"
+    assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
 
 
 def test_robot_demo_profile_enables_demo_scan_defaults():
@@ -97,6 +101,8 @@ def test_robot_demo_profile_enables_demo_scan_defaults():
     assert "demo scene summary" in defaults["demo_scan_summary"]
     assert defaults["chatbot_preflight_required"] == "true"
     assert defaults["planner_llm_preflight_required"] == "true"
+    assert defaults["enable_orchestrator_planner_gate"] == "true"
+    assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
 
 
 def test_sim_demo_profile_matches_demo_scan_defaults():
@@ -110,6 +116,8 @@ def test_sim_demo_profile_matches_demo_scan_defaults():
     assert defaults["start_planner_llm"] == "true"
     assert defaults["chatbot_planner_mode_enabled"] == "true"
     assert defaults["enable_demo_scan_skill"] == "true"
+    assert defaults["enable_orchestrator_planner_gate"] == "true"
+    assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
 
 
 def test_stack_uses_launch_events_for_chatbot_and_dialogue_lifecycle():
