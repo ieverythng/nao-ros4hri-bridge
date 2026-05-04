@@ -322,3 +322,27 @@ def _warn(logger, message: str) -> None:
         logger.warn(message)
         return
     warnings.warn(message, stacklevel=2)
+
+
+# Baseline `object` labels for perform_motion routing (orchestrator + chatbot scene-target filter).
+DEFAULT_PERFORM_MOTION_OBJECT_LABELS = frozenset(
+    {
+        'stand',
+        'standinit',
+        'sit',
+        'kneel',
+        'crouch',
+        'head_center',
+        'head_look_left',
+        'head_look_right',
+        'head_look_up',
+        'head_look_down',
+        'look_at_reset',
+    }
+)
+
+
+def is_perform_motion_object_label(value: str) -> bool:
+    """Return whether one label is reserved for perform_motion routing."""
+    clean_value = str(value or '').strip().lower()
+    return clean_value in DEFAULT_PERFORM_MOTION_OBJECT_LABELS

@@ -9,6 +9,27 @@ import time
 
 
 DEFAULT_PLANNER_REQUEST_INTENT = 'planner_request'
+
+
+class IntentLabels:
+    """Stable hri_actions intent label strings used by pure contract code."""
+
+    BRING_OBJECT = 'bring_object'
+    GRAB_OBJECT = 'grab_object'
+    GREET = 'greet'
+    GUIDE = 'guide'
+    MOVE_TO = 'move_to'
+    PERFORM_MOTION = 'perform_motion'
+    PLACE_OBJECT = 'place_object'
+    PRESENT_CONTENT = 'present_content'
+    RAW_USER_INPUT = 'raw_user_input'
+    SAY = 'say'
+    START_ACTIVITY = 'start_activity'
+    STOP_ACTIVITY = 'stop_activity'
+    SUSPEND = 'suspend'
+    WAKEUP = 'wakeup'
+
+
 PLAN_STEP_TYPES = ('noop', 'say', 'skill', 'look_at')
 PLAN_FAILURE_POLICIES = (
     'fail',
@@ -358,6 +379,7 @@ def build_execution_feedback_payload(
     needs_user_input: bool = False,
     validation_errors: list[str] | None = None,
     timestamp_sec: float = 0.0,
+    result_summary: str = '',
 ) -> dict:
     """Build one normalized planner feedback payload."""
     resolved_step = step if isinstance(step, dict) else None
@@ -387,6 +409,7 @@ def build_execution_feedback_payload(
         'scene_targets': coerce_str_list(plan_context.get('scene_targets', [])),
         'validation_errors': coerce_str_list(validation_errors or []),
         'timestamp_sec': _coerce_float(timestamp_sec, time.time()),
+        'result_summary': str(result_summary or '').strip(),
     }
     if resolved_step is not None:
         payload['step'] = {
@@ -528,6 +551,7 @@ def _default_feedback_event_type(status: str) -> str:
     mapping = {
         'accepted': 'plan_accepted',
         'running': 'step_started',
+        'succeeded': 'step_succeeded',
         'completed': 'plan_completed',
         'invalid': 'plan_invalid',
         'failed': 'step_failed',
@@ -562,6 +586,7 @@ class ExecutionFeedback:
     step_on_failure: str
     step_requires: tuple[str, ...]
     timestamp_sec: float
+    result_summary: str
 
     @classmethod
     def from_payload(cls, payload) -> 'ExecutionFeedback':
@@ -608,6 +633,7 @@ class ExecutionFeedback:
                 )
             ),
             timestamp_sec=_coerce_float(data.get('timestamp_sec', 0.0)),
+            result_summary=str(data.get('result_summary', '')).strip(),
         )
 
 

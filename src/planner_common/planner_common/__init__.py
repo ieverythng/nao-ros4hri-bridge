@@ -1,9 +1,12 @@
 """Shared contract helpers for planner and world-model nodes."""
 
 from planner_common.contracts import DEFAULT_PLANNER_REQUEST_INTENT
+from planner_common.contracts import PLAN_FAILURE_POLICIES
+from planner_common.contracts import PLAN_STEP_TYPES
 from planner_common.contracts import EnrichedEntity
 from planner_common.contracts import EnrichedSnapshot
 from planner_common.contracts import ExecutionFeedback
+from planner_common.contracts import IntentLabels
 from planner_common.contracts import PlannerDialogueAct
 from planner_common.contracts import PlannerRequest
 from planner_common.contracts import PLANNER_DIALOGUE_ACTS
@@ -24,21 +27,28 @@ from planner_common.contracts import normalize_communication_policy
 from planner_common.contracts import normalize_grounded_context
 from planner_common.contracts import normalize_plan_steps
 from planner_common.contracts import parse_json_object
+from planner_common.skill_manifest import DEFAULT_PERFORM_MOTION_OBJECT_LABELS
 from planner_common.skill_manifest import ExportedSkillManifest
+from planner_common.skill_manifest import is_perform_motion_object_label
 from planner_common.skill_manifest import load_exported_skill_manifests
 from planner_common.skill_manifest import resolve_package_xml
 from planner_common.contracts import truncate_text
 
 __all__ = [
+    'DEFAULT_PERFORM_MOTION_OBJECT_LABELS',
     'DEFAULT_PLANNER_REQUEST_INTENT',
     'EnrichedEntity',
     'EnrichedSnapshot',
     'ExportedSkillManifest',
+    'is_perform_motion_object_label',
     'ExecutionFeedback',
+    'IntentLabels',
     'PlannerDialogueAct',
     'PlannerRequest',
     'PLANNER_DIALOGUE_ACTS',
+    'PLAN_FAILURE_POLICIES',
     'PLANNER_REQUEST_KINDS',
+    'PLAN_STEP_TYPES',
     'SceneObject',
     'SceneSummary',
     'SUPERVISOR_STATUSES',
