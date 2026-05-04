@@ -6,6 +6,46 @@ This document is the richer reference for the JSON payloads that move task,
 scene, and execution state between nodes. The root README contains compact
 examples; this file is the contract-focused view.
 
+## chatbot_llm JSON Output
+
+**Owner:** `chatbot_llm`
+**Purpose:** response generation, route decision, intent declaration, planner routing.
+**Important:** chatbot does not own executable plan steps.
+
+```json
+{
+  "verbal_ack": "Okay, I will do that.",
+  "route": "execution",
+  "confidence": 0.82,
+  "user_intent": {
+    "type": "head_look_left",
+    "goal": "look left",
+    "goal_text": "look left",
+    "ack_text": "Okay, I will look left.",
+    "ack_mode": "say",
+    "scene_targets": [],
+    "request_kind": "new_goal",
+    "interaction_mode": "speech"
+  }
+}
+```
+
+**Allowed route values**
+
+```text
+dialogue | knowledge_query | execution
+```
+
+**Policy**
+
+```text
+chatbot_llm declares the user-facing intent and routes execution turns.
+planner_llm owns executable planning and supervision.
+nao_orchestrator owns deterministic execution.
+```
+
+---
+
 ## Planner Request
 
 Topic:

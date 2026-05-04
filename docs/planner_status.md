@@ -1,6 +1,6 @@
 # Planner Status
 
-Last updated: 2026-04-27
+Last updated: 2026-05-04
 
 ## Current State
 
@@ -18,25 +18,81 @@ Implemented:
 - `user_text` has been removed from normal `chatbot_llm` planner requests and
   from the `planner_llm` prompt payload. `PlannerRequest` still parses it for
   legacy compatibility.
-- Planner/chatbot Ollama calls now default to `qwen3.5:397b-cloud` with
+- Planner launch profiles now default to `qwen3-coder:480b-cloud`, while
+  chatbot response generation defaults to `gemma4:31b-cloud`; both keep
   `think: false` in source and launch defaults.
 - `/planner/request` still uses the ROS `Intent` envelope, so `priority` and
   `confidence` are visible in topic echoes. `chatbot_llm` now publishes a
   deterministic planner priority and a bounded confidence instead of leaving
   execution-routed requests at `0.0`.
+- `scan` is now the planner-visible perception/composite skill contract. The
+  previous demo-only `mock_scan_scene` naming has been removed from the planner
+  registry.
+- Planner execution feedback carries `result_summary`, which lets scan-style
+  success summaries reach planner supervision without executor-authored speech.
+- `step_succeeded` feedback now uses `status=succeeded` with
+  `event_type=step_succeeded`.
+- Planner skill prompt summaries now include params, aliases, observable
+  success, safety flags, and adapter mapping.
+- Unsupported model-generated planner steps no longer produce silent partial
+  plans; if any generated step is rejected, the model output is treated as
+  invalid and routed to clarification/fallback.
+- `nao_chatbot` sim/robot/demo launch profiles share launch-native lifecycle
+  events for chatbot/dialogue startup.
 
 Known weak spots:
 
-- Planner ingress can still mix `goal_text`, `normalized_intents`,
-  scene targets, and `requested_plan`; diagnostics should verify that
-  `goal_text` is the primary objective and `requested_plan` remains optional.
-- Multi-step completeness needs direct testing; unsupported-step filtering may
-  hide partial-plan failures.
-- Head motion can now be launched with explicit simulator/demo fallback
-  parameters, but a rebuilt runtime is required before this affects the live
-  graph.
+- Current demo path still has `chatbot_llm` publishing `/planner/request`
+  directly. Supervisor feedback recommends moving this planner-gate ownership
+  into `nao_orchestrator`; that is the next architectural migration, not a
+  mixed-in demo hotfix.
+- Dialogue-only intent cleanup is incomplete. `chatbot_llm` should avoid
+  publishing greet/identity/wellbeing/help as executable intents, and
+  `nao_orchestrator` should only keep a temporary ignore shim.
+- Multi-step completeness still needs live ROS scenario testing after the
+  stricter unsupported-step behavior.
+- Ollama cloud model availability has shifted; `qwen3.5:*cloud` may require a
+  paid tier or quota headroom depending on the account.
 - Pre/post condition validation should remain lightweight until the simple loop
   is proven.
+
+## Current Architecture Reference
+
+See `docs/planner_architecture_current.md` for the consolidated architecture
+status, remaining gaps, and model benchmark procedure.
+
+## Model Candidate Probe
+
+Use:
+
+```bash
+python3 scripts/benchmark_ollama_models.py --markdown \
+  qwen3-coder:480b-cloud \
+  gemma4:31b-cloud \
+  glm-5.1:cloud \
+  kimi-k2.6:cloud \
+  deepseek-v4-flash:cloud \
+  qwen3.5:cloud
+```
+
+Interpretation:
+
+- prefer valid compact JSON over conversational quality;
+- prefer supported skill names (`perform_motion`, `look_at`, `scan`);
+- use latency only after JSON validity is acceptable;
+- fall back to llama.cpp through the OpenAI-compatible planner provider if
+  cloud quota/model access blocks the demo.
+
+Latest quick result, 2026-05-04:
+
+- preferred planner candidate: `qwen3-coder:480b-cloud`;
+- fallback cloud candidate: `gemma4:31b-cloud`;
+- launch defaults now use `planner_llm_model=qwen3-coder:480b-cloud` and
+  `ollama_model=gemma4:31b-cloud`;
+- blocked by subscription/quota: `qwen3.5:*cloud`, `glm-5.1:cloud`,
+  `kimi-k2.6:cloud`, `deepseek-v4-*cloud`;
+- not recommended despite shallow JSON pass: `gpt-oss:120b-cloud`;
+- weak fallback only: `gpt-oss:20b-cloud` and local `llama3.2:1b`.
 
 ## Diagnostic Goal
 
@@ -213,3 +269,20 @@ Next ROS topic observations should be pasted here with:
 - execution feedback payload
 - dialogue act payload, if any
 - failure classification
+
+Demo readiness update on 2026-05-05:
+
+- Current recommended model is `gemma4:31b-cloud` for both `chatbot_llm` and
+  `planner_llm`; `qwen3.5:cloud` is subscription-gated and
+  `qwen3-coder:480b-cloud` timed out in live stack probes.
+- Demo launch profiles now require LLM preflight and log `[STACK]`,
+  `[LLM PREFLIGHT]`, and `[STACK READY]` markers so rqt shows selected models,
+  subsystem enablement, lifecycle order, and readiness.
+- Chatbot LLM timeout on execution-looking turns now preserves the planner seam:
+  it speaks a short acknowledgement and publishes the original goal text to the
+  planner instead of falling back to dialogue-only mode.
+- Planner provider timeout now becomes a backend-unavailable failure dialogue
+  act, not an `ask_clarification` act.
+- See `docs/demo_ready_handoff_2026-05-05.md` for the meeting/demo narrative
+  and `docs/nao_orchestrator_planner_gate_handoff.md` for the deferred
+  orchestrator planner-gate migration.
