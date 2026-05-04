@@ -48,6 +48,13 @@ Head-motion parameters:
 | `allow_open_loop_without_joint_state` | `false` | Demo/sim fallback: publish absolute goals even before head joint state is available. |
 | `assume_success_on_convergence_timeout` | `false` | Demo/sim fallback: report success after publishing when convergence cannot be observed. |
 
+### Head motion node lifecycle
+
+`head_motion_skill_server` is a plain `rclpy` node (not `rclpy.lifecycle`). It is
+started by launch, runs until process exit, and tears down in `main()` after
+executor spin. Configure convergence and open-loop fallbacks via parameters
+above rather than lifecycle transitions.
+
 ## Planner Contract Role
 
 `nao_orchestrator` can execute planner steps with `type: "skill"` and

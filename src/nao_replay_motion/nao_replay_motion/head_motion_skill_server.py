@@ -324,43 +324,69 @@ class HeadMotionSkillServer(Node):
                         % (target_yaw, target_pitch)
                     )
                 else:
-                    duration = time.monotonic() - start_time
-                    if goal_handle.is_cancel_requested:
-                        goal_handle.canceled()
-                        return self._result(False, "Cancelled during convergence wait", duration)
                     reason = self._convergence_timeout_reason(
                         target_yaw=target_yaw,
                         target_pitch=target_pitch,
                         initial_state=current_state,
                     )
-                    if self.assume_success_on_convergence_timeout:
-                        return self._complete_open_loop_after_timeout(
-                            goal_handle,
-                            start_time=start_time,
-                            target_yaw=target_yaw,
-                            target_pitch=target_pitch,
-                            reason=reason,
-                        )
-                    self.get_logger().warn("HEAD_MOTION failed | %s" % reason)
-                    goal_handle.abort()
-                    return self._result(False, reason, duration)
-            else:
-                duration = time.monotonic() - start_time
-                if goal_handle.is_cancel_requested:
-                    goal_handle.canceled()
-                    return self._result(False, "Cancelled during convergence wait", duration)
-                if self.assume_success_on_convergence_timeout:
-                    return self._complete_open_loop_after_timeout(
+                    return self._outcome_after_convergence_timeout(
                         goal_handle,
                         start_time=start_time,
+                        reason=reason,
                         target_yaw=target_yaw,
                         target_pitch=target_pitch,
-                        reason=initial_reason,
                     )
-                self.get_logger().warn("HEAD_MOTION failed | %s" % initial_reason)
-                goal_handle.abort()
-                return self._result(False, initial_reason, duration)
+            else:
+                return self._outcome_after_convergence_timeout(
+                    goal_handle,
+                    start_time=start_time,
+                    reason=initial_reason,
+                    target_yaw=target_yaw,
+                    target_pitch=target_pitch,
+                )
 
+        return self._finalize_converged_head_motion(
+            goal_handle,
+            start_time=start_time,
+            relative=relative,
+            target_yaw=target_yaw,
+            target_pitch=target_pitch,
+        )
+
+    def _outcome_after_convergence_timeout(
+        self,
+        goal_handle,
+        *,
+        start_time: float,
+        reason: str,
+        target_yaw: float,
+        target_pitch: float,
+    ):
+        duration = time.monotonic() - start_time
+        if goal_handle.is_cancel_requested:
+            goal_handle.canceled()
+            return self._result(False, "Cancelled during convergence wait", duration)
+        if self.assume_success_on_convergence_timeout:
+            return self._complete_open_loop_after_timeout(
+                goal_handle,
+                start_time=start_time,
+                target_yaw=target_yaw,
+                target_pitch=target_pitch,
+                reason=reason,
+            )
+        self.get_logger().warn("HEAD_MOTION failed | %s" % reason)
+        goal_handle.abort()
+        return self._result(False, reason, duration)
+
+    def _finalize_converged_head_motion(
+        self,
+        goal_handle,
+        *,
+        start_time: float,
+        relative: bool,
+        target_yaw: float,
+        target_pitch: float,
+    ):
         self._publish_feedback(goal_handle, "completing", 1.0)
         duration = time.monotonic() - start_time
         goal_handle.succeed()
