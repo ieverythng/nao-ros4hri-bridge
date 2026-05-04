@@ -5,24 +5,9 @@ from __future__ import annotations
 
 import json
 
-try:  # pragma: no cover - runtime dependency
-    from hri_actions_msgs.msg import Intent
-except ImportError:  # pragma: no cover - import-light unit tests
-    class Intent:  # type: ignore[no-redef]
-        BRING_OBJECT = 'bring_object'
-        GRAB_OBJECT = 'grab_object'
-        GREET = 'greet'
-        GUIDE = 'guide'
-        MOVE_TO = 'move_to'
-        PERFORM_MOTION = 'perform_motion'
-        PLACE_OBJECT = 'place_object'
-        PRESENT_CONTENT = 'present_content'
-        RAW_USER_INPUT = 'raw_user_input'
-        SAY = 'say'
-        START_ACTIVITY = 'start_activity'
-        STOP_ACTIVITY = 'stop_activity'
-        SUSPEND = 'suspend'
-        WAKEUP = 'wakeup'
+from planner_common.contracts import PLAN_FAILURE_POLICIES
+from planner_common.contracts import PLAN_STEP_TYPES
+from planner_common.contracts import IntentLabels as Intent
 
 
 _STANDARD_INTENTS = {
@@ -125,16 +110,15 @@ _POSTURE_TOPIC_FALLBACKS = {
     'crouch': 'kneel',
 }
 
-_PLAN_STEP_TYPES = {'say', 'skill', 'look_at', 'noop'}
+_PLAN_STEP_TYPES_SET = frozenset(PLAN_STEP_TYPES)
+_PLAN_FAILURE_POLICIES_SET = frozenset(PLAN_FAILURE_POLICIES)
 _SUPPORTED_SKILL_PLAN_NAMES = {
     '',
     'perform_motion',
     'motion',
     'look_at',
-    'mock_scan_scene',
-    'scan_scene',
+    'scan',
 }
-_PLAN_FAILURE_POLICIES = {'fail', 'replan', 'ask_user', 'clarify', 'ignore'}
 
 
 # -----------------------------------------------------------------------------
@@ -512,7 +496,7 @@ def _plan_metadata_value(data: dict, plan_data: dict, *keys: str):
 
 def _normalize_plan_step(step: dict, *, index: int) -> dict | None:
     step_type = str(step.get('type', '')).strip().lower()
-    if step_type not in _PLAN_STEP_TYPES:
+    if step_type not in _PLAN_STEP_TYPES_SET:
         return None
 
     return {
@@ -538,7 +522,7 @@ def _normalize_plan_step(step: dict, *, index: int) -> dict | None:
 
 def _coerce_failure_policy(value) -> str:
     clean_value = str(value).strip().lower()
-    if clean_value in _PLAN_FAILURE_POLICIES:
+    if clean_value in _PLAN_FAILURE_POLICIES_SET:
         return clean_value
     return 'fail'
 
@@ -579,7 +563,7 @@ def _plan_step_validation_error(intent_name: str, step: dict) -> str:
         return f'unsupported skill step "{step_name}"'
     if step_name == 'look_at':
         return _plan_look_at_error(step_args)
-    if step_name in ('mock_scan_scene', 'scan_scene'):
+    if step_name == 'scan':
         return ''
 
     route, _resolved_payload = classify_motion_target(

@@ -21,6 +21,7 @@ from interaction_skills.action import LookAt
 from kb_skills.intent_labels import KB_QUERY_INTENTS
 from nao_skills.action import DoHeadMotion, ReplayMotion
 from planner_common import build_execution_feedback_payload
+from planner_common import make_plan_id
 from rclpy.action import ActionClient
 from rclpy.lifecycle import Node, State, TransitionCallbackReturn
 from std_msgs.msg import String
@@ -40,6 +41,9 @@ try:  # pragma: no cover - runtime dependency
     from naoqi_bridge_msgs.msg import JointAnglesWithSpeed
 except ImportError:  # pragma: no cover - runtime dependency
     JointAnglesWithSpeed = None
+
+# Posture bridge JSON may report `crouch` where orchestrator expects `kneel`.
+_POSTURE_BRIDGE_NAME_ALIASES = {'stand': 'stand', 'sit': 'sit', 'kneel': 'crouch'}
 
 
 @dataclass(slots=True)
@@ -104,12 +108,9 @@ class NaoOrchestrator(Node):
         self.declare_parameter('planner_feedback_topic', '/planner/execution_feedback')
         self.declare_parameter('dedupe_window_sec', 0.8)
         self.declare_parameter('default_greeting', 'Hello! Nice to meet you.')
-        self.declare_parameter('enable_demo_mock_skills', False)
-        self.declare_parameter('mock_scan_scene_result_mode', 'success')
-        self.declare_parameter(
-            'mock_scan_scene_summary',
-            'I looked around and can report a simple demo scene summary.',
-        )
+        self.declare_parameter('enable_demo_scan_skill', False)
+        self.declare_parameter('demo_scan_result_mode', 'success')
+        self.declare_parameter('demo_scan_summary', '')
 
         self.intent_topic = str(self.get_parameter('intent_topic').value)
         self.enable_legacy_intent_bridge = bool(
@@ -188,14 +189,14 @@ class NaoOrchestrator(Node):
             float(self.get_parameter('dedupe_window_sec').value),
         )
         self.default_greeting = str(self.get_parameter('default_greeting').value)
-        self.enable_demo_mock_skills = bool(
-            self.get_parameter('enable_demo_mock_skills').value
+        self.enable_demo_scan_skill = bool(
+            self.get_parameter('enable_demo_scan_skill').value
         )
-        self.mock_scan_scene_result_mode = str(
-            self.get_parameter('mock_scan_scene_result_mode').value
+        self.demo_scan_result_mode = str(
+            self.get_parameter('demo_scan_result_mode').value
         ).strip().lower()
-        self.mock_scan_scene_summary = str(
-            self.get_parameter('mock_scan_scene_summary').value
+        self.demo_scan_summary = str(
+            self.get_parameter('demo_scan_summary').value
         ).strip()
 
         self._intent_sub = None
@@ -588,9 +589,36 @@ class NaoOrchestrator(Node):
                     intent_name=intent_name,
                     source=source,
                     plan_context=plan_context,
-                    status='running',
+                    status='succeeded',
                     event_type='step_succeeded',
                     step=step,
+                    result_summary=str(reason or '').strip(),
+                )
+                continue
+
+            failure_policy = str(step.get('on_failure', 'fail')).strip().lower()
+            if failure_policy == 'continue':
+                self._publish_plan_feedback(
+                    intent_name=intent_name,
+                    source=source,
+                    plan_context=plan_context,
+                    status='failed',
+                    event_type='step_failed',
+                    reason=reason,
+                    step=step,
+                    blocking=False,
+                    unmet_preconditions=list(step.get('requires', [])),
+                    needs_user_input=False,
+                )
+                self.get_logger().warn(
+                    'Planned intent step failed; continuing plan | intent=%s source=%s plan_id=%s step=%s reason=%s'
+                    % (intent_name, source, plan_id, step, reason)
+                )
+                continue
+            if failure_policy == 'ignore':
+                self.get_logger().info(
+                    'Planned intent step failed; on_failure=ignore | intent=%s plan_id=%s step=%s reason=%s'
+                    % (intent_name, plan_id, step, reason)
                 )
                 continue
 
@@ -686,8 +714,8 @@ class NaoOrchestrator(Node):
                     step_args,
                     on_started=on_started,
                 )
-            if step_name in ('mock_scan_scene', 'scan_scene'):
-                return self._execute_mock_scan_scene_step(
+            if step_name == 'scan':
+                return self._execute_scan_step(
                     step_args,
                     on_started=on_started,
                 )
@@ -821,34 +849,37 @@ class NaoOrchestrator(Node):
         self.get_logger().warn('Unsupported motion payload: %s' % step_args)
         return False, 'unsupported motion payload'
 
-    def _execute_mock_scan_scene_step(
+    def _execute_scan_step(
         self,
         step_args: dict,
         *,
         on_started=None,
     ) -> tuple[bool, str]:
-        if not self.enable_demo_mock_skills:
+        if not self.enable_demo_scan_skill:
             self._stats.dispatch_failures += 1
-            return False, 'mock demo skills are disabled'
+            return False, 'demo scan backend is disabled'
 
         if on_started is not None:
             on_started()
 
         result_mode = str(
-            step_args.get('result_mode', self.mock_scan_scene_result_mode)
+            step_args.get('result_mode', self.demo_scan_result_mode)
         ).strip().lower()
-        target_kind = str(step_args.get('target_kind', 'scene')).strip() or 'scene'
-        summary = str(step_args.get('summary', self.mock_scan_scene_summary)).strip()
+        target = str(step_args.get('target', '')).strip()
+        target_kind = str(
+            step_args.get('target_kind', target or 'scene')
+        ).strip() or 'scene'
+        summary = str(step_args.get('summary', self.demo_scan_summary)).strip()
 
         self.get_logger().info(
-            'ORCH MOCK_SCAN_SCENE | target_kind=%s result_mode=%s'
-            % (target_kind, result_mode or 'success')
+            'ORCH SCAN | target=%s target_kind=%s result_mode=%s'
+            % (target or target_kind, target_kind, result_mode or 'success')
         )
         if result_mode in ('fail', 'failed', 'failure'):
             self._stats.dispatch_failures += 1
-            return False, 'mock scan scene requested failure for %s' % target_kind
+            return False, 'scan requested failure for %s' % target_kind
 
-        return True, summary or 'mock scan scene completed'
+        return True, summary or 'scan completed'
 
     def _execute_replay_motion_step(
         self,
@@ -1139,13 +1170,6 @@ class NaoOrchestrator(Node):
             if success:
                 return True, message
             return False, message or 'action reported failure'
-        standard_result = getattr(action_result, 'result', None)
-        if standard_result is not None:
-            error_code = int(getattr(standard_result, 'error_code', 0))
-            error_msg = str(getattr(standard_result, 'error_msg', '')).strip()
-            if error_code == 0:
-                return True, error_msg
-            return False, error_msg or 'action failed with error code %d' % error_code
         return True, ''
 
     @staticmethod
@@ -1168,13 +1192,10 @@ class NaoOrchestrator(Node):
             payload.get('command', ''),
             payload.get('posture_name', ''),
         )
+        alias = _POSTURE_BRIDGE_NAME_ALIASES.get(expected, expected)
         return any(
             str(candidate or '').strip().lower() == expected
-            or str(candidate or '').strip().lower() == {
-                'stand': 'stand',
-                'sit': 'sit',
-                'kneel': 'crouch',
-            }.get(expected, expected)
+            or str(candidate or '').strip().lower() == alias
             for candidate in candidates
             if str(candidate or '').strip()
         )
@@ -1183,7 +1204,7 @@ class NaoOrchestrator(Node):
         plan_id = str(plan_context.get('plan_id', '')).strip()
         if plan_id:
             return plan_id
-        return 'plan_%d' % int(time.time() * 1000)
+        return make_plan_id()
 
     def _publish_plan_feedback(
         self,
@@ -1199,6 +1220,7 @@ class NaoOrchestrator(Node):
         unmet_preconditions: list[str] | None = None,
         needs_user_input: bool = False,
         validation_errors: list[str] | None = None,
+        result_summary: str = '',
     ) -> None:
         if self._planner_feedback_pub is None:
             return
@@ -1217,6 +1239,7 @@ class NaoOrchestrator(Node):
             needs_user_input=needs_user_input,
             validation_errors=list(validation_errors or []),
             timestamp_sec=round(time.time(), 3),
+            result_summary=str(result_summary or '').strip(),
         )
         msg = String()
         msg.data = json.dumps(payload, sort_keys=True, separators=(',', ':'))
@@ -1292,12 +1315,7 @@ class NaoOrchestrator(Node):
             % self.posture_command_result_topic,
         )
 
-    def _dispatch_motion_payload(
-        self,
-        payload: dict,
-        *,
-        count_unsupported_failure: bool = False,
-    ) -> tuple[bool, str]:
+    def _dispatch_motion_payload(self, payload: dict) -> tuple[bool, str]:
         route, resolved_payload = classify_motion_target(Intent.PERFORM_MOTION, payload)
         if route == 'replay_motion':
             motion_name = resolved_payload['motion_name']
@@ -1312,9 +1330,6 @@ class NaoOrchestrator(Node):
             success, reason = self._execute_look_at_reset_step()
             return success, 'look_at_reset' if success else reason
 
-        if count_unsupported_failure:
-            self._stats.dispatch_failures += 1
-            self.get_logger().warn('Unsupported motion payload: %s' % payload)
         return False, 'unsupported'
 
     def _start_direct_motion_dispatch(self, payload: dict) -> None:
@@ -1368,68 +1383,6 @@ class NaoOrchestrator(Node):
         self._say_client.send_goal_async(goal)
         self.get_logger().info('ORCH SAY_DISPATCH | %s' % clean_text)
         return True
-
-    def _dispatch_replay_motion(self, motion_name: str) -> bool:
-        """Dispatch replay-motion and wait for its action result."""
-        clean_motion = str(motion_name).strip()
-        if not clean_motion:
-            self._stats.dispatch_failures += 1
-            return False
-        success, reason = self._execute_replay_motion_step(clean_motion)
-        if not success:
-            self.get_logger().warn(
-                'Replay motion dispatch failed for %s: %s'
-                % (clean_motion, reason)
-            )
-        return success
-
-    def _dispatch_head_motion(self, payload: dict) -> bool:
-        """Dispatch head motion and wait for its action result."""
-        yaw = float(payload.get('yaw', 0.0))
-        pitch = float(payload.get('pitch', 0.0))
-        relative = bool(payload.get('relative', False))
-        success, reason = self._execute_head_motion_step(
-            {'yaw': yaw, 'pitch': pitch, 'relative': relative}
-        )
-        if not success:
-            self.get_logger().warn(
-                'Head motion dispatch failed | yaw=%.3f pitch=%.3f relative=%s reason=%s'
-                % (yaw, pitch, relative, reason)
-            )
-        return success
-
-    def _dispatch_look_at_reset(self) -> bool:
-        """Prefer the upstream look-at action and wait for the resulting action."""
-        success, reason = self._execute_look_at_reset_step()
-        if not success:
-            self.get_logger().warn('look_at reset dispatch failed: %s' % reason)
-        return success
-
-    def _dispatch_look_at_target(
-        self,
-        *,
-        frame_id: str,
-        x_value,
-        y_value,
-        z_value,
-        policy: str = '',
-    ) -> bool:
-        """Dispatch a target-frame gaze request and wait for the action result."""
-        clean_frame = str(frame_id).strip()
-        if not clean_frame:
-            self._stats.dispatch_failures += 1
-            self.get_logger().warn('No target frame resolved for look_at dispatch')
-            return False
-        success, reason = self._execute_look_at_target_step(
-            frame_id=clean_frame,
-            x_value=x_value,
-            y_value=y_value,
-            z_value=z_value,
-            policy=policy,
-        )
-        if not success:
-            self.get_logger().warn('look_at target dispatch failed: %s' % reason)
-        return success
 
     def _is_duplicate(self, signature: str) -> bool:
         """Drop repeated intents that arrive inside the configured dedupe window."""
