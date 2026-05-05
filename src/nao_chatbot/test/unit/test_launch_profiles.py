@@ -78,6 +78,7 @@ def test_sim_profile_keeps_interaction_sim_enabled_without_planner():
     assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
     assert defaults["chatbot_server_url"] == "http://127.0.0.1:11434/api/chat"
     assert defaults["planner_llm_base_url"] == "http://127.0.0.1:11435"
+    assert defaults["start_managed_ollama"] == "false"
     assert defaults["start_demo_log_window"] == "true"
 
 
@@ -94,6 +95,7 @@ def test_robot_profile_enables_planner_mode_by_default():
     assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
     assert defaults["chatbot_server_url"] == "http://127.0.0.1:11434/api/chat"
     assert defaults["planner_llm_base_url"] == "http://127.0.0.1:11435"
+    assert defaults["start_managed_ollama"] == "false"
     assert defaults["start_demo_log_window"] == "true"
 
 
@@ -111,6 +113,7 @@ def test_robot_demo_profile_enables_demo_scan_defaults():
     assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
     assert defaults["chatbot_server_url"] == "http://127.0.0.1:11434/api/chat"
     assert defaults["planner_llm_base_url"] == "http://127.0.0.1:11435"
+    assert defaults["start_managed_ollama"] == "false"
     assert defaults["start_demo_log_window"] == "true"
 
 
@@ -126,6 +129,7 @@ def test_sim_demo_profile_matches_demo_scan_defaults():
     assert defaults["chatbot_planner_mode_enabled"] == "true"
     assert defaults["enable_demo_scan_skill"] == "true"
     assert defaults["enable_orchestrator_planner_gate"] == "true"
+    assert defaults["start_managed_ollama"] == "false"
     assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
 
 

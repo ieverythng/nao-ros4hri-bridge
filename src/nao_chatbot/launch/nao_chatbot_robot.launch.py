@@ -7,6 +7,7 @@ _ROBOT_PROFILE_DEFAULTS = {
     "planner_llm_model": "gemma4:31b-cloud",
     "chatbot_server_url": "http://127.0.0.1:11434/api/chat",
     "planner_llm_base_url": "http://127.0.0.1:11435",
+    "start_managed_ollama": "false",
     "start_demo_log_window": "true",
     "start_naoqi_driver": "false",
     "start_nao_robot": "true",

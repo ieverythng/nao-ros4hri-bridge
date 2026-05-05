@@ -21,6 +21,7 @@ RUN bash -lc 'set -euo pipefail; \
       ros-jazzy-gscam \
       ros-jazzy-image-transport-plugins \
       ros-jazzy-rosbridge-server \
+      curl \
       gstreamer1.0-alsa \
       gstreamer1.0-plugins-base \
       gstreamer1.0-plugins-good \
@@ -65,6 +66,7 @@ RUN bash -lc 'set -euo pipefail; \
       socialminds-ros-jazzy-ros-qml-plugin \
       socialminds-ros-jazzy-ui-msgs \
       socialminds-ros-jazzy-ui-server \
+      zstd \
     ); \
     missing=(); \
     for pkg in "${packages[@]}"; do \
@@ -92,6 +94,13 @@ RUN bash -lc 'set -euo pipefail; \
     # launch_tui requires a newer Textual API than Ubuntu 24.04 ships.
     python3 -m pip install --no-cache-dir --break-system-packages --ignore-installed \
       "textual>=0.50,<1"'
+
+# Demo profiles can launch split chatbot/planner Ollama servers from ROS launch.
+# Keep this before copying sources so normal overlay rebuilds reuse the binary.
+RUN bash -lc 'set -euo pipefail; \
+    if ! command -v ollama >/dev/null 2>&1; then \
+      curl -fsSL https://ollama.com/install.sh | sh; \
+    fi'
 
 # Remove base-image source tree first so deleted files are not kept as stale leftovers.
 RUN rm -rf /home/ubuntu/ws/src && mkdir -p /home/ubuntu/ws/src

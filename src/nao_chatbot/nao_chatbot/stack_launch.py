@@ -18,6 +18,7 @@ from launch.actions import IncludeLaunchDescription
 from launch.actions import LogInfo
 from launch.actions import OpaqueFunction
 from launch.actions import RegisterEventHandler
+from launch.actions import TimerAction
 from launch.conditions import IfCondition
 from launch.events import matches_action
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -84,6 +85,37 @@ def _make_lifecycle_bundle(
         condition=condition,
     )
     return [node, bootstrap]
+
+
+def _managed_ollama_script() -> str:
+    """Start ollama unless the configured host already responds."""
+    return r"""set +e
+python3 - <<'PY'
+import os
+import sys
+import urllib.request
+
+host = os.environ.get("OLLAMA_HOST", "").strip()
+url = "http://%s/api/tags" % host
+try:
+    with urllib.request.urlopen(url, timeout=2.0) as response:
+        print("[OLLAMA] existing server ready | host=%s status=%s" % (host, response.status), flush=True)
+        sys.exit(0)
+except Exception as exc:
+    print("[OLLAMA] starting managed server | host=%s reason=%s" % (host, exc), flush=True)
+    sys.exit(1)
+PY
+probe_status="$?"
+set -e
+if [ "${probe_status}" -eq 0 ]; then
+  exec sleep infinity
+fi
+if ! command -v ollama >/dev/null 2>&1; then
+  echo "[OLLAMA] ollama executable is missing; rebuild the container image with the updated Dockerfile" >&2
+  exit 127
+fi
+exec ollama serve
+"""
 
 
 def _not_launching_chatbot_llm_condition():
@@ -839,6 +871,29 @@ def generate_profile_launch_description(
         default_value=_profile_default(profile_defaults, "start_demo_log_window", "false"),
         description="Print a filtered /rosout stream for demo-relevant chatbot/planner/executor nodes.",
     )
+    start_managed_ollama_arg = DeclareLaunchArgument(
+        "start_managed_ollama",
+        default_value=_profile_default(profile_defaults, "start_managed_ollama", "false"),
+        description=(
+            "Start launch-managed Ollama servers for split chatbot/planner endpoints. "
+            "Existing servers on the same hosts are reused."
+        ),
+    )
+    managed_chatbot_ollama_host_arg = DeclareLaunchArgument(
+        "managed_chatbot_ollama_host",
+        default_value=_profile_default(profile_defaults, "managed_chatbot_ollama_host", "127.0.0.1:11434"),
+        description="OLLAMA_HOST used by the launch-managed chatbot Ollama server.",
+    )
+    managed_planner_ollama_host_arg = DeclareLaunchArgument(
+        "managed_planner_ollama_host",
+        default_value=_profile_default(profile_defaults, "managed_planner_ollama_host", "127.0.0.1:11435"),
+        description="OLLAMA_HOST used by the launch-managed planner Ollama server.",
+    )
+    managed_ollama_startup_delay_sec_arg = DeclareLaunchArgument(
+        "managed_ollama_startup_delay_sec",
+        default_value=_profile_default(profile_defaults, "managed_ollama_startup_delay_sec", "3.0"),
+        description="Delay planner_llm startup briefly after launching managed Ollama servers.",
+    )
     demo_log_nodes_arg = DeclareLaunchArgument(
         "demo_log_nodes",
         default_value=_profile_default(
@@ -1021,6 +1076,11 @@ def generate_profile_launch_description(
         "planner_llm_base_url",
         default_value=_profile_default(profile_defaults, "planner_llm_base_url", "http://127.0.0.1:11434"),
         description="Planner backend base URL. For Ollama this is the server root, not /api/chat.",
+    )
+    planner_llm_api_key_env_arg = DeclareLaunchArgument(
+        "planner_llm_api_key_env",
+        default_value=_profile_default(profile_defaults, "planner_llm_api_key_env", "OPENAI_API_KEY"),
+        description="Environment variable read by planner_llm for OpenAI/vLLM-compatible API keys.",
     )
     planner_llm_temperature_arg = DeclareLaunchArgument(
         "planner_llm_temperature",
@@ -1580,6 +1640,12 @@ def generate_profile_launch_description(
                 )
             },
             {
+                "api_key_env": ParameterValue(
+                    LaunchConfiguration("planner_llm_api_key_env"),
+                    value_type=str,
+                )
+            },
+            {
                 "temperature": ParameterValue(
                     LaunchConfiguration("planner_llm_temperature"),
                     value_type=float,
@@ -1783,6 +1849,20 @@ def generate_profile_launch_description(
         emulate_tty=True,
         condition=IfCondition(LaunchConfiguration("start_demo_log_window")),
     )
+    managed_chatbot_ollama = ExecuteProcess(
+        cmd=["bash", "-lc", _managed_ollama_script()],
+        additional_env={"OLLAMA_HOST": LaunchConfiguration("managed_chatbot_ollama_host")},
+        output="screen",
+        emulate_tty=True,
+        condition=IfCondition(LaunchConfiguration("start_managed_ollama")),
+    )
+    managed_planner_ollama = ExecuteProcess(
+        cmd=["bash", "-lc", _managed_ollama_script()],
+        additional_env={"OLLAMA_HOST": LaunchConfiguration("managed_planner_ollama_host")},
+        output="screen",
+        emulate_tty=True,
+        condition=IfCondition(LaunchConfiguration("start_managed_ollama")),
+    )
     asr_launch = None
     if include_asr:
         asr_launch = IncludeLaunchDescription(
@@ -1893,6 +1973,10 @@ def generate_profile_launch_description(
             start_rqt_chat_arg,
             start_robot_speech_debug_arg,
             start_demo_log_window_arg,
+            start_managed_ollama_arg,
+            managed_chatbot_ollama_host_arg,
+            managed_planner_ollama_host_arg,
+            managed_ollama_startup_delay_sec_arg,
             demo_log_nodes_arg,
             demo_log_min_level_arg,
             interaction_sim_gscam_config_arg,
@@ -1938,6 +2022,7 @@ def generate_profile_launch_description(
             planner_llm_provider_arg,
             planner_llm_model_arg,
             planner_llm_base_url_arg,
+            planner_llm_api_key_env_arg,
             planner_llm_temperature_arg,
             planner_llm_max_tokens_arg,
             planner_llm_timeout_sec_arg,
@@ -2026,6 +2111,8 @@ def generate_profile_launch_description(
             rqt_chat,
             robot_speech_debug,
             demo_log_window,
+            managed_chatbot_ollama,
+            managed_planner_ollama,
             OpaqueFunction(
                 function=_optional_launch_description,
                 kwargs={
@@ -2091,7 +2178,10 @@ def generate_profile_launch_description(
             nao_replay_motion_launch,
             *nao_look_at_bundle,
             nao_scene_grounding_node,
-            planner_llm_node,
+            TimerAction(
+                period=LaunchConfiguration("managed_ollama_startup_delay_sec"),
+                actions=[planner_llm_node],
+            ),
             *( [asr_launch] if asr_launch is not None else [] ),
         ]
     )

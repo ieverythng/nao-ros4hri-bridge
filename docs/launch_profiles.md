@@ -95,13 +95,46 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
 - `planner_llm_default_retry_budget`: default plan retry budget.
 - `planner_llm_auto_replan`: enables supervisor auto-replan policy.
 
-For demo runs that use two Ollama servers, keep the chatbot and planner on
-separate endpoints:
+For the local split-endpoint experiment, start two host-side Ollama servers
+before launching ROS. This must run on the host, not from inside the container,
+so both servers share your normal Ollama cloud identity and model access:
+
+```bash
+./scripts/start_demo_ollama_endpoints.sh
+```
+
+The script starts or reuses:
+
+- chatbot endpoint: `http://127.0.0.1:11434/api/chat`
+- planner endpoint: `http://127.0.0.1:11435`
+
+It also probes the configured model on both endpoints before returning. The
+default demo model is `gemma4:31b-cloud`; override with `OLLAMA_MODEL=...` if
+needed. On machines where the authenticated cloud models belong to the system
+`ollama` service user, the script starts the planner endpoint with
+`sudo -u ollama` so it can read the same model manifests and cloud identity as
+the existing `11434` service.
+
+Then launch with the profile defaults:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot_demo.launch.py
+```
+
+Equivalent manual startup:
 
 ```bash
 OLLAMA_HOST=127.0.0.1:11434 ollama serve
-OLLAMA_HOST=127.0.0.1:11435 ollama serve
+sudo -u ollama env HOME=/usr/share/ollama \
+  OLLAMA_HOST=127.0.0.1:11435 \
+  OLLAMA_MODELS=/usr/share/ollama/.ollama/models \
+  ollama serve
 ```
+
+Launch can also start container-managed Ollama servers with
+`start_managed_ollama:=true`, but keep that disabled for cloud models unless you
+have explicitly copied/provisioned the same Ollama identity inside the container.
+A fresh container-managed server can fail cloud requests with `401 Unauthorized`.
 
 Then launch with explicit endpoints when you do not want profile defaults:
 
@@ -109,6 +142,18 @@ Then launch with explicit endpoints when you do not want profile defaults:
 ros2 launch nao_chatbot nao_chatbot_robot_demo.launch.py \
   chatbot_server_url:=http://127.0.0.1:11434/api/chat \
   planner_llm_base_url:=http://127.0.0.1:11435
+```
+
+For a vLLM or other OpenAI-compatible planner backend, use:
+
+```bash
+./scripts/probe_vllm_chat.py --base-url http://<vllm-host>:8004
+
+ros2 launch nao_chatbot nao_chatbot_robot_demo.launch.py \
+  planner_llm_provider:=openai_compatible \
+  planner_llm_base_url:=http://<vllm-host>:<port> \
+  planner_llm_model:=<served-model-name> \
+  planner_llm_api_key_env:=VLLM_API_KEY
 ```
 
 ## Demo Log Window

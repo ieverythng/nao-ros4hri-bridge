@@ -6,6 +6,7 @@ _SIM_DEMO_PROFILE_DEFAULTS = {
     "planner_llm_model": "gemma4:31b-cloud",
     "chatbot_server_url": "http://127.0.0.1:11434/api/chat",
     "planner_llm_base_url": "http://127.0.0.1:11435",
+    "start_managed_ollama": "false",
     "start_demo_log_window": "true",
     "nao_ip": "172.26.112.25",
     "network_interface": "wlp1s0",
