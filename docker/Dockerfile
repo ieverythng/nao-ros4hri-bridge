@@ -12,16 +12,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /home/ubuntu/ws
 
-# Remove base-image source tree first so deleted files are not kept as stale leftovers.
-RUN rm -rf /home/ubuntu/ws/src && mkdir -p /home/ubuntu/ws/src
-
-# Overlay repository sources into the runtime workspace. External packages kept
-# out of the monorepo history, such as interaction_skills and the emorobcare
-# detector stack, are copied too when they are present under src/.
-COPY src/ /home/ubuntu/ws/src/
-
 # Most overlay rebuilds reuse a prepared base image, so only install runtime
-# dependencies when they are genuinely missing.
+# dependencies when they are genuinely missing. Keep this before copying sources
+# so ordinary code edits do not force apt/pip network checks on every rebuild.
 RUN bash -lc 'set -euo pipefail; \
     packages=( \
       ros-jazzy-cv-bridge \
@@ -99,6 +92,14 @@ RUN bash -lc 'set -euo pipefail; \
     # launch_tui requires a newer Textual API than Ubuntu 24.04 ships.
     python3 -m pip install --no-cache-dir --break-system-packages --ignore-installed \
       "textual>=0.50,<1"'
+
+# Remove base-image source tree first so deleted files are not kept as stale leftovers.
+RUN rm -rf /home/ubuntu/ws/src && mkdir -p /home/ubuntu/ws/src
+
+# Overlay repository sources into the runtime workspace. External packages kept
+# out of the monorepo history, such as interaction_skills and the emorobcare
+# detector stack, are copied too when they are present under src/.
+COPY src/ /home/ubuntu/ws/src/
 
 # Rebuild the migrated local workspace packages on top of the validated base.
 RUN bash -lc 'source /opt/ros/jazzy/setup.bash && \

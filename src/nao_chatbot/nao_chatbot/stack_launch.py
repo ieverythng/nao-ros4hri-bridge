@@ -834,6 +834,25 @@ def generate_profile_launch_description(
         default_value=_profile_default(profile_defaults, "start_robot_speech_debug", "true"),
         description="Launch a logger that mirrors robot speech into ROS logs.",
     )
+    start_demo_log_window_arg = DeclareLaunchArgument(
+        "start_demo_log_window",
+        default_value=_profile_default(profile_defaults, "start_demo_log_window", "false"),
+        description="Print a filtered /rosout stream for demo-relevant chatbot/planner/executor nodes.",
+    )
+    demo_log_nodes_arg = DeclareLaunchArgument(
+        "demo_log_nodes",
+        default_value=_profile_default(
+            profile_defaults,
+            "demo_log_nodes",
+            "chatbot_llm,planner_llm,nao_orchestrator,dialogue_manager,nao_say_skill,head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug",
+        ),
+        description="Comma-separated node allowlist for the filtered demo log window.",
+    )
+    demo_log_min_level_arg = DeclareLaunchArgument(
+        "demo_log_min_level",
+        default_value=_profile_default(profile_defaults, "demo_log_min_level", "info"),
+        description="Minimum severity for the filtered demo log window: debug, info, warn, error, or fatal.",
+    )
     posture_command_topic_arg = DeclareLaunchArgument(
         "posture_command_topic",
         default_value="/chatbot/posture_command",
@@ -933,8 +952,22 @@ def generate_profile_launch_description(
     )
     chatbot_server_url_arg = DeclareLaunchArgument(
         "chatbot_server_url",
-        default_value="http://localhost:11434/api/chat",
+        default_value=_profile_default(
+            profile_defaults,
+            "chatbot_server_url",
+            "http://localhost:11434/api/chat",
+        ),
         description="Backend HTTP endpoint used by chatbot_llm.",
+    )
+    chatbot_request_timeout_sec_arg = DeclareLaunchArgument(
+        "chatbot_request_timeout_sec",
+        default_value=_profile_default(profile_defaults, "chatbot_request_timeout_sec", "20.0"),
+        description="Normal chatbot_llm response timeout in seconds.",
+    )
+    chatbot_first_request_timeout_sec_arg = DeclareLaunchArgument(
+        "chatbot_first_request_timeout_sec",
+        default_value=_profile_default(profile_defaults, "chatbot_first_request_timeout_sec", "60.0"),
+        description="Timeout for the first chatbot_llm response request in a dialogue.",
     )
     chatbot_preflight_required_arg = DeclareLaunchArgument(
         "chatbot_preflight_required",
@@ -945,6 +978,16 @@ def generate_profile_launch_description(
         "chatbot_preflight_timeout_sec",
         default_value=_profile_default(profile_defaults, "chatbot_preflight_timeout_sec", "45.0"),
         description="Timeout for chatbot_llm warmup/preflight requests.",
+    )
+    chatbot_preflight_attempts_arg = DeclareLaunchArgument(
+        "chatbot_preflight_attempts",
+        default_value=_profile_default(profile_defaults, "chatbot_preflight_attempts", "1"),
+        description="Number of chatbot_llm readiness attempts before startup proceeds or fails.",
+    )
+    chatbot_preflight_realistic_enabled_arg = DeclareLaunchArgument(
+        "chatbot_preflight_realistic_enabled",
+        default_value=_profile_default(profile_defaults, "chatbot_preflight_realistic_enabled", "false"),
+        description="Run an extra demo-shaped chatbot_llm readiness prompt during preflight.",
     )
     chatbot_preflight_keepalive_interval_sec_arg = DeclareLaunchArgument(
         "chatbot_preflight_keepalive_interval_sec",
@@ -991,7 +1034,7 @@ def generate_profile_launch_description(
     )
     planner_llm_timeout_sec_arg = DeclareLaunchArgument(
         "planner_llm_timeout_sec",
-        default_value="20.0",
+        default_value=_profile_default(profile_defaults, "planner_llm_timeout_sec", "20.0"),
         description="Planner backend timeout in seconds.",
     )
     planner_llm_think_arg = DeclareLaunchArgument(
@@ -1008,6 +1051,16 @@ def generate_profile_launch_description(
         "planner_llm_preflight_timeout_sec",
         default_value=_profile_default(profile_defaults, "planner_llm_preflight_timeout_sec", "45.0"),
         description="Timeout for planner_llm model warmup/preflight requests.",
+    )
+    planner_llm_preflight_attempts_arg = DeclareLaunchArgument(
+        "planner_llm_preflight_attempts",
+        default_value=_profile_default(profile_defaults, "planner_llm_preflight_attempts", "1"),
+        description="Number of planner_llm readiness attempts before startup proceeds or fails.",
+    )
+    planner_llm_preflight_realistic_enabled_arg = DeclareLaunchArgument(
+        "planner_llm_preflight_realistic_enabled",
+        default_value=_profile_default(profile_defaults, "planner_llm_preflight_realistic_enabled", "false"),
+        description="Run an extra demo-shaped planner_llm readiness prompt during preflight.",
     )
     planner_llm_default_retry_budget_arg = DeclareLaunchArgument(
         "planner_llm_default_retry_budget",
@@ -1075,6 +1128,18 @@ def generate_profile_launch_description(
                 )
             },
             {
+                "request_timeout_sec": ParameterValue(
+                    LaunchConfiguration("chatbot_request_timeout_sec"),
+                    value_type=float,
+                )
+            },
+            {
+                "first_request_timeout_sec": ParameterValue(
+                    LaunchConfiguration("chatbot_first_request_timeout_sec"),
+                    value_type=float,
+                )
+            },
+            {
                 "response_max_tokens": ParameterValue(
                     LaunchConfiguration("chatbot_response_max_tokens"),
                     value_type=int,
@@ -1102,6 +1167,18 @@ def generate_profile_launch_description(
                 "preflight_timeout_sec": ParameterValue(
                     LaunchConfiguration("chatbot_preflight_timeout_sec"),
                     value_type=float,
+                )
+            },
+            {
+                "preflight_attempts": ParameterValue(
+                    LaunchConfiguration("chatbot_preflight_attempts"),
+                    value_type=int,
+                )
+            },
+            {
+                "preflight_realistic_enabled": ParameterValue(
+                    LaunchConfiguration("chatbot_preflight_realistic_enabled"),
+                    value_type=bool,
                 )
             },
             {
@@ -1539,6 +1616,18 @@ def generate_profile_launch_description(
                 )
             },
             {
+                "preflight_attempts": ParameterValue(
+                    LaunchConfiguration("planner_llm_preflight_attempts"),
+                    value_type=int,
+                )
+            },
+            {
+                "preflight_realistic_enabled": ParameterValue(
+                    LaunchConfiguration("planner_llm_preflight_realistic_enabled"),
+                    value_type=bool,
+                )
+            },
+            {
                 "default_retry_budget": ParameterValue(
                     LaunchConfiguration("planner_llm_default_retry_budget"),
                     value_type=int,
@@ -1679,6 +1768,21 @@ def generate_profile_launch_description(
         emulate_tty=True,
         condition=IfCondition(LaunchConfiguration("start_robot_speech_debug")),
     )
+    demo_log_window = ExecuteProcess(
+        cmd=[
+            "ros2",
+            "run",
+            "nao_chatbot",
+            "demo_rosout_filter",
+            "--nodes",
+            LaunchConfiguration("demo_log_nodes"),
+            "--min-level",
+            LaunchConfiguration("demo_log_min_level"),
+        ],
+        output="screen",
+        emulate_tty=True,
+        condition=IfCondition(LaunchConfiguration("start_demo_log_window")),
+    )
     asr_launch = None
     if include_asr:
         asr_launch = IncludeLaunchDescription(
@@ -1788,6 +1892,9 @@ def generate_profile_launch_description(
             start_rqt_console_arg,
             start_rqt_chat_arg,
             start_robot_speech_debug_arg,
+            start_demo_log_window_arg,
+            demo_log_nodes_arg,
+            demo_log_min_level_arg,
             interaction_sim_gscam_config_arg,
             nao_ip_arg,
             nao_port_arg,
@@ -1810,8 +1917,12 @@ def generate_profile_launch_description(
             chatbot_intent_model_arg,
             ollama_intent_model_arg,
             chatbot_server_url_arg,
+            chatbot_request_timeout_sec_arg,
+            chatbot_first_request_timeout_sec_arg,
             chatbot_preflight_required_arg,
             chatbot_preflight_timeout_sec_arg,
+            chatbot_preflight_attempts_arg,
+            chatbot_preflight_realistic_enabled_arg,
             chatbot_preflight_keepalive_interval_sec_arg,
             chatbot_planner_mode_enabled_arg,
             planner_request_topic_arg,
@@ -1833,6 +1944,8 @@ def generate_profile_launch_description(
             planner_llm_think_arg,
             planner_llm_preflight_required_arg,
             planner_llm_preflight_timeout_sec_arg,
+            planner_llm_preflight_attempts_arg,
+            planner_llm_preflight_realistic_enabled_arg,
             planner_llm_default_retry_budget_arg,
             planner_llm_auto_replan_arg,
             *asr_launch_args,
@@ -1858,6 +1971,10 @@ def generate_profile_launch_description(
                     LaunchConfiguration("planner_llm_model"),
                     " planner_mode=",
                     LaunchConfiguration("chatbot_planner_mode_enabled"),
+                    " chatbot_url=",
+                    LaunchConfiguration("chatbot_server_url"),
+                    " planner_url=",
+                    LaunchConfiguration("planner_llm_base_url"),
                     " planner_gate=",
                     LaunchConfiguration("enable_orchestrator_planner_gate"),
                     " scan_demo=",
@@ -1908,6 +2025,7 @@ def generate_profile_launch_description(
             interaction_sim_rqt_chat_note,
             rqt_chat,
             robot_speech_debug,
+            demo_log_window,
             OpaqueFunction(
                 function=_optional_launch_description,
                 kwargs={

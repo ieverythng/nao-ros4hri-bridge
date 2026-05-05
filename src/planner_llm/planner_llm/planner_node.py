@@ -57,6 +57,8 @@ class PlannerNode(Node):
         self.declare_parameter('preflight_required', False)
         self.declare_parameter('preflight_timeout_sec', 45.0)
         self.declare_parameter('preflight_max_tokens', 64)
+        self.declare_parameter('preflight_attempts', 1)
+        self.declare_parameter('preflight_realistic_enabled', False)
         self.declare_parameter('default_retry_budget', 1)
         self.declare_parameter('auto_replan', True)
 
@@ -165,12 +167,22 @@ class PlannerNode(Node):
         required = bool(self.get_parameter('preflight_required').value)
         timeout_sec = max(0.5, float(self.get_parameter('preflight_timeout_sec').value))
         max_tokens = max(1, int(self.get_parameter('preflight_max_tokens').value))
+        attempts = max(1, int(self.get_parameter('preflight_attempts').value))
+        realistic_enabled = bool(self.get_parameter('preflight_realistic_enabled').value)
         if not enabled:
             return True
 
         self.get_logger().info(
-            '[LLM PREFLIGHT] planner starting | provider=%s model=%s timeout=%.1fs required=%s'
-            % (provider_config.provider, provider_config.model, timeout_sec, required)
+            '[LLM PREFLIGHT] planner starting | provider=%s model=%s timeout=%.1fs '
+            'required=%s attempts=%d realistic=%s'
+            % (
+                provider_config.provider,
+                provider_config.model,
+                timeout_sec,
+                required,
+                attempts,
+                realistic_enabled,
+            )
         )
         preflight_config = replace(
             provider_config,
@@ -178,28 +190,98 @@ class PlannerNode(Node):
             max_tokens=max_tokens,
             temperature=0.0,
         )
+        provider = build_provider(preflight_config)
+        for attempt in range(1, attempts + 1):
+            if self._run_planner_readiness_attempt(
+                provider,
+                attempt=attempt,
+                attempts=attempts,
+                realistic_enabled=realistic_enabled,
+            ):
+                self.get_logger().info(
+                    '[LLM PREFLIGHT] planner model ready | provider=%s model=%s attempt=%d/%d'
+                    % (provider_config.provider, provider_config.model, attempt, attempts)
+                )
+                return True
+        return not required
+
+    def _run_planner_readiness_attempt(
+        self,
+        provider,
+        *,
+        attempt: int,
+        attempts: int,
+        realistic_enabled: bool,
+    ) -> bool:
         try:
-            text = build_provider(preflight_config).generate(
+            text = provider.generate(
                 [
                     {'role': 'system', 'content': 'Reply only with JSON. No prose.'},
                     {'role': 'user', 'content': 'Return {"ready":true}.'},
                 ]
             )
         except Exception as err:
-            self.get_logger().error('[LLM PREFLIGHT] planner failed | error=%s' % err)
-            return not required
+            self.get_logger().warn(
+                '[LLM PREFLIGHT] planner tiny probe failed | attempt=%d/%d error=%s'
+                % (attempt, attempts, err)
+            )
+            return False
 
         if _preflight_ready(text):
-            self.get_logger().info(
-                '[LLM PREFLIGHT] planner model ready | provider=%s model=%s'
-                % (provider_config.provider, provider_config.model)
+            return self._run_planner_realistic_probe(
+                provider,
+                attempt=attempt,
+                attempts=attempts,
+                enabled=realistic_enabled,
             )
-            return True
         self.get_logger().error(
             '[LLM PREFLIGHT] planner returned invalid readiness payload | payload=%s'
             % _preview_text(text)
         )
-        return not required
+        return False
+
+    def _run_planner_realistic_probe(
+        self,
+        provider,
+        *,
+        attempt: int,
+        attempts: int,
+        enabled: bool,
+    ) -> bool:
+        if not enabled:
+            return True
+        try:
+            text = provider.generate(
+                [
+                    {
+                        'role': 'system',
+                        'content': (
+                            'You are planner_llm for a ROS4HRI robot. Reply with one '
+                            'compact JSON plan object only.'
+                        ),
+                    },
+                    {
+                        'role': 'user',
+                        'content': (
+                            'Plan a demo request: move the head right, then report completion. '
+                            'Use fields goal_id, plan_id, mode, steps.'
+                        ),
+                    },
+                ]
+            )
+        except Exception as err:
+            self.get_logger().warn(
+                '[LLM PREFLIGHT] planner realistic probe failed | attempt=%d/%d error=%s'
+                % (attempt, attempts, err)
+            )
+            return False
+        if str(text or '').strip():
+            return True
+        self.get_logger().warn(
+            '[LLM PREFLIGHT] planner realistic probe returned empty text | attempt=%d/%d'
+            % (attempt, attempts)
+        )
+        return False
 
     def _on_planner_request(self, msg: Intent) -> None:
         if msg.intent and str(msg.intent).strip() != self._planner_request_intent:

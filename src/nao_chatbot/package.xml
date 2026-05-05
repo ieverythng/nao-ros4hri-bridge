@@ -8,6 +8,7 @@
   <license>BSD-3-Clause</license>
 
   <depend>rclpy</depend>
+  <depend>rcl_interfaces</depend>
   <depend>std_msgs</depend>
   <depend>hri_actions_msgs</depend>
   <exec_depend>asr_vosk</exec_depend>

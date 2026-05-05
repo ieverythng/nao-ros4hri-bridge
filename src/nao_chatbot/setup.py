@@ -36,6 +36,7 @@ setup(
     entry_points={
         'console_scripts': [
             'asr_push_to_talk_cli = nao_chatbot.asr_push_to_talk_cli:main',
+            'demo_rosout_filter = nao_chatbot.demo_rosout_filter:main',
             'robot_speech_debug = nao_chatbot.robot_speech_debug:main',
         ],
     },

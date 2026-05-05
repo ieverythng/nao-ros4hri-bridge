@@ -87,9 +87,55 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
 - `planner_skill_registry_path`: optional planner skill registry overlay.
 - `planner_llm_provider`: `ollama` by default.
 - `planner_llm_model`: planner model name.
-- `planner_llm_base_url`: provider base URL.
+- `chatbot_server_url`: full chatbot backend chat endpoint, for example
+  `http://127.0.0.1:11434/api/chat`.
+- `planner_llm_base_url`: planner provider base URL, for example
+  `http://127.0.0.1:11435`. For the Ollama provider, `planner_llm`
+  appends `/api/chat`.
 - `planner_llm_default_retry_budget`: default plan retry budget.
 - `planner_llm_auto_replan`: enables supervisor auto-replan policy.
+
+For demo runs that use two Ollama servers, keep the chatbot and planner on
+separate endpoints:
+
+```bash
+OLLAMA_HOST=127.0.0.1:11434 ollama serve
+OLLAMA_HOST=127.0.0.1:11435 ollama serve
+```
+
+Then launch with explicit endpoints when you do not want profile defaults:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot_demo.launch.py \
+  chatbot_server_url:=http://127.0.0.1:11434/api/chat \
+  planner_llm_base_url:=http://127.0.0.1:11435
+```
+
+## Demo Log Window
+
+Demo profiles can start a filtered operator console that only shows the
+dialogue/planner/executor path and ignores noisy perception, KnowledgeCore,
+face, object-detection, and visualization nodes by default. In operation it also
+prints concise summaries of `/intents`, `/planner/request`,
+`/planner/execution_feedback`, `/planner/dialogue_act`, and
+`/dialogue_manager/closed_captions`, so intent routing, planner requests,
+planner decisions, and robot speech are visible without opening raw topic
+echoes.
+
+- `start_demo_log_window`: starts `nao_chatbot demo_rosout_filter`.
+- `demo_log_nodes`: comma-separated node allowlist.
+- `demo_log_min_level`: minimum severity (`debug`, `info`, `warn`, `error`, or
+  `fatal`).
+
+Standalone:
+
+```bash
+ros2 run nao_chatbot demo_rosout_filter \
+  --nodes chatbot_llm,planner_llm,nao_orchestrator,dialogue_manager,nao_say_skill,head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug \
+  --min-level info
+```
+
+Use `--no-topics` if you only want the filtered `/rosout` stream.
 
 ## Key Grounding Arguments
 
