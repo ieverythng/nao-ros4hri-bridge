@@ -45,8 +45,8 @@ demo-hardening pass; it changes runtime ownership and needs its own validation.
   the live `_execute_*_step` paths.
 - `scan` is now a first-party NAO composite skill export and a planner-visible
   derived skill, replacing the earlier `mock_scan_scene` registry entry.
-- Scan/demo success summaries are carried through planner execution feedback as
-  `result_summary`.
+- Scan success summaries are carried through planner execution feedback as
+  `result_summary`; scan is no longer guarded by demo-only launch flags.
 - Planner skill prompt manifests expose aliases, params, expected effects,
   observable success, safety flags, and robot adapter mapping.
 - Unsupported generated planner steps are treated as invalid whole-plan output,
@@ -133,3 +133,11 @@ ros2 launch nao_chatbot nao_chatbot_sim_demo.launch.py \
 
 For chatbot turns, point the Ollama-compatible frontend at the same model only
 after the planner path is stable; planner JSON validity is the first priority.
+
+## Future Arm/Wave Skill
+
+Treat arm motion as a separate robot-safety pass. First check whether a wave can
+be represented as a `ReplayMotion` `motion_name`; if so, add it as an alias in
+the existing replay-motion seam and cover it with orchestrator routing tests.
+Only introduce a new arm action/server if replay motion cannot express the
+gesture safely and repeatably.

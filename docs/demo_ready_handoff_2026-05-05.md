@@ -11,7 +11,7 @@ flowchart LR
   C -->|verbal_ack only| DM
   C -->|PlannerRequest goal_text + metadata| P["planner_llm"]
   P -->|validated abstract plan| O["nao_orchestrator"]
-  O -->|skill calls + feedback| S["NAO skills / mock scan"]
+  O -->|skill calls + feedback| S["NAO skills / scan"]
   O -->|ExecutionFeedback| P
   P -->|dialogue act hints| DM
 ```
@@ -29,10 +29,10 @@ owns planning; `nao_orchestrator` owns deterministic execution.
   ownership instead of local chatbot plan guesses.
 - Introduced `IntentLabels` and shared planner contract helpers in
   `planner_common` so intent compatibility does not live in a one-off module.
-- Formalized `scan` as a NAO skill contract in package metadata and the planner
-  skill registry, with demo/mock execution behind `nao_orchestrator`.
-- Renamed look-around demo behavior to the `scan` skill and kept the mock
-  backend deterministic for no-robot validation.
+- Formalized `scan` as a NAO skill contract in package metadata, the planner
+  skill registry, and the normal `nao_orchestrator` execution path.
+- Renamed look-around demo behavior to the `scan` skill and kept deterministic
+  scan results available for no-robot validation.
 - Cleaned the orchestrator execution path: less dead wrapper code, clearer
   result summaries, `on_failure=continue` support, and feedback status alignment.
 - Preserved head-motion open-loop options for no-TF/no-robot debugging while
@@ -127,7 +127,7 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
 ## Remaining gaps
 
 - Real robot skill execution still needs hardware validation.
-- The mock `scan` path proves planner/orchestrator routing, but the eventual
+- The current `scan` path proves planner/orchestrator routing, but the eventual
   production scan skill should revise KnowledgeCore through the scene-grounding
   contract once perception is stable.
 - The planner-gate migration in `nao_orchestrator` now has an initial

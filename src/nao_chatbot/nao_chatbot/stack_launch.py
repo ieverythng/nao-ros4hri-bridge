@@ -56,6 +56,7 @@ def _make_lifecycle_bundle(
     node_name,
     condition,
     extra_parameters=None,
+    remappings=None,
 ):
     """Create one lifecycle node plus the bootstrap process that activates it."""
     config_path = PathJoinSubstitution(
@@ -71,6 +72,7 @@ def _make_lifecycle_bundle(
         namespace="",
         name=node_name,
         parameters=parameters,
+        remappings=remappings or [],
         output="both",
         emulate_tty=True,
         condition=condition,
@@ -684,24 +686,19 @@ def generate_profile_launch_description(
         default_value="",
         description="Optional absolute path to a planner_llm skill-registry JSON file.",
     )
-    enable_demo_scan_skill_arg = DeclareLaunchArgument(
-        "enable_demo_scan_skill",
-        default_value=_profile_default(profile_defaults, "enable_demo_scan_skill", "false"),
-        description="Enable the demo scan backend inside nao_orchestrator.",
+    scan_result_mode_arg = DeclareLaunchArgument(
+        "scan_result_mode",
+        default_value=_profile_default(profile_defaults, "scan_result_mode", "success"),
+        description="Deterministic result mode for the scan skill.",
     )
-    demo_scan_result_mode_arg = DeclareLaunchArgument(
-        "demo_scan_result_mode",
-        default_value=_profile_default(profile_defaults, "demo_scan_result_mode", "success"),
-        description="Deterministic result mode for the demo scan backend.",
-    )
-    demo_scan_summary_arg = DeclareLaunchArgument(
-        "demo_scan_summary",
+    scan_summary_arg = DeclareLaunchArgument(
+        "scan_summary",
         default_value=_profile_default(
             profile_defaults,
-            "demo_scan_summary",
-            "I looked around and can report a simple demo scene summary.",
+            "scan_summary",
+            "I looked around and can report the current scene summary.",
         ),
-        description="Success summary returned by the demo scan backend.",
+        description="Success summary returned by the scan skill.",
     )
     scene_grounding_allowed_labels_arg = DeclareLaunchArgument(
         "scene_grounding_allowed_labels",
@@ -969,6 +966,36 @@ def generate_profile_launch_description(
         "dialogue_manager_default_chat_configuration",
         default_value="",
         description="Optional JSON configuration passed to the default dialogue session.",
+    )
+    chat_input_tracked_topic_arg = DeclareLaunchArgument(
+        "chat_input_tracked_topic",
+        default_value=_profile_default(
+            profile_defaults,
+            "chat_input_tracked_topic",
+            "/nao_chatbot/humans/voices/tracked",
+        ),
+        description=(
+            "Voice tracking topic used by rqt_chat and dialogue_manager. "
+            "Non-ASR profiles default to a private topic to avoid stray DDS ASR input."
+        ),
+    )
+    chat_input_speech_topic_arg = DeclareLaunchArgument(
+        "chat_input_speech_topic",
+        default_value=_profile_default(
+            profile_defaults,
+            "chat_input_speech_topic",
+            "/nao_chatbot/humans/voices/anonymous_speaker/speech",
+        ),
+        description="LiveSpeech topic used by rqt_chat and dialogue_manager.",
+    )
+    chat_input_is_speaking_topic_arg = DeclareLaunchArgument(
+        "chat_input_is_speaking_topic",
+        default_value=_profile_default(
+            profile_defaults,
+            "chat_input_is_speaking_topic",
+            "/nao_chatbot/humans/voices/anonymous_speaker/is_speaking",
+        ),
+        description="is_speaking topic used by rqt_chat debug input.",
     )
     chatbot_model_arg = DeclareLaunchArgument(
         "chatbot_model",
@@ -1299,6 +1326,17 @@ def generate_profile_launch_description(
                 )
             },
         ],
+        remappings=[
+            ("/humans/voices/tracked", LaunchConfiguration("chat_input_tracked_topic")),
+            (
+                "/humans/voices/anonymous_speaker/speech",
+                LaunchConfiguration("chat_input_speech_topic"),
+            ),
+            (
+                "/humans/voices/anonymous_speaker/is_speaking",
+                LaunchConfiguration("chat_input_is_speaking_topic"),
+            ),
+        ],
     )
 
     nao_orchestrator_bundle = _make_lifecycle_bundle(
@@ -1314,20 +1352,14 @@ def generate_profile_launch_description(
                 )
             },
             {
-                "enable_demo_scan_skill": ParameterValue(
-                    LaunchConfiguration("enable_demo_scan_skill"),
-                    value_type=bool,
-                )
-            },
-            {
-                "demo_scan_result_mode": ParameterValue(
-                    LaunchConfiguration("demo_scan_result_mode"),
+                "scan_result_mode": ParameterValue(
+                    LaunchConfiguration("scan_result_mode"),
                     value_type=str,
                 )
             },
             {
-                "demo_scan_summary": ParameterValue(
-                    LaunchConfiguration("demo_scan_summary"),
+                "scan_summary": ParameterValue(
+                    LaunchConfiguration("scan_summary"),
                     value_type=str,
                 )
             },
@@ -1732,6 +1764,12 @@ def generate_profile_launch_description(
                 "else "
                 "exec rqt --clear-config --ros-args -r /tts_engine/tts:=",
                 LaunchConfiguration("debug_tts_action_name"),
+                " -r /humans/voices/tracked:=",
+                LaunchConfiguration("chat_input_tracked_topic"),
+                " -r /humans/voices/anonymous_speaker/speech:=",
+                LaunchConfiguration("chat_input_speech_topic"),
+                " -r /humans/voices/anonymous_speaker/is_speaking:=",
+                LaunchConfiguration("chat_input_is_speaking_topic"),
                 "; "
                 "fi",
             ],
@@ -1769,6 +1807,12 @@ def generate_profile_launch_description(
                 "fi; "
                 "exec rqt --clear-config --perspective-file \"$perspective\" --ros-args -r /tts_engine/tts:=",
                 LaunchConfiguration("debug_tts_action_name"),
+                " -r /humans/voices/tracked:=",
+                LaunchConfiguration("chat_input_tracked_topic"),
+                " -r /humans/voices/anonymous_speaker/speech:=",
+                LaunchConfiguration("chat_input_speech_topic"),
+                " -r /humans/voices/anonymous_speaker/is_speaking:=",
+                LaunchConfiguration("chat_input_is_speaking_topic"),
                 "; "
                 "fi",
             ],
@@ -1820,6 +1864,12 @@ def generate_profile_launch_description(
                 "exec rqt --clear-config --standalone rqt_chat.chat.ChatPlugin --ros-args "
                 "-r /tts_engine/tts:=",
                 LaunchConfiguration("debug_tts_action_name"),
+                " -r /humans/voices/tracked:=",
+                LaunchConfiguration("chat_input_tracked_topic"),
+                " -r /humans/voices/anonymous_speaker/speech:=",
+                LaunchConfiguration("chat_input_speech_topic"),
+                " -r /humans/voices/anonymous_speaker/is_speaking:=",
+                LaunchConfiguration("chat_input_is_speaking_topic"),
                 "; "
                 "fi",
             ],
@@ -1993,6 +2043,9 @@ def generate_profile_launch_description(
             dialogue_manager_enable_default_chat_arg,
             dialogue_manager_default_chat_role_arg,
             dialogue_manager_default_chat_configuration_arg,
+            chat_input_tracked_topic_arg,
+            chat_input_speech_topic_arg,
+            chat_input_is_speaking_topic_arg,
             chatbot_model_arg,
             ollama_model_arg,
             chatbot_think_arg,
@@ -2016,9 +2069,8 @@ def generate_profile_launch_description(
             planner_request_intent_arg,
             planner_dialogue_act_topic_arg,
             planner_skill_registry_path_arg,
-            enable_demo_scan_skill_arg,
-            demo_scan_result_mode_arg,
-            demo_scan_summary_arg,
+            scan_result_mode_arg,
+            scan_summary_arg,
             planner_llm_provider_arg,
             planner_llm_model_arg,
             planner_llm_base_url_arg,
@@ -2062,8 +2114,7 @@ def generate_profile_launch_description(
                     LaunchConfiguration("planner_llm_base_url"),
                     " planner_gate=",
                     LaunchConfiguration("enable_orchestrator_planner_gate"),
-                    " scan_demo=",
-                    LaunchConfiguration("enable_demo_scan_skill"),
+                    " scan=enabled",
                 ]
             ),
             LogInfo(

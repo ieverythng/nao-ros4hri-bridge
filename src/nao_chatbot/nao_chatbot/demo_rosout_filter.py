@@ -195,11 +195,13 @@ def _format_intent_event(label: str, msg) -> str:
         "modality=%s" % _compact_text(getattr(msg, "modality", ""), 40),
     ]
     if plan:
+        step_names = _format_step_names(steps)
         detail_parts.extend(
             [
                 "goal_id=%s" % _compact_text(plan.get("goal_id", ""), 60),
                 "plan_id=%s" % _compact_text(plan.get("plan_id", ""), 60),
                 "steps=%d" % len(steps),
+                "step_names=%s" % _compact_text(step_names, 120),
                 "validation=%s" % _compact_text(plan.get("validation_status", ""), 40),
             ]
         )
@@ -207,9 +209,15 @@ def _format_intent_event(label: str, msg) -> str:
         request_id = data.get("request_id") or data.get("goal_id")
         if request_id:
             detail_parts.append("request_id=%s" % _compact_text(request_id, 60))
-        intents = data.get("intents")
+        goal_text = data.get("goal_text", "")
+        if goal_text:
+            detail_parts.append("goal=%s" % _compact_text(goal_text, 120))
+        intents = data.get("normalized_intents", data.get("intents"))
         if isinstance(intents, list):
             detail_parts.append("intents=%s" % _compact_text(",".join(map(str, intents)), 100))
+        requested_plan = data.get("requested_plan")
+        if isinstance(requested_plan, list):
+            detail_parts.append("requested_steps=%d" % len(requested_plan))
     return "%-16s %s" % (label, " ".join(part for part in detail_parts if part))
 
 
@@ -255,6 +263,17 @@ def _parse_json(payload: str) -> dict:
     except json.JSONDecodeError:
         return {}
     return parsed if isinstance(parsed, dict) else {}
+
+
+def _format_step_names(steps: list) -> str:
+    names: list[str] = []
+    for step in steps:
+        if not isinstance(step, dict):
+            continue
+        step_type = str(step.get("type", "")).strip()
+        step_name = str(step.get("name", "")).strip()
+        names.append("/".join(part for part in (step_type, step_name) if part))
+    return ",".join(name for name in names if name)
 
 
 def _compact_text(value, max_chars: int) -> str:

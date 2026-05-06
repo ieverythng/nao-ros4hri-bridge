@@ -25,6 +25,9 @@ _SIM_ASR_PROFILE_DEFAULTS = {
     "chatbot_preflight_required": "true",
     "chatbot_preflight_keepalive_interval_sec": "180.0",
     "planner_llm_preflight_required": "true",
+    "chat_input_tracked_topic": "/humans/voices/tracked",
+    "chat_input_speech_topic": "/humans/voices/anonymous_speaker/speech",
+    "chat_input_is_speaking_topic": "/humans/voices/anonymous_speaker/is_speaking",
 }
 
 

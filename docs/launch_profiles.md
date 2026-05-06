@@ -9,7 +9,7 @@ This file is the active launch guide. Historical launch notes are under
 
 | Launch file | Default purpose | Notes |
 | --- | --- | --- |
-| `nao_chatbot_sim.launch.py` | Simulator stack and operator tools | Planner off by default |
+| `nao_chatbot_sim.launch.py` | Simulator stack and operator tools | Planner off by default; camera/GStreamer perception off unless requested |
 | `nao_chatbot_sim_asr.launch.py` | Simulator stack plus local ASR | Uses `simple_audio_capture` + `asr_vosk` |
 | `nao_chatbot_robot.launch.py` | Real robot camera/RViz/HRI overlays | Planner mode on in robot profile defaults |
 | `nao_chatbot_robot_asr.launch.py` | Robot stack plus local ASR | Needs `nao_ip` |
@@ -32,10 +32,11 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   chatbot_planner_mode_enabled:=true
 ```
 
-Simulator with object grounding:
+Simulator with object grounding and camera/GStreamer perception:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_interaction_sim_perception:=true \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=emorobcare_cv
@@ -81,6 +82,9 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
 
 - `start_planner_llm`: starts `planner_llm`.
 - `chatbot_planner_mode_enabled`: makes `chatbot_llm` publish `/planner/request`.
+- `scan_result_mode`: deterministic scan skill result mode (`success` or
+  `failure`) for no-robot validation.
+- `scan_summary`: success summary returned by the scan skill.
 - `planner_request_topic`: defaults to `/planner/request`.
 - `planner_request_intent`: defaults to `planner_request`.
 - `planner_dialogue_act_topic`: defaults to `/planner/dialogue_act`.
@@ -94,6 +98,16 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
   appends `/api/chat`.
 - `planner_llm_default_retry_budget`: default plan retry budget.
 - `planner_llm_auto_replan`: enables supervisor auto-replan policy.
+
+## ASR And Perception Startup
+
+Non-ASR profiles do not include `asr_vosk` or `simple_audio_capture` launch
+arguments. Use `nao_chatbot_sim_asr.launch.py`, `nao_chatbot_robot_asr.launch.py`,
+or `nao_chatbot_asr_only.launch.py` when local speech recognition is desired.
+
+The interaction-sim tools can run without camera/GStreamer perception. In sim
+profiles, enable camera perception explicitly with
+`start_interaction_sim_perception:=true` when you need the `gscam` camera feed.
 
 For the local split-endpoint experiment, start two host-side Ollama servers
 before launching ROS. This must run on the host, not from inside the container,
@@ -144,15 +158,34 @@ ros2 launch nao_chatbot nao_chatbot_robot_demo.launch.py \
   planner_llm_base_url:=http://127.0.0.1:11435
 ```
 
-For a vLLM or other OpenAI-compatible planner backend, use:
+For a vLLM or other OpenAI-compatible backend, first probe the API:
 
 ```bash
-./scripts/probe_vllm_chat.py --base-url http://<vllm-host>:8004
+./scripts/probe_vllm_chat.py --lab-pc --list-models
+./scripts/probe_vllm_chat.py \
+  --base-url http://<vllm-host>:8004 \
+  --model <served-model-name>
+```
 
+Then route the planner to vLLM:
+
+```bash
 ros2 launch nao_chatbot nao_chatbot_robot_demo.launch.py \
   planner_llm_provider:=openai_compatible \
   planner_llm_base_url:=http://<vllm-host>:<port> \
   planner_llm_model:=<served-model-name> \
+  planner_llm_api_key_env:=VLLM_API_KEY
+```
+
+To route both chatbot and planner to the current lab PC endpoint:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot_demo.launch.py \
+  chatbot_server_url:=http://10.7.138.215:8004/v1/chat/completions \
+  ollama_model:=QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ \
+  planner_llm_provider:=openai_compatible \
+  planner_llm_base_url:=http://10.7.138.215:8004 \
+  planner_llm_model:=QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ \
   planner_llm_api_key_env:=VLLM_API_KEY
 ```
 

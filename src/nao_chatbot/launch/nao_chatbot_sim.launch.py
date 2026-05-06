@@ -15,7 +15,7 @@ _SIM_PROFILE_DEFAULTS = {
     "hri_visualization_image_topic": "/camera/image_raw",
     "object_detection_input_image_topic": "/camera/image_raw",
     "start_interaction_sim": "true",
-    "start_interaction_sim_perception": "true",
+    "start_interaction_sim_perception": "false",
     "start_interaction_sim_tools": "true",
     "start_interaction_sim_expressive_face": "false",
     "start_interaction_sim_ui": "false",

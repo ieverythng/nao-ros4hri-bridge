@@ -34,6 +34,7 @@ from nao_orchestrator.intent_rules import (
     parse_intent_data,
     posture_topic_fallback_for_motion,
     resolve_say_text,
+    resolve_scan_result,
     validate_execution_plan,
 )
 from nao_orchestrator.planner_gate import PlannerGate
@@ -45,6 +46,20 @@ except ImportError:  # pragma: no cover - runtime dependency
 
 # Posture bridge JSON may report `crouch` where orchestrator expects `kneel`.
 _POSTURE_BRIDGE_NAME_ALIASES = {'stand': 'stand', 'sit': 'sit', 'kneel': 'crouch'}
+
+
+def _first_non_empty_text(*values) -> str:
+    for value in values:
+        text = str(value or '').strip()
+        if text:
+            return text
+    return ''
+
+
+def _first_non_empty_value(data: dict, *keys: str) -> str:
+    if not isinstance(data, dict):
+        return ''
+    return _first_non_empty_text(*(data.get(key, '') for key in keys))
 
 
 @dataclass(slots=True)
@@ -113,9 +128,8 @@ class NaoOrchestrator(Node):
         self.declare_parameter('planner_request_topic', '/planner/request')
         self.declare_parameter('dedupe_window_sec', 0.8)
         self.declare_parameter('default_greeting', 'Hello! Nice to meet you.')
-        self.declare_parameter('enable_demo_scan_skill', False)
-        self.declare_parameter('demo_scan_result_mode', 'success')
-        self.declare_parameter('demo_scan_summary', '')
+        self.declare_parameter('scan_result_mode', 'success')
+        self.declare_parameter('scan_summary', '')
 
         self.intent_topic = str(self.get_parameter('intent_topic').value)
         self.enable_legacy_intent_bridge = bool(
@@ -202,15 +216,10 @@ class NaoOrchestrator(Node):
             float(self.get_parameter('dedupe_window_sec').value),
         )
         self.default_greeting = str(self.get_parameter('default_greeting').value)
-        self.enable_demo_scan_skill = bool(
-            self.get_parameter('enable_demo_scan_skill').value
-        )
-        self.demo_scan_result_mode = str(
-            self.get_parameter('demo_scan_result_mode').value
+        self.scan_result_mode = str(
+            self.get_parameter('scan_result_mode').value
         ).strip().lower()
-        self.demo_scan_summary = str(
-            self.get_parameter('demo_scan_summary').value
-        ).strip()
+        self.scan_summary = str(self.get_parameter('scan_summary').value).strip()
 
         self._intent_sub = None
         self._legacy_intent_sub = None
@@ -865,11 +874,26 @@ class NaoOrchestrator(Node):
         *,
         on_started=None,
     ) -> tuple[bool, str]:
+        step_text = _first_non_empty_value(
+            step_args,
+            'text',
+            'message',
+            'utterance',
+            'content',
+            'suggested_response',
+            'text_hint',
+            'object',
+        )
         text = resolve_say_text(
             intent_name=Intent.SAY,
             data={
-                'object': step_args.get('text', step_args.get('object', '')),
-                'suggested_response': step_args.get('text', ''),
+                'object': step_text,
+                'suggested_response': _first_non_empty_value(
+                    step_args,
+                    'suggested_response',
+                    'text_hint',
+                    'text',
+                ),
                 'recipient': step_args.get(
                     'recipient',
                     fallback_data.get('recipient', ''),
@@ -877,7 +901,12 @@ class NaoOrchestrator(Node):
             },
             default_greeting=self.default_greeting,
         )
-        clean_text = str(text).strip()
+        clean_text = _first_non_empty_text(
+            text,
+            fallback_data.get('ack_text', ''),
+            fallback_data.get('suggested_response', ''),
+            fallback_data.get('goal_text', ''),
+        )
         if not clean_text:
             self._stats.dispatch_failures += 1
             return False, 'say dispatch failed: empty text'
@@ -948,31 +977,28 @@ class NaoOrchestrator(Node):
         *,
         on_started=None,
     ) -> tuple[bool, str]:
-        if not self.enable_demo_scan_skill:
-            self._stats.dispatch_failures += 1
-            return False, 'demo scan backend is disabled'
-
         if on_started is not None:
             on_started()
 
-        result_mode = str(
-            step_args.get('result_mode', self.demo_scan_result_mode)
-        ).strip().lower()
-        target = str(step_args.get('target', '')).strip()
-        target_kind = str(
-            step_args.get('target_kind', target or 'scene')
-        ).strip() or 'scene'
-        summary = str(step_args.get('summary', self.demo_scan_summary)).strip()
+        success, reason, metadata = resolve_scan_result(
+            step_args,
+            default_result_mode=self.scan_result_mode,
+            default_summary=self.scan_summary,
+        )
 
         self.get_logger().info(
             'ORCH SCAN | target=%s target_kind=%s result_mode=%s'
-            % (target or target_kind, target_kind, result_mode or 'success')
+            % (
+                metadata['target'] or metadata['target_kind'],
+                metadata['target_kind'],
+                metadata['result_mode'],
+            )
         )
-        if result_mode in ('fail', 'failed', 'failure'):
+        if not success:
             self._stats.dispatch_failures += 1
-            return False, 'scan requested failure for %s' % target_kind
+            return False, reason
 
-        return True, summary or 'scan completed'
+        return True, reason
 
     def _execute_replay_motion_step(
         self,

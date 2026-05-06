@@ -13,6 +13,7 @@ from nao_orchestrator.intent_rules import parse_intent_data
 from nao_orchestrator.intent_rules import posture_topic_fallback_for_motion
 from nao_orchestrator.intent_rules import resolve_ack_text
 from nao_orchestrator.intent_rules import resolve_say_text
+from nao_orchestrator.intent_rules import resolve_scan_result
 from nao_orchestrator.intent_rules import validate_execution_plan
 
 
@@ -66,6 +67,15 @@ def test_resolve_say_text_prefers_suggested_response_for_greet() -> None:
         'Default hello',
     )
     assert text == 'Hello from the migrated orchestrator!'
+
+
+def test_say_step_text_helpers_accept_common_llm_fields() -> None:
+    text = resolve_say_text(
+        Intent.SAY,
+        {'object': '', 'suggested_response': 'I finished that sequence.'},
+        '',
+    )
+    assert text == 'I finished that sequence.'
 
 
 def test_classify_motion_target_maps_head_motion() -> None:
@@ -220,6 +230,33 @@ def test_validate_execution_plan_accepts_scan_skill() -> None:
     )
     assert envelope['errors'] == []
     assert envelope['steps'][0]['name'] == 'scan'
+
+
+def test_scan_step_is_available_without_demo_gate() -> None:
+    success, reason, metadata = resolve_scan_result(
+        {'target_kind': 'people'},
+        default_result_mode='success',
+        default_summary='I scanned the scene.',
+    )
+
+    assert success
+    assert reason == 'I scanned the scene.'
+    assert metadata == {
+        'target': '',
+        'target_kind': 'people',
+        'result_mode': 'success',
+    }
+
+
+def test_scan_step_can_report_configured_failure() -> None:
+    success, reason, metadata = resolve_scan_result(
+        {'target_kind': 'people'},
+        default_result_mode='failure',
+    )
+
+    assert success is False
+    assert reason == 'scan requested failure for people'
+    assert metadata['result_mode'] == 'failure'
 
 
 def test_validate_execution_plan_rejects_duplicate_plan_step_ids() -> None:

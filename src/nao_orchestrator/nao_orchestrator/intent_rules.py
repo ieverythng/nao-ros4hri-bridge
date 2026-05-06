@@ -256,6 +256,29 @@ def resolve_ack_text(
     return resolve_say_text(intent_name, payload, default_greeting)
 
 
+def resolve_scan_result(
+    step_args: dict,
+    *,
+    default_result_mode: str = 'success',
+    default_summary: str = '',
+) -> tuple[bool, str, dict]:
+    """Normalize deterministic scan execution output for the orchestrator."""
+    result_mode = str(
+        step_args.get('result_mode', default_result_mode)
+    ).strip().lower()
+    target = str(step_args.get('target', '')).strip()
+    target_kind = str(step_args.get('target_kind', target or 'scene')).strip() or 'scene'
+    summary = str(step_args.get('summary', default_summary)).strip()
+    metadata = {
+        'target': target,
+        'target_kind': target_kind,
+        'result_mode': result_mode or 'success',
+    }
+    if result_mode in ('fail', 'failed', 'failure'):
+        return False, 'scan requested failure for %s' % target_kind, metadata
+    return True, summary or 'scan completed', metadata
+
+
 # -----------------------------------------------------------------------------
 # Structured execution-plan helpers
 # -----------------------------------------------------------------------------

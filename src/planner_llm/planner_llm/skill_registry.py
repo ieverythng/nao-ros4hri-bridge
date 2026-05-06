@@ -90,7 +90,7 @@ _DERIVED_SKILL_SPECS = {
                 'kb_revise',
                 'planner feedback completed',
             ],
-            'failure_modes': ['scan requested failure', 'demo scan backend disabled'],
+            'failure_modes': ['scan requested failure', 'scan backend unavailable'],
             'retryable': True,
             'can_request_user_help': False,
             'can_request_clarification': True,

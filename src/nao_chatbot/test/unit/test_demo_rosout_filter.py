@@ -14,6 +14,16 @@ class _IntentMsg:
     data = '{"plan":{"goal_id":"goal-1","plan_id":"plan-1","validation_status":"valid","steps":[{},{}]}}'
 
 
+class _PlannerRequestMsg:
+    intent = 'planner_request'
+    source = 'chatbot_llm'
+    modality = 'speech'
+    data = (
+        '{"request_id":"turn-1","goal_text":"scan the room",'
+        '"normalized_intents":[],"requested_plan":[]}'
+    )
+
+
 def test_parse_nodes_normalizes_slashes_and_empty_values():
     assert _parse_nodes('/chatbot_llm, planner_llm,,/nao_orchestrator ') == (
         'chatbot_llm',
@@ -44,6 +54,15 @@ def test_format_intent_event_summarizes_planner_plan():
     assert 'goal_id=goal-1' in line
     assert 'plan_id=plan-1' in line
     assert 'steps=2' in line
+
+
+def test_format_intent_event_summarizes_planner_request_payload():
+    line = _format_intent_event('PLANNER_REQUEST', _PlannerRequestMsg())
+
+    assert 'request_id=turn-1' in line
+    assert 'goal=scan the room' in line
+    assert 'intents=' in line
+    assert 'requested_steps=0' in line
 
 
 def test_format_json_event_summarizes_planner_dialogue_act():

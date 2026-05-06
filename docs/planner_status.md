@@ -25,9 +25,10 @@ Implemented:
   `confidence` are visible in topic echoes. `chatbot_llm` now publishes a
   deterministic planner priority and a bounded confidence instead of leaving
   execution-routed requests at `0.0`.
-- `scan` is now the planner-visible perception/composite skill contract. The
-  previous demo-only `mock_scan_scene` naming has been removed from the planner
-  registry.
+- `scan` is now the planner-visible perception/composite skill contract and is
+  available through the normal orchestrator path rather than a demo-only gate.
+  The previous demo-only `mock_scan_scene` naming has been removed from the
+  planner registry.
 - Planner execution feedback carries `result_summary`, which lets scan-style
   success summaries reach planner supervision without executor-authored speech.
 - `step_succeeded` feedback now uses `status=succeeded` with

@@ -12,7 +12,7 @@ robot-motion demo.
 - `nao_orchestrator` accepts the plan and publishes execution feedback.
 - The feedback reaches `planner_llm`.
 - Completion, failure, or clarification is visible through feedback or
-  `/planner/dialogue_act`.
+`/planner/dialogue_act`.
 
 ## Baseline Commands
 
@@ -83,7 +83,8 @@ For each run, copy the important fields into `docs/planner_status.md`:
 - The planner supervises a goal and emits a plan.
 - The orchestrator validates and executes deterministically.
 - Execution feedback is the loop-closing contract.
-- Mock skills are acceptable if they prove the loop without real robot risk.
+- Deterministic skill backends are acceptable if they prove the loop without
+  real robot risk; `scan` is a normal skill contract, not a demo-only gate.
 
 ## Current Limitation
 

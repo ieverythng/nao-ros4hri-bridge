@@ -34,6 +34,9 @@ _SYSTEM_PROMPT = (
     'replan_hint, retry_budget, scene_targets, communication_policy, and steps. '
     'Each step must contain type, name, args, requires, on_failure, and retry_budget. '
     'Plan only over the supplied abstract skill registry and allowed step types. '
+    'Important contract: type="skill" may only use names from allowed_skill_names; '
+    'say is not a skill name, it is its own step type, so speech must be '
+    '{"type":"say","name":"say","args":{"text":"..."}}. '
     'Do not reference robot-specific topics, NAOqi APIs, or direct hardware calls. '
     'normalized_intents may be incomplete, so infer the executable request from goal_text, '
     'grounded context, and execution feedback. Treat requested_plan as a compatibility '
@@ -144,7 +147,7 @@ class PlannerEngine:
                 communication_policy=resolved_policy,
             )
 
-        decision = self._decision_from_model_output(
+        decision, validation_errors = self._decision_from_model_output_with_errors(
             request,
             raw_model_output,
             feedback=feedback,
@@ -155,6 +158,40 @@ class PlannerEngine:
         )
         if decision is not None:
             return decision
+
+        if validation_errors:
+            try:
+                retry_raw_model_output = self._provider.generate(
+                    self._build_messages(
+                        request,
+                        world_model_text=world_model_text,
+                        world_model_snapshot=world_model_snapshot or {},
+                        feedback=feedback,
+                        goal_id=resolved_goal_id,
+                        plan_version=resolved_plan_version,
+                        validation_errors=validation_errors,
+                        previous_model_output=raw_model_output,
+                    )
+                )
+            except PlannerProviderError as err:
+                retry_raw_model_output = 'planner backend unavailable during validation retry: %s' % err
+            else:
+                retry_decision, retry_validation_errors = self._decision_from_model_output_with_errors(
+                    request,
+                    retry_raw_model_output,
+                    feedback=feedback,
+                    goal_id=resolved_goal_id,
+                    plan_version=resolved_plan_version,
+                    status=status,
+                    communication_policy=resolved_policy,
+                )
+                if retry_decision is not None:
+                    return retry_decision
+                validation_errors = retry_validation_errors or validation_errors
+                raw_model_output = '%s\n\n--- invalid retry output ---\n%s' % (
+                    raw_model_output,
+                    retry_raw_model_output,
+                )
 
         requested_plan_decision = self._requested_plan_decision(
             request,
@@ -168,15 +205,14 @@ class PlannerEngine:
         if requested_plan_decision is not None:
             return requested_plan_decision
 
-        return self._clarification_decision(
+        return self._invalid_model_output_decision(
             request,
             feedback=feedback,
-            reason='planner output did not contain a valid executable plan',
+            reason='planner output did not contain a valid executable plan: %s'
+            % '; '.join(validation_errors or ['no valid executable steps']),
             raw_model_output=raw_model_output,
-            mode='clarify',
             goal_id=resolved_goal_id,
             plan_version=resolved_plan_version,
-            status='waiting_user',
             communication_policy=resolved_policy,
         )
 
@@ -189,6 +225,8 @@ class PlannerEngine:
         feedback: ExecutionFeedback | None,
         goal_id: str,
         plan_version: int,
+        validation_errors: list[str] | None = None,
+        previous_model_output: str = '',
     ) -> list[dict[str, str]]:
         prompt = {
             'request': self._request_payload(request),
@@ -201,11 +239,91 @@ class PlannerEngine:
             'allowed_step_types': list(self._skill_registry.step_types),
             'allowed_skill_names': list(self._skill_registry.allowed_skill_names),
             'allowed_motion_objects': list(_RULE_BASED_MOTIONS.values()),
+            'output_contract': {
+                'step_type_skill': {
+                    'type': 'skill',
+                    'name': 'must be one allowed_skill_names entry',
+                },
+                'step_type_say': {
+                    'type': 'say',
+                    'name': 'say',
+                    'args': {'text': 'text for dialogue_manager/nao_say_skill'},
+                },
+                'invalid_examples': [
+                    {'type': 'skill', 'name': 'say'},
+                    {'type': 'skill', 'name': 'nao_say'},
+                ],
+            },
         }
+        if validation_errors:
+            prompt['validation_retry'] = {
+                'errors': list(validation_errors),
+                'instruction': (
+                    'Regenerate the full plan as one valid JSON object. Correct only the '
+                    'planner contract errors. Do not ask the user for clarification unless '
+                    'the original human request is genuinely ambiguous.'
+                ),
+                'previous_model_output': str(previous_model_output or '')[:4000],
+            }
         return [
             {'role': 'system', 'content': _SYSTEM_PROMPT},
             {'role': 'user', 'content': json.dumps(prompt, sort_keys=True)},
         ]
+
+    def _decision_from_model_output_with_errors(
+        self,
+        request: PlannerRequest,
+        raw_model_output: str,
+        *,
+        feedback: ExecutionFeedback | None,
+        goal_id: str,
+        plan_version: int,
+        status: str,
+        communication_policy: dict,
+    ) -> tuple[PlannerDecision | None, list[str]]:
+        parsed = extract_json_object(raw_model_output)
+        if not parsed:
+            return None, ['model output did not contain a JSON object']
+
+        decision_mode = str(parsed.get('decision', parsed.get('mode', 'plan'))).strip().lower()
+        if decision_mode in ('clarify', 'clarification', 'fail'):
+            decision = self._decision_from_model_output(
+                request,
+                raw_model_output,
+                feedback=feedback,
+                goal_id=goal_id,
+                plan_version=plan_version,
+                status=status,
+                communication_policy=communication_policy,
+            )
+            return decision, []
+
+        steps, validation_errors = self._extract_plan_steps_with_errors(parsed)
+        if validation_errors:
+            return None, validation_errors
+        if not steps:
+            return None, ['model output did not contain executable steps']
+
+        return self._build_decision(
+            request=request,
+            feedback=feedback,
+            steps=steps,
+            ack_text=str(parsed.get('ack_text', '')).strip(),
+            ack_mode=str(parsed.get('ack_mode', request.ack_mode)).strip(),
+            validation_status=str(parsed.get('validation_status', 'draft')).strip() or 'draft',
+            failure_reason=str(parsed.get('failure_reason', '')).strip(),
+            user_facing_reason=str(parsed.get('user_facing_reason', '')).strip(),
+            replan_hint=str(parsed.get('replan_hint', '')).strip(),
+            retry_budget=self._next_retry_budget(parsed, feedback)[0],
+            scene_targets=self._scene_targets_for_decision(request, feedback, parsed),
+            plan_id=str(parsed.get('plan_id', parsed.get('id', ''))).strip(),
+            raw_model_output=raw_model_output,
+            mode='replan' if feedback is not None else 'plan',
+            goal_id=goal_id,
+            plan_version=plan_version,
+            status=status,
+            communication_policy=self._resolved_communication_policy(parsed, communication_policy),
+        ), []
 
     def _decision_from_model_output(
         self,
@@ -357,6 +475,44 @@ class PlannerEngine:
             scene_targets=self._scene_targets_for_decision(request, feedback, {}),
             raw_model_output=raw_model_output,
             mode='backend_unavailable',
+            goal_id=goal_id,
+            plan_version=plan_version,
+            status='failed',
+            communication_policy=communication_policy,
+        )
+
+    def _invalid_model_output_decision(
+        self,
+        request: PlannerRequest,
+        *,
+        feedback: ExecutionFeedback | None,
+        reason: str,
+        raw_model_output: str,
+        goal_id: str,
+        plan_version: int,
+        communication_policy: dict,
+    ) -> PlannerDecision:
+        clean_reason = str(reason or '').strip() or 'planner output was invalid'
+        return self._build_decision(
+            request=request,
+            feedback=feedback,
+            steps=[
+                self._step(
+                    step_type='say',
+                    name='say',
+                    args={'text': clean_reason},
+                )
+            ],
+            ack_text='',
+            ack_mode='',
+            validation_status='invalid',
+            failure_reason=clean_reason,
+            user_facing_reason=clean_reason,
+            replan_hint='planner_invalid_output',
+            retry_budget=0,
+            scene_targets=self._scene_targets_for_decision(request, feedback, {}),
+            raw_model_output=raw_model_output,
+            mode='fail',
             goal_id=goal_id,
             plan_version=plan_version,
             status='failed',
@@ -523,20 +679,42 @@ class PlannerEngine:
         }
 
     def _extract_plan_steps(self, parsed: dict) -> list[dict]:
+        steps, validation_errors = self._extract_plan_steps_with_errors(parsed)
+        if validation_errors:
+            return []
+        return steps
+
+    def _extract_plan_steps_with_errors(self, parsed: dict) -> tuple[list[dict], list[str]]:
         steps = parsed.get('steps')
         if not isinstance(steps, list):
             plan_payload = parsed.get('plan', {})
             if isinstance(plan_payload, dict):
                 steps = plan_payload.get('steps', [])
         if not isinstance(steps, list):
-            return []
+            return [], ['steps must be a list']
         normalized_steps = normalize_plan_steps(steps)
+        if not normalized_steps:
+            return [], ['steps list did not contain valid step objects']
         supported_steps, rejected_steps = self._skill_registry.filter_supported_steps_with_rejections(
             normalized_steps
         )
         if rejected_steps:
-            return []
-        return supported_steps
+            return [], [self._step_rejection_reason(step) for step in rejected_steps]
+        return supported_steps, []
+
+    def _step_rejection_reason(self, step: dict) -> str:
+        step_type = str(step.get('type', '')).strip().lower()
+        step_name = str(step.get('name', '')).strip().lower()
+        if step_type == 'skill' and step_name not in self._skill_registry.allowed_skill_names:
+            return (
+                'unsupported skill step name "%s"; allowed_skill_names=%s. '
+                'Use type="say", name="say" for speech.'
+                % (step_name or '<empty>', ','.join(self._skill_registry.allowed_skill_names))
+            )
+        return 'unsupported plan step type="%s" name="%s"' % (
+            step_type or '<empty>',
+            step_name or '<empty>',
+        )
 
     @staticmethod
     def _step(

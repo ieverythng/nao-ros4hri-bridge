@@ -43,9 +43,8 @@ _ROBOT_DEMO_PROFILE_DEFAULTS = {
     "planner_llm_preflight_timeout_sec": "60.0",
     "planner_llm_preflight_attempts": "3",
     "planner_llm_preflight_realistic_enabled": "true",
-    "enable_demo_scan_skill": "true",
-    "demo_scan_result_mode": "success",
-    "demo_scan_summary": "I looked around and can report a simple demo scene summary.",
+    "scan_result_mode": "success",
+    "scan_summary": "I looked around and can report the current scene summary.",
 }
 
 

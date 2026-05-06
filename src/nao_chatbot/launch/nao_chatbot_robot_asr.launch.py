@@ -38,6 +38,9 @@ _ROBOT_ASR_PROFILE_DEFAULTS = {
     "planner_llm_preflight_timeout_sec": "60.0",
     "planner_llm_preflight_attempts": "3",
     "planner_llm_preflight_realistic_enabled": "true",
+    "chat_input_tracked_topic": "/humans/voices/tracked",
+    "chat_input_speech_topic": "/humans/voices/anonymous_speaker/speech",
+    "chat_input_is_speaking_topic": "/humans/voices/anonymous_speaker/is_speaking",
 }
 
 

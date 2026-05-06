@@ -18,6 +18,18 @@ class _FakeProvider:
         return self._response_text
 
 
+class _SequenceProvider:
+    def __init__(self, responses: list[str]) -> None:
+        self._responses = list(responses)
+        self.messages = []
+
+    def generate(self, messages):
+        self.messages.append(list(messages))
+        if not self._responses:
+            return '{}'
+        return self._responses.pop(0)
+
+
 class _FailingProvider:
     def generate(self, messages):
         raise PlannerProviderError('timed out')
@@ -84,9 +96,10 @@ def test_planner_engine_uses_provider_for_non_rule_request() -> None:
     assert provider.messages[0]['role'] == 'system'
     assert '"goal_text": "inspect the visible cup"' in provider.messages[1]['content']
     assert '"user_text"' not in provider.messages[1]['content']
+    assert '"invalid_examples": [{"name": "say", "type": "skill"}' in provider.messages[1]['content']
 
 
-def test_planner_engine_rejects_unsupported_model_skills() -> None:
+def test_planner_engine_reports_invalid_model_output_as_failure() -> None:
     provider = _FakeProvider(
         '{"ack_text":"Trying a custom action.","steps":[{"type":"skill","name":"dance","args":{"style":"wave"},"requires":[],"on_failure":"fail","retry_budget":0}]}'
     )
@@ -101,8 +114,39 @@ def test_planner_engine_rejects_unsupported_model_skills() -> None:
     )
 
     decision = engine.plan_request(request, goal_id='goal_bad', plan_version=1)
-    assert decision.mode == 'clarify'
-    assert decision.payload['plan']['replan_hint'] == 'clarify_user'
+    assert decision.mode == 'fail'
+    assert decision.payload['plan']['status'] == 'failed'
+    assert decision.payload['plan']['replan_hint'] == 'planner_invalid_output'
+    assert 'unsupported skill step name "dance"' in decision.payload['plan']['failure_reason']
+
+
+def test_planner_engine_retries_invalid_model_plan_with_validation_feedback() -> None:
+    provider = _SequenceProvider(
+        [
+            '{"steps":[{"type":"skill","name":"scan","args":{"target_kind":"scene"}},'
+            '{"type":"skill","name":"say","args":{"text":"I looked around."}}]}',
+            '{"steps":[{"type":"skill","name":"scan","args":{"target_kind":"scene"}},'
+            '{"type":"say","name":"say","args":{"text":"I looked around."}}]}',
+        ]
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_retry',
+            'goal_id': 'goal_retry',
+            'goal_text': 'scan the room and tell me what you see',
+            'normalized_intents': ['inspect_scene'],
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_retry', plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert len(provider.messages) == 2
+    retry_prompt = provider.messages[1][1]['content']
+    assert 'validation_retry' in retry_prompt
+    assert 'Use type=\\"say\\", name=\\"say\\" for speech.' in retry_prompt
+    assert [step['type'] for step in decision.payload['plan']['steps']] == ['skill', 'say']
 
 
 def test_planner_engine_marks_provider_timeout_as_backend_unavailable() -> None:
@@ -111,7 +155,7 @@ def test_planner_engine_marks_provider_timeout_as_backend_unavailable() -> None:
         {
             'request_id': 'r_timeout',
             'goal_id': 'goal_timeout',
-            'goal_text': 'scan the room',
+            'goal_text': 'bring me the cup',
             'normalized_intents': ['inspect_scene'],
             'requested_plan': [],
         }
@@ -142,7 +186,7 @@ def test_planner_engine_rejects_partial_model_plans_when_one_step_is_unsupported
 
     decision = engine.plan_request(request, goal_id='goal_partial', plan_version=1)
 
-    assert decision.mode == 'clarify'
+    assert decision.mode == 'fail'
     assert decision.payload['plan']['steps'][0]['type'] == 'say'
 
 
@@ -249,7 +293,7 @@ def test_planner_engine_does_not_use_partial_requested_plan_hints() -> None:
 
     decision = engine.plan_request(request, goal_id='goal_hint_partial', plan_version=1)
 
-    assert decision.mode == 'clarify'
+    assert decision.mode == 'fail'
 
 
 def test_provider_factory_selects_openai_compatible_adapter() -> None:
