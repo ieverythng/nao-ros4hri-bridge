@@ -45,9 +45,9 @@ class PlannerNode(Node):
         self.declare_parameter('planner_request_intent', DEFAULT_PLANNER_REQUEST_INTENT)
         self.declare_parameter('default_intent_name', Intent.RAW_USER_INPUT)
         self.declare_parameter('skill_registry_path', '')
-        self.declare_parameter('provider', 'ollama')
-        self.declare_parameter('model', 'gemma4:31b-cloud')
-        self.declare_parameter('base_url', 'http://127.0.0.1:11434')
+        self.declare_parameter('provider', 'openai_compatible')
+        self.declare_parameter('model', 'QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ')
+        self.declare_parameter('base_url', 'http://10.7.138.215:8004')
         self.declare_parameter('api_key_env', 'OPENAI_API_KEY')
         self.declare_parameter('temperature', 0.1)
         self.declare_parameter('max_tokens', 800)
@@ -152,9 +152,9 @@ class PlannerNode(Node):
 
     def _provider_config(self) -> PlannerProviderConfig:
         return PlannerProviderConfig(
-            provider=self._text_parameter('provider', 'ollama'),
-            model=self._text_parameter('model', 'gemma4:31b-cloud'),
-            base_url=self._text_parameter('base_url', 'http://127.0.0.1:11434'),
+            provider=self._text_parameter('provider', 'openai_compatible'),
+            model=self._text_parameter('model', 'QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ'),
+            base_url=self._text_parameter('base_url', 'http://10.7.138.215:8004'),
             api_key_env=self._text_parameter('api_key_env', 'OPENAI_API_KEY'),
             temperature=float(self.get_parameter('temperature').value),
             max_tokens=int(self.get_parameter('max_tokens').value),

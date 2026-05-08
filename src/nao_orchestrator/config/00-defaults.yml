@@ -24,3 +24,7 @@
     planner_feedback_topic: "/planner/execution_feedback"
     dedupe_window_sec: 0.8
     default_greeting: "Hello! Nice to meet you."
+    scan_result_mode: "success"
+    scan_summary: ""
+    scan_summary_topic: "/scene/summary"
+    scan_report_after_success: true

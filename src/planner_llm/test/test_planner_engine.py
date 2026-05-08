@@ -367,7 +367,7 @@ def test_ollama_provider_uses_thinking_when_content_is_empty(monkeypatch) -> Non
 
 def test_planner_engine_accepts_scan_steps_from_provider() -> None:
     provider = _FakeProvider(
-        '{"ack_text":"I will look around and report what I find.","steps":[{"type":"skill","name":"perform_motion","args":{"object":"head_look_left"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"perform_motion","args":{"object":"head_look_right"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"scan","args":{"target":"people","max_sweeps":2},"requires":[],"on_failure":"replan","retry_budget":0}]}'
+        '{"ack_text":"I will look around and report what I find.","steps":[{"type":"skill","name":"perform_motion","args":{"object":"head_look_left"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"perform_motion","args":{"object":"head_look_right"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"scan","args":{"target":"people","max_sweeps":2},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"say","name":"say","args":{"text":"I found one person."},"requires":[],"on_failure":"continue","retry_budget":0}]}'
     )
     engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
     request = PlannerRequest.from_payload(
@@ -388,4 +388,5 @@ def test_planner_engine_accepts_scan_steps_from_provider() -> None:
         'perform_motion',
         'perform_motion',
         'scan',
+        'say',
     ]

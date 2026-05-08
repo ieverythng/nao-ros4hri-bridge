@@ -2,8 +2,11 @@ from nao_chatbot.stack_launch import generate_profile_launch_description
 
 
 _SIM_ASR_PROFILE_DEFAULTS = {
-    "ollama_model": "gemma4:31b-cloud",
-    "planner_llm_model": "gemma4:31b-cloud",
+    "chatbot_model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+    "planner_llm_provider": "openai_compatible",
+    "planner_llm_model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+    "chatbot_server_url": "http://10.7.138.215:8004/v1/chat/completions",
+    "planner_llm_base_url": "http://10.7.138.215:8004",
     "start_naoqi_driver": "false",
     "start_nao_robot": "false",
     "start_nao_robot_hri_visualization": "false",

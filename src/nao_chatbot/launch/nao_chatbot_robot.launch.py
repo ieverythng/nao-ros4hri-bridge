@@ -3,10 +3,11 @@ from nao_chatbot.stack_launch import generate_profile_launch_description
 
 _ROBOT_PROFILE_DEFAULTS = {
     "nao_ip": "172.26.112.25",
-    "ollama_model": "gemma4:31b-cloud",
-    "planner_llm_model": "gemma4:31b-cloud",
-    "chatbot_server_url": "http://127.0.0.1:11434/api/chat",
-    "planner_llm_base_url": "http://127.0.0.1:11435",
+    "chatbot_model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+    "planner_llm_provider": "openai_compatible",
+    "planner_llm_model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+    "chatbot_server_url": "http://10.7.138.215:8004/v1/chat/completions",
+    "planner_llm_base_url": "http://10.7.138.215:8004",
     "start_managed_ollama": "false",
     "start_demo_log_window": "true",
     "start_naoqi_driver": "false",

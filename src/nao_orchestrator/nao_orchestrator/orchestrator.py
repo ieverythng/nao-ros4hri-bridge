@@ -130,6 +130,8 @@ class NaoOrchestrator(Node):
         self.declare_parameter('default_greeting', 'Hello! Nice to meet you.')
         self.declare_parameter('scan_result_mode', 'success')
         self.declare_parameter('scan_summary', '')
+        self.declare_parameter('scan_summary_topic', '/scene/summary')
+        self.declare_parameter('scan_report_after_success', True)
 
         self.intent_topic = str(self.get_parameter('intent_topic').value)
         self.enable_legacy_intent_bridge = bool(
@@ -220,9 +222,14 @@ class NaoOrchestrator(Node):
             self.get_parameter('scan_result_mode').value
         ).strip().lower()
         self.scan_summary = str(self.get_parameter('scan_summary').value).strip()
+        self.scan_summary_topic = str(self.get_parameter('scan_summary_topic').value).strip()
+        self.scan_report_after_success = bool(
+            self.get_parameter('scan_report_after_success').value
+        )
 
         self._intent_sub = None
         self._legacy_intent_sub = None
+        self._scan_summary_sub = None
         self._posture_result_sub = None
         self._diag_pub = None
         self._diag_timer = None
@@ -244,6 +251,7 @@ class NaoOrchestrator(Node):
         self._posture_result_lock = threading.Lock()
         self._posture_result_event = threading.Event()
         self._latest_posture_result: dict | None = None
+        self._latest_scan_summary = ''
         self._planner_gate = PlannerGate()
 
     # -------------------------------------------------------------------------
@@ -278,6 +286,13 @@ class NaoOrchestrator(Node):
             self._on_posture_command_result,
             10,
         )
+        if self.scan_summary_topic:
+            self._scan_summary_sub = self.create_subscription(
+                String,
+                self.scan_summary_topic,
+                self._on_scan_summary,
+                10,
+            )
         self._planner_feedback_pub = self.create_publisher(
             String,
             self.planner_feedback_topic,
@@ -355,6 +370,9 @@ class NaoOrchestrator(Node):
         if self._legacy_intent_sub is not None:
             self.destroy_subscription(self._legacy_intent_sub)
             self._legacy_intent_sub = None
+        if self._scan_summary_sub is not None:
+            self.destroy_subscription(self._scan_summary_sub)
+            self._scan_summary_sub = None
         if self._planner_gate_sub is not None:
             self.destroy_subscription(self._planner_gate_sub)
             self._planner_gate_sub = None
@@ -393,6 +411,9 @@ class NaoOrchestrator(Node):
         if self._posture_result_sub is not None:
             self.destroy_subscription(self._posture_result_sub)
             self._posture_result_sub = None
+        if self._scan_summary_sub is not None:
+            self.destroy_subscription(self._scan_summary_sub)
+            self._scan_summary_sub = None
         if self._diag_timer is not None:
             self.destroy_timer(self._diag_timer)
             self._diag_timer = None
@@ -453,6 +474,9 @@ class NaoOrchestrator(Node):
             data=normalized_data,
             source=str(msg.source or msg.modality or Intent.UNKNOWN),
         )
+
+    def _on_scan_summary(self, msg: String) -> None:
+        self._latest_scan_summary = str(msg.data or '').strip()
 
     def _on_planner_gate_request(self, msg: Intent) -> None:
         """Admit chatbot-originated planner requests before planner_llm sees them."""
@@ -981,7 +1005,7 @@ class NaoOrchestrator(Node):
             on_started()
 
         success, reason, metadata = resolve_scan_result(
-            step_args,
+            self._scan_args_with_summary(step_args),
             default_result_mode=self.scan_result_mode,
             default_summary=self.scan_summary,
         )
@@ -998,7 +1022,21 @@ class NaoOrchestrator(Node):
             self._stats.dispatch_failures += 1
             return False, reason
 
+        if self.scan_report_after_success and reason:
+            speech_ok, speech_reason = self._execute_say_plan_step(
+                {'text': reason},
+                {},
+            )
+            if not speech_ok:
+                return False, speech_reason
+
         return True, reason
+
+    def _scan_args_with_summary(self, step_args: dict) -> dict:
+        scan_args = dict(step_args)
+        if not str(scan_args.get('summary', '')).strip() and self._latest_scan_summary:
+            scan_args['summary'] = self._latest_scan_summary
+        return scan_args
 
     def _execute_replay_motion_step(
         self,

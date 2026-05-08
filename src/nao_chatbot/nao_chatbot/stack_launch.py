@@ -37,6 +37,11 @@ from lifecycle_msgs.msg import Transition
 from nao_chatbot.interaction_sim_support import build_interaction_sim_actions
 
 
+DEFAULT_VLLM_MODEL = "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ"
+DEFAULT_VLLM_BASE_URL = "http://10.7.138.215:8004"
+DEFAULT_VLLM_CHAT_URL = DEFAULT_VLLM_BASE_URL + "/v1/chat/completions"
+
+
 # -----------------------------------------------------------------------------
 # Generic launch helpers
 # -----------------------------------------------------------------------------
@@ -999,13 +1004,16 @@ def generate_profile_launch_description(
     )
     chatbot_model_arg = DeclareLaunchArgument(
         "chatbot_model",
-        default_value=_profile_default(profile_defaults, "chatbot_model", ""),
-        description="Legacy explicit model argument for chatbot_llm; prefer ollama_model.",
+        default_value=_profile_default(profile_defaults, "chatbot_model", DEFAULT_VLLM_MODEL),
+        description="Preferred public model argument for chatbot_llm response generation.",
     )
     ollama_model_arg = DeclareLaunchArgument(
         "ollama_model",
-        default_value=_profile_default(profile_defaults, "ollama_model", "gemma4:31b-cloud"),
-        description="Preferred public model argument used by chatbot_llm for response generation.",
+        default_value=_profile_default(profile_defaults, "ollama_model", ""),
+        description=(
+            "Backward-compatible alias for chatbot_model. Leave empty for vLLM/"
+            "OpenAI-compatible profiles."
+        ),
     )
     chatbot_think_arg = DeclareLaunchArgument(
         "chatbot_think",
@@ -1037,7 +1045,7 @@ def generate_profile_launch_description(
         default_value=_profile_default(
             profile_defaults,
             "chatbot_server_url",
-            "http://localhost:11434/api/chat",
+            DEFAULT_VLLM_CHAT_URL,
         ),
         description="Backend HTTP endpoint used by chatbot_llm.",
     )
@@ -1087,7 +1095,7 @@ def generate_profile_launch_description(
     )
     planner_llm_provider_arg = DeclareLaunchArgument(
         "planner_llm_provider",
-        default_value=_profile_default(profile_defaults, "planner_llm_provider", "ollama"),
+        default_value=_profile_default(profile_defaults, "planner_llm_provider", "openai_compatible"),
         description="Planner backend provider: ollama or openai-compatible.",
     )
     planner_llm_model_arg = DeclareLaunchArgument(
@@ -1095,13 +1103,13 @@ def generate_profile_launch_description(
         default_value=_profile_default(
             profile_defaults,
             "planner_llm_model",
-            _profile_default(profile_defaults, "ollama_model", "gemma4:31b-cloud"),
+            _profile_default(profile_defaults, "chatbot_model", DEFAULT_VLLM_MODEL),
         ),
         description="Planner model name used by planner_llm.",
     )
     planner_llm_base_url_arg = DeclareLaunchArgument(
         "planner_llm_base_url",
-        default_value=_profile_default(profile_defaults, "planner_llm_base_url", "http://127.0.0.1:11434"),
+        default_value=_profile_default(profile_defaults, "planner_llm_base_url", DEFAULT_VLLM_BASE_URL),
         description="Planner backend base URL. For Ollama this is the server root, not /api/chat.",
     )
     planner_llm_api_key_env_arg = DeclareLaunchArgument(
@@ -1173,6 +1181,18 @@ def generate_profile_launch_description(
                 description="Optional audio device identifier passed to simple_audio_capture.",
             ),
             DeclareLaunchArgument(
+                "asr_audio_capture_enabled",
+                default_value=_profile_default(
+                    profile_defaults,
+                    "asr_audio_capture_enabled",
+                    "false",
+                ),
+                description=(
+                    "Launch simple_audio_capture for ASR microphone input. This is "
+                    "disabled by default because it starts a GStreamer audio source."
+                ),
+            ),
+            DeclareLaunchArgument(
                 "asr_push_to_talk_enabled",
                 default_value="true",
                 description="Require an explicit Bool gate before ASR listens.",
@@ -1187,7 +1207,7 @@ def generate_profile_launch_description(
         extra_parameters=[
             {
                 "model": ParameterValue(
-                    _prefer_first_non_empty("ollama_model", "chatbot_model"),
+                    _prefer_first_non_empty("chatbot_model", "ollama_model"),
                     value_type=str,
                 )
             },
@@ -1196,8 +1216,8 @@ def generate_profile_launch_description(
                     _prefer_first_non_empty(
                         "ollama_intent_model",
                         "chatbot_intent_model",
-                        "ollama_model",
                         "chatbot_model",
+                        "ollama_model",
                     ),
                     value_type=str,
                 )
@@ -1930,6 +1950,9 @@ def generate_profile_launch_description(
                 "asr_audio_capture_device": LaunchConfiguration(
                     "asr_audio_capture_device"
                 ),
+                "asr_audio_capture_enabled": LaunchConfiguration(
+                    "asr_audio_capture_enabled"
+                ),
                 "asr_push_to_talk_enabled": LaunchConfiguration(
                     "asr_push_to_talk_enabled"
                 ),
@@ -2103,7 +2126,7 @@ def generate_profile_launch_description(
             LogInfo(
                 msg=[
                     "[STACK] nao_chatbot launch | chatbot_model=",
-                    _prefer_first_non_empty("ollama_model", "chatbot_model"),
+                    _prefer_first_non_empty("chatbot_model", "ollama_model"),
                     " planner_model=",
                     LaunchConfiguration("planner_llm_model"),
                     " planner_mode=",

@@ -95,8 +95,12 @@ def generate_launch_description():
     )
     asr_audio_capture_enabled_arg = DeclareLaunchArgument(
         "asr_audio_capture_enabled",
-        default_value="true",
-        description="Launch simple_audio_capture together with asr_vosk.",
+        default_value="false",
+        description=(
+            "Launch simple_audio_capture together with asr_vosk. Keep this false "
+            "unless microphone capture is explicitly needed, because it starts a "
+            "GStreamer audio source."
+        ),
     )
     asr_audio_capture_source_type_arg = DeclareLaunchArgument(
         "asr_audio_capture_source_type",

@@ -18,9 +18,9 @@ _NO_THINK_PREFIX = (
 
 @dataclass(frozen=True)
 class PlannerProviderConfig:
-    provider: str = 'ollama'
+    provider: str = 'openai_compatible'
     model: str = ''
-    base_url: str = 'http://127.0.0.1:11434'
+    base_url: str = 'http://10.7.138.215:8004'
     api_key_env: str = 'OPENAI_API_KEY'
     temperature: float = 0.1
     max_tokens: int = 800

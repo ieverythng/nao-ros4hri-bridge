@@ -6,6 +6,9 @@ from launch.actions import DeclareLaunchArgument
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[2]
+LAB_VLLM_MODEL = "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ"
+LAB_VLLM_CHAT_URL = "http://10.7.138.215:8004/v1/chat/completions"
+LAB_VLLM_BASE_URL = "http://10.7.138.215:8004"
 
 
 def _load_launch_module(relative_path: str, module_name: str):
@@ -54,7 +57,9 @@ def test_planner_local_profile_disables_runtime_nodes_by_default():
     assert defaults["start_nao_replay_motion"] == "false"
     assert defaults["start_nao_look_at"] == "false"
     assert defaults["start_robot_speech_debug"] == "false"
-    assert defaults["planner_llm_model"] == "gemma4:31b-cloud"
+    assert defaults["planner_llm_provider"] == "openai_compatible"
+    assert defaults["planner_llm_model"] == LAB_VLLM_MODEL
+    assert defaults["planner_llm_base_url"] == LAB_VLLM_BASE_URL
     assert defaults["planner_llm_preflight_required"] == "true"
 
 
@@ -71,13 +76,14 @@ def test_sim_profile_keeps_interaction_sim_enabled_without_planner():
     assert defaults["interaction_sim_hri_log_profile"] == "quiet"
     assert defaults["scene_grounding_fallback_match_distance_px"] == "40.0"
     assert defaults["scene_grounding_fallback_match_max_age_sec"] == "1.2"
-    assert defaults["planner_llm_model"] == "gemma4:31b-cloud"
+    assert defaults["planner_llm_model"] == LAB_VLLM_MODEL
     assert defaults["chatbot_preflight_required"] == "true"
     assert defaults["planner_llm_preflight_required"] == "true"
     assert defaults["enable_orchestrator_planner_gate"] == "true"
     assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
-    assert defaults["chatbot_server_url"] == "http://127.0.0.1:11434/api/chat"
-    assert defaults["planner_llm_base_url"] == "http://127.0.0.1:11435"
+    assert defaults["planner_llm_provider"] == "openai_compatible"
+    assert defaults["chatbot_server_url"] == LAB_VLLM_CHAT_URL
+    assert defaults["planner_llm_base_url"] == LAB_VLLM_BASE_URL
     assert defaults["start_managed_ollama"] == "false"
     assert defaults["start_demo_log_window"] == "true"
     assert defaults["chat_input_tracked_topic"] == "/nao_chatbot/humans/voices/tracked"
@@ -97,11 +103,12 @@ def test_robot_profile_enables_planner_mode_by_default():
     assert defaults["nao_ip"] == "172.26.112.25"
     assert defaults["start_planner_llm"] == "true"
     assert defaults["chatbot_planner_mode_enabled"] == "true"
-    assert defaults["planner_llm_model"] == "gemma4:31b-cloud"
+    assert defaults["planner_llm_model"] == LAB_VLLM_MODEL
     assert defaults["enable_orchestrator_planner_gate"] == "true"
     assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
-    assert defaults["chatbot_server_url"] == "http://127.0.0.1:11434/api/chat"
-    assert defaults["planner_llm_base_url"] == "http://127.0.0.1:11435"
+    assert defaults["planner_llm_provider"] == "openai_compatible"
+    assert defaults["chatbot_server_url"] == LAB_VLLM_CHAT_URL
+    assert defaults["planner_llm_base_url"] == LAB_VLLM_BASE_URL
     assert defaults["start_managed_ollama"] == "false"
     assert defaults["start_demo_log_window"] == "true"
     assert defaults["chat_input_tracked_topic"] == "/nao_chatbot/humans/voices/tracked"
@@ -127,8 +134,9 @@ def test_robot_demo_profile_uses_official_scan_defaults():
     assert defaults["planner_llm_preflight_required"] == "true"
     assert defaults["enable_orchestrator_planner_gate"] == "true"
     assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
-    assert defaults["chatbot_server_url"] == "http://127.0.0.1:11434/api/chat"
-    assert defaults["planner_llm_base_url"] == "http://127.0.0.1:11435"
+    assert defaults["planner_llm_provider"] == "openai_compatible"
+    assert defaults["chatbot_server_url"] == LAB_VLLM_CHAT_URL
+    assert defaults["planner_llm_base_url"] == LAB_VLLM_BASE_URL
     assert defaults["start_managed_ollama"] == "false"
     assert defaults["start_demo_log_window"] == "true"
 
@@ -171,6 +179,7 @@ def test_asr_profiles_are_the_only_profiles_with_asr_launch_args():
             == "/nao_chatbot/humans/voices/anonymous_speaker/is_speaking"
         )
         assert "asr_vosk_model_path" not in defaults
+        assert "asr_audio_capture_enabled" not in defaults
         assert "asr_audio_capture_device" not in defaults
         assert "asr_push_to_talk_enabled" not in defaults
 
@@ -179,6 +188,7 @@ def test_asr_profiles_are_the_only_profiles_with_asr_launch_args():
         "nao_chatbot_sim_asr_launch_test",
     )
     assert defaults["asr_vosk_model_path"] == "/models/vosk-model-small-en-us-0.15"
+    assert defaults["asr_audio_capture_enabled"] == "false"
     assert defaults["asr_push_to_talk_enabled"] == "true"
     assert defaults["chat_input_tracked_topic"] == "/humans/voices/tracked"
     assert defaults["chat_input_speech_topic"] == "/humans/voices/anonymous_speaker/speech"
@@ -192,6 +202,7 @@ def test_asr_profiles_are_the_only_profiles_with_asr_launch_args():
         "nao_chatbot_robot_asr_launch_test",
     )
     assert defaults["asr_vosk_model_path"] == "/models/vosk-model-small-en-us-0.15"
+    assert defaults["asr_audio_capture_enabled"] == "false"
     assert defaults["asr_push_to_talk_enabled"] == "true"
     assert defaults["chat_input_tracked_topic"] == "/humans/voices/tracked"
     assert defaults["chat_input_speech_topic"] == "/humans/voices/anonymous_speaker/speech"

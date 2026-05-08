@@ -9,9 +9,9 @@
     planner_request_intent: "planner_request"
     default_intent_name: "raw_user_input"
     skill_registry_path: ""
-    provider: "ollama"
-    model: "qwen3.5:397b-cloud"
-    base_url: "http://127.0.0.1:11434"
+    provider: "openai_compatible"
+    model: "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ"
+    base_url: "http://10.7.138.215:8004"
     api_key_env: "OPENAI_API_KEY"
     temperature: 0.1
     max_tokens: 800
