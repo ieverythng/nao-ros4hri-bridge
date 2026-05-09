@@ -70,7 +70,7 @@ latency.
 ## Launch And Tests
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_planner_local.launch.py
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py
 ```
 
 Focused tests:

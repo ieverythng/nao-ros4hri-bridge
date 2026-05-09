@@ -35,16 +35,17 @@ _SYSTEM_PROMPT = (
     'Each step must contain type, name, args, requires, on_failure, and retry_budget. '
     'Plan only over the supplied abstract skill registry and allowed step types. '
     'Important contract: type="skill" may only use names from allowed_skill_names; '
-    'say is not a skill name, it is its own step type, so speech must be '
-    '{"type":"say","name":"say","args":{"text":"..."}}. '
+    'do not use skill name "say" or direct speech actions inside executable plans. '
     'Do not reference robot-specific topics, NAOqi APIs, or direct hardware calls. '
     'normalized_intents may be incomplete, so infer the executable request from goal_text, '
     'grounded context, and execution feedback. Treat requested_plan as a compatibility '
     'fallback only, never as higher priority than goal_text or allowed skills. '
     'For scan-style requests such as "look around and tell me what you see", '
     'prefer a short sequence of perform_motion sweep steps followed by a scene-inspection '
-    'skill from the supplied registry when available, then add a final say step that reports '
-    'the observed scene or explains that no grounded scene summary is available. '
+    'skill from the supplied registry when available. Include the requested target or '
+    'target_kind in scan args; if the target is ambiguous, clarify before planning. '
+    'Do not add say steps to executable plans; chatbot_llm owns user-facing completion '
+    'wording after execution. '
     'If the task is ambiguous or blocked, set '
     'decision to clarify and include clarification_text. If no safe continuation exists, '
     'set decision to fail and explain why.'
@@ -248,11 +249,18 @@ class PlannerEngine:
                 'step_type_say': {
                     'type': 'say',
                     'name': 'say',
-                    'args': {'text': 'text for dialogue_manager/nao_say_skill'},
+                    'usage': 'only for clarify/fail/pure dialogue decisions, never mixed with executable steps',
+                    'args': {'text': 'clarification or failure text'},
                 },
                 'invalid_examples': [
                     {'type': 'skill', 'name': 'say'},
                     {'type': 'skill', 'name': 'nao_say'},
+                    {
+                        'steps': [
+                            {'type': 'skill', 'name': 'scan'},
+                            {'type': 'say', 'name': 'say'},
+                        ],
+                    },
                 ],
             },
         }
@@ -701,6 +709,9 @@ class PlannerEngine:
         )
         if rejected_steps:
             return [], [self._step_rejection_reason(step) for step in rejected_steps]
+        mixed_say_error = self._mixed_say_step_error(supported_steps)
+        if mixed_say_error:
+            return [], [mixed_say_error]
         return supported_steps, []
 
     def _step_rejection_reason(self, step: dict) -> str:
@@ -709,13 +720,33 @@ class PlannerEngine:
         if step_type == 'skill' and step_name not in self._skill_registry.allowed_skill_names:
             return (
                 'unsupported skill step name "%s"; allowed_skill_names=%s. '
-                'Use type="say", name="say" for speech.'
+                'Use decision="clarify" or decision="fail" for user-facing speech; '
+                'do not mix speech steps into executable plans.'
                 % (step_name or '<empty>', ','.join(self._skill_registry.allowed_skill_names))
             )
         return 'unsupported plan step type="%s" name="%s"' % (
             step_type or '<empty>',
             step_name or '<empty>',
         )
+
+    @classmethod
+    def _mixed_say_step_error(cls, steps: list[dict]) -> str:
+        has_say = any(cls._is_say_step(step) for step in steps)
+        has_executable = any(not cls._is_say_step(step) for step in steps)
+        if not has_say or not has_executable:
+            return ''
+        return (
+            'say steps cannot be mixed with executable steps; plan only executable '
+            'robot actions and leave completion wording to chatbot_llm after execution'
+        )
+
+    @staticmethod
+    def _is_say_step(step: dict) -> bool:
+        if not isinstance(step, dict):
+            return False
+        step_type = str(step.get('type', '')).strip().lower()
+        step_name = str(step.get('name', '')).strip().lower()
+        return step_type == 'say' or step_name == 'say'
 
     @staticmethod
     def _step(

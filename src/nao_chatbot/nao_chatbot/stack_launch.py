@@ -41,6 +41,130 @@ DEFAULT_VLLM_MODEL = "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ"
 DEFAULT_VLLM_BASE_URL = "http://10.7.138.215:8004"
 DEFAULT_VLLM_CHAT_URL = DEFAULT_VLLM_BASE_URL + "/v1/chat/completions"
 
+_LAB_VLLM_DEFAULTS = {
+    "chatbot_model": DEFAULT_VLLM_MODEL,
+    "planner_llm_provider": "openai_compatible",
+    "planner_llm_model": DEFAULT_VLLM_MODEL,
+    "chatbot_server_url": DEFAULT_VLLM_CHAT_URL,
+    "planner_llm_base_url": DEFAULT_VLLM_BASE_URL,
+    "start_managed_ollama": "false",
+    "start_demo_log_window": "true",
+    "chatbot_think": "false",
+    "planner_llm_think": "false",
+    "chatbot_preflight_required": "true",
+    "chatbot_preflight_keepalive_interval_sec": "180.0",
+    "planner_llm_preflight_required": "true",
+    "chatbot_request_timeout_sec": "60.0",
+    "chatbot_first_request_timeout_sec": "75.0",
+    "chatbot_preflight_timeout_sec": "60.0",
+    "chatbot_preflight_attempts": "3",
+    "chatbot_preflight_realistic_enabled": "true",
+    "planner_llm_timeout_sec": "60.0",
+    "planner_llm_preflight_timeout_sec": "60.0",
+    "planner_llm_preflight_attempts": "3",
+    "planner_llm_preflight_realistic_enabled": "true",
+}
+_PLANNER_GATE_DEFAULTS = {
+    "enable_orchestrator_planner_gate": "true",
+    "chatbot_planner_request_topic": "/nao_orchestrator/planner_request",
+}
+_SIM_CAMERA_DEFAULTS = {
+    "start_naoqi_driver": "false",
+    "start_nao_robot": "false",
+    "start_nao_robot_hri_visualization": "false",
+    "start_rviz": "false",
+    "hri_visualization_image_topic": "/camera/image_raw",
+    "object_detection_input_image_topic": "/camera/image_raw",
+    "start_interaction_sim": "true",
+    "start_interaction_sim_perception": "true",
+    "start_interaction_sim_tools": "true",
+    "start_interaction_sim_expressive_face": "false",
+    "start_interaction_sim_ui": "false",
+    "interaction_sim_hri_log_profile": "quiet",
+    "start_rqt_console": "true",
+    "sim_use_laptop_tts": "false",
+    "head_motion_allow_open_loop_without_joint_state": "true",
+    "head_motion_assume_success_on_convergence_timeout": "true",
+}
+_ROBOT_CAMERA_DEFAULTS = {
+    "nao_ip": "172.26.112.25",
+    "start_naoqi_driver": "false",
+    "start_nao_robot": "true",
+    "start_nao_robot_hri_visualization": "true",
+    "start_rviz": "true",
+    "hri_visualization_image_topic": "/camera/front/image_raw",
+    "object_detection_input_image_topic": "/camera/front/image_raw",
+    "posture_bridge_connect_on_startup": "true",
+    "posture_bridge_disable_autonomous_life_on_connect": "false",
+    "posture_bridge_wake_up_on_connect": "true",
+    "head_motion_allow_open_loop_without_joint_state": "true",
+    "head_motion_assume_success_on_convergence_timeout": "true",
+    "start_interaction_sim": "false",
+    "start_interaction_sim_perception": "false",
+    "start_interaction_sim_tools": "true",
+    "start_interaction_sim_ui": "false",
+    "start_rqt_console": "false",
+    "sim_use_laptop_tts": "false",
+}
+_GROUNDING_DEFAULTS = {
+    "object_detection_threshold": "0.40",
+    "scene_grounding_knowledge_lifespan_sec": "3.0",
+    "scene_grounding_knowledge_refresh_interval_sec": "0.75",
+    "scene_grounding_fallback_match_distance_px": "40.0",
+    "scene_grounding_fallback_match_max_age_sec": "1.2",
+}
+_DEMO_DEFAULTS = {
+    "nao_ip": "172.26.112.25",
+    "network_interface": "wlp1s0",
+    "start_object_detection": "true",
+    "start_scene_grounding": "true",
+    "object_detection_backend": "emorobcare_cv",
+    "start_planner_llm": "true",
+    "chatbot_planner_mode_enabled": "true",
+    "scan_result_mode": "success",
+    "scan_summary": "I looked around and can report the current scene summary.",
+    "scan_report_after_success": "false",
+}
+
+
+def _merged_defaults(*sections: dict[str, str]) -> dict[str, str]:
+    defaults: dict[str, str] = {}
+    for section in sections:
+        defaults.update(section)
+    return defaults
+
+
+def sim_profile_defaults() -> dict[str, str]:
+    return _merged_defaults(
+        _LAB_VLLM_DEFAULTS,
+        _PLANNER_GATE_DEFAULTS,
+        _SIM_CAMERA_DEFAULTS,
+        _GROUNDING_DEFAULTS,
+        {
+            "start_planner_llm": "true",
+            "chatbot_planner_mode_enabled": "true",
+        },
+    )
+
+
+def robot_profile_defaults() -> dict[str, str]:
+    return _merged_defaults(
+        _LAB_VLLM_DEFAULTS,
+        _PLANNER_GATE_DEFAULTS,
+        _ROBOT_CAMERA_DEFAULTS,
+        {
+            "start_planner_llm": "true",
+            "chatbot_planner_mode_enabled": "true",
+        },
+    )
+
+
+def demo_profile_defaults() -> dict[str, str]:
+    return _merged_defaults(
+        sim_profile_defaults(),
+        _DEMO_DEFAULTS,
+    )
+
 
 # -----------------------------------------------------------------------------
 # Generic launch helpers
@@ -275,6 +399,21 @@ def _prefer_first_non_empty(*names: str):
     return PythonExpression(expression)
 
 
+def _nao_say_backend_action_name():
+    """Pick laptop debug TTS for simulator runs only when explicitly requested."""
+    return PythonExpression(
+        [
+            '"',
+            LaunchConfiguration("sim_use_laptop_tts"),
+            '" == "true" and "',
+            LaunchConfiguration("debug_tts_action_name"),
+            '" or "',
+            LaunchConfiguration("tts_backend_action_name"),
+            '"',
+        ]
+    )
+
+
 # -----------------------------------------------------------------------------
 # Optional external integrations
 # -----------------------------------------------------------------------------
@@ -499,7 +638,6 @@ def _optional_hri_visualization_launch(context):
 def generate_profile_launch_description(
     *,
     profile_defaults: dict | None = None,
-    include_asr: bool = False,
 ):
     """Build the full launch description used by sim and robot wrappers."""
     start_naoqi_driver_arg = DeclareLaunchArgument(
@@ -704,6 +842,18 @@ def generate_profile_launch_description(
             "I looked around and can report the current scene summary.",
         ),
         description="Success summary returned by the scan skill.",
+    )
+    scan_report_after_success_arg = DeclareLaunchArgument(
+        "scan_report_after_success",
+        default_value=_profile_default(
+            profile_defaults,
+            "scan_report_after_success",
+            "false",
+        ),
+        description=(
+            "Let nao_orchestrator speak scan results directly. Keep false so "
+            "completed task wording routes back through chatbot_llm."
+        ),
     )
     scene_grounding_allowed_labels_arg = DeclareLaunchArgument(
         "scene_grounding_allowed_labels",
@@ -952,6 +1102,23 @@ def generate_profile_launch_description(
         default_value="/debug/say",
         description="Debug-only TTS action used for rqt_chat and operator monitoring.",
     )
+    tts_backend_action_name_arg = DeclareLaunchArgument(
+        "tts_backend_action_name",
+        default_value=_profile_default(profile_defaults, "tts_backend_action_name", ""),
+        description=(
+            "Downstream robot TTS action for nao_say_skill. Keep empty to use "
+            "the /speech topic fallback."
+        ),
+    )
+    sim_use_laptop_tts_arg = DeclareLaunchArgument(
+        "sim_use_laptop_tts",
+        default_value=_profile_default(profile_defaults, "sim_use_laptop_tts", "false"),
+        description=(
+            "Simulator helper: when true, route nao_say_skill speech through "
+            "debug_tts_action_name (typically /debug/say) so laptop-side TTS can "
+            "play utterances. Robot/demo profiles keep robot speech defaults."
+        ),
+    )
     dialogue_manager_chatbot_arg = DeclareLaunchArgument(
         "dialogue_manager_chatbot",
         default_value="chatbot_llm",
@@ -1167,37 +1334,42 @@ def generate_profile_launch_description(
         default_value="true",
         description="Automatically trigger replanning when nao_orchestrator reports failed or invalid plans.",
     )
-    asr_launch_args = []
-    if include_asr:
-        asr_launch_args = [
-            DeclareLaunchArgument(
-                "asr_vosk_model_path",
-                default_value="/models/vosk-model-small-en-us-0.15",
-                description="Absolute path to the Vosk model.",
-            ),
-            DeclareLaunchArgument(
-                "asr_audio_capture_device",
-                default_value="",
-                description="Optional audio device identifier passed to simple_audio_capture.",
-            ),
-            DeclareLaunchArgument(
-                "asr_audio_capture_enabled",
-                default_value=_profile_default(
-                    profile_defaults,
-                    "asr_audio_capture_enabled",
-                    "false",
-                ),
-                description=(
-                    "Launch simple_audio_capture for ASR microphone input. This is "
-                    "disabled by default because it starts a GStreamer audio source."
-                ),
-            ),
-            DeclareLaunchArgument(
-                "asr_push_to_talk_enabled",
-                default_value="true",
-                description="Require an explicit Bool gate before ASR listens.",
-            ),
-        ]
+    start_asr_arg = DeclareLaunchArgument(
+        "start_asr",
+        default_value=_profile_default(profile_defaults, "start_asr", "false"),
+        description="Opt into local Vosk ASR; disabled by default for all main profiles.",
+    )
+    asr_vosk_model_path_arg = DeclareLaunchArgument(
+        "asr_vosk_model_path",
+        default_value="/models/vosk-model-small-en-us-0.15",
+        description="Absolute path to the Vosk model.",
+    )
+    asr_audio_capture_device_arg = DeclareLaunchArgument(
+        "asr_audio_capture_device",
+        default_value="",
+        description="Optional audio device identifier passed to simple_audio_capture.",
+    )
+    asr_audio_capture_enabled_arg = DeclareLaunchArgument(
+        "asr_audio_capture_enabled",
+        default_value=_profile_default(
+            profile_defaults,
+            "asr_audio_capture_enabled",
+            "false",
+        ),
+        description=(
+            "Launch simple_audio_capture for ASR microphone input. This is "
+            "disabled by default because it starts a GStreamer audio source."
+        ),
+    )
+    asr_push_to_talk_enabled_arg = DeclareLaunchArgument(
+        "asr_push_to_talk_enabled",
+        default_value=_profile_default(
+            profile_defaults,
+            "asr_push_to_talk_enabled",
+            "true",
+        ),
+        description="Require an explicit Bool gate before ASR listens.",
+    )
 
     chatbot_llm_bundle = _make_lifecycle_bundle(
         package_name="chatbot_llm",
@@ -1384,6 +1556,12 @@ def generate_profile_launch_description(
                 )
             },
             {
+                "scan_report_after_success": ParameterValue(
+                    LaunchConfiguration("scan_report_after_success"),
+                    value_type=bool,
+                )
+            },
+            {
                 "enable_planner_gate": ParameterValue(
                     LaunchConfiguration("enable_orchestrator_planner_gate"),
                     value_type=bool,
@@ -1421,7 +1599,13 @@ def generate_profile_launch_description(
                     LaunchConfiguration("debug_tts_action_name"),
                     value_type=str,
                 )
-            }
+            },
+            {
+                "tts_backend_action_name": ParameterValue(
+                    _nao_say_backend_action_name(),
+                    value_type=str,
+                )
+            },
         ],
     )
 
@@ -1557,6 +1741,28 @@ def generate_profile_launch_description(
             "start_interaction_sim_perception:=false for robot-camera validation, "
             "or override object_detection_input_image_topic and "
             "hri_visualization_image_topic to /camera/front/image_raw."
+        ),
+    )
+    object_detection_camera_note = LogInfo(
+        condition=IfCondition(
+            PythonExpression(
+                [
+                    '"',
+                    LaunchConfiguration("start_object_detection"),
+                    '" == "true" and "',
+                    LaunchConfiguration("object_detection_input_image_topic"),
+                    '" == "/camera/image_raw" and "',
+                    LaunchConfiguration("start_interaction_sim_perception"),
+                    '" != "true" and "',
+                    LaunchConfiguration("start_nao_robot"),
+                    '" != "true"',
+                ]
+            )
+        ),
+        msg=(
+            "object_detection is listening on /camera/image_raw, but interaction_sim "
+            "perception is disabled and no robot camera profile is active. GScam is "
+            "started by start_interaction_sim_perception:=true, not by start_naoqi_driver."
         ),
     )
 
@@ -1933,31 +2139,30 @@ def generate_profile_launch_description(
         emulate_tty=True,
         condition=IfCondition(LaunchConfiguration("start_managed_ollama")),
     )
-    asr_launch = None
-    if include_asr:
-        asr_launch = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                PathJoinSubstitution(
-                    [
-                        FindPackageShare("nao_chatbot"),
-                        "launch",
-                        "nao_chatbot_asr_only.launch.py",
-                    ]
-                )
+    asr_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("nao_chatbot"),
+                    "launch",
+                    "nao_chatbot_asr_only.launch.py",
+                ]
+            )
+        ),
+        launch_arguments={
+            "asr_vosk_model_path": LaunchConfiguration("asr_vosk_model_path"),
+            "asr_audio_capture_device": LaunchConfiguration(
+                "asr_audio_capture_device"
             ),
-            launch_arguments={
-                "asr_vosk_model_path": LaunchConfiguration("asr_vosk_model_path"),
-                "asr_audio_capture_device": LaunchConfiguration(
-                    "asr_audio_capture_device"
-                ),
-                "asr_audio_capture_enabled": LaunchConfiguration(
-                    "asr_audio_capture_enabled"
-                ),
-                "asr_push_to_talk_enabled": LaunchConfiguration(
-                    "asr_push_to_talk_enabled"
-                ),
-            }.items(),
-        )
+            "asr_audio_capture_enabled": LaunchConfiguration(
+                "asr_audio_capture_enabled"
+            ),
+            "asr_push_to_talk_enabled": LaunchConfiguration(
+                "asr_push_to_talk_enabled"
+            ),
+        }.items(),
+        condition=IfCondition(LaunchConfiguration("start_asr")),
+    )
 
     dialogue_manager_node = dialogue_manager_bundle[0]
     start_chatbot_condition = IfCondition(LaunchConfiguration("start_chatbot_llm"))
@@ -1993,6 +2198,18 @@ def generate_profile_launch_description(
     dialogue_manager_activate = _activate_lifecycle_node_on_inactive(
         dialogue_manager_node,
         condition=IfCondition(LaunchConfiguration("start_dialogue_manager")),
+    )
+    nao_say_skill_node = nao_say_skill_bundle[0]
+    start_nao_say_skill_condition = IfCondition(
+        LaunchConfiguration("start_nao_say_skill")
+    )
+    nao_say_skill_configure = _configure_lifecycle_node(
+        nao_say_skill_node,
+        condition=start_nao_say_skill_condition,
+    )
+    nao_say_skill_activate = _activate_lifecycle_node_on_inactive(
+        nao_say_skill_node,
+        condition=start_nao_say_skill_condition,
     )
     stack_ready_after_dialogue = RegisterEventHandler(
         OnStateTransition(
@@ -2062,6 +2279,8 @@ def generate_profile_launch_description(
             posture_bridge_disable_autonomous_life_on_connect_arg,
             posture_bridge_wake_up_on_connect_arg,
             debug_tts_action_name_arg,
+            tts_backend_action_name_arg,
+            sim_use_laptop_tts_arg,
             dialogue_manager_chatbot_arg,
             dialogue_manager_enable_default_chat_arg,
             dialogue_manager_default_chat_role_arg,
@@ -2094,6 +2313,7 @@ def generate_profile_launch_description(
             planner_skill_registry_path_arg,
             scan_result_mode_arg,
             scan_summary_arg,
+            scan_report_after_success_arg,
             planner_llm_provider_arg,
             planner_llm_model_arg,
             planner_llm_base_url_arg,
@@ -2108,7 +2328,11 @@ def generate_profile_launch_description(
             planner_llm_preflight_realistic_enabled_arg,
             planner_llm_default_retry_budget_arg,
             planner_llm_auto_replan_arg,
-            *asr_launch_args,
+            start_asr_arg,
+            asr_vosk_model_path_arg,
+            asr_audio_capture_device_arg,
+            asr_audio_capture_enabled_arg,
+            asr_push_to_talk_enabled_arg,
             object_detection_namespace_arg,
             object_detection_model_arg,
             object_detection_device_arg,
@@ -2179,6 +2403,7 @@ def generate_profile_launch_description(
             robot_perception_note,
             robot_tools_only_note,
             driver_perception_note,
+            object_detection_camera_note,
             rqt_console,
             interaction_sim_rqt,
             interaction_sim_rqt_chat_note,
@@ -2246,6 +2471,8 @@ def generate_profile_launch_description(
             dialogue_manager_configure_immediate,
             dialogue_manager_configure_after_chatbot,
             dialogue_manager_activate,
+            nao_say_skill_configure,
+            nao_say_skill_activate,
             stack_ready_after_dialogue,
             *nao_orchestrator_bundle,
             *nao_say_skill_bundle,
@@ -2256,6 +2483,6 @@ def generate_profile_launch_description(
                 period=LaunchConfiguration("managed_ollama_startup_delay_sec"),
                 actions=[planner_llm_node],
             ),
-            *( [asr_launch] if asr_launch is not None else [] ),
+            asr_launch,
         ]
     )

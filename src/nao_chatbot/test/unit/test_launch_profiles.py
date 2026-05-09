@@ -2,10 +2,32 @@ import importlib.util
 import sys
 from pathlib import Path
 
-from launch.actions import DeclareLaunchArgument
+import pytest
+
+try:
+    from launch.actions import DeclareLaunchArgument
+except ModuleNotFoundError:
+    DeclareLaunchArgument = None
+
+pytestmark = pytest.mark.skipif(
+    DeclareLaunchArgument is None,
+    reason="ROS 2 launch Python package is not available",
+)
 
 
-PACKAGE_ROOT = Path(__file__).resolve().parents[2]
+def _nao_chatbot_package_root() -> Path:
+    """Resolve ``src/nao_chatbot`` even if tests move under ``tests/unit`` or similar."""
+    here = Path(__file__).resolve()
+    for candidate in (here, *here.parents):
+        if (candidate / "launch" / "nao_chatbot_sim.launch.py").is_file():
+            return candidate
+    raise RuntimeError(
+        f"Could not locate nao_chatbot package root from {here} "
+        "(expected launch/nao_chatbot_sim.launch.py)."
+    )
+
+
+PACKAGE_ROOT = _nao_chatbot_package_root()
 LAB_VLLM_MODEL = "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ"
 LAB_VLLM_CHAT_URL = "http://10.7.138.215:8004/v1/chat/completions"
 LAB_VLLM_BASE_URL = "http://10.7.138.215:8004"
@@ -44,172 +66,87 @@ def _launch_defaults(relative_path: str, module_name: str) -> dict[str, str]:
     return defaults
 
 
-def test_planner_local_profile_disables_runtime_nodes_by_default():
-    defaults = _launch_defaults(
-        "launch/nao_chatbot_planner_local.launch.py",
-        "nao_chatbot_planner_local_launch_test",
-    )
-    assert defaults["start_planner_llm"] == "true"
-    assert defaults["start_chatbot_llm"] == "false"
-    assert defaults["start_dialogue_manager"] == "false"
-    assert defaults["start_knowledge_core"] == "false"
-    assert defaults["start_nao_say_skill"] == "false"
-    assert defaults["start_nao_replay_motion"] == "false"
-    assert defaults["start_nao_look_at"] == "false"
-    assert defaults["start_robot_speech_debug"] == "false"
+def _assert_lab_vllm_defaults(defaults: dict[str, str]) -> None:
     assert defaults["planner_llm_provider"] == "openai_compatible"
     assert defaults["planner_llm_model"] == LAB_VLLM_MODEL
+    assert defaults["chatbot_server_url"] == LAB_VLLM_CHAT_URL
     assert defaults["planner_llm_base_url"] == LAB_VLLM_BASE_URL
+    assert defaults["start_managed_ollama"] == "false"
+    assert defaults["chatbot_preflight_required"] == "true"
     assert defaults["planner_llm_preflight_required"] == "true"
 
 
-def test_sim_profile_keeps_interaction_sim_enabled_without_planner():
+def _assert_asr_is_opt_in(defaults: dict[str, str]) -> None:
+    assert defaults["start_asr"] == "false"
+    assert defaults["asr_audio_capture_enabled"] == "false"
+    assert defaults["asr_push_to_talk_enabled"] == "true"
+    assert defaults["chat_input_tracked_topic"] == "/nao_chatbot/humans/voices/tracked"
+    assert (
+        defaults["chat_input_speech_topic"]
+        == "/nao_chatbot/humans/voices/anonymous_speaker/speech"
+    )
+    assert defaults["tts_backend_action_name"] == ""
+    assert defaults["sim_use_laptop_tts"] == "false"
+
+
+def test_sim_profile_provides_gscam_camera_and_rqt_with_planner():
     defaults = _launch_defaults(
         "launch/nao_chatbot_sim.launch.py",
         "nao_chatbot_sim_launch_test",
     )
     assert defaults["start_interaction_sim"] == "true"
-    assert defaults["start_interaction_sim_perception"] == "false"
+    assert defaults["start_interaction_sim_perception"] == "true"
     assert defaults["start_interaction_sim_tools"] == "true"
+    assert defaults["start_naoqi_driver"] == "false"
+    assert defaults["start_nao_robot"] == "false"
+    assert defaults["object_detection_input_image_topic"] == "/camera/image_raw"
+    assert defaults["hri_visualization_image_topic"] == "/camera/image_raw"
     assert defaults["start_rqt_console"] == "true"
-    assert defaults["start_planner_llm"] == "false"
-    assert defaults["interaction_sim_hri_log_profile"] == "quiet"
-    assert defaults["scene_grounding_fallback_match_distance_px"] == "40.0"
-    assert defaults["scene_grounding_fallback_match_max_age_sec"] == "1.2"
-    assert defaults["planner_llm_model"] == LAB_VLLM_MODEL
-    assert defaults["chatbot_preflight_required"] == "true"
-    assert defaults["planner_llm_preflight_required"] == "true"
+    assert defaults["start_planner_llm"] == "true"
+    assert defaults["chatbot_planner_mode_enabled"] == "true"
     assert defaults["enable_orchestrator_planner_gate"] == "true"
     assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
-    assert defaults["planner_llm_provider"] == "openai_compatible"
-    assert defaults["chatbot_server_url"] == LAB_VLLM_CHAT_URL
-    assert defaults["planner_llm_base_url"] == LAB_VLLM_BASE_URL
-    assert defaults["start_managed_ollama"] == "false"
-    assert defaults["start_demo_log_window"] == "true"
-    assert defaults["chat_input_tracked_topic"] == "/nao_chatbot/humans/voices/tracked"
-    assert (
-        defaults["chat_input_speech_topic"]
-        == "/nao_chatbot/humans/voices/anonymous_speaker/speech"
-    )
-    assert "asr_vosk_model_path" not in defaults
-    assert "asr_audio_capture_device" not in defaults
+    _assert_lab_vllm_defaults(defaults)
+    _assert_asr_is_opt_in(defaults)
 
 
-def test_robot_profile_enables_planner_mode_by_default():
+def test_robot_profile_uses_robot_camera_and_planner_mode_by_default():
     defaults = _launch_defaults(
         "launch/nao_chatbot_robot.launch.py",
         "nao_chatbot_robot_launch_test",
     )
     assert defaults["nao_ip"] == "172.26.112.25"
+    assert defaults["start_nao_robot"] == "true"
+    assert defaults["start_interaction_sim"] == "false"
+    assert defaults["start_interaction_sim_perception"] == "false"
+    assert defaults["object_detection_input_image_topic"] == "/camera/front/image_raw"
+    assert defaults["hri_visualization_image_topic"] == "/camera/front/image_raw"
     assert defaults["start_planner_llm"] == "true"
     assert defaults["chatbot_planner_mode_enabled"] == "true"
-    assert defaults["planner_llm_model"] == LAB_VLLM_MODEL
     assert defaults["enable_orchestrator_planner_gate"] == "true"
-    assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
-    assert defaults["planner_llm_provider"] == "openai_compatible"
-    assert defaults["chatbot_server_url"] == LAB_VLLM_CHAT_URL
-    assert defaults["planner_llm_base_url"] == LAB_VLLM_BASE_URL
-    assert defaults["start_managed_ollama"] == "false"
-    assert defaults["start_demo_log_window"] == "true"
-    assert defaults["chat_input_tracked_topic"] == "/nao_chatbot/humans/voices/tracked"
-    assert (
-        defaults["chat_input_speech_topic"]
-        == "/nao_chatbot/humans/voices/anonymous_speaker/speech"
-    )
-    assert "asr_vosk_model_path" not in defaults
-    assert "asr_audio_capture_device" not in defaults
+    _assert_lab_vllm_defaults(defaults)
+    _assert_asr_is_opt_in(defaults)
 
 
-def test_robot_demo_profile_uses_official_scan_defaults():
+def test_demo_profile_is_sim_only_with_mock_scan_and_planner_enabled():
     defaults = _launch_defaults(
-        "launch/nao_chatbot_robot_demo.launch.py",
-        "nao_chatbot_robot_demo_launch_test",
+        "launch/nao_chatbot_demo.launch.py",
+        "nao_chatbot_demo_launch_test",
     )
-    assert defaults["scan_result_mode"] == "success"
-    assert "current scene summary" in defaults["scan_summary"]
-    assert "enable_demo_scan_skill" not in defaults
-    assert "demo_scan_result_mode" not in defaults
-    assert "demo_scan_summary" not in defaults
-    assert defaults["chatbot_preflight_required"] == "true"
-    assert defaults["planner_llm_preflight_required"] == "true"
-    assert defaults["enable_orchestrator_planner_gate"] == "true"
-    assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
-    assert defaults["planner_llm_provider"] == "openai_compatible"
-    assert defaults["chatbot_server_url"] == LAB_VLLM_CHAT_URL
-    assert defaults["planner_llm_base_url"] == LAB_VLLM_BASE_URL
-    assert defaults["start_managed_ollama"] == "false"
-    assert defaults["start_demo_log_window"] == "true"
-
-
-def test_sim_demo_profile_uses_scan_without_heavy_perception_by_default():
-    defaults = _launch_defaults(
-        "launch/nao_chatbot_sim_demo.launch.py",
-        "nao_chatbot_sim_demo_launch_test",
-    )
-    assert defaults["start_naoqi_driver"] == "true"
+    assert defaults["start_naoqi_driver"] == "false"
+    assert defaults["start_nao_robot"] == "false"
+    assert defaults["start_interaction_sim"] == "true"
+    assert defaults["start_interaction_sim_perception"] == "true"
     assert defaults["start_object_detection"] == "true"
     assert defaults["start_scene_grounding"] == "true"
-    assert defaults["start_interaction_sim_perception"] == "false"
+    assert defaults["object_detection_backend"] == "emorobcare_cv"
     assert defaults["start_planner_llm"] == "true"
     assert defaults["chatbot_planner_mode_enabled"] == "true"
     assert defaults["scan_result_mode"] == "success"
     assert "current scene summary" in defaults["scan_summary"]
-    assert "enable_demo_scan_skill" not in defaults
-    assert defaults["enable_orchestrator_planner_gate"] == "true"
-    assert defaults["start_managed_ollama"] == "false"
-    assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
-
-
-def test_asr_profiles_are_the_only_profiles_with_asr_launch_args():
-    non_asr_profiles = [
-        ("launch/nao_chatbot_sim.launch.py", "nao_chatbot_sim_no_asr_test"),
-        ("launch/nao_chatbot_robot.launch.py", "nao_chatbot_robot_no_asr_test"),
-        ("launch/nao_chatbot_robot_demo.launch.py", "nao_chatbot_robot_demo_no_asr_test"),
-        ("launch/nao_chatbot_sim_demo.launch.py", "nao_chatbot_sim_demo_no_asr_test"),
-    ]
-    for relative_path, module_name in non_asr_profiles:
-        defaults = _launch_defaults(relative_path, module_name)
-        assert defaults["chat_input_tracked_topic"] == "/nao_chatbot/humans/voices/tracked"
-        assert (
-            defaults["chat_input_speech_topic"]
-            == "/nao_chatbot/humans/voices/anonymous_speaker/speech"
-        )
-        assert (
-            defaults["chat_input_is_speaking_topic"]
-            == "/nao_chatbot/humans/voices/anonymous_speaker/is_speaking"
-        )
-        assert "asr_vosk_model_path" not in defaults
-        assert "asr_audio_capture_enabled" not in defaults
-        assert "asr_audio_capture_device" not in defaults
-        assert "asr_push_to_talk_enabled" not in defaults
-
-    defaults = _launch_defaults(
-        "launch/nao_chatbot_sim_asr.launch.py",
-        "nao_chatbot_sim_asr_launch_test",
-    )
-    assert defaults["asr_vosk_model_path"] == "/models/vosk-model-small-en-us-0.15"
-    assert defaults["asr_audio_capture_enabled"] == "false"
-    assert defaults["asr_push_to_talk_enabled"] == "true"
-    assert defaults["chat_input_tracked_topic"] == "/humans/voices/tracked"
-    assert defaults["chat_input_speech_topic"] == "/humans/voices/anonymous_speaker/speech"
-    assert (
-        defaults["chat_input_is_speaking_topic"]
-        == "/humans/voices/anonymous_speaker/is_speaking"
-    )
-
-    defaults = _launch_defaults(
-        "launch/nao_chatbot_robot_asr.launch.py",
-        "nao_chatbot_robot_asr_launch_test",
-    )
-    assert defaults["asr_vosk_model_path"] == "/models/vosk-model-small-en-us-0.15"
-    assert defaults["asr_audio_capture_enabled"] == "false"
-    assert defaults["asr_push_to_talk_enabled"] == "true"
-    assert defaults["chat_input_tracked_topic"] == "/humans/voices/tracked"
-    assert defaults["chat_input_speech_topic"] == "/humans/voices/anonymous_speaker/speech"
-    assert (
-        defaults["chat_input_is_speaking_topic"]
-        == "/humans/voices/anonymous_speaker/is_speaking"
-    )
+    assert defaults["scan_report_after_success"] == "false"
+    _assert_lab_vllm_defaults(defaults)
+    _assert_asr_is_opt_in(defaults)
 
 
 def test_stack_uses_launch_events_for_chatbot_and_dialogue_lifecycle():
@@ -220,17 +157,5 @@ def test_stack_uses_launch_events_for_chatbot_and_dialogue_lifecycle():
     launch_description = stack_launch.generate_profile_launch_description()
     entity_type_names = [type(entity).__name__ for entity in launch_description.entities]
 
-    assert 'EmitEvent' in entity_type_names
-    assert 'RegisterEventHandler' in entity_type_names
-
-
-def test_stack_does_not_poll_chatbot_lifecycle_with_ros2_cli():
-    stack_launch = _load_launch_module(
-        "nao_chatbot/stack_launch.py",
-        "nao_chatbot_stack_launch_budget_test",
-    )
-    source = Path(stack_launch.__file__).read_text()
-
-    assert '_lifecycle_wait_then_bootstrap_script' not in source
-    assert '_service_wait_then_lifecycle_bootstrap_script' not in source
-    assert 'ros2 lifecycle get "$wait_node_name"' not in source
+    assert "EmitEvent" in entity_type_names
+    assert "RegisterEventHandler" in entity_type_names

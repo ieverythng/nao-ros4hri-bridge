@@ -48,6 +48,7 @@ class SupervisorState:
     active_plan_steps: tuple[dict, ...] = ()
     communication_policy: dict = field(default_factory=dict)
     last_request: PlannerRequest | None = None
+    latest_result_summary: str = ''
 
 
 @dataclass(frozen=True)
@@ -110,6 +111,8 @@ class PlannerSupervisor:
             return SupervisorOutcome()
 
         state.last_execution_feedback = feedback
+        if feedback.result_summary:
+            state.latest_result_summary = feedback.result_summary
         if feedback.timestamp_sec > 0:
             state.latest_world_timestamp_sec = feedback.timestamp_sec
 
@@ -151,13 +154,18 @@ class PlannerSupervisor:
             state.active_plan_id = ''
             state.awaiting_user_response = False
             self._forget_plan(feedback.plan_id)
-            if self._communication_policy_allows(state, 'emit_completion'):
+            completion_text = state.latest_result_summary or self._completion_text(state)
+            if (
+                (completion_text or state.latest_result_summary or state.active_plan_steps)
+                and self._communication_policy_allows(state, 'emit_completion')
+                and not self._plan_already_spoke_result(state)
+            ):
                 return SupervisorOutcome(
                     dialogue_acts=(self._dialogue_act(
                         state,
                         act='notify_completion',
                         reason=feedback.reason or 'goal completed',
-                        text_hint=self._completion_text(state),
+                        text_hint=completion_text,
                     ),)
                 )
             return SupervisorOutcome()
@@ -372,6 +380,7 @@ class PlannerSupervisor:
                 if state.last_request is not None
                 else [],
                 'goal_text': state.last_request.goal_text if state.last_request is not None else '',
+                'result_summary': state.latest_result_summary,
                 'status': state.current_status,
             },
         )
@@ -404,15 +413,14 @@ class PlannerSupervisor:
         return 'I am working on it now.'
 
     def _completion_text(self, state: SupervisorState) -> str:
-        if len(state.active_plan_steps) > 1:
-            return 'I finished that sequence.'
         if state.active_plan_steps:
-            step_text = self._completion_text_for_step(
-                state.active_plan_steps[0],
-                scene_targets=state.active_scene_targets,
-            )
-            if step_text:
-                return step_text
+            for step in reversed(state.active_plan_steps):
+                step_text = self._completion_text_for_step(
+                    step,
+                    scene_targets=state.active_scene_targets,
+                )
+                if step_text:
+                    return step_text
         if state.last_request is not None and len(state.last_request.normalized_intents) == 1:
             intent_name = state.last_request.normalized_intents[0]
             step_text = self._completion_text_for_step(
@@ -425,7 +433,20 @@ class PlannerSupervisor:
             )
             if step_text:
                 return step_text
-        return 'I finished that task.'
+        return ''
+
+    @staticmethod
+    def _plan_already_spoke_result(state: SupervisorState) -> bool:
+        if not state.active_plan_steps:
+            return False
+        final_step = state.active_plan_steps[-1]
+        if not isinstance(final_step, dict):
+            return False
+        step_type = str(final_step.get('type', '')).strip().lower()
+        step_name = str(final_step.get('name', '')).strip().lower()
+        if step_type != 'say' and step_name != 'say':
+            return False
+        return bool(str(dict(final_step.get('args', {})).get('text', '')).strip())
 
     @staticmethod
     def _step_for_feedback(state: SupervisorState, feedback: ExecutionFeedback) -> dict:

@@ -7,7 +7,7 @@ robot adapter packages.
 ## Owns
 
 - shared launch builder in `nao_chatbot/stack_launch.py`
-- simulator, robot, planner-local, and ASR launch profiles
+- simulator, robot, demo, and ASR utility launch surfaces (planner is on by default in sim/robot/demo)
 - push-to-talk and speech-debug operator utilities
 
 It does not own chatbot inference, planner logic, or robot skill execution.
@@ -16,19 +16,31 @@ It does not own chatbot inference, planner logic, or robot skill execution.
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py
-ros2 launch nao_chatbot nao_chatbot_sim_asr.launch.py
 ros2 launch nao_chatbot nao_chatbot_robot.launch.py nao_ip:=<robot_ip>
-ros2 launch nao_chatbot nao_chatbot_robot_asr.launch.py nao_ip:=<robot_ip>
-ros2 launch nao_chatbot nao_chatbot_planner_local.launch.py
+ros2 launch nao_chatbot nao_chatbot_demo.launch.py
 ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py
 ```
 
-Planner mode:
+ASR opt-in:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
-  start_planner_llm:=true \
-  chatbot_planner_mode_enabled:=true
+  start_asr:=true \
+  asr_vosk_model_path:=/models/vosk-model-small-en-us-0.15
+```
+
+Demo profile:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_demo.launch.py
+```
+
+Planner is enabled by default in sim, robot, and demo. To turn it off:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_planner_llm:=false \
+  chatbot_planner_mode_enabled:=false
 ```
 
 Object grounding:
@@ -40,12 +52,10 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   object_detection_backend:=emorobcare_cv
 ```
 
-Planner mode plus object grounding:
+Planner plus object grounding (defaults already include planner; only perception flags are required):
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
-  start_planner_llm:=true \
-  chatbot_planner_mode_enabled:=true \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=emorobcare_cv
@@ -86,7 +96,7 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
 - `object_detection_backend`
 - `nao_ip`
 - `start_rviz`
-- `asr_vosk_enabled`
+- `start_asr`
 - `asr_push_to_talk_enabled`
 - `start_interaction_sim`
 - `start_interaction_sim_perception`
@@ -122,6 +132,14 @@ This package wires:
 
 It should keep launch wiring explicit rather than hiding planner behavior inside
 unrelated packages.
+
+Planner dialogue ownership stays split:
+
+- `chatbot_llm` generates the initial ack and final task-relative wording.
+- `planner_llm` produces abstract plans and completion dialogue-act facts.
+- `nao_orchestrator` executes skills and reports feedback.
+- `dialogue_manager` routes completion facts back through `chatbot_llm` before
+  speaking through TTS.
 
 ## Perception And Scene Grounding
 

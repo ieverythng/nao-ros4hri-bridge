@@ -125,8 +125,7 @@ def test_planner_engine_retries_invalid_model_plan_with_validation_feedback() ->
         [
             '{"steps":[{"type":"skill","name":"scan","args":{"target_kind":"scene"}},'
             '{"type":"skill","name":"say","args":{"text":"I looked around."}}]}',
-            '{"steps":[{"type":"skill","name":"scan","args":{"target_kind":"scene"}},'
-            '{"type":"say","name":"say","args":{"text":"I looked around."}}]}',
+            '{"steps":[{"type":"skill","name":"scan","args":{"target_kind":"scene"}}]}',
         ]
     )
     engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
@@ -145,8 +144,33 @@ def test_planner_engine_retries_invalid_model_plan_with_validation_feedback() ->
     assert len(provider.messages) == 2
     retry_prompt = provider.messages[1][1]['content']
     assert 'validation_retry' in retry_prompt
-    assert 'Use type=\\"say\\", name=\\"say\\" for speech.' in retry_prompt
-    assert [step['type'] for step in decision.payload['plan']['steps']] == ['skill', 'say']
+    assert 'do not mix speech steps into executable plans' in retry_prompt
+    assert [step['type'] for step in decision.payload['plan']['steps']] == ['skill']
+
+
+def test_planner_engine_rejects_mixed_say_and_executable_steps() -> None:
+    provider = _FakeProvider(
+        '{"ack_text":"Sure, I will move my head up and down for you.",'
+        '"steps":[{"type":"skill","name":"perform_motion","args":{"object":"head_look_up"}},'
+        '{"type":"skill","name":"perform_motion","args":{"object":"head_look_down"}},'
+        '{"type":"say","name":"say","args":{"text":"Sure, I will move my head up and down for you."}}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_dedupe',
+            'goal_id': 'goal_dedupe',
+            'goal_text': 'move your head up and down',
+            'normalized_intents': ['head_nod', 'head_look_up'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_dedupe', plan_version=1)
+
+    assert decision.mode == 'fail'
+    assert decision.payload['plan']['status'] == 'failed'
+    assert 'say steps cannot be mixed with executable steps' in decision.payload['plan']['failure_reason']
 
 
 def test_planner_engine_marks_provider_timeout_as_backend_unavailable() -> None:
@@ -367,7 +391,7 @@ def test_ollama_provider_uses_thinking_when_content_is_empty(monkeypatch) -> Non
 
 def test_planner_engine_accepts_scan_steps_from_provider() -> None:
     provider = _FakeProvider(
-        '{"ack_text":"I will look around and report what I find.","steps":[{"type":"skill","name":"perform_motion","args":{"object":"head_look_left"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"perform_motion","args":{"object":"head_look_right"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"scan","args":{"target":"people","max_sweeps":2},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"say","name":"say","args":{"text":"I found one person."},"requires":[],"on_failure":"continue","retry_budget":0}]}'
+        '{"ack_text":"I will look around and report what I find.","steps":[{"type":"skill","name":"perform_motion","args":{"object":"head_look_left"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"perform_motion","args":{"object":"head_look_right"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"scan","args":{"target":"people","target_kind":"people","max_sweeps":2},"requires":[],"on_failure":"replan","retry_budget":0}]}'
     )
     engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
     request = PlannerRequest.from_payload(
@@ -388,5 +412,34 @@ def test_planner_engine_accepts_scan_steps_from_provider() -> None:
         'perform_motion',
         'perform_motion',
         'scan',
-        'say',
+    ]
+
+
+def test_planner_engine_retries_scan_result_wording_outside_plan() -> None:
+    provider = _SequenceProvider(
+        [
+            '{"ack_text":"I will look around and report what I find.",'
+            '"steps":[{"type":"skill","name":"scan","args":{"target":"people"}},'
+            '{"type":"say","name":"say","args":{"text":"I found one person."}}]}',
+            '{"ack_text":"I will look around and report what I find.",'
+            '"steps":[{"type":"skill","name":"scan","args":{"target":"people","target_kind":"people"}}]}',
+        ]
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_scan_result',
+            'goal_id': 'goal_scan_result',
+            'goal_text': 'look around and tell me what you see',
+            'normalized_intents': ['inspect_scene'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_scan_result', plan_version=1)
+
+    assert len(provider.messages) == 2
+    assert 'say steps cannot be mixed with executable steps' in provider.messages[1][1]['content']
+    assert [step['name'] for step in decision.payload['plan']['steps']] == [
+        'scan',
     ]

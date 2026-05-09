@@ -234,7 +234,7 @@ def test_validate_execution_plan_accepts_scan_skill() -> None:
 
 def test_scan_step_is_available_without_demo_gate() -> None:
     success, reason, metadata = resolve_scan_result(
-        {'target_kind': 'people'},
+        {'target_kind': 'scene'},
         default_result_mode='success',
         default_summary='I scanned the scene.',
     )
@@ -243,9 +243,37 @@ def test_scan_step_is_available_without_demo_gate() -> None:
     assert reason == 'I scanned the scene.'
     assert metadata == {
         'target': '',
-        'target_kind': 'people',
+        'target_kind': 'scene',
         'result_mode': 'success',
     }
+
+
+def test_targeted_scan_without_explicit_summary_reports_missing_detection() -> None:
+    success, reason, metadata = resolve_scan_result(
+        {'target': 'people', 'target_kind': 'people'},
+        default_result_mode='success',
+        default_summary='I scanned the scene.',
+    )
+
+    assert success
+    assert reason == 'I completed the scan for people, but no confirmed detection result was reported.'
+    assert metadata['target_kind'] == 'people'
+
+
+def test_targeted_scan_preserves_explicit_summary() -> None:
+    success, reason, metadata = resolve_scan_result(
+        {
+            'target': 'people',
+            'target_kind': 'people',
+            'summary': 'I found one person near the table.',
+        },
+        default_result_mode='success',
+        default_summary='I scanned the scene.',
+    )
+
+    assert success
+    assert reason == 'I found one person near the table.'
+    assert metadata['target'] == 'people'
 
 
 def test_scan_step_can_report_configured_failure() -> None:

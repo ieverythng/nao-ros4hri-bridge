@@ -1,8 +1,8 @@
+from nao_chatbot.stack_launch import demo_profile_defaults
 from nao_chatbot.stack_launch import generate_profile_launch_description
-from nao_chatbot.stack_launch import robot_profile_defaults
 
 
 def generate_launch_description():
     return generate_profile_launch_description(
-        profile_defaults=robot_profile_defaults(),
+        profile_defaults=demo_profile_defaults(),
     )

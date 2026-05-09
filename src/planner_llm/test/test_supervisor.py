@@ -129,6 +129,84 @@ class _AckEngine(_StubEngine):
         return decision
 
 
+class _MotionSequenceEngine(_StubEngine):
+    def plan_request(self, request, **kwargs):
+        decision = super().plan_request(request, **kwargs)
+        decision.payload['plan']['steps'] = [
+            {
+                'id': 'step_1',
+                'type': 'skill',
+                'name': 'perform_motion',
+                'args': {'object': 'head_look_up'},
+                'requires': [],
+                'on_failure': 'replan',
+                'retry_budget': 0,
+            },
+            {
+                'id': 'step_2',
+                'type': 'skill',
+                'name': 'perform_motion',
+                'args': {'object': 'head_look_down'},
+                'requires': [],
+                'on_failure': 'replan',
+                'retry_budget': 0,
+            },
+        ]
+        return decision
+
+
+class _MotionScanEngine(_StubEngine):
+    def plan_request(self, request, **kwargs):
+        decision = super().plan_request(request, **kwargs)
+        decision.payload['plan']['steps'] = [
+            {
+                'id': 'step_1',
+                'type': 'skill',
+                'name': 'perform_motion',
+                'args': {'object': 'head_look_left'},
+                'requires': [],
+                'on_failure': 'replan',
+                'retry_budget': 0,
+            },
+            {
+                'id': 'step_2',
+                'type': 'skill',
+                'name': 'scan',
+                'args': {'target': 'people', 'target_kind': 'people'},
+                'requires': [],
+                'on_failure': 'replan',
+                'retry_budget': 0,
+            },
+        ]
+        return decision
+
+
+class _ResultSayEngine(_StubEngine):
+    def plan_request(self, request, **kwargs):
+        decision = super().plan_request(request, **kwargs)
+        decision.payload['plan']['steps'] = [
+            {
+                'id': 'step_1',
+                'type': 'skill',
+                'name': 'scan',
+                'args': {'target': 'people'},
+                'requires': [],
+                'on_failure': 'replan',
+                'retry_budget': 0,
+            },
+            {
+                'id': 'step_2',
+                'type': 'say',
+                'name': 'say',
+                'args': {'text': 'I found one person.'},
+                'requires': [],
+                'on_failure': 'continue',
+                'retry_budget': 0,
+            },
+        ]
+        return decision
+
+
 def test_supervisor_creates_new_goal_session_without_duplicate_ack_dialogue_act() -> None:
     supervisor = PlannerSupervisor(_StubEngine(), auto_replan=True)
     request = PlannerRequest.from_payload(
@@ -316,6 +394,125 @@ def test_supervisor_emits_completion_dialogue_act_when_policy_allows_it() -> Non
     assert len(outcome.dialogue_acts) == 1
     assert outcome.dialogue_acts[0].act == 'notify_completion'
     assert outcome.dialogue_acts[0].text_hint == 'I am looking straight ahead now.'
+
+
+def test_supervisor_uses_task_specific_completion_for_motion_sequence() -> None:
+    supervisor = PlannerSupervisor(_MotionSequenceEngine(), auto_replan=True)
+    request = PlannerRequest.from_payload(
+        {'goal_id': 'goal_motion_sequence', 'request_id': 'turn_1', 'user_text': 'nod'}
+    )
+    first_outcome = supervisor.handle_request(request)
+    feedback = ExecutionFeedback.from_payload(
+        {
+            'goal_id': 'goal_motion_sequence',
+            'plan_id': first_outcome.decision.plan_id,
+            'plan_version': 1,
+            'event_type': 'plan_completed',
+            'status': 'completed',
+        }
+    )
+
+    outcome = supervisor.handle_feedback(feedback)
+
+    assert outcome.decision is None
+    assert len(outcome.dialogue_acts) == 1
+    assert outcome.dialogue_acts[0].text_hint == 'I am looking down now.'
+
+
+def test_supervisor_suppresses_completion_when_plan_ended_with_result_say() -> None:
+    supervisor = PlannerSupervisor(_ResultSayEngine(), auto_replan=True)
+    request = PlannerRequest.from_payload(
+        {'goal_id': 'goal_scan_result', 'request_id': 'turn_1', 'user_text': 'scan'}
+    )
+    first_outcome = supervisor.handle_request(request)
+    feedback = ExecutionFeedback.from_payload(
+        {
+            'goal_id': 'goal_scan_result',
+            'plan_id': first_outcome.decision.plan_id,
+            'plan_version': 1,
+            'event_type': 'plan_completed',
+            'status': 'completed',
+        }
+    )
+
+    outcome = supervisor.handle_feedback(feedback)
+
+    assert outcome.decision is None
+    assert outcome.dialogue_acts == ()
+
+
+def test_supervisor_completion_act_carries_latest_result_summary() -> None:
+    supervisor = PlannerSupervisor(_StubEngine(), auto_replan=True)
+    request = PlannerRequest.from_payload(
+        {'goal_id': 'goal_scan_summary', 'request_id': 'turn_1', 'user_text': 'scan'}
+    )
+    first_outcome = supervisor.handle_request(request)
+    step_feedback = ExecutionFeedback.from_payload(
+        {
+            'goal_id': 'goal_scan_summary',
+            'plan_id': first_outcome.decision.plan_id,
+            'plan_version': 1,
+            'event_type': 'step_succeeded',
+            'status': 'succeeded',
+            'result_summary': 'I found one person.',
+        }
+    )
+    supervisor.handle_feedback(step_feedback)
+
+    outcome = supervisor.handle_feedback(
+        ExecutionFeedback.from_payload(
+            {
+                'goal_id': 'goal_scan_summary',
+                'plan_id': first_outcome.decision.plan_id,
+                'plan_version': 1,
+                'event_type': 'plan_completed',
+                'status': 'completed',
+            }
+        )
+    )
+
+    assert len(outcome.dialogue_acts) == 1
+    assert outcome.dialogue_acts[0].text_hint == 'I found one person.'
+    assert outcome.dialogue_acts[0].context['result_summary'] == 'I found one person.'
+
+
+def test_supervisor_prefers_scan_result_over_motion_completion_copy() -> None:
+    supervisor = PlannerSupervisor(_MotionScanEngine(), auto_replan=True)
+    request = PlannerRequest.from_payload(
+        {'goal_id': 'goal_scan_summary', 'request_id': 'turn_1', 'user_text': 'scan for people'}
+    )
+    first_outcome = supervisor.handle_request(request)
+    supervisor.handle_feedback(
+        ExecutionFeedback.from_payload(
+            {
+                'goal_id': 'goal_scan_summary',
+                'plan_id': first_outcome.decision.plan_id,
+                'plan_version': 1,
+                'event_type': 'step_succeeded',
+                'status': 'succeeded',
+                'step_id': 'step_2',
+                'result_summary': (
+                    'I completed the scan for people, but no confirmed detection result was reported.'
+                ),
+            }
+        )
+    )
+
+    outcome = supervisor.handle_feedback(
+        ExecutionFeedback.from_payload(
+            {
+                'goal_id': 'goal_scan_summary',
+                'plan_id': first_outcome.decision.plan_id,
+                'plan_version': 1,
+                'event_type': 'plan_completed',
+                'status': 'completed',
+            }
+        )
+    )
+
+    assert len(outcome.dialogue_acts) == 1
+    assert outcome.dialogue_acts[0].text_hint.startswith('I completed the scan for people')
+    assert 'looking to the left' not in outcome.dialogue_acts[0].text_hint
 
 
 def test_supervisor_emits_acknowledgement_dialogue_act_when_policy_allows_it() -> None:

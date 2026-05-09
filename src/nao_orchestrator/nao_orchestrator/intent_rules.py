@@ -268,7 +268,8 @@ def resolve_scan_result(
     ).strip().lower()
     target = str(step_args.get('target', '')).strip()
     target_kind = str(step_args.get('target_kind', target or 'scene')).strip() or 'scene'
-    summary = str(step_args.get('summary', default_summary)).strip()
+    explicit_summary = str(step_args.get('summary', '')).strip()
+    summary = explicit_summary or str(default_summary).strip()
     metadata = {
         'target': target,
         'target_kind': target_kind,
@@ -276,7 +277,13 @@ def resolve_scan_result(
     }
     if result_mode in ('fail', 'failed', 'failure'):
         return False, 'scan requested failure for %s' % target_kind, metadata
-    return True, summary or 'scan completed', metadata
+    if explicit_summary or target_kind == 'scene':
+        return True, summary or 'scan completed', metadata
+    target_label = target or target_kind
+    return True, (
+        'I completed the scan for %s, but no confirmed detection result was reported.'
+        % target_label
+    ), metadata
 
 
 # -----------------------------------------------------------------------------
