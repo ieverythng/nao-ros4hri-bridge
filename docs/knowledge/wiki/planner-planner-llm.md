@@ -265,7 +265,7 @@ The planner should never reference raw robot topics or NAOqi APIs directly—onl
 Local smoke test:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_planner_local.launch.py
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py
 ```
 
 Publish fixture messages:

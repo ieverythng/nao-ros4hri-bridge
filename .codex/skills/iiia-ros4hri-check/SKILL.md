@@ -14,8 +14,12 @@ package structure, and upstream-sensitive edits.
 
 ## Quick Start
 
-1. Run `scripts/ros4hri_change_audit.py` from the repo root to identify touched
-   packages and the guardrails that apply.
+1. From the **repository root** (`nao-ros4hri-bridge`), run
+   `python3 scripts/ros4hri_change_audit.py` to identify touched packages and the
+   guardrails that apply. The canonical script lives in the repo; the copy under
+   `.codex/skills/iiia-ros4hri-check/scripts/ros4hri_change_audit.py` delegates to
+   it so the skill stays in sync when this repo is checked out as a subfolder, with
+   a standalone fallback when the canonical script is unavailable in a branch.
 2. Read `references/repo-boundaries.md` to understand which packages are safe to
    evolve freely and which require seam-focused changes only.
 3. Read `references/ros4hri-guardrails.md` for the actual checklist.
@@ -87,11 +91,12 @@ package structure, and upstream-sensitive edits.
 
 ## Resources
 
-- `references/repo-boundaries.md`
+- `references/repo-boundaries.md` (under this skill directory)
   - package ownership, nested repo notes, and repo-specific sensitivity map
-- `references/ros4hri-guardrails.md`
+- `references/ros4hri-guardrails.md` (under this skill directory)
   - ROS, ROS4HRI, SocialMinds, and IIIA-specific checklist with external links
-- `scripts/ros4hri_change_audit.py`
+- **`scripts/ros4hri_change_audit.py` at the repo root** (not only under `.codex/`)
   - summarize changed packages and print the most relevant guardrail cues
 - `scripts/link_into_codex_home.sh`
-  - symlink this repo-bound skill into `${CODEX_HOME:-$HOME/.codex}/skills`
+  - install this skill into `${CODEX_HOME:-$HOME/.codex}/skills` with either
+    `copy` (branch-independent local snapshot) or `symlink` (always follow this repo checkout)

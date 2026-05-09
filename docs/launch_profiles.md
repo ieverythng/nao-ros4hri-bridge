@@ -1,6 +1,6 @@
 # Launch Profiles
 
-Last updated: 2026-04-24
+Last updated: 2026-05-08
 
 This file is the active launch guide. Historical launch notes are under
 `docs/artifacts/`.
@@ -9,11 +9,9 @@ This file is the active launch guide. Historical launch notes are under
 
 | Launch file | Default purpose | Notes |
 | --- | --- | --- |
-| `nao_chatbot_sim.launch.py` | Simulator stack and operator tools | Planner off by default; camera/GStreamer perception off unless requested |
-| `nao_chatbot_sim_asr.launch.py` | Simulator stack plus local ASR | Uses `simple_audio_capture` + `asr_vosk` |
-| `nao_chatbot_robot.launch.py` | Real robot camera/RViz/HRI overlays | Planner mode on in robot profile defaults |
-| `nao_chatbot_robot_asr.launch.py` | Robot stack plus local ASR | Needs `nao_ip` |
-| `nao_chatbot_planner_local.launch.py` | Planner/orchestrator local harness | No dialogue, robot skills, detector, or KB by default |
+| `nao_chatbot_sim.launch.py` | Simulator stack and operator tools | Planner and planner gate on by default; laptop camera on `/camera/image_raw`; `rqt` console on |
+| `nao_chatbot_robot.launch.py` | Real robot camera/RViz/HRI overlays | Planner mode on; robot TF and RViz in profile defaults |
+| `nao_chatbot_demo.launch.py` | Sim-only demo with mock scan and demo-oriented defaults | Extends sim profile with demo skills and grounding |
 | `nao_chatbot_asr_only.launch.py` | Isolated ASR | No dialogue/planner/executor |
 
 ## Common Commands
@@ -24,31 +22,53 @@ Simulator:
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py
 ```
 
-Simulator with planner handoff:
+Simulator with planner opt-out:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
-  start_planner_llm:=true \
-  chatbot_planner_mode_enabled:=true
+  start_planner_llm:=false \
+  chatbot_planner_mode_enabled:=false
 ```
 
 Simulator with object grounding and camera/GStreamer perception:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
-  start_interaction_sim_perception:=true \
   start_object_detection:=true \
   start_scene_grounding:=true \
   object_detection_backend:=emorobcare_cv
 ```
 
-Planner-local harness:
+Simulator with laptop-side TTS playback for robot utterances:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_planner_local.launch.py
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  sim_use_laptop_tts:=true
 ```
 
-Planner-local with fixture publishers:
+Demo:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_demo.launch.py
+```
+
+Minimal planner + orchestrator harness (sim profile, most runtime nodes off):
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_chatbot_llm:=false \
+  start_dialogue_manager:=false \
+  start_knowledge_core:=false \
+  start_interaction_sim:=false \
+  start_interaction_sim_perception:=false \
+  start_interaction_sim_tools:=false \
+  start_object_detection:=false \
+  start_scene_grounding:=false \
+  start_rqt_console:=false \
+  start_robot_speech_debug:=false
+```
+
+Planner fixtures (optional):
 
 ```bash
 ros2 run planner_llm publish_fixture request
@@ -85,6 +105,12 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
 - `scan_result_mode`: deterministic scan skill result mode (`success` or
   `failure`) for no-robot validation.
 - `scan_summary`: success summary returned by the scan skill.
+  Targeted scans only use this as final factual content when it is attached as
+  an explicit scan-step summary; otherwise they report that no confirmed target
+  detection was available.
+- `scan_report_after_success`: defaults to `false` so scan completion wording
+  routes through `chatbot_llm` instead of being spoken directly by
+  `nao_orchestrator`.
 - `planner_request_topic`: defaults to `/planner/request`.
 - `planner_request_intent`: defaults to `planner_request`.
 - `planner_dialogue_act_topic`: defaults to `/planner/dialogue_act`.
@@ -101,13 +127,32 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
 
 ## ASR And Perception Startup
 
-Non-ASR profiles do not include `asr_vosk` or `simple_audio_capture` launch
-arguments. Use `nao_chatbot_sim_asr.launch.py`, `nao_chatbot_robot_asr.launch.py`,
-or `nao_chatbot_asr_only.launch.py` when local speech recognition is desired.
+Main profiles expose ASR arguments but keep ASR disabled by default. Pass
+`start_asr:=true` when local speech recognition is desired, or use
+`nao_chatbot_asr_only.launch.py` for isolated ASR testing.
 
-The interaction-sim tools can run without camera/GStreamer perception. In sim
-profiles, enable camera perception explicitly with
-`start_interaction_sim_perception:=true` when you need the `gscam` camera feed.
+The interaction-sim tools can run without camera/GStreamer perception, but
+`gscam` itself is part of `start_interaction_sim_perception`. `start_naoqi_driver`
+does not start GScam.
+
+## Planner Dialogue Flow
+
+Execution-oriented turns use this ownership split:
+
+```text
+user -> dialogue_manager -> chatbot_llm -> nao_orchestrator planner gate
+     -> planner_llm -> nao_orchestrator -> skills
+     -> planner feedback -> planner_llm dialogue act
+     -> dialogue_manager -> chatbot_llm completion pass -> TTS
+```
+
+`chatbot_llm` owns natural language for the initial acknowledgement and final
+task-relative utterance. `planner_llm` owns abstract plan structure and
+supervision only. `nao_orchestrator` executes deterministic skill steps and
+publishes feedback; it should not invent user-facing wording. Executable
+planner outputs must not include `say` steps. If the planner model mixes
+speech with robot actions, `planner_llm` rejects the output and retries with
+validation feedback.
 
 For the local split-endpoint experiment, start two host-side Ollama servers
 before launching ROS. This must run on the host, not from inside the container,
@@ -132,7 +177,7 @@ the existing `11434` service.
 Then launch with the profile defaults:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_robot_demo.launch.py
+ros2 launch nao_chatbot nao_chatbot_demo.launch.py
 ```
 
 Equivalent manual startup:
@@ -153,7 +198,7 @@ A fresh container-managed server can fail cloud requests with `401 Unauthorized`
 Then launch with explicit endpoints when you do not want profile defaults:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_robot_demo.launch.py \
+ros2 launch nao_chatbot nao_chatbot_demo.launch.py \
   chatbot_server_url:=http://127.0.0.1:11434/api/chat \
   planner_llm_base_url:=http://127.0.0.1:11435
 ```
@@ -170,7 +215,7 @@ For a vLLM or other OpenAI-compatible backend, first probe the API:
 Then route the planner to vLLM:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_robot_demo.launch.py \
+ros2 launch nao_chatbot nao_chatbot_demo.launch.py \
   planner_llm_provider:=openai_compatible \
   planner_llm_base_url:=http://<vllm-host>:<port> \
   planner_llm_model:=<served-model-name> \
@@ -180,7 +225,7 @@ ros2 launch nao_chatbot nao_chatbot_robot_demo.launch.py \
 To route both chatbot and planner to the current lab PC endpoint:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_robot_demo.launch.py \
+ros2 launch nao_chatbot nao_chatbot_demo.launch.py \
   chatbot_server_url:=http://10.7.138.215:8004/v1/chat/completions \
   ollama_model:=QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ \
   planner_llm_provider:=openai_compatible \
@@ -237,6 +282,8 @@ Use `--no-topics` if you only want the filtered `/rosout` stream.
 - `start_nao_say_skill`: robot-side speech hook.
 - `start_nao_replay_motion`: replay/posture/head-motion skills.
 - `start_nao_look_at`: upstream-style look-at implementation.
+- `tts_backend_action_name`: explicit downstream robot TTS action name (empty keeps `/speech` topic fallback).
+- `sim_use_laptop_tts`: sim-only helper that reroutes `nao_say_skill` speech to `debug_tts_action_name` (default `false` for sim/robot/demo).
 
 ## Docker Demo Path
 
@@ -265,5 +312,5 @@ docker run --rm -it \
 ```bash
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py --show-args
 ros2 launch nao_chatbot nao_chatbot_robot.launch.py --show-args
-ros2 launch nao_chatbot nao_chatbot_planner_local.launch.py --show-args
+ros2 launch nao_chatbot nao_chatbot_demo.launch.py --show-args
 ```

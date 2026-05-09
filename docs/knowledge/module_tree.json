@@ -424,7 +424,6 @@
       "src/nao_chatbot/config/interaction_sim_debug.perspective",
       "src/nao_chatbot/config/nao_robot_safe.rviz",
       "src/nao_chatbot/launch/nao_chatbot_asr_only.launch.py",
-      "src/nao_chatbot/launch/nao_chatbot_planner_local.launch.py",
       "src/nao_chatbot/launch/nao_chatbot_robot.launch.py",
       "src/nao_chatbot/launch/nao_chatbot_robot_asr.launch.py",
       "src/nao_chatbot/launch/nao_chatbot_sim.launch.py",

@@ -221,26 +221,25 @@ colcon build --symlink-install --packages-select \
   nao_chatbot asr_vosk simple_audio_capture
 ```
 
-Planner-only local harness:
-
-```bash
-ros2 launch nao_chatbot nao_chatbot_planner_local.launch.py
-ros2 run planner_llm publish_fixture request
-ros2 run planner_llm publish_fixture feedback
-```
-
-Simulator stack:
+Simulator stack (planner on by default):
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py
 ```
 
-Simulator with planner handoff:
+Optional planner fixtures for local testing:
+
+```bash
+ros2 run planner_llm publish_fixture request
+ros2 run planner_llm publish_fixture feedback
+```
+
+Simulator with planner opt-out:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
-  start_planner_llm:=true \
-  chatbot_planner_mode_enabled:=true \
+  start_planner_llm:=false \
+  chatbot_planner_mode_enabled:=false \
   chatbot_think:=false \
   planner_llm_think:=false
 ```
@@ -351,6 +350,43 @@ TF/operator notes:
 The immediate Monday path is documentation visibility, then one minimal planner
 diagnostic, then only the smallest demo code needed to prove the loop.
 
+## Development environment (venv, pre-commit, ROS tests)
+
+- Create a venv and install dev tools (includes **numpy** for `dialogue_manager` and
+  migration action tests):
+
+  ```bash
+  python3 -m venv .venv
+  source .venv/bin/activate
+  pip install -r requirements-dev.txt
+  ```
+
+- **`scripts/run_tests.sh`** prefers `.venv/bin/python3` when it exists, so after
+  `pip install -r requirements-dev.txt` the same script used by pre-commit will pick
+  up numpy without using `apt install python3-numpy` (the Debian package name is
+  `python3-numpy`, not `numpy`).
+
+- ROS message types and **`launch`** still come from the ROS underlay. Always
+  **source ROS before** `run_tests.sh` / pytest when you want the full suite, for
+  example:
+
+  ```bash
+  source /opt/ros/jazzy/setup.bash
+  source install/setup.bash  # after colcon build
+  source .venv/bin/activate
+  ./scripts/run_tests.sh
+  ```
+
+  If `launch` is missing on `PYTHONPATH`, `test_launch_profiles.py` is skipped with
+  a short message. Optional: recreate the venv with
+  `python3 -m venv .venv --system-site-packages` so the venv inherits system ROS
+  Python packages when needed.
+
+- After adding or renaming launch files, run **`colcon build --packages-select nao_chatbot`**
+  (or a full build) before robot runs. `scripts/run_tests.sh` launch smoke checks
+  source launch files directly so it validates current edits without forcing an
+  overlay rebuild.
+
 ## Validation
 
 Focused unit checks:
@@ -387,7 +423,8 @@ ros2 topic echo /planner/dialogue_act
 - `docs/contracts.md`: rich contract examples and interpretation notes.
 - `docs/launch_profiles.md`: launch matrix and operator commands.
 - `docs/planner_status.md`: current planner diagnosis, limitations, and next actions.
-- `docs/monday_demo.md`: demo checklist and observable topic path.
+- `docs/artifacts/monday_demo.md`: archived demo checklist and observable topic path.
+- `docs/README.md`: docs governance, including the `.md` + `.html` pairing rule for plan docs.
 - `docs/artifacts/`: historical handoffs, integration notes, and old ledgers.
 - `docs/knowledge/**`: GitNexus/knowledge-layer docs; left untouched by normal
   documentation cleanup.

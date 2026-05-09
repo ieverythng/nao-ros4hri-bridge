@@ -1,6 +1,6 @@
 # Planner Architecture Current State
 
-Last updated: 2026-05-04
+Last updated: 2026-05-08
 
 This file consolidates the Cursor guardrail review, the supervisor feedback
 architecture note, and the demo planner handoff into one implementation-facing
@@ -12,9 +12,9 @@ The stack remains layered:
 
 ```text
 dialogue_manager -> chatbot_llm -> planner_llm -> nao_orchestrator -> skills
-                                      ^                 |
-                                      |                 v
-                              /planner/dialogue_act <- /planner/execution_feedback
+       ^                              ^                 |
+       |                              |                 v
+       +-- chatbot completion pass <--+-- dialogue act <- /planner/execution_feedback
 ```
 
 Current demo path:
@@ -22,7 +22,11 @@ Current demo path:
 - `chatbot_llm` publishes execution-oriented planner requests on `/planner/request`.
 - `planner_llm` plans over abstract skills and supervises execution feedback.
 - `nao_orchestrator` validates and executes structured plan steps.
-- `dialogue_manager` remains the speech/TTS realization owner.
+- `dialogue_manager` remains the speech/TTS realization owner and routes
+  completed task wording back through `chatbot_llm`.
+- `chatbot_llm` generates the user-facing acknowledgement and any completed-task
+  utterance; `planner_llm` may provide factual hints but does not own final
+  wording.
 
 Target architecture from supervisor feedback:
 
@@ -57,11 +61,18 @@ demo-hardening pass; it changes runtime ownership and needs its own validation.
   events, avoiding shell `ros2 lifecycle` hangs in loaded sim profiles.
 - Head-motion convergence timeout handling is simpler and the plain-node
   lifecycle stance is documented.
+- Mixed executable-plus-`say` planner outputs are invalid and retried with
+  validation feedback; completion wording goes through the
+  `dialogue_manager -> chatbot_llm` dialogue pass instead of being spoken
+  directly by `planner_llm` or `nao_orchestrator`.
+- Targeted scan feedback now distinguishes "scan completed" from "confirmed
+  target result available", so `chatbot_llm` can answer honestly when a person
+  or object result was not grounded.
 
 ## Remaining Architectural Gaps
 
-- Move planner handoff ownership from direct `chatbot_llm -> /planner/request`
-  to `nao_orchestrator -> /planner/request`.
+- Keep the planner gate as the planner ingress in launch defaults:
+  `chatbot_llm -> /nao_orchestrator/planner_request -> /planner/request`.
 - Stop emitting dialogue-only intents (`greet`, `identity`, `wellbeing`,
   `help`) into the execution path; keep only a temporary ignore shim in
   `nao_orchestrator`.
@@ -124,7 +135,7 @@ If cloud access is quota-limited or paywalled, fall back to a llama.cpp
 OpenAI-compatible endpoint by launching with:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_sim_demo.launch.py \
+ros2 launch nao_chatbot nao_chatbot_demo.launch.py \
   planner_llm_provider:=openai_compatible \
   planner_llm_base_url:=http://HOST:PORT \
   planner_llm_model:=MODEL_NAME \

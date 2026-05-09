@@ -20,11 +20,11 @@ All profiles share a common builder (`stack_launch.py`) and differ only in their
 graph TD
     subgraph Profiles
         SIM[nao_chatbot_sim.launch.py]
+        DEMO[nao_chatbot_demo.launch.py]
         SIM_ASR[nao_chatbot_sim_asr.launch.py]
         ROBOT[nao_chatbot_robot.launch.py]
         ROBOT_ASR[nao_chatbot_robot_asr.launch.py]
         ASR_ONLY[nao_chatbot_asr_only.launch.py]
-        PLANNER[nao_chatbot_planner_local.launch.py]
     end
 
     subgraph Builder
@@ -32,10 +32,10 @@ graph TD
     end
 
     SIM --> STACK
+    DEMO --> STACK
     SIM_ASR --> STACK
     ROBOT --> STACK
     ROBOT_ASR --> STACK
-    PLANNER --> STACK
 
     ASR_ONLY --> ASR_LAUNCH[nao_chatbot_asr_only.launch.py<br/>standalone ASR lifecycle]
 ```
@@ -62,12 +62,12 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   object_detection_backend:=emorobcare_cv
 ```
 
-With planner mode:
+Planner is on by default in sim/robot/demo. To disable planner handoff:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
-  start_planner_llm:=true \
-  chatbot_planner_mode_enabled:=true
+  start_planner_llm:=false \
+  chatbot_planner_mode_enabled:=false
 ```
 
 ### Real-Robot Profile
@@ -129,15 +129,23 @@ ASR-only utility (no robot or simulator):
 ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py
 ```
 
-### Planner-Only Profile
+### Minimal planner harness (optional)
 
-For testing planner integration without the full stack:
+The former `nao_chatbot_planner_local.launch.py` entry point was removed. Use the sim profile and disable components you do not need, for example:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_planner_local.launch.py
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_chatbot_llm:=false \
+  start_dialogue_manager:=false \
+  start_knowledge_core:=false \
+  start_interaction_sim:=false \
+  start_interaction_sim_perception:=false \
+  start_interaction_sim_tools:=false \
+  start_object_detection:=false \
+  start_scene_grounding:=false \
+  start_rqt_console:=false \
+  start_robot_speech_debug:=false
 ```
-
-This profile disables `chatbot_llm`, `dialogue_manager`, and `knowledge_core`, enabling only `nao_orchestrator` and `planner_llm`.
 
 ## Architecture
 

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prompt Pack Hardening Plan (ROS4HRI)</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --fg: #1a1a1a;
+      --muted: #5d5d5d;
+      --bg: #f8f8f8;
+      --card: #ffffff;
+      --border: #d9d9d9;
+      --accent: #0b5fff;
+      --ok: #0f8a5f;
+      --warn: #a66400;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fg: #e8e8e8;
+        --muted: #9f9f9f;
+        --bg: #111111;
+        --card: #1d1d1d;
+        --border: #343434;
+        --accent: #7fb4ff;
+        --ok: #3ccf95;
+        --warn: #ffb266;
+      }
+    }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
+      max-width: 68rem;
+      margin: 0 auto;
+      padding: 1.4rem 1.2rem 3rem;
+      line-height: 1.58;
+      color: var(--fg);
+      background: var(--bg);
+    }
+    h1 { font-size: 1.65rem; margin: 0.1rem 0 0.6rem; }
+    h2 { font-size: 1.25rem; margin-top: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+    h3 { font-size: 1.05rem; margin-top: 1.35rem; }
+    p, li { font-size: 0.96rem; }
+    .meta { color: var(--muted); font-size: 0.9rem; margin-bottom: 1rem; }
+    .chip { display: inline-block; padding: 0.16rem 0.48rem; border-radius: 999px; border: 1px solid var(--border); background: var(--card); font-size: 0.82rem; margin-right: 0.35rem; }
+    .ok { color: var(--ok); }
+    .warn { color: var(--warn); }
+    code { font-family: ui-monospace, "Cascadia Code", monospace; background: rgba(0,0,0,.06); padding: 0.1em 0.28em; border-radius: 4px; }
+    pre {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.8rem;
+      overflow-x: auto;
+      font-size: 0.88rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    th, td { border: 1px solid var(--border); padding: 0.45rem 0.55rem; vertical-align: top; text-align: left; }
+    th { background: rgba(0,0,0,.04); }
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: var(--card);
+      padding: 0.6rem 0.85rem;
+      margin: 0.9rem 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Prompt Pack Hardening Plan (ROS4HRI Harness)</h1>
+  <div class="meta">
+    Last updated: 2026-05-09 |
+    Scope: <code>chatbot_llm</code>, <code>planner_llm</code>, prompt ingestion, validation, rollout safety
+  </div>
+
+  <p>
+    This plan consolidates a deeper audit of current prompt assembly and runtime behavior,
+    then proposes a phased implementation to align chatbot/planner prompt pipelines for
+    better reliability, easier tuning, and faster experiment cycles.
+  </p>
+
+  <div class="callout">
+    <strong>Primary finding:</strong> prompt ingestion is currently <em>asymmetric</em>.
+    <code>chatbot_llm</code> has a YAML prompt-pack pipeline with fallback merge semantics;
+    <code>planner_llm</code> still embeds its system contract in Python constants plus inline retry copy.
+  </div>
+
+  <h2>1) Verification Snapshot</h2>
+  <p>Direct checks completed in this pass:</p>
+  <ul>
+    <li><span class="chip ok">PASS</span> <code>src/chatbot_llm/test/test_prompt_pack.py</code> (3 tests)</li>
+    <li><span class="chip ok">PASS</span> <code>src/planner_llm/test/test_planner_engine.py</code> + <code>test_skill_registry.py</code> (22 tests)</li>
+    <li><span class="chip ok">PASS</span> prompt-surface grep on loader/config/provider paths</li>
+  </ul>
+
+  <h3>Evidence Anchors</h3>
+  <ul>
+    <li><code>src/chatbot_llm/chatbot_llm/prompt_pack.py</code>: YAML load + fallback merge.</li>
+    <li><code>src/chatbot_llm/chatbot_llm/backend_config.py</code>: effective precedence (params + prompt pack).</li>
+    <li><code>src/planner_llm/planner_llm/planner_engine.py</code>: <code>_SYSTEM_PROMPT</code> + inline validation retry payload.</li>
+    <li><code>src/planner_llm/config/skill_registry.json</code> and <code>skill_registry.py</code>: machine-readable capability injection.</li>
+    <li><code>src/planner_llm/planner_llm/providers.py</code>: provider-specific no-think and payload semantics.</li>
+  </ul>
+
+  <h2>2) Current Design: Strengths and Friction</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Area</th>
+        <th>Current Strength</th>
+        <th>Current Friction / Risk</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Chatbot prompt ingestion</td>
+        <td>Human-editable YAML pack + safe fallback defaults.</td>
+        <td>Dual override paths (<code>prompt_pack_path</code> and raw ROS params) can drift across deployments.</td>
+      </tr>
+      <tr>
+        <td>Planner prompt ingestion</td>
+        <td>Strong in-code contract checks and tests.</td>
+        <td>Prompt prose lives in code constants; slower operator iteration and weaker config traceability.</td>
+      </tr>
+      <tr>
+        <td>Capability grounding</td>
+        <td><code>skill_registry.json</code> + <code>prompt_manifest()</code> keep capability data structured.</td>
+        <td>No prompt-pack layer for planner policy text to evolve independently from Python edits.</td>
+      </tr>
+      <tr>
+        <td>Performance guardrails</td>
+        <td>Preflight probes, small token limits for chatbot turns, no-think guards for qwen models.</td>
+        <td>Prompt complexity and verbosity are not explicitly budgeted per stage; no stable prompt version id in runtime logs.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>3) Performance Signals To Improve</h2>
+  <ul>
+    <li>Planner output reliability still depends on prompt phrasing details in <code>planner_engine.py</code>.</li>
+    <li>Cross-model behavior (Ollama/OpenAI-compatible) differs, while prompts are not versioned per provider profile.</li>
+    <li>Chatbot response and intent phases share common context but do not expose an explicit prompt revision stamp in telemetry.</li>
+    <li>Prompt edits currently require mixed edit locations (YAML, ROS params, Python constants), which increases rollout mistakes.</li>
+  </ul>
+
+  <h2>4) Target Prompt Architecture</h2>
+  <h3>4.1 Prompt Pack Symmetry</h3>
+  <ul>
+    <li>Add <code>planner_llm/config/planner_prompt_pack.yaml</code>.</li>
+    <li>Add <code>planner_llm/prompt_pack.py</code> mirroring chatbot semantics:
+      <code>default_prompt_pack()</code>, <code>load_prompt_pack(path)</code>, parse fallback, partial override merge.</li>
+    <li>Add ROS param <code>planner_prompt_pack_path</code> with empty-path auto-resolution to install/share path.</li>
+  </ul>
+
+  <h3>4.2 Layer Separation</h3>
+  <ul>
+    <li><strong>Layer A (policy prose):</strong> YAML pack (model-facing natural language).</li>
+    <li><strong>Layer B (hard contract rules):</strong> Python validation logic + tests (must stay code-enforced).</li>
+    <li><strong>Layer C (capability surface):</strong> <code>skill_registry.json</code> + prompt manifest (data-only).</li>
+  </ul>
+
+  <h3>4.3 Prompt Versioning</h3>
+  <ul>
+    <li>Add optional <code>prompt_pack_version</code> field in both packs.</li>
+    <li>Emit version in startup/preflight logs and planner request traces.</li>
+  </ul>
+
+  <h2>5) Implementation Plan (Phased)</h2>
+  <h3>Phase A — Non-breaking Scaffolding</h3>
+  <ol>
+    <li>Create planner prompt-pack loader and default YAML file.</li>
+    <li>Keep existing <code>_SYSTEM_PROMPT</code> as fallback to preserve behavior.</li>
+    <li>Add unit tests for empty path, bad YAML fallback, and partial override merge.</li>
+  </ol>
+
+  <h3>Phase B — Controlled Migration</h3>
+  <ol>
+    <li>Move planner system prose and retry guidance text into the YAML pack keys.</li>
+    <li>Retain hard validity checks in Python (step type/name enforcement, required fields).</li>
+    <li>Add regression tests for existing invalid-plan and retry behavior.</li>
+  </ol>
+
+  <h3>Phase C — Experiment Harness</h3>
+  <ol>
+    <li>Add profile-specific prompt packs (e.g., <code>demo</code>, <code>lab-vllm</code>, <code>robot-safe</code>).</li>
+    <li>Add a small prompt-eval script that replays fixed planner fixtures and reports pass/fail latency.</li>
+    <li>Track prompt version in benchmark outputs.</li>
+  </ol>
+
+  <h3>Phase D — Runtime Hardening</h3>
+  <ol>
+    <li>Add explicit length budgets for system prompt sections to reduce overflow/noise risk.</li>
+    <li>Add mandatory “contract guard” section in planner prompt pack to avoid accidental weakening.</li>
+    <li>Add change checklist: prompt edit must include test update or explicit rationale.</li>
+  </ol>
+
+  <h2>6) Prompt Quality Hardening Checklist</h2>
+  <ul>
+    <li>Use deterministic verbs and avoid ambiguous synonyms for contract fields.</li>
+    <li>Separate “must” constraints from “style” hints in distinct blocks.</li>
+    <li>Keep completion wording ownership explicit: planner decides structure, chatbot/dialogue own user-facing phrasing.</li>
+    <li>Avoid embedding robot-specific transport details in model prose when contract already encodes them.</li>
+    <li>Guard against chain-of-thought leakage via provider-level no-think controls and output schema checks.</li>
+  </ul>
+
+  <h2>7) Validation Plan</h2>
+  <h3>Unit and Contract</h3>
+  <pre><code>PYTHONPATH=src/chatbot_llm:src/planner_common:src/planner_llm \
+python3 -m pytest -q \
+  src/chatbot_llm/test/test_prompt_pack.py \
+  src/planner_llm/test/test_planner_engine.py \
+  src/planner_llm/test/test_skill_registry.py</code></pre>
+
+  <h3>Runtime Smoke</h3>
+  <ul>
+    <li>Start planner with preflight enabled and verify prompt-pack version is logged.</li>
+    <li>Replay fixed fixture requests and compare plan validity + latency before/after prompt changes.</li>
+    <li>Confirm no regression in <code>/planner/dialogue_act</code> handling for clarify/fail paths.</li>
+  </ul>
+
+  <h3>Acceptance Gates</h3>
+  <ul>
+    <li>No drop in planner test pass rate.</li>
+    <li>No increase in invalid model-output failures on fixture set.</li>
+    <li>Median plan latency does not regress beyond agreed threshold.</li>
+    <li>Prompt source location is traceable at runtime (path + version).</li>
+  </ul>
+
+  <h2>8) Docs Workflow Rule: Markdown + HTML Pairs</h2>
+  <p>
+    Canonical human-facing source remains Markdown. HTML is generated companion output for
+    sharing and richer reading.
+  </p>
+  <ol>
+    <li>Create/update <code>docs/&lt;name&gt;.md</code>.</li>
+    <li>Render companion HTML with:
+      <pre><code>python3 scripts/render_markdown_html.py docs/&lt;name&gt;.md docs/&lt;name&gt;.html</code></pre>
+    </li>
+    <li>Commit both files together for plan/review documents.</li>
+  </ol>
+
+  <h2>9) Recommended First PR Scope</h2>
+  <ul>
+    <li>Planner prompt-pack scaffold only (Phase A), no behavior rewrite.</li>
+    <li>Prompt version logging in planner startup.</li>
+    <li>Tests for planner prompt-pack loading semantics.</li>
+    <li>One baseline fixture benchmark script for repeatable comparisons.</li>
+  </ul>
+
+  <div class="callout">
+    <strong>Bottom line:</strong> the biggest gain is not “more prompt text,” but a stable
+    <em>prompt ingestion contract</em> that makes behavior reproducible across providers,
+    branches, and devices.
+  </div>
+</body>
+</html>

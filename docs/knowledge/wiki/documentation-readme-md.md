@@ -174,7 +174,7 @@ Primary launch files in `src/nao_chatbot/launch/`:
 | `nao_chatbot_sim_asr.launch.py` | Simulator + local ASR |
 | `nao_chatbot_robot.launch.py` | Real robot + RViz + HRI overlays |
 | `nao_chatbot_robot_asr.launch.py` | Real robot + ASR |
-| `nao_chatbot_planner_local.launch.py` | Planner-only local harness |
+| `nao_chatbot_sim.launch.py` | Sim profile; planner on by default |
 | `nao_chatbot_asr_only.launch.py` | Isolated ASR pipeline |
 
 ### Key Launch Arguments

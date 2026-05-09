@@ -209,7 +209,7 @@ python3 -m py_compile chatbot_llm/planner_request_adapter.py chatbot_llm/node_im
 Bridge stack:
 
 ```bash
-ros2 launch nao_chatbot nao_chatbot_planner_local.launch.py
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py
 ```
 
 Observe:

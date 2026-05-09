@@ -106,11 +106,12 @@ Authoritative ROS4HRI and SocialMinds entry points:
 
 Read these when the change is architectural or spans multiple packages:
 
-- `docs/demo_status_and_contracts.md`
 - `docs/launch_profiles.md`
-- `docs/thesis_planning_handoff.md`
-- `docs/planner_supervisor_phase_c_handoff.md`
-- `docs/ros4hri_fork_delta_ledgers.md`
+- `docs/planner_architecture_current.md`
+- `docs/artifacts/demo_status_and_contracts.md`
+- `docs/artifacts/thesis_planning_handoff.md`
+- `docs/artifacts/planner_supervisor_phase_c_handoff.md`
+- `docs/artifacts/ros4hri_fork_delta_ledgers.md`
 
 ## 5. What I found on the internet
 
