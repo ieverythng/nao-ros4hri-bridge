@@ -21,6 +21,8 @@ subscriptions, or KnowledgeCore transport.
 | --- | --- | --- | --- |
 | subscribe | `/intents` | `hri_actions_msgs/msg/Intent` | Direct or planner-generated intents |
 | optional subscribe | `/chatbot/intent` | `std_msgs/msg/String` | Legacy bridge, disabled by default |
+| optional subscribe | `/scene/summary` | `std_msgs/msg/String` | Scene grounding summary used by scan steps |
+| optional subscribe | `/humans/persons/tracked` | `hri_msgs/msg/IdsList` | Live person IDs used for person-oriented scan summaries |
 | publish | `/planner/execution_feedback` | `std_msgs/msg/String` | Plan lifecycle feedback |
 | action client | `/nao/say` | `communication_skills/action/Say` | Speech step execution |
 | action client | `/skill/replay_motion` | `nao_skills/action/ReplayMotion` | Motion/posture execution |
@@ -62,6 +64,9 @@ Defaults live in `config/00-defaults.yml`.
 - `posture_command_result_timeout_sec`
 - `planner_feedback_topic`
 - `dedupe_window_sec`
+- `scan_summary_topic`
+- `scan_people_topic`
+- `scan_people_max_age_sec`
 
 Replay/posture result waits default to `20.0s` because the NAO posture bridge can
 finish slightly after the old 12-second window under reconnect or posture-change

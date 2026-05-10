@@ -14,6 +14,8 @@ from nao_orchestrator.intent_rules import posture_topic_fallback_for_motion
 from nao_orchestrator.intent_rules import resolve_ack_text
 from nao_orchestrator.intent_rules import resolve_say_text
 from nao_orchestrator.intent_rules import resolve_scan_result
+from nao_orchestrator.intent_rules import is_people_scan_target
+from nao_orchestrator.intent_rules import summarize_people_detection
 from nao_orchestrator.intent_rules import validate_execution_plan
 
 
@@ -285,6 +287,23 @@ def test_scan_step_can_report_configured_failure() -> None:
     assert success is False
     assert reason == 'scan requested failure for people'
     assert metadata['result_mode'] == 'failure'
+
+
+def test_people_scan_target_detection_supports_common_aliases() -> None:
+    assert is_people_scan_target('people') is True
+    assert is_people_scan_target('human') is True
+    assert is_people_scan_target('scene', target='person') is True
+    assert is_people_scan_target('object', target='bottle') is False
+
+
+def test_people_scan_summary_formats_single_and_plural() -> None:
+    assert summarize_people_detection([]) == ''
+    assert summarize_people_detection(['anonymous_person_abc']) == (
+        'I found one person (id: anonymous_person_abc).'
+    )
+    assert summarize_people_detection(
+        ['anonymous_person_abc', 'anonymous_person_xyz']
+    ) == 'I found 2 people (for example: anonymous_person_abc).'
 
 
 def test_validate_execution_plan_rejects_duplicate_plan_step_ids() -> None:

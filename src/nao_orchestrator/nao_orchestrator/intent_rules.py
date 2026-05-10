@@ -120,6 +120,13 @@ _SUPPORTED_SKILL_PLAN_NAMES = {
     'scan',
 }
 
+_PEOPLE_SCAN_TARGET_KINDS = {
+    'person',
+    'people',
+    'human',
+    'humans',
+}
+
 
 # -----------------------------------------------------------------------------
 # Input parsing helpers
@@ -284,6 +291,30 @@ def resolve_scan_result(
         'I completed the scan for %s, but no confirmed detection result was reported.'
         % target_label
     ), metadata
+
+
+def is_people_scan_target(target_kind: str, target: str = '') -> bool:
+    """Return whether a scan target is explicitly person-oriented."""
+    clean_kind = str(target_kind or '').strip().lower()
+    if clean_kind in _PEOPLE_SCAN_TARGET_KINDS:
+        return True
+    clean_target = str(target or '').strip().lower()
+    return clean_target in _PEOPLE_SCAN_TARGET_KINDS
+
+
+def summarize_people_detection(person_ids: list[str]) -> str:
+    """Render a user-facing scan summary from tracked person identifiers."""
+    clean_ids = [
+        str(person_id).strip()
+        for person_id in person_ids
+        if str(person_id).strip()
+    ]
+    count = len(clean_ids)
+    if count <= 0:
+        return ''
+    if count == 1:
+        return 'I found one person (id: %s).' % clean_ids[0]
+    return 'I found %d people (for example: %s).' % (count, clean_ids[0])
 
 
 # -----------------------------------------------------------------------------

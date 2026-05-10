@@ -35,9 +35,16 @@ from nao_orchestrator.intent_rules import (
     posture_topic_fallback_for_motion,
     resolve_say_text,
     resolve_scan_result,
+    is_people_scan_target,
+    summarize_people_detection,
     validate_execution_plan,
 )
 from nao_orchestrator.planner_gate import PlannerGate
+
+try:  # pragma: no cover - runtime dependency
+    from hri_msgs.msg import IdsList
+except ImportError:  # pragma: no cover - runtime dependency
+    IdsList = None
 
 try:  # pragma: no cover - runtime dependency
     from naoqi_bridge_msgs.msg import JointAnglesWithSpeed
@@ -132,6 +139,8 @@ class NaoOrchestrator(Node):
         self.declare_parameter('scan_summary', '')
         self.declare_parameter('scan_summary_topic', '/scene/summary')
         self.declare_parameter('scan_report_after_success', True)
+        self.declare_parameter('scan_people_topic', '/humans/persons/tracked')
+        self.declare_parameter('scan_people_max_age_sec', 2.0)
 
         self.intent_topic = str(self.get_parameter('intent_topic').value)
         self.enable_legacy_intent_bridge = bool(
@@ -226,10 +235,16 @@ class NaoOrchestrator(Node):
         self.scan_report_after_success = bool(
             self.get_parameter('scan_report_after_success').value
         )
+        self.scan_people_topic = str(self.get_parameter('scan_people_topic').value).strip()
+        self.scan_people_max_age_sec = max(
+            0.0,
+            float(self.get_parameter('scan_people_max_age_sec').value),
+        )
 
         self._intent_sub = None
         self._legacy_intent_sub = None
         self._scan_summary_sub = None
+        self._scan_people_sub = None
         self._posture_result_sub = None
         self._diag_pub = None
         self._diag_timer = None
@@ -252,6 +267,8 @@ class NaoOrchestrator(Node):
         self._posture_result_event = threading.Event()
         self._latest_posture_result: dict | None = None
         self._latest_scan_summary = ''
+        self._latest_tracked_person_ids: tuple[str, ...] = ()
+        self._latest_tracked_people_ts = 0.0
         self._planner_gate = PlannerGate()
 
     # -------------------------------------------------------------------------
@@ -292,6 +309,17 @@ class NaoOrchestrator(Node):
                 self.scan_summary_topic,
                 self._on_scan_summary,
                 10,
+            )
+        if self.scan_people_topic and IdsList is not None:
+            self._scan_people_sub = self.create_subscription(
+                IdsList,
+                self.scan_people_topic,
+                self._on_scan_people,
+                10,
+            )
+        elif self.scan_people_topic:
+            self.get_logger().warn(
+                'IdsList unavailable; people-aware scan summaries are disabled'
             )
         self._planner_feedback_pub = self.create_publisher(
             String,
@@ -373,6 +401,9 @@ class NaoOrchestrator(Node):
         if self._scan_summary_sub is not None:
             self.destroy_subscription(self._scan_summary_sub)
             self._scan_summary_sub = None
+        if self._scan_people_sub is not None:
+            self.destroy_subscription(self._scan_people_sub)
+            self._scan_people_sub = None
         if self._planner_gate_sub is not None:
             self.destroy_subscription(self._planner_gate_sub)
             self._planner_gate_sub = None
@@ -414,6 +445,9 @@ class NaoOrchestrator(Node):
         if self._scan_summary_sub is not None:
             self.destroy_subscription(self._scan_summary_sub)
             self._scan_summary_sub = None
+        if self._scan_people_sub is not None:
+            self.destroy_subscription(self._scan_people_sub)
+            self._scan_people_sub = None
         if self._diag_timer is not None:
             self.destroy_timer(self._diag_timer)
             self._diag_timer = None
@@ -477,6 +511,14 @@ class NaoOrchestrator(Node):
 
     def _on_scan_summary(self, msg: String) -> None:
         self._latest_scan_summary = str(msg.data or '').strip()
+
+    def _on_scan_people(self, msg: IdsList) -> None:
+        self._latest_tracked_person_ids = tuple(
+            str(person_id).strip()
+            for person_id in msg.ids
+            if str(person_id).strip()
+        )
+        self._latest_tracked_people_ts = time.time()
 
     def _on_planner_gate_request(self, msg: Intent) -> None:
         """Admit chatbot-originated planner requests before planner_llm sees them."""
@@ -1034,9 +1076,32 @@ class NaoOrchestrator(Node):
 
     def _scan_args_with_summary(self, step_args: dict) -> dict:
         scan_args = dict(step_args)
-        if not str(scan_args.get('summary', '')).strip() and self._latest_scan_summary:
+        target = str(scan_args.get('target', '')).strip()
+        target_kind = str(
+            scan_args.get('target_kind', target or 'scene')
+        ).strip().lower() or 'scene'
+
+        if is_people_scan_target(target_kind, target):
+            people_summary = self._tracked_people_scan_summary()
+            if people_summary:
+                scan_args['summary'] = people_summary
+                return scan_args
+
+        if (
+            not str(scan_args.get('summary', '')).strip()
+            and self._latest_scan_summary
+        ):
             scan_args['summary'] = self._latest_scan_summary
         return scan_args
+
+    def _tracked_people_scan_summary(self) -> str:
+        if not self._latest_tracked_person_ids:
+            return ''
+        if self.scan_people_max_age_sec > 0.0:
+            age_sec = time.time() - float(self._latest_tracked_people_ts or 0.0)
+            if age_sec > self.scan_people_max_age_sec:
+                return ''
+        return summarize_people_detection(list(self._latest_tracked_person_ids))
 
     def _execute_replay_motion_step(
         self,
