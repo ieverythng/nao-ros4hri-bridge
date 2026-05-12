@@ -275,8 +275,11 @@ def resolve_scan_result(
     ).strip().lower()
     target = str(step_args.get('target', '')).strip()
     target_kind = str(step_args.get('target_kind', target or 'scene')).strip() or 'scene'
-    explicit_summary = str(step_args.get('summary', '')).strip()
-    summary = explicit_summary or str(default_summary).strip()
+    summary = str(step_args.get('summary', '')).strip() or str(default_summary).strip()
+    result_payload = build_scan_result_payload(
+        step_args,
+        default_summary=summary,
+    )
     metadata = {
         'target': target,
         'target_kind': target_kind,
@@ -284,13 +287,7 @@ def resolve_scan_result(
     }
     if result_mode in ('fail', 'failed', 'failure'):
         return False, 'scan requested failure for %s' % target_kind, metadata
-    if explicit_summary or target_kind == 'scene':
-        return True, summary or 'scan completed', metadata
-    target_label = target or target_kind
-    return True, (
-        'I completed the scan for %s, but no confirmed detection result was reported.'
-        % target_label
-    ), metadata
+    return True, str(result_payload.get('summary_text', '')).strip() or 'scan completed', metadata
 
 
 def is_people_scan_target(target_kind: str, target: str = '') -> bool:
@@ -315,6 +312,150 @@ def summarize_people_detection(person_ids: list[str]) -> str:
     if count == 1:
         return 'I found one person (id: %s).' % clean_ids[0]
     return 'I found %d people (for example: %s).' % (count, clean_ids[0])
+
+
+def build_scan_result_payload(
+    step_args: dict,
+    *,
+    default_summary: str = '',
+) -> dict:
+    """Build a structured scan result payload with conservative person-target policy."""
+    target = str(step_args.get('target', '')).strip()
+    target_kind = str(step_args.get('target_kind', target or 'scene')).strip().lower() or 'scene'
+    explicit_summary = str(step_args.get('summary', '')).strip()
+    default_summary_text = str(default_summary).strip()
+    is_people_target = is_people_scan_target(target_kind, target)
+
+    people = _normalize_scan_people(step_args)
+    objects = _normalize_scan_objects(step_args.get('objects', []))
+    if is_people_target and not people:
+        people = _people_from_scene_objects(objects)
+
+    target_found = bool(people) if is_people_target else bool(people or objects)
+    if explicit_summary:
+        summary_text = explicit_summary
+    elif is_people_target and people:
+        summary_text = summarize_people_detection(
+            [str(item.get('id', '')).strip() for item in people]
+        )
+    elif is_people_target and objects:
+        target_label = target or target_kind or 'people'
+        summary_text = (
+            'I completed the scan for %s. I detected objects, but none were confirmed as people.'
+            % target_label
+        )
+    elif is_people_target:
+        target_label = target or target_kind
+        summary_text = (
+            'I completed the scan for %s, but no confirmed detection result was reported.'
+            % target_label
+        )
+    elif objects:
+        summary_text = _summarize_scene_objects(objects)
+    elif people:
+        summary_text = summarize_people_detection(
+            [str(item.get('id', '')).strip() for item in people]
+        )
+    else:
+        summary_text = default_summary_text or 'scan completed'
+
+    return {
+        'skill': 'scan',
+        'target': target,
+        'target_kind': target_kind,
+        'target_found': bool(target_found),
+        'people': people,
+        'objects': objects,
+        'summary_text': summary_text,
+        'confidence_policy': 'grounded_current_observation',
+    }
+
+
+def _normalize_scan_people(step_args: dict) -> list[dict]:
+    candidates = step_args.get('people', [])
+    if not isinstance(candidates, list) or not candidates:
+        people_ids = step_args.get('people_ids', [])
+        if isinstance(people_ids, list):
+            candidates = [{'id': item} for item in people_ids]
+    normalized: list[dict] = []
+    for candidate in candidates:
+        if isinstance(candidate, dict):
+            person_id = str(candidate.get('id', '')).strip()
+            if not person_id:
+                continue
+            entry = {
+                'id': person_id,
+                'source': str(candidate.get('source', 'unknown')).strip() or 'unknown',
+            }
+            age_value = candidate.get('last_seen_age_sec', '')
+            try:
+                entry['last_seen_age_sec'] = float(age_value)
+            except (TypeError, ValueError):
+                pass
+            normalized.append(entry)
+        else:
+            person_id = str(candidate).strip()
+            if person_id:
+                normalized.append({'id': person_id, 'source': 'unknown'})
+    return normalized
+
+
+def _normalize_scan_objects(raw_objects) -> list[dict]:
+    if not isinstance(raw_objects, list):
+        return []
+    normalized: list[dict] = []
+    for item in raw_objects:
+        if not isinstance(item, dict):
+            continue
+        label = str(item.get('label', item.get('kb_class', item.get('entity_id', '')))).strip()
+        entity_id = str(item.get('entity_id', item.get('id', ''))).strip()
+        if not label and not entity_id:
+            continue
+        normalized.append(
+            {
+                'id': entity_id,
+                'label': label,
+                'kb_class': str(item.get('kb_class', '')).strip(),
+                'source': str(item.get('source', 'scene_summary')).strip() or 'scene_summary',
+            }
+        )
+    return normalized
+
+
+def _people_from_scene_objects(objects: list[dict]) -> list[dict]:
+    people: list[dict] = []
+    for item in objects:
+        label = str(item.get('label', '')).strip().lower()
+        kb_class = str(item.get('kb_class', '')).strip().lower()
+        if label not in _PEOPLE_SCAN_TARGET_KINDS and kb_class not in _PEOPLE_SCAN_TARGET_KINDS:
+            continue
+        person_id = str(item.get('id', '')).strip() or str(item.get('label', '')).strip()
+        if not person_id:
+            continue
+        people.append(
+            {
+                'id': person_id,
+                'source': str(item.get('source', 'scene_summary')).strip() or 'scene_summary',
+            }
+        )
+    return people
+
+
+def _summarize_scene_objects(objects: list[dict]) -> str:
+    labels = [
+        str(item.get('label', '')).strip()
+        for item in objects
+        if str(item.get('label', '')).strip()
+    ]
+    if not labels:
+        return 'I completed the scene scan.'
+    preview = ', '.join(labels[:3])
+    if len(labels) == 1:
+        return 'I completed the scene scan and detected %s.' % preview
+    return 'I completed the scene scan and detected %d objects (for example: %s).' % (
+        len(labels),
+        preview,
+    )
 
 
 # -----------------------------------------------------------------------------

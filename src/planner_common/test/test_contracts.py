@@ -119,6 +119,7 @@ def test_execution_feedback_parses_nested_step_and_supervisor_fields() -> None:
     assert feedback.step_on_failure == 'replan'
     assert feedback.step_requires == ('cup_visible',)
     assert feedback.result_summary == ''
+    assert feedback.result_payload == {}
 
 
 def test_execution_feedback_result_summary_round_trips() -> None:
@@ -134,6 +135,30 @@ def test_execution_feedback_result_summary_round_trips() -> None:
     assert payload['result_summary'] == 'Scan summary: two faces.'
     feedback = ExecutionFeedback.from_payload(payload)
     assert feedback.result_summary == 'Scan summary: two faces.'
+    assert feedback.result_payload == {}
+
+
+def test_execution_feedback_result_payload_round_trips_and_backfills_summary() -> None:
+    payload = build_execution_feedback_payload(
+        intent='raw_user_input',
+        source='nao_orchestrator',
+        plan_context={'goal_id': 'g1', 'plan_id': 'p1', 'plan_version': 1},
+        status='completed',
+        event_type='step_succeeded',
+        result_payload={
+            'skill': 'scan',
+            'target_kind': 'people',
+            'target_found': True,
+            'people': [{'id': 'anonymous_person_1', 'source': 'hri_tracked_persons'}],
+            'objects': [],
+            'summary_text': 'I found one person (id: anonymous_person_1).',
+        },
+    )
+    assert payload['result_summary'] == 'I found one person (id: anonymous_person_1).'
+    feedback = ExecutionFeedback.from_payload(payload)
+    assert feedback.result_summary == 'I found one person (id: anonymous_person_1).'
+    assert feedback.result_payload['skill'] == 'scan'
+    assert feedback.result_payload['target_found'] is True
 
 
 def test_execution_feedback_event_type_defaults_succeeded_to_step_succeeded() -> None:

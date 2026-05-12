@@ -455,6 +455,13 @@ def test_supervisor_completion_act_carries_latest_result_summary() -> None:
             'event_type': 'step_succeeded',
             'status': 'succeeded',
             'result_summary': 'I found one person.',
+            'result_payload': {
+                'skill': 'scan',
+                'target_kind': 'people',
+                'target_found': True,
+                'people': [{'id': 'anonymous_person_1', 'source': 'hri_tracked_persons'}],
+                'summary_text': 'I found one person.',
+            },
         }
     )
     supervisor.handle_feedback(step_feedback)
@@ -474,6 +481,7 @@ def test_supervisor_completion_act_carries_latest_result_summary() -> None:
     assert len(outcome.dialogue_acts) == 1
     assert outcome.dialogue_acts[0].text_hint == 'I found one person.'
     assert outcome.dialogue_acts[0].context['result_summary'] == 'I found one person.'
+    assert outcome.dialogue_acts[0].context['result_payload']['skill'] == 'scan'
 
 
 def test_supervisor_prefers_scan_result_over_motion_completion_copy() -> None:
@@ -542,3 +550,46 @@ def test_supervisor_emits_acknowledgement_dialogue_act_when_policy_allows_it() -
     assert len(outcome.dialogue_acts) == 1
     assert outcome.dialogue_acts[0].act == 'acknowledge'
     assert outcome.dialogue_acts[0].text_hint == 'Okay, I am starting now.'
+
+
+def test_supervisor_resets_cached_result_context_between_replans_of_same_goal() -> None:
+    class _NoStepEngine(_StubEngine):
+        def plan_request(self, request, **kwargs):
+            decision = super().plan_request(request, **kwargs)
+            decision.payload['plan']['steps'] = []
+            return decision
+
+    supervisor = PlannerSupervisor(_NoStepEngine(), auto_replan=True)
+    first_request = PlannerRequest.from_payload(
+        {'goal_id': 'goal_stale_result_cache', 'request_id': 'turn_1', 'user_text': 'first pass'}
+    )
+    first_outcome = supervisor.handle_request(first_request)
+    supervisor.handle_feedback(
+        ExecutionFeedback.from_payload(
+            {
+                'goal_id': 'goal_stale_result_cache',
+                'plan_id': first_outcome.decision.plan_id,
+                'plan_version': 1,
+                'event_type': 'plan_completed',
+                'status': 'completed',
+                'result_summary': 'I already found one person.',
+            }
+        )
+    )
+
+    second_request = PlannerRequest.from_payload(
+        {'goal_id': 'goal_stale_result_cache', 'request_id': 'turn_2', 'user_text': 'second pass'}
+    )
+    second_outcome = supervisor.handle_request(second_request)
+    outcome = supervisor.handle_feedback(
+        ExecutionFeedback.from_payload(
+            {
+                'goal_id': 'goal_stale_result_cache',
+                'plan_id': second_outcome.decision.plan_id,
+                'plan_version': 2,
+                'event_type': 'plan_completed',
+                'status': 'completed',
+            }
+        )
+    )
+    assert outcome.dialogue_acts == ()

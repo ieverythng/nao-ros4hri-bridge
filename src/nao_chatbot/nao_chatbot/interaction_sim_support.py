@@ -396,17 +396,24 @@ def build_interaction_sim_actions(context):
             ]
         )
 
+    robot_driver_active = _as_bool(context, "start_nao_robot") or _as_bool(
+        context, "start_naoqi_driver"
+    )
+
     if start_tools:
-        scoped_actions.extend(
-            [
-                Node(
-                    package="ui_server",
-                    executable="ui_server",
-                    condition=IfCondition(
-                        LaunchConfiguration("start_interaction_sim_ui")
-                    ),
-                    output="screen",
-                ),
+        rosbridge_actions = []
+        if robot_driver_active:
+            rosbridge_actions.append(
+                LogInfo(
+                    msg=(
+                        "interaction_sim tools detected a robot driver path "
+                        "(start_nao_robot/start_naoqi_driver). Skipping the "
+                        "extra rosbridge_server launch to avoid websocket-port conflicts."
+                    )
+                )
+            )
+        else:
+            rosbridge_actions.append(
                 IncludeLaunchDescription(
                     XMLLaunchDescriptionSource(
                         [
@@ -419,7 +426,19 @@ def build_interaction_sim_actions(context):
                             )
                         ]
                     )
+                )
+            )
+        scoped_actions.extend(
+            [
+                Node(
+                    package="ui_server",
+                    executable="ui_server",
+                    condition=IfCondition(
+                        LaunchConfiguration("start_interaction_sim_ui")
+                    ),
+                    output="screen",
                 ),
+                *rosbridge_actions,
             ]
         )
 

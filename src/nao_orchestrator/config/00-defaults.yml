@@ -28,3 +28,9 @@
     scan_summary: ""
     scan_summary_topic: "/scene/summary"
     scan_report_after_success: true
+    scan_min_sweeps: 1
+    scan_max_sweeps: 2
+    scan_sweep_yaw_rad: 0.45
+    scan_sweep_pitch_rad: 0.0
+    scan_sweep_settle_sec: 0.2
+    scan_require_motion: true

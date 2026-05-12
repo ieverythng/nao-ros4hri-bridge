@@ -3,6 +3,7 @@ import json
 from kb_skills.intent_labels import KB_QUERY_VISIBLE_PEOPLE
 
 from nao_orchestrator.intent_rules import classify_motion_target
+from nao_orchestrator.intent_rules import build_scan_result_payload
 from nao_orchestrator.intent_rules import Intent
 from nao_orchestrator.intent_rules import make_intent_signature
 from nao_orchestrator.intent_rules import normalize_incoming_intent
@@ -287,6 +288,39 @@ def test_scan_step_can_report_configured_failure() -> None:
     assert success is False
     assert reason == 'scan requested failure for people'
     assert metadata['result_mode'] == 'failure'
+
+
+def test_people_scan_payload_marks_objects_as_non_target_when_no_people() -> None:
+    payload = build_scan_result_payload(
+        {
+            'target': 'people',
+            'target_kind': 'people',
+            'objects': [
+                {'id': 'obj_1', 'label': 'bottle', 'source': 'scene_summary'},
+            ],
+        }
+    )
+
+    assert payload['skill'] == 'scan'
+    assert payload['target_found'] is False
+    assert payload['people'] == []
+    assert payload['objects'][0]['label'] == 'bottle'
+    assert 'none were confirmed as people' in payload['summary_text'].lower()
+
+
+def test_scene_scan_payload_summarizes_objects() -> None:
+    payload = build_scan_result_payload(
+        {
+            'target_kind': 'scene',
+            'objects': [
+                {'id': 'cup_1', 'label': 'cup', 'source': 'scene_summary'},
+                {'id': 'chair_1', 'label': 'chair', 'source': 'scene_summary'},
+            ],
+        }
+    )
+
+    assert payload['target_found'] is True
+    assert payload['summary_text'].startswith('I completed the scene scan')
 
 
 def test_people_scan_target_detection_supports_common_aliases() -> None:

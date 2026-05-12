@@ -34,6 +34,36 @@
       "timeout_hint": 8.0,
       "safety_flags": ["attention"],
       "robot_adapter_mapping": "nao_orchestrator.look_at"
+  },
+  {
+    "name": "scan",
+    "aliases": ["look_around", "inspect_scene", "check_visible_entities"],
+    "category": "perception",
+    "params": ["target", "target_kind", "max_sweeps", "evidence_policy"],
+    "required_params": [],
+    "preconditions": [
+      "Use scan only when the user asks for fresh perception or to re-check what the robot can currently see."
+    ],
+    "expected_effects": [
+      "bounded head scan refreshes scene evidence and makes a fresh perception snapshot available"
+    ],
+    "observable_success": [
+      "result_payload.target_found",
+      "result_payload.people",
+      "result_payload.objects"
+    ],
+    "failure_modes": ["scan requested failure", "scan backend unavailable"],
+    "retryable": true,
+    "can_request_user_help": false,
+    "can_request_clarification": true,
+    "timeout_hint": 3.0,
+    "safety_flags": ["perception"],
+    "robot_adapter_mapping": "nao_orchestrator.scan",
+    "planner_guidance": [
+      "Use scan for fresh perception requests (e.g., 'scan the room', 'look around').",
+      "Do not use scan for memory-only questions unless the user asks to scan again.",
+      "Prioritize people evidence when the target is people-oriented."
+    ]
     }
   ]
 }

@@ -1,0 +1,673 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Codex Handoff — ROS4HRI Stack Hardening Pass</title><style>
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;max-width:980px;margin:0 auto;padding:32px 24px 64px;line-height:1.55;color:#172033}h1{font-size:1.9rem}h2{margin-top:2rem;border-bottom:1px solid #ddd;padding-bottom:.25rem}h3{margin-top:1.35rem}pre{background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:12px;overflow-x:auto}code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}table{border-collapse:collapse;width:100%;margin:1rem 0}th,td{border:1px solid #d0d7de;padding:8px 10px;vertical-align:top}th{background:#f6f8fa}li{margin:.22rem 0}
+</style></head><body><h1>Codex Handoff — ROS4HRI Stack Hardening Pass</h1>
+
+<p>**Date:** 2026-05-10</p>
+<p>**Owner context:** Álvaro / PIPELINE / RESEARCH-GLOBAL orchestration style</p>
+<p>**Primary runtime target:** NAO ROS4HRI planner stack</p>
+<p>**Audience:** Codex / Warp / GitHub-agent implementation workers</p>
+
+<h2>0. Branches and repository scope</h2>
+
+<p>Use these exact branches unless the operator explicitly changes scope:</p>
+
+<table>
+<thead><tr><th>Repo</th><th>Branch</th><th>Role</th></tr></thead>
+<tbody>
+<tr><td>`ieverythng/nao-ros4hri-bridge`</td><td>`feat/TFM-LLM_planner`</td><td>Monorepo / main planner, orchestrator, contracts, launch, knowledge tooling</td></tr>
+<tr><td>`ieverythng/nao_chatbot_llm`</td><td>`feat/planner_llm_hooks`</td><td>Chatbot backend, prompt pack, routing, knowledge snapshot, planner handoff</td></tr>
+<tr><td>`ieverythng/dialogue_manager`</td><td>`juan-feat-1`</td><td>Upstream-aligned dialogue manager with planner dialogue-act bridge</td></tr>
+</tbody></table>
+
+<p>`RESEARCH-GLOBAL` was provided as an orchestration reference repo, but the current GitHub connector did not list or fetch it. Keep this task plan compatible with that future orchestration by using issue/task cards with: **repo, branch, objective, context, files, tests, acceptance gates, risks**.</p>
+
+<h2>1. Current evidence-backed diagnosis</h2>
+
+<p>The backend and vLLM routing path are now stable enough that the major remaining failures are not primarily transport bugs.</p>
+
+<p>The current failure class is:</p>
+
+<p>&gt; The robot can execute deterministic actions, but the semantic evidence produced by composite skills is not being carried cleanly into the final user-facing answer.</p>
+
+<p>The existing docs already define the layered runtime:</p>
+
+<pre><code>
+dialogue_manager -&gt; chatbot_llm -&gt; planner_llm -&gt; nao_orchestrator -&gt; skills
+
+</code></pre>
+
+<p>The current workflow assigns clear ownership: dialogue manager speaks, chatbot routes/declares, planner supervises, planner_common normalizes contracts, and orchestrator executes deterministically.</p>
+
+<p>The latest architecture note also explicitly states that completion wording currently goes through a `dialogue_manager -&gt; chatbot_llm` completion pass, while the target architecture eventually moves planner ingress through `nao_orchestrator` as deterministic gate. Treat those as two separate migrations: **fix wording/evidence now, planner-gate ownership later**.</p>
+
+<h2>2. Non-negotiable architectural principles</h2>
+
+<li>1. **Dialogue manager owns speech realization.** Do not make `planner_llm` or `nao_orchestrator` speak directly except through existing dialogue-act/TTS seams.</li>
+<li>2. **Chatbot declares route and intent, not executable plans.** `chatbot_llm` may produce `verbal_ack`, `route`, `confidence`, and `user_intent` metadata. It must not own final skill steps.</li>
+<li>3. **Planner owns plan structure and supervision.** `planner_llm` plans over abstract skills, not robot-specific APIs.</li>
+<li>4. **Orchestrator owns deterministic execution.** `nao_orchestrator` validates and executes plan steps. It should return typed execution feedback.</li>
+<li>5. **Skills must return evidence, not just prose.** Composite skills like `scan` need structured result payloads with a short summary mirror for old paths.</li>
+<li>6. **Prompts are configuration; contracts are code.** Prompt-pack migration is good, but validation must stay in Python tests/contracts.</li>
+
+<h2>3. Indexed repo findings</h2>
+
+<h3>3.1 `nao-ros4hri-bridge`</h3>
+
+<p>The feature branch is large and mature: planner_common, planner_llm, planner gate, GitNexus knowledge tooling, docs/contracts, and multiple handoff artifacts are present.</p>
+
+<p>Important current state:</p>
+
+<li>`docs/current_workflow.md` defines layer ownership and runtime topics.</li>
+<li>`docs/planner_architecture_current.md` states that `scan` is first-party, planner-visible, and completion wording currently goes through chatbot.</li>
+<li>`docs/contracts.md` documents `/planner/request`, `/intents`, `/planner/execution_feedback`, `/planner/dialogue_act`, `knowledge_snapshot`, and `/scene/summary`.</li>
+<li>`AGENTS.md` introduces the GitNexus layer and instructs agents to query/context/source, then confirm in code.</li>
+
+<p>Gaps:</p>
+
+<li>Execution feedback currently centers on `result_summary` string. That is too weak for scan/person evidence.</li>
+<li>`planner_llm` still embeds the main system prompt in `planner_engine.py`.</li>
+<li>`skill_registry.json` should make `scan` explicit and MCP-like, even if runtime can derive it.</li>
+<li>Planner gate exists but is not the first PR target.</li>
+
+<h3>3.2 `nao_chatbot_llm`</h3>
+
+<p>This branch has a full rewrite around `backend_config.py`, `prompt_pack.py`, `prompt_builders.py`, `turn_engine.py`, `planner_handoff.py`, `planner_request_adapter.py`, `knowledge_snapshot.py`, and `ollama_transport.py`.</p>
+
+<p>Good:</p>
+
+<li>Prompt pack exists.</li>
+<li>Planner-mode single-stage response routing exists.</li>
+<li>Knowledge snapshots and recent scene memory exist.</li>
+<li>Tests already cover planner-mode routing, prompt-pack loading, knowledge snapshots, and planner handoff.</li>
+
+<p>Gaps:</p>
+
+<li>`ollama_transport.py` now supports OpenAI-compatible `/v1/chat/completions`, so the name is misleading.</li>
+<li>`_EXECUTION_HINT_MARKERS` in `turn_engine.py` is too broad. Terms like `person`, `people`, and `room` can accidentally convert knowledge/memory questions into execution.</li>
+<li>Completion wording is currently handled as a normal chatbot turn when sent by dialogue_manager. That can re-trigger routing.</li>
+
+<h3>3.3 `dialogue_manager`</h3>
+
+<p>This branch intentionally keeps upstream alignment and adds only limited local changes.</p>
+
+<p>Good:</p>
+
+<li>Planner dialogue-act subscription exists.</li>
+<li>`notify_completion` can request chatbot wording through the default dialogue.</li>
+<li>TTS ownership remains in dialogue_manager.</li>
+
+<p>Gaps:</p>
+
+<li>`notify_completion -&gt; send_default_system_input()` causes the completion wording request to enter the normal chatbot turn path.</li>
+<li>That path can infer `route=execution`, publish planner requests, or contaminate history.</li>
+<li>`explain_failure` is currently suppressed from TTS; sanitize instead of suppressing.</li>
+
+<h2>4. Implementation phases</h2>
+
+<h2>Phase 0 — Agent/branch/bootstrap discipline</h2>
+
+<p>**Goal:** Make every implementation run reproducible.</p>
+
+<p>**Repos/files**</p>
+
+<li>`nao-ros4hri-bridge/AGENTS.md`</li>
+<li>`nao-ros4hri-bridge/docs/knowledge/WORKFLOWS.md`</li>
+<li>`.codex/skills/iiia-ros4hri-check/*`</li>
+<li>`.codex/skills/deslop-refactor/*`</li>
+
+<p>**Actions**</p>
+
+<li>1. Start from the exact branches listed in section 0.</li>
+<li>2. In `nao-ros4hri-bridge`, run knowledge tooling before deep edits:</li>
+
+<pre><code>
+tools/knowledge/status.sh || true
+
+scripts/bootstrap_socialminds_sources.sh || true
+
+tools/knowledge/index_repo.sh || true
+
+</code></pre>
+
+<li>3. Use GitNexus when available:</li>
+<li>exploration: `query -&gt; context -&gt; source`</li>
+<li>debugging: `query symptom -&gt; context suspect -&gt; source`</li>
+<li>refactor: `context + impact -&gt; source edit -&gt; tests -&gt; index refresh`</li>
+<li>4. Always spot-check source code even if GitNexus returns confident answers.</li>
+
+<p>**Acceptance**</p>
+
+<li>Branch names logged in PR description.</li>
+<li>Baseline tests run or explicitly marked unavailable.</li>
+<li>Any GitNexus finding is source-confirmed before code changes.</li>
+
+<h2>Phase 1 — Stop planner completion wording from re-entering normal routing</h2>
+
+<p>**Priority:** P0</p>
+<p>**Reason:** Highest immediate impact on scan/report robustness.</p>
+
+<h3>Option A — Fast safe path</h3>
+
+<p>**Files**</p>
+
+<li>`dialogue_manager/dialogue_manager/manager_node.py`</li>
+
+<p>**Change**</p>
+
+<p>For `PlannerDialogueAct.act == &quot;notify_completion&quot;`:</p>
+
+<li>1. Prefer `dialogue_act.text_hint` or `dialogue_act.context.result_summary`.</li>
+<li>2. Speak it directly through `_tts_client.speak()`.</li>
+<li>3. Do **not** call `_ask_chatbot_for_planner_reply()` unless `use_llm_completion_wording` parameter is true.</li>
+
+<p>Add parameter:</p>
+
+<pre><code>
+planner_completion_wording_mode: &quot;direct&quot;  # direct | chatbot
+
+</code></pre>
+
+<p>Default: `direct`.</p>
+
+<p>**Expected behavior**</p>
+
+<li>Scan completion speaks the factual result directly.</li>
+<li>No new chatbot route decision is created for planner completion.</li>
+<li>No extra `/planner/request` is published because of a completion prompt.</li>
+
+<h3>Option B — Proper wording-only service</h3>
+
+<p>**Files**</p>
+
+<li>`chatbot_llm/node_impl.py`</li>
+<li>`chatbot_llm/turn_engine.py`</li>
+<li>`chatbot_llm/prompt_builders.py`</li>
+<li>`dialogue_manager/chatbot_client.py`</li>
+<li>`dialogue_manager/manager_node.py`</li>
+
+<p>**Change**</p>
+
+<p>Add a wording-only path that accepts a planner dialogue act and returns only:</p>
+
+<pre><code>
+{&quot;verbal_ack&quot;:&quot;I found one person, but I cannot confirm it is the same person as before.&quot;}
+
+</code></pre>
+
+<p>Rules:</p>
+
+<li>no route inference</li>
+<li>no planner handoff</li>
+<li>no intent publication</li>
+<li>no execution fallback</li>
+<li>no normal user-turn history pollution unless explicitly enabled</li>
+
+<p>**Acceptance tests**</p>
+
+<li>`notify_completion` with `text_hint` speaks directly.</li>
+<li>`notify_completion` with `result_summary` speaks directly.</li>
+<li>`notify_completion` does not publish planner request.</li>
+<li>`ask_clarification` still speaks and awaits response.</li>
+<li>`explain_failure` emits sanitized failure text instead of being fully suppressed.</li>
+
+<h2>Phase 2 — Add structured scan evidence</h2>
+
+<p>**Priority:** P0</p>
+<p>**Reason:** Fixes human/object confusion and makes composite skills thesis-worthy.</p>
+
+<p>**Files**</p>
+
+<li>`nao-ros4hri-bridge/src/planner_common/planner_common/contracts.py`</li>
+<li>`nao-ros4hri-bridge/docs/contracts.md`</li>
+<li>`nao-ros4hri-bridge/src/nao_orchestrator/nao_orchestrator/intent_rules.py`</li>
+<li>`nao-ros4hri-bridge/src/nao_orchestrator/nao_orchestrator/orchestrator.py`</li>
+<li>`nao-ros4hri-bridge/src/planner_llm/planner_llm/supervisor.py`</li>
+<li>`dialogue_manager/dialogue_manager/manager_node.py`</li>
+
+<p>**Change**</p>
+
+<p>Add `result_payload` to execution feedback while keeping `result_summary` for backward compatibility.</p>
+
+<p>Example payload:</p>
+
+<pre><code>
+{
+
+  &quot;skill&quot;: &quot;scan&quot;,
+
+  &quot;target&quot;: &quot;people&quot;,
+
+  &quot;target_kind&quot;: &quot;people&quot;,
+
+  &quot;target_found&quot;: true,
+
+  &quot;people&quot;: [
+
+    {
+
+      &quot;id&quot;: &quot;anonymous_person_daeba&quot;,
+
+      &quot;source&quot;: &quot;hri_tracked_persons&quot;,
+
+      &quot;last_seen_age_sec&quot;: 0.4
+
+    }
+
+  ],
+
+  &quot;objects&quot;: [],
+
+  &quot;summary_text&quot;: &quot;I found one person (id: anonymous_person_daeba).&quot;,
+
+  &quot;confidence_policy&quot;: &quot;grounded_current_observation&quot;
+
+}
+
+</code></pre>
+
+<p>**Scan priority rules**</p>
+
+<p>For `target_kind in {&quot;person&quot;,&quot;people&quot;,&quot;human&quot;,&quot;humans&quot;}`:</p>
+
+<li>1. Use fresh `/humans/persons/tracked` IDs first.</li>
+<li>2. Use KB/world-model human entities second.</li>
+<li>3. Use `/scene/summary` person-like detections third.</li>
+<li>4. Only mention object detections if no person was confirmed, and clearly say they are not the requested target.</li>
+
+<p>**Compatibility**</p>
+
+<li>Continue filling `result_summary = result_payload.summary_text`.</li>
+<li>`PlannerSupervisor.latest_result_summary` remains valid.</li>
+<li>Add `latest_result_payload` alongside it.</li>
+
+<p>**Acceptance tests**</p>
+
+<li>Person scan with fresh person IDs returns `target_found=true`.</li>
+<li>Person scan without people but with objects returns `target_found=false` and does not claim object success.</li>
+<li>Scene scan can summarize objects.</li>
+<li>Result payload is preserved into planner dialogue-act context.</li>
+<li>Dialogue manager can speak `summary_text` directly.</li>
+
+<h2>Phase 3 — Fix chatbot route semantics for scan/memory/knowledge questions</h2>
+
+<p>**Priority:** P0/P1</p>
+<p>**Reason:** Prevents “last scan” and “same person” questions from triggering new execution.</p>
+
+<p>**Files**</p>
+
+<li>`nao_chatbot_llm/chatbot_llm/turn_engine.py`</li>
+<li>`nao_chatbot_llm/chatbot_llm/prompt_builders.py`</li>
+<li>`nao_chatbot_llm/chatbot_llm/prompt_pack.py`</li>
+<li>`nao_chatbot_llm/config/chat_prompt_pack.yaml`</li>
+<li>`nao_chatbot_llm/test/test_turn_engine.py`</li>
+
+<p>**Change**</p>
+
+<p>Replace broad execution markers with a two-class policy.</p>
+
+<p>Execution request examples:</p>
+
+<li>“scan the room”</li>
+<li>“look around”</li>
+<li>“look around again”</li>
+<li>“check for people now”</li>
+<li>“move your head left”</li>
+<li>“stand up”</li>
+
+<p>Knowledge/memory question examples:</p>
+
+<li>“what did you see?”</li>
+<li>“did you see anyone?”</li>
+<li>“did you see people in the last scan?”</li>
+<li>“what was the person id?”</li>
+<li>“is it the same person as before?”</li>
+<li>“what can you currently see?”</li>
+
+<p>The second class should route to `knowledge_query` unless the user explicitly asks to scan/check/look again.</p>
+
+<p>**Implementation sketch**</p>
+
+<p>Add helper:</p>
+
+<pre><code>
+def _looks_like_knowledge_or_memory_question(user_text: str) -&gt; bool:
+
+    ...
+
+</code></pre>
+
+<p>Then in `_infer_route()`:</p>
+
+<li>1. if explicit route from model is valid, keep it only if not contradicted by hard safety rules;</li>
+<li>2. if knowledge/memory question, return `knowledge_query`;</li>
+<li>3. if physical imperative/action request, return `execution`;</li>
+<li>4. else dialogue.</li>
+
+<p>**Acceptance tests**</p>
+
+<li>`did you see people in the last scan?` -&gt; `knowledge_query`</li>
+<li>`what was the person id?` -&gt; `knowledge_query`</li>
+<li>`is that the same person as before?` -&gt; `knowledge_query`</li>
+<li>`scan the room for a person` -&gt; `execution`</li>
+<li>`look around and tell me what you see` -&gt; `execution`</li>
+<li>LLM empty response for scan request still hands off to planner.</li>
+<li>LLM empty response for memory question does not hand off to planner.</li>
+
+<h2>Phase 4 — Make scan an explicit MCP-like skill affordance</h2>
+
+<p>**Priority:** P1</p>
+<p>**Reason:** Improves planner reliability without adding hardcoded special cases.</p>
+
+<p>**Files**</p>
+
+<li>`nao-ros4hri-bridge/src/planner_llm/config/skill_registry.json`</li>
+<li>`nao-ros4hri-bridge/src/planner_llm/planner_llm/skill_registry.py`</li>
+<li>`nao-ros4hri-bridge/src/planner_llm/test/test_skill_registry.py`</li>
+<li>`nao-ros4hri-bridge/docs/contracts.md`</li>
+
+<p>**Change**</p>
+
+<p>Add explicit `scan` entry to `skill_registry.json`, even if derived runtime loading already exposes it.</p>
+
+<p>Recommended fields:</p>
+
+<li>aliases: `look_around`, `inspect_scene`, `check_visible_entities`</li>
+<li>params: `target`, `target_kind`, `max_sweeps`, `evidence_policy`</li>
+<li>expected_effects: bounded head scan + refreshed evidence</li>
+<li>observable_success: `result_payload.target_found`, `result_payload.people`, `result_payload.objects`</li>
+<li>planner_guidance:</li>
+<li>use scan for fresh perception</li>
+<li>do not use scan for last-scan questions unless user asks to scan again</li>
+<li>prioritize people evidence for people-target scans</li>
+
+<p>**Acceptance**</p>
+
+<li>`prompt_manifest()` includes scan with aliases and guidance.</li>
+<li>Planner fixtures choose scan for fresh scan commands.</li>
+<li>Planner fixtures avoid scan for memory-only questions when chatbot routes them as knowledge.</li>
+
+<h2>Phase 5 — Planner prompt-pack symmetry</h2>
+
+<p>**Priority:** P1</p>
+<p>**Reason:** Aligns with uploaded hardening plan; makes prompt iteration controlled and testable.</p>
+
+<p>**Files**</p>
+
+<li>`nao-ros4hri-bridge/src/planner_llm/planner_llm/prompt_pack.py`</li>
+<li>`nao-ros4hri-bridge/src/planner_llm/config/planner_prompt_pack.yaml`</li>
+<li>`nao-ros4hri-bridge/src/planner_llm/planner_llm/planner_engine.py`</li>
+<li>`nao-ros4hri-bridge/src/planner_llm/planner_llm/planner_node.py`</li>
+<li>`nao-ros4hri-bridge/src/planner_llm/test/test_planner_prompt_pack.py`</li>
+
+<p>**Change**</p>
+
+<p>Move planner policy prose and validation-retry copy out of Python constants into YAML.</p>
+
+<p>Keep in Python:</p>
+
+<li>allowed step validation</li>
+<li>skill filtering</li>
+<li>mixed say/executable rejection</li>
+<li>JSON extraction</li>
+<li>retry logic</li>
+<li>fallback/requested-plan logic</li>
+
+<p>Add:</p>
+
+<li>`prompt_pack_version`</li>
+<li>prompt pack path logging</li>
+<li>fallback behavior on invalid YAML</li>
+<li>tests for partial override merge</li>
+
+<p>**Acceptance**</p>
+
+<li>Existing planner tests pass.</li>
+<li>Bad YAML falls back safely.</li>
+<li>Startup logs prompt pack path + version.</li>
+<li>No weakening of planner contract validation.</li>
+
+<h2>Phase 6 — Clean dialogue-only intent leakage and hardcoded robot utterances</h2>
+
+<p>**Priority:** P2</p>
+<p>**Reason:** Architectural hygiene after urgent scan/completion stability.</p>
+
+<p>**Files**</p>
+
+<li>`nao_chatbot_llm/chatbot_llm/prompt_builders.py`</li>
+<li>`nao_chatbot_llm/chatbot_llm/intent_rules.py`</li>
+<li>`nao-ros4hri-bridge/src/nao_orchestrator/nao_orchestrator/intent_rules.py`</li>
+<li>`nao-ros4hri-bridge/src/planner_llm/planner_llm/planner_engine.py`</li>
+<li>`dialogue_manager/dialogue_manager/manager_node.py`</li>
+
+<p>**Change**</p>
+
+<li>Stop producing executable `SAY` intents for `greet`, `identity`, `wellbeing`, `help`.</li>
+<li>Keep orchestrator ignore shims temporarily.</li>
+<li>Move hardcoded wording to prompt packs or dialogue response layer.</li>
+<li>Remove planner `greet -&gt; say` rule after dialogue-only route is proven stable.</li>
+
+<p>**Acceptance**</p>
+
+<li>Greeting stays entirely in chatbot/dialogue path.</li>
+<li>Orchestrator receives no execution intent for greeting/help in normal dialogue.</li>
+<li>Direct `/intents` compatibility tests still pass.</li>
+
+<h2>Phase 7 — Rename transport or introduce provider-neutral wrapper</h2>
+
+<p>**Priority:** P2</p>
+<p>**Reason:** Maintainability, not primary behavior.</p>
+
+<p>**Files**</p>
+
+<li>`nao_chatbot_llm/chatbot_llm/ollama_transport.py`</li>
+<li>`nao_chatbot_llm/chatbot_llm/node_impl.py`</li>
+<li>`nao_chatbot_llm/test/test_ollama_transport.py`</li>
+
+<p>**Option A**</p>
+
+<p>Keep file for compatibility but add:</p>
+
+<pre><code>
+class ChatCompletionTransport(OllamaTransport):
+
+    ...
+
+</code></pre>
+
+<p>and import/use the neutral name.</p>
+
+<p>**Option B**</p>
+
+<p>Rename file to `chat_completion_transport.py` and leave `ollama_transport.py` as compatibility shim.</p>
+
+<p>**Acceptance**</p>
+
+<li>Existing tests pass.</li>
+<li>OpenAI-compatible `/v1/chat/completions` behavior remains covered.</li>
+<li>Log messages no longer say “Ollama” for vLLM/OpenAI-compatible endpoints.</li>
+
+<h2>Phase 8 — Planner gate ownership migration</h2>
+
+<p>**Priority:** P3</p>
+<p>**Reason:** Correct target architecture, but not before P0/P1 stability.</p>
+
+<p>**Files**</p>
+
+<li>`nao-ros4hri-bridge/src/nao_orchestrator/nao_orchestrator/planner_gate.py`</li>
+<li>`nao-ros4hri-bridge/src/nao_orchestrator/nao_orchestrator/orchestrator.py`</li>
+<li>`nao_chatbot_llm/chatbot_llm/backend_config.py`</li>
+<li>`nao_chatbot_llm/chatbot_llm/planner_handoff.py`</li>
+<li>launch files in `nao_chatbot`</li>
+
+<p>**Change**</p>
+
+<p>Migrate planner ingress from:</p>
+
+<pre><code>
+chatbot_llm -&gt; /planner/request
+
+</code></pre>
+
+<p>to:</p>
+
+<pre><code>
+chatbot_llm -&gt; /nao_orchestrator/planner_request -&gt; /planner/request
+
+</code></pre>
+
+<p>Only after completion wording and scan evidence are stable.</p>
+
+<p>**Acceptance**</p>
+
+<li>Duplicate active goals rejected.</li>
+<li>Supersede/cancel/clarification pass through correctly.</li>
+<li>`planner_gate` clears on completion/failure/cancellation.</li>
+<li>Launch defaults documented.</li>
+
+<h2>5. Suggested GitHub issue/task cards</h2>
+
+<h3>Issue 1 — P0: Stop planner completion from re-entering normal chatbot routing</h3>
+
+<p>**Repo:** `dialogue_manager`</p>
+<p>**Branch:** `juan-feat-1`</p>
+<p>**Files:** `manager_node.py`, `chatbot_client.py`, tests</p>
+<p>**Acceptance:** completion act speaks factual text; no new planner request is created.</p>
+
+<h3>Issue 2 — P0: Add structured scan result payload to execution feedback</h3>
+
+<p>**Repo:** `nao-ros4hri-bridge`</p>
+<p>**Branch:** `feat/TFM-LLM_planner`</p>
+<p>**Files:** `planner_common/contracts.py`, `nao_orchestrator/orchestrator.py`, `intent_rules.py`, `planner_llm/supervisor.py`, docs/tests</p>
+<p>**Acceptance:** person-target scan returns typed people evidence and `summary_text`.</p>
+
+<h3>Issue 3 — P0/P1: Separate execution requests from knowledge/memory questions</h3>
+
+<p>**Repo:** `nao_chatbot_llm`</p>
+<p>**Branch:** `feat/planner_llm_hooks`</p>
+<p>**Files:** `turn_engine.py`, `prompt_builders.py`, `prompt_pack.py`, `chat_prompt_pack.yaml`, tests</p>
+<p>**Acceptance:** “last scan/person id/same person” routes to knowledge/memory, not execution.</p>
+
+<h3>Issue 4 — P1: Make scan explicit and MCP-like in skill registry</h3>
+
+<p>**Repo:** `nao-ros4hri-bridge`</p>
+<p>**Branch:** `feat/TFM-LLM_planner`</p>
+<p>**Files:** `skill_registry.json`, `skill_registry.py`, tests/docs</p>
+<p>**Acceptance:** prompt manifest contains enriched scan affordance and aliases.</p>
+
+<h3>Issue 5 — P1: Add planner prompt pack</h3>
+
+<p>**Repo:** `nao-ros4hri-bridge`</p>
+<p>**Branch:** `feat/TFM-LLM_planner`</p>
+<p>**Files:** `planner_llm/prompt_pack.py`, `planner_prompt_pack.yaml`, `planner_engine.py`, `planner_node.py`, tests</p>
+<p>**Acceptance:** prompt version logged; invalid YAML fallback; current planner tests pass.</p>
+
+<h3>Issue 6 — P2: Clean dialogue-only intent leakage</h3>
+
+<p>**Repos:** `nao_chatbot_llm`, `nao-ros4hri-bridge`</p>
+<p>**Branches:** listed above</p>
+<p>**Acceptance:** greetings/help stay in dialogue layer; no execution intent emitted.</p>
+
+<h3>Issue 7 — P2: Rename or wrap Ollama transport</h3>
+
+<p>**Repo:** `nao_chatbot_llm`</p>
+<p>**Branch:** `feat/planner_llm_hooks`</p>
+<p>**Acceptance:** provider-neutral naming; OpenAI-compatible behavior unchanged.</p>
+
+<h3>Issue 8 — P3: Move planner ingress behind orchestrator gate</h3>
+
+<p>**Repos:** `nao-ros4hri-bridge`, `nao_chatbot_llm`</p>
+<p>**Acceptance:** `/nao_orchestrator/planner_request` is default ingress; gate manages active goal state.</p>
+
+<h2>6. Baseline tests to run before and after each PR</h2>
+
+<h3>`nao_chatbot_llm`</h3>
+
+<pre><code>
+cd src/chatbot_llm
+
+PYTHONPATH=&quot;$PWD:../planner_common:../kb_skills&quot; \
+
+python3 -m pytest -q \
+
+  test/test_turn_engine.py \
+
+  test/test_planner_request_adapter.py \
+
+  test/test_knowledge_snapshot.py \
+
+  test/test_prompt_pack.py \
+
+  test/test_ollama_transport.py
+
+</code></pre>
+
+<h3>`nao-ros4hri-bridge`</h3>
+
+<pre><code>
+PYTHONPATH=src/planner_common:src/planner_llm:src/nao_orchestrator:src/kb_skills \
+
+python3 -m pytest -q \
+
+  src/planner_common/test/test_contracts.py \
+
+  src/planner_llm/test/test_planner_engine.py \
+
+  src/planner_llm/test/test_supervisor.py \
+
+  src/planner_llm/test/test_skill_registry.py \
+
+  src/nao_orchestrator/test/test_nao_orchestrator_intent_rules.py \
+
+  src/nao_orchestrator/test/test_planner_gate.py
+
+</code></pre>
+
+<h3>`dialogue_manager`</h3>
+
+<pre><code>
+python3 -m pytest -q \
+
+  test/test_chatbot_client.py \
+
+  test/test_manager_node.py
+
+</code></pre>
+
+<h2>7. Scenario acceptance suite</h2>
+
+<table>
+<thead><tr><th>Scenario</th><th>Expected route</th><th>Expected execution</th><th>Expected speech</th></tr></thead>
+<tbody>
+<tr><td>“scan the room for a person”</td><td>execution</td><td>scan</td><td>person-focused result or honest no-person result</td></tr>
+<tr><td>“look around and tell me what you see”</td><td>execution</td><td>scan</td><td>grounded current scene summary</td></tr>
+<tr><td>“did you see people in the last scan?”</td><td>knowledge_query</td><td>no new scan</td><td>answer from last scan evidence</td></tr>
+<tr><td>“what was the person id?”</td><td>knowledge_query</td><td>no new scan</td><td>ID if known, otherwise honest unknown</td></tr>
+<tr><td>“is it the same person as before?”</td><td>knowledge_query</td><td>no new scan unless asked</td><td>do not claim sameness without evidence</td></tr>
+<tr><td>“stand up and then look left”</td><td>execution</td><td>two-step plan</td><td>completion once, no duplicate ack</td></tr>
+<tr><td>“help”</td><td>dialogue</td><td>none</td><td>dialogue response only</td></tr>
+<tr><td>planner step failure</td><td>none/new clarify</td><td>no hidden failure</td><td>sanitized failure text or clarification</td></tr>
+</tbody></table>
+
+<h2>8. PR discipline</h2>
+
+<p>For each PR:</p>
+
+<li>1. Update tests first or with code.</li>
+<li>2. Keep scope to one phase unless explicitly directed.</li>
+<li>3. Include before/after scenario notes.</li>
+<li>4. Include exact branches and files changed.</li>
+<li>5. Run the relevant subset of tests.</li>
+<li>6. Refresh GitNexus index after significant code changes if working locally:</li>
+
+<pre><code>
+tools/knowledge/post_commit_refresh.sh || true
+
+</code></pre>
+
+<h2>9. First PR recommendation</h2>
+
+<p>Start with **Issue 1 / Phase 1 Option A**.</p>
+
+<p>Reason: it is the smallest change with the highest chance of removing the current “planner completion becomes a new execution route” failure.</p>
+
+<p>Then implement **Issue 2 structured scan evidence**. Once scan evidence is typed, prompt hardening becomes much more effective because the model is no longer guessing from loose prose.</p></body></html>

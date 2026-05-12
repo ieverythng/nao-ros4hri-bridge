@@ -9,6 +9,7 @@ Use this index to keep top-level docs focused and avoid one-off bloat.
 - `launch_profiles.md` — operator launch matrix and runtime switches.
 - `planner_status.md` — current planner behavior and known limits.
 - `planner_architecture_current.md` — implementation-facing planner architecture snapshot.
+- `plans/` — phase plans and hardening handoff references.
 
 ## Archived docs (reference, do not treat as source of truth)
 

@@ -121,6 +121,7 @@ class PlannerSkill:
     safety_flags: tuple[str, ...]
     robot_adapter_mapping: str
     aliases: tuple[str, ...] = ()
+    planner_guidance: tuple[str, ...] = ()
 
     @classmethod
     def from_dict(cls, payload: dict) -> 'PlannerSkill':
@@ -140,6 +141,7 @@ class PlannerSkill:
             safety_flags=_coerce_tuple(payload.get('safety_flags', [])),
             robot_adapter_mapping=str(payload.get('robot_adapter_mapping', '')).strip(),
             aliases=_coerce_tuple(payload.get('aliases', [])),
+            planner_guidance=_coerce_tuple(payload.get('planner_guidance', [])),
         )
 
     def matches_name(self, name: str) -> bool:
@@ -163,6 +165,7 @@ class PlannerSkill:
             'timeout_hint': self.timeout_hint,
             'safety_flags': list(self.safety_flags),
             'robot_adapter_mapping': self.robot_adapter_mapping,
+            'planner_guidance': list(self.planner_guidance),
         }
 
 
@@ -244,13 +247,15 @@ class SkillRegistry:
             return False
         if step_type != 'skill':
             return True
-        step_name = str(step.get('name', '')).strip().lower()
-        if not step_name:
-            return False
-        return any(skill.matches_name(step_name) for skill in self._skills)
+        return bool(self.resolve_skill_name(step.get('name', '')))
 
     def filter_supported_steps(self, steps: list[dict]) -> list[dict]:
-        return [step for step in steps if self.supports_step(step)]
+        supported: list[dict] = []
+        for step in steps:
+            normalized_step = self.normalize_step(step)
+            if self.supports_step(normalized_step):
+                supported.append(normalized_step)
+        return supported
 
     def filter_supported_steps_with_rejections(
         self,
@@ -259,14 +264,37 @@ class SkillRegistry:
         supported: list[dict] = []
         rejected: list[dict] = []
         for step in steps:
-            if self.supports_step(step):
-                supported.append(step)
+            normalized_step = self.normalize_step(step)
+            if self.supports_step(normalized_step):
+                supported.append(normalized_step)
             else:
-                rejected.append(step)
+                rejected.append(normalized_step)
         return supported, rejected
 
     def prompt_manifest(self) -> list[dict]:
         return [skill.prompt_summary() for skill in self._skills]
+
+    def resolve_skill_name(self, name: str) -> str:
+        """Return canonical skill name for a direct name or alias, else empty."""
+        clean_name = str(name or '').strip().lower()
+        if not clean_name:
+            return ''
+        for skill in self._skills:
+            if skill.matches_name(clean_name):
+                return skill.name
+        return ''
+
+    def normalize_step(self, step: dict) -> dict:
+        """Normalize one step and canonicalize skill aliases to canonical names."""
+        if not isinstance(step, dict):
+            return {}
+        normalized = dict(step)
+        step_type = str(normalized.get('type', '')).strip().lower()
+        if step_type == 'skill':
+            canonical_name = self.resolve_skill_name(normalized.get('name', ''))
+            if canonical_name:
+                normalized['name'] = canonical_name
+        return normalized
 
 
 def _build_derived_skills(

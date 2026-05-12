@@ -27,6 +27,7 @@ from rclpy.lifecycle import Node, State, TransitionCallbackReturn
 from std_msgs.msg import String
 
 from nao_orchestrator.intent_rules import (
+    build_scan_result_payload,
     classify_motion_target,
     make_intent_signature,
     normalize_incoming_intent,
@@ -141,6 +142,12 @@ class NaoOrchestrator(Node):
         self.declare_parameter('scan_report_after_success', True)
         self.declare_parameter('scan_people_topic', '/humans/persons/tracked')
         self.declare_parameter('scan_people_max_age_sec', 2.0)
+        self.declare_parameter('scan_min_sweeps', 1)
+        self.declare_parameter('scan_max_sweeps', 2)
+        self.declare_parameter('scan_sweep_yaw_rad', 0.45)
+        self.declare_parameter('scan_sweep_pitch_rad', 0.0)
+        self.declare_parameter('scan_sweep_settle_sec', 0.2)
+        self.declare_parameter('scan_require_motion', True)
 
         self.intent_topic = str(self.get_parameter('intent_topic').value)
         self.enable_legacy_intent_bridge = bool(
@@ -240,6 +247,28 @@ class NaoOrchestrator(Node):
             0.0,
             float(self.get_parameter('scan_people_max_age_sec').value),
         )
+        self.scan_min_sweeps = max(
+            1,
+            int(self.get_parameter('scan_min_sweeps').value),
+        )
+        self.scan_max_sweeps = max(
+            self.scan_min_sweeps,
+            int(self.get_parameter('scan_max_sweeps').value),
+        )
+        self.scan_sweep_yaw_rad = max(
+            0.0,
+            float(self.get_parameter('scan_sweep_yaw_rad').value),
+        )
+        self.scan_sweep_pitch_rad = float(
+            self.get_parameter('scan_sweep_pitch_rad').value
+        )
+        self.scan_sweep_settle_sec = max(
+            0.0,
+            float(self.get_parameter('scan_sweep_settle_sec').value),
+        )
+        self.scan_require_motion = bool(
+            self.get_parameter('scan_require_motion').value
+        )
 
         self._intent_sub = None
         self._legacy_intent_sub = None
@@ -267,6 +296,7 @@ class NaoOrchestrator(Node):
         self._posture_result_event = threading.Event()
         self._latest_posture_result: dict | None = None
         self._latest_scan_summary = ''
+        self._latest_scene_objects: tuple[dict, ...] = ()
         self._latest_tracked_person_ids: tuple[str, ...] = ()
         self._latest_tracked_people_ts = 0.0
         self._planner_gate = PlannerGate()
@@ -510,7 +540,19 @@ class NaoOrchestrator(Node):
         )
 
     def _on_scan_summary(self, msg: String) -> None:
-        self._latest_scan_summary = str(msg.data or '').strip()
+        raw_payload = str(msg.data or '').strip()
+        parsed_payload = self._parse_scan_summary_payload(raw_payload)
+        scene_objects = tuple(self._extract_scene_objects(parsed_payload))
+        self._latest_scene_objects = scene_objects
+
+        summary_text = str(parsed_payload.get('summary_text', '')).strip()
+        if not summary_text and scene_objects:
+            summary_text = str(
+                build_scan_result_payload(
+                    {'target_kind': 'scene', 'objects': list(scene_objects)},
+                ).get('summary_text', '')
+            ).strip()
+        self._latest_scan_summary = summary_text or raw_payload
 
     def _on_scan_people(self, msg: IdsList) -> None:
         self._latest_tracked_person_ids = tuple(
@@ -726,6 +768,8 @@ class NaoOrchestrator(Node):
         """Execute a validated plan in a background worker so action results can be awaited."""
         plan_id = self._resolve_plan_id(plan_context)
         executed_any = False
+        latest_result_summary = ''
+        latest_result_payload: dict = {}
 
         for step in plan:
             step_started = False
@@ -744,13 +788,15 @@ class NaoOrchestrator(Node):
                     step=step,
                 )
 
-            step_ok, reason = self._dispatch_plan_step(
+            step_ok, reason, result_payload = self._dispatch_plan_step(
                 step,
                 fallback_data=data,
                 on_started=_mark_step_started,
             )
             if step_ok:
                 executed_any = True
+                latest_result_summary = str(reason or '').strip()
+                latest_result_payload = dict(result_payload or {})
                 if not step_started:
                     _mark_step_started()
                 self._publish_plan_feedback(
@@ -760,7 +806,8 @@ class NaoOrchestrator(Node):
                     status='succeeded',
                     event_type='step_succeeded',
                     step=step,
-                    result_summary=str(reason or '').strip(),
+                    result_summary=latest_result_summary,
+                    result_payload=latest_result_payload,
                 )
                 continue
 
@@ -824,6 +871,8 @@ class NaoOrchestrator(Node):
                 plan_context=plan_context,
                 status='completed',
                 event_type='plan_completed',
+                result_summary=latest_result_summary,
+                result_payload=latest_result_payload,
             )
             return
 
@@ -845,7 +894,7 @@ class NaoOrchestrator(Node):
         fallback_data: dict,
         *,
         on_started=None,
-    ) -> tuple[bool, str]:
+    ) -> tuple[bool, str, dict]:
         """Execute one step from the optional structured `Intent.data.plan`."""
         step_type = str(step.get('type', '')).strip().lower()
         step_name = str(step.get('name', '')).strip().lower()
@@ -854,35 +903,39 @@ class NaoOrchestrator(Node):
         if step_type == 'noop':
             if on_started is not None:
                 on_started()
-            return True, ''
+            return True, '', {}
 
         if step_type == 'say':
-            return self._execute_say_plan_step(
+            success, reason = self._execute_say_plan_step(
                 step_args,
                 fallback_data,
                 on_started=on_started,
             )
+            return success, reason, {}
 
         if step_type == 'look_at':
-            return self._dispatch_planned_look_at(
+            success, reason = self._dispatch_planned_look_at(
                 step_name,
                 step_args,
                 on_started=on_started,
             )
+            return success, reason, {}
 
         if step_type == 'skill':
             if step_name in ('perform_motion', 'motion', ''):
-                return self._execute_motion_plan_step(
+                success, reason = self._execute_motion_plan_step(
                     step_args,
                     on_started=on_started,
                 )
+                return success, reason, {}
             if step_name == 'look_at':
-                return self._dispatch_planned_look_at(
+                success, reason = self._dispatch_planned_look_at(
                     step_name,
                     step_args,
                     on_started=on_started,
                 )
-            if step_name == 'scan':
+                return success, reason, {}
+            if step_name in ('scan', 'look_around', 'inspect_scene', 'check_visible_entities'):
                 return self._execute_scan_step(
                     step_args,
                     on_started=on_started,
@@ -890,7 +943,7 @@ class NaoOrchestrator(Node):
 
         self._stats.dispatch_failures += 1
         self.get_logger().warn('Unsupported planned step: %s' % step)
-        return False, 'unsupported planned step'
+        return False, 'unsupported planned step', {}
 
     def _dispatch_planned_look_at(
         self,
@@ -1042,14 +1095,28 @@ class NaoOrchestrator(Node):
         step_args: dict,
         *,
         on_started=None,
-    ) -> tuple[bool, str]:
+    ) -> tuple[bool, str, dict]:
         if on_started is not None:
             on_started()
 
+        scan_args = self._scan_args_with_summary(step_args)
+        sweep_ok, sweep_reason = self._execute_scan_head_sweep(scan_args)
+        if not sweep_ok and self.scan_require_motion:
+            self._stats.dispatch_failures += 1
+            failed_payload = build_scan_result_payload(
+                scan_args,
+                default_summary=sweep_reason or 'scan head sweep failed',
+            )
+            return False, sweep_reason or 'scan head sweep failed', failed_payload
+
         success, reason, metadata = resolve_scan_result(
-            self._scan_args_with_summary(step_args),
+            scan_args,
             default_result_mode=self.scan_result_mode,
             default_summary=self.scan_summary,
+        )
+        result_payload = build_scan_result_payload(
+            scan_args,
+            default_summary=str(reason or '').strip(),
         )
 
         self.get_logger().info(
@@ -1062,7 +1129,7 @@ class NaoOrchestrator(Node):
         )
         if not success:
             self._stats.dispatch_failures += 1
-            return False, reason
+            return False, reason, result_payload
 
         if self.scan_report_after_success and reason:
             speech_ok, speech_reason = self._execute_say_plan_step(
@@ -1070,9 +1137,53 @@ class NaoOrchestrator(Node):
                 {},
             )
             if not speech_ok:
-                return False, speech_reason
+                return False, speech_reason, result_payload
 
-        return True, reason
+        return True, reason, result_payload
+
+    def _scan_sweep_count(self, scan_args: dict) -> int:
+        raw_max_sweeps = scan_args.get('max_sweeps', self.scan_min_sweeps)
+        try:
+            requested = int(raw_max_sweeps)
+        except (TypeError, ValueError):
+            requested = self.scan_min_sweeps
+        requested = max(self.scan_min_sweeps, requested)
+        return min(self.scan_max_sweeps, requested)
+
+    def _execute_scan_head_sweep(self, scan_args: dict) -> tuple[bool, str]:
+        sweep_count = self._scan_sweep_count(scan_args)
+        if sweep_count <= 0:
+            return True, ''
+        if self.scan_sweep_yaw_rad <= 0.0:
+            self.get_logger().warn('scan_sweep_yaw_rad<=0.0, skipping scan head sweep')
+            return True, ''
+
+        sweep_positions = (
+            self.scan_sweep_yaw_rad,
+            -self.scan_sweep_yaw_rad,
+            0.0,
+        )
+        self.get_logger().info(
+            'ORCH SCAN_SWEEP | sweeps=%d yaw=%.3f pitch=%.3f'
+            % (sweep_count, self.scan_sweep_yaw_rad, self.scan_sweep_pitch_rad)
+        )
+
+        for _ in range(sweep_count):
+            for yaw in sweep_positions:
+                motion_ok, motion_reason = self._execute_head_motion_step(
+                    {
+                        'yaw': float(yaw),
+                        'pitch': float(self.scan_sweep_pitch_rad),
+                        'relative': False,
+                    }
+                )
+                if not motion_ok:
+                    return False, motion_reason or 'scan head sweep dispatch failed'
+                self._stats.dispatched_head_motion += 1
+                if self.scan_sweep_settle_sec > 0.0:
+                    time.sleep(self.scan_sweep_settle_sec)
+
+        return True, ''
 
     def _scan_args_with_summary(self, step_args: dict) -> dict:
         scan_args = dict(step_args)
@@ -1080,12 +1191,26 @@ class NaoOrchestrator(Node):
         target_kind = str(
             scan_args.get('target_kind', target or 'scene')
         ).strip().lower() or 'scene'
+        scan_args['target_kind'] = target_kind
+
+        scene_objects = [
+            dict(item)
+            for item in self._latest_scene_objects
+            if isinstance(item, dict)
+        ]
+        if scene_objects:
+            scan_args['objects'] = scene_objects
 
         if is_people_scan_target(target_kind, target):
-            people_summary = self._tracked_people_scan_summary()
-            if people_summary:
-                scan_args['summary'] = people_summary
-                return scan_args
+            people_payload = self._tracked_people_scan_people_payload()
+            if people_payload:
+                scan_args['people'] = people_payload
+                people_summary = summarize_people_detection(
+                    [str(item.get('id', '')).strip() for item in people_payload]
+                )
+                if people_summary:
+                    scan_args['summary'] = people_summary
+            return scan_args
 
         if (
             not str(scan_args.get('summary', '')).strip()
@@ -1094,14 +1219,21 @@ class NaoOrchestrator(Node):
             scan_args['summary'] = self._latest_scan_summary
         return scan_args
 
-    def _tracked_people_scan_summary(self) -> str:
+    def _tracked_people_scan_people_payload(self) -> list[dict]:
         if not self._latest_tracked_person_ids:
-            return ''
-        if self.scan_people_max_age_sec > 0.0:
-            age_sec = time.time() - float(self._latest_tracked_people_ts or 0.0)
-            if age_sec > self.scan_people_max_age_sec:
-                return ''
-        return summarize_people_detection(list(self._latest_tracked_person_ids))
+            return []
+        age_sec = max(0.0, time.time() - float(self._latest_tracked_people_ts or 0.0))
+        if self.scan_people_max_age_sec > 0.0 and age_sec > self.scan_people_max_age_sec:
+            return []
+        return [
+            {
+                'id': person_id,
+                'source': 'hri_tracked_persons',
+                'last_seen_age_sec': round(age_sec, 3),
+            }
+            for person_id in self._latest_tracked_person_ids
+            if str(person_id).strip()
+        ]
 
     def _execute_replay_motion_step(
         self,
@@ -1395,6 +1527,38 @@ class NaoOrchestrator(Node):
         return True, ''
 
     @staticmethod
+    def _parse_scan_summary_payload(raw_payload: str) -> dict:
+        if not raw_payload:
+            return {}
+        try:
+            parsed = json.loads(raw_payload)
+        except json.JSONDecodeError:
+            return {}
+        return parsed if isinstance(parsed, dict) else {}
+
+    @staticmethod
+    def _extract_scene_objects(payload: dict) -> list[dict]:
+        raw_objects = payload.get('objects', [])
+        if not isinstance(raw_objects, list):
+            return []
+        objects: list[dict] = []
+        for item in raw_objects:
+            if not isinstance(item, dict):
+                continue
+            entity_id = str(item.get('entity_id', item.get('id', ''))).strip()
+            label = str(item.get('label', item.get('kb_class', entity_id))).strip()
+            objects.append(
+                {
+                    'id': entity_id,
+                    'entity_id': entity_id,
+                    'label': label,
+                    'kb_class': str(item.get('kb_class', '')).strip(),
+                    'source': str(item.get('source', 'scene_summary')).strip() or 'scene_summary',
+                }
+            )
+        return objects
+
+    @staticmethod
     def _parse_posture_result_message(payload: str) -> dict:
         try:
             parsed = json.loads(str(payload or '').strip())
@@ -1443,6 +1607,7 @@ class NaoOrchestrator(Node):
         needs_user_input: bool = False,
         validation_errors: list[str] | None = None,
         result_summary: str = '',
+        result_payload: dict | None = None,
     ) -> None:
         if self._planner_feedback_pub is None:
             return
@@ -1462,6 +1627,7 @@ class NaoOrchestrator(Node):
             validation_errors=list(validation_errors or []),
             timestamp_sec=round(time.time(), 3),
             result_summary=str(result_summary or '').strip(),
+            result_payload=dict(result_payload or {}),
         )
         msg = String()
         msg.data = json.dumps(payload, sort_keys=True, separators=(',', ':'))

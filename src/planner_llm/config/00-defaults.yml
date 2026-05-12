@@ -9,6 +9,7 @@
     planner_request_intent: "planner_request"
     default_intent_name: "raw_user_input"
     skill_registry_path: ""
+    planner_prompt_pack_path: ""
     provider: "openai_compatible"
     model: "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ"
     base_url: "http://10.7.138.215:8004"

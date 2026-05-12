@@ -202,6 +202,34 @@ def _clean_payload(value) -> dict:
     }
 
 
+def _normalize_result_payload_item(value):
+    if isinstance(value, dict):
+        return _normalize_result_payload(value)
+    if isinstance(value, list):
+        return [
+            _normalize_result_payload_item(item)
+            for item in value
+            if item is not None
+        ]
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, (bool, int, float)):
+        return value
+    return str(value)
+
+
+def _normalize_result_payload(value) -> dict:
+    if not isinstance(value, dict):
+        return {}
+    normalized = {}
+    for key, item in value.items():
+        clean_key = str(key or '').strip()
+        if not clean_key or item is None:
+            continue
+        normalized[clean_key] = _normalize_result_payload_item(item)
+    return normalized
+
+
 def _normalize_choice(value: str, allowed: tuple[str, ...], fallback: str) -> str:
     clean_value = str(value or '').strip().lower()
     if clean_value in allowed:
@@ -380,10 +408,17 @@ def build_execution_feedback_payload(
     validation_errors: list[str] | None = None,
     timestamp_sec: float = 0.0,
     result_summary: str = '',
+    result_payload: dict | None = None,
 ) -> dict:
     """Build one normalized planner feedback payload."""
     resolved_step = step if isinstance(step, dict) else None
     resolved_retry_budget = _coerce_nonnegative_int(plan_context.get('retry_budget', 0))
+    normalized_result_payload = _normalize_result_payload(result_payload or {})
+    normalized_result_summary = str(result_summary or '').strip()
+    if not normalized_result_summary:
+        normalized_result_summary = str(
+            normalized_result_payload.get('summary_text', '')
+        ).strip()
     if resolved_step is not None:
         resolved_retry_budget = _coerce_nonnegative_int(
             resolved_step.get('retry_budget', resolved_retry_budget)
@@ -409,7 +444,8 @@ def build_execution_feedback_payload(
         'scene_targets': coerce_str_list(plan_context.get('scene_targets', [])),
         'validation_errors': coerce_str_list(validation_errors or []),
         'timestamp_sec': _coerce_float(timestamp_sec, time.time()),
-        'result_summary': str(result_summary or '').strip(),
+        'result_summary': normalized_result_summary,
+        'result_payload': normalized_result_payload,
     }
     if resolved_step is not None:
         payload['step'] = {
@@ -587,6 +623,7 @@ class ExecutionFeedback:
     step_requires: tuple[str, ...]
     timestamp_sec: float
     result_summary: str
+    result_payload: dict
 
     @classmethod
     def from_payload(cls, payload) -> 'ExecutionFeedback':
@@ -597,6 +634,10 @@ class ExecutionFeedback:
         step_failure_policy = step_payload.get('on_failure', step_payload.get('failure_policy', ''))
         clean_step_failure_policy = str(step_failure_policy or '').strip().lower()
         status = str(data.get('status', '')).strip().lower()
+        result_payload = _normalize_result_payload(data.get('result_payload', {}))
+        result_summary = str(data.get('result_summary', '')).strip()
+        if not result_summary:
+            result_summary = str(result_payload.get('summary_text', '')).strip()
         return cls(
             goal_id=str(data.get('goal_id', '')).strip(),
             plan_id=str(data.get('plan_id', '')).strip(),
@@ -633,7 +674,8 @@ class ExecutionFeedback:
                 )
             ),
             timestamp_sec=_coerce_float(data.get('timestamp_sec', 0.0)),
-            result_summary=str(data.get('result_summary', '')).strip(),
+            result_summary=result_summary,
+            result_payload=result_payload,
         )
 
 

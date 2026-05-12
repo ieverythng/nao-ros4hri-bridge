@@ -15,6 +15,8 @@ from planner_common import normalize_plan_steps
 
 from planner_llm.providers import BasePlannerProvider
 from planner_llm.providers import PlannerProviderError
+from planner_llm.prompt_pack import PlannerPromptPack
+from planner_llm.prompt_pack import default_prompt_pack
 from planner_llm.skill_registry import SkillRegistry
 
 
@@ -28,30 +30,6 @@ _RULE_BASED_MOTIONS = {
     'posture_sit': 'sit',
     'posture_kneel': 'kneel',
 }
-_SYSTEM_PROMPT = (
-    'You are planner_llm for a ROS4HRI robot. Reply with one JSON object only. '
-    'Return fields ack_text, ack_mode, decision, validation_status, failure_reason, '
-    'replan_hint, retry_budget, scene_targets, communication_policy, and steps. '
-    'Each step must contain type, name, args, requires, on_failure, and retry_budget. '
-    'Plan only over the supplied abstract skill registry and allowed step types. '
-    'Important contract: type="skill" may only use names from allowed_skill_names; '
-    'do not use skill name "say" or direct speech actions inside executable plans. '
-    'Do not reference robot-specific topics, NAOqi APIs, or direct hardware calls. '
-    'normalized_intents may be incomplete, so infer the executable request from goal_text, '
-    'grounded context, and execution feedback. Treat requested_plan as a compatibility '
-    'fallback only, never as higher priority than goal_text or allowed skills. '
-    'For scan-style requests such as "look around and tell me what you see", '
-    'prefer a short sequence of perform_motion sweep steps followed by a scene-inspection '
-    'skill from the supplied registry when available. Include the requested target or '
-    'target_kind in scan args; if the target is ambiguous, clarify before planning. '
-    'Do not add say steps to executable plans; chatbot_llm owns user-facing completion '
-    'wording after execution. '
-    'If the task is ambiguous or blocked, set '
-    'decision to clarify and include clarification_text. If no safe continuation exists, '
-    'set decision to fail and explain why.'
-)
-
-
 @dataclass(frozen=True)
 class PlannerDecision:
     intent_name: str
@@ -68,12 +46,14 @@ class PlannerEngine:
         self,
         provider: BasePlannerProvider,
         skill_registry: SkillRegistry,
+        prompt_pack: PlannerPromptPack | None = None,
         *,
         default_intent_name: str = IntentLabels.RAW_USER_INPUT,
         default_retry_budget: int = 1,
     ) -> None:
         self._provider = provider
         self._skill_registry = skill_registry
+        self._prompt_pack = prompt_pack or default_prompt_pack()
         self._default_intent_name = str(default_intent_name or IntentLabels.RAW_USER_INPUT).strip()
         self._default_retry_budget = max(0, int(default_retry_budget))
 
@@ -241,41 +221,31 @@ class PlannerEngine:
             'allowed_step_types': list(self._skill_registry.step_types),
             'allowed_skill_names': list(self._skill_registry.allowed_skill_names),
             'allowed_motion_objects': list(_RULE_BASED_MOTIONS.values()),
-            'output_contract': {
-                'step_type_skill': {
-                    'type': 'skill',
-                    'name': 'must be one allowed_skill_names entry',
-                },
-                'step_type_say': {
-                    'type': 'say',
-                    'name': 'say',
-                    'usage': 'only for clarify/fail/pure dialogue decisions, never mixed with executable steps',
-                    'args': {'text': 'clarification or failure text'},
-                },
-                'invalid_examples': [
-                    {'type': 'skill', 'name': 'say'},
-                    {'type': 'skill', 'name': 'nao_say'},
-                    {
-                        'steps': [
-                            {'type': 'skill', 'name': 'scan'},
-                            {'type': 'say', 'name': 'say'},
-                        ],
-                    },
-                ],
-            },
+            'output_contract': dict(self._prompt_pack.output_contract),
         }
         if validation_errors:
-            prompt['validation_retry'] = {
-                'errors': list(validation_errors),
-                'instruction': (
+            validation_retry = dict(self._prompt_pack.validation_retry)
+            validation_instruction = str(validation_retry.get('instruction', '')).strip()
+            if not validation_instruction:
+                validation_instruction = (
                     'Regenerate the full plan as one valid JSON object. Correct only the '
                     'planner contract errors. Do not ask the user for clarification unless '
                     'the original human request is genuinely ambiguous.'
-                ),
-                'previous_model_output': str(previous_model_output or '')[:4000],
+                )
+            try:
+                max_output_len = max(
+                    0,
+                    int(validation_retry.get('previous_model_output_max_chars', 4000)),
+                )
+            except (TypeError, ValueError):
+                max_output_len = 4000
+            prompt['validation_retry'] = {
+                'errors': list(validation_errors),
+                'instruction': validation_instruction,
+                'previous_model_output': str(previous_model_output or '')[:max_output_len],
             }
         return [
-            {'role': 'system', 'content': _SYSTEM_PROMPT},
+            {'role': 'system', 'content': self._prompt_pack.system_prompt},
             {'role': 'user', 'content': json.dumps(prompt, sort_keys=True)},
         ]
 

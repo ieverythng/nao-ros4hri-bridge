@@ -92,6 +92,9 @@ _ROBOT_CAMERA_DEFAULTS = {
     "start_nao_robot": "true",
     "start_nao_robot_hri_visualization": "true",
     "start_rviz": "true",
+    "start_object_detection": "true",
+    "start_scene_grounding": "true",
+    "object_detection_backend": "emorobcare_cv",
     "hri_visualization_image_topic": "/camera/front/image_raw",
     "object_detection_input_image_topic": "/camera/front/image_raw",
     "posture_bridge_connect_on_startup": "true",
@@ -311,6 +314,38 @@ done
 """.strip()
 
 
+def _lifecycle_recovery_script(node_name: str, timeout_sec: int = 240) -> str:
+    """Retry lifecycle configure/activate after startup races."""
+    normalized_name = f"/{str(node_name).lstrip('/')}"
+    return f"""
+node_name="{normalized_name}"
+deadline=$((SECONDS + {max(1, int(timeout_sec))}))
+while true; do
+  state="$(ros2 lifecycle get "$node_name" 2>/dev/null | awk '{{print $1}}')"
+  case "$state" in
+    active)
+      exit 0
+      ;;
+    inactive)
+      ros2 lifecycle set "$node_name" activate >/dev/null 2>&1 || true
+      ;;
+    unconfigured)
+      ros2 lifecycle set "$node_name" configure >/dev/null 2>&1 || true
+      ;;
+    finalized|errorprocessing)
+      echo "lifecycle recovery failed for $node_name: state=$state" >&2
+      exit 1
+      ;;
+  esac
+  if [ "$SECONDS" -ge "$deadline" ]; then
+    echo "lifecycle recovery timed out for $node_name (last_state=${{state:-unknown}})" >&2
+    exit 1
+  fi
+  sleep 1.0
+done
+""".strip()
+
+
 def _service_wait_script(service_name: str, timeout_sec: int = 30) -> str:
     """Generate a shell loop that waits for one ROS service to appear."""
     normalized_name = f"/{str(service_name).lstrip('/')}"
@@ -400,16 +435,35 @@ def _prefer_first_non_empty(*names: str):
 
 
 def _nao_say_backend_action_name():
-    """Pick laptop debug TTS for simulator runs only when explicitly requested."""
+    """Pick laptop debug TTS only for simulator-only runs when explicitly requested."""
     return PythonExpression(
         [
             '"',
             LaunchConfiguration("sim_use_laptop_tts"),
             '" == "true" and "',
+            LaunchConfiguration("start_naoqi_driver"),
+            '" != "true" and "',
+            LaunchConfiguration("start_nao_robot"),
+            '" != "true" and "',
             LaunchConfiguration("debug_tts_action_name"),
             '" or "',
             LaunchConfiguration("tts_backend_action_name"),
             '"',
+        ]
+    )
+
+
+def _effective_posture_bridge_wake_up_on_connect():
+    """Force wake-up when a real robot driver path is active."""
+    return PythonExpression(
+        [
+            '"true" if ("',
+            LaunchConfiguration("posture_bridge_wake_up_on_connect"),
+            '" == "true" or "',
+            LaunchConfiguration("start_naoqi_driver"),
+            '" == "true" or "',
+            LaunchConfiguration("start_nao_robot"),
+            '" == "true") else "false"',
         ]
     )
 
@@ -1630,9 +1684,7 @@ def generate_profile_launch_description(
             "posture_bridge_disable_autonomous_life_on_connect": LaunchConfiguration(
                 "posture_bridge_disable_autonomous_life_on_connect"
             ),
-            "posture_bridge_wake_up_on_connect": LaunchConfiguration(
-                "posture_bridge_wake_up_on_connect"
-            ),
+            "posture_bridge_wake_up_on_connect": _effective_posture_bridge_wake_up_on_connect(),
             "head_motion_allow_open_loop_without_joint_state": LaunchConfiguration(
                 "head_motion_allow_open_loop_without_joint_state"
             ),
@@ -1741,6 +1793,44 @@ def generate_profile_launch_description(
             "start_interaction_sim_perception:=false for robot-camera validation, "
             "or override object_detection_input_image_topic and "
             "hri_visualization_image_topic to /camera/front/image_raw."
+        ),
+    )
+    laptop_tts_robot_note = LogInfo(
+        condition=IfCondition(
+            PythonExpression(
+                [
+                    '"',
+                    LaunchConfiguration("sim_use_laptop_tts"),
+                    '" == "true" and ("',
+                    LaunchConfiguration("start_naoqi_driver"),
+                    '" == "true" or "',
+                    LaunchConfiguration("start_nao_robot"),
+                    '" == "true")',
+                ]
+            )
+        ),
+        msg=(
+            "sim_use_laptop_tts:=true was requested while a real robot path is active. "
+            "Ignoring debug laptop TTS routing and keeping nao_say_skill on robot speech backend."
+        ),
+    )
+    posture_wakeup_note = LogInfo(
+        condition=IfCondition(
+            PythonExpression(
+                [
+                    '"',
+                    LaunchConfiguration("posture_bridge_wake_up_on_connect"),
+                    '" != "true" and ("',
+                    LaunchConfiguration("start_naoqi_driver"),
+                    '" == "true" or "',
+                    LaunchConfiguration("start_nao_robot"),
+                    '" == "true")',
+                ]
+            )
+        ),
+        msg=(
+            "posture_bridge_wake_up_on_connect was not explicitly enabled while a real robot "
+            "driver path is active. Forcing wake-up on connect to keep posture/motion actions responsive."
         ),
     )
     object_detection_camera_note = LogInfo(
@@ -2211,6 +2301,26 @@ def generate_profile_launch_description(
         nao_say_skill_node,
         condition=start_nao_say_skill_condition,
     )
+    nao_orchestrator_recovery = TimerAction(
+        period=20.0,
+        actions=[
+            ExecuteProcess(
+                cmd=["bash", "-lc", _lifecycle_recovery_script("nao_orchestrator")],
+                output="screen",
+                condition=IfCondition(LaunchConfiguration("start_nao_orchestrator")),
+            )
+        ],
+    )
+    nao_look_at_recovery = TimerAction(
+        period=24.0,
+        actions=[
+            ExecuteProcess(
+                cmd=["bash", "-lc", _lifecycle_recovery_script("nao_look_at")],
+                output="screen",
+                condition=IfCondition(LaunchConfiguration("start_nao_look_at")),
+            )
+        ],
+    )
     stack_ready_after_dialogue = RegisterEventHandler(
         OnStateTransition(
             target_lifecycle_node=dialogue_manager_node,
@@ -2403,6 +2513,8 @@ def generate_profile_launch_description(
             robot_perception_note,
             robot_tools_only_note,
             driver_perception_note,
+            laptop_tts_robot_note,
+            posture_wakeup_note,
             object_detection_camera_note,
             rqt_console,
             interaction_sim_rqt,
@@ -2473,6 +2585,8 @@ def generate_profile_launch_description(
             dialogue_manager_activate,
             nao_say_skill_configure,
             nao_say_skill_activate,
+            nao_orchestrator_recovery,
+            nao_look_at_recovery,
             stack_ready_after_dialogue,
             *nao_orchestrator_bundle,
             *nao_say_skill_bundle,

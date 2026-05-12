@@ -49,6 +49,7 @@ class SupervisorState:
     communication_policy: dict = field(default_factory=dict)
     last_request: PlannerRequest | None = None
     latest_result_summary: str = ''
+    latest_result_payload: dict = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -113,6 +114,8 @@ class PlannerSupervisor:
         state.last_execution_feedback = feedback
         if feedback.result_summary:
             state.latest_result_summary = feedback.result_summary
+        if feedback.result_payload:
+            state.latest_result_payload = dict(feedback.result_payload)
         if feedback.timestamp_sec > 0:
             state.latest_world_timestamp_sec = feedback.timestamp_sec
 
@@ -193,6 +196,8 @@ class PlannerSupervisor:
         state.current_status = 'planning'
         state.awaiting_user_response = False
         state.active_plan_steps = ()
+        state.latest_result_summary = ''
+        state.latest_result_payload = {}
         state.last_request = request
         if not state.communication_policy:
             state.communication_policy = {}
@@ -381,6 +386,7 @@ class PlannerSupervisor:
                 else [],
                 'goal_text': state.last_request.goal_text if state.last_request is not None else '',
                 'result_summary': state.latest_result_summary,
+                'result_payload': dict(state.latest_result_payload),
                 'status': state.current_status,
             },
         )

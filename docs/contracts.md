@@ -210,6 +210,23 @@ Topic:
   "scene_targets": ["kitchen"],
   "validation_errors": [],
   "timestamp_sec": 1777040000.0,
+  "result_summary": "I found one person (id: anonymous_person_daeba).",
+  "result_payload": {
+    "skill": "scan",
+    "target": "people",
+    "target_kind": "people",
+    "target_found": true,
+    "people": [
+      {
+        "id": "anonymous_person_daeba",
+        "source": "hri_tracked_persons",
+        "last_seen_age_sec": 0.4
+      }
+    ],
+    "objects": [],
+    "summary_text": "I found one person (id: anonymous_person_daeba).",
+    "confidence_policy": "grounded_current_observation"
+  },
   "step": {
     "id": "step_1",
     "type": "skill",
@@ -220,6 +237,9 @@ Topic:
   }
 }
 ```
+
+`result_summary` remains the backward-compatible short text mirror.
+`result_payload` carries the typed skill result (for scan/person evidence).
 
 Important event types:
 

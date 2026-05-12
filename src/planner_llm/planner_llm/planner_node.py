@@ -19,6 +19,7 @@ from planner_llm.planner_engine import PlannerEngine
 from planner_llm.providers import PlannerProviderConfig
 from planner_llm.providers import build_provider
 from planner_llm.skill_registry import SkillRegistry
+from planner_llm.prompt_pack import load_prompt_pack
 from planner_llm.supervisor import PlannerSupervisor
 from planner_llm.supervisor import SupervisorOutcome
 
@@ -45,6 +46,7 @@ class PlannerNode(Node):
         self.declare_parameter('planner_request_intent', DEFAULT_PLANNER_REQUEST_INTENT)
         self.declare_parameter('default_intent_name', Intent.RAW_USER_INPUT)
         self.declare_parameter('skill_registry_path', '')
+        self.declare_parameter('planner_prompt_pack_path', '')
         self.declare_parameter('provider', 'openai_compatible')
         self.declare_parameter('model', 'QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ')
         self.declare_parameter('base_url', 'http://10.7.138.215:8004')
@@ -79,6 +81,7 @@ class PlannerNode(Node):
             'default_intent_name',
             Intent.RAW_USER_INPUT,
         )
+        self._planner_prompt_pack_path = self._text_parameter('planner_prompt_pack_path')
         self._auto_replan = bool(self.get_parameter('auto_replan').value)
         default_retry_budget = int(self.get_parameter('default_retry_budget').value)
 
@@ -100,6 +103,7 @@ class PlannerNode(Node):
             raise RuntimeError('planner_llm provider preflight failed')
 
         provider = build_provider(provider_config)
+        prompt_pack = load_prompt_pack(self._planner_prompt_pack_path, logger=self.get_logger())
         skill_registry = SkillRegistry.load(
             self._text_parameter('skill_registry_path'),
             logger=self.get_logger(),
@@ -107,6 +111,7 @@ class PlannerNode(Node):
         engine = PlannerEngine(
             provider,
             skill_registry,
+            prompt_pack=prompt_pack,
             default_intent_name=self._default_intent_name,
             default_retry_budget=default_retry_budget,
         )
@@ -138,6 +143,13 @@ class PlannerNode(Node):
                 provider_config.provider,
                 provider_config.model,
                 self._auto_replan,
+            )
+        )
+        self.get_logger().info(
+            '[PROMPT PACK] planner_llm pack loaded | path=%s version=%s'
+            % (
+                str(getattr(prompt_pack, 'source_path', '')),
+                str(getattr(prompt_pack, 'prompt_pack_version', '')),
             )
         )
 
