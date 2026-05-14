@@ -18,6 +18,7 @@ from planner_llm.providers import PlannerProviderError
 from planner_llm.prompt_pack import PlannerPromptPack
 from planner_llm.prompt_pack import default_prompt_pack
 from planner_llm.skill_registry import SkillRegistry
+from planner_llm.workbench_adapter import WorkbenchPlannerAdapter
 
 
 _RULE_BASED_MOTIONS = {
@@ -50,12 +51,14 @@ class PlannerEngine:
         *,
         default_intent_name: str = IntentLabels.RAW_USER_INPUT,
         default_retry_budget: int = 1,
+        workbench_adapter: WorkbenchPlannerAdapter | None = None,
     ) -> None:
         self._provider = provider
         self._skill_registry = skill_registry
         self._prompt_pack = prompt_pack or default_prompt_pack()
         self._default_intent_name = str(default_intent_name or IntentLabels.RAW_USER_INPUT).strip()
         self._default_retry_budget = max(0, int(default_retry_budget))
+        self._workbench_adapter = workbench_adapter
 
     def plan_request(
         self,
@@ -96,6 +99,19 @@ class PlannerEngine:
         )
         if rule_based_decision is not None:
             return rule_based_decision
+
+        workbench_decision = self._workbench_decision(
+            request,
+            world_model_text=world_model_text,
+            world_model_snapshot=world_model_snapshot or {},
+            feedback=feedback,
+            goal_id=resolved_goal_id,
+            plan_version=resolved_plan_version,
+            status=status,
+            communication_policy=resolved_policy,
+        )
+        if workbench_decision is not None:
+            return workbench_decision
 
         try:
             raw_model_output = self._provider.generate(
@@ -196,6 +212,79 @@ class PlannerEngine:
             goal_id=resolved_goal_id,
             plan_version=resolved_plan_version,
             communication_policy=resolved_policy,
+        )
+
+    def _workbench_decision(
+        self,
+        request: PlannerRequest,
+        *,
+        world_model_text: str,
+        world_model_snapshot: dict,
+        feedback: ExecutionFeedback | None,
+        goal_id: str,
+        plan_version: int,
+        status: str,
+        communication_policy: dict,
+    ) -> PlannerDecision | None:
+        if self._workbench_adapter is None or not self._workbench_adapter.enabled:
+            return None
+
+        candidate = self._workbench_adapter.propose(
+            request,
+            world_model_text=world_model_text,
+            world_model_snapshot=world_model_snapshot,
+            feedback=feedback,
+        )
+        if candidate is None:
+            if self._workbench_adapter.required:
+                return self._backend_unavailable_decision(
+                    request,
+                    feedback=feedback,
+                    raw_model_output='Neural Workbench unavailable: %s'
+                    % self._workbench_adapter.load_error,
+                    goal_id=goal_id,
+                    plan_version=plan_version,
+                    communication_policy=communication_policy,
+                )
+            return None
+        candidate_mode = str(
+            candidate.planner_output.get('decision', candidate.planner_output.get('mode', 'plan'))
+        ).strip().lower()
+        if candidate_mode not in ('plan', 'replan') and not self._workbench_adapter.required:
+            return None
+
+        decision, validation_errors = self._decision_from_model_output_with_errors(
+            request,
+            candidate.raw_output,
+            feedback=feedback,
+            goal_id=goal_id,
+            plan_version=plan_version,
+            status=status,
+            communication_policy=communication_policy,
+        )
+        if decision is None:
+            if self._workbench_adapter.required:
+                return self._invalid_model_output_decision(
+                    request,
+                    feedback=feedback,
+                    reason='Neural Workbench candidate failed planner validation: %s'
+                    % '; '.join(validation_errors or ['no valid executable steps']),
+                    raw_model_output=candidate.raw_output,
+                    goal_id=goal_id,
+                    plan_version=plan_version,
+                    communication_policy=communication_policy,
+                )
+            return None
+
+        plan_payload = decision.payload.get('plan', {})
+        if isinstance(plan_payload, dict) and candidate.metadata:
+            plan_payload['neural_workbench'] = dict(candidate.metadata)
+        return PlannerDecision(
+            intent_name=decision.intent_name,
+            payload=decision.payload,
+            plan_id=decision.plan_id,
+            raw_model_output=candidate.raw_output,
+            mode='workbench_replan' if feedback is not None else 'workbench',
         )
 
     def _build_messages(

@@ -20,3 +20,8 @@
     think: false
     default_retry_budget: 1
     auto_replan: true
+    planner_workbench_enabled: false
+    planner_workbench_required: false
+    planner_workbench_desired_ab_level: 1
+    planner_workbench_python_path: ""
+    planner_workbench_trace_candidates: true

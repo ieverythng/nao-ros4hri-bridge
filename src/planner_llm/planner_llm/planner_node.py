@@ -22,6 +22,8 @@ from planner_llm.skill_registry import SkillRegistry
 from planner_llm.prompt_pack import load_prompt_pack
 from planner_llm.supervisor import PlannerSupervisor
 from planner_llm.supervisor import SupervisorOutcome
+from planner_llm.workbench_adapter import WorkbenchAdapterConfig
+from planner_llm.workbench_adapter import WorkbenchPlannerAdapter
 
 try:  # pragma: no cover - runtime dependency
     from hri_actions_msgs.msg import Intent
@@ -63,6 +65,11 @@ class PlannerNode(Node):
         self.declare_parameter('preflight_realistic_enabled', False)
         self.declare_parameter('default_retry_budget', 1)
         self.declare_parameter('auto_replan', True)
+        self.declare_parameter('planner_workbench_enabled', False)
+        self.declare_parameter('planner_workbench_required', False)
+        self.declare_parameter('planner_workbench_desired_ab_level', 1)
+        self.declare_parameter('planner_workbench_python_path', '')
+        self.declare_parameter('planner_workbench_trace_candidates', True)
 
         self._planner_request_topic = self._text_parameter('planner_request_topic')
         self._intent_topic = self._text_parameter('intent_topic')
@@ -114,6 +121,7 @@ class PlannerNode(Node):
             prompt_pack=prompt_pack,
             default_intent_name=self._default_intent_name,
             default_retry_budget=default_retry_budget,
+            workbench_adapter=self._workbench_adapter(),
         )
         self._supervisor = PlannerSupervisor(engine, auto_replan=self._auto_replan)
 
@@ -132,7 +140,7 @@ class PlannerNode(Node):
         self._world_text = ''
 
         self.get_logger().info(
-            '[STACK READY] planner_llm ready | request=%s intents=%s feedback=%s dialogue_act=%s snapshot=%s text=%s provider=%s model=%s auto_replan=%s'
+            '[STACK READY] planner_llm ready | request=%s intents=%s feedback=%s dialogue_act=%s snapshot=%s text=%s provider=%s model=%s auto_replan=%s workbench=%s'
             % (
                 self._planner_request_topic,
                 self._intent_topic,
@@ -143,6 +151,7 @@ class PlannerNode(Node):
                 provider_config.provider,
                 provider_config.model,
                 self._auto_replan,
+                bool(self.get_parameter('planner_workbench_enabled').value),
             )
         )
         self.get_logger().info(
@@ -173,6 +182,16 @@ class PlannerNode(Node):
             timeout_sec=float(self.get_parameter('timeout_sec').value),
             think=bool(self.get_parameter('think').value),
         )
+
+    def _workbench_adapter(self) -> WorkbenchPlannerAdapter:
+        config = WorkbenchAdapterConfig(
+            enabled=bool(self.get_parameter('planner_workbench_enabled').value),
+            required=bool(self.get_parameter('planner_workbench_required').value),
+            desired_ab_level=int(self.get_parameter('planner_workbench_desired_ab_level').value),
+            python_path=self._text_parameter('planner_workbench_python_path'),
+            trace_candidates=bool(self.get_parameter('planner_workbench_trace_candidates').value),
+        )
+        return WorkbenchPlannerAdapter(config, logger=self.get_logger())
 
     def _run_provider_preflight(self, provider_config: PlannerProviderConfig) -> bool:
         enabled = bool(self.get_parameter('preflight_enabled').value)

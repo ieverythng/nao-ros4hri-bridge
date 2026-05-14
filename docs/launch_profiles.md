@@ -124,6 +124,18 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
   appends `/api/chat`.
 - `planner_llm_default_retry_budget`: default plan retry budget.
 - `planner_llm_auto_replan`: enables supervisor auto-replan policy.
+- `planner_workbench_enabled`: disabled by default; when enabled, `planner_llm`
+  tries an optional Neural Workbench candidate program before provider planning.
+- `planner_workbench_required`: disabled by default; when enabled, Workbench
+  unavailability or invalid candidates become planner failures instead of
+  provider fallbacks.
+- `planner_workbench_desired_ab_level`: desired abstraction level passed to the
+  Workbench selector.
+- `planner_workbench_python_path`: optional `os.pathsep`-separated Python paths
+  for external Workbench packages when they are not installed in the active ROS
+  environment.
+- `planner_workbench_trace_candidates`: attaches Workbench candidate-program
+  metadata to planner output for research logging.
 
 ## ASR And Perception Startup
 

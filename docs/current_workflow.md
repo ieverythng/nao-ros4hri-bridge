@@ -12,6 +12,7 @@ handoffs and old integration notes live in `docs/artifacts/`.
 | Dialogue | `dialogue_manager` | Dialogue lifecycle and speaking ownership |
 | LLM dialogue | `chatbot_llm` | Response generation, intent declaration, planner routing, KB snapshot formatting |
 | Planning | `planner_llm` | Goal supervision, plan generation, replanning, planner dialogue acts |
+| Research planner seam | Neural Workbench | Optional candidate abstract skill program proposal before provider LLM planning |
 | Contracts | `planner_common` | JSON contract normalization and helpers |
 | Execution | `nao_orchestrator` | Deterministic intent validation, ordered skill execution, execution feedback |
 | Knowledge | `kb_skills` | KnowledgeCore query/revise boundary |
@@ -29,6 +30,7 @@ flowchart LR
     route -->|direct mode<br/>/intents| orch["nao_orchestrator<br/>deterministic executor"]
     route -->|planner mode<br/>/planner/request| planner["planner_llm<br/>planner + supervisor"]
 
+    workbench["Neural Workbench<br/>optional research seam"] -.->|candidate abstract skill program| planner
     planner -->|executable plan<br/>/intents| orch
     orch -.->|execution status<br/>/planner/execution_feedback| planner
     planner -.->|clarify/report<br/>/planner/dialogue_act| dm
@@ -45,6 +47,12 @@ The interaction starts with user text on `/humans/voices/*/speech`.
 `chatbot_llm` then chooses either direct execution through `/intents` or planner
 execution through `/planner/request`. The planner never speaks directly; it
 publishes `/planner/dialogue_act` back to `dialogue_manager`.
+
+The Neural Workbench seam is optional and planner-owned. When enabled,
+`planner_llm` asks the external Workbench package for a candidate abstract skill
+program before calling the configured LLM provider. The candidate is still
+validated by the local `planner_llm` skill registry, and execution still flows
+through `/intents` into `nao_orchestrator`.
 
 ## Grounded Scene Flow
 

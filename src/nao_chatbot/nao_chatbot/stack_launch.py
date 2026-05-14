@@ -1388,6 +1388,34 @@ def generate_profile_launch_description(
         default_value="true",
         description="Automatically trigger replanning when nao_orchestrator reports failed or invalid plans.",
     )
+    planner_workbench_enabled_arg = DeclareLaunchArgument(
+        "planner_workbench_enabled",
+        default_value=_profile_default(profile_defaults, "planner_workbench_enabled", "false"),
+        description="Let planner_llm try the optional Neural Workbench candidate-program seam before LLM planning.",
+    )
+    planner_workbench_required_arg = DeclareLaunchArgument(
+        "planner_workbench_required",
+        default_value=_profile_default(profile_defaults, "planner_workbench_required", "false"),
+        description="Fail planner turns when the enabled Neural Workbench seam is unavailable or invalid.",
+    )
+    planner_workbench_desired_ab_level_arg = DeclareLaunchArgument(
+        "planner_workbench_desired_ab_level",
+        default_value=_profile_default(profile_defaults, "planner_workbench_desired_ab_level", "1"),
+        description="Desired abstraction level forwarded to the Neural Workbench selector.",
+    )
+    planner_workbench_python_path_arg = DeclareLaunchArgument(
+        "planner_workbench_python_path",
+        default_value=_profile_default(profile_defaults, "planner_workbench_python_path", ""),
+        description=(
+            "Optional os.pathsep-separated Python paths for the external Neural Workbench "
+            "packages when they are not installed in the ROS environment."
+        ),
+    )
+    planner_workbench_trace_candidates_arg = DeclareLaunchArgument(
+        "planner_workbench_trace_candidates",
+        default_value=_profile_default(profile_defaults, "planner_workbench_trace_candidates", "true"),
+        description="Attach Workbench candidate-program traces to planner metadata for research logging.",
+    )
     start_asr_arg = DeclareLaunchArgument(
         "start_asr",
         default_value=_profile_default(profile_defaults, "start_asr", "false"),
@@ -2053,6 +2081,36 @@ def generate_profile_launch_description(
                     value_type=bool,
                 )
             },
+            {
+                "planner_workbench_enabled": ParameterValue(
+                    LaunchConfiguration("planner_workbench_enabled"),
+                    value_type=bool,
+                )
+            },
+            {
+                "planner_workbench_required": ParameterValue(
+                    LaunchConfiguration("planner_workbench_required"),
+                    value_type=bool,
+                )
+            },
+            {
+                "planner_workbench_desired_ab_level": ParameterValue(
+                    LaunchConfiguration("planner_workbench_desired_ab_level"),
+                    value_type=int,
+                )
+            },
+            {
+                "planner_workbench_python_path": ParameterValue(
+                    LaunchConfiguration("planner_workbench_python_path"),
+                    value_type=str,
+                )
+            },
+            {
+                "planner_workbench_trace_candidates": ParameterValue(
+                    LaunchConfiguration("planner_workbench_trace_candidates"),
+                    value_type=bool,
+                )
+            },
         ],
         condition=IfCondition(LaunchConfiguration("start_planner_llm")),
     )
@@ -2438,6 +2496,11 @@ def generate_profile_launch_description(
             planner_llm_preflight_realistic_enabled_arg,
             planner_llm_default_retry_budget_arg,
             planner_llm_auto_replan_arg,
+            planner_workbench_enabled_arg,
+            planner_workbench_required_arg,
+            planner_workbench_desired_ab_level_arg,
+            planner_workbench_python_path_arg,
+            planner_workbench_trace_candidates_arg,
             start_asr_arg,
             asr_vosk_model_path_arg,
             asr_audio_capture_device_arg,

@@ -1,3 +1,5 @@
+import json
+
 from planner_common import ExecutionFeedback
 from planner_common import PlannerRequest
 
@@ -33,6 +35,27 @@ class _SequenceProvider:
 class _FailingProvider:
     def generate(self, messages):
         raise PlannerProviderError('timed out')
+
+
+class _FakeWorkbenchAdapter:
+    enabled = True
+    required = False
+    load_error = ''
+
+    def __init__(self, candidate) -> None:
+        self._candidate = candidate
+        self.requests = []
+
+    def propose(self, request, **kwargs):
+        self.requests.append((request, kwargs))
+        return self._candidate
+
+
+class _WorkbenchCandidate:
+    def __init__(self, raw_output: str, metadata=None) -> None:
+        self.raw_output = raw_output
+        self.metadata = metadata or {}
+        self.planner_output = json.loads(raw_output)
 
 
 def _engine_for_response(response_text: str, *, retry_budget: int = 1) -> PlannerEngine:
@@ -97,6 +120,103 @@ def test_planner_engine_uses_provider_for_non_rule_request() -> None:
     assert '"goal_text": "inspect the visible cup"' in provider.messages[1]['content']
     assert '"user_text"' not in provider.messages[1]['content']
     assert '"invalid_examples": [{"name": "say", "type": "skill"}' in provider.messages[1]['content']
+
+
+def test_planner_engine_uses_workbench_candidate_before_provider() -> None:
+    provider = _FakeProvider('{}')
+    workbench = _FakeWorkbenchAdapter(
+        _WorkbenchCandidate(
+            '{"steps":[{"type":"skill","name":"scan","args":{"target_kind":"scene"}}]}',
+            metadata={'selected_program_id': 'scan_123', 'desired_ab_level': 1},
+        )
+    )
+    engine = PlannerEngine(
+        provider,
+        SkillRegistry.load(),
+        default_retry_budget=1,
+        workbench_adapter=workbench,
+    )
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_workbench',
+            'goal_id': 'goal_workbench',
+            'goal_text': 'scan the room',
+            'normalized_intents': ['inspect_scene'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_workbench', plan_version=1)
+
+    assert decision.mode == 'workbench'
+    assert decision.payload['plan']['steps'][0]['name'] == 'scan'
+    assert decision.payload['plan']['neural_workbench']['selected_program_id'] == 'scan_123'
+    assert provider.messages == []
+    assert workbench.requests[0][1]['world_model_snapshot'] == {}
+
+
+def test_planner_engine_falls_back_when_optional_workbench_rejects_candidate() -> None:
+    provider = _FakeProvider(
+        '{"steps":[{"type":"skill","name":"scan","args":{"target_kind":"scene"}}]}'
+    )
+    workbench = _FakeWorkbenchAdapter(
+        _WorkbenchCandidate(
+            '{"steps":[{"type":"skill","name":"unknown_workbench_skill","args":{}}]}'
+        )
+    )
+    engine = PlannerEngine(
+        provider,
+        SkillRegistry.load(),
+        default_retry_budget=1,
+        workbench_adapter=workbench,
+    )
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_workbench_fallback',
+            'goal_id': 'goal_workbench_fallback',
+            'goal_text': 'scan the room',
+            'normalized_intents': ['inspect_scene'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_workbench_fallback', plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['steps'][0]['name'] == 'scan'
+    assert provider.messages
+
+
+def test_planner_engine_falls_back_when_optional_workbench_cannot_plan() -> None:
+    provider = _FakeProvider(
+        '{"steps":[{"type":"skill","name":"scan","args":{"target_kind":"scene"}}]}'
+    )
+    workbench = _FakeWorkbenchAdapter(
+        _WorkbenchCandidate(
+            '{"decision":"clarify","user_facing_reason":"I could not form a valid candidate program.","steps":[]}'
+        )
+    )
+    engine = PlannerEngine(
+        provider,
+        SkillRegistry.load(),
+        default_retry_budget=1,
+        workbench_adapter=workbench,
+    )
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_workbench_cannot_plan',
+            'goal_id': 'goal_workbench_cannot_plan',
+            'goal_text': 'please do a weird compound task',
+            'normalized_intents': ['custom_action'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_workbench_cannot_plan', plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['steps'][0]['name'] == 'scan'
+    assert provider.messages
 
 
 def test_planner_engine_reports_invalid_model_output_as_failure() -> None:

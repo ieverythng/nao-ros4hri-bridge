@@ -147,6 +147,12 @@ Payload:
       "emit_completion": true,
       "emit_failure": true
     },
+    "neural_workbench": {
+      "source": "neural_workbench",
+      "desired_ab_level": 1,
+      "selected_program_id": "scan_abc123",
+      "trace_ids": []
+    },
     "steps": [
       {
         "id": "step_1",
@@ -181,6 +187,11 @@ Allowed failure policies:
 Current limitation: unsupported planner steps can be filtered by the skill
 registry. The next diagnostic should verify whether multi-step plans can degrade
 into partial plans without being classified as invalid.
+
+Optional `plan.neural_workbench` metadata is research-only. It records candidate
+program provenance when `planner_workbench_enabled` is true. It must not be
+required by `nao_orchestrator`, and it must not contain robot-topic or SDK
+execution instructions.
 
 ## Execution Feedback
 
