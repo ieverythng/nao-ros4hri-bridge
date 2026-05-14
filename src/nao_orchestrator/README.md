@@ -9,11 +9,11 @@ steps in order, and publishes planner feedback.
 - `/intents` subscription
 - structured `Intent.data.plan` validation
 - ordered execution of supported plan steps
-- action clients for NAO speech, replay motion, head motion, and look-at
+- action clients for NAO speech, replay motion, head motion, look-at, and scan
 - `/planner/execution_feedback`
 
 It does not own user dialogue, LLM prompting, planner policy, detector
-subscriptions, or KnowledgeCore transport.
+subscriptions, scan internals, or KnowledgeCore transport.
 
 ## Public ROS Interfaces
 
@@ -21,13 +21,12 @@ subscriptions, or KnowledgeCore transport.
 | --- | --- | --- | --- |
 | subscribe | `/intents` | `hri_actions_msgs/msg/Intent` | Direct or planner-generated intents |
 | optional subscribe | `/chatbot/intent` | `std_msgs/msg/String` | Legacy bridge, disabled by default |
-| optional subscribe | `/scene/summary` | `std_msgs/msg/String` | Scene grounding summary used by scan steps |
-| optional subscribe | `/humans/persons/tracked` | `hri_msgs/msg/IdsList` | Live person IDs used for person-oriented scan summaries |
 | publish | `/planner/execution_feedback` | `std_msgs/msg/String` | Plan lifecycle feedback |
 | action client | `/nao/say` | `communication_skills/action/Say` | Speech step execution |
 | action client | `/skill/replay_motion` | `nao_skills/action/ReplayMotion` | Motion/posture execution |
 | action client | `/skill/do_head_motion` | `nao_skills/action/DoHeadMotion` | Head motion execution |
 | action client | `/skill/look_at` | `interaction_skills/action/LookAt` | Gaze execution |
+| action client | `/skill/scan` | `nao_skills/action/ScanScene` | Scan skill dispatch (internals owned by scan skill server) |
 
 Temporary fallbacks:
 
@@ -40,6 +39,7 @@ Temporary fallbacks:
 - `say`: dispatches through `/nao/say` when speech dispatch is enabled.
 - `skill` with `perform_motion` or `motion`: replay/head/look-at-reset routing.
 - `skill` with `look_at`: target-frame or reset gaze routing.
+- `skill` with `scan`, `look_around`, `inspect_scene`, or `check_visible_entities`: `/skill/scan` dispatch.
 - `look_at`: target-frame or reset gaze routing.
 
 Unsupported steps should produce validation or step-failure feedback rather than
@@ -64,9 +64,10 @@ Defaults live in `config/00-defaults.yml`.
 - `posture_command_result_timeout_sec`
 - `planner_feedback_topic`
 - `dedupe_window_sec`
-- `scan_summary_topic`
-- `scan_people_topic`
-- `scan_people_max_age_sec`
+- `scan_action`
+- `scan_result_mode`
+- `scan_action_result_timeout_sec`
+- `scan_report_after_success`
 
 Replay/posture result waits default to `20.0s` because the NAO posture bridge can
 finish slightly after the old 12-second window under reconnect or posture-change

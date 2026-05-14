@@ -6,6 +6,8 @@ This folder keeps handoff and plan documents that should be used as references f
 
 - `codex_ros4hri_stack_hardening_handoff_2026-05-10.md` — ROS4HRI stack hardening handoff plan (canonical markdown).
 - `codex_ros4hri_stack_hardening_handoff_2026-05-10.html` — rendered HTML companion.
+- `codex_skill_centric_ros4hri_handoff_2026-05-13_overlay.md` — additive implementation overlay aligned with the 2026-05-12 skill-centric handoff.
+- `codex_skill_centric_ros4hri_handoff_2026-05-13_overlay.html` — interactive status tracker for the overlay phases and live runtime checks.
 - `prompt_pack_hardening_plan_2026-05-09.html` — prompt-pack hardening plan used during previous review and implementation rounds.
 
 ## Recommended usage

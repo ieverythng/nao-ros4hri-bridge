@@ -162,9 +162,9 @@
         surroundings. This is a composite skill contract: implementations may
         combine head/body motion, scene grounding, and KnowledgeCore revision
         while preserving the planner/orchestrator boundary.
-      interface: composite
+      interface: action
       default_interface_path: /skill/scan
-      datatype: planner_common/CompositeSkill
+      datatype: nao_skills/action/ScanScene
       functional_domains:
         - perception
         - motions
@@ -189,16 +189,26 @@
             description: |
               Current KnowledgeCore or grounded-context state used as a
               precondition, for example whether the target is already visible.
+          - name: evidence_policy
+            type: string
+            default: grounded_current_observation
+            description: |
+              Scan evidence selection policy for composite skill execution.
+          - name: result_mode
+            type: string
+            default: success
+            description: |
+              Optional test hook for deterministic failure injection.
         out:
-          - name: target_detected
+          - name: target_found
             type: boolean
             description: True if the scan detected the requested target.
-          - name: kb_revise
-            type: object
-            description: KB revision payload or summary produced by the scan.
-          - name: summary
+          - name: result_payload_json
             type: string
-            description: Machine-readable concise scan result summary.
+            description: Structured JSON payload produced by the skill server.
+          - name: summary_text
+            type: string
+            description: Concise factual summary mirrored to planner feedback.
         feedback:
           - name: status
             type: string

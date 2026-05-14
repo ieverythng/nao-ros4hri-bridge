@@ -1,0 +1,17 @@
+# Goal - high-level scan request for a composite scene/person/object scan.
+string target
+string target_kind
+int32 max_sweeps
+string evidence_policy
+string result_mode
+---
+# Result - typed scan outcome for planner/orchestrator feedback relaying.
+bool success
+string message
+string summary_text
+string result_payload_json
+float32 duration
+---
+# Feedback - progress updates during composite scan execution.
+string status
+float32 progress
