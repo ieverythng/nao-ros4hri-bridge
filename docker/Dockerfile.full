@@ -92,6 +92,9 @@ COPY src/ /home/ubuntu/ws/src/
 RUN bash -lc 'source /opt/ros/jazzy/setup.bash && \
     cd /home/ubuntu/ws && \
     rebuild_packages=( \
+      skill_common \
+      neural_workbench \
+      stack_observer \
       kb_skills \
       dialogue_manager \
       asr_vosk \

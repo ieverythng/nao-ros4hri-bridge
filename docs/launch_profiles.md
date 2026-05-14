@@ -10,6 +10,7 @@ This file is the active launch guide. Historical launch notes are under
 | Launch file | Default purpose | Notes |
 | --- | --- | --- |
 | `nao_chatbot_sim.launch.py` | Simulator stack and operator tools | Planner and planner gate on by default; laptop camera on `/camera/image_raw`; `rqt` console on |
+| `nao_research_sim.launch.py` | Research seam profile for Workbench and observer validation | Mirrors sim defaults, enables `planner_workbench_*` and starts optional `stack_observer` when installed |
 | `nao_chatbot_robot.launch.py` | Real robot camera/RViz/HRI overlays | Planner mode on; robot TF and RViz in profile defaults |
 | `nao_chatbot_demo.launch.py` | Sim-only demo with mock scan and demo-oriented defaults | Extends sim profile with demo skills and grounding |
 | `nao_chatbot_asr_only.launch.py` | Isolated ASR | No dialogue/planner/executor |
@@ -20,6 +21,12 @@ Simulator:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py
+```
+
+Research seam profile (Workbench + observer):
+
+```bash
+ros2 launch nao_chatbot nao_research_sim.launch.py
 ```
 
 Simulator with planner opt-out:
@@ -139,6 +146,9 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
   environment.
 - `planner_workbench_trace_candidates`: attaches Workbench candidate-program
   metadata to planner output for research logging.
+- `start_stack_observer`: launches the optional `stack_observer` lifecycle node
+  when the package is present in the active workspace.
+- `stack_observer_trace_path`: JSONL output path used by `stack_observer`.
 
 ## ASR And Perception Startup
 

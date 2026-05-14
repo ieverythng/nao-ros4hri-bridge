@@ -169,6 +169,36 @@ def demo_profile_defaults() -> dict[str, str]:
     )
 
 
+def _default_workbench_python_path() -> str:
+    """Prefer the local Neural-Wokbench source paths when present."""
+    candidates = (
+        "/home/ubuntu/ws/src/Neural-Wokbench/src/skill_common",
+        "/home/ubuntu/ws/src/Neural-Wokbench/src/neural_workbench",
+        "/home/juanbeck/nao-ros4hri-bridge/src/Neural-Wokbench/src/skill_common",
+        "/home/juanbeck/nao-ros4hri-bridge/src/Neural-Wokbench/src/neural_workbench",
+    )
+    existing_paths: list[str] = []
+    for candidate in candidates:
+        if os.path.isdir(candidate) and candidate not in existing_paths:
+            existing_paths.append(candidate)
+    return os.pathsep.join(existing_paths)
+
+
+def research_profile_defaults() -> dict[str, str]:
+    return _merged_defaults(
+        sim_profile_defaults(),
+        {
+            "planner_workbench_enabled": "true",
+            "planner_workbench_required": "false",
+            "planner_workbench_desired_ab_level": "1",
+            "planner_workbench_python_path": _default_workbench_python_path(),
+            "planner_workbench_trace_candidates": "true",
+            "start_stack_observer": "true",
+            "stack_observer_trace_path": "traces/stack_observer_events.jsonl",
+        },
+    )
+
+
 # -----------------------------------------------------------------------------
 # Generic launch helpers
 # -----------------------------------------------------------------------------
@@ -1421,6 +1451,23 @@ def generate_profile_launch_description(
         default_value=_profile_default(profile_defaults, "planner_workbench_trace_candidates", "true"),
         description="Attach Workbench candidate-program traces to planner metadata for research logging.",
     )
+    start_stack_observer_arg = DeclareLaunchArgument(
+        "start_stack_observer",
+        default_value=_profile_default(profile_defaults, "start_stack_observer", "false"),
+        description=(
+            "Launch the optional stack_observer lifecycle node from Neural-Wokbench "
+            "when the package is installed in this workspace."
+        ),
+    )
+    stack_observer_trace_path_arg = DeclareLaunchArgument(
+        "stack_observer_trace_path",
+        default_value=_profile_default(
+            profile_defaults,
+            "stack_observer_trace_path",
+            "traces/stack_observer_events.jsonl",
+        ),
+        description="JSONL output path forwarded to stack_observer trace logging.",
+    )
     start_asr_arg = DeclareLaunchArgument(
         "start_asr",
         default_value=_profile_default(profile_defaults, "start_asr", "false"),
@@ -2531,6 +2578,8 @@ def generate_profile_launch_description(
             planner_workbench_desired_ab_level_arg,
             planner_workbench_python_path_arg,
             planner_workbench_trace_candidates_arg,
+            start_stack_observer_arg,
+            stack_observer_trace_path_arg,
             start_asr_arg,
             asr_vosk_model_path_arg,
             asr_audio_capture_device_arg,
@@ -2619,6 +2668,19 @@ def generate_profile_launch_description(
             demo_log_window,
             managed_chatbot_ollama,
             managed_planner_ollama,
+            OpaqueFunction(
+                function=_optional_launch_description,
+                kwargs={
+                    "package_name": "stack_observer",
+                    "launch_file_name": "stack_observer.launch.py",
+                    "launch_arg_name": "start_stack_observer",
+                    "display_name": "stack_observer",
+                    "required_packages": ["stack_observer"],
+                    "launch_arguments": {
+                        "trace_path": LaunchConfiguration("stack_observer_trace_path"),
+                    },
+                },
+            ),
             OpaqueFunction(
                 function=_optional_launch_description,
                 kwargs={

@@ -149,6 +149,31 @@ def test_demo_profile_is_sim_only_with_mock_scan_and_planner_enabled():
     _assert_asr_is_opt_in(defaults)
 
 
+def test_research_profile_enables_workbench_and_stack_observer_by_default():
+    defaults = _launch_defaults(
+        "launch/nao_research_sim.launch.py",
+        "nao_research_sim_launch_test",
+    )
+    assert defaults["start_interaction_sim"] == "true"
+    assert defaults["start_interaction_sim_perception"] == "true"
+    assert defaults["start_interaction_sim_tools"] == "true"
+    assert defaults["start_planner_llm"] == "true"
+    assert defaults["chatbot_planner_mode_enabled"] == "true"
+    assert defaults["planner_workbench_enabled"] == "true"
+    assert defaults["planner_workbench_required"] == "false"
+    assert defaults["planner_workbench_desired_ab_level"] == "1"
+    assert defaults["planner_workbench_trace_candidates"] == "true"
+    assert defaults["start_stack_observer"] == "true"
+    assert defaults["stack_observer_trace_path"] == "traces/stack_observer_events.jsonl"
+    workbench_python_path = defaults["planner_workbench_python_path"]
+    assert isinstance(workbench_python_path, str)
+    if workbench_python_path:
+        assert "Neural-Wokbench/src/skill_common" in workbench_python_path
+        assert "Neural-Wokbench/src/neural_workbench" in workbench_python_path
+    _assert_lab_vllm_defaults(defaults)
+    _assert_asr_is_opt_in(defaults)
+
+
 def test_stack_uses_launch_events_for_chatbot_and_dialogue_lifecycle():
     stack_launch = _load_launch_module(
         "nao_chatbot/stack_launch.py",

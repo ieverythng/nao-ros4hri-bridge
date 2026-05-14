@@ -56,4 +56,11 @@ echo "Available packages:"
 ros2 pkg list | grep -E "(asr_vosk|chatbot_llm|dialogue_manager|interaction_skills|naoqi|nao_(chatbot|look_at|orchestrator|replay_motion|say_skill|scene_grounding|skills)|planner_(common|llm)|simple_audio_capture|emorobcare_cv_(msgs|object_detection)|my_game_interface)" || \
   echo "No expected nao-related packages found"
 
+# Be forgiving with a common typo seen in local docker run commands.
+if [ "${1:-}" = "bash-NW" ]; then
+  echo "Command 'bash-NW' is invalid; falling back to 'bash'." >&2
+  shift
+  set -- bash "$@"
+fi
+
 exec "$@"
