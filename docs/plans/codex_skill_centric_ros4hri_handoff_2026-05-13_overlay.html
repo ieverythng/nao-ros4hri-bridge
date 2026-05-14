@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ROS4HRI Skill-Centric Overlay Tracker (2026-05-13)</title>
+  <style>
+    :root {
+      --bg: #f4f6f7;
+      --panel: #ffffff;
+      --ink: #1b1f23;
+      --muted: #55616d;
+      --line: #d6dde3;
+      --accent: #0f766e;
+      --warn: #b45309;
+      --bad: #b91c1c;
+      --ok: #166534;
+    }
+    body {
+      margin: 0;
+      background: linear-gradient(120deg, #eef6f5 0%, var(--bg) 45%, #eef2fa 100%);
+      color: var(--ink);
+      font: 15px/1.5 "IBM Plex Sans", "Segoe UI", sans-serif;
+    }
+    .wrap { max-width: 1100px; margin: 24px auto; padding: 0 16px 32px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin: 12px 0; }
+    h1, h2, h3 { margin: 0 0 10px; font-family: "IBM Plex Serif", Georgia, serif; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 20px; }
+    .meta { color: var(--muted); margin-bottom: 10px; }
+    .row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
+    .pill { border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; font-size: 12px; background: #fafcfd; }
+    .ok { color: var(--ok); border-color: #b7e4c7; background: #ecfdf3; }
+    .warn { color: var(--warn); border-color: #fcd9a3; background: #fff8eb; }
+    .bad { color: var(--bad); border-color: #fecaca; background: #fff1f2; }
+    ul { margin: 6px 0 0 18px; }
+    li { margin: 4px 0; }
+    label.task { display: block; margin: 6px 0; }
+    input[type="checkbox"] { transform: translateY(1px); margin-right: 8px; }
+    textarea, input[type="text"] {
+      width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px;
+      font: inherit; box-sizing: border-box; background: #fff;
+    }
+    textarea { min-height: 120px; }
+    .btn { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 7px 10px; cursor: pointer; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 860px) { .split { grid-template-columns: 1fr; } }
+    code { background: #f6f8fa; padding: 1px 4px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Skill-Centric ROS4HRI Overlay Tracker</h1>
+      <div class="meta">Additive tracker for the 2026-05-12 handoff docs. This file is local and persists state in browser localStorage.</div>
+      <div class="row">
+        <div>
+          Source anchors: <code>§3</code>, <code>§4.2</code>, <code>§5 Phase 1/3/4/6</code>, <code>§7 PR4</code>, <code>§8</code>, <code>§10</code>
+        </div>
+        <div id="overall" class="pill warn">In Progress</div>
+      </div>
+    </div>
+
+    <div class="split">
+      <div class="card">
+        <h2>Interleaved Gates</h2>
+        <label class="task"><input data-key="gate_deslop" type="checkbox">deslop-refactor gate passed</label>
+        <label class="task"><input data-key="gate_iiia" type="checkbox">iiia-ros4hri-check gate passed</label>
+        <label class="task"><input data-key="gate_live" type="checkbox">live-container gate passed</label>
+      </div>
+      <div class="card">
+        <h2>Periodic Runtime Checks (20 min)</h2>
+        <label class="task"><input data-key="check_nodes" type="checkbox">node graph check</label>
+        <label class="task"><input data-key="check_action" type="checkbox">/skill/scan action check</label>
+        <label class="task"><input data-key="check_lifecycle" type="checkbox">scan lifecycle check</label>
+        <label class="task"><input data-key="check_smoke" type="checkbox">scan smoke goal check</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Phase A: Direct Scan Action-Server Switch</h2>
+      <label class="task"><input data-key="a_orch_cleanup" type="checkbox">orchestrator internal scan logic removed</label>
+      <label class="task"><input data-key="a_scan_server" type="checkbox">scan internals fully owned by scan_skill_server</label>
+      <label class="task"><input data-key="a_lifecycle" type="checkbox">lifecycle startup/recovery stable in launch</label>
+      <label class="task"><input data-key="a_repeat_goals" type="checkbox">multi-request scan execution stable</label>
+      <label class="task"><input data-key="a_done" type="checkbox">Phase A complete</label>
+    </div>
+
+    <div class="card">
+      <h2>Phase B: Skill Normalization Priority</h2>
+      <label class="task"><input data-key="b_registry" type="checkbox">shared skill registry seam defined</label>
+      <label class="task"><input data-key="b_aliases" type="checkbox">planner aliases normalized (scan/look_around/inspect_scene)</label>
+      <label class="task"><input data-key="b_contract" type="checkbox">shared result contract seam applied</label>
+      <label class="task"><input data-key="b_done" type="checkbox">Phase B complete</label>
+    </div>
+
+    <div class="card">
+      <h2>Phase C: Validation Harness</h2>
+      <label class="task"><input data-key="c_injection" type="checkbox">controlled failure injection scenarios</label>
+      <label class="task"><input data-key="c_replan" type="checkbox">planner replan behavior verified</label>
+      <label class="task"><input data-key="c_runtime" type="checkbox">robot-profile runtime checks passed</label>
+      <label class="task"><input data-key="c_done" type="checkbox">Phase C complete</label>
+    </div>
+
+    <div class="split">
+      <div class="card">
+        <h2>Live Validation Log</h2>
+        <textarea data-key="validation_log" placeholder="Append build/runtime observations, command snippets, pass/fail status."></textarea>
+      </div>
+      <div class="card">
+        <h2>Current Caveats / Follow-ups</h2>
+        <textarea data-key="caveats" placeholder="Track open issues, assumptions, and next checks."></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Operator Notes</h2>
+      <input data-key="operator_note" type="text" placeholder="Short status line for supervisor updates" />
+      <div style="margin-top:10px; display:flex; gap:8px;">
+        <button class="btn" id="reset">Reset Tracker</button>
+        <button class="btn" id="seed">Seed Current Status</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "ros4hri_skill_overlay_2026_05_13";
+    const seedData = {
+      gate_deslop: true,
+      gate_iiia: false,
+      gate_live: true,
+      check_nodes: true,
+      check_action: true,
+      check_lifecycle: true,
+      check_smoke: true,
+      a_orch_cleanup: true,
+      a_scan_server: true,
+      a_lifecycle: true,
+      a_repeat_goals: false,
+      a_done: false,
+      validation_log: "2026-05-13: scan callback fixed (no running event loop). /skill/scan smoke succeeded with feedback sweep progress.",
+      caveats: "Re-check repeated scan requests under robot profile with live camera and head motion action server timing.",
+      operator_note: "Phase A nearly complete; runtime stable on first-pass scan smoke."
+    };
+
+    function loadState() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      } catch {
+        return {};
+      }
+    }
+
+    function saveState(state) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderOverall(state);
+    }
+
+    function renderOverall(state) {
+      const allChecks = document.querySelectorAll("input[type='checkbox'][data-key]");
+      const total = allChecks.length;
+      let done = 0;
+      allChecks.forEach((el) => { if (state[el.dataset.key]) done += 1; });
+      const ratio = total ? done / total : 0;
+      const el = document.getElementById("overall");
+      if (ratio >= 0.98) {
+        el.textContent = "Complete";
+        el.className = "pill ok";
+      } else if (ratio >= 0.5) {
+        el.textContent = "In Progress";
+        el.className = "pill warn";
+      } else {
+        el.textContent = "Needs Attention";
+        el.className = "pill bad";
+      }
+    }
+
+    function wire() {
+      const state = loadState();
+      document.querySelectorAll("[data-key]").forEach((el) => {
+        const k = el.dataset.key;
+        if (el.type === "checkbox") el.checked = Boolean(state[k]);
+        else el.value = typeof state[k] === "string" ? state[k] : "";
+
+        const handler = () => {
+          const next = loadState();
+          next[k] = el.type === "checkbox" ? el.checked : el.value;
+          saveState(next);
+        };
+        el.addEventListener("change", handler);
+        if (el.tagName === "TEXTAREA" || el.tagName === "INPUT") {
+          el.addEventListener("input", handler);
+        }
+      });
+
+      document.getElementById("reset").addEventListener("click", () => {
+        localStorage.removeItem(STORAGE_KEY);
+        location.reload();
+      });
+
+      document.getElementById("seed").addEventListener("click", () => {
+        saveState(seedData);
+        location.reload();
+      });
+
+      renderOverall(state);
+    }
+
+    wire();
+  </script>
+</body>
+</html>

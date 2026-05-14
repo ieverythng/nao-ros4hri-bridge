@@ -13,6 +13,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "action/DoHeadMotion.action"
   "action/DoPosture.action"
   "action/ReplayMotion.action"
+  "action/ScanScene.action"
   DEPENDENCIES action_msgs
 )
 

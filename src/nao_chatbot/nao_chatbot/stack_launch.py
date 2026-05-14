@@ -1021,6 +1021,11 @@ def generate_profile_launch_description(
         default_value=_profile_default(profile_defaults, "start_nao_orchestrator", "true"),
         description="Launch the NAO orchestrator scaffold.",
     )
+    start_scan_skill_arg = DeclareLaunchArgument(
+        "start_scan_skill",
+        default_value=_profile_default(profile_defaults, "start_scan_skill", "true"),
+        description="Launch the scan composite skill action server.",
+    )
     start_nao_say_skill_arg = DeclareLaunchArgument(
         "start_nao_say_skill",
         default_value=_profile_default(profile_defaults, "start_nao_say_skill", "true"),
@@ -1105,7 +1110,7 @@ def generate_profile_launch_description(
         default_value=_profile_default(
             profile_defaults,
             "demo_log_nodes",
-            "chatbot_llm,planner_llm,nao_orchestrator,dialogue_manager,nao_say_skill,head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug",
+            "chatbot_llm,planner_llm,nao_orchestrator,scan_skill_server,dialogue_manager,nao_say_skill,head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug",
         ),
         description="Comma-separated node allowlist for the filtered demo log window.",
     )
@@ -1604,12 +1609,6 @@ def generate_profile_launch_description(
                 )
             },
             {
-                "scan_summary": ParameterValue(
-                    LaunchConfiguration("scan_summary"),
-                    value_type=str,
-                )
-            },
-            {
                 "scan_report_after_success": ParameterValue(
                     LaunchConfiguration("scan_report_after_success"),
                     value_type=bool,
@@ -1636,6 +1635,26 @@ def generate_profile_launch_description(
             {
                 "planner_dialogue_act_topic": ParameterValue(
                     LaunchConfiguration("planner_dialogue_act_topic"),
+                    value_type=str,
+                )
+            },
+        ],
+    )
+    scan_skill_bundle = _make_lifecycle_bundle(
+        package_name="nao_orchestrator",
+        executable="run_scan_skill",
+        node_name="scan_skill_server",
+        condition=IfCondition(LaunchConfiguration("start_scan_skill")),
+        extra_parameters=[
+            {
+                "scan_result_mode": ParameterValue(
+                    LaunchConfiguration("scan_result_mode"),
+                    value_type=str,
+                )
+            },
+            {
+                "scan_summary": ParameterValue(
+                    LaunchConfiguration("scan_summary"),
                     value_type=str,
                 )
             },
@@ -2311,6 +2330,16 @@ def generate_profile_launch_description(
             )
         ],
     )
+    scan_skill_recovery = TimerAction(
+        period=22.0,
+        actions=[
+            ExecuteProcess(
+                cmd=["bash", "-lc", _lifecycle_recovery_script("scan_skill_server")],
+                output="screen",
+                condition=IfCondition(LaunchConfiguration("start_scan_skill")),
+            )
+        ],
+    )
     nao_look_at_recovery = TimerAction(
         period=24.0,
         actions=[
@@ -2364,6 +2393,7 @@ def generate_profile_launch_description(
             start_interaction_sim_ui_arg,
             interaction_sim_hri_log_profile_arg,
             start_nao_orchestrator_arg,
+            start_scan_skill_arg,
             start_nao_say_skill_arg,
             start_nao_replay_motion_arg,
             head_motion_allow_open_loop_without_joint_state_arg,
@@ -2484,6 +2514,8 @@ def generate_profile_launch_description(
                     LaunchConfiguration("start_planner_llm"),
                     " nao_orchestrator=",
                     LaunchConfiguration("start_nao_orchestrator"),
+                    " scan_skill=",
+                    LaunchConfiguration("start_scan_skill"),
                     " scene_grounding=",
                     LaunchConfiguration("start_scene_grounding"),
                     " object_detection=",
@@ -2586,8 +2618,10 @@ def generate_profile_launch_description(
             nao_say_skill_configure,
             nao_say_skill_activate,
             nao_orchestrator_recovery,
+            scan_skill_recovery,
             nao_look_at_recovery,
             stack_ready_after_dialogue,
+            *scan_skill_bundle,
             *nao_orchestrator_bundle,
             *nao_say_skill_bundle,
             nao_replay_motion_launch,

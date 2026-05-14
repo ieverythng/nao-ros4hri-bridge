@@ -25,9 +25,23 @@
     dedupe_window_sec: 0.8
     default_greeting: "Hello! Nice to meet you."
     scan_result_mode: "success"
+    scan_action: "/skill/scan"
+    scan_action_wait_sec: 0.2
+    scan_action_result_timeout_sec: 20.0
+    scan_report_after_success: true
+
+/scan_skill_server:
+  ros__parameters:
+    action_name: "/skill/scan"
+    head_motion_action: "/skill/do_head_motion"
+    head_motion_speed: 0.25
+    head_motion_wait_sec: 1.0
+    head_motion_result_timeout_sec: 6.0
+    scan_result_mode: "success"
     scan_summary: ""
     scan_summary_topic: "/scene/summary"
-    scan_report_after_success: true
+    scan_people_topic: "/humans/persons/tracked"
+    scan_people_max_age_sec: 2.0
     scan_min_sweeps: 1
     scan_max_sweeps: 2
     scan_sweep_yaw_rad: 0.45
