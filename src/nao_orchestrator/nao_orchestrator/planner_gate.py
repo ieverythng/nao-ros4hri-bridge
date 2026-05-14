@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import sys
 
 from planner_common import PlannerRequest
 from planner_common import parse_json_object
 
+_FROZEN_DATACLASS_KWARGS = {'frozen': True}
+if sys.version_info >= (3, 10):  # pragma: no branch - lab containers may run Python 3.9
+    _FROZEN_DATACLASS_KWARGS['slots'] = True
 
-@dataclass(frozen=True, slots=True)
+
+@dataclass(**_FROZEN_DATACLASS_KWARGS)
 class PlannerGateDecision:
     """Decision returned for one incoming planner request."""
 

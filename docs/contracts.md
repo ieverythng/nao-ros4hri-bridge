@@ -188,6 +188,16 @@ Current limitation: unsupported planner steps can be filtered by the skill
 registry. The next diagnostic should verify whether multi-step plans can degrade
 into partial plans without being classified as invalid.
 
+Planner skill registry source:
+
+- Legacy mode: `planner_llm/config/skill_registry.json` with top-level `skills`.
+- AB mode: Neural Workbench `ab_registry.json` with top-level `objects`.
+
+In AB mode, `planner_llm` converts only AB=1+ `kind=skill` objects into
+executable planner skills. AB=0 topics, services, validation helpers, memory
+primitives, and dialogue-only objects remain part of the shared Workbench
+vocabulary but are not accepted as executable `/intents` skill steps.
+
 Optional `plan.neural_workbench` metadata is research-only. It records candidate
 program provenance when `planner_workbench_enabled` is true. It must not be
 required by `nao_orchestrator`, and it must not contain robot-topic or SDK

@@ -199,9 +199,7 @@ class SkillRegistry:
                 logger=logger,
             )
         }
-        overlay_skills = overlay_payload.get('skills', [])
-        if not isinstance(overlay_skills, list):
-            overlay_skills = []
+        overlay_skills = _planner_skill_overlays(overlay_payload)
 
         step_types = tuple(overlay_payload.get('step_types', _DEFAULT_STEP_TYPES))
         derived_skills = _build_derived_skills(exported_skills, overlay_skills)
@@ -387,6 +385,63 @@ def _load_registry_overlay(registry_path: Path | None) -> dict:
         return json.loads(registry_path.read_text(encoding='utf-8'))
     except Exception:
         return {}
+
+
+def _planner_skill_overlays(payload: dict) -> list[dict]:
+    """Accept either the legacy planner registry or the canonical AB registry."""
+    skills = payload.get('skills')
+    if isinstance(skills, list):
+        return [dict(item) for item in skills if isinstance(item, dict)]
+
+    objects = payload.get('objects', [])
+    if not isinstance(objects, list):
+        return []
+    return [
+        _planner_skill_from_ab_object(item)
+        for item in objects
+        if _is_planner_skill_ab_object(item)
+    ]
+
+
+def _is_planner_skill_ab_object(payload) -> bool:
+    if not isinstance(payload, dict):
+        return False
+    kind = str(payload.get('kind', '')).strip().lower()
+    if kind != 'skill':
+        return False
+    try:
+        ab_level = int(payload.get('ab_level', payload.get('abstraction_level', 0)) or 0)
+    except (TypeError, ValueError):
+        ab_level = 0
+    return ab_level >= 1 and bool(str(payload.get('object_id', payload.get('name', ''))).strip())
+
+
+def _planner_skill_from_ab_object(payload: dict) -> dict:
+    skill_payload = dict(payload)
+    skill_payload['name'] = str(payload.get('object_id', payload.get('name', ''))).strip()
+    skill_payload['abstraction_level'] = int(
+        payload.get('ab_level', payload.get('abstraction_level', 1)) or 1
+    )
+    status = str(payload.get('implementation_status', '')).strip().lower()
+    skill_payload.setdefault('retryable', 'navigation' in _coerce_tuple(payload.get('safety_flags', ())))
+    skill_payload.setdefault('can_request_user_help', 'navigation' in _coerce_tuple(payload.get('safety_flags', ())))
+    skill_payload.setdefault('can_request_clarification', True)
+    skill_payload.setdefault('timeout_hint', _timeout_hint_from_ab_object(payload))
+    skill_payload.setdefault('is_fake', status == 'fake')
+    return skill_payload
+
+
+def _timeout_hint_from_ab_object(payload: dict) -> float:
+    category = str(payload.get('category', '')).strip().lower()
+    if category == 'navigation':
+        return 20.0
+    if category == 'perception':
+        return 3.0
+    if category == 'attention':
+        return 8.0
+    if category == 'embodiment':
+        return 10.0
+    return 5.0
 
 
 def _resolve_registry_path(path: str) -> tuple[Path | None, bool]:

@@ -114,7 +114,10 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
 - `planner_request_topic`: defaults to `/planner/request`.
 - `planner_request_intent`: defaults to `planner_request`.
 - `planner_dialogue_act_topic`: defaults to `/planner/dialogue_act`.
-- `planner_skill_registry_path`: optional planner skill registry overlay.
+- `planner_skill_registry_path`: optional planner skill registry overlay. This
+  accepts either the legacy planner registry JSON (`skills`) or the canonical
+  Neural Workbench AB registry JSON (`objects`); `planner_llm` extracts only
+  planner-safe AB=1 `kind=skill` entries.
 - `planner_llm_provider`: `ollama` by default.
 - `planner_llm_model`: planner model name.
 - `chatbot_server_url`: full chatbot backend chat endpoint, for example

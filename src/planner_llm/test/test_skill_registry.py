@@ -1,3 +1,5 @@
+import json
+
 from planner_llm.skill_registry import SkillRegistry
 
 
@@ -88,3 +90,53 @@ def test_skill_registry_canonicalizes_scan_alias_steps() -> None:
 
     assert rejected == []
     assert [step['name'] for step in supported] == ['scan', 'scan']
+
+
+def test_skill_registry_loads_planner_view_from_ab_registry(tmp_path) -> None:
+    ab_registry_path = tmp_path / 'ab_registry.json'
+    ab_registry_path.write_text(
+        json.dumps(
+            {
+                'objects': [
+                    {
+                        'object_id': '/planner/execution_feedback',
+                        'ab_level': 0,
+                        'kind': 'topic',
+                        'category': 'execution_feedback',
+                    },
+                    {
+                        'object_id': 'scan',
+                        'ab_level': 1,
+                        'kind': 'skill',
+                        'category': 'perception',
+                        'aliases': ['look_around'],
+                        'params': ['target_kind'],
+                        'required_params': [],
+                        'expected_effects': ['refreshed scene evidence'],
+                        'observable_success': ['result_payload.target_found'],
+                        'failure_modes': ['backend_unavailable'],
+                        'planner_guidance': ['use scan for fresh perception'],
+                        'robot_adapter_mapping': 'nao_orchestrator.scan',
+                        'safety_flags': ['perception'],
+                        'implementation_status': 'first_party',
+                    },
+                    {
+                        'object_id': 'report_result',
+                        'ab_level': 1,
+                        'kind': 'dialogue_act',
+                        'category': 'communication',
+                    },
+                ],
+            }
+        ),
+        encoding='utf-8',
+    )
+
+    registry = SkillRegistry.load(str(ab_registry_path))
+
+    assert registry.step_types == ('noop', 'say', 'skill', 'look_at')
+    assert registry.resolve_skill_name('look_around') == 'scan'
+    assert 'scan' in registry.allowed_skill_names
+    assert 'report_result' not in registry.allowed_skill_names
+    manifest_by_name = {item['name']: item for item in registry.prompt_manifest()}
+    assert manifest_by_name['scan']['robot_adapter_mapping'] == 'nao_orchestrator.scan'
