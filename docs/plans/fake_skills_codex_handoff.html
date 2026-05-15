@@ -1,0 +1,560 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Codex Handoff — Fake Skills Action Server</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+:root{--bg:#f7f3ea;--panel:#fffaf0;--ink:#2b2118;--muted:#7d6f62;--line:#dfd2bf;--accent:#c46a2b;--code:#f0e6d6}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0%,#fff7e8 0,var(--bg) 42%,#eee3d2 100%);color:var(--ink);font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;line-height:1.58}
+main{max-width:1120px;margin:0 auto;padding:42px 24px 96px}h1{font-size:2.3rem;letter-spacing:-.035em;margin:0 0 1rem}h2{margin-top:2.3rem;padding-top:.7rem;border-top:1px solid var(--line);letter-spacing:-.02em}h3{margin-top:1.55rem;color:#3b2b1f}blockquote{margin:1.2rem 0;border-left:4px solid var(--accent);padding:.8rem 1rem;background:rgba(255,255,255,.55);border-radius:0 12px 12px 0}pre{background:#2b2118;color:#fff7ea;border-radius:14px;padding:14px 16px;overflow-x:auto;box-shadow:0 10px 24px rgba(43,33,24,.12)}code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;background:var(--code);color:#402719;border-radius:5px;padding:.08rem .28rem}pre code{background:transparent;color:inherit;padding:0}table{width:100%;border-collapse:collapse;margin:1rem 0 1.5rem;background:rgba(255,255,255,.56);border-radius:12px;overflow:hidden}th,td{border:1px solid var(--line);padding:9px 11px;vertical-align:top}th{background:#eadcc8;text-align:left}</style></head><body><main><h1>Codex Handoff — Fake Skills Action Server for Base Planner + Neural Workbench Validation</h1>
+<p><strong>Target branch:</strong> <code>feat(R)/Neural-Workbench</code> for research integration; backport-compatible with <code>feat/TFM-LLM_planner</code> where appropriate.</p>
+<p><strong>Primary repo:</strong> <code>ieverythng/nao-ros4hri-bridge</code></p>
+<p><strong>Purpose:</strong> Implement a fake skill execution substrate that can be used by both the current planner stack and the Neural Workbench validation path.</p>
+<h2>1. Executive intent</h2>
+<p>The fake skills should not be treated as throwaway demo stubs. They are a core part of the validation and simulation layer.</p>
+<p>They should allow the stack to test:</p>
+<ul>
+<li>abstract skill routing;</li>
+<li>ordered multi-step execution;</li>
+<li>controlled success/failure;</li>
+<li>replanning hooks;</li>
+<li>result payload propagation;</li>
+<li>AB registry mappings;</li>
+<li>dashboard/TUI traces;</li>
+<li>Neural Workbench candidate selection and energy/entropy scoring.</li>
+</ul>
+<p>The current AB registry already exposes planner-visible AB=1 skills such as <code>scan</code>, <code>find_object</code>, <code>navigate_to</code>, <code>walk_to</code>, <code>perform_motion</code>, <code>look_at</code>, and <code>report_result</code>, and it includes AB=0 ROS/runtime seams such as <code>/planner/request</code>, <code>/intents</code>, <code>/planner/execution_feedback</code>, <code>/planner/dialogue_act</code>, <code>/scene/summary</code>, <code>query_kb</code>, <code>verify_evidence_payload</code>, <code>store_trace</code>, and <code>retrieve_memory</code>.</p>
+<p>The fake skill substrate should therefore be implemented as a <strong>real ROS2 package with deterministic action/service behaviour</strong>, not as prompt-only logic.</p>
+<h2>2. Key architectural decision</h2>
+<p>Create one package and one shared fake skill engine:</p>
+<pre><code>src/fake_skills/
+  package.xml
+  setup.py
+  fake_skills/
+    __init__.py
+    engine.py
+    contracts.py
+    action_server.py
+    scenario_store.py
+    result_builders.py
+    skills/
+      navigate_to.py
+      find_object.py
+      wave_greet.py
+      wave_at.py
+      inspect_area.py
+  config/
+    fake_skill_scenarios.yaml
+  launch/
+    fake_skills.launch.py
+  test/
+    test_engine.py
+    test_result_builders.py
+    test_scenario_store.py</code></pre>
+<p>Expose either:</p>
+<h3>Preferred: one generic action server plus compatibility wrappers</h3>
+<pre><code>/skill/fake/execute        # generic fake skill endpoint
+/skill/fake/navigate_to    # optional wrapper/alias
+/skill/fake/find_object    # optional wrapper/alias
+/skill/fake/wave_greet     # optional wrapper/alias</code></pre>
+<p>The generic endpoint executes payloads of the form:</p>
+<pre><code>{
+  &quot;skill&quot;: &quot;navigate_to&quot;,
+  &quot;args&quot;: {&quot;target&quot;: &quot;kitchen&quot;},
+  &quot;scenario&quot;: {&quot;result_mode&quot;: &quot;path_blocked&quot;}
+}</code></pre>
+<h3>Alternative: multiple action servers, one shared engine</h3>
+<pre><code>/skill/fake/navigate_to
+/skill/fake/find_object
+/skill/fake/wave_greet
+/skill/fake/inspect_area</code></pre>
+<p>This is closer to classic ROS action-server semantics, but duplicates wiring. Use this only if the existing <code>nao_orchestrator</code> dispatch layer strongly prefers one endpoint per skill.</p>
+<h2>3. Why one fake skill engine</h2>
+<p>The goal is to avoid writing isolated fake skills that drift from each other. A single engine should own:</p>
+<ul>
+<li>result mode handling;</li>
+<li>delay/progress simulation;</li>
+<li>failure injection;</li>
+<li>typed result payload creation;</li>
+<li>trace labels;</li>
+<li>AB object lookup;</li>
+<li>scenario reset;</li>
+<li>deterministic seeding;</li>
+<li>dashboard event emission.</li>
+</ul>
+<p>This makes it useful for both:</p>
+<pre><code>base planner validation
+Neural Workbench candidate/trace validation</code></pre>
+<h2>4. Skill set to implement</h2>
+<h3>4.1 <code>navigate_to</code></h3>
+<p><strong>Registry role:</strong> AB=1 executable semantic navigation skill now; supports AB=2/AB=3 strategy objects later.</p>
+<p>Planner-visible examples:</p>
+<pre><code>&quot;go to the kitchen&quot;
+&quot;move to the table&quot;
+&quot;navigate to the charging station&quot;</code></pre>
+<p>Input args:</p>
+<pre><code>{
+  &quot;target&quot;: &quot;kitchen&quot;,
+  &quot;location&quot;: &quot;kitchen&quot;,
+  &quot;result_mode&quot;: &quot;success&quot;
+}</code></pre>
+<p>Result modes:</p>
+<pre><code>success
+path_blocked
+unknown_location
+safety_disabled
+timeout
+fail_once
+always_fail
+unexpected_payload</code></pre>
+<p>Canonical result payload:</p>
+<pre><code>{
+  &quot;skill&quot;: &quot;navigate_to&quot;,
+  &quot;status&quot;: &quot;failed&quot;,
+  &quot;target&quot;: &quot;kitchen&quot;,
+  &quot;target_kind&quot;: &quot;location&quot;,
+  &quot;target_found&quot;: false,
+  &quot;summary_text&quot;: &quot;I could not navigate to the kitchen because the path is blocked.&quot;,
+  &quot;evidence&quot;: {
+    &quot;location&quot;: &quot;kitchen&quot;,
+    &quot;simulated&quot;: true
+  },
+  &quot;failure&quot;: {
+    &quot;code&quot;: &quot;path_blocked&quot;,
+    &quot;message&quot;: &quot;The simulated path to the kitchen is blocked.&quot;,
+    &quot;recoverable&quot;: true,
+    &quot;suggested_recovery&quot;: &quot;ask_user_for_alternative_route&quot;
+  },
+  &quot;metadata&quot;: {
+    &quot;ab_object_id&quot;: &quot;navigate_to&quot;,
+    &quot;fake&quot;: true,
+    &quot;duration_sec&quot;: 1.2
+  }
+}</code></pre>
+<p>AB interpretation:</p>
+<pre><code>navigate_to as currently registered = AB=1 executable semantic navigation skill.
+navigate_with_recovery = future AB=2/AB=3 macro/strategy candidate.</code></pre>
+<p>Do not prematurely register <code>navigate_to</code> itself as AB=3. Keep the executable skill AB=1 and allow Workbench traces to propose higher objects.</p>
+<h3>4.2 <code>find_object</code></h3>
+<p><strong>Registry role:</strong> AB=1 fake perception/search skill.</p>
+<p>Planner-visible examples:</p>
+<pre><code>&quot;find the cup&quot;
+&quot;look for the ball&quot;
+&quot;find a person&quot;</code></pre>
+<p>Input args:</p>
+<pre><code>{
+  &quot;target&quot;: &quot;cup&quot;,
+  &quot;target_kind&quot;: &quot;object&quot;,
+  &quot;result_mode&quot;: &quot;found&quot;
+}</code></pre>
+<p>Result modes:</p>
+<pre><code>found
+not_found
+ambiguous
+backend_unavailable
+fail_once
+always_fail
+unexpected_payload</code></pre>
+<p>Canonical result payload:</p>
+<pre><code>{
+  &quot;skill&quot;: &quot;find_object&quot;,
+  &quot;status&quot;: &quot;succeeded&quot;,
+  &quot;target&quot;: &quot;cup&quot;,
+  &quot;target_kind&quot;: &quot;object&quot;,
+  &quot;target_found&quot;: true,
+  &quot;summary_text&quot;: &quot;I found one cup.&quot;,
+  &quot;evidence&quot;: {
+    &quot;objects&quot;: [
+      {
+        &quot;id&quot;: &quot;fake_cup_1&quot;,
+        &quot;label&quot;: &quot;cup&quot;,
+        &quot;confidence&quot;: 0.91,
+        &quot;source&quot;: &quot;fake_find_object&quot;
+      }
+    ]
+  },
+  &quot;failure&quot;: {},
+  &quot;metadata&quot;: {
+    &quot;ab_object_id&quot;: &quot;find_object&quot;,
+    &quot;fake&quot;: true,
+    &quot;duration_sec&quot;: 0.8
+  }
+}</code></pre>
+<p>For <code>ambiguous</code>, return multiple candidates and mark recoverable:</p>
+<pre><code>&quot;failure&quot;: {
+  &quot;code&quot;: &quot;ambiguous&quot;,
+  &quot;recoverable&quot;: true,
+  &quot;suggested_recovery&quot;: &quot;ask_user_to_disambiguate&quot;
+}</code></pre>
+<h3>4.3 <code>wave_greet</code></h3>
+<p><strong>Registry role:</strong> AB=1 executable social/motion skill.</p>
+<p>This is the low-level reusable fake/real social gesture primitive. It can be fake initially and later mapped to an actual NAO motion/replay action.</p>
+<p>Planner-visible examples:</p>
+<pre><code>&quot;wave&quot;
+&quot;say hello with a wave&quot;
+&quot;greet them&quot;</code></pre>
+<p>Input args:</p>
+<pre><code>{
+  &quot;style&quot;: &quot;friendly&quot;,
+  &quot;hand&quot;: &quot;right&quot;,
+  &quot;duration_sec&quot;: 2.0,
+  &quot;dry_run&quot;: true
+}</code></pre>
+<p>Result modes:</p>
+<pre><code>success
+motion_unavailable
+safety_disabled
+fail_once
+unexpected_payload</code></pre>
+<p>Canonical result payload:</p>
+<pre><code>{
+  &quot;skill&quot;: &quot;wave_greet&quot;,
+  &quot;status&quot;: &quot;succeeded&quot;,
+  &quot;target&quot;: &quot;&quot;,
+  &quot;target_kind&quot;: &quot;social_gesture&quot;,
+  &quot;target_found&quot;: null,
+  &quot;summary_text&quot;: &quot;I performed a friendly wave.&quot;,
+  &quot;evidence&quot;: {
+    &quot;gesture&quot;: &quot;wave&quot;,
+    &quot;style&quot;: &quot;friendly&quot;,
+    &quot;dry_run&quot;: true
+  },
+  &quot;metadata&quot;: {
+    &quot;ab_object_id&quot;: &quot;wave_greet&quot;,
+    &quot;fake&quot;: true,
+    &quot;duration_sec&quot;: 2.0
+  }
+}</code></pre>
+<p>Recommended AB entry:</p>
+<pre><code>object_id: wave_greet
+ab_level: 1
+kind: skill
+category: social_motion
+aliases: [wave, greet_wave, wave_hello]
+params: [style, hand, duration_sec, dry_run, result_mode]
+required_params: []
+implementation_status: fake
+supports_failure_injection: true
+robot_adapter_mapping: fake_skills.wave_greet
+decomposes_to:
+  - perform_motion</code></pre>
+<h3>4.4 <code>wave_at</code></h3>
+<p><strong>Registry role:</strong> AB=2 macro candidate.</p>
+<p><code>wave_at</code> should be represented as a macro over AB=1 objects:</p>
+<pre><code>look_at(target) -&gt; wave_greet(style=friendly)</code></pre>
+<p>It should initially be <strong>proposal-only</strong> in the AB registry unless Codex implements a reviewed macro execution path.</p>
+<p>Planner-visible examples:</p>
+<pre><code>&quot;wave at the person&quot;
+&quot;look at them and wave&quot;
+&quot;greet the person with a wave&quot;</code></pre>
+<p>Canonical macro composition:</p>
+<pre><code>object_id: wave_at
+ab_level: 2
+kind: macro_skill
+category: social_hri
+implementation_status: proposal
+decomposes_to:
+  - look_at
+  - wave_greet
+result_schema:
+  required: [skill, status, summary_text]</code></pre>
+<p>Execution options:</p>
+<ol>
+<li><strong>Base stack:</strong> planner emits two AB=1 steps: <code>look_at</code>, <code>wave_greet</code>.</li>
+<li><strong>Workbench mode:</strong> Workbench may propose AB=2 <code>wave_at</code>, then expand to AB=1 before sending to <code>nao_orchestrator</code>.</li>
+</ol>
+<p>Acceptance:</p>
+<ul>
+<li><code>wave_at</code> must not bypass <code>nao_orchestrator</code>.</li>
+<li>If no macro executor exists yet, keep <code>wave_at</code> as a registry proposal and expand to AB=1 steps.</li>
+</ul>
+<h3>4.5 <code>inspect_area</code></h3>
+<p><strong>Registry role:</strong> AB=1 fake skill initially; AB=2/AB=3 candidate later.</p>
+<p>Recommended as the third fake skill family because it sits naturally between perception and navigation.</p>
+<p>Planner-visible examples:</p>
+<pre><code>&quot;inspect the table&quot;
+&quot;check the area near the sofa&quot;
+&quot;look at the desk and tell me if anything is there&quot;</code></pre>
+<p>Simple AB=1 fake form:</p>
+<pre><code>inspect_area(target_area)</code></pre>
+<p>AB=2 macro form:</p>
+<pre><code>navigate_to(area) -&gt; scan(target_kind=scene) -&gt; report_result</code></pre>
+<p>For now, implement as a <strong>fake AB=1 executable skill</strong> with a decomposition hint to future AB=2 macro variants.</p>
+<p>Result modes:</p>
+<pre><code>clear
+object_found
+person_found
+ambiguous
+area_unknown
+backend_unavailable</code></pre>
+<p>Canonical result payload:</p>
+<pre><code>{
+  &quot;skill&quot;: &quot;inspect_area&quot;,
+  &quot;status&quot;: &quot;succeeded&quot;,
+  &quot;target&quot;: &quot;table&quot;,
+  &quot;target_kind&quot;: &quot;area&quot;,
+  &quot;target_found&quot;: true,
+  &quot;summary_text&quot;: &quot;The table area appears clear.&quot;,
+  &quot;evidence&quot;: {
+    &quot;area&quot;: &quot;table&quot;,
+    &quot;objects&quot;: [],
+    &quot;people&quot;: [],
+    &quot;simulated&quot;: true
+  },
+  &quot;metadata&quot;: {
+    &quot;ab_object_id&quot;: &quot;inspect_area&quot;,
+    &quot;fake&quot;: true
+  }
+}</code></pre>
+<p>Why <code>inspect_area</code>:</p>
+<ul>
+<li>It gives the planner a richer fake perception task.</li>
+<li>It can later become an AB=2 or AB=3 strategy over <code>navigate_to</code>, <code>scan</code>, <code>find_object</code>, and <code>report_result</code>.</li>
+<li>It supports validation scenarios beyond simple object lookup.</li>
+</ul>
+<h2>5. Generic fake skill result schema</h2>
+<p>All fake skills must return the same outer payload shape:</p>
+<pre><code>{
+  &quot;skill&quot;: &quot;string&quot;,
+  &quot;status&quot;: &quot;succeeded | failed | partial | unavailable&quot;,
+  &quot;target&quot;: &quot;string&quot;,
+  &quot;target_kind&quot;: &quot;string&quot;,
+  &quot;target_found&quot;: true,
+  &quot;summary_text&quot;: &quot;string&quot;,
+  &quot;evidence&quot;: {},
+  &quot;failure&quot;: {
+    &quot;code&quot;: &quot;string&quot;,
+    &quot;message&quot;: &quot;string&quot;,
+    &quot;recoverable&quot;: true,
+    &quot;suggested_recovery&quot;: &quot;string&quot;
+  },
+  &quot;metadata&quot;: {
+    &quot;ab_object_id&quot;: &quot;string&quot;,
+    &quot;fake&quot;: true,
+    &quot;result_mode&quot;: &quot;string&quot;,
+    &quot;duration_sec&quot;: 0.0,
+    &quot;scenario_id&quot;: &quot;string&quot;
+  }
+}</code></pre>
+<p>The current <code>SkillResultPayload</code> contract should be reused. Do not invent a second payload schema.</p>
+<h2>6. Scenario configuration</h2>
+<p>Create:</p>
+<pre><code>src/fake_skills/config/fake_skill_scenarios.yaml</code></pre>
+<p>Example:</p>
+<pre><code>default:
+  navigate_to:
+    result_mode: success
+    delay_sec: 1.0
+  find_object:
+    result_mode: found
+    target_found: true
+  wave_greet:
+    result_mode: success
+    dry_run: true
+  inspect_area:
+    result_mode: clear
+
+scenarios:
+  path_blocked:
+    navigate_to:
+      result_mode: path_blocked
+      recoverable: true
+  ambiguous_cup:
+    find_object:
+      result_mode: ambiguous
+      candidates:
+        - {id: fake_cup_1, label: cup, confidence: 0.72}
+        - {id: fake_cup_2, label: cup, confidence: 0.69}
+  social_wave_unavailable:
+    wave_greet:
+      result_mode: motion_unavailable
+  area_person_found:
+    inspect_area:
+      result_mode: person_found</code></pre>
+<p>The engine should allow scenario override per request:</p>
+<pre><code>{
+  &quot;skill&quot;: &quot;navigate_to&quot;,
+  &quot;args&quot;: {&quot;target&quot;: &quot;kitchen&quot;},
+  &quot;scenario&quot;: {&quot;result_mode&quot;: &quot;path_blocked&quot;}
+}</code></pre>
+<h2>7. ROS interfaces</h2>
+<p>Codex should inspect the current action/message seams before finalizing exact types. If no suitable custom action exists, use JSON payloads over a simple action or service wrapper consistent with existing repo patterns.</p>
+<p>Preferred conceptual interface:</p>
+<pre><code>Action: /skill/fake/execute
+
+Goal:
+  skill_name: string
+  args_json: string
+  scenario_json: string
+
+Feedback:
+  progress: float
+  phase: string
+  message: string
+
+Result:
+  ok: bool
+  status: string
+  result_payload_json: string</code></pre>
+<p>If action definition changes are too heavy, implement an internal Python dispatcher first and expose integration through <code>nao_orchestrator</code> using the existing Intent/JSON pathway.</p>
+<h2>8. Integration with <code>nao_orchestrator</code></h2>
+<p>The orchestrator should dispatch fake skills using the canonical AB registry executor mapping:</p>
+<pre><code>fake_skills.navigate_to
+fake_skills.find_object
+fake_skills.wave_greet
+fake_skills.inspect_area</code></pre>
+<p>Rules:</p>
+<ul>
+<li>Orchestrator validates plan step.</li>
+<li>Orchestrator dispatches fake skill.</li>
+<li>Fake skill returns <code>SkillResultPayload</code>.</li>
+<li>Orchestrator wraps it in <code>ExecutionFeedback</code>.</li>
+<li>Planner receives <code>/planner/execution_feedback</code>.</li>
+<li><code>stack_observer</code> displays active skill + payload.</li>
+</ul>
+<p>Do not allow fake skills to publish final speech directly. Speech remains through planner dialogue act and <code>dialogue_manager</code>.</p>
+<h2>9. Integration with Neural Workbench</h2>
+<p>The fake skills are required for Workbench validation.</p>
+<p>Workbench use cases:</p>
+<pre><code>candidate program: navigate_to(kitchen)
+fake result: path_blocked
+expected workbench/planner response: ask user or recover
+
+candidate program: find_object(cup)
+fake result: ambiguous
+expected response: ask clarification
+
+candidate program: wave_at(person)
+macro expansion: look_at(person) -&gt; wave_greet
+expected response: grounded completion</code></pre>
+<p>Fake skills should provide enough metadata for trace memory:</p>
+<pre><code>{
+  &quot;ab_object_id&quot;: &quot;navigate_to&quot;,
+  &quot;result_mode&quot;: &quot;path_blocked&quot;,
+  &quot;recoverable&quot;: true,
+  &quot;delta_entropy_proxy&quot;: 0.21,
+  &quot;energy_observation&quot;: {
+    &quot;risk_observed&quot;: 0.15,
+    &quot;cost_observed&quot;: 0.30
+  }
+}</code></pre>
+<p>Entropy fields can be optional for now.</p>
+<h2>10. AB registry updates</h2>
+<p>Add or update entries for:</p>
+<pre><code>wave_greet
+inspect_area
+wave_at
+navigate_with_recovery</code></pre>
+<p>Do not remove existing entries:</p>
+<pre><code>navigate_to
+find_object
+walk_to
+scan
+perform_motion
+look_at
+report_result</code></pre>
+<p>Example macro entry:</p>
+<pre><code>object_id: wave_at
+ab_level: 2
+kind: macro_skill
+category: social_hri
+implementation_status: proposal
+decomposes_to:
+  - look_at
+  - wave_greet
+expected_effects:
+  - robot attends to target
+  - robot performs greeting wave
+observable_success:
+  - look_at.status
+  - wave_greet.status
+safety_flags:
+  - attention
+  - motion</code></pre>
+<h2>11. Tests</h2>
+<p>Add unit tests:</p>
+<pre><code>src/fake_skills/test/test_result_builders.py
+src/fake_skills/test/test_scenario_store.py
+src/fake_skills/test/test_engine.py
+src/fake_skills/test/test_action_server_smoke.py</code></pre>
+<p>Add integration tests if current test harness allows:</p>
+<pre><code>src/nao_orchestrator/test/test_fake_skill_dispatch.py
+src/neural_workbench/test/test_fake_skill_candidate_feedback.py
+src/stack_observer/test/test_fake_skill_event_render.py</code></pre>
+<p>Test cases:</p>
+<table><thead><tr><th>Test</th><th>Expected</th></tr></thead><tbody>
+<tr><td>navigate_to success</td><td><code>status=succeeded</code>, no failure</td></tr>
+<tr><td>navigate_to path_blocked</td><td>recoverable failure payload</td></tr>
+<tr><td>find_object found</td><td>evidence contains object</td></tr>
+<tr><td>find_object ambiguous</td><td>multiple candidates + clarification recovery</td></tr>
+<tr><td>wave_greet success</td><td>dry-run gesture payload</td></tr>
+<tr><td>wave_at expansion</td><td>expands to <code>look_at</code>, <code>wave_greet</code> if no macro executor</td></tr>
+<tr><td>inspect_area person_found</td><td>evidence.people populated</td></tr>
+<tr><td>unexpected_payload</td><td>verifier rejects or marks failed</td></tr>
+<tr><td>fail_once</td><td>first call fails, second call succeeds</td></tr>
+<tr><td>scenario override</td><td>per-request scenario wins over default</td></tr>
+</tbody></table>
+<h2>12. Launch</h2>
+<p>Create:</p>
+<pre><code>src/fake_skills/launch/fake_skills.launch.py</code></pre>
+<p>Parameters:</p>
+<pre><code>fake_skills_enabled: true
+fake_skill_scenario_file: config/fake_skill_scenarios.yaml
+fake_skill_default_delay_sec: 0.75
+fake_skill_publish_events: true
+fake_skill_event_topic: /fake_skills/events
+fake_skill_deterministic_seed: 42</code></pre>
+<p>Include this launch in the demo stack only when fake validation is needed.</p>
+<h2>13. Dashboard/TUI requirements</h2>
+<p><code>stack_observer</code> should display:</p>
+<pre><code>active fake skill
+scenario/result_mode
+result_payload.status
+result_payload.failure.code
+recoverable flag
+suggested recovery
+trace_id if available</code></pre>
+<p>The fake skill package should optionally publish:</p>
+<pre><code>/fake_skills/events</code></pre>
+<p>Event payload:</p>
+<pre><code>{
+  &quot;event_type&quot;: &quot;fake_skill_started | fake_skill_feedback | fake_skill_completed&quot;,
+  &quot;skill&quot;: &quot;navigate_to&quot;,
+  &quot;scenario_id&quot;: &quot;path_blocked&quot;,
+  &quot;result_mode&quot;: &quot;path_blocked&quot;,
+  &quot;goal_id&quot;: &quot;goal_123&quot;,
+  &quot;payload&quot;: {}
+}</code></pre>
+<h2>14. Acceptance checklist</h2>
+<ul>
+<li><code>fake_skills</code> package builds.</li>
+<li>All fake skills return <code>SkillResultPayload</code>.</li>
+<li><code>navigate_to</code>, <code>find_object</code>, <code>wave_greet</code>, and <code>inspect_area</code> are callable.</li>
+<li><code>wave_at</code> is represented as AB=2 proposal or macro expansion.</li>
+<li>Failure modes are deterministic and configurable.</li>
+<li>Orchestrator can dispatch fake skills through registry mapping.</li>
+<li>ExecutionFeedback includes fake result payload.</li>
+<li>Planner receives feedback and can ask/replan/fail.</li>
+<li>Stack observer displays fake skill lifecycle.</li>
+<li>Neural Workbench can use fake skills for scenario validation.</li>
+</ul>
+<h2>15. First implementation order</h2>
+<ol>
+<li>Create <code>fake_skills</code> package skeleton.</li>
+<li>Implement result payload builders.</li>
+<li>Implement scenario store.</li>
+<li>Implement fake engine with synchronous Python call surface.</li>
+<li>Add ROS action/server wrapper.</li>
+<li>Wire <code>nao_orchestrator</code> dispatch for <code>navigate_to</code> and <code>find_object</code>.</li>
+<li>Add <code>wave_greet</code>.</li>
+<li>Add <code>inspect_area</code>.</li>
+<li>Add AB registry entries for <code>wave_greet</code>, <code>inspect_area</code>, and <code>wave_at</code>.</li>
+<li>Add dashboard event emission.</li>
+<li>Add integration tests.</li>
+</ol>
+<h2>16. Safety and scope</h2>
+<p>Do not:</p>
+<ul>
+<li>bypass <code>nao_orchestrator</code>;</li>
+<li>let fake skills speak directly;</li>
+<li>confuse fake success with real robot capability;</li>
+<li>enable real walking under fake <code>walk_to</code>;</li>
+<li>auto-register AB=2 macros as live executable skills;</li>
+<li>use prompt-only simulation for validation when a fake skill server can return typed payloads.</li>
+</ul>
+<p>The fake skills are a validation substrate. They should be deterministic, inspectable, and boringly reliable.</p></main></body></html>
