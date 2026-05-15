@@ -25,6 +25,10 @@ from planner_common import make_plan_id
 from rclpy.action import ActionClient
 from rclpy.lifecycle import Node, State, TransitionCallbackReturn
 from std_msgs.msg import String
+try:  # pragma: no cover - optional shared registry dependency
+    from skill_common import load_default_registry as load_default_skill_registry
+except ImportError:  # pragma: no cover - keep local alias fallback
+    load_default_skill_registry = None
 
 from nao_orchestrator.intent_rules import (
     classify_motion_target,
@@ -50,6 +54,12 @@ except ImportError:  # pragma: no cover - runtime dependency
 
 # Posture bridge JSON may report `crouch` where orchestrator expects `kneel`.
 _POSTURE_BRIDGE_NAME_ALIASES = {'stand': 'stand', 'sit': 'sit', 'kneel': 'crouch'}
+_DEFAULT_SCAN_SKILL_ALIASES = (
+    'scan',
+    'look_around',
+    'inspect_scene',
+    'check_visible_entities',
+)
 
 
 def _first_non_empty_text(*values) -> str:
@@ -265,6 +275,10 @@ class NaoOrchestrator(Node):
         self._posture_result_event = threading.Event()
         self._latest_posture_result: dict | None = None
         self._planner_gate = PlannerGate()
+        self._scan_skill_names = self._load_scan_skill_names()
+        self._active_execution_token = ''
+        self._active_execution_plan_version = 0
+        self._execution_lock = threading.Lock()
 
     # -------------------------------------------------------------------------
     # Lifecycle configuration
@@ -504,11 +518,12 @@ class NaoOrchestrator(Node):
         self._planner_request_pub.publish(msg)
         self._stats.last_route = 'planner_gate:forwarded'
         self.get_logger().info(
-            'Planner gate forwarded request | goal_id=%s kind=%s active_goal=%s topic=%s'
+            'Planner gate forwarded request | goal_id=%s kind=%s active_goal=%s active_token=%s topic=%s'
             % (
                 decision.request.goal_id,
                 decision.request.request_kind,
                 self._planner_gate.active_goal_id or '-',
+                self._planner_gate.active_goal_token or '-',
                 self.planner_request_topic,
             )
         )
@@ -610,6 +625,9 @@ class NaoOrchestrator(Node):
         source: str,
     ) -> bool:
         plan_id = self._resolve_plan_id(plan_context)
+        plan_token = self._resolve_plan_token(plan_context)
+        plan_version = self._plan_version_from_context(plan_context)
+        self._claim_execution_plan(plan_token, plan_version)
         self._stats.plans_started += 1
         self._stats.last_plan_id = plan_id
 
@@ -633,6 +651,7 @@ class NaoOrchestrator(Node):
                 'Planned intent validation failed | intent=%s source=%s plan_id=%s errors=%s'
                 % (intent_name, source, plan_id, plan_context['errors'])
             )
+            self._finalize_execution_plan(plan_token, plan_version)
             return False
 
         self._publish_plan_feedback(
@@ -658,6 +677,8 @@ class NaoOrchestrator(Node):
                 'plan': list(plan),
                 'plan_context': dict(plan_context),
                 'source': source,
+                'plan_token': plan_token,
+                'plan_version': plan_version,
             },
             daemon=True,
         )
@@ -685,6 +706,8 @@ class NaoOrchestrator(Node):
         plan: list[dict],
         plan_context: dict,
         source: str,
+        plan_token: str,
+        plan_version: int,
     ) -> None:
         """Execute a validated plan in a background worker so action results can be awaited."""
         plan_id = self._resolve_plan_id(plan_context)
@@ -693,6 +716,21 @@ class NaoOrchestrator(Node):
         latest_result_payload: dict = {}
 
         for step in plan:
+            if not self._is_execution_plan_active(plan_token, plan_version):
+                self._publish_plan_feedback(
+                    intent_name=intent_name,
+                    source=source,
+                    plan_context=plan_context,
+                    status='cancelled',
+                    event_type='plan_cancelled',
+                    reason='superseded by a newer planner goal',
+                )
+                self._finalize_execution_plan(plan_token, plan_version)
+                self.get_logger().info(
+                    'Stopped stale plan worker | plan_id=%s token=%s version=%s'
+                    % (plan_id, plan_token or '-', plan_version)
+                )
+                return
             step_started = False
 
             def _mark_step_started() -> None:
@@ -780,6 +818,7 @@ class NaoOrchestrator(Node):
                 'Planned intent step failed | intent=%s source=%s plan_id=%s step=%s reason=%s'
                 % (intent_name, source, plan_id, step, reason)
             )
+            self._finalize_execution_plan(plan_token, plan_version)
             return
 
         if executed_any:
@@ -795,6 +834,7 @@ class NaoOrchestrator(Node):
                 result_summary=latest_result_summary,
                 result_payload=latest_result_payload,
             )
+            self._finalize_execution_plan(plan_token, plan_version)
             return
 
         self._stats.plans_failed += 1
@@ -808,6 +848,7 @@ class NaoOrchestrator(Node):
             reason='plan contained no executable steps',
             blocking=True,
         )
+        self._finalize_execution_plan(plan_token, plan_version)
 
     def _dispatch_plan_step(
         self,
@@ -856,7 +897,7 @@ class NaoOrchestrator(Node):
                     on_started=on_started,
                 )
                 return success, reason, {}
-            if step_name in ('scan', 'look_around', 'inspect_scene', 'check_visible_entities'):
+            if step_name in self._scan_skill_names:
                 return self._execute_scan_step(
                     step_args,
                     on_started=on_started,
@@ -1399,6 +1440,24 @@ class NaoOrchestrator(Node):
             return False, message or 'action reported failure'
         return True, ''
 
+    def _load_scan_skill_names(self) -> set[str]:
+        if load_default_skill_registry is None:
+            return set(_DEFAULT_SCAN_SKILL_ALIASES)
+        try:
+            registry = load_default_skill_registry()
+            scan_skill = registry.get('scan')
+            if scan_skill is None:
+                return set(_DEFAULT_SCAN_SKILL_ALIASES)
+            names = {str(scan_skill.name).strip().lower()}
+            names.update(
+                str(alias).strip().lower()
+                for alias in getattr(scan_skill, 'aliases', ())
+                if str(alias).strip()
+            )
+            return names or set(_DEFAULT_SCAN_SKILL_ALIASES)
+        except Exception:
+            return set(_DEFAULT_SCAN_SKILL_ALIASES)
+
     @staticmethod
     def _parse_posture_result_message(payload: str) -> dict:
         try:
@@ -1433,6 +1492,47 @@ class NaoOrchestrator(Node):
             return plan_id
         return make_plan_id()
 
+    @staticmethod
+    def _plan_version_from_context(plan_context: dict) -> int:
+        try:
+            return max(0, int(plan_context.get('plan_version', 0) or 0))
+        except (TypeError, ValueError):
+            return 0
+
+    def _resolve_plan_token(self, plan_context: dict) -> str:
+        explicit_token = str(plan_context.get('goal_token', '')).strip()
+        if explicit_token:
+            return explicit_token
+        goal_id = str(plan_context.get('goal_id', '')).strip()
+        plan_version = self._plan_version_from_context(plan_context)
+        if goal_id and plan_version > 0:
+            return f'{goal_id}:v{plan_version}'
+        return goal_id
+
+    def _claim_execution_plan(self, plan_token: str, plan_version: int) -> None:
+        with self._execution_lock:
+            self._active_execution_token = str(plan_token or '').strip()
+            self._active_execution_plan_version = max(0, int(plan_version or 0))
+
+    def _is_execution_plan_active(self, plan_token: str, plan_version: int) -> bool:
+        with self._execution_lock:
+            active_token = self._active_execution_token
+            active_version = self._active_execution_plan_version
+        if not active_token:
+            return False
+        if str(plan_token or '').strip() != active_token:
+            return False
+        return max(0, int(plan_version or 0)) >= active_version
+
+    def _finalize_execution_plan(self, plan_token: str, plan_version: int) -> None:
+        with self._execution_lock:
+            if str(plan_token or '').strip() != self._active_execution_token:
+                return
+            if max(0, int(plan_version or 0)) < self._active_execution_plan_version:
+                return
+            self._active_execution_token = ''
+            self._active_execution_plan_version = 0
+
     def _publish_plan_feedback(
         self,
         *,
@@ -1454,6 +1554,7 @@ class NaoOrchestrator(Node):
             return
         normalized_plan_context = dict(plan_context)
         normalized_plan_context['plan_id'] = self._resolve_plan_id(plan_context)
+        normalized_plan_context['goal_token'] = self._resolve_plan_token(normalized_plan_context)
         payload = build_execution_feedback_payload(
             intent=str(intent_name).strip(),
             source=str(source).strip(),
@@ -1655,6 +1756,8 @@ class NaoOrchestrator(Node):
                 ),
                 KeyValue(key='planner_gate_enabled', value=str(self.enable_planner_gate)),
                 KeyValue(key='planner_gate_active_goal', value=self._planner_gate.active_goal_id),
+                KeyValue(key='planner_gate_active_token', value=self._planner_gate.active_goal_token),
+                KeyValue(key='active_execution_token', value=self._active_execution_token),
                 KeyValue(
                     key='intents_received',
                     value=str(self._stats.intents_received),

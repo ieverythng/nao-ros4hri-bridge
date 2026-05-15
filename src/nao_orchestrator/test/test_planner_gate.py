@@ -23,6 +23,7 @@ def test_planner_gate_accepts_first_new_goal() -> None:
     assert decision.accepted is True
     assert decision.request.goal_id == 'goal_1'
     assert gate.active_goal_id == 'goal_1'
+    assert gate.active_goal_token == 'goal_1'
 
 
 def test_planner_gate_rejects_duplicate_active_goal() -> None:
@@ -97,6 +98,7 @@ def test_planner_gate_feedback_completion_clears_goal() -> None:
     gate.observe_feedback(json.dumps({'goal_id': 'goal_1', 'event_type': 'plan_completed'}))
 
     assert gate.active_goal_id == ''
+    assert gate.active_goal_token == ''
 
 
 def test_planner_gate_dialogue_failure_clears_goal() -> None:
@@ -115,3 +117,22 @@ def test_planner_gate_clarification_keeps_goal_active() -> None:
     gate.observe_dialogue_act(json.dumps({'goal_id': 'goal_1', 'act': 'ask_clarification'}))
 
     assert gate.active_goal_id == 'goal_1'
+
+
+def test_planner_gate_ignores_feedback_with_stale_token() -> None:
+    gate = PlannerGate()
+    assert gate.decide(_payload('goal_1', goal_token='goal_1:turn_1')).accepted is True
+
+    gate.observe_feedback(
+        json.dumps(
+            {
+                'goal_id': 'goal_1',
+                'goal_token': 'goal_1:old_turn',
+                'plan_version': 1,
+                'event_type': 'plan_completed',
+            }
+        )
+    )
+
+    assert gate.active_goal_id == 'goal_1'
+    assert gate.active_goal_token == 'goal_1:turn_1'

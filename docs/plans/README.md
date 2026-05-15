@@ -4,14 +4,13 @@ This folder keeps handoff and plan documents that should be used as references f
 
 ## Active plan artifacts
 
-- `codex_ros4hri_stack_hardening_handoff_2026-05-10.md` — ROS4HRI stack hardening handoff plan (canonical markdown).
-- `codex_ros4hri_stack_hardening_handoff_2026-05-10.html` — rendered HTML companion.
-- `codex_skill_centric_ros4hri_handoff_2026-05-13_overlay.md` — additive implementation overlay aligned with the 2026-05-12 skill-centric handoff.
-- `codex_skill_centric_ros4hri_handoff_2026-05-13_overlay.html` — interactive status tracker for the overlay phases and live runtime checks.
-- `prompt_pack_hardening_plan_2026-05-09.html` — prompt-pack hardening plan used during previous review and implementation rounds.
+- `ros4hri_integration_master_plan_2026-05-15.md` — consolidated non-fake-skill integration plan (canonical markdown).
+- `ros4hri_integration_master_plan_2026-05-15.html` — rendered HTML companion for quick review.
+- `fake_skills_codex_handoff.md` — separate fake-skills implementation handoff (kept intentionally separate).
+- `fake_skills_codex_handoff.html` — rendered HTML companion for fake-skills track.
 
 ## Recommended usage
 
-- Use the markdown file as the source of truth for edits or task splitting.
+- Use the relevant markdown file as the source of truth for edits or task splitting.
 - Use the `.html` companion for sharing and quick scanning.
 - Keep new phase-related handoff notes in this folder as both `.md` and `.html` so they remain discoverable together.

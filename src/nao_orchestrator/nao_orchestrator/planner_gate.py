@@ -22,10 +22,16 @@ class PlannerGate:
 
     def __init__(self) -> None:
         self._active_goal_id = ''
+        self._active_goal_token = ''
+        self._active_plan_version = 0
 
     @property
     def active_goal_id(self) -> str:
         return self._active_goal_id
+
+    @property
+    def active_goal_token(self) -> str:
+        return self._active_goal_token
 
     def decide(self, payload) -> PlannerGateDecision:
         request = PlannerRequest.from_payload(payload)
@@ -34,6 +40,8 @@ class PlannerGate:
         if kind == 'cancel_request':
             if self._matches_active_goal(request):
                 self._active_goal_id = ''
+                self._active_goal_token = ''
+                self._active_plan_version = 0
             return PlannerGateDecision(True, request)
 
         if kind == 'clarification_answer':
@@ -55,7 +63,8 @@ class PlannerGate:
             return PlannerGateDecision(True, request)
 
         if self._active_goal_id and request.goal_id == self._active_goal_id:
-            return PlannerGateDecision(False, request, 'duplicate active planner goal')
+            if not self._active_goal_token or request.goal_token == self._active_goal_token:
+                return PlannerGateDecision(False, request, 'duplicate active planner goal')
 
         if self._active_goal_id and request.supersedes_goal_id != self._active_goal_id:
             return PlannerGateDecision(
@@ -65,13 +74,26 @@ class PlannerGate:
             )
 
         self._active_goal_id = request.goal_id
+        self._active_goal_token = request.goal_token or request.goal_id
+        self._active_plan_version = 0
         return PlannerGateDecision(True, request)
 
     def observe_feedback(self, payload) -> None:
         feedback = parse_json_object(payload)
         goal_id = str(feedback.get('goal_id', '')).strip()
+        goal_token = str(feedback.get('goal_token', '')).strip()
+        try:
+            plan_version = max(0, int(feedback.get('plan_version', 0) or 0))
+        except (TypeError, ValueError):
+            plan_version = 0
         if goal_id and goal_id != self._active_goal_id:
             return
+        if goal_token and self._active_goal_token and goal_token != self._active_goal_token:
+            return
+        if plan_version and self._active_plan_version and plan_version < self._active_plan_version:
+            return
+        if plan_version and plan_version >= self._active_plan_version:
+            self._active_plan_version = plan_version
         event_type = str(feedback.get('event_type', '')).strip().lower()
         status = str(feedback.get('status', '')).strip().lower()
         if event_type in ('plan_completed', 'plan_cancelled') or status in (
@@ -81,19 +103,28 @@ class PlannerGate:
             'invalid',
         ):
             self._active_goal_id = ''
+            self._active_goal_token = ''
+            self._active_plan_version = 0
 
     def observe_dialogue_act(self, payload) -> None:
         dialogue_act = parse_json_object(payload)
         goal_id = str(dialogue_act.get('goal_id', '')).strip()
+        goal_token = str(dialogue_act.get('goal_token', '')).strip()
         if goal_id and goal_id != self._active_goal_id:
+            return
+        if goal_token and self._active_goal_token and goal_token != self._active_goal_token:
             return
         act = str(dialogue_act.get('act', '')).strip().lower()
         if act in ('explain_failure', 'notify_cancellation'):
             self._active_goal_id = ''
+            self._active_goal_token = ''
+            self._active_plan_version = 0
 
     def _matches_active_goal(self, request: PlannerRequest) -> bool:
         if not self._active_goal_id:
             return False
+        if self._active_goal_token and request.goal_token:
+            return request.goal_token == self._active_goal_token
         return self._active_goal_id in (
             request.goal_id,
             request.parent_goal_id,

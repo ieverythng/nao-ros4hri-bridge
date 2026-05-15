@@ -135,6 +135,7 @@ def test_parse_plan_envelope_accepts_dict_style_plan_metadata() -> None:
         {
             'plan': {
                 'goal_id': 'goal-7',
+                'goal_token': 'goal-7:turn-5',
                 'plan_id': 'plan-42',
                 'plan_version': 3,
                 'status': 'executing',
@@ -148,6 +149,7 @@ def test_parse_plan_envelope_accepts_dict_style_plan_metadata() -> None:
         }
     )
     assert envelope['goal_id'] == 'goal-7'
+    assert envelope['goal_token'] == 'goal-7:turn-5'
     assert envelope['plan_id'] == 'plan-42'
     assert envelope['plan_version'] == 3
     assert envelope['status'] == 'executing'

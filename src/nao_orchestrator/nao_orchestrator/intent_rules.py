@@ -488,6 +488,13 @@ def parse_plan_envelope(data: dict) -> dict:
             _plan_metadata_value(data, parsed_plan_dict, 'goal_id', 'goalId'),
             '',
         ),
+        'goal_token': _first_non_empty(
+            _plan_metadata_value(data, parsed_plan_dict, 'goal_token', 'goalToken'),
+            _first_non_empty(
+                _plan_metadata_value(data, parsed_plan_dict, 'goal_id', 'goalId'),
+                '',
+            ),
+        ),
         'plan_id': _first_non_empty(
             _plan_metadata_value(data, parsed_plan_dict, 'plan_id', 'id', 'planId'),
             '',
@@ -652,6 +659,7 @@ def _first_non_empty(*values: str) -> str:
 def _empty_plan_envelope() -> dict:
     return {
         'goal_id': '',
+        'goal_token': '',
         'plan_id': '',
         'plan_version': 0,
         'status': '',

@@ -10,6 +10,8 @@ Use this index to keep top-level docs focused and avoid one-off bloat.
 - `planner_status.md` — current planner behavior and known limits.
 - `planner_architecture_current.md` — implementation-facing planner architecture snapshot.
 - `plans/` — phase plans and hardening handoff references.
+  - active consolidated plan: `plans/ros4hri_integration_master_plan_2026-05-15.md`
+  - separate fake-skills track: `plans/fake_skills_codex_handoff.md`
 
 ## Archived docs (reference, do not treat as source of truth)
 
