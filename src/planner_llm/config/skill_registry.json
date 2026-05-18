@@ -1,69 +1,167 @@
 {
-  "step_types": ["noop", "say", "skill", "look_at"],
+  "step_types": [
+    "noop",
+    "say",
+    "skill",
+    "look_at"
+  ],
   "skills": [
     {
       "name": "perform_motion",
-      "aliases": ["motion"],
+      "aliases": [
+        "motion",
+        "posture",
+        "head_motion"
+      ],
       "category": "embodiment",
-      "params": ["object", "speed", "relative", "yaw", "pitch"],
-      "required_params": ["object"],
+      "params": [
+        "object",
+        "speed",
+        "relative",
+        "yaw",
+        "pitch"
+      ],
+      "required_params": [
+        "object"
+      ],
       "preconditions": [],
-      "expected_effects": ["robot posture or head orientation changes"],
-      "observable_success": ["planner feedback accepted", "planner feedback completed"],
-      "failure_modes": ["unsupported motion payload", "motion dispatch failed"],
+      "expected_effects": [
+        "robot posture or head orientation changes"
+      ],
+      "observable_success": [
+        "planner feedback accepted",
+        "planner feedback completed"
+      ],
+      "failure_modes": [
+        "unsupported motion payload",
+        "motion dispatch failed"
+      ],
       "retryable": true,
       "can_request_user_help": false,
       "can_request_clarification": true,
       "timeout_hint": 10.0,
-      "safety_flags": ["motion"],
+      "safety_flags": [
+        "motion"
+      ],
       "robot_adapter_mapping": "nao_orchestrator.perform_motion"
     },
     {
       "name": "look_at",
-      "aliases": [],
+      "aliases": [
+        "gaze_at"
+      ],
       "category": "attention",
-      "params": ["target_frame", "frame_id", "policy", "x", "y", "z"],
+      "params": [
+        "target_frame",
+        "frame_id",
+        "policy",
+        "x",
+        "y",
+        "z"
+      ],
       "required_params": [],
       "preconditions": [],
-      "expected_effects": ["robot gaze is redirected or reset"],
-      "observable_success": ["planner feedback step_started", "planner feedback completed"],
-      "failure_modes": ["look_at step missing target frame or reset policy", "look_at target dispatch failed"],
+      "expected_effects": [
+        "robot gaze is redirected or reset"
+      ],
+      "observable_success": [
+        "planner feedback step_started",
+        "planner feedback completed"
+      ],
+      "failure_modes": [
+        "look_at step missing target frame or reset policy",
+        "look_at target dispatch failed"
+      ],
       "retryable": true,
       "can_request_user_help": false,
       "can_request_clarification": true,
       "timeout_hint": 8.0,
-      "safety_flags": ["attention"],
+      "safety_flags": [
+        "attention"
+      ],
       "robot_adapter_mapping": "nao_orchestrator.look_at"
-  },
-  {
-    "name": "scan",
-    "aliases": ["look_around", "inspect_scene", "check_visible_entities"],
-    "category": "perception",
-    "params": ["target", "target_kind", "max_sweeps", "evidence_policy"],
-    "required_params": [],
-    "preconditions": [
-      "Use scan only when the user asks for fresh perception or to re-check what the robot can currently see."
-    ],
-    "expected_effects": [
-      "bounded head scan refreshes scene evidence and makes a fresh perception snapshot available"
-    ],
-    "observable_success": [
-      "result_payload.target_found",
-      "result_payload.people",
-      "result_payload.objects"
-    ],
-    "failure_modes": ["scan requested failure", "scan backend unavailable"],
-    "retryable": true,
-    "can_request_user_help": false,
-    "can_request_clarification": true,
-    "timeout_hint": 3.0,
-    "safety_flags": ["perception"],
-    "robot_adapter_mapping": "nao_orchestrator.scan",
-    "planner_guidance": [
-      "Use scan for fresh perception requests (e.g., 'scan the room', 'look around').",
-      "Do not use scan for memory-only questions unless the user asks to scan again.",
-      "Prioritize people evidence when the target is people-oriented."
-    ]
+    },
+    {
+      "name": "scan",
+      "aliases": [
+        "look_around",
+        "inspect_scene",
+        "check_visible_entities"
+      ],
+      "category": "perception",
+      "params": [
+        "target",
+        "target_kind",
+        "max_sweeps",
+        "evidence_policy"
+      ],
+      "required_params": [],
+      "preconditions": [
+        "Use scan only when the user asks for fresh perception or to re-check what the robot can currently see."
+      ],
+      "expected_effects": [
+        "bounded head scan refreshes scene evidence and makes a fresh perception snapshot available"
+      ],
+      "observable_success": [
+        "result_payload.target_found",
+        "result_payload.people",
+        "result_payload.objects"
+      ],
+      "failure_modes": [
+        "scan requested failure",
+        "scan backend unavailable"
+      ],
+      "retryable": true,
+      "can_request_user_help": false,
+      "can_request_clarification": true,
+      "timeout_hint": 3.0,
+      "safety_flags": [
+        "perception"
+      ],
+      "robot_adapter_mapping": "nao_orchestrator.scan",
+      "planner_guidance": [
+        "Use scan for fresh perception requests (e.g., 'scan the room', 'look around').",
+        "Do not use scan for memory-only questions unless the user asks to scan again.",
+        "Prioritize people evidence when the target is people-oriented."
+      ]
+    },
+    {
+      "name": "report_result",
+      "aliases": [
+        "notify_completion",
+        "say_result"
+      ],
+      "category": "communication",
+      "params": [
+        "summary_text"
+      ],
+      "required_params": [],
+      "preconditions": [
+        "Use only when reporting grounded results from previous executed steps."
+      ],
+      "expected_effects": [
+        "user receives completion/result summary through robot speech"
+      ],
+      "observable_success": [
+        "planner feedback step_succeeded",
+        "planner feedback plan_completed"
+      ],
+      "failure_modes": [
+        "report_result step missing summary text",
+        "say dispatch failed"
+      ],
+      "retryable": true,
+      "can_request_user_help": false,
+      "can_request_clarification": false,
+      "timeout_hint": 6.0,
+      "safety_flags": [
+        "communication"
+      ],
+      "robot_adapter_mapping": "nao_orchestrator.report_result",
+      "planner_guidance": [
+        "Use report_result as the final step after perception/action skills when a user-facing summary is needed.",
+        "Prefer summary_text grounded on result payloads from previous steps."
+      ]
     }
   ]
 }

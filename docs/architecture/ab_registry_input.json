@@ -573,7 +573,7 @@
     {
       "object_id": "report_result",
       "ab_level": 1,
-      "kind": "dialogue_act",
+      "kind": "skill",
       "category": "communication",
       "aliases": [
         "notify_completion",
@@ -582,25 +582,26 @@
       "params": [
         "summary_text"
       ],
-      "required_params": [
-        "summary_text"
-      ],
+      "required_params": [],
       "preconditions": [
         "summary text must be grounded in result payload or trace evidence"
       ],
       "expected_effects": [
-        "dialogue layer receives result wording"
+        "user receives completion/result summary through robot speech"
       ],
       "observable_success": [
-        "dialogue_act"
+        "step_succeeded",
+        "plan_completed"
       ],
       "failure_modes": [
-        "missing_summary"
+        "missing_summary",
+        "say_dispatch_failed"
       ],
       "planner_guidance": [
-        "use only for reporting grounded results; final speech belongs to dialogue_manager"
+        "use report_result as the final step after perception/action skills when a user-facing summary is needed",
+        "prefer summary_text grounded on result payloads from previous steps"
       ],
-      "robot_adapter_mapping": "planner_llm.dialogue_act",
+      "robot_adapter_mapping": "nao_orchestrator.report_result",
       "result_schema": {
         "required": [
           "skill",

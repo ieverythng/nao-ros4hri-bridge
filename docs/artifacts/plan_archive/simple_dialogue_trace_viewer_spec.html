@@ -1,0 +1,164 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Simple Dialogue Trace Viewer Spec</title><style>:root{--bg:#f7f3ea;--ink:#2b2118;--line:#dfd2bf;--accent:#c46a2b;--code:#f0e6d6}
+body{margin:0;background:radial-gradient(circle at 20% 0%,#fff7e8 0,var(--bg) 42%,#eee3d2 100%);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;line-height:1.58}
+main{max-width:1120px;margin:0 auto;padding:42px 24px 96px}h1{font-size:2.25rem;letter-spacing:-.035em}h2{margin-top:2.3rem;padding-top:.7rem;border-top:1px solid var(--line)}h3{margin-top:1.55rem}blockquote{border-left:4px solid var(--accent);padding:.8rem 1rem;background:rgba(255,255,255,.55);border-radius:0 12px 12px 0}pre{background:#2b2118;color:#fff7ea;border-radius:14px;padding:14px 16px;overflow-x:auto}code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);border-radius:5px;padding:.08rem .28rem}pre code{background:transparent;color:inherit;padding:0}table{width:100%;border-collapse:collapse;margin:1rem 0;background:rgba(255,255,255,.56)}th,td{border:1px solid var(--line);padding:9px 11px;vertical-align:top}th{background:#eadcc8;text-align:left}</style></head><body><main><h1>NAO ROS4HRI Observability — Simple Dialogue Trace Viewer Spec</h1>
+<p><strong>Target branch:</strong> <code>feat(R)/Neural-Workbench</code> or <code>feat/observability-dashboard</code></p>
+<p><strong>Backport relevance:</strong> high for <code>feat/TFM-LLM_planner</code></p>
+<p><strong>Priority:</strong> P0</p>
+<p><strong>Purpose:</strong> provide the simple, supervisor-friendly view of the real runtime flow.</p>
+<h2>1. Goal</h2>
+<p>Build a lightweight trace viewer that shows the full flow:</p>
+<pre><code>User -&gt; dialogue_manager -&gt; chatbot_llm -&gt; planner_llm -&gt; nao_orchestrator -&gt; skill/action server -&gt; execution feedback -&gt; planner dialogue act -&gt; robot speech</code></pre>
+<p>It should be simple enough to run during demos and debugging. It must display the actual payloads at every step, but in a compact readable way.</p>
+<h2>2. Recommended package</h2>
+<pre><code>src/interaction_trace_viewer/
+  package.xml
+  setup.py
+  interaction_trace_viewer/
+    trace_node.py
+    trace_model.py
+    payload_normalizer.py
+    render_tui.py
+    render_html.py
+  launch/
+    interaction_trace_viewer.launch.py
+  test/
+    test_trace_model.py
+    test_payload_normalizer.py</code></pre>
+<p>A single script is acceptable for the first pass:</p>
+<pre><code>scripts/interaction_trace_viewer.py
+scripts/render_interaction_trace_html.py</code></pre>
+<p>but the event model should be clean enough to migrate into <code>stack_observer</code>.</p>
+<h2>3. Real ROS artifacts to observe</h2>
+<p>Subscribe directly to actual ROS artifacts wherever possible:</p>
+<pre><code>/humans/voices/*/speech
+/planner/request
+/intents
+/planner/execution_feedback
+/planner/dialogue_act
+/scene/summary
+/rosout</code></pre>
+<p>Optional / future:</p>
+<pre><code>/fake_skills/events
+/neural_workbench/candidates
+/neural_workbench/selection
+/neural_workbench/trace
+/stack_observer/events</code></pre>
+<p>If a topic is missing, show <code>source unavailable</code> rather than crashing.</p>
+<h2>4. Normalized event model</h2>
+<pre><code>@dataclass
+class InteractionEvent:
+    timestamp: float
+    trace_id: str | None
+    source_node: str
+    channel: str
+    event_type: str
+    ab_object_id: str | None
+    ab_level: int | None
+    summary: str
+    payload: dict
+    raw: str | None = None</code></pre>
+<p>Event types:</p>
+<pre><code>user_utterance
+chatbot_response
+planner_request
+planner_output
+orchestrator_dispatch
+skill_started
+skill_feedback
+skill_result
+execution_feedback
+planner_dialogue_act
+robot_speech
+scene_update
+error
+warning</code></pre>
+<h2>5. Trace grouping</h2>
+<p>Preferred:</p>
+<pre><code>new user utterance starts a trace
+final /planner/dialogue_act closes the trace</code></pre>
+<p>Fallback:</p>
+<pre><code>/planner/request starts a trace when user speech is not available</code></pre>
+<p>If planner/common already carries <code>trace_id</code>, <code>turn_id</code>, or <code>correlation_id</code>, reuse it.</p>
+<h2>6. TUI output</h2>
+<p>Example compact output:</p>
+<pre><code>TRACE trace_024 | user: &quot;find the cup and tell me where it is&quot;
+
+[00.000] USER
+  find the cup and tell me where it is
+
+[00.142] CHATBOT -&gt; PLANNER REQUEST
+  goal: find object and report result
+  target: cup
+
+[00.412] PLANNER
+  steps:
+    1. find_object(target=&quot;cup&quot;)
+    2. report_result(source=&quot;step_1&quot;)
+
+[00.620] ORCHESTRATOR
+  dispatch: find_object {&quot;target&quot;: &quot;cup&quot;}
+
+[01.220] SKILL RESULT
+  status: succeeded
+  target_found: true
+  evidence: fake_cup_1 confidence=0.91
+
+[01.360] DIALOGUE ACT
+  say: &quot;I found one cup.&quot;</code></pre>
+<p>CLI:</p>
+<pre><code>ros2 run interaction_trace_viewer trace_node --compact
+ros2 run interaction_trace_viewer trace_node --verbose</code></pre>
+<h2>7. Static HTML report</h2>
+<p>Support:</p>
+<pre><code>ros2 run interaction_trace_viewer render_html \
+  --input traces/latest.jsonl \
+  --output traces/latest.html</code></pre>
+<p>HTML sections:</p>
+<pre><code>trace summary
+timeline
+planner request
+planner output
+skill dispatches
+skill result payloads
+final dialogue act
+errors/warnings
+raw JSON appendix</code></pre>
+<h2>8. Payload display rules</h2>
+<p>Compact mode should show:</p>
+<ul>
+<li>user text;</li>
+<li>chatbot intent/routing summary;</li>
+<li>planner goal and plan steps;</li>
+<li>orchestrator dispatched skill;</li>
+<li>skill result status;</li>
+<li><code>target_found</code>;</li>
+<li><code>failure.code</code>;</li>
+<li><code>failure.recoverable</code>;</li>
+<li><code>suggested_recovery</code>;</li>
+<li>final dialogue act.</li>
+</ul>
+<p>Verbose mode shows full JSON.</p>
+<h2>9. Launch parameters</h2>
+<pre><code>trace_viewer_enabled: true
+compact_mode: true
+write_jsonl: true
+jsonl_output_dir: ~/.ros/nao_ros4hri_traces
+write_html_on_shutdown: true
+html_output_dir: ~/.ros/nao_ros4hri_trace_reports
+include_raw_payloads: true
+max_payload_chars: 4000</code></pre>
+<h2>10. Acceptance checklist</h2>
+<ul>
+<li>Launches with the current stack.</li>
+<li>Does not interfere with execution.</li>
+<li>Subscribes to real ROS topics.</li>
+<li>Shows user → chatbot → planner → orchestrator → skill → feedback → dialogue act.</li>
+<li>Shows actual payloads.</li>
+<li>Writes JSONL traces.</li>
+<li>Renders simple HTML reports.</li>
+<li>Handles missing optional topics gracefully.</li>
+<li>Works with fake skill result payloads.</li>
+<li>Works without Neural Workbench enabled.</li>
+</ul>
+<h2>11. Non-goals</h2>
+<p>This simple viewer should not manage node restarts, launch profiles, AB-space visualization, registry editing, or Workbench macro crystallization. It is a clear trace viewer.</p></main></body></html>

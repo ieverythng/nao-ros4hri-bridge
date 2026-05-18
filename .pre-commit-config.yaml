@@ -33,6 +33,12 @@ repos:
         language: system
         files: ^src/(nao_chatbot|nao_look_at|nao_orchestrator|nao_replay_motion|nao_say_skill|asr_vosk|simple_audio_capture)/.*\.py$
 
+      - id: check-skill-registry-consistency
+        name: check-skill-registry-consistency
+        entry: python3 scripts/check_skill_registry_consistency.py
+        language: system
+        pass_filenames: false
+
       - id: workspace-test-suite
         name: workspace-test-suite
         entry: ./scripts/run_tests.sh
