@@ -60,6 +60,13 @@ _DEFAULT_SCAN_SKILL_ALIASES = (
     'inspect_scene',
     'check_visible_entities',
 )
+_DEFAULT_FAKE_SKILL_ALIASES = {
+    'navigate_to': {'navigate_to', 'go_to', 'move_to_location'},
+    'find_object': {'find_object', 'find', 'locate_object', 'find_person'},
+    'wave_greet': {'wave_greet', 'wave', 'greet_wave', 'wave_hello'},
+    'inspect_area': {'inspect_area', 'inspect', 'check_area'},
+    'walk_to': {'walk_to', 'walk_forward', 'step_to'},
+}
 
 
 def _first_non_empty_text(*values) -> str:
@@ -87,6 +94,7 @@ class _RuntimeStats:
     dispatched_replay_motion: int = 0
     dispatched_head_motion: int = 0
     dispatched_look_at: int = 0
+    dispatched_fake_skill: int = 0
     dispatch_failures: int = 0
     last_intent: str = ''
     last_route: str = ''
@@ -148,6 +156,13 @@ class NaoOrchestrator(Node):
         self.declare_parameter('scan_action_wait_sec', 0.2)
         self.declare_parameter('scan_action_result_timeout_sec', 20.0)
         self.declare_parameter('scan_report_after_success', True)
+        self.declare_parameter('fake_skill_wait_sec', 0.2)
+        self.declare_parameter('fake_skill_result_timeout_sec', 20.0)
+        self.declare_parameter('fake_skill_navigate_to_action', '/skill/fake/navigate_to')
+        self.declare_parameter('fake_skill_find_object_action', '/skill/fake/find_object')
+        self.declare_parameter('fake_skill_wave_greet_action', '/skill/fake/wave_greet')
+        self.declare_parameter('fake_skill_inspect_area_action', '/skill/fake/inspect_area')
+        self.declare_parameter('fake_skill_walk_to_action', '/skill/fake/walk_to')
 
         self.intent_topic = str(self.get_parameter('intent_topic').value)
         self.enable_legacy_intent_bridge = bool(
@@ -249,6 +264,21 @@ class NaoOrchestrator(Node):
         self.scan_report_after_success = bool(
             self.get_parameter('scan_report_after_success').value
         )
+        self.fake_skill_wait_sec = max(
+            0.0,
+            float(self.get_parameter('fake_skill_wait_sec').value),
+        )
+        self.fake_skill_result_timeout_sec = max(
+            0.1,
+            float(self.get_parameter('fake_skill_result_timeout_sec').value),
+        )
+        self._fake_skill_action_names = {
+            'navigate_to': str(self.get_parameter('fake_skill_navigate_to_action').value).strip(),
+            'find_object': str(self.get_parameter('fake_skill_find_object_action').value).strip(),
+            'wave_greet': str(self.get_parameter('fake_skill_wave_greet_action').value).strip(),
+            'inspect_area': str(self.get_parameter('fake_skill_inspect_area_action').value).strip(),
+            'walk_to': str(self.get_parameter('fake_skill_walk_to_action').value).strip(),
+        }
 
         self._intent_sub = None
         self._legacy_intent_sub = None
@@ -271,11 +301,13 @@ class NaoOrchestrator(Node):
         self._head_motion_client = None
         self._look_at_client = None
         self._scan_client = None
+        self._fake_skill_clients: dict[str, ActionClient] = {}
         self._posture_result_lock = threading.Lock()
         self._posture_result_event = threading.Event()
         self._latest_posture_result: dict | None = None
         self._planner_gate = PlannerGate()
         self._scan_skill_names = self._load_scan_skill_names()
+        self._fake_skill_aliases = self._load_fake_skill_aliases()
         self._active_execution_token = ''
         self._active_execution_plan_version = 0
         self._execution_lock = threading.Lock()
@@ -301,6 +333,18 @@ class NaoOrchestrator(Node):
         self._look_at_client = ActionClient(self, LookAt, self.look_at_action)
         if ScanScene is not None:
             self._scan_client = ActionClient(self, ScanScene, self.scan_action)
+            for skill_name in sorted(set(self._fake_skill_aliases.values())):
+                action_name = self._fake_skill_action_names.get(
+                    skill_name,
+                    '/skill/fake/%s' % skill_name,
+                )
+                if not action_name:
+                    continue
+                self._fake_skill_clients[skill_name] = ActionClient(
+                    self,
+                    ScanScene,
+                    action_name,
+                )
         else:
             self.get_logger().warn(
                 'ScanScene interface unavailable; scan dispatch will fail until interfaces are rebuilt'
@@ -340,7 +384,7 @@ class NaoOrchestrator(Node):
                 'JointAnglesWithSpeed unavailable; joint-topic fallback is disabled'
             )
         self.get_logger().info(
-            'nao_orchestrator configured | intents:%s legacy:%s say:%s replay:%s head:%s look:%s scan:%s planner_gate:%s->%s'
+            'nao_orchestrator configured | intents:%s legacy:%s say:%s replay:%s head:%s look:%s scan:%s fake:%s planner_gate:%s->%s'
             % (
                 self.intent_topic,
                 self.legacy_intent_topic,
@@ -349,6 +393,7 @@ class NaoOrchestrator(Node):
                 self.head_motion_action,
                 self.look_at_action,
                 self.scan_action if self._scan_client is not None else 'unavailable',
+                ','.join(sorted(self._fake_skill_clients.keys())) or 'none',
                 self.planner_gate_request_topic if self.enable_planner_gate else 'disabled',
                 self.planner_request_topic,
             )
@@ -461,11 +506,15 @@ class NaoOrchestrator(Node):
         ):
             if client is not None:
                 client.destroy()
+        for client in self._fake_skill_clients.values():
+            if client is not None:
+                client.destroy()
         self._say_client = None
         self._replay_motion_client = None
         self._head_motion_client = None
         self._look_at_client = None
         self._scan_client = None
+        self._fake_skill_clients = {}
 
     # -------------------------------------------------------------------------
     # Intent ingestion
@@ -902,6 +951,13 @@ class NaoOrchestrator(Node):
                     step_args,
                     on_started=on_started,
                 )
+            fake_skill_name = self._resolve_fake_skill_name(step_name)
+            if fake_skill_name:
+                return self._execute_fake_skill_step(
+                    fake_skill_name,
+                    step_args,
+                    on_started=on_started,
+                )
 
         self._stats.dispatch_failures += 1
         self.get_logger().warn('Unsupported planned step: %s' % step)
@@ -1094,6 +1150,69 @@ class NaoOrchestrator(Node):
                 return False, speech_reason, payload
         return True, summary_text, payload
 
+    def _execute_fake_skill_step(
+        self,
+        skill_name: str,
+        step_args: dict,
+        *,
+        on_started=None,
+    ) -> tuple[bool, str, dict]:
+        if on_started is not None:
+            on_started()
+
+        if ScanScene is None:
+            self._stats.dispatch_failures += 1
+            return False, 'ScanScene interface unavailable for fake skill dispatch', {}
+
+        client = self._fake_skill_clients.get(skill_name)
+        if client is None:
+            self._stats.dispatch_failures += 1
+            return False, 'fake skill action client unavailable for %s' % skill_name, {}
+
+        goal = ScanScene.Goal()
+        goal.target = str(step_args.get('target', step_args.get('location', ''))).strip()
+        goal.target_kind = str(step_args.get('target_kind', '')).strip()
+        goal.max_sweeps = int(step_args.get('max_sweeps', 0) or 0)
+        goal.result_mode = str(step_args.get('result_mode', '')).strip().lower()
+
+        args_payload = dict(step_args or {})
+        scenario_id = str(args_payload.pop('scenario_id', '')).strip()
+        scenario_override = args_payload.pop('scenario', args_payload.pop('scenario_override', {}))
+        for field_name in ('target', 'location', 'target_kind', 'max_sweeps', 'result_mode'):
+            args_payload.pop(field_name, None)
+
+        evidence_payload = {'skill': skill_name}
+        if args_payload:
+            evidence_payload['args'] = args_payload
+        if scenario_id:
+            evidence_payload['scenario_id'] = scenario_id
+        if isinstance(scenario_override, dict) and scenario_override:
+            evidence_payload['scenario'] = scenario_override
+        goal.evidence_policy = json.dumps(
+            evidence_payload,
+            sort_keys=True,
+            separators=(',', ':'),
+        )
+
+        result = self._execute_action_step(
+            client=client,
+            goal=goal,
+            wait_sec=self.fake_skill_wait_sec,
+            result_timeout_sec=self.fake_skill_result_timeout_sec,
+            description='fake_skill:%s' % skill_name,
+        )
+        payload = self._fake_payload_from_action_result(
+            skill_name,
+            result.raw_result,
+            fallback_step_args=step_args,
+        )
+        summary_text = str(payload.get('summary_text', result.reason or '')).strip()
+        if not result.success:
+            return False, result.reason or summary_text or ('%s action failed' % skill_name), payload
+
+        self._stats.dispatched_fake_skill += 1
+        return True, summary_text, payload
+
     def _scan_args_from_step(self, step_args: dict) -> dict:
         scan_args = dict(step_args or {})
         target = str(scan_args.get('target', '')).strip()
@@ -1141,6 +1260,51 @@ class NaoOrchestrator(Node):
             'objects': [],
             'summary_text': summary_text,
             'confidence_policy': 'grounded_current_observation',
+        }
+
+    def _fake_payload_from_action_result(
+        self,
+        skill_name: str,
+        action_result,
+        *,
+        fallback_step_args: dict,
+    ) -> dict:
+        target = str(fallback_step_args.get('target', fallback_step_args.get('location', ''))).strip()
+        target_kind = str(fallback_step_args.get('target_kind', '')).strip()
+        if action_result is None:
+            return {
+                'skill': skill_name,
+                'status': 'failed',
+                'target': target,
+                'target_kind': target_kind,
+                'target_found': False,
+                'summary_text': '',
+                'evidence': {},
+                'failure': {'code': 'missing_result', 'recoverable': False},
+                'metadata': {'fake': True},
+            }
+        payload_json = str(getattr(action_result, 'result_payload_json', '')).strip()
+        if payload_json:
+            try:
+                payload = json.loads(payload_json)
+            except json.JSONDecodeError:
+                payload = {}
+            if isinstance(payload, dict):
+                return payload
+        summary_text = _first_non_empty_text(
+            getattr(action_result, 'summary_text', ''),
+            getattr(action_result, 'message', ''),
+        )
+        return {
+            'skill': skill_name,
+            'status': 'succeeded' if bool(getattr(action_result, 'success', False)) else 'failed',
+            'target': target,
+            'target_kind': target_kind,
+            'target_found': None,
+            'summary_text': summary_text,
+            'evidence': {},
+            'failure': {},
+            'metadata': {'fake': True},
         }
 
     def _execute_replay_motion_step(
@@ -1457,6 +1621,44 @@ class NaoOrchestrator(Node):
             return names or set(_DEFAULT_SCAN_SKILL_ALIASES)
         except Exception:
             return set(_DEFAULT_SCAN_SKILL_ALIASES)
+
+    def _load_fake_skill_aliases(self) -> dict[str, str]:
+        fallback_aliases: dict[str, str] = {}
+        for canonical, aliases in _DEFAULT_FAKE_SKILL_ALIASES.items():
+            for alias in aliases:
+                fallback_aliases[str(alias).strip().lower()] = canonical
+
+        if load_default_skill_registry is None:
+            return fallback_aliases
+        try:
+            registry = load_default_skill_registry()
+            aliases = dict(fallback_aliases)
+            for skill_payload in registry.prompt_manifest():
+                if not isinstance(skill_payload, dict):
+                    continue
+                mapping = str(skill_payload.get('robot_adapter_mapping', '')).strip().lower()
+                if not mapping.startswith('fake_skills.'):
+                    continue
+                canonical = mapping.split('.', 1)[1].strip().lower()
+                if not canonical:
+                    continue
+                names = [str(skill_payload.get('name', '')).strip().lower()]
+                names.extend(
+                    str(alias).strip().lower()
+                    for alias in skill_payload.get('aliases', [])
+                    if str(alias).strip()
+                )
+                for name in names:
+                    aliases[name] = canonical
+            return aliases
+        except Exception:
+            return fallback_aliases
+
+    def _resolve_fake_skill_name(self, step_name: str) -> str:
+        clean_name = str(step_name or '').strip().lower()
+        if not clean_name:
+            return ''
+        return self._fake_skill_aliases.get(clean_name, '')
 
     @staticmethod
     def _parse_posture_result_message(payload: str) -> dict:

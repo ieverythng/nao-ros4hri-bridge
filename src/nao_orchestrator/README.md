@@ -9,7 +9,7 @@ steps in order, and publishes planner feedback.
 - `/intents` subscription
 - structured `Intent.data.plan` validation
 - ordered execution of supported plan steps
-- action clients for NAO speech, replay motion, head motion, look-at, and scan
+- action clients for NAO speech, replay motion, head motion, look-at, scan, and fake skills
 - `/planner/execution_feedback`
 
 It does not own user dialogue, LLM prompting, planner policy, detector
@@ -27,6 +27,7 @@ subscriptions, scan internals, or KnowledgeCore transport.
 | action client | `/skill/do_head_motion` | `nao_skills/action/DoHeadMotion` | Head motion execution |
 | action client | `/skill/look_at` | `interaction_skills/action/LookAt` | Gaze execution |
 | action client | `/skill/scan` | `nao_skills/action/ScanScene` | Scan skill dispatch (internals owned by scan skill server) |
+| action client | `/skill/fake/*` | `nao_skills/action/ScanScene` | Fake skill dispatch for planner/workbench validation |
 
 Temporary fallbacks:
 
@@ -40,6 +41,7 @@ Temporary fallbacks:
 - `skill` with `perform_motion` or `motion`: replay/head/look-at-reset routing.
 - `skill` with `look_at`: target-frame or reset gaze routing.
 - `skill` with `scan`, `look_around`, `inspect_scene`, or `check_visible_entities`: `/skill/scan` dispatch.
+- `skill` with fake-skill names from `skill_common` (`navigate_to`, `find_object`, `wave_greet`, `inspect_area`, `walk_to`): `/skill/fake/*` dispatch.
 - `look_at`: target-frame or reset gaze routing.
 
 Unsupported steps should produce validation or step-failure feedback rather than
@@ -68,6 +70,13 @@ Defaults live in `config/00-defaults.yml`.
 - `scan_result_mode`
 - `scan_action_result_timeout_sec`
 - `scan_report_after_success`
+- `fake_skill_wait_sec`
+- `fake_skill_result_timeout_sec`
+- `fake_skill_navigate_to_action`
+- `fake_skill_find_object_action`
+- `fake_skill_wave_greet_action`
+- `fake_skill_inspect_area_action`
+- `fake_skill_walk_to_action`
 
 Replay/posture result waits default to `20.0s` because the NAO posture bridge can
 finish slightly after the old 12-second window under reconnect or posture-change

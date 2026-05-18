@@ -1,0 +1,33 @@
+default:
+  navigate_to:
+    result_mode: success
+    delay_sec: 1.0
+  find_object:
+    result_mode: found
+    target_found: true
+    delay_sec: 0.8
+  wave_greet:
+    result_mode: success
+    dry_run: true
+    delay_sec: 1.2
+  inspect_area:
+    result_mode: clear
+    delay_sec: 0.9
+  walk_to:
+    result_mode: dry_run
+    dry_run: true
+    delay_sec: 0.7
+
+scenarios:
+  path_blocked:
+    navigate_to:
+      result_mode: path_blocked
+  ambiguous_cup:
+    find_object:
+      result_mode: ambiguous
+  social_wave_unavailable:
+    wave_greet:
+      result_mode: motion_unavailable
+  area_person_found:
+    inspect_area:
+      result_mode: person_found

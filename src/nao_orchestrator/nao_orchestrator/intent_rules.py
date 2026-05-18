@@ -8,6 +8,10 @@ import json
 from planner_common.contracts import PLAN_FAILURE_POLICIES
 from planner_common.contracts import PLAN_STEP_TYPES
 from planner_common.contracts import IntentLabels as Intent
+try:  # pragma: no cover - optional shared registry dependency
+    from skill_common import load_default_registry as load_default_skill_registry
+except ImportError:  # pragma: no cover - keep local fallback
+    load_default_skill_registry = None
 
 
 _STANDARD_INTENTS = {
@@ -112,7 +116,7 @@ _POSTURE_TOPIC_FALLBACKS = {
 
 _PLAN_STEP_TYPES_SET = frozenset(PLAN_STEP_TYPES)
 _PLAN_FAILURE_POLICIES_SET = frozenset(PLAN_FAILURE_POLICIES)
-_SUPPORTED_SKILL_PLAN_NAMES = {
+_DEFAULT_SUPPORTED_SKILL_PLAN_NAMES = {
     '',
     'perform_motion',
     'motion',
@@ -126,6 +130,45 @@ _PEOPLE_SCAN_TARGET_KINDS = {
     'human',
     'humans',
 }
+
+
+def _load_supported_skill_names() -> tuple[set[str], set[str], set[str]]:
+    supported = set(_DEFAULT_SUPPORTED_SKILL_PLAN_NAMES)
+    scan_names = {'scan'}
+    fake_names: set[str] = set()
+
+    if load_default_skill_registry is None:
+        return supported, scan_names, fake_names
+
+    try:
+        registry = load_default_skill_registry()
+        for skill in registry.prompt_manifest():
+            if not isinstance(skill, dict):
+                continue
+            name = str(skill.get('name', '')).strip().lower()
+            aliases = {
+                str(alias).strip().lower()
+                for alias in skill.get('aliases', [])
+                if str(alias).strip()
+            }
+            mapping = str(skill.get('robot_adapter_mapping', '')).strip().lower()
+            names = {name, *aliases}
+            names.discard('')
+            if not names:
+                continue
+            supported.update(names)
+            if name == 'scan' or mapping == 'nao_orchestrator.scan':
+                scan_names.update(names)
+            if mapping.startswith('fake_skills.'):
+                fake_names.update(names)
+        return supported, scan_names, fake_names
+    except Exception:
+        return supported, scan_names, fake_names
+
+
+_SUPPORTED_SKILL_PLAN_NAMES, _SCAN_SKILL_PLAN_NAMES, _FAKE_SKILL_PLAN_NAMES = (
+    _load_supported_skill_names()
+)
 
 
 # -----------------------------------------------------------------------------
@@ -773,7 +816,10 @@ def _plan_step_validation_error(intent_name: str, step: dict) -> str:
         return f'unsupported skill step "{step_name}"'
     if step_name == 'look_at':
         return _plan_look_at_error(step_args)
-    if step_name == 'scan':
+    if step_name in _SCAN_SKILL_PLAN_NAMES:
+        return ''
+
+    if step_name in _FAKE_SKILL_PLAN_NAMES:
         return ''
 
     route, _resolved_payload = classify_motion_target(

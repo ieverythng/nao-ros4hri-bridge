@@ -29,6 +29,13 @@
     scan_action_wait_sec: 0.2
     scan_action_result_timeout_sec: 20.0
     scan_report_after_success: true
+    fake_skill_wait_sec: 0.2
+    fake_skill_result_timeout_sec: 20.0
+    fake_skill_navigate_to_action: "/skill/fake/navigate_to"
+    fake_skill_find_object_action: "/skill/fake/find_object"
+    fake_skill_wave_greet_action: "/skill/fake/wave_greet"
+    fake_skill_inspect_area_action: "/skill/fake/inspect_area"
+    fake_skill_walk_to_action: "/skill/fake/walk_to"
 
 /scan_skill_server:
   ros__parameters:

@@ -366,7 +366,7 @@
       "planner_guidance": [
         "use for a specific named object or person target"
       ],
-      "robot_adapter_mapping": "fake_find_object_skill.find_object",
+      "robot_adapter_mapping": "fake_skills.find_object",
       "result_schema": {
         "required": [
           "skill",
@@ -417,7 +417,7 @@
       "planner_guidance": [
         "use for semantic destinations such as kitchen or table"
       ],
-      "robot_adapter_mapping": "fake_navigation_skill.navigate_to",
+      "robot_adapter_mapping": "fake_skills.navigate_to",
       "result_schema": {
         "required": [
           "skill",
@@ -464,7 +464,7 @@
       "planner_guidance": [
         "keep dry-run enabled until real walking is explicitly approved"
       ],
-      "robot_adapter_mapping": "walk_to_skill.walk_to",
+      "robot_adapter_mapping": "fake_skills.walk_to",
       "result_schema": {
         "required": [
           "skill",
@@ -612,6 +612,222 @@
         "communication"
       ],
       "implementation_status": "first_party"
+    },
+    {
+      "object_id": "wave_greet",
+      "ab_level": 1,
+      "kind": "skill",
+      "category": "social_motion",
+      "aliases": [
+        "wave",
+        "greet_wave",
+        "wave_hello"
+      ],
+      "params": [
+        "style",
+        "hand",
+        "duration_sec",
+        "dry_run",
+        "result_mode"
+      ],
+      "required_params": [],
+      "preconditions": [],
+      "expected_effects": [
+        "robot performs greeting wave gesture"
+      ],
+      "observable_success": [
+        "status",
+        "summary_text"
+      ],
+      "failure_modes": [
+        "motion_unavailable",
+        "safety_disabled",
+        "unexpected_payload"
+      ],
+      "planner_guidance": [
+        "use wave_greet for social greeting gestures"
+      ],
+      "robot_adapter_mapping": "fake_skills.wave_greet",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "social_motion",
+        "motion"
+      ],
+      "implementation_status": "fake",
+      "supports_failure_injection": true,
+      "is_composite": false,
+      "is_fake": true,
+      "decomposes_to": [
+        "perform_motion"
+      ]
+    },
+    {
+      "object_id": "inspect_area",
+      "ab_level": 1,
+      "kind": "skill",
+      "category": "perception",
+      "aliases": [
+        "inspect_zone",
+        "check_area"
+      ],
+      "params": [
+        "target",
+        "target_area",
+        "result_mode"
+      ],
+      "required_params": [
+        "target"
+      ],
+      "preconditions": [
+        "target area should be named"
+      ],
+      "expected_effects": [
+        "scene evidence for target area is returned"
+      ],
+      "observable_success": [
+        "status",
+        "target_found",
+        "evidence.people",
+        "evidence.objects"
+      ],
+      "failure_modes": [
+        "ambiguous",
+        "area_unknown",
+        "backend_unavailable"
+      ],
+      "planner_guidance": [
+        "use inspect_area to validate area state before reporting"
+      ],
+      "robot_adapter_mapping": "fake_skills.inspect_area",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "perception"
+      ],
+      "implementation_status": "fake",
+      "supports_failure_injection": true,
+      "is_composite": true,
+      "is_fake": true,
+      "decomposes_to": [
+        "navigate_to",
+        "scan",
+        "report_result"
+      ]
+    },
+    {
+      "object_id": "wave_at",
+      "ab_level": 2,
+      "kind": "macro_skill",
+      "category": "social_hri",
+      "aliases": [
+        "greet_person_wave"
+      ],
+      "params": [
+        "target"
+      ],
+      "required_params": [
+        "target"
+      ],
+      "preconditions": [
+        "target should be referenceable in scene context"
+      ],
+      "expected_effects": [
+        "robot attends to target and performs greeting wave"
+      ],
+      "observable_success": [
+        "look_at.status",
+        "wave_greet.status"
+      ],
+      "failure_modes": [
+        "target_missing",
+        "motion_unavailable"
+      ],
+      "planner_guidance": [
+        "expand wave_at into look_at then wave_greet until macro executor is available"
+      ],
+      "robot_adapter_mapping": "",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "attention",
+        "motion"
+      ],
+      "implementation_status": "proposal",
+      "supports_failure_injection": false,
+      "is_composite": true,
+      "is_fake": true,
+      "decomposes_to": [
+        "look_at",
+        "wave_greet"
+      ]
+    },
+    {
+      "object_id": "navigate_with_recovery",
+      "ab_level": 2,
+      "kind": "macro_skill",
+      "category": "navigation",
+      "aliases": [
+        "recovering_navigation"
+      ],
+      "params": [
+        "target"
+      ],
+      "required_params": [
+        "target"
+      ],
+      "preconditions": [
+        "navigation must be enabled"
+      ],
+      "expected_effects": [
+        "robot reaches target or asks for route recovery"
+      ],
+      "observable_success": [
+        "navigate_to.status",
+        "report_result.summary_text"
+      ],
+      "failure_modes": [
+        "path_blocked",
+        "unknown_location",
+        "safety_disabled"
+      ],
+      "planner_guidance": [
+        "expand navigate_with_recovery to navigate_to plus clarification/report steps"
+      ],
+      "robot_adapter_mapping": "",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "navigation"
+      ],
+      "implementation_status": "proposal",
+      "supports_failure_injection": false,
+      "is_composite": true,
+      "is_fake": true,
+      "decomposes_to": [
+        "navigate_to",
+        "report_result"
+      ]
     }
   ]
 }

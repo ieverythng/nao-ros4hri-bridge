@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-15  
 **Branch context:** `feat/TFM-LLM_planner` + nested repos (`chatbot_llm`, `dialogue_manager`)  
-**Scope:** Consolidated status of all non-fake-skill integration plans and overlays.
+**Scope:** Consolidated status of active ROS4HRI integration tracks, including fake-skill execution seams.
 
 ## 1. Source Plans Consolidated
 
@@ -12,15 +12,14 @@ This plan merges and supersedes the following implementation plans for active ex
 - `codex_skill_centric_ros4hri_handoff_2026-05-13_overlay.md` (+ HTML)
 - `prompt_pack_hardening_plan_2026-05-09.html`
 
-The fake skills handoff is intentionally excluded from supersession and remains active as a separate track:
+The fake skills handoff remains active and is now partially implemented:
 
 - `fake_skills_codex_handoff.md` (+ HTML)
 
 ## 2. Explicit Out-of-Scope Items
 
-- No fake-skill implementation in this pass (kept as separate handoff track).
-- No NeuralWorkbench-internal code edits in this pass.
 - No GitNexus-generated docs refresh in this pass (left as-is intentionally).
+- No migration of `wave_at` / `navigate_with_recovery` AB=2 macros into live executor dispatch yet (kept proposal-only).
 
 ## 3. Status Matrix (Done / In Progress / Pending)
 
@@ -36,20 +35,31 @@ The fake skills handoff is intentionally excluded from supersession and remains 
 
 - **Done (policy decision updated)**: Local copied `src/skill_common` removed.
 - **Done**: Planner/orchestrator/chatbot seams remain compatible with `skill_common` when provided by nested package source.
-- **Pending**: Validate runtime build against nested `skill_common` from NeuralWorkbench branch `feat/TFM_planner_only` in target environment.
+- **Done**: Runtime/unit validation run against nested `skill_common` in `src/Neural-Wokbench/src/skill_common`.
+- **Done**: AB registry mappings updated to `fake_skills.*` adapters for fake executable skills.
 
-## C. Dialogue/route correctness
+## C. Fake skill execution substrate
+
+- **Done**: New `src/fake_skills` ROS package with deterministic engine + scenario store.
+- **Done**: Action servers created for `/skill/fake/execute`, `/skill/fake/navigate_to`, `/skill/fake/find_object`, `/skill/fake/wave_greet`, `/skill/fake/inspect_area`, and `/skill/fake/walk_to`.
+- **Done**: Shared `SkillResultPayload` contract used via `skill_common` (with test fallback shim).
+- **Done**: `nao_orchestrator` dispatch supports fake skill names discovered from `skill_common` adapter mappings.
+- **Done**: Plan validation accepts fake skill names exported from `skill_common`.
+- **Done**: Scenario-driven result modes include deterministic failure injection (`fail_once`, recoverable vs non-recoverable modes).
+- **Pending**: Integrate optional fake-skill launch toggles into main `nao_chatbot` launch profiles.
+
+## D. Dialogue/route correctness
 
 - **Done**: Planner completion system payload no longer emits execution intents.
 - **Pending**: Full memory/knowledge-vs-execution route hardening for ambiguous prompts (`person/people/room` execution-marker overreach).
 - **Pending**: Final cleanup of dialogue-only intent leakage (`greet/help/identity/wellbeing`) on all edge paths.
 
-## D. Ownership/architecture migration
+## E. Ownership/architecture migration
 
 - **In progress**: Planner gate exists with token/version checks and supersede semantics.
 - **Pending**: Default ingress migration to `chatbot_llm -> /nao_orchestrator/planner_request -> /planner/request` across launch defaults and runtime validation.
 
-## E. Upstream reconciliation
+## F. Upstream reconciliation
 
 - **Done**: Upstream inventory artifact created with remotes/heads/conflict domains and merge order.
 - **Pending**: Execute staged merges: `chatbot_msgs` contracts first, then `dialogue_manager`, then `chatbot_llm`.
@@ -57,24 +67,29 @@ The fake skills handoff is intentionally excluded from supersession and remains 
 
 ## 4. Remaining Implementation Backlog (Execution Order)
 
-1. **P0** Route semantics hardening in `chatbot_llm/turn_engine.py`:
+1. **P0** Fake skill live runtime validation:
+- launch `fake_skills` with deterministic scenarios
+- run one planner success and one planner replan path using fake skills
+- confirm `/planner/execution_feedback.result_payload` propagation end-to-end
+
+2. **P0** Route semantics hardening in `chatbot_llm/turn_engine.py`:
 - knowledge/memory questions must route `knowledge_query` by default
 - explicit new-scan imperatives must route `execution`
 
-2. **P0** Runtime validation on live container/robot:
+3. **P0** Runtime validation on live container/robot:
 - lifecycle active checks
 - action availability
 - one success path and one failure/supersede path
 
-3. **P1** Dialogue-only intent cleanup:
+4. **P1** Dialogue-only intent cleanup:
 - ensure no execution-intent leakage for dialogue-only classes
 
-4. **P1** Planner gate default ingress cutover in launch profiles:
+5. **P1** Planner gate default ingress cutover in launch profiles:
 - align launch defaults with orchestrator-gated ingress
 
-5. **P2** Provider-neutral transport naming cleanup (`ollama_transport` compatibility shim strategy)
+6. **P2** Provider-neutral transport naming cleanup (`ollama_transport` compatibility shim strategy)
 
-6. **P2** Upstream staged merge execution per inventory artifact
+7. **P2** Upstream staged merge execution per inventory artifact
 
 ## 4.1 Stashed Future Changes (Must Land Soon)
 
@@ -115,6 +130,7 @@ For each remaining backlog item:
 
 1. Confirm nested `skill_common` availability from NeuralWorkbench branch `feat/TFM_planner_only` in the active workspace/container.
 2. Re-run focused tests:
-- `planner_common`, `planner_llm`, `nao_orchestrator`, `chatbot_llm`
-3. Execute live runtime gates on robot profile with planner mode enabled.
-4. Begin P0 route hardening (`knowledge_query` vs `execution`).
+- `planner_common`, `planner_llm`, `nao_orchestrator`, `chatbot_llm`, `fake_skills`
+3. Run fake-skill planner scenarios (`navigate_to:path_blocked`, `find_object:ambiguous`) and capture replanning behavior.
+4. Execute live runtime gates on robot profile with planner mode enabled.
+5. Continue P0 route hardening (`knowledge_query` vs `execution`).
