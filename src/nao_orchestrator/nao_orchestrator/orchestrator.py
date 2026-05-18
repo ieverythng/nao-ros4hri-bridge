@@ -22,13 +22,12 @@ from kb_skills.intent_labels import KB_QUERY_INTENTS
 from nao_skills.action import DoHeadMotion, ReplayMotion
 from planner_common import build_execution_feedback_payload
 from planner_common import make_plan_id
+from planner_common import load_shared_skill_manifest
+from planner_common import merge_fake_skill_aliases
+from planner_common import merge_scan_skill_names
 from rclpy.action import ActionClient
 from rclpy.lifecycle import Node, State, TransitionCallbackReturn
 from std_msgs.msg import String
-try:  # pragma: no cover - optional shared registry dependency
-    from skill_common import load_default_registry as load_default_skill_registry
-except ImportError:  # pragma: no cover - keep local alias fallback
-    load_default_skill_registry = None
 
 from nao_orchestrator.intent_rules import (
     classify_motion_target,
@@ -163,6 +162,9 @@ class NaoOrchestrator(Node):
         self.declare_parameter('fake_skill_wave_greet_action', '/skill/fake/wave_greet')
         self.declare_parameter('fake_skill_inspect_area_action', '/skill/fake/inspect_area')
         self.declare_parameter('fake_skill_walk_to_action', '/skill/fake/walk_to')
+        self.declare_parameter('report_result_action', '/skill/report_result')
+        self.declare_parameter('report_result_action_wait_sec', 0.2)
+        self.declare_parameter('report_result_action_result_timeout_sec', 8.0)
 
         self.intent_topic = str(self.get_parameter('intent_topic').value)
         self.enable_legacy_intent_bridge = bool(
@@ -279,6 +281,17 @@ class NaoOrchestrator(Node):
             'inspect_area': str(self.get_parameter('fake_skill_inspect_area_action').value).strip(),
             'walk_to': str(self.get_parameter('fake_skill_walk_to_action').value).strip(),
         }
+        self.report_result_action = str(
+            self.get_parameter('report_result_action').value
+        ).strip()
+        self.report_result_action_wait_sec = max(
+            0.0,
+            float(self.get_parameter('report_result_action_wait_sec').value),
+        )
+        self.report_result_action_result_timeout_sec = max(
+            0.1,
+            float(self.get_parameter('report_result_action_result_timeout_sec').value),
+        )
 
         self._intent_sub = None
         self._legacy_intent_sub = None
@@ -302,6 +315,7 @@ class NaoOrchestrator(Node):
         self._look_at_client = None
         self._scan_client = None
         self._fake_skill_clients: dict[str, ActionClient] = {}
+        self._report_result_client = None
         self._posture_result_lock = threading.Lock()
         self._posture_result_event = threading.Event()
         self._latest_posture_result: dict | None = None
@@ -349,6 +363,11 @@ class NaoOrchestrator(Node):
             self.get_logger().warn(
                 'ScanScene interface unavailable; scan dispatch will fail until interfaces are rebuilt'
             )
+        self._report_result_client = ActionClient(
+            self,
+            Say,
+            self.report_result_action,
+        )
         self._diag_pub = self.create_publisher(DiagnosticArray, '/diagnostics', 1)
         self._diag_timer = self.create_timer(1.0, self._publish_diagnostics)
         self._posture_command_pub = self.create_publisher(
@@ -384,7 +403,7 @@ class NaoOrchestrator(Node):
                 'JointAnglesWithSpeed unavailable; joint-topic fallback is disabled'
             )
         self.get_logger().info(
-            'nao_orchestrator configured | intents:%s legacy:%s say:%s replay:%s head:%s look:%s scan:%s fake:%s planner_gate:%s->%s'
+            'nao_orchestrator configured | intents:%s legacy:%s say:%s replay:%s head:%s look:%s scan:%s report:%s fake:%s planner_gate:%s->%s'
             % (
                 self.intent_topic,
                 self.legacy_intent_topic,
@@ -394,6 +413,7 @@ class NaoOrchestrator(Node):
                 self.look_at_action,
                 self.scan_action if self._scan_client is not None else 'unavailable',
                 ','.join(sorted(self._fake_skill_clients.keys())) or 'none',
+                self.report_result_action,
                 self.planner_gate_request_topic if self.enable_planner_gate else 'disabled',
                 self.planner_request_topic,
             )
@@ -503,6 +523,7 @@ class NaoOrchestrator(Node):
             self._head_motion_client,
             self._look_at_client,
             self._scan_client,
+            self._report_result_client,
         ):
             if client is not None:
                 client.destroy()
@@ -515,6 +536,7 @@ class NaoOrchestrator(Node):
         self._look_at_client = None
         self._scan_client = None
         self._fake_skill_clients = {}
+        self._report_result_client = None
 
     # -------------------------------------------------------------------------
     # Intent ingestion
@@ -796,9 +818,15 @@ class NaoOrchestrator(Node):
                     step=step,
                 )
 
+            dispatch_fallback_data = dict(data)
+            if latest_result_summary:
+                dispatch_fallback_data['last_result_summary'] = latest_result_summary
+            if latest_result_payload:
+                dispatch_fallback_data['last_result_payload'] = dict(latest_result_payload)
+
             step_ok, reason, result_payload = self._dispatch_plan_step(
                 step,
-                fallback_data=data,
+                fallback_data=dispatch_fallback_data,
                 on_started=_mark_step_started,
             )
             if step_ok:
@@ -946,6 +974,12 @@ class NaoOrchestrator(Node):
                     on_started=on_started,
                 )
                 return success, reason, {}
+            if step_name == 'report_result':
+                return self._execute_report_result_step(
+                    step_args,
+                    fallback_data,
+                    on_started=on_started,
+                )
             if step_name in self._scan_skill_names:
                 return self._execute_scan_step(
                     step_args,
@@ -1013,6 +1047,8 @@ class NaoOrchestrator(Node):
     ) -> tuple[bool, str]:
         step_text = _first_non_empty_value(
             step_args,
+            'summary_text',
+            'result_summary',
             'text',
             'message',
             'utterance',
@@ -1029,6 +1065,8 @@ class NaoOrchestrator(Node):
                     step_args,
                     'suggested_response',
                     'text_hint',
+                    'summary_text',
+                    'result_summary',
                     'text',
                 ),
                 'recipient': step_args.get(
@@ -1066,6 +1104,75 @@ class NaoOrchestrator(Node):
             self.get_logger().info('ORCH SAY_DISPATCH | %s' % clean_text)
             return True, ''
         return False, result.reason or 'say dispatch failed'
+
+    def _execute_report_result_step(
+        self,
+        step_args: dict,
+        fallback_data: dict,
+        *,
+        on_started=None,
+    ) -> tuple[bool, str, dict]:
+        report_text = _first_non_empty_value(
+            step_args,
+            'summary_text',
+            'result_summary',
+            'text',
+            'message',
+            'utterance',
+            'content',
+            'suggested_response',
+            'text_hint',
+            'object',
+        )
+        if not report_text:
+            report_text = _first_non_empty_value(
+                fallback_data,
+                'last_result_summary',
+                'result_summary',
+                'summary_text',
+            )
+        if not report_text:
+            last_result_payload = fallback_data.get('last_result_payload', {})
+            if isinstance(last_result_payload, dict):
+                report_text = _first_non_empty_value(
+                    last_result_payload,
+                    'summary_text',
+                    'result_summary',
+                    'message',
+                )
+        if not report_text:
+            self._stats.dispatch_failures += 1
+            return False, 'report_result step missing summary text', {
+                'skill': 'report_result',
+                'status': 'failed',
+                'summary_text': '',
+            }
+
+        goal = Say.Goal()
+        goal.input = report_text
+        goal.person_id = _first_non_empty_value(
+            step_args,
+            'recipient',
+            'person_id',
+        )
+        result = self._execute_action_step(
+            client=self._report_result_client,
+            goal=goal,
+            wait_sec=self.report_result_action_wait_sec,
+            result_timeout_sec=self.report_result_action_result_timeout_sec,
+            description='report_result_skill',
+            on_started=on_started,
+        )
+        success = bool(result.success)
+        reason = str(result.reason or '').strip()
+        payload = {
+            'skill': 'report_result',
+            'status': 'completed' if success else 'failed',
+            'summary_text': report_text,
+        }
+        if success:
+            return True, report_text, payload
+        return False, reason or 'report_result action failed', payload
 
     def _execute_motion_plan_step(
         self,
@@ -1605,22 +1712,10 @@ class NaoOrchestrator(Node):
         return True, ''
 
     def _load_scan_skill_names(self) -> set[str]:
-        if load_default_skill_registry is None:
-            return set(_DEFAULT_SCAN_SKILL_ALIASES)
-        try:
-            registry = load_default_skill_registry()
-            scan_skill = registry.get('scan')
-            if scan_skill is None:
-                return set(_DEFAULT_SCAN_SKILL_ALIASES)
-            names = {str(scan_skill.name).strip().lower()}
-            names.update(
-                str(alias).strip().lower()
-                for alias in getattr(scan_skill, 'aliases', ())
-                if str(alias).strip()
-            )
-            return names or set(_DEFAULT_SCAN_SKILL_ALIASES)
-        except Exception:
-            return set(_DEFAULT_SCAN_SKILL_ALIASES)
+        return merge_scan_skill_names(
+            fallback_names=_DEFAULT_SCAN_SKILL_ALIASES,
+            manifest=load_shared_skill_manifest(),
+        )
 
     def _load_fake_skill_aliases(self) -> dict[str, str]:
         fallback_aliases: dict[str, str] = {}
@@ -1628,31 +1723,10 @@ class NaoOrchestrator(Node):
             for alias in aliases:
                 fallback_aliases[str(alias).strip().lower()] = canonical
 
-        if load_default_skill_registry is None:
-            return fallback_aliases
-        try:
-            registry = load_default_skill_registry()
-            aliases = dict(fallback_aliases)
-            for skill_payload in registry.prompt_manifest():
-                if not isinstance(skill_payload, dict):
-                    continue
-                mapping = str(skill_payload.get('robot_adapter_mapping', '')).strip().lower()
-                if not mapping.startswith('fake_skills.'):
-                    continue
-                canonical = mapping.split('.', 1)[1].strip().lower()
-                if not canonical:
-                    continue
-                names = [str(skill_payload.get('name', '')).strip().lower()]
-                names.extend(
-                    str(alias).strip().lower()
-                    for alias in skill_payload.get('aliases', [])
-                    if str(alias).strip()
-                )
-                for name in names:
-                    aliases[name] = canonical
-            return aliases
-        except Exception:
-            return fallback_aliases
+        return merge_fake_skill_aliases(
+            fallback_aliases=fallback_aliases,
+            manifest=load_shared_skill_manifest(),
+        )
 
     def _resolve_fake_skill_name(self, step_name: str) -> str:
         clean_name = str(step_name or '').strip().lower()

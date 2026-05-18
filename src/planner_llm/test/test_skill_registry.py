@@ -9,6 +9,7 @@ def test_skill_registry_loads_from_source_fallback_when_install_overlay_is_missi
     assert 'motion' in registry.allowed_skill_names
     assert 'look_at' in registry.allowed_skill_names
     assert 'scan' in registry.allowed_skill_names
+    assert 'report_result' in registry.allowed_skill_names
 
 
 def test_skill_registry_derives_planner_skills_from_package_exports() -> None:
@@ -18,11 +19,15 @@ def test_skill_registry_derives_planner_skills_from_package_exports() -> None:
     perform_motion = skills_by_name['perform_motion']
     look_at = skills_by_name['look_at']
     scan = skills_by_name['scan']
+    report_result = skills_by_name['report_result']
 
     assert perform_motion.robot_adapter_mapping == 'nao_orchestrator.perform_motion'
     assert perform_motion.required_params == ('object',)
     assert 'motion' in perform_motion.aliases
+    assert 'posture' in perform_motion.aliases
+    assert 'head_motion' in perform_motion.aliases
     assert look_at.robot_adapter_mapping == 'nao_orchestrator.look_at'
+    assert 'gaze_at' in look_at.aliases
     assert scan.robot_adapter_mapping == 'nao_orchestrator.scan'
     assert scan.aliases == ('look_around', 'inspect_scene', 'check_visible_entities')
     assert scan.params == ('target', 'target_kind', 'max_sweeps', 'evidence_policy')
@@ -30,6 +35,8 @@ def test_skill_registry_derives_planner_skills_from_package_exports() -> None:
     assert any('scan' in item.lower() for item in scan.planner_guidance)
     assert scan.observable_success
     assert 'perception' in scan.safety_flags
+    assert report_result.robot_adapter_mapping == 'nao_orchestrator.report_result'
+    assert report_result.params == ('summary_text',)
 
 
 def test_skill_prompt_summary_exposes_planner_contract_fields() -> None:

@@ -9,7 +9,7 @@ This file is the active launch guide. Historical launch notes are under
 
 | Launch file | Default purpose | Notes |
 | --- | --- | --- |
-| `nao_chatbot_sim.launch.py` | Simulator stack and operator tools | Planner and planner gate on by default; laptop camera on `/camera/image_raw`; `rqt` console on |
+| `nao_chatbot_sim.launch.py` | Simulator stack and operator tools | Planner and planner gate on by default; laptop camera on `/camera/image_raw`; `rqt` console on; interaction trace viewer on |
 | `nao_chatbot_robot.launch.py` | Real robot camera/RViz/HRI overlays | Planner mode on; robot TF and RViz in profile defaults |
 | `nao_chatbot_demo.launch.py` | Sim-only demo with mock scan and demo-oriented defaults | Extends sim profile with demo skills and grounding |
 | `nao_chatbot_asr_only.launch.py` | Isolated ASR | No dialogue/planner/executor |
@@ -124,6 +124,12 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
   appends `/api/chat`.
 - `planner_llm_default_retry_budget`: default plan retry budget.
 - `planner_llm_auto_replan`: enables supervisor auto-replan policy.
+- `start_interaction_trace_viewer`: launches `interaction_trace_viewer/trace_node`.
+- `interaction_trace_compact_mode`: compact terminal output (`true`) or verbose payload view (`false`).
+- `interaction_trace_write_jsonl`: writes JSONL traces under `interaction_trace_jsonl_output_dir`.
+- `interaction_trace_write_html_on_shutdown`: writes static HTML report on shutdown under `interaction_trace_html_output_dir`.
+- `interaction_trace_include_raw_payloads`: keeps raw payload strings in trace events.
+- `interaction_trace_max_payload_chars`: max summary chars per rendered event.
 
 ## ASR And Perception Startup
 
