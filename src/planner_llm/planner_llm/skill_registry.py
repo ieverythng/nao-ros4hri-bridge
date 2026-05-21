@@ -9,12 +9,7 @@ import warnings
 
 from planner_common import ExportedSkillManifest
 from planner_common import load_exported_skill_manifests
-try:  # pragma: no cover - optional shared registry dependency
-    from skill_common import load_default_registry as load_default_skill_registry
-    from skill_common import load_registry_file as load_skill_registry_file
-except ImportError:  # pragma: no cover - planner_llm still supports legacy overlays
-    load_default_skill_registry = None
-    load_skill_registry_file = None
+from planner_common import load_shared_skill_manifest
 
 try:  # pragma: no cover - runtime dependency
     from ament_index_python.packages import PackageNotFoundError
@@ -460,15 +455,10 @@ def _warn(logger, message: str) -> None:
 
 
 def _load_shared_registry(path: str, *, logger=None):
-    if load_default_skill_registry is None:
-        return None
     clean_path = str(path or '').strip()
     try:
-        if clean_path:
-            shared_registry = load_skill_registry_file(clean_path)
-        else:
-            shared_registry = load_default_skill_registry()
-        return tuple(getattr(shared_registry, 'prompt_manifest', lambda: [])())
+        shared_registry = load_shared_skill_manifest(clean_path)
+        return tuple(shared_registry) if shared_registry else None
     except Exception as err:  # pragma: no cover - runtime dependency/errors
         _warn(
             logger,

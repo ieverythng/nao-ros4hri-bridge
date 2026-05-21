@@ -77,9 +77,7 @@
 </head>
 <body>
 <h1>ROS4HRI Integration Master Plan (Consolidated)</h1>
-<p><strong>Date:</strong> 2026-05-15</p>
-<p><strong>Branch context:</strong> <code>feat/TFM-LLM_planner</code> + nested repos (<code>chatbot_llm</code>, <code>dialogue_manager</code>)</p>
-<p><strong>Scope:</strong> Consolidated status of all non-fake-skill integration plans and overlays.</p>
+<p><strong>Date:</strong> 2026-05-15 <strong>Branch context:</strong> <code>feat/TFM-LLM_planner</code> + nested repos (<code>chatbot_llm</code>, <code>dialogue_manager</code>) <strong>Scope:</strong> Consolidated status of active ROS4HRI integration tracks, including fake-skill execution seams.</p>
 <h2>1. Source Plans Consolidated</h2>
 <p>This plan merges and supersedes the following implementation plans for active execution tracking:</p>
 <ul>
@@ -87,15 +85,14 @@
 <li><code>codex_skill_centric_ros4hri_handoff_2026-05-13_overlay.md</code> (+ HTML)</li>
 <li><code>prompt_pack_hardening_plan_2026-05-09.html</code></li>
 </ul>
-<p>The fake skills handoff is intentionally excluded from supersession and remains active as a separate track:</p>
+<p>The fake skills handoff remains active and is now partially implemented:</p>
 <ul>
 <li><code>fake_skills_codex_handoff.md</code> (+ HTML)</li>
 </ul>
 <h2>2. Explicit Out-of-Scope Items</h2>
 <ul>
-<li>No fake-skill implementation in this pass (kept as separate handoff track).</li>
-<li>No NeuralWorkbench-internal code edits in this pass.</li>
 <li>No GitNexus-generated docs refresh in this pass (left as-is intentionally).</li>
+<li>No migration of <code>wave_at</code> / <code>navigate_with_recovery</code> AB=2 macros into live executor dispatch yet (kept proposal-only).</li>
 </ul>
 <h2>3. Status Matrix (Done / In Progress / Pending)</h2>
 <h2>A. Core planner-executor-chatbot integration</h2>
@@ -110,26 +107,45 @@
 <ul>
 <li><strong>Done (policy decision updated)</strong>: Local copied <code>src/skill_common</code> removed.</li>
 <li><strong>Done</strong>: Planner/orchestrator/chatbot seams remain compatible with <code>skill_common</code> when provided by nested package source.</li>
-<li><strong>Pending</strong>: Validate runtime build against nested <code>skill_common</code> from NeuralWorkbench branch <code>feat/TFM_planner_only</code> in target environment.</li>
+<li><strong>Done</strong>: Runtime/unit validation run against nested <code>skill_common</code> in <code>src/Neural-Wokbench/src/skill_common</code>.</li>
+<li><strong>Done</strong>: AB registry mappings updated to <code>fake_skills.*</code> adapters for fake executable skills.</li>
 </ul>
-<h2>C. Dialogue/route correctness</h2>
+<h2>C. Fake skill execution substrate</h2>
+<ul>
+<li><strong>Done</strong>: New <code>src/fake_skills</code> ROS package with deterministic engine + scenario store.</li>
+<li><strong>Done</strong>: Action servers created for <code>/skill/fake/execute</code>, <code>/skill/fake/navigate_to</code>, <code>/skill/fake/find_object</code>, <code>/skill/fake/wave_greet</code>, <code>/skill/fake/inspect_area</code>, and <code>/skill/fake/walk_to</code>.</li>
+<li><strong>Done</strong>: Shared <code>SkillResultPayload</code> contract used via <code>skill_common</code> (with test fallback shim).</li>
+<li><strong>Done</strong>: <code>nao_orchestrator</code> dispatch supports fake skill names discovered from <code>skill_common</code> adapter mappings.</li>
+<li><strong>Done</strong>: Plan validation accepts fake skill names exported from <code>skill_common</code>.</li>
+<li><strong>Done</strong>: Scenario-driven result modes include deterministic failure injection (<code>fail_once</code>, recoverable vs non-recoverable modes).</li>
+<li><strong>Pending</strong>: Integrate optional fake-skill launch toggles into main <code>nao_chatbot</code> launch profiles.</li>
+</ul>
+<h2>D. Dialogue/route correctness</h2>
 <ul>
 <li><strong>Done</strong>: Planner completion system payload no longer emits execution intents.</li>
 <li><strong>Pending</strong>: Full memory/knowledge-vs-execution route hardening for ambiguous prompts (<code>person/people/room</code> execution-marker overreach).</li>
 <li><strong>Pending</strong>: Final cleanup of dialogue-only intent leakage (<code>greet/help/identity/wellbeing</code>) on all edge paths.</li>
 </ul>
-<h2>D. Ownership/architecture migration</h2>
+<h2>E. Ownership/architecture migration</h2>
 <ul>
 <li><strong>In progress</strong>: Planner gate exists with token/version checks and supersede semantics.</li>
 <li><strong>Pending</strong>: Default ingress migration to <code>chatbot_llm -&gt; /nao_orchestrator/planner_request -&gt; /planner/request</code> across launch defaults and runtime validation.</li>
 </ul>
-<h2>E. Upstream reconciliation</h2>
+<h2>F. Upstream reconciliation</h2>
 <ul>
 <li><strong>Done</strong>: Upstream inventory artifact created with remotes/heads/conflict domains and merge order.</li>
 <li><strong>Pending</strong>: Execute staged merges: <code>chatbot_msgs</code> contracts first, then <code>dialogue_manager</code>, then <code>chatbot_llm</code>.</li>
 <li><strong>Pending (explicit stashed-future bundle)</strong>: Land upstream nested-repo sync changes tracked in <code>docs/artifacts/upstream_sync_inventory_2026-05-14.md</code> as a dedicated near-term integration sequence.</li>
 </ul>
 <h2>4. Remaining Implementation Backlog (Execution Order)</h2>
+<ol>
+<li><strong>P0</strong> Fake skill live runtime validation:</li>
+</ol>
+<ul>
+<li>launch <code>fake_skills</code> with deterministic scenarios</li>
+<li>run one planner success and one planner replan path using fake skills</li>
+<li>confirm <code>/planner/execution_feedback.result_payload</code> propagation end-to-end</li>
+</ul>
 <ol>
 <li><strong>P0</strong> Route semantics hardening in <code>chatbot_llm/turn_engine.py</code>:</li>
 </ol>
@@ -213,11 +229,12 @@
 <li>Re-run focused tests:</li>
 </ol>
 <ul>
-<li><code>planner_common</code>, <code>planner_llm</code>, <code>nao_orchestrator</code>, <code>chatbot_llm</code></li>
+<li><code>planner_common</code>, <code>planner_llm</code>, <code>nao_orchestrator</code>, <code>chatbot_llm</code>, <code>fake_skills</code></li>
 </ul>
 <ol>
+<li>Run fake-skill planner scenarios (<code>navigate_to:path_blocked</code>, <code>find_object:ambiguous</code>) and capture replanning behavior.</li>
 <li>Execute live runtime gates on robot profile with planner mode enabled.</li>
-<li>Begin P0 route hardening (<code>knowledge_query</code> vs <code>execution</code>).</li>
+<li>Continue P0 route hardening (<code>knowledge_query</code> vs <code>execution</code>).</li>
 </ol>
 </body>
 </html>

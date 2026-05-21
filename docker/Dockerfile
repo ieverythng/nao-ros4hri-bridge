@@ -120,10 +120,12 @@ RUN bash -lc 'source /opt/ros/jazzy/setup.bash && \
       chatbot_llm \
       planner_common \
       planner_llm \
+      fake_skills \
       nao_say_skill \
       nao_replay_motion \
       nao_look_at \
       nao_orchestrator \
+      interaction_trace_viewer \
       nao_scene_grounding \
       nao_chatbot \
       simple_audio_capture \

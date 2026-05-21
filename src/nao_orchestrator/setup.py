@@ -35,6 +35,7 @@ setup(
         "console_scripts": [
             "run_app = nao_orchestrator.run_app:main",
             "run_scan_skill = nao_orchestrator.run_scan_skill:main",
+            "run_report_result_skill = nao_orchestrator.run_report_result_skill:main",
         ],
     },
 )

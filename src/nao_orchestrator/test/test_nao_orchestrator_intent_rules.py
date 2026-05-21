@@ -237,6 +237,60 @@ def test_validate_execution_plan_accepts_scan_skill() -> None:
     assert envelope['steps'][0]['name'] == 'scan'
 
 
+def test_validate_execution_plan_accepts_fake_navigation_skill() -> None:
+    envelope = validate_execution_plan(
+        Intent.PERFORM_MOTION,
+        {
+            'plan': [
+                {
+                    'type': 'skill',
+                    'name': 'navigate_to',
+                    'args': {'target': 'kitchen', 'result_mode': 'path_blocked'},
+                    'on_failure': 'replan',
+                }
+            ]
+        },
+    )
+    assert envelope['errors'] == []
+    assert envelope['steps'][0]['name'] == 'navigate_to'
+
+
+def test_validate_execution_plan_accepts_report_result_skill() -> None:
+    envelope = validate_execution_plan(
+        Intent.SAY,
+        {
+            'plan': [
+                {
+                    'type': 'skill',
+                    'name': 'report_result',
+                    'args': {'summary_text': 'I found one person in front of me.'},
+                    'on_failure': 'fail',
+                }
+            ]
+        },
+    )
+    assert envelope['errors'] == []
+    assert envelope['steps'][0]['name'] == 'report_result'
+
+
+def test_validate_execution_plan_accepts_wave_greet_fake_skill() -> None:
+    envelope = validate_execution_plan(
+        Intent.PERFORM_MOTION,
+        {
+            'plan': [
+                {
+                    'type': 'skill',
+                    'name': 'wave',
+                    'args': {'style': 'friendly'},
+                    'on_failure': 'continue',
+                }
+            ]
+        },
+    )
+    assert envelope['errors'] == []
+    assert envelope['steps'][0]['name'] == 'wave'
+
+
 def test_scan_step_is_available_without_demo_gate() -> None:
     success, reason, metadata = resolve_scan_result(
         {'target_kind': 'scene'},
