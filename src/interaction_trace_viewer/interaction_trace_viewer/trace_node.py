@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import json
 import os
 import time
 
@@ -41,6 +42,18 @@ class InteractionTraceNode(Node):
         self.declare_parameter('include_raw_payloads', True)
         self.declare_parameter('max_payload_chars', 4000)
         self.declare_parameter('discovery_period_sec', 2.0)
+        self.declare_parameter('enable_scene_summary_channel', False)
+        self.declare_parameter('scene_summary_emit_on_change_only', True)
+        self.declare_parameter('scene_summary_min_interval_sec', 1.0)
+        self.declare_parameter(
+            'rosout_node_allowlist_csv',
+            (
+                'chatbot_llm,planner_llm,nao_orchestrator,scan_skill_server,'
+                'report_result_skill_server,fake_skill_server,dialogue_manager,nao_say_skill,'
+                'head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug'
+            ),
+        )
+        self.declare_parameter('rosout_min_level', 'warn')
 
         self.enabled = bool(self.get_parameter('trace_viewer_enabled').value)
         self.compact_mode = bool(self.get_parameter('compact_mode').value)
@@ -49,6 +62,20 @@ class InteractionTraceNode(Node):
         self.include_raw_payloads = bool(self.get_parameter('include_raw_payloads').value)
         self.max_payload_chars = max(0, int(self.get_parameter('max_payload_chars').value))
         self.discovery_period_sec = max(0.5, float(self.get_parameter('discovery_period_sec').value))
+        self.enable_scene_summary_channel = bool(self.get_parameter('enable_scene_summary_channel').value)
+        self.scene_summary_emit_on_change_only = bool(
+            self.get_parameter('scene_summary_emit_on_change_only').value
+        )
+        self.scene_summary_min_interval_sec = max(
+            0.0,
+            float(self.get_parameter('scene_summary_min_interval_sec').value),
+        )
+        self._rosout_node_allowlist = _parse_csv_set(
+            self.get_parameter('rosout_node_allowlist_csv').value
+        )
+        self._rosout_min_level = _coerce_rosout_level(
+            self.get_parameter('rosout_min_level').value
+        )
 
         self.jsonl_output_dir = str(self.get_parameter('jsonl_output_dir').value).strip() or '~/.ros/nao_ros4hri_traces'
         self.html_output_dir = str(self.get_parameter('html_output_dir').value).strip() or '~/.ros/nao_ros4hri_trace_reports'
@@ -56,15 +83,18 @@ class InteractionTraceNode(Node):
         self._topic_subscriptions: dict[str, object] = {}
         self._trace_recorder = TraceRecorder()
         self._writer = JsonlTraceWriter(self.jsonl_output_dir) if self.write_jsonl else None
+        self._last_scene_summary_key = ''
+        self._last_scene_summary_ts = 0.0
 
         self._known_topic_specs = {
             '/planner/request': ('hri_actions_msgs/msg/Intent', self._subscribe_intent),
             '/intents': ('hri_actions_msgs/msg/Intent', self._subscribe_intent),
             '/planner/execution_feedback': ('std_msgs/msg/String', self._subscribe_string),
             '/planner/dialogue_act': ('std_msgs/msg/String', self._subscribe_string),
-            '/scene/summary': ('std_msgs/msg/String', self._subscribe_string),
             '/rosout': ('rcl_interfaces/msg/Log', self._subscribe_rosout),
         }
+        if self.enable_scene_summary_channel:
+            self._known_topic_specs['/scene/summary'] = ('std_msgs/msg/String', self._subscribe_string)
 
         if not self.enabled:
             self.get_logger().warn('interaction_trace_viewer disabled via parameter trace_viewer_enabled=false')
@@ -142,6 +172,8 @@ class InteractionTraceNode(Node):
         self._emit_event(event)
 
     def _on_string(self, channel: str, msg: String) -> None:
+        if channel == '/scene/summary' and not self._should_emit_scene_summary(msg.data):
+            return
         event = normalize_string_message(channel=channel, msg=msg, max_payload_chars=self.max_payload_chars)
         self._emit_event(event)
 
@@ -154,7 +186,43 @@ class InteractionTraceNode(Node):
         event = normalize_rosout_message(channel=channel, msg=msg, max_payload_chars=self.max_payload_chars)
         if str(event.payload.get('name', '')).strip() == self.get_name():
             return
+        source_node = _normalize_node_name(event.payload.get('name', ''))
+        if self._rosout_node_allowlist and source_node not in self._rosout_node_allowlist:
+            return
+        if int(event.payload.get('level', 0) or 0) < self._rosout_min_level:
+            return
         self._emit_event(event)
+
+    def _should_emit_scene_summary(self, raw_payload: str) -> bool:
+        now = time.time()
+        if self.scene_summary_min_interval_sec > 0.0:
+            elapsed = now - self._last_scene_summary_ts
+            if elapsed < self.scene_summary_min_interval_sec:
+                return False
+
+        parsed = {}
+        try:
+            candidate = json.loads(str(raw_payload or '').strip())
+            if isinstance(candidate, dict):
+                parsed = candidate
+        except Exception:
+            parsed = {}
+
+        if self.scene_summary_emit_on_change_only:
+            objects = parsed.get('objects', []) if isinstance(parsed, dict) else []
+            labels = [
+                str(item.get('label', '')).strip().lower()
+                for item in objects
+                if isinstance(item, dict)
+            ]
+            labels = [label for label in labels if label]
+            summary_key = ','.join(sorted(labels))
+            if summary_key == self._last_scene_summary_key:
+                return False
+            self._last_scene_summary_key = summary_key
+
+        self._last_scene_summary_ts = now
+        return True
 
     def _emit_event(self, event) -> None:
         timestamp = event.timestamp if event.timestamp > 0.0 else time.time()
@@ -210,3 +278,33 @@ def main(args=None) -> None:
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
+
+
+def _parse_csv_set(raw_value) -> set[str]:
+    return {
+        _normalize_node_name(token)
+        for token in str(raw_value or '').split(',')
+        if _normalize_node_name(token)
+    }
+
+
+def _normalize_node_name(value) -> str:
+    return str(value or '').strip().strip('/')
+
+
+def _coerce_rosout_level(raw_level) -> int:
+    level_map = {
+        'debug': 10,
+        'info': 20,
+        'warn': 30,
+        'warning': 30,
+        'error': 40,
+        'fatal': 50,
+    }
+    clean_level = str(raw_level or '').strip().lower()
+    if clean_level in level_map:
+        return level_map[clean_level]
+    try:
+        return int(clean_level)
+    except (TypeError, ValueError):
+        return 30

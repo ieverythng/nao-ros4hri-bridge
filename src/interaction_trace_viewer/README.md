@@ -23,6 +23,15 @@ It records and displays end-to-end interaction events across:
 ros2 run interaction_trace_viewer trace_node
 ```
 
+Planner-focused low-noise mode (recommended):
+
+```bash
+ros2 run interaction_trace_viewer trace_node --ros-args \
+  -p enable_scene_summary_channel:=false \
+  -p rosout_min_level:=warn \
+  -p rosout_node_allowlist_csv:="chatbot_llm,planner_llm,nao_orchestrator,scan_skill_server,report_result_skill_server,fake_skill_server,dialogue_manager,nao_say_skill,head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug"
+```
+
 Verbose payload output:
 
 ```bash
@@ -50,6 +59,8 @@ ros2 run interaction_trace_viewer render_html \
 
 ## Notes
 
+- `/scene/summary` tracing is disabled by default to avoid high-frequency object/perception flood.
+- `/rosout` tracing is filtered by node allowlist and severity by default (`warn` and above).
 - Payloads are stored in full by default.
 - Missing optional topics are handled by discovery and do not crash the node.
 - Event model stays compatible with future dashboard and fake-skill event feeds.

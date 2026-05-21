@@ -84,6 +84,16 @@ _SIM_CAMERA_DEFAULTS = {
     "start_rqt_console": "true",
     "sim_use_laptop_tts": "false",
     "start_interaction_trace_viewer": "true",
+    "interaction_trace_enable_scene_summary_channel": "false",
+    "interaction_trace_scene_summary_emit_on_change_only": "true",
+    "interaction_trace_scene_summary_min_interval_sec": "1.0",
+    "interaction_trace_rosout_min_level": "warn",
+    "interaction_trace_rosout_node_allowlist_csv": (
+        "chatbot_llm,planner_llm,nao_orchestrator,scan_skill_server,"
+        "report_result_skill_server,fake_skill_server,dialogue_manager,nao_say_skill,"
+        "head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug"
+    ),
+    "start_fake_skills": "true",
     "head_motion_allow_open_loop_without_joint_state": "true",
     "head_motion_assume_success_on_convergence_timeout": "true",
 }
@@ -110,6 +120,16 @@ _ROBOT_CAMERA_DEFAULTS = {
     "start_rqt_console": "false",
     "sim_use_laptop_tts": "false",
     "start_interaction_trace_viewer": "false",
+    "interaction_trace_enable_scene_summary_channel": "false",
+    "interaction_trace_scene_summary_emit_on_change_only": "true",
+    "interaction_trace_scene_summary_min_interval_sec": "1.0",
+    "interaction_trace_rosout_min_level": "warn",
+    "interaction_trace_rosout_node_allowlist_csv": (
+        "chatbot_llm,planner_llm,nao_orchestrator,scan_skill_server,"
+        "report_result_skill_server,fake_skill_server,dialogue_manager,nao_say_skill,"
+        "head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug"
+    ),
+    "start_fake_skills": "true",
 }
 _GROUNDING_DEFAULTS = {
     "object_detection_threshold": "0.40",
@@ -1033,6 +1053,11 @@ def generate_profile_launch_description(
         default_value=_profile_default(profile_defaults, "start_report_result_skill", "true"),
         description="Launch the report_result action server.",
     )
+    start_fake_skills_arg = DeclareLaunchArgument(
+        "start_fake_skills",
+        default_value=_profile_default(profile_defaults, "start_fake_skills", "true"),
+        description="Launch deterministic fake skill action servers (/skill/fake/*).",
+    )
     start_nao_say_skill_arg = DeclareLaunchArgument(
         "start_nao_say_skill",
         default_value=_profile_default(profile_defaults, "start_nao_say_skill", "true"),
@@ -1148,6 +1173,55 @@ def generate_profile_launch_description(
         ),
         description="Maximum summary characters per interaction trace event.",
     )
+    interaction_trace_enable_scene_summary_channel_arg = DeclareLaunchArgument(
+        "interaction_trace_enable_scene_summary_channel",
+        default_value=_profile_default(
+            profile_defaults,
+            "interaction_trace_enable_scene_summary_channel",
+            "false",
+        ),
+        description="Enable /scene/summary ingestion in trace viewer (off by default to reduce perception flood).",
+    )
+    interaction_trace_scene_summary_emit_on_change_only_arg = DeclareLaunchArgument(
+        "interaction_trace_scene_summary_emit_on_change_only",
+        default_value=_profile_default(
+            profile_defaults,
+            "interaction_trace_scene_summary_emit_on_change_only",
+            "true",
+        ),
+        description="Emit scene summary events only when object-label snapshot changes.",
+    )
+    interaction_trace_scene_summary_min_interval_sec_arg = DeclareLaunchArgument(
+        "interaction_trace_scene_summary_min_interval_sec",
+        default_value=_profile_default(
+            profile_defaults,
+            "interaction_trace_scene_summary_min_interval_sec",
+            "1.0",
+        ),
+        description="Minimum interval between emitted /scene/summary events.",
+    )
+    interaction_trace_rosout_node_allowlist_csv_arg = DeclareLaunchArgument(
+        "interaction_trace_rosout_node_allowlist_csv",
+        default_value=_profile_default(
+            profile_defaults,
+            "interaction_trace_rosout_node_allowlist_csv",
+            (
+                "chatbot_llm,planner_llm,nao_orchestrator,scan_skill_server,"
+                "report_result_skill_server,fake_skill_server,dialogue_manager,nao_say_skill,"
+                "head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug"
+            ),
+        ),
+        description="CSV allowlist for rosout nodes shown by interaction trace viewer.",
+    )
+    interaction_trace_rosout_min_level_arg = DeclareLaunchArgument(
+        "interaction_trace_rosout_min_level",
+        default_value=_profile_default(
+            profile_defaults,
+            "interaction_trace_rosout_min_level",
+            "warn",
+        ),
+        description="Minimum rosout severity for interaction trace viewer (debug|info|warn|error|fatal).",
+    )
     start_demo_log_window_arg = DeclareLaunchArgument(
         "start_demo_log_window",
         default_value=_profile_default(profile_defaults, "start_demo_log_window", "false"),
@@ -1181,7 +1255,7 @@ def generate_profile_launch_description(
         default_value=_profile_default(
             profile_defaults,
             "demo_log_nodes",
-            "chatbot_llm,planner_llm,nao_orchestrator,scan_skill_server,report_result_skill_server,dialogue_manager,nao_say_skill,head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug",
+            "chatbot_llm,planner_llm,nao_orchestrator,scan_skill_server,report_result_skill_server,fake_skill_server,dialogue_manager,nao_say_skill,head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug",
         ),
         description="Comma-separated node allowlist for the filtered demo log window.",
     )
@@ -2312,6 +2386,19 @@ def generate_profile_launch_description(
                 "html_output_dir": LaunchConfiguration("interaction_trace_html_output_dir"),
                 "include_raw_payloads": LaunchConfiguration("interaction_trace_include_raw_payloads"),
                 "max_payload_chars": LaunchConfiguration("interaction_trace_max_payload_chars"),
+                "enable_scene_summary_channel": LaunchConfiguration(
+                    "interaction_trace_enable_scene_summary_channel"
+                ),
+                "scene_summary_emit_on_change_only": LaunchConfiguration(
+                    "interaction_trace_scene_summary_emit_on_change_only"
+                ),
+                "scene_summary_min_interval_sec": LaunchConfiguration(
+                    "interaction_trace_scene_summary_min_interval_sec"
+                ),
+                "rosout_node_allowlist_csv": LaunchConfiguration(
+                    "interaction_trace_rosout_node_allowlist_csv"
+                ),
+                "rosout_min_level": LaunchConfiguration("interaction_trace_rosout_min_level"),
             }
         ],
         condition=IfCondition(LaunchConfiguration("start_interaction_trace_viewer")),
@@ -2502,6 +2589,7 @@ def generate_profile_launch_description(
             start_nao_orchestrator_arg,
             start_scan_skill_arg,
             start_report_result_skill_arg,
+            start_fake_skills_arg,
             start_nao_say_skill_arg,
             start_nao_replay_motion_arg,
             head_motion_allow_open_loop_without_joint_state_arg,
@@ -2518,6 +2606,11 @@ def generate_profile_launch_description(
             interaction_trace_html_output_dir_arg,
             interaction_trace_include_raw_payloads_arg,
             interaction_trace_max_payload_chars_arg,
+            interaction_trace_enable_scene_summary_channel_arg,
+            interaction_trace_scene_summary_emit_on_change_only_arg,
+            interaction_trace_scene_summary_min_interval_sec_arg,
+            interaction_trace_rosout_node_allowlist_csv_arg,
+            interaction_trace_rosout_min_level_arg,
             start_demo_log_window_arg,
             start_managed_ollama_arg,
             managed_chatbot_ollama_host_arg,
@@ -2634,6 +2727,8 @@ def generate_profile_launch_description(
                     LaunchConfiguration("start_scan_skill"),
                     " report_result_skill=",
                     LaunchConfiguration("start_report_result_skill"),
+                    " fake_skills=",
+                    LaunchConfiguration("start_fake_skills"),
                     " scene_grounding=",
                     LaunchConfiguration("start_scene_grounding"),
                     " object_detection=",
@@ -2729,6 +2824,16 @@ def generate_profile_launch_description(
                 function=_optional_object_detection_launch,
             ),
             OpaqueFunction(function=build_interaction_sim_actions),
+            OpaqueFunction(
+                function=_optional_launch_description,
+                kwargs={
+                    "package_name": "fake_skills",
+                    "launch_file_name": "fake_skills.launch.py",
+                    "launch_arg_name": "start_fake_skills",
+                    "display_name": "fake_skills",
+                    "required_packages": ["fake_skills"],
+                },
+            ),
             chatbot_llm_bundle[0],
             chatbot_llm_configure,
             chatbot_llm_activate,
