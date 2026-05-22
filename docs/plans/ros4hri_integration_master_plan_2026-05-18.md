@@ -105,6 +105,19 @@ Add decomposition-ready fields in canonical AB schema for higher-level objects:
 
 - automated tests for DAG integrity + decomposition validation run green.
 
+### AB-F4: P3 Prompt + Nested Registry Updates (P3)
+
+- tighten planner/chatbot routing prompts and response schemas for non-execution turns.
+- publish structured chatbot routing trace events for dialogue vs planner handoff visibility.
+- enforce canonical registry projection sync across planner fallback config and docs mirrors via pre-commit checks.
+- route planner dialogue-act user wording through `chatbot_llm` by default, with direct wording only as explicit compatibility mode.
+
+**Exit criteria**
+
+- no drift between canonical AB registry and projected planner/docs registry surfaces.
+- trace viewer can show planner/execution plus chatbot routing outcomes from structured payloads.
+- planner clarification/failure/completion user-facing wording remains chatbot-owned in live launch profiles.
+
 ## 5. Active Track: Observability Dashboard Rollout
 
 This track merges prior simple-viewer and full-dashboard plans.

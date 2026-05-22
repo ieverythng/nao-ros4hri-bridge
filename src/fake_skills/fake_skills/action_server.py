@@ -6,6 +6,7 @@ import json
 import time
 
 from nao_skills.action import ScanScene
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.action import ActionServer
 from rclpy.action import CancelResponse
 from rclpy.action import GoalResponse
@@ -39,6 +40,7 @@ class FakeSkillActionServer(Node):
         self.declare_parameter('deterministic_seed', 42)
         self.declare_parameter('publish_events', True)
         self.declare_parameter('event_topic', '/fake_skills/events')
+        self.declare_parameter('active_scenario_id', '')
 
         scenario_path = str(self.get_parameter('scenario_file').value).strip()
         if not scenario_path and get_package_share_directory is not None:
@@ -59,6 +61,10 @@ class FakeSkillActionServer(Node):
             default_delay_sec=float(self.get_parameter('default_delay_sec').value),
             deterministic_seed=int(self.get_parameter('deterministic_seed').value),
         )
+        self._active_scenario_id = str(self.get_parameter('active_scenario_id').value).strip()
+        self.declare_parameter('available_scenario_ids', list(self._scenario_store.scenario_ids()))
+        self._set_parameters_callback = self.add_on_set_parameters_callback(self._on_set_parameters)
+        self._active_scenario_id = self._normalize_active_scenario_id(self._active_scenario_id)
 
         self._publish_events = bool(self.get_parameter('publish_events').value)
         event_topic = str(self.get_parameter('event_topic').value).strip() or '/fake_skills/events'
@@ -98,10 +104,12 @@ class FakeSkillActionServer(Node):
             )
 
         self.get_logger().info(
-            'fake_skill_server ready | execute=%s skills=%s'
+            'fake_skill_server ready | execute=%s skills=%s active_scenario=%s available_scenarios=%s'
             % (
                 str(self.get_parameter('execute_action_name').value).strip(),
                 ','.join(self._engine.supported_skills),
+                (self._active_scenario_id or '<none>'),
+                ','.join(self._scenario_store.scenario_ids()) or '<none>',
             )
         )
 
@@ -180,8 +188,10 @@ class FakeSkillActionServer(Node):
             'target': str(goal.target or '').strip(),
             'target_kind': str(goal.target_kind or '').strip(),
             'max_sweeps': int(goal.max_sweeps),
-            'result_mode': str(goal.result_mode or '').strip().lower(),
         }
+        result_mode = str(goal.result_mode or '').strip().lower()
+        if result_mode:
+            args['result_mode'] = result_mode
 
         if isinstance(payload.get('args', {}), dict):
             args.update(payload.get('args', {}))
@@ -200,12 +210,48 @@ class FakeSkillActionServer(Node):
         if not isinstance(scenario_override, dict):
             scenario_override = {}
 
+        scenario_id = str(payload.get('scenario_id', '')).strip()
+        if not scenario_id:
+            scenario_id = self._active_scenario_id
+
         return FakeSkillRequest(
             skill=skill,
             args=args,
-            scenario_id=str(payload.get('scenario_id', '')).strip(),
+            scenario_id=scenario_id,
             scenario_override=scenario_override,
         )
+
+    def _normalize_active_scenario_id(self, value: str) -> str:
+        clean = str(value or '').strip()
+        if not clean:
+            return ''
+        if self._scenario_store.has_scenario(clean):
+            return clean
+        self.get_logger().warn(
+            'Unknown active_scenario_id "%s"; using defaults (no named scenario).' % clean
+        )
+        return ''
+
+    def _on_set_parameters(self, parameters) -> SetParametersResult:
+        for parameter in parameters:
+            if parameter.name != 'active_scenario_id':
+                continue
+            requested = str(parameter.value or '').strip()
+            if requested and not self._scenario_store.has_scenario(requested):
+                available = ','.join(self._scenario_store.scenario_ids()) or '<none>'
+                return SetParametersResult(
+                    successful=False,
+                    reason=(
+                        'Unknown active_scenario_id "%s". Available: %s'
+                        % (requested, available)
+                    ),
+                )
+            self._active_scenario_id = requested
+            self.get_logger().info(
+                'active_scenario_id updated to %s'
+                % (self._active_scenario_id or '<none>')
+            )
+        return SetParametersResult(successful=True)
 
     @staticmethod
     def _parse_evidence_policy(value: str) -> dict:

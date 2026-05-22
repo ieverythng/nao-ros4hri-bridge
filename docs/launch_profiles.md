@@ -114,6 +114,10 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
 - `planner_request_topic`: defaults to `/planner/request`.
 - `planner_request_intent`: defaults to `planner_request`.
 - `planner_dialogue_act_topic`: defaults to `/planner/dialogue_act`.
+- `dialogue_manager_planner_dialogue_wording_mode`: defaults to `chatbot` so
+  planner dialogue acts are rendered by `chatbot_llm`.
+- `dialogue_manager_planner_completion_wording_mode`: compatibility override
+  for completion wording (`chatbot` or `direct`).
 - `planner_skill_registry_path`: optional planner skill registry overlay.
 - `planner_llm_provider`: `ollama` by default.
 - `planner_llm_model`: planner model name.
@@ -124,12 +128,56 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
   appends `/api/chat`.
 - `planner_llm_default_retry_budget`: default plan retry budget.
 - `planner_llm_auto_replan`: enables supervisor auto-replan policy.
+- `start_fake_skills`: launches `fake_skills/fake_skill_server`.
+- `fake_skill_scenario_file`: optional fake-skill scenario YAML (default uses
+  `fake_skills/config/fake_skill_scenarios.yaml` from package share).
+- `fake_skill_active_scenario_id`: optional named scenario applied globally by
+  `fake_skill_server` unless a per-request `scenario_id` override is provided.
 - `start_interaction_trace_viewer`: launches `interaction_trace_viewer/trace_node`.
 - `interaction_trace_compact_mode`: compact terminal output (`true`) or verbose payload view (`false`).
 - `interaction_trace_write_jsonl`: writes JSONL traces under `interaction_trace_jsonl_output_dir`.
 - `interaction_trace_write_html_on_shutdown`: writes static HTML report on shutdown under `interaction_trace_html_output_dir`.
 - `interaction_trace_include_raw_payloads`: keeps raw payload strings in trace events.
 - `interaction_trace_max_payload_chars`: max summary chars per rendered event.
+- `interaction_trace_include_channels_csv`: optional CSV allowlist for channels.
+- `interaction_trace_exclude_channels_csv`: optional CSV denylist for channels.
+- `interaction_trace_include_event_types_csv`: optional CSV allowlist for event types.
+- `interaction_trace_exclude_event_types_csv`: optional CSV denylist for event types.
+
+## Fake Skill Scenario Switching
+
+Launch with an initial named scenario:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_fake_skills:=true \
+  fake_skill_active_scenario_id:=path_blocked
+```
+
+Inspect available and active scenario ids:
+
+```bash
+ros2 param get /fake_skill_server available_scenario_ids
+ros2 param get /fake_skill_server active_scenario_id
+```
+
+Switch scenario live (same container session):
+
+```bash
+ros2 param set /fake_skill_server active_scenario_id ambiguous_cup
+```
+
+Reset to defaults (no named scenario):
+
+```bash
+ros2 param set /fake_skill_server active_scenario_id ""
+```
+
+Semi-interactive selector (same container, same running stack):
+
+```bash
+./scripts/fake_skill_scenario_menu.sh /fake_skill_server
+```
 
 ## ASR And Perception Startup
 
@@ -149,13 +197,13 @@ Execution-oriented turns use this ownership split:
 user -> dialogue_manager -> chatbot_llm -> nao_orchestrator planner gate
      -> planner_llm -> nao_orchestrator -> skills
      -> planner feedback -> planner_llm dialogue act
-     -> dialogue_manager -> chatbot_llm completion pass -> TTS
+     -> dialogue_manager -> chatbot_llm dialogue-act wording pass -> TTS
 ```
 
-`chatbot_llm` owns natural language for the initial acknowledgement and final
-task-relative utterance. `planner_llm` owns abstract plan structure and
-supervision only. `nao_orchestrator` executes deterministic skill steps and
-publishes feedback; it should not invent user-facing wording. Executable
+`chatbot_llm` owns natural language for user-facing planner acknowledgements,
+clarifications, failures, and completions. `planner_llm` owns abstract plan
+structure and supervision only. `nao_orchestrator` executes deterministic skill
+steps and publishes feedback; it should not invent user-facing wording. Executable
 planner outputs must not include `say` steps. If the planner model mixes
 speech with robot actions, `planner_llm` rejects the output and retries with
 validation feedback.

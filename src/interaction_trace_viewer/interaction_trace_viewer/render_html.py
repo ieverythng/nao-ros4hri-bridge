@@ -17,10 +17,17 @@ def render_events_html(events: list[InteractionEvent], *, title: str = 'Interact
     cards: list[str] = []
     for event in events:
         payload_text = json.dumps(event.payload, ensure_ascii=False, indent=2, sort_keys=True)
-        default_open = event.event_type in {'planner_request', 'planner_output', 'execution_feedback', 'planner_dialogue_act'}
+        default_open = event.event_type in {
+            'planner_request',
+            'planner_output',
+            'execution_feedback',
+            'planner_dialogue_act',
+            'chatbot_turn_trace',
+        }
         open_attr = ' open' if default_open else ''
         trace_id = str(event.trace_id or '-')
         source_node = str(event.source_node or '')
+        flow_hint = _flow_hint(event.payload)
         searchable = ' '.join(
             [
                 str(event.event_type or ''),
@@ -28,6 +35,7 @@ def render_events_html(events: list[InteractionEvent], *, title: str = 'Interact
                 trace_id,
                 str(event.summary or ''),
                 source_node,
+                flow_hint,
                 str(payload_text),
             ]
         ).lower()
@@ -49,10 +57,10 @@ def render_events_html(events: list[InteractionEvent], *, title: str = 'Interact
                 html.escape(event.channel),
                 html.escape(source_node or '-'),
             )
+            + ('<p class="meta-inline">%s</p>' % html.escape(flow_hint) if flow_hint else '')
             + '<p>%s</p>' % html.escape(event.summary)
             + '<details%s><summary>payload</summary><pre>%s</pre></details>'
             % (open_attr, html.escape(payload_text))
-            + ('<details><summary>raw</summary><pre>%s</pre></details>' % html.escape(str(event.raw)) if event.raw else '')
             + '</article>'
         )
 
@@ -163,6 +171,22 @@ def render_events_html(events: list[InteractionEvent], *, title: str = 'Interact
         ),
         cards='\n'.join(cards),
     )
+
+
+def _flow_hint(payload: dict) -> str:
+    if not isinstance(payload, dict):
+        return ''
+    parts = []
+    for key in ('goal_id', 'plan_id', 'step_id', 'event_type', 'route', 'intent'):
+        value = str(payload.get(key, '')).strip()
+        if value:
+            parts.append('%s=%s' % (key, value))
+    step = payload.get('step', {})
+    if isinstance(step, dict):
+        step_name = str(step.get('name', '')).strip()
+        if step_name:
+            parts.append('step=%s' % step_name)
+    return ' | '.join(parts[:5])
 
 
 def main(argv: list[str] | None = None) -> int:

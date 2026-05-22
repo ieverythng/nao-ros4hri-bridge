@@ -53,3 +53,13 @@ def test_engine_fail_once_switches_to_success_on_second_call() -> None:
 
     assert first['status'] == 'failed'
     assert second['status'] == 'succeeded'
+
+
+def test_engine_find_object_treats_success_mode_as_found() -> None:
+    payload, _delay = _engine().execute(
+        skill='find_object',
+        args={'target': 'cup', 'result_mode': 'success'},
+    )
+
+    assert payload['status'] == 'succeeded'
+    assert payload['target_found'] is True

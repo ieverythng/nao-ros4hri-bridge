@@ -76,3 +76,17 @@ def test_normalize_rosout_message_classifies_errors_over_warnings() -> None:
 
     assert warning_event.event_type == 'warning'
     assert error_event.event_type == 'error'
+
+
+def test_normalize_turn_trace_string_message() -> None:
+    msg = SimpleNamespace(
+        data='{"event_type":"chatbot_turn_result","route":"dialogue","intent":"greet","intent_source":"llm_response_route"}'
+    )
+    event = normalize_string_message(
+        channel='/chatbot_llm/turn_trace',
+        msg=msg,
+        max_payload_chars=4000,
+    )
+
+    assert event.event_type == 'chatbot_turn_trace'
+    assert 'route=dialogue' in event.summary

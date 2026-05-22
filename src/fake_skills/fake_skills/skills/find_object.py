@@ -5,17 +5,23 @@ from __future__ import annotations
 from fake_skills.result_builders import build_skill_result
 from fake_skills.result_builders import failure_block
 
+SUCCESS_MODES = {'found', 'success'}
+
 
 def execute(*, args: dict, mode: str, metadata: dict, fail_once_active: bool) -> dict:
     target = str(args.get('target', '')).strip() or 'object'
     target_kind = str(args.get('target_kind', 'object')).strip() or 'object'
+    evidence_policy = str(args.get('evidence_policy', 'fresh_required')).strip() or 'fresh_required'
+    metadata = dict(metadata or {})
+    metadata.setdefault('evidence_policy', evidence_policy)
+    metadata.setdefault('requires_fresh_scan', evidence_policy in {'fresh_required', 'force_fresh'})
 
     if mode == 'fail_once' and not fail_once_active:
         mode = 'not_found'
     elif mode == 'fail_once' and fail_once_active:
         mode = 'found'
 
-    if mode == 'found':
+    if mode in SUCCESS_MODES:
         return build_skill_result(
             skill='find_object',
             status='succeeded',
@@ -30,6 +36,7 @@ def execute(*, args: dict, mode: str, metadata: dict, fail_once_active: bool) ->
                         'label': target,
                         'confidence': 0.91,
                         'source': 'fake_find_object',
+                        'evidence_policy': evidence_policy,
                     }
                 ]
             },
@@ -118,7 +125,7 @@ def execute(*, args: dict, mode: str, metadata: dict, fail_once_active: bool) ->
         evidence={'objects': []},
         failure=failure_block(
             code='not_found',
-            message='No matching object was detected.',
+            message='No matching object was detected in the current evidence snapshot.',
             recoverable=True,
             suggested_recovery='scan_then_retry',
         ),

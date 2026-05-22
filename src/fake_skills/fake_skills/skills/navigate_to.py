@@ -35,7 +35,7 @@ def execute(*, args: dict, mode: str, metadata: dict, fail_once_active: bool) ->
             target=target,
             target_kind=target_kind,
             target_found=True,
-            summary_text='I navigated to %s.' % (target or 'the requested location'),
+            summary_text='I completed destination navigation to %s.' % (target or 'the requested location'),
             evidence={'location': target or '', 'simulated': True},
             metadata=metadata,
         ).to_dict()

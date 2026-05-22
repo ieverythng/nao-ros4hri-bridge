@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import re
 import sys
 
 try:
@@ -20,6 +21,9 @@ PLANNER_REGISTRY_PATH = REPO_ROOT / "src/planner_llm/config/skill_registry.json"
 DOCS_AB_REGISTRY_PATH = REPO_ROOT / "docs/architecture/ab_registry_input.json"
 NW_DOCS_AB_REGISTRY_PATH = (
     REPO_ROOT / "src/Neural-Wokbench/docs/neural_workbench/data/ab_registry_input.json"
+)
+INTERACTIVE_ARCHITECTURE_HTML_PATH = (
+    REPO_ROOT / "docs/architecture/ros4hri_neural_workbench_interactive_architecture.html"
 )
 
 
@@ -58,6 +62,52 @@ def _skill_projection_from_ab(ab_payload: dict) -> dict[str, dict]:
             continue
         projection[name] = item
     return projection
+
+
+def _runtime_callable_from_ab(ab_item: dict) -> bool:
+    metadata = ab_item.get("metadata", {})
+    if isinstance(metadata, dict) and "runtime_callable" in metadata:
+        return bool(metadata.get("runtime_callable"))
+    return True
+
+
+def _interactive_registry_payload(canonical: dict) -> list[dict]:
+    records: list[dict] = []
+    for item in canonical.get("objects", []):
+        if not isinstance(item, dict):
+            continue
+        transport = item.get("transport", "")
+        if isinstance(transport, dict):
+            transport = str(transport.get("type", "")).strip()
+        else:
+            transport = str(transport or "").strip()
+        records.append(
+            {
+                "id": str(item.get("object_id", "")).strip(),
+                "ab": int(item.get("ab_level", 0) or 0),
+                "kind": str(item.get("kind", "")).strip(),
+                "category": str(item.get("category", "")).strip(),
+                "owner": str(item.get("owner_package", "")).strip(),
+                "status": str(item.get("implementation_status", "")).strip(),
+                "mapping": str(item.get("robot_adapter_mapping", "")).strip(),
+                "transport": transport,
+                "safety": ", ".join(_norm_list(item.get("safety_flags", []))),
+                "effects": "; ".join(_norm_list(item.get("expected_effects", []))),
+            }
+        )
+    return sorted(records, key=lambda record: (record["ab"], record["id"]))
+
+
+def _interactive_html_text_with_registry(current_text: str, registry_records: list[dict]) -> str:
+    registry_js = "const REGISTRY=" + json.dumps(registry_records, ensure_ascii=False) + ";"
+    pattern = re.compile(r"const REGISTRY=.*?;\nlet mode=", flags=re.DOTALL)
+    replacement = registry_js + "\nlet mode="
+    updated, count = pattern.subn(replacement, current_text, count=1)
+    if count != 1:
+        raise RuntimeError(
+            f"Could not locate REGISTRY block in {INTERACTIVE_ARCHITECTURE_HTML_PATH}"
+        )
+    return updated
 
 
 def _assert_equal(errors: list[str], context: str, left, right) -> None:
@@ -170,6 +220,10 @@ def _compare_skill_yaml_against_ab(
             dict(yaml_item.get("result_schema", {})),
         )
 
+    missing_yaml_names = sorted(set(ab_projection) - set(yaml_map))
+    for name in missing_yaml_names:
+        errors.append("skill_registry.yaml is missing canonical skill `%s`" % name)
+
 
 def _compare_planner_registry_against_ab(
     *,
@@ -182,12 +236,14 @@ def _compare_planner_registry_against_ab(
         errors.append("planner_llm skill_registry.json is missing a valid top-level `skills` list")
         return
 
+    planner_names: set[str] = set()
     for item in planner_skills:
         if not isinstance(item, dict):
             continue
         name = str(item.get("name", "")).strip().lower()
         if not name:
             continue
+        planner_names.add(name)
         ab_item = ab_projection.get(name)
         if ab_item is None:
             errors.append("planner skill `%s` is missing from canonical ab_registry.json" % name)
@@ -230,6 +286,22 @@ def _compare_planner_registry_against_ab(
             _norm_list(item.get("safety_flags", [])),
         )
 
+    expected_runtime_skills = {
+        name
+        for name, ab_item in ab_projection.items()
+        if _runtime_callable_from_ab(ab_item)
+    }
+    missing_runtime = sorted(expected_runtime_skills - planner_names)
+    extra_runtime = sorted(planner_names - expected_runtime_skills)
+    if missing_runtime:
+        errors.append(
+            "planner registry missing runtime-callable skills: %s" % ", ".join(missing_runtime)
+        )
+    if extra_runtime:
+        errors.append(
+            "planner registry has non-runtime-callable skills: %s" % ", ".join(extra_runtime)
+        )
+
 
 def _compare_docs_copies(
     *,
@@ -248,6 +320,46 @@ def _compare_docs_copies(
         )
 
 
+def _validate_runtime_callability_policy(*, errors: list[str], canonical_ab_payload: dict) -> None:
+    for item in canonical_ab_payload.get("objects", []):
+        if not isinstance(item, dict):
+            continue
+        object_id = str(item.get("object_id", "")).strip() or "<unnamed>"
+        ab_level = int(item.get("ab_level", 0) or 0)
+        runtime_callable = _runtime_callable_from_ab(item)
+        if ab_level == 0 and runtime_callable:
+            errors.append(
+                "ab_registry runtime policy violation: AB=0 object marked runtime callable: %s"
+                % object_id
+            )
+        if ab_level >= 2 and runtime_callable:
+            errors.append(
+                "ab_registry runtime policy violation: AB>=2 proposal marked runtime callable: %s"
+                % object_id
+            )
+
+
+def _compare_interactive_html_registry(
+    *,
+    errors: list[str],
+    canonical_ab_payload: dict,
+    interactive_html_text: str,
+) -> None:
+    expected_records = _interactive_registry_payload(canonical_ab_payload)
+    try:
+        expected_text = _interactive_html_text_with_registry(
+            interactive_html_text, expected_records
+        )
+    except RuntimeError as err:
+        errors.append(str(err))
+        return
+    if interactive_html_text != expected_text:
+        errors.append(
+            "docs/architecture/ros4hri_neural_workbench_interactive_architecture.html "
+            "REGISTRY block drifted from canonical skill_common ab_registry.json"
+        )
+
+
 def main() -> int:
     errors: list[str] = []
 
@@ -256,6 +368,7 @@ def main() -> int:
     planner_payload = _load_json(PLANNER_REGISTRY_PATH)
     docs_ab_payload = _load_json(DOCS_AB_REGISTRY_PATH)
     nw_docs_ab_payload = _load_json(NW_DOCS_AB_REGISTRY_PATH)
+    interactive_html_text = INTERACTIVE_ARCHITECTURE_HTML_PATH.read_text(encoding="utf-8")
 
     ab_projection = _skill_projection_from_ab(canonical_ab_payload)
 
@@ -274,6 +387,12 @@ def main() -> int:
         canonical_ab_payload=canonical_ab_payload,
         docs_ab_payload=docs_ab_payload,
         nw_docs_ab_payload=nw_docs_ab_payload,
+    )
+    _validate_runtime_callability_policy(errors=errors, canonical_ab_payload=canonical_ab_payload)
+    _compare_interactive_html_registry(
+        errors=errors,
+        canonical_ab_payload=canonical_ab_payload,
+        interactive_html_text=interactive_html_text,
     )
 
     if errors:

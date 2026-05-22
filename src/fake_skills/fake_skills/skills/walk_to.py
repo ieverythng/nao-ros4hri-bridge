@@ -18,9 +18,9 @@ def execute(*, args: dict, mode: str, metadata: dict, fail_once_active: bool) ->
 
     if mode in ('success', 'dry_run'):
         summary = (
-            'Dry run: I would walk %.2f meters %s.' % (distance_m, direction)
+            'Dry run: I would execute one local walk segment of %.2f meters %s.' % (distance_m, direction)
             if dry_run
-            else 'I walked %.2f meters %s.' % (distance_m, direction)
+            else 'I completed one local walk segment of %.2f meters %s.' % (distance_m, direction)
         )
         return build_skill_result(
             skill='walk_to',

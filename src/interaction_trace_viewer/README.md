@@ -14,6 +14,7 @@ It records and displays end-to-end interaction events across:
 - `/intents`
 - `/planner/execution_feedback`
 - `/planner/dialogue_act`
+- `/chatbot_llm/turn_trace`
 - `/scene/summary`
 - `/rosout`
 
@@ -30,6 +31,14 @@ ros2 run interaction_trace_viewer trace_node --ros-args \
   -p enable_scene_summary_channel:=false \
   -p rosout_min_level:=warn \
   -p rosout_node_allowlist_csv:="chatbot_llm,planner_llm,nao_orchestrator,scan_skill_server,report_result_skill_server,fake_skill_server,dialogue_manager,nao_say_skill,head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug"
+```
+
+Filter only selected channels/event types:
+
+```bash
+ros2 run interaction_trace_viewer trace_node --ros-args \
+  -p include_channels_csv:="planner/request,intents,planner/execution_feedback,planner/dialogue_act,chatbot_llm/turn_trace" \
+  -p include_event_types_csv:="planner_request,planner_output,execution_feedback,planner_dialogue_act,chatbot_turn_trace"
 ```
 
 Verbose payload output:
@@ -61,6 +70,7 @@ ros2 run interaction_trace_viewer render_html \
 
 - `/scene/summary` tracing is disabled by default to avoid high-frequency object/perception flood.
 - `/rosout` tracing is filtered by node allowlist and severity by default (`warn` and above).
-- Payloads are stored in full by default.
+- Payload JSON is stored by default; raw payload text capture is optional (`include_raw_payloads`).
+- UI rendering shows normalized JSON payload only; raw payload text is hidden by default.
 - Missing optional topics are handled by discovery and do not crash the node.
 - Event model stays compatible with future dashboard and fake-skill event feeds.

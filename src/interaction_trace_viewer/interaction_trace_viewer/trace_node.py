@@ -39,8 +39,12 @@ class InteractionTraceNode(Node):
         self.declare_parameter('jsonl_output_dir', '~/.ros/nao_ros4hri_traces')
         self.declare_parameter('write_html_on_shutdown', True)
         self.declare_parameter('html_output_dir', '~/.ros/nao_ros4hri_trace_reports')
-        self.declare_parameter('include_raw_payloads', True)
+        self.declare_parameter('include_raw_payloads', False)
         self.declare_parameter('max_payload_chars', 4000)
+        self.declare_parameter('include_channels_csv', '')
+        self.declare_parameter('exclude_channels_csv', '')
+        self.declare_parameter('include_event_types_csv', '')
+        self.declare_parameter('exclude_event_types_csv', '')
         self.declare_parameter('discovery_period_sec', 2.0)
         self.declare_parameter('enable_scene_summary_channel', False)
         self.declare_parameter('scene_summary_emit_on_change_only', True)
@@ -61,6 +65,10 @@ class InteractionTraceNode(Node):
         self.write_html_on_shutdown = bool(self.get_parameter('write_html_on_shutdown').value)
         self.include_raw_payloads = bool(self.get_parameter('include_raw_payloads').value)
         self.max_payload_chars = max(0, int(self.get_parameter('max_payload_chars').value))
+        self._include_channels = _parse_csv_set(self.get_parameter('include_channels_csv').value)
+        self._exclude_channels = _parse_csv_set(self.get_parameter('exclude_channels_csv').value)
+        self._include_event_types = _parse_csv_set(self.get_parameter('include_event_types_csv').value)
+        self._exclude_event_types = _parse_csv_set(self.get_parameter('exclude_event_types_csv').value)
         self.discovery_period_sec = max(0.5, float(self.get_parameter('discovery_period_sec').value))
         self.enable_scene_summary_channel = bool(self.get_parameter('enable_scene_summary_channel').value)
         self.scene_summary_emit_on_change_only = bool(
@@ -91,6 +99,7 @@ class InteractionTraceNode(Node):
             '/intents': ('hri_actions_msgs/msg/Intent', self._subscribe_intent),
             '/planner/execution_feedback': ('std_msgs/msg/String', self._subscribe_string),
             '/planner/dialogue_act': ('std_msgs/msg/String', self._subscribe_string),
+            '/chatbot_llm/turn_trace': ('std_msgs/msg/String', self._subscribe_string),
             '/rosout': ('rcl_interfaces/msg/Log', self._subscribe_rosout),
         }
         if self.enable_scene_summary_channel:
@@ -225,6 +234,8 @@ class InteractionTraceNode(Node):
         return True
 
     def _emit_event(self, event) -> None:
+        if not self._event_allowed(event):
+            return
         timestamp = event.timestamp if event.timestamp > 0.0 else time.time()
         source_node = str(event.payload.get('name', '')).strip() if event.event_type == 'rosout' else ''
         raw_payload = event.raw if self.include_raw_payloads else None
@@ -241,6 +252,21 @@ class InteractionTraceNode(Node):
             self._writer.write(traced)
 
         print(format_event_line(traced, verbose=not self.compact_mode), flush=True)
+
+    def _event_allowed(self, event) -> bool:
+        channel = str(event.channel or '').strip().lower()
+        event_type = str(event.event_type or '').strip().lower()
+        clean_channel = channel.strip('/')
+        clean_event_type = event_type.strip('/')
+        if self._include_channels and clean_channel not in self._include_channels:
+            return False
+        if self._exclude_channels and clean_channel in self._exclude_channels:
+            return False
+        if self._include_event_types and clean_event_type not in self._include_event_types:
+            return False
+        if self._exclude_event_types and clean_event_type in self._exclude_event_types:
+            return False
+        return True
 
     def close(self) -> None:
         if self._writer is not None:
@@ -282,7 +308,7 @@ def main(args=None) -> None:
 
 def _parse_csv_set(raw_value) -> set[str]:
     return {
-        _normalize_node_name(token)
+        _normalize_node_name(token).lower()
         for token in str(raw_value or '').split(',')
         if _normalize_node_name(token)
     }

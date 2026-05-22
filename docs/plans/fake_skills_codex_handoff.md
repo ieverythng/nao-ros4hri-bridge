@@ -1,5 +1,8 @@
 # Codex Handoff — Fake Skills Action Server for Base Planner + Neural Workbench Validation
 
+> Archived reference notice: active execution tracking now lives in `docs/plans/ros4hri_integration_master_plan_2026-05-18.html`.
+> Preserved archive copies: `docs/artifacts/plan_archive/fake_skills_codex_handoff.md` and `.html`.
+
 **Target branch:** `feat(R)/Neural-Workbench` for research integration; backport-compatible with `feat/TFM-LLM_planner` where appropriate.  
 **Primary repo:** `ieverythng/nao-ros4hri-bridge`  
 **Purpose:** Implement a fake skill execution substrate that can be used by both the current planner stack and the Neural Workbench validation path.

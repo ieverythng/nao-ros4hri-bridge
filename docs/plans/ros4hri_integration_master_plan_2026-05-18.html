@@ -90,9 +90,9 @@
 <li><code>docs/artifacts/plan_archive/full_nao_dashboard_spec.md</code></li>
 </ul>
 <p>These source plans are preserved in <code>docs/artifacts/plan_archive/</code> for provenance.</p>
-<p>The fake skills stream remains separate by design:</p>
+<p>The fake skills stream is now archived and linked into the unified registry track:</p>
 <ul>
-<li><code>fake_skills_codex_handoff.md</code> (+ HTML)</li>
+<li><code>docs/artifacts/plan_archive/fake_skills_codex_handoff.md</code> (+ HTML)</li>
 </ul>
 <h2>2. Repo-Doc Structure Contract</h2>
 <p>To avoid docs churn, active docs are constrained to:</p>
@@ -121,6 +121,7 @@
 <li><strong>Done</strong>: automated consistency checker added (<code>scripts/check_skill_registry_consistency.py</code>) and wired to pre-commit.</li>
 <li><strong>Done</strong>: planner skill alias normalization aligned with canonical skill_common views.</li>
 <li><strong>Pending</strong>: full AB decomposition migration (AB=2+ symbolic lineage and decomposition metadata).</li>
+<li><strong>In progress</strong>: AB=1 runtime skills now carry AB=0 leaf decomposition metadata with <code>max_depth=-1</code> policy for staged full decomposition.</li>
 </ul>
 <h3>C. Lifecycle and Launch Reliability</h3>
 <ul>
@@ -177,6 +178,23 @@
 <ul>
 <li>automated tests for DAG integrity + decomposition validation run green.</li>
 </ul>
+<h3>AB-F4: P3 Prompt + Nested Registry Updates (P3)</h3>
+<ul>
+<li>tighten planner/chatbot routing prompts and response schemas for non-execution turns.</li>
+<li>publish structured chatbot routing trace events for dialogue vs planner handoff visibility.</li>
+<li>enforce canonical registry projection sync across planner fallback config and docs mirrors via pre-commit checks.</li>
+</ul>
+<p><strong>Exit criteria</strong></p>
+<ul>
+<li>no drift between canonical AB registry and projected planner/docs registry surfaces.</li>
+<li>trace viewer can show planner/execution plus chatbot routing outcomes from structured payloads.</li>
+</ul>
+<p><strong>Status update (2026-05-22)</strong></p>
+<ul>
+<li>planner dialogue wording seam expanded: clarification/failure/help/completion dialogue acts can route through <code>chatbot_llm</code> before TTS.</li>
+<li>new dialogue-manager mode parameter introduced: <code>planner_dialogue_wording_mode</code> (<code>chatbot</code> default in stack profiles).</li>
+<li>compatibility mode retained for completion-only wording override via <code>planner_completion_wording_mode</code>.</li>
+</ul>
 <h2>5. Active Track: Observability Dashboard Rollout</h2>
 <p>This track merges prior simple-viewer and full-dashboard plans.</p>
 <h3>OBS-0: Shared Event Model (P0)</h3>
@@ -226,7 +244,7 @@
 <li><strong>P0</strong> Finalize chatbot routing policy edge-cases (<code>knowledge_query</code> default where appropriate).</li>
 <li><strong>P0</strong> Add operator-facing troubleshooting section in <code>launch_profiles.md</code> for live-stack/no-relaunch constraints.</li>
 <li><strong>P0</strong> Land simple trace viewer package scaffold (<code>interaction_trace_viewer</code>).</li>
-<li><strong>P1</strong> Begin AB decomposition schema expansion and tests.</li>
+<li><strong>P1</strong> Extend AB=1 decomposition coverage to remaining runtime skills and add DAG/depth validators.</li>
 <li><strong>P1</strong> Begin dashboard backend skeleton (<code>nao_dashboard</code>).</li>
 <li><strong>P2</strong> Stage upstream nested-repo merges per inventory artifact.</li>
 </ol>

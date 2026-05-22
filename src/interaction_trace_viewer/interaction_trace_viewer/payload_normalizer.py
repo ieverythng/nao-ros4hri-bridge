@@ -133,6 +133,16 @@ def summarize_event_payload(*, event_type: str, channel: str, payload: dict, max
         if pieces:
             return _clip(' | '.join(pieces), max_payload_chars)
 
+    if event_type == 'chatbot_turn_trace':
+        route = _first_non_empty(payload, 'route')
+        intent = _first_non_empty(payload, 'intent')
+        source = _first_non_empty(payload, 'intent_source')
+        return _clip(
+            'route=%s | intent=%s | source=%s'
+            % (route or '-', intent or '-', source or '-'),
+            max_payload_chars,
+        )
+
     compact = json.dumps(payload, ensure_ascii=True, separators=(',', ':'))
     return _clip('%s %s' % (channel, compact), max_payload_chars)
 
@@ -150,6 +160,7 @@ def _event_type_for_channel(channel: str) -> str:
         '/intents': 'planner_output',
         '/planner/execution_feedback': 'execution_feedback',
         '/planner/dialogue_act': 'planner_dialogue_act',
+        '/chatbot_llm/turn_trace': 'chatbot_turn_trace',
         '/scene/summary': 'scene_update',
     }
     return mapping.get(str(channel).strip(), 'message')
