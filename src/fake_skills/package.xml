@@ -8,6 +8,7 @@
   <license>Apache-2.0</license>
 
   <depend>rclpy</depend>
+  <depend>rcl_interfaces</depend>
   <depend>ament_index_python</depend>
   <depend>nao_skills</depend>
   <depend>std_msgs</depend>

@@ -288,6 +288,8 @@ def test_build_plan_payload_keeps_supervisor_envelope_shape() -> None:
     assert payload['plan']['status'] == 'executing'
     assert payload['plan']['scene_targets'] == ['cup']
     assert payload['plan']['communication_policy']['emit_progress'] is True
+    assert payload['plan']['communication_policy_source'] == ''
+    assert 'user_facing_reason' not in payload
     assert payload['plan']['steps'][0]['args']['target_frame'] == 'cup_frame'
 
 

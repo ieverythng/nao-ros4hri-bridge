@@ -330,6 +330,7 @@ def build_plan_payload(
     plan_version: int = 1,
     status: str = 'draft',
     communication_policy: dict | None = None,
+    communication_policy_source: str = '',
 ) -> dict:
     """Build one planner result payload using the shared envelope shape."""
     resolved_scene_targets = list(scene_targets or getattr(request, 'scene_targets', []))
@@ -345,7 +346,6 @@ def build_plan_payload(
         'goal_token': resolved_goal_token,
         'ack_text': resolved_ack_text,
         'ack_mode': resolved_ack_mode,
-        'user_facing_reason': str(user_facing_reason or '').strip(),
         'scene_targets': resolved_scene_targets,
         'grounded_context': normalize_grounded_context(
             getattr(request, 'grounded_context', {})
@@ -363,6 +363,7 @@ def build_plan_payload(
             'retry_budget': _coerce_nonnegative_int(retry_budget),
             'scene_targets': resolved_scene_targets,
             'communication_policy': resolved_policy,
+            'communication_policy_source': str(communication_policy_source or '').strip(),
             'steps': normalize_plan_steps(list(steps or [])),
         },
     }

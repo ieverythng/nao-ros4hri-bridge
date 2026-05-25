@@ -522,10 +522,7 @@ class PlannerSupervisor:
     @staticmethod
     def _decision_reason(decision: PlannerDecision) -> str:
         plan_payload = dict(decision.payload.get('plan', {}))
-        user_facing_reason = str(
-            plan_payload.get('user_facing_reason', '')
-            or decision.payload.get('user_facing_reason', '')
-        ).strip()
+        user_facing_reason = str(plan_payload.get('user_facing_reason', '')).strip()
         if user_facing_reason:
             return user_facing_reason
         steps = plan_payload.get('steps', [])

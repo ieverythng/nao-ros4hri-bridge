@@ -83,7 +83,10 @@ _SIM_CAMERA_DEFAULTS = {
     "interaction_sim_hri_log_profile": "quiet",
     "start_rqt_console": "true",
     "sim_use_laptop_tts": "false",
-    "start_interaction_trace_viewer": "true",
+    "start_interaction_trace_viewer": "false",
+    "interaction_trace_compact_mode": "false",
+    "dialogue_manager_planner_dialogue_wording_mode": "chatbot",
+    "dialogue_manager_planner_completion_wording_mode": "chatbot",
     "interaction_trace_enable_scene_summary_channel": "false",
     "interaction_trace_scene_summary_emit_on_change_only": "true",
     "interaction_trace_scene_summary_min_interval_sec": "1.0",
@@ -120,6 +123,8 @@ _ROBOT_CAMERA_DEFAULTS = {
     "start_rqt_console": "false",
     "sim_use_laptop_tts": "false",
     "start_interaction_trace_viewer": "false",
+    "dialogue_manager_planner_dialogue_wording_mode": "chatbot",
+    "dialogue_manager_planner_completion_wording_mode": "chatbot",
     "interaction_trace_enable_scene_summary_channel": "false",
     "interaction_trace_scene_summary_emit_on_change_only": "true",
     "interaction_trace_scene_summary_min_interval_sec": "1.0",
@@ -149,19 +154,6 @@ _DEMO_DEFAULTS = {
     "scan_result_mode": "success",
     "scan_summary": "I looked around and can report the current scene summary.",
     "scan_report_after_success": "false",
-    "interaction_trace_compact_mode": "false",
-    "interaction_trace_include_raw_payloads": "true",
-    "interaction_trace_include_channels_csv": (
-        "planner/request,intents,planner/execution_feedback,planner/dialogue_act,"
-        "chatbot_llm/turn_trace,fake_skills/events"
-    ),
-    "interaction_trace_include_event_types_csv": (
-        "planner_request,planner_output,execution_feedback,planner_dialogue_act,"
-        "chatbot_turn_trace,skill_result"
-    ),
-    "fake_skill_global_mode": "every_other",
-    "fake_skill_random_failure_prob": "0.50",
-    "fake_skill_mode_overrides_json": "{}",
 }
 
 
@@ -1074,47 +1066,12 @@ def generate_profile_launch_description(
     fake_skill_scenario_file_arg = DeclareLaunchArgument(
         "fake_skill_scenario_file",
         default_value=_profile_default(profile_defaults, "fake_skill_scenario_file", ""),
-        description="Optional YAML scenario file for fake skill outcomes.",
+        description="Optional YAML file with fake skill default and named scenarios.",
     )
     fake_skill_active_scenario_id_arg = DeclareLaunchArgument(
         "fake_skill_active_scenario_id",
         default_value=_profile_default(profile_defaults, "fake_skill_active_scenario_id", ""),
-        description="Optional named fake-skill scenario applied globally by fake_skill_server.",
-    )
-    fake_skill_default_delay_sec_arg = DeclareLaunchArgument(
-        "fake_skill_default_delay_sec",
-        default_value=_profile_default(profile_defaults, "fake_skill_default_delay_sec", "0.75"),
-        description="Default simulated duration for fake skill execution.",
-    )
-    fake_skill_publish_events_arg = DeclareLaunchArgument(
-        "fake_skill_publish_events",
-        default_value=_profile_default(profile_defaults, "fake_skill_publish_events", "true"),
-        description="Publish fake skill lifecycle events.",
-    )
-    fake_skill_event_topic_arg = DeclareLaunchArgument(
-        "fake_skill_event_topic",
-        default_value=_profile_default(profile_defaults, "fake_skill_event_topic", "/fake_skills/events"),
-        description="Topic for fake skill lifecycle events.",
-    )
-    fake_skill_deterministic_seed_arg = DeclareLaunchArgument(
-        "fake_skill_deterministic_seed",
-        default_value=_profile_default(profile_defaults, "fake_skill_deterministic_seed", "42"),
-        description="Deterministic seed for fake-skill policy modes.",
-    )
-    fake_skill_global_mode_arg = DeclareLaunchArgument(
-        "fake_skill_global_mode",
-        default_value=_profile_default(profile_defaults, "fake_skill_global_mode", "every_other"),
-        description="Global fake-skill policy: scenario|always_success|always_fail|every_other|random_seeded.",
-    )
-    fake_skill_random_failure_prob_arg = DeclareLaunchArgument(
-        "fake_skill_random_failure_prob",
-        default_value=_profile_default(profile_defaults, "fake_skill_random_failure_prob", "0.50"),
-        description="Failure probability applied when fake_skill_global_mode=random_seeded.",
-    )
-    fake_skill_mode_overrides_json_arg = DeclareLaunchArgument(
-        "fake_skill_mode_overrides_json",
-        default_value=_profile_default(profile_defaults, "fake_skill_mode_overrides_json", "{}"),
-        description="JSON map for per-skill overrides, e.g. {\"find_object\":\"always_fail\"}.",
+        description="Optional named scenario id applied by default to fake skill requests.",
     )
     start_nao_say_skill_arg = DeclareLaunchArgument(
         "start_nao_say_skill",
@@ -1218,7 +1175,7 @@ def generate_profile_launch_description(
         default_value=_profile_default(
             profile_defaults,
             "interaction_trace_include_raw_payloads",
-            "true",
+            "false",
         ),
         description="Keep raw payload text in interaction trace events.",
     )
@@ -1238,7 +1195,10 @@ def generate_profile_launch_description(
             "interaction_trace_include_channels_csv",
             "",
         ),
-        description="CSV allowlist for trace channels (empty means include all).",
+        description=(
+            "Optional CSV allowlist of trace channels (without leading slash), "
+            "for example planner/request,planner/execution_feedback."
+        ),
     )
     interaction_trace_exclude_channels_csv_arg = DeclareLaunchArgument(
         "interaction_trace_exclude_channels_csv",
@@ -1247,7 +1207,7 @@ def generate_profile_launch_description(
             "interaction_trace_exclude_channels_csv",
             "",
         ),
-        description="CSV denylist for trace channels.",
+        description="Optional CSV denylist of trace channels (without leading slash).",
     )
     interaction_trace_include_event_types_csv_arg = DeclareLaunchArgument(
         "interaction_trace_include_event_types_csv",
@@ -1256,7 +1216,10 @@ def generate_profile_launch_description(
             "interaction_trace_include_event_types_csv",
             "",
         ),
-        description="CSV allowlist for trace event types (empty means include all).",
+        description=(
+            "Optional CSV allowlist of trace event types, for example "
+            "planner_request,execution_feedback,chatbot_turn_trace."
+        ),
     )
     interaction_trace_exclude_event_types_csv_arg = DeclareLaunchArgument(
         "interaction_trace_exclude_event_types_csv",
@@ -1265,7 +1228,7 @@ def generate_profile_launch_description(
             "interaction_trace_exclude_event_types_csv",
             "",
         ),
-        description="CSV denylist for trace event types.",
+        description="Optional CSV denylist of trace event types.",
     )
     interaction_trace_enable_scene_summary_channel_arg = DeclareLaunchArgument(
         "interaction_trace_enable_scene_summary_channel",
@@ -1436,6 +1399,29 @@ def generate_profile_launch_description(
         "dialogue_manager_default_chat_configuration",
         default_value="",
         description="Optional JSON configuration passed to the default dialogue session.",
+    )
+    dialogue_manager_planner_dialogue_wording_mode_arg = DeclareLaunchArgument(
+        "dialogue_manager_planner_dialogue_wording_mode",
+        default_value=_profile_default(
+            profile_defaults,
+            "dialogue_manager_planner_dialogue_wording_mode",
+            "chatbot",
+        ),
+        description=(
+            "How planner dialogue acts are spoken by dialogue_manager: "
+            "chatbot routes all wording through chatbot_llm, direct uses planner text."
+        ),
+    )
+    dialogue_manager_planner_completion_wording_mode_arg = DeclareLaunchArgument(
+        "dialogue_manager_planner_completion_wording_mode",
+        default_value=_profile_default(
+            profile_defaults,
+            "dialogue_manager_planner_completion_wording_mode",
+            "chatbot",
+        ),
+        description=(
+            "Compatibility override for notify_completion wording: chatbot or direct."
+        ),
     )
     chat_input_tracked_topic_arg = DeclareLaunchArgument(
         "chat_input_tracked_topic",
@@ -1812,6 +1798,18 @@ def generate_profile_launch_description(
             {
                 "planner_dialogue_act_topic": ParameterValue(
                     LaunchConfiguration("planner_dialogue_act_topic"),
+                    value_type=str,
+                )
+            },
+            {
+                "planner_dialogue_wording_mode": ParameterValue(
+                    LaunchConfiguration("dialogue_manager_planner_dialogue_wording_mode"),
+                    value_type=str,
+                )
+            },
+            {
+                "planner_completion_wording_mode": ParameterValue(
+                    LaunchConfiguration("dialogue_manager_planner_completion_wording_mode"),
                     value_type=str,
                 )
             },
@@ -2690,13 +2688,6 @@ def generate_profile_launch_description(
             start_fake_skills_arg,
             fake_skill_scenario_file_arg,
             fake_skill_active_scenario_id_arg,
-            fake_skill_default_delay_sec_arg,
-            fake_skill_publish_events_arg,
-            fake_skill_event_topic_arg,
-            fake_skill_deterministic_seed_arg,
-            fake_skill_global_mode_arg,
-            fake_skill_random_failure_prob_arg,
-            fake_skill_mode_overrides_json_arg,
             start_nao_say_skill_arg,
             start_nao_replay_motion_arg,
             head_motion_allow_open_loop_without_joint_state_arg,
@@ -2745,6 +2736,8 @@ def generate_profile_launch_description(
             dialogue_manager_enable_default_chat_arg,
             dialogue_manager_default_chat_role_arg,
             dialogue_manager_default_chat_configuration_arg,
+            dialogue_manager_planner_dialogue_wording_mode_arg,
+            dialogue_manager_planner_completion_wording_mode_arg,
             chat_input_tracked_topic_arg,
             chat_input_speech_topic_arg,
             chat_input_is_speaking_topic_arg,
@@ -2942,22 +2935,11 @@ def generate_profile_launch_description(
                     "launch_file_name": "fake_skills.launch.py",
                     "launch_arg_name": "start_fake_skills",
                     "display_name": "fake_skills",
+                    "required_packages": ["fake_skills"],
                     "launch_arguments": {
                         "fake_skill_scenario_file": LaunchConfiguration("fake_skill_scenario_file"),
                         "fake_skill_active_scenario_id": LaunchConfiguration("fake_skill_active_scenario_id"),
-                        "fake_skill_default_delay_sec": LaunchConfiguration("fake_skill_default_delay_sec"),
-                        "fake_skill_publish_events": LaunchConfiguration("fake_skill_publish_events"),
-                        "fake_skill_event_topic": LaunchConfiguration("fake_skill_event_topic"),
-                        "fake_skill_deterministic_seed": LaunchConfiguration("fake_skill_deterministic_seed"),
-                        "fake_skill_global_mode": LaunchConfiguration("fake_skill_global_mode"),
-                        "fake_skill_random_failure_prob": LaunchConfiguration(
-                            "fake_skill_random_failure_prob"
-                        ),
-                        "fake_skill_mode_overrides_json": LaunchConfiguration(
-                            "fake_skill_mode_overrides_json"
-                        ),
                     },
-                    "required_packages": ["fake_skills"],
                 },
             ),
             chatbot_llm_bundle[0],
