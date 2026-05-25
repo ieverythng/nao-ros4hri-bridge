@@ -774,6 +774,7 @@ class PlannerEngine:
             plan_version=plan_version,
             status=status,
             communication_policy=communication_policy,
+            communication_policy_source='planner_engine:%s' % (mode or 'plan'),
         )
         return PlannerDecision(
             intent_name=self._default_intent_name,

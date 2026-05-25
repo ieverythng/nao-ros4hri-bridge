@@ -87,6 +87,8 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
 - `start_dialogue_manager`
 - `start_planner_llm`
 - `chatbot_planner_mode_enabled`
+- `dialogue_manager_planner_dialogue_wording_mode`
+- `dialogue_manager_planner_completion_wording_mode`
 - `start_nao_orchestrator`
 - `start_nao_say_skill`
 - `start_nao_replay_motion`
@@ -135,11 +137,11 @@ unrelated packages.
 
 Planner dialogue ownership stays split:
 
-- `chatbot_llm` generates the initial ack and final task-relative wording.
+- `chatbot_llm` generates user-facing wording for planner dialogue acts.
 - `planner_llm` produces abstract plans and completion dialogue-act facts.
 - `nao_orchestrator` executes skills and reports feedback.
-- `dialogue_manager` routes completion facts back through `chatbot_llm` before
-  speaking through TTS.
+- `dialogue_manager` routes planner dialogue-act facts back through
+  `chatbot_llm` before speaking through TTS.
 
 ## Perception And Scene Grounding
 

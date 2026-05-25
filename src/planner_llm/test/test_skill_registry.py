@@ -10,6 +10,9 @@ def test_skill_registry_loads_from_source_fallback_when_install_overlay_is_missi
     assert 'look_at' in registry.allowed_skill_names
     assert 'scan' in registry.allowed_skill_names
     assert 'report_result' in registry.allowed_skill_names
+    assert 'find_object' in registry.allowed_skill_names
+    assert 'navigate_to' in registry.allowed_skill_names
+    assert 'walk_to' in registry.allowed_skill_names
 
 
 def test_skill_registry_derives_planner_skills_from_package_exports() -> None:

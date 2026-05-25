@@ -134,7 +134,7 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
 - `fake_skill_active_scenario_id`: optional named scenario applied globally by
   `fake_skill_server` unless a per-request `scenario_id` override is provided.
 - `start_interaction_trace_viewer`: launches `interaction_trace_viewer/trace_node`.
-- `interaction_trace_compact_mode`: compact terminal output (`true`) or verbose payload view (`false`).
+- `interaction_trace_compact_mode`: compact terminal output (`true`) or verbose payload view (`false`, default in sim profile).
 - `interaction_trace_write_jsonl`: writes JSONL traces under `interaction_trace_jsonl_output_dir`.
 - `interaction_trace_write_html_on_shutdown`: writes static HTML report on shutdown under `interaction_trace_html_output_dir`.
 - `interaction_trace_include_raw_payloads`: keeps raw payload strings in trace events.
