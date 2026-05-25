@@ -9,8 +9,7 @@ This file is the active launch guide. Historical launch notes are under
 
 | Launch file | Default purpose | Notes |
 | --- | --- | --- |
-| `nao_chatbot_sim.launch.py` | Simulator stack and operator tools | Planner and planner gate on by default; laptop camera on `/camera/image_raw`; `rqt` console on |
-| `nao_research_sim.launch.py` | Research seam profile for Workbench and observer validation | Mirrors sim defaults, enables `planner_workbench_*` and starts optional `stack_observer` when installed |
+| `nao_chatbot_sim.launch.py` | Simulator stack and operator tools | Planner and planner gate on by default; laptop camera on `/camera/image_raw`; `rqt` console on; interaction trace viewer on |
 | `nao_chatbot_robot.launch.py` | Real robot camera/RViz/HRI overlays | Planner mode on; robot TF and RViz in profile defaults |
 | `nao_chatbot_demo.launch.py` | Sim-only demo with mock scan and demo-oriented defaults | Extends sim profile with demo skills and grounding |
 | `nao_chatbot_asr_only.launch.py` | Isolated ASR | No dialogue/planner/executor |
@@ -21,12 +20,6 @@ Simulator:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py
-```
-
-Research seam profile (Workbench + observer):
-
-```bash
-ros2 launch nao_chatbot nao_research_sim.launch.py
 ```
 
 Simulator with planner opt-out:
@@ -121,10 +114,11 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
 - `planner_request_topic`: defaults to `/planner/request`.
 - `planner_request_intent`: defaults to `planner_request`.
 - `planner_dialogue_act_topic`: defaults to `/planner/dialogue_act`.
-- `planner_skill_registry_path`: optional planner skill registry overlay. This
-  accepts either the legacy planner registry JSON (`skills`) or the canonical
-  Neural Workbench AB registry JSON (`objects`); `planner_llm` extracts only
-  planner-safe AB=1 `kind=skill` entries.
+- `dialogue_manager_planner_dialogue_wording_mode`: defaults to `chatbot` so
+  planner dialogue acts are rendered by `chatbot_llm`.
+- `dialogue_manager_planner_completion_wording_mode`: compatibility override
+  for completion wording (`chatbot` or `direct`).
+- `planner_skill_registry_path`: optional planner skill registry overlay.
 - `planner_llm_provider`: `ollama` by default.
 - `planner_llm_model`: planner model name.
 - `chatbot_server_url`: full chatbot backend chat endpoint, for example
@@ -134,21 +128,56 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
   appends `/api/chat`.
 - `planner_llm_default_retry_budget`: default plan retry budget.
 - `planner_llm_auto_replan`: enables supervisor auto-replan policy.
-- `planner_workbench_enabled`: disabled by default; when enabled, `planner_llm`
-  tries an optional Neural Workbench candidate program before provider planning.
-- `planner_workbench_required`: disabled by default; when enabled, Workbench
-  unavailability or invalid candidates become planner failures instead of
-  provider fallbacks.
-- `planner_workbench_desired_ab_level`: desired abstraction level passed to the
-  Workbench selector.
-- `planner_workbench_python_path`: optional `os.pathsep`-separated Python paths
-  for external Workbench packages when they are not installed in the active ROS
-  environment.
-- `planner_workbench_trace_candidates`: attaches Workbench candidate-program
-  metadata to planner output for research logging.
-- `start_stack_observer`: launches the optional `stack_observer` lifecycle node
-  when the package is present in the active workspace.
-- `stack_observer_trace_path`: JSONL output path used by `stack_observer`.
+- `start_fake_skills`: launches `fake_skills/fake_skill_server`.
+- `fake_skill_scenario_file`: optional fake-skill scenario YAML (default uses
+  `fake_skills/config/fake_skill_scenarios.yaml` from package share).
+- `fake_skill_active_scenario_id`: optional named scenario applied globally by
+  `fake_skill_server` unless a per-request `scenario_id` override is provided.
+- `start_interaction_trace_viewer`: launches `interaction_trace_viewer/trace_node`.
+- `interaction_trace_compact_mode`: compact terminal output (`true`) or verbose payload view (`false`).
+- `interaction_trace_write_jsonl`: writes JSONL traces under `interaction_trace_jsonl_output_dir`.
+- `interaction_trace_write_html_on_shutdown`: writes static HTML report on shutdown under `interaction_trace_html_output_dir`.
+- `interaction_trace_include_raw_payloads`: keeps raw payload strings in trace events.
+- `interaction_trace_max_payload_chars`: max summary chars per rendered event.
+- `interaction_trace_include_channels_csv`: optional CSV allowlist for channels.
+- `interaction_trace_exclude_channels_csv`: optional CSV denylist for channels.
+- `interaction_trace_include_event_types_csv`: optional CSV allowlist for event types.
+- `interaction_trace_exclude_event_types_csv`: optional CSV denylist for event types.
+
+## Fake Skill Scenario Switching
+
+Launch with an initial named scenario:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_fake_skills:=true \
+  fake_skill_active_scenario_id:=path_blocked
+```
+
+Inspect available and active scenario ids:
+
+```bash
+ros2 param get /fake_skill_server available_scenario_ids
+ros2 param get /fake_skill_server active_scenario_id
+```
+
+Switch scenario live (same container session):
+
+```bash
+ros2 param set /fake_skill_server active_scenario_id ambiguous_cup
+```
+
+Reset to defaults (no named scenario):
+
+```bash
+ros2 param set /fake_skill_server active_scenario_id ""
+```
+
+Semi-interactive selector (same container, same running stack):
+
+```bash
+./scripts/fake_skill_scenario_menu.sh /fake_skill_server
+```
 
 ## ASR And Perception Startup
 
@@ -168,13 +197,13 @@ Execution-oriented turns use this ownership split:
 user -> dialogue_manager -> chatbot_llm -> nao_orchestrator planner gate
      -> planner_llm -> nao_orchestrator -> skills
      -> planner feedback -> planner_llm dialogue act
-     -> dialogue_manager -> chatbot_llm completion pass -> TTS
+     -> dialogue_manager -> chatbot_llm dialogue-act wording pass -> TTS
 ```
 
-`chatbot_llm` owns natural language for the initial acknowledgement and final
-task-relative utterance. `planner_llm` owns abstract plan structure and
-supervision only. `nao_orchestrator` executes deterministic skill steps and
-publishes feedback; it should not invent user-facing wording. Executable
+`chatbot_llm` owns natural language for user-facing planner acknowledgements,
+clarifications, failures, and completions. `planner_llm` owns abstract plan
+structure and supervision only. `nao_orchestrator` executes deterministic skill
+steps and publishes feedback; it should not invent user-facing wording. Executable
 planner outputs must not include `say` steps. If the planner model mixes
 speech with robot actions, `planner_llm` rejects the output and retries with
 validation feedback.

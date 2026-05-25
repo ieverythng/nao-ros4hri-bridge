@@ -1,37 +1,30 @@
 # Documentation Index
 
-Use this index to keep top-level docs focused and avoid one-off bloat.
+This top-level docs surface is intentionally small and operational.
 
-## Active docs (update first)
+## Active top-level docs
 
-- `current_workflow.md` — canonical architecture and ownership map.
-- `contracts.md` — planner/request/feedback contract details.
-- `launch_profiles.md` — operator launch matrix and runtime switches.
-- `planner_status.md` — current planner behavior and known limits.
-- `planner_architecture_current.md` — implementation-facing planner architecture snapshot.
-- `plans/` — phase plans and hardening handoff references.
+- `contracts.md` — runtime payload contracts.
+- `current_workflow.md` — canonical ownership and runtime flow.
+- `launch_profiles.md` — launch matrix, arguments, operator runbooks.
+- `planner_status.md` — planner execution status, known gaps, next checks.
 
-## Archived docs (reference, do not treat as source of truth)
+## Architecture
 
-- `artifacts/` — handoffs, temporary checklists, and older design notes.
-- `knowledge/` — generated knowledge-layer outputs and wiki snapshots.
+- `architecture/ab_registry_input.json` — current AB registry architecture snapshot.
+- `architecture/ros4hri_neural_workbench_interactive_architecture.html` — interactive architecture view for supervisor review.
+
+## Plans
+
+- `plans/ros4hri_integration_master_plan_2026-05-18.md` (+ HTML) — canonical integration tracker.
+- `plans/fake_skills_codex_handoff.md` (+ HTML) — separate fake-skills stream.
+
+## Reference/Generated Material
+
+- `artifacts/` — archived handoffs, historical plans, and research notes.
+- `knowledge/` — GitNexus knowledge layer docs and generated wiki snapshots.
 
 ## Retention rule
 
-If a note is tied to a specific demo day, branch sweep, or troubleshooting pass,
-place it in `docs/artifacts/` and keep the durable conclusions in one of the
-active docs above.
-
-## Markdown + HTML Pair Rule
-
-For plan/review docs intended for human sharing:
-
-1. Keep Markdown as canonical source (`.md`).
-2. Commit a companion HTML render (`.html`) in the same folder.
-3. Generate/update HTML with:
-
-```bash
-python3 scripts/render_markdown_html.py docs/<name>.md docs/<name>.html
-```
-
-If the Markdown changes, refresh the paired HTML in the same commit.
+If content is tied to a specific date, sweep, or temporary handoff, place it in
+`docs/artifacts/` and keep durable conclusions in active docs above.

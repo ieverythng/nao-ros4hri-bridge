@@ -53,7 +53,7 @@ maybe_build_optional_detector_stack
 # Print ROS environment
 echo "ROS_DISTRO: $ROS_DISTRO"
 echo "Available packages:"
-ros2 pkg list | grep -E "(asr_vosk|chatbot_llm|dialogue_manager|interaction_skills|naoqi|nao_(chatbot|look_at|orchestrator|replay_motion|say_skill|scene_grounding|skills)|planner_(common|llm)|simple_audio_capture|emorobcare_cv_(msgs|object_detection)|my_game_interface)" || \
+ros2 pkg list | grep -E "(asr_vosk|chatbot_llm|dialogue_manager|interaction_skills|interaction_trace_viewer|naoqi|nao_(chatbot|look_at|orchestrator|replay_motion|say_skill|scene_grounding|skills)|planner_(common|llm)|fake_skills|simple_audio_capture|emorobcare_cv_(msgs|object_detection)|my_game_interface)" || \
   echo "No expected nao-related packages found"
 
 # Be forgiving with a common typo seen in local docker run commands.

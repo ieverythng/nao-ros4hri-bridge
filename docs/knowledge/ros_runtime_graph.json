@@ -31,6 +31,12 @@
         "nao_replay_motion"
       ]
     },
+    "/chatbot/posture_command_result": {
+      "subscribers": [
+        "nao_orchestrator",
+        "nao_replay_motion"
+      ]
+    },
     "/chatbot_llm/dialogue_interaction": {
       "service_clients": [
         "dialogue_manager"
@@ -65,12 +71,25 @@
         "nao_chatbot"
       ]
     },
+    "/debug/object_detection": {
+      "publishers": [
+        "emorobcare_cv_object_detection"
+      ]
+    },
     "/debug/say": {
       "action_clients": [
         "nao_say_skill"
       ]
     },
+    "/depth_map": {
+      "subscribers": [
+        "emorobcare_cv_object_detection"
+      ]
+    },
     "/detected_objects": {
+      "publishers": [
+        "emorobcare_cv_object_detection"
+      ],
       "subscribers": [
         "nao_scene_grounding"
       ]
@@ -114,6 +133,16 @@
         "planner_llm"
       ]
     },
+    "/fake_skills/events": {
+      "publishers": [
+        "fake_skills"
+      ]
+    },
+    "/humans/persons/tracked": {
+      "subscribers": [
+        "nao_orchestrator"
+      ]
+    },
     "/humans/voices/*/speech": {
       "subscribers": [
         "dialogue_manager"
@@ -147,6 +176,7 @@
         "dialogue_manager"
       ],
       "subscribers": [
+        "nao_chatbot",
         "nao_orchestrator"
       ]
     },
@@ -257,14 +287,37 @@
         "nao_say_skill"
       ]
     },
+    "/nao_orchestrator/planner_request": {
+      "subscribers": [
+        "nao_orchestrator"
+      ]
+    },
     "/nao_scene_grounding/summary": {
       "publishers": [
         "nao_scene_grounding"
       ]
     },
+    "/planner/dialogue_act": {
+      "subscribers": [
+        "dialogue_manager",
+        "nao_chatbot",
+        "nao_orchestrator"
+      ]
+    },
     "/planner/execution_feedback": {
       "publishers": [
         "nao_orchestrator"
+      ],
+      "subscribers": [
+        "nao_chatbot"
+      ]
+    },
+    "/planner/request": {
+      "publishers": [
+        "nao_orchestrator"
+      ],
+      "subscribers": [
+        "nao_chatbot"
       ]
     },
     "/planner_dialogue_act_topic": {
@@ -282,9 +335,34 @@
         "planner_llm"
       ]
     },
+    "/processing_time": {
+      "publishers": [
+        "emorobcare_cv_object_detection"
+      ]
+    },
     "/robot_speaking": {
       "subscribers": [
         "asr_vosk"
+      ]
+    },
+    "/rosout": {
+      "subscribers": [
+        "nao_chatbot"
+      ]
+    },
+    "/scene/summary": {
+      "subscribers": [
+        "nao_orchestrator"
+      ]
+    },
+    "/sim_scene/place_object": {
+      "service_clients": [
+        "emorobcare_cv_object_detection"
+      ]
+    },
+    "/sim_scene/remove_object": {
+      "service_clients": [
+        "emorobcare_cv_object_detection"
       ]
     },
     "/skill/ask": {
@@ -358,6 +436,11 @@
         "motions_skills"
       ]
     },
+    "/skill/fake/execute": {
+      "action_servers": [
+        "fake_skills"
+      ]
+    },
     "/skill/look_at": {
       "action_clients": [
         "nao_orchestrator"
@@ -386,7 +469,18 @@
         "nao_skills"
       ]
     },
+    "/skill/report_result": {
+      "action_clients": [
+        "nao_orchestrator"
+      ],
+      "action_servers": [
+        "nao_orchestrator"
+      ]
+    },
     "/skill/say": {
+      "action_clients": [
+        "nao_orchestrator"
+      ],
       "action_servers": [
         "dialogue_manager"
       ],
@@ -395,6 +489,20 @@
       ],
       "contracts": [
         "communication_skills"
+      ]
+    },
+    "/skill/scan": {
+      "action_clients": [
+        "nao_orchestrator"
+      ],
+      "action_servers": [
+        "nao_orchestrator"
+      ],
+      "contract_kinds": [
+        "action"
+      ],
+      "contracts": [
+        "nao_skills"
       ]
     },
     "/skill/set_expression": {
@@ -410,13 +518,28 @@
         "nao_say_skill"
       ]
     },
+    "/start_detection": {
+      "service_servers": [
+        "emorobcare_cv_object_detection"
+      ]
+    },
+    "/stop_detection": {
+      "service_servers": [
+        "emorobcare_cv_object_detection"
+      ]
+    },
+    "/system/health/object_detect": {
+      "publishers": [
+        "emorobcare_cv_object_detection"
+      ]
+    },
     "/tts_engine/tts": {
       "action_servers": [
         "nao_say_skill"
       ]
     }
   },
-  "generatedAt": "2026-04-10T16:35:40.386138+00:00",
+  "generatedAt": "2026-05-21T20:33:49.296746+00:00",
   "packages": [
     {
       "actionClients": [],
@@ -463,6 +586,7 @@
         "src/chatbot_llm/chatbot_llm/knowledge_snapshot_client.py",
         "src/chatbot_llm/chatbot_llm/node_impl.py",
         "src/chatbot_llm/chatbot_llm/ollama_transport.py",
+        "src/chatbot_llm/chatbot_llm/planner_handoff.py",
         "src/chatbot_llm/chatbot_llm/planner_request_adapter.py",
         "src/chatbot_llm/chatbot_llm/prompt_builders.py",
         "src/chatbot_llm/chatbot_llm/prompt_pack.py",
@@ -544,8 +668,79 @@
       "serviceServers": [],
       "subscribes": [
         "/humans/voices/*/speech",
-        "/humans/voices/tracked"
+        "/humans/voices/tracked",
+        "/planner/dialogue_act"
       ]
+    },
+    {
+      "actionClients": [],
+      "actionServers": [],
+      "contracts": [],
+      "files": [
+        "src/emorobcare_cv_object_detection/emorobcare_cv_object_detection/__init__.py",
+        "src/emorobcare_cv_object_detection/emorobcare_cv_object_detection/node_object_detection.py",
+        "src/emorobcare_cv_object_detection/launch/emorobot_object_detector.launch.py",
+        "src/emorobcare_cv_object_detection/launch/launch.py",
+        "src/emorobcare_cv_object_detection/launch/launch_simple_with_knowledge_base.py",
+        "src/emorobcare_cv_object_detection/setup.py"
+      ],
+      "name": "emorobcare_cv_object_detection",
+      "nodeNames": [
+        "object_detector_node"
+      ],
+      "publishes": [
+        "/debug/object_detection",
+        "/detected_objects",
+        "/processing_time",
+        "/system/health/object_detect"
+      ],
+      "root": "src/emorobcare_cv_object_detection",
+      "serviceClients": [
+        "/sim_scene/place_object",
+        "/sim_scene/remove_object"
+      ],
+      "serviceServers": [
+        "/start_detection",
+        "/stop_detection"
+      ],
+      "subscribes": [
+        "/depth_map"
+      ]
+    },
+    {
+      "actionClients": [],
+      "actionServers": [
+        "/skill/fake/execute"
+      ],
+      "contracts": [],
+      "files": [
+        "src/fake_skills/fake_skills/__init__.py",
+        "src/fake_skills/fake_skills/action_server.py",
+        "src/fake_skills/fake_skills/contracts.py",
+        "src/fake_skills/fake_skills/engine.py",
+        "src/fake_skills/fake_skills/result_builders.py",
+        "src/fake_skills/fake_skills/run_fake_skill_server.py",
+        "src/fake_skills/fake_skills/scenario_store.py",
+        "src/fake_skills/fake_skills/skills/__init__.py",
+        "src/fake_skills/fake_skills/skills/find_object.py",
+        "src/fake_skills/fake_skills/skills/inspect_area.py",
+        "src/fake_skills/fake_skills/skills/navigate_to.py",
+        "src/fake_skills/fake_skills/skills/walk_to.py",
+        "src/fake_skills/fake_skills/skills/wave_greet.py",
+        "src/fake_skills/launch/fake_skills.launch.py",
+        "src/fake_skills/setup.py"
+      ],
+      "name": "fake_skills",
+      "nodeNames": [
+        "fake_skill_server"
+      ],
+      "publishes": [
+        "/fake_skills/events"
+      ],
+      "root": "src/fake_skills",
+      "serviceClients": [],
+      "serviceServers": [],
+      "subscribes": []
     },
     {
       "actionClients": [],
@@ -656,12 +851,12 @@
       "contracts": [],
       "files": [
         "src/nao_chatbot/launch/nao_chatbot_asr_only.launch.py",
+        "src/nao_chatbot/launch/nao_chatbot_demo.launch.py",
         "src/nao_chatbot/launch/nao_chatbot_robot.launch.py",
-        "src/nao_chatbot/launch/nao_chatbot_robot_asr.launch.py",
         "src/nao_chatbot/launch/nao_chatbot_sim.launch.py",
-        "src/nao_chatbot/launch/nao_chatbot_sim_asr.launch.py",
         "src/nao_chatbot/nao_chatbot/__init__.py",
         "src/nao_chatbot/nao_chatbot/asr_push_to_talk_cli.py",
+        "src/nao_chatbot/nao_chatbot/demo_rosout_filter.py",
         "src/nao_chatbot/nao_chatbot/interaction_sim_support.py",
         "src/nao_chatbot/nao_chatbot/robot_speech_debug.py",
         "src/nao_chatbot/nao_chatbot/speech_debug_labels.py",
@@ -670,6 +865,7 @@
       ],
       "name": "nao_chatbot",
       "nodeNames": [
+        "demo_rosout_filter",
         "robot_speech_debug"
       ],
       "publishes": [],
@@ -678,7 +874,12 @@
       "serviceServers": [],
       "subscribes": [
         "/debug/nao_say/speech",
-        "/dialogue_manager/closed_captions"
+        "/dialogue_manager/closed_captions",
+        "/intents",
+        "/planner/dialogue_act",
+        "/planner/execution_feedback",
+        "/planner/request",
+        "/rosout"
       ]
     },
     {
@@ -712,34 +913,53 @@
         "/nao/say",
         "/skill/do_head_motion",
         "/skill/look_at",
-        "/skill/replay_motion"
+        "/skill/replay_motion",
+        "/skill/report_result",
+        "/skill/say",
+        "/skill/scan"
       ],
-      "actionServers": [],
+      "actionServers": [
+        "/skill/report_result",
+        "/skill/scan"
+      ],
       "contracts": [],
       "files": [
         "src/nao_orchestrator/launch/nao_orchestrator.launch.py",
         "src/nao_orchestrator/nao_orchestrator/__init__.py",
         "src/nao_orchestrator/nao_orchestrator/intent_rules.py",
         "src/nao_orchestrator/nao_orchestrator/orchestrator.py",
+        "src/nao_orchestrator/nao_orchestrator/planner_gate.py",
+        "src/nao_orchestrator/nao_orchestrator/report_result_skill_server.py",
         "src/nao_orchestrator/nao_orchestrator/run_app.py",
+        "src/nao_orchestrator/nao_orchestrator/run_report_result_skill.py",
+        "src/nao_orchestrator/nao_orchestrator/run_scan_skill.py",
+        "src/nao_orchestrator/nao_orchestrator/scan_skill_server.py",
         "src/nao_orchestrator/setup.py"
       ],
       "name": "nao_orchestrator",
       "nodeNames": [
-        "nao_orchestrator"
+        "nao_orchestrator",
+        "report_result_skill_server",
+        "scan_skill_server"
       ],
       "publishes": [
         "/chatbot/posture_command",
         "/diagnostics",
         "/joint_angles",
-        "/planner/execution_feedback"
+        "/planner/execution_feedback",
+        "/planner/request"
       ],
       "root": "src/nao_orchestrator",
       "serviceClients": [],
       "serviceServers": [],
       "subscribes": [
         "/chatbot/intent",
-        "/intents"
+        "/chatbot/posture_command_result",
+        "/humans/persons/tracked",
+        "/intents",
+        "/nao_orchestrator/planner_request",
+        "/planner/dialogue_act",
+        "/scene/summary"
       ]
     },
     {
@@ -772,6 +992,7 @@
       "serviceClients": [],
       "serviceServers": [],
       "subscribes": [
+        "/chatbot/posture_command_result",
         "/joint_states"
       ]
     },
@@ -838,7 +1059,8 @@
       "contracts": [
         "/skill/do_head_motion",
         "/skill/do_posture",
-        "/skill/replay_motion"
+        "/skill/replay_motion",
+        "/skill/scan"
       ],
       "files": [],
       "name": "nao_skills",
@@ -858,6 +1080,7 @@
         "src/planner_llm/planner_llm/fixture_publisher.py",
         "src/planner_llm/planner_llm/planner_engine.py",
         "src/planner_llm/planner_llm/planner_node.py",
+        "src/planner_llm/planner_llm/prompt_pack.py",
         "src/planner_llm/planner_llm/providers.py",
         "src/planner_llm/planner_llm/skill_registry.py",
         "src/planner_llm/planner_llm/supervisor.py",

@@ -24,3 +24,16 @@ Preferred workflows:
 Reference:
 
 - `docs/knowledge/WORKFLOWS.md`
+
+## Package-Level Layers
+
+Use package-local AGENTS guidance before large edits in these stacks:
+
+- `src/planner_llm/AGENTS.md`
+- `src/chatbot_llm/AGENTS.md`
+- `src/nao_orchestrator/AGENTS.md`
+- `src/fake_skills/AGENTS.md`
+
+Canonical registry contract:
+
+- `docs/architecture/skill_registry_contract.md`

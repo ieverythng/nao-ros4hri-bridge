@@ -1,69 +1,433 @@
 {
-  "step_types": ["noop", "say", "skill", "look_at"],
+  "step_types": [
+    "noop",
+    "say",
+    "skill",
+    "look_at"
+  ],
   "skills": [
     {
-      "name": "perform_motion",
-      "aliases": ["motion"],
-      "category": "embodiment",
-      "params": ["object", "speed", "relative", "yaw", "pitch"],
-      "required_params": ["object"],
-      "preconditions": [],
-      "expected_effects": ["robot posture or head orientation changes"],
-      "observable_success": ["planner feedback accepted", "planner feedback completed"],
-      "failure_modes": ["unsupported motion payload", "motion dispatch failed"],
-      "retryable": true,
-      "can_request_user_help": false,
-      "can_request_clarification": true,
-      "timeout_hint": 10.0,
-      "safety_flags": ["motion"],
-      "robot_adapter_mapping": "nao_orchestrator.perform_motion"
+      "name": "find_object",
+      "category": "perception",
+      "aliases": [
+        "find",
+        "locate_object",
+        "find_person"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "target",
+        "target_kind"
+      ],
+      "required_params": [
+        "target"
+      ],
+      "preconditions": [
+        "target must be named"
+      ],
+      "expected_effects": [
+        "object or person evidence is returned"
+      ],
+      "observable_success": [
+        "target_found",
+        "evidence.entity_id"
+      ],
+      "failure_modes": [
+        "not_found",
+        "ambiguous",
+        "backend_unavailable"
+      ],
+      "planner_guidance": [
+        "use for a specific named object or person target"
+      ],
+      "robot_adapter_mapping": "fake_find_object_skill.find_object",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "target_found",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "perception"
+      ],
+      "supports_failure_injection": true,
+      "is_composite": true,
+      "is_fake": true,
+      "runtime_callable": true,
+      "decomposes_to": [
+        "/skill/fake/find_object",
+        "read_scene_summary",
+        "confirm_target_visibility",
+        "verify_evidence_payload"
+      ],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "full_to_ab0",
+        "notes": "Requires fresh scene evidence and explicit target visibility checks."
+      }
     },
     {
       "name": "look_at",
-      "aliases": [],
       "category": "attention",
-      "params": ["target_frame", "frame_id", "policy", "x", "y", "z"],
+      "aliases": [
+        "gaze_at"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "target_frame",
+        "frame_id",
+        "policy",
+        "x",
+        "y",
+        "z"
+      ],
       "required_params": [],
       "preconditions": [],
-      "expected_effects": ["robot gaze is redirected or reset"],
-      "observable_success": ["planner feedback step_started", "planner feedback completed"],
-      "failure_modes": ["look_at step missing target frame or reset policy", "look_at target dispatch failed"],
-      "retryable": true,
-      "can_request_user_help": false,
-      "can_request_clarification": true,
-      "timeout_hint": 8.0,
-      "safety_flags": ["attention"],
-      "robot_adapter_mapping": "nao_orchestrator.look_at"
-  },
-  {
-    "name": "scan",
-    "aliases": ["look_around", "inspect_scene", "check_visible_entities"],
-    "category": "perception",
-    "params": ["target", "target_kind", "max_sweeps", "evidence_policy"],
-    "required_params": [],
-    "preconditions": [
-      "Use scan only when the user asks for fresh perception or to re-check what the robot can currently see."
-    ],
-    "expected_effects": [
-      "bounded head scan refreshes scene evidence and makes a fresh perception snapshot available"
-    ],
-    "observable_success": [
-      "result_payload.target_found",
-      "result_payload.people",
-      "result_payload.objects"
-    ],
-    "failure_modes": ["scan requested failure", "scan backend unavailable"],
-    "retryable": true,
-    "can_request_user_help": false,
-    "can_request_clarification": true,
-    "timeout_hint": 3.0,
-    "safety_flags": ["perception"],
-    "robot_adapter_mapping": "nao_orchestrator.scan",
-    "planner_guidance": [
-      "Use scan for fresh perception requests (e.g., 'scan the room', 'look around').",
-      "Do not use scan for memory-only questions unless the user asks to scan again.",
-      "Prioritize people evidence when the target is people-oriented."
-    ]
+      "expected_effects": [
+        "robot gaze is redirected or reset"
+      ],
+      "observable_success": [
+        "status"
+      ],
+      "failure_modes": [
+        "missing_target",
+        "dispatch_failed"
+      ],
+      "planner_guidance": [
+        "use for target-frame gaze control, not for full scene scan"
+      ],
+      "robot_adapter_mapping": "nao_orchestrator.look_at",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status"
+        ]
+      },
+      "safety_flags": [
+        "attention"
+      ],
+      "supports_failure_injection": false,
+      "is_composite": false,
+      "is_fake": false,
+      "runtime_callable": true,
+      "decomposes_to": [
+        "/skill/look_at",
+        "validate_motion_payload",
+        "wait_for_perception"
+      ],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "full_to_ab0",
+        "notes": "Attention control decomposes to motion validation + dispatch + bounded wait."
+      }
+    },
+    {
+      "name": "navigate_to",
+      "category": "navigation",
+      "aliases": [
+        "go_to",
+        "move_to_location"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "target",
+        "location"
+      ],
+      "required_params": [
+        "target"
+      ],
+      "preconditions": [
+        "navigation must be enabled",
+        "target location must be known or resolvable"
+      ],
+      "expected_effects": [
+        "robot arrives at target location"
+      ],
+      "observable_success": [
+        "status"
+      ],
+      "failure_modes": [
+        "path_blocked",
+        "unknown_location",
+        "safety_disabled"
+      ],
+      "planner_guidance": [
+        "use for semantic destinations such as kitchen or table"
+      ],
+      "robot_adapter_mapping": "fake_navigation_skill.navigate_to",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "navigation"
+      ],
+      "supports_failure_injection": true,
+      "is_composite": true,
+      "is_fake": true,
+      "runtime_callable": true,
+      "decomposes_to": [
+        "/skill/fake/navigate_to",
+        "validate_navigation_request",
+        "estimate_navigation_path",
+        "verify_evidence_payload"
+      ],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "full_to_ab0",
+        "notes": "AB1 runtime skill with AB0 decomposition; semantically destination-oriented."
+      }
+    },
+    {
+      "name": "perform_motion",
+      "category": "embodiment",
+      "aliases": [
+        "motion",
+        "posture",
+        "head_motion"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "object",
+        "speed",
+        "relative",
+        "yaw",
+        "pitch"
+      ],
+      "required_params": [
+        "object"
+      ],
+      "preconditions": [],
+      "expected_effects": [
+        "robot posture or head orientation changes"
+      ],
+      "observable_success": [
+        "status"
+      ],
+      "failure_modes": [
+        "unsupported_motion",
+        "dispatch_failed"
+      ],
+      "planner_guidance": [
+        "use for known posture and head-motion labels"
+      ],
+      "robot_adapter_mapping": "nao_orchestrator.perform_motion",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status"
+        ]
+      },
+      "safety_flags": [
+        "motion"
+      ],
+      "supports_failure_injection": false,
+      "is_composite": false,
+      "is_fake": false,
+      "runtime_callable": true,
+      "decomposes_to": [
+        "/skill/replay_motion",
+        "/skill/do_head_motion",
+        "validate_motion_payload",
+        "verify_evidence_payload"
+      ],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "full_to_ab0",
+        "notes": "Motion dispatch decomposes into validation + deterministic action dispatch."
+      }
+    },
+    {
+      "name": "report_result",
+      "category": "communication",
+      "aliases": [
+        "notify_completion",
+        "say_result"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "summary_text"
+      ],
+      "required_params": [],
+      "preconditions": [
+        "summary text must be grounded in result payload or trace evidence"
+      ],
+      "expected_effects": [
+        "user receives completion/result summary through robot speech"
+      ],
+      "observable_success": [
+        "step_succeeded",
+        "plan_completed"
+      ],
+      "failure_modes": [
+        "missing_summary",
+        "say_dispatch_failed"
+      ],
+      "planner_guidance": [
+        "use report_result as the final step after perception/action skills when a user-facing summary is needed",
+        "prefer summary_text grounded on result payloads from previous steps"
+      ],
+      "robot_adapter_mapping": "nao_orchestrator.report_result",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "communication"
+      ],
+      "supports_failure_injection": false,
+      "is_composite": false,
+      "is_fake": false,
+      "runtime_callable": true,
+      "decomposes_to": [
+        "/skill/report_result",
+        "verify_evidence_payload",
+        "emit_robot_speech"
+      ],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "full_to_ab0",
+        "notes": "Result reporting validates payload then emits speech via deterministic channel."
+      }
+    },
+    {
+      "name": "scan",
+      "category": "perception",
+      "aliases": [
+        "look_around",
+        "inspect_scene",
+        "check_visible_entities"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "target",
+        "target_kind",
+        "max_sweeps",
+        "evidence_policy"
+      ],
+      "required_params": [],
+      "preconditions": [
+        "fresh perception requested"
+      ],
+      "expected_effects": [
+        "refreshed scene evidence",
+        "typed scan result payload"
+      ],
+      "observable_success": [
+        "target_found",
+        "evidence.people",
+        "evidence.objects"
+      ],
+      "failure_modes": [
+        "no_person",
+        "objects_only",
+        "backend_unavailable",
+        "unexpected_payload"
+      ],
+      "planner_guidance": [
+        "use scan for fresh perception requests",
+        "do not decompose scan into head motion unless debugging scan itself",
+        "prioritize people evidence for person-target scans"
+      ],
+      "robot_adapter_mapping": "nao_orchestrator.scan",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ],
+        "optional": [
+          "target",
+          "target_kind",
+          "target_found",
+          "evidence",
+          "failure",
+          "metadata"
+        ]
+      },
+      "safety_flags": [
+        "perception"
+      ],
+      "supports_failure_injection": true,
+      "is_composite": true,
+      "is_fake": false,
+      "runtime_callable": true,
+      "decomposes_to": [
+        "/skill/scan",
+        "wait_for_perception",
+        "read_scene_summary",
+        "verify_evidence_payload"
+      ],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "full_to_ab0",
+        "notes": "Execute as AB1 skill but decompose to AB0 for analysis and future deterministic routing."
+      }
+    },
+    {
+      "name": "walk_to",
+      "category": "navigation",
+      "aliases": [
+        "walk_forward",
+        "step_to"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "distance_m",
+        "direction",
+        "dry_run"
+      ],
+      "required_params": [],
+      "preconditions": [
+        "walking must be operator-enabled"
+      ],
+      "expected_effects": [
+        "robot moves a short distance or reports dry-run result"
+      ],
+      "observable_success": [
+        "status"
+      ],
+      "failure_modes": [
+        "safety_disabled",
+        "path_blocked"
+      ],
+      "planner_guidance": [
+        "keep dry-run enabled until real walking is explicitly approved"
+      ],
+      "robot_adapter_mapping": "walk_to_skill.walk_to",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "navigation",
+        "movement"
+      ],
+      "supports_failure_injection": true,
+      "is_composite": false,
+      "is_fake": true,
+      "runtime_callable": true,
+      "decomposes_to": [
+        "/skill/fake/walk_to",
+        "validate_navigation_request",
+        "verify_evidence_payload"
+      ],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "full_to_ab0",
+        "notes": "AB1 primitive locomotion segment skill used by higher-level navigation flows."
+      }
     }
   ]
 }

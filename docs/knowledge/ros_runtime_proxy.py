@@ -29,6 +29,10 @@ def ros_topic_chatbot_posture_command():
     """ROS topic endpoint /chatbot/posture_command."""
     return "/chatbot/posture_command"
 
+def ros_topic_chatbot_posture_command_result():
+    """ROS topic endpoint /chatbot/posture_command_result."""
+    return "/chatbot/posture_command_result"
+
 def ros_service_chatbot_llm_dialogue_interaction():
     """ROS service endpoint /chatbot_llm/dialogue_interaction."""
     return "/chatbot_llm/dialogue_interaction"
@@ -49,9 +53,17 @@ def ros_topic_debug_nao_say_speech():
     """ROS topic endpoint /debug/nao_say/speech."""
     return "/debug/nao_say/speech"
 
+def ros_topic_debug_object_detection():
+    """ROS topic endpoint /debug/object_detection."""
+    return "/debug/object_detection"
+
 def ros_action_debug_say():
     """ROS action endpoint /debug/say."""
     return "/debug/say"
+
+def ros_topic_depth_map():
+    """ROS topic endpoint /depth_map."""
+    return "/depth_map"
 
 def ros_topic_detected_objects():
     """ROS topic endpoint /detected_objects."""
@@ -80,6 +92,14 @@ def ros_topic_enriched_snapshot_topic():
 def ros_topic_enriched_text_topic():
     """ROS topic endpoint /enriched_text_topic."""
     return "/enriched_text_topic"
+
+def ros_topic_fake_skills_events():
+    """ROS topic endpoint /fake_skills/events."""
+    return "/fake_skills/events"
+
+def ros_topic_humans_persons_tracked():
+    """ROS topic endpoint /humans/persons/tracked."""
+    return "/humans/persons/tracked"
 
 def ros_topic_humans_voices_any_speech():
     """ROS topic endpoint /humans/voices/*/speech."""
@@ -165,13 +185,25 @@ def ros_action_nao_say():
     """ROS action endpoint /nao/say."""
     return "/nao/say"
 
+def ros_topic_nao_orchestrator_planner_request():
+    """ROS topic endpoint /nao_orchestrator/planner_request."""
+    return "/nao_orchestrator/planner_request"
+
 def ros_topic_nao_scene_grounding_summary():
     """ROS topic endpoint /nao_scene_grounding/summary."""
     return "/nao_scene_grounding/summary"
 
+def ros_topic_planner_dialogue_act():
+    """ROS topic endpoint /planner/dialogue_act."""
+    return "/planner/dialogue_act"
+
 def ros_topic_planner_execution_feedback():
     """ROS topic endpoint /planner/execution_feedback."""
     return "/planner/execution_feedback"
+
+def ros_topic_planner_request():
+    """ROS topic endpoint /planner/request."""
+    return "/planner/request"
 
 def ros_topic_planner_dialogue_act_topic():
     """ROS topic endpoint /planner_dialogue_act_topic."""
@@ -185,9 +217,29 @@ def ros_topic_planner_request_topic():
     """ROS topic endpoint /planner_request_topic."""
     return "/planner_request_topic"
 
+def ros_topic_processing_time():
+    """ROS topic endpoint /processing_time."""
+    return "/processing_time"
+
 def ros_topic_robot_speaking():
     """ROS topic endpoint /robot_speaking."""
     return "/robot_speaking"
+
+def ros_topic_rosout():
+    """ROS topic endpoint /rosout."""
+    return "/rosout"
+
+def ros_topic_scene_summary():
+    """ROS topic endpoint /scene/summary."""
+    return "/scene/summary"
+
+def ros_service_sim_scene_place_object():
+    """ROS service endpoint /sim_scene/place_object."""
+    return "/sim_scene/place_object"
+
+def ros_service_sim_scene_remove_object():
+    """ROS service endpoint /sim_scene/remove_object."""
+    return "/sim_scene/remove_object"
 
 def ros_action_skill_ask():
     """ROS action endpoint /skill/ask."""
@@ -217,6 +269,10 @@ def ros_action_skill_execute_joint_trajectory():
     """ROS action endpoint /skill/execute_joint_trajectory."""
     return "/skill/execute_joint_trajectory"
 
+def ros_action_skill_fake_execute():
+    """ROS action endpoint /skill/fake/execute."""
+    return "/skill/fake/execute"
+
 def ros_action_skill_look_at():
     """ROS action endpoint /skill/look_at."""
     return "/skill/look_at"
@@ -225,9 +281,17 @@ def ros_action_skill_replay_motion():
     """ROS action endpoint /skill/replay_motion."""
     return "/skill/replay_motion"
 
+def ros_action_skill_report_result():
+    """ROS action endpoint /skill/report_result."""
+    return "/skill/report_result"
+
 def ros_action_skill_say():
     """ROS action endpoint /skill/say."""
     return "/skill/say"
+
+def ros_action_skill_scan():
+    """ROS action endpoint /skill/scan."""
+    return "/skill/scan"
 
 def ros_topic_skill_set_expression():
     """ROS topic endpoint /skill/set_expression."""
@@ -236,6 +300,18 @@ def ros_topic_skill_set_expression():
 def ros_topic_speech():
     """ROS topic endpoint /speech."""
     return "/speech"
+
+def ros_service_start_detection():
+    """ROS service endpoint /start_detection."""
+    return "/start_detection"
+
+def ros_service_stop_detection():
+    """ROS service endpoint /stop_detection."""
+    return "/stop_detection"
+
+def ros_topic_system_health_object_detect():
+    """ROS topic endpoint /system/health/object_detect."""
+    return "/system/health/object_detect"
 
 def ros_action_tts_engine_tts():
     """ROS action endpoint /tts_engine/tts."""
@@ -289,11 +365,37 @@ def ros_node_dialogue_manager():
     ros_topic_intents()
     ros_topic_humans_voices_any_speech()
     ros_topic_humans_voices_tracked()
+    ros_topic_planner_dialogue_act()
     ros_service_chatbot_llm_dialogue_interaction()
     ros_action_chatbot_llm_start_dialogue()
     ros_action_skill_ask()
     ros_action_skill_chat()
     ros_action_skill_say()
+
+def ros_contract_emorobcare_cv_object_detection():
+    """Interface contracts exported by emorobcare_cv_object_detection."""
+    return None
+
+def ros_node_emorobcare_cv_object_detection():
+    """Runtime ROS proxy for package/node emorobcare_cv_object_detection."""
+    ros_topic_debug_object_detection()
+    ros_topic_detected_objects()
+    ros_topic_processing_time()
+    ros_topic_system_health_object_detect()
+    ros_topic_depth_map()
+    ros_service_sim_scene_place_object()
+    ros_service_sim_scene_remove_object()
+    ros_service_start_detection()
+    ros_service_stop_detection()
+
+def ros_contract_fake_skills():
+    """Interface contracts exported by fake_skills."""
+    return None
+
+def ros_node_fake_skills():
+    """Runtime ROS proxy for package/node fake_skills."""
+    ros_topic_fake_skills_events()
+    ros_action_skill_fake_execute()
 
 def ros_contract_interaction_skills():
     """Interface contracts exported by interaction_skills."""
@@ -353,6 +455,11 @@ def ros_node_nao_chatbot():
     """Runtime ROS proxy for package/node nao_chatbot."""
     ros_topic_debug_nao_say_speech()
     ros_topic_dialogue_manager_closed_captions()
+    ros_topic_intents()
+    ros_topic_planner_dialogue_act()
+    ros_topic_planner_execution_feedback()
+    ros_topic_planner_request()
+    ros_topic_rosout()
 
 def ros_contract_nao_look_at():
     """Interface contracts exported by nao_look_at."""
@@ -374,12 +481,23 @@ def ros_node_nao_orchestrator():
     ros_topic_diagnostics()
     ros_topic_joint_angles()
     ros_topic_planner_execution_feedback()
+    ros_topic_planner_request()
     ros_topic_chatbot_intent()
+    ros_topic_chatbot_posture_command_result()
+    ros_topic_humans_persons_tracked()
     ros_topic_intents()
+    ros_topic_nao_orchestrator_planner_request()
+    ros_topic_planner_dialogue_act()
+    ros_topic_scene_summary()
     ros_action_nao_say()
     ros_action_skill_do_head_motion()
     ros_action_skill_look_at()
     ros_action_skill_replay_motion()
+    ros_action_skill_report_result()
+    ros_action_skill_say()
+    ros_action_skill_scan()
+    ros_action_skill_report_result()
+    ros_action_skill_scan()
 
 def ros_contract_nao_replay_motion():
     """Interface contracts exported by nao_replay_motion."""
@@ -389,6 +507,7 @@ def ros_node_nao_replay_motion():
     """Runtime ROS proxy for package/node nao_replay_motion."""
     ros_topic_chatbot_posture_command()
     ros_topic_joint_angles()
+    ros_topic_chatbot_posture_command_result()
     ros_topic_joint_states()
     ros_action_skill_do_head_motion()
     ros_action_skill_do_posture()
@@ -421,6 +540,7 @@ def ros_contract_nao_skills():
     ros_action_skill_do_head_motion()
     ros_action_skill_do_posture()
     ros_action_skill_replay_motion()
+    ros_action_skill_scan()
 
 def ros_node_nao_skills():
     """Runtime ROS proxy for package/node nao_skills."""
@@ -467,6 +587,12 @@ def ros_flow_topic_debug_nao_say_speech():
     ros_topic_debug_nao_say_speech()
     ros_node_nao_chatbot()
 
+def ros_flow_topic_detected_objects():
+    """Publisher/subscriber flow for /detected_objects."""
+    ros_node_emorobcare_cv_object_detection()
+    ros_topic_detected_objects()
+    ros_node_nao_scene_grounding()
+
 def ros_flow_topic_dialogue_manager_closed_captions():
     """Publisher/subscriber flow for /dialogue_manager/closed_captions."""
     ros_node_dialogue_manager()
@@ -483,6 +609,7 @@ def ros_flow_topic_intents():
     """Publisher/subscriber flow for /intents."""
     ros_node_dialogue_manager()
     ros_topic_intents()
+    ros_node_nao_chatbot()
     ros_node_nao_orchestrator()
 
 def ros_flow_topic_kb_active_concepts():
@@ -509,6 +636,18 @@ def ros_flow_action_nao_say():
     ros_action_nao_say()
     ros_node_nao_orchestrator()
 
+def ros_flow_topic_planner_execution_feedback():
+    """Publisher/subscriber flow for /planner/execution_feedback."""
+    ros_node_nao_orchestrator()
+    ros_topic_planner_execution_feedback()
+    ros_node_nao_chatbot()
+
+def ros_flow_topic_planner_request():
+    """Publisher/subscriber flow for /planner/request."""
+    ros_node_nao_orchestrator()
+    ros_topic_planner_request()
+    ros_node_nao_chatbot()
+
 def ros_flow_action_skill_do_head_motion():
     """Action server/client flow for /skill/do_head_motion."""
     ros_node_nao_replay_motion()
@@ -525,4 +664,22 @@ def ros_flow_action_skill_replay_motion():
     """Action server/client flow for /skill/replay_motion."""
     ros_node_nao_replay_motion()
     ros_action_skill_replay_motion()
+    ros_node_nao_orchestrator()
+
+def ros_flow_action_skill_report_result():
+    """Action server/client flow for /skill/report_result."""
+    ros_node_nao_orchestrator()
+    ros_action_skill_report_result()
+    ros_node_nao_orchestrator()
+
+def ros_flow_action_skill_say():
+    """Action server/client flow for /skill/say."""
+    ros_node_dialogue_manager()
+    ros_action_skill_say()
+    ros_node_nao_orchestrator()
+
+def ros_flow_action_skill_scan():
+    """Action server/client flow for /skill/scan."""
+    ros_node_nao_orchestrator()
+    ros_action_skill_scan()
     ros_node_nao_orchestrator()

@@ -1,6 +1,6 @@
 # Planner Status
 
-Last updated: 2026-05-04
+Last updated: 2026-05-18
 
 ## Current State
 
@@ -59,8 +59,13 @@ Known weak spots:
 
 ## Current Architecture Reference
 
-See `docs/planner_architecture_current.md` for the consolidated architecture
-status, remaining gaps, and model benchmark procedure.
+Use:
+
+- `docs/current_workflow.md` for the canonical ownership/runtime map.
+- `docs/plans/ros4hri_integration_master_plan_2026-05-18.md` for active
+  implementation status and next-phase execution order.
+- `docs/artifacts/handoffs/planner_architecture_current.md` for archived
+  architecture provenance from earlier sweeps.
 
 ## Model Candidate Probe
 
@@ -287,6 +292,7 @@ Demo readiness update on 2026-05-05:
 - `nao_orchestrator` now owns an optional planner gate on
   `/nao_orchestrator/planner_request`, forwarding accepted requests to
   `/planner/request` while rejecting duplicate or unsuperseded active goals.
-- See `docs/demo_ready_handoff_2026-05-05.md` for the meeting/demo narrative
-  and `docs/nao_orchestrator_planner_gate_handoff.md` for the deferred
-  orchestrator planner-gate migration notes.
+- See `docs/artifacts/handoffs/demo_ready_handoff_2026-05-05.md` for the
+  original meeting/demo narrative and
+  `docs/artifacts/handoffs/nao_orchestrator_planner_gate_handoff.md` for
+  deferred planner-gate migration notes.

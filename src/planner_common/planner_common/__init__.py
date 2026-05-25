@@ -32,6 +32,11 @@ from planner_common.skill_manifest import ExportedSkillManifest
 from planner_common.skill_manifest import is_perform_motion_object_label
 from planner_common.skill_manifest import load_exported_skill_manifests
 from planner_common.skill_manifest import resolve_package_xml
+from planner_common.skill_registry_bridge import load_shared_skill_manifest
+from planner_common.skill_registry_bridge import merge_fake_skill_aliases
+from planner_common.skill_registry_bridge import merge_scan_skill_names
+from planner_common.skill_registry_bridge import merge_supported_skill_names
+from planner_common.skill_registry_bridge import names_from_manifest
 from planner_common.contracts import truncate_text
 
 __all__ = [
@@ -62,10 +67,15 @@ __all__ = [
     'load_exported_skill_manifests',
     'make_goal_id',
     'make_plan_id',
+    'merge_fake_skill_aliases',
+    'merge_scan_skill_names',
+    'merge_supported_skill_names',
     'normalize_communication_policy',
     'normalize_grounded_context',
     'normalize_plan_steps',
+    'names_from_manifest',
     'parse_json_object',
     'resolve_package_xml',
     'truncate_text',
+    'load_shared_skill_manifest',
 ]

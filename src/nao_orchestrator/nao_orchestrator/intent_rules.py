@@ -8,6 +8,10 @@ import json
 from planner_common.contracts import PLAN_FAILURE_POLICIES
 from planner_common.contracts import PLAN_STEP_TYPES
 from planner_common.contracts import IntentLabels as Intent
+from planner_common.skill_registry_bridge import merge_fake_skill_aliases
+from planner_common.skill_registry_bridge import merge_scan_skill_names
+from planner_common.skill_registry_bridge import load_shared_skill_manifest
+from planner_common.skill_registry_bridge import merge_supported_skill_names
 
 
 _STANDARD_INTENTS = {
@@ -112,12 +116,40 @@ _POSTURE_TOPIC_FALLBACKS = {
 
 _PLAN_STEP_TYPES_SET = frozenset(PLAN_STEP_TYPES)
 _PLAN_FAILURE_POLICIES_SET = frozenset(PLAN_FAILURE_POLICIES)
-_SUPPORTED_SKILL_PLAN_NAMES = {
+_DEFAULT_SCAN_SKILL_PLAN_NAMES = {
+    'scan',
+    'look_around',
+    'inspect_scene',
+    'check_visible_entities',
+}
+_DEFAULT_FAKE_SKILL_PLAN_NAMES = {
+    'navigate_to',
+    'go_to',
+    'move_to_location',
+    'find_object',
+    'find',
+    'locate_object',
+    'find_person',
+    'wave_greet',
+    'wave',
+    'greet_wave',
+    'wave_hello',
+    'inspect_area',
+    'inspect',
+    'check_area',
+    'walk_to',
+    'walk_forward',
+    'step_to',
+}
+_DEFAULT_SUPPORTED_SKILL_PLAN_NAMES = {
     '',
     'perform_motion',
     'motion',
     'look_at',
     'scan',
+    'report_result',
+    *_DEFAULT_SCAN_SKILL_PLAN_NAMES,
+    *_DEFAULT_FAKE_SKILL_PLAN_NAMES,
 }
 
 _PEOPLE_SCAN_TARGET_KINDS = {
@@ -126,6 +158,33 @@ _PEOPLE_SCAN_TARGET_KINDS = {
     'human',
     'humans',
 }
+
+
+def _load_supported_skill_names() -> tuple[set[str], set[str], set[str]]:
+    manifest = load_shared_skill_manifest()
+    supported = merge_supported_skill_names(
+        fallback_names=_DEFAULT_SUPPORTED_SKILL_PLAN_NAMES,
+        manifest=manifest,
+    )
+    scan_names = merge_scan_skill_names(
+        fallback_names=_DEFAULT_SCAN_SKILL_PLAN_NAMES,
+        manifest=manifest,
+    )
+    fake_aliases = merge_fake_skill_aliases(
+        fallback_aliases={
+            name: name
+            for name in _DEFAULT_FAKE_SKILL_PLAN_NAMES
+        },
+        manifest=manifest,
+    )
+    fake_names = set(fake_aliases.keys())
+
+    return supported, scan_names, fake_names
+
+
+_SUPPORTED_SKILL_PLAN_NAMES, _SCAN_SKILL_PLAN_NAMES, _FAKE_SKILL_PLAN_NAMES = (
+    _load_supported_skill_names()
+)
 
 
 # -----------------------------------------------------------------------------
@@ -488,6 +547,13 @@ def parse_plan_envelope(data: dict) -> dict:
             _plan_metadata_value(data, parsed_plan_dict, 'goal_id', 'goalId'),
             '',
         ),
+        'goal_token': _first_non_empty(
+            _plan_metadata_value(data, parsed_plan_dict, 'goal_token', 'goalToken'),
+            _first_non_empty(
+                _plan_metadata_value(data, parsed_plan_dict, 'goal_id', 'goalId'),
+                '',
+            ),
+        ),
         'plan_id': _first_non_empty(
             _plan_metadata_value(data, parsed_plan_dict, 'plan_id', 'id', 'planId'),
             '',
@@ -652,6 +718,7 @@ def _first_non_empty(*values: str) -> str:
 def _empty_plan_envelope() -> dict:
     return {
         'goal_id': '',
+        'goal_token': '',
         'plan_id': '',
         'plan_version': 0,
         'status': '',
@@ -765,7 +832,13 @@ def _plan_step_validation_error(intent_name: str, step: dict) -> str:
         return f'unsupported skill step "{step_name}"'
     if step_name == 'look_at':
         return _plan_look_at_error(step_args)
-    if step_name == 'scan':
+    if step_name in _SCAN_SKILL_PLAN_NAMES:
+        return ''
+
+    if step_name in _FAKE_SKILL_PLAN_NAMES:
+        return ''
+    if step_name == 'report_result':
+        # report_result can speak explicit summary text or reuse prior step context.
         return ''
 
     route, _resolved_payload = classify_motion_target(

@@ -334,6 +334,7 @@ def build_plan_payload(
     """Build one planner result payload using the shared envelope shape."""
     resolved_scene_targets = list(scene_targets or getattr(request, 'scene_targets', []))
     resolved_goal_id = str(goal_id or getattr(request, 'goal_id', '')).strip()
+    resolved_goal_token = str(getattr(request, 'goal_token', resolved_goal_id)).strip() or resolved_goal_id
     resolved_plan_id = str(plan_id or make_plan_id()).strip()
     resolved_ack_text = str(ack_text or getattr(request, 'ack_text', '')).strip()
     resolved_ack_mode = str(ack_mode or getattr(request, 'ack_mode', '')).strip()
@@ -341,6 +342,7 @@ def build_plan_payload(
 
     return {
         'goal_id': resolved_goal_id,
+        'goal_token': resolved_goal_token,
         'ack_text': resolved_ack_text,
         'ack_mode': resolved_ack_mode,
         'user_facing_reason': str(user_facing_reason or '').strip(),
@@ -350,6 +352,7 @@ def build_plan_payload(
         ),
         'plan': {
             'goal_id': resolved_goal_id,
+            'goal_token': resolved_goal_token,
             'plan_id': resolved_plan_id,
             'plan_version': max(1, int(plan_version or 1)),
             'status': str(status or '').strip().lower() or 'draft',
@@ -369,6 +372,7 @@ def build_dialogue_act_payload(
     *,
     goal_id: str,
     act: str,
+    goal_token: str = '',
     plan_id: str = '',
     plan_version: int = 0,
     priority: str = 'normal',
@@ -381,6 +385,7 @@ def build_dialogue_act_payload(
     """Build one planner dialogue act payload."""
     return {
         'goal_id': str(goal_id or '').strip(),
+        'goal_token': str(goal_token or '').strip() or str(goal_id or '').strip(),
         'plan_id': str(plan_id or '').strip(),
         'plan_version': max(0, int(plan_version or 0)),
         'act': _normalize_choice(act, PLANNER_DIALOGUE_ACTS, 'progress_update'),
@@ -426,6 +431,9 @@ def build_execution_feedback_payload(
 
     payload = {
         'goal_id': str(plan_context.get('goal_id', '')).strip(),
+        'goal_token': str(
+            plan_context.get('goal_token', plan_context.get('goal_id', ''))
+        ).strip(),
         'plan_id': str(plan_context.get('plan_id', '')).strip(),
         'plan_version': max(0, _coerce_nonnegative_int(plan_context.get('plan_version', 0))),
         'intent': str(intent or '').strip(),
@@ -471,6 +479,7 @@ class PlannerRequest:
 
     request_id: str
     goal_id: str
+    goal_token: str
     parent_goal_id: str
     supersedes_goal_id: str
     request_kind: str
@@ -505,6 +514,7 @@ class PlannerRequest:
         return cls(
             request_id=request_id,
             goal_id=goal_id,
+            goal_token=str(data.get('goal_token', goal_id)).strip() or goal_id,
             parent_goal_id=str(data.get('parent_goal_id', '')).strip(),
             supersedes_goal_id=str(data.get('supersedes_goal_id', '')).strip(),
             request_kind=_normalize_choice(
@@ -600,6 +610,7 @@ class ExecutionFeedback:
     """Normalized planner/executor feedback payload."""
 
     goal_id: str
+    goal_token: str
     plan_id: str
     plan_version: int
     event_type: str
@@ -640,6 +651,7 @@ class ExecutionFeedback:
             result_summary = str(result_payload.get('summary_text', '')).strip()
         return cls(
             goal_id=str(data.get('goal_id', '')).strip(),
+            goal_token=str(data.get('goal_token', data.get('goal_id', ''))).strip(),
             plan_id=str(data.get('plan_id', '')).strip(),
             plan_version=max(0, _coerce_nonnegative_int(data.get('plan_version', 0))),
             event_type=str(
@@ -684,6 +696,7 @@ class PlannerDialogueAct:
     """Normalized planner-owned dialogue act payload."""
 
     goal_id: str
+    goal_token: str
     plan_id: str
     plan_version: int
     act: str
@@ -699,6 +712,7 @@ class PlannerDialogueAct:
         data = parse_json_object(payload)
         return cls(
             goal_id=str(data.get('goal_id', '')).strip(),
+            goal_token=str(data.get('goal_token', data.get('goal_id', ''))).strip(),
             plan_id=str(data.get('plan_id', '')).strip(),
             plan_version=max(0, _coerce_nonnegative_int(data.get('plan_version', 0))),
             act=_normalize_choice(data.get('act', ''), PLANNER_DIALOGUE_ACTS, 'progress_update'),

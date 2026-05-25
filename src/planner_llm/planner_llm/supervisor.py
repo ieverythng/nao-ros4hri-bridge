@@ -35,6 +35,7 @@ class SupervisorState:
     """Supervisor-owned state for one goal."""
 
     goal_id: str
+    goal_token: str = ''
     parent_goal_id: str = ''
     supersedes_goal_id: str = ''
     current_status: str = 'idle'
@@ -193,6 +194,7 @@ class PlannerSupervisor:
 
         state.parent_goal_id = request.parent_goal_id
         state.supersedes_goal_id = request.supersedes_goal_id
+        state.goal_token = str(request.goal_token or request.goal_id).strip()
         state.current_status = 'planning'
         state.awaiting_user_response = False
         state.active_plan_steps = ()
@@ -322,6 +324,7 @@ class PlannerSupervisor:
     ) -> SupervisorOutcome:
         if state is None:
             state = SupervisorState(goal_id=request.goal_id)
+        state.goal_token = str(request.goal_token or state.goal_token or state.goal_id).strip()
 
         state.current_status = 'cancelled'
         state.awaiting_user_response = False
@@ -343,6 +346,7 @@ class PlannerSupervisor:
         if state is None:
             return
         state.current_status = 'superseded'
+        state.goal_token = ''
         state.awaiting_user_response = False
         self._forget_plan(state.active_plan_id)
         state.active_plan_id = ''
@@ -354,6 +358,10 @@ class PlannerSupervisor:
             return None
         state = self._states.get(goal_id)
         if state is None:
+            return None
+        if feedback.goal_token and state.goal_token and feedback.goal_token != state.goal_token:
+            return None
+        if feedback.plan_version and state.plan_version and feedback.plan_version < state.plan_version:
             return None
         if feedback.plan_id and state.active_plan_id and feedback.plan_id != state.active_plan_id:
             return None
@@ -371,6 +379,7 @@ class PlannerSupervisor:
     ) -> PlannerDialogueAct:
         payload = build_dialogue_act_payload(
             goal_id=state.goal_id,
+            goal_token=state.goal_token or state.goal_id,
             plan_id=state.active_plan_id,
             plan_version=state.plan_version,
             act=act,

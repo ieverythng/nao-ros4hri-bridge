@@ -135,6 +135,7 @@ def test_parse_plan_envelope_accepts_dict_style_plan_metadata() -> None:
         {
             'plan': {
                 'goal_id': 'goal-7',
+                'goal_token': 'goal-7:turn-5',
                 'plan_id': 'plan-42',
                 'plan_version': 3,
                 'status': 'executing',
@@ -148,6 +149,7 @@ def test_parse_plan_envelope_accepts_dict_style_plan_metadata() -> None:
         }
     )
     assert envelope['goal_id'] == 'goal-7'
+    assert envelope['goal_token'] == 'goal-7:turn-5'
     assert envelope['plan_id'] == 'plan-42'
     assert envelope['plan_version'] == 3
     assert envelope['status'] == 'executing'
@@ -233,6 +235,60 @@ def test_validate_execution_plan_accepts_scan_skill() -> None:
     )
     assert envelope['errors'] == []
     assert envelope['steps'][0]['name'] == 'scan'
+
+
+def test_validate_execution_plan_accepts_fake_navigation_skill() -> None:
+    envelope = validate_execution_plan(
+        Intent.PERFORM_MOTION,
+        {
+            'plan': [
+                {
+                    'type': 'skill',
+                    'name': 'navigate_to',
+                    'args': {'target': 'kitchen', 'result_mode': 'path_blocked'},
+                    'on_failure': 'replan',
+                }
+            ]
+        },
+    )
+    assert envelope['errors'] == []
+    assert envelope['steps'][0]['name'] == 'navigate_to'
+
+
+def test_validate_execution_plan_accepts_report_result_skill() -> None:
+    envelope = validate_execution_plan(
+        Intent.SAY,
+        {
+            'plan': [
+                {
+                    'type': 'skill',
+                    'name': 'report_result',
+                    'args': {'summary_text': 'I found one person in front of me.'},
+                    'on_failure': 'fail',
+                }
+            ]
+        },
+    )
+    assert envelope['errors'] == []
+    assert envelope['steps'][0]['name'] == 'report_result'
+
+
+def test_validate_execution_plan_accepts_wave_greet_fake_skill() -> None:
+    envelope = validate_execution_plan(
+        Intent.PERFORM_MOTION,
+        {
+            'plan': [
+                {
+                    'type': 'skill',
+                    'name': 'wave',
+                    'args': {'style': 'friendly'},
+                    'on_failure': 'continue',
+                }
+            ]
+        },
+    )
+    assert envelope['errors'] == []
+    assert envelope['steps'][0]['name'] == 'wave'
 
 
 def test_scan_step_is_available_without_demo_gate() -> None:

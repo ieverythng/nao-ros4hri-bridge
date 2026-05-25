@@ -1,17 +1,23 @@
-# Plans and hardening passes
+# Plans and Execution Tracks
 
-This folder keeps handoff and plan documents that should be used as references for implementation phases, including this hardening sweep.
+This folder is intentionally minimal.
 
-## Active plan artifacts
+## Active plans
 
-- `codex_ros4hri_stack_hardening_handoff_2026-05-10.md` — ROS4HRI stack hardening handoff plan (canonical markdown).
-- `codex_ros4hri_stack_hardening_handoff_2026-05-10.html` — rendered HTML companion.
-- `codex_skill_centric_ros4hri_handoff_2026-05-13_overlay.md` — additive implementation overlay aligned with the 2026-05-12 skill-centric handoff.
-- `codex_skill_centric_ros4hri_handoff_2026-05-13_overlay.html` — interactive status tracker for the overlay phases and live runtime checks.
-- `prompt_pack_hardening_plan_2026-05-09.html` — prompt-pack hardening plan used during previous review and implementation rounds.
+- `ros4hri_integration_master_plan_2026-05-18.md` (+ `.html`)  
+  Canonical integration tracker (planner/orchestrator, AB registry integration, observability/dashboard stream, upstream reconciliation).
+- `fake_skills_codex_handoff.md` (+ `.html`)  
+  Separate active stream for fake skills implementation.
 
-## Recommended usage
+## Archival rule
 
-- Use the markdown file as the source of truth for edits or task splitting.
-- Use the `.html` companion for sharing and quick scanning.
-- Keep new phase-related handoff notes in this folder as both `.md` and `.html` so they remain discoverable together.
+When a plan becomes fully implemented or is superseded, move it to
+`docs/artifacts/plan_archive/` and fold the status into the master plan.
+
+## Authoring rule
+
+For any active plan intended for review:
+
+1. Keep Markdown as source of truth.
+2. Keep an HTML companion in the same folder.
+3. Update both in the same commit.

@@ -1,0 +1,325 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Full NAO Dashboard Spec</title><style>:root{--bg:#f7f3ea;--ink:#2b2118;--line:#dfd2bf;--accent:#c46a2b;--code:#f0e6d6}
+body{margin:0;background:radial-gradient(circle at 20% 0%,#fff7e8 0,var(--bg) 42%,#eee3d2 100%);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;line-height:1.58}
+main{max-width:1120px;margin:0 auto;padding:42px 24px 96px}h1{font-size:2.25rem;letter-spacing:-.035em}h2{margin-top:2.3rem;padding-top:.7rem;border-top:1px solid var(--line)}h3{margin-top:1.55rem}blockquote{border-left:4px solid var(--accent);padding:.8rem 1rem;background:rgba(255,255,255,.55);border-radius:0 12px 12px 0}pre{background:#2b2118;color:#fff7ea;border-radius:14px;padding:14px 16px;overflow-x:auto}code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);border-radius:5px;padding:.08rem .28rem}pre code{background:transparent;color:inherit;padding:0}table{width:100%;border-collapse:collapse;margin:1rem 0;background:rgba(255,255,255,.56)}th,td{border:1px solid var(--line);padding:9px 11px;vertical-align:top}th{background:#eadcc8;text-align:left}</style></head><body><main><h1>NAO ROS4HRI Observability — Full Integrated Dashboard Specification</h1>
+<p><strong>Target branch:</strong> <code>feat(R)/Neural-Workbench</code> or <code>feat/nao-observability-dashboard</code></p>
+<p><strong>Priority:</strong> P1/P2, long-lead implementation</p>
+<p><strong>Purpose:</strong> the full “wow version” for demos, debugging, Neural Workbench visualization, and future PhD-grade research tooling.</p>
+<h2>1. Vision</h2>
+<p>Build a browser-based dashboard that externalizes the whole NAO cognitive/execution stack:</p>
+<pre><code>user input
+dialogue_manager
+chatbot_llm
+planner_llm
+Neural Workbench
+nao_orchestrator
+skill/action servers
+scene grounding
+KB / WME-like state
+AB registry
+trace memory
+ROS graph health</code></pre>
+<p>The dashboard should answer:</p>
+<pre><code>What did the user say?
+What did chatbot_llm infer?
+What did planner_llm plan?
+What candidates did the Workbench consider?
+What did the verifier reject?
+What did the orchestrator dispatch?
+What skill/action ran?
+What result payload came back?
+Why did the robot say what it said?
+What node/topic/service/action is failing?</code></pre>
+<h2>2. Two modes</h2>
+<h3>Base stack mode</h3>
+<p>For <code>feat/TFM-LLM_planner</code> or Workbench disabled:</p>
+<pre><code>dialogue_manager -&gt; chatbot_llm -&gt; planner_llm -&gt; nao_orchestrator -&gt; skills -&gt; feedback -&gt; dialogue_act</code></pre>
+<h3>Neural Workbench mode</h3>
+<p>Adds:</p>
+<pre><code>candidate pulse programs
+AB registry verification
+energy/entropy scores
+selected program
+trace retrieval
+macro candidates
+AB-space visualizations</code></pre>
+<p>Base mode must work first.</p>
+<h2>3. Direct ROS artifact rule</h2>
+<p>The dashboard should use <code>skill_common</code>, AB registry, and <code>stack_observer</code>, but it should also wire directly to real ROS artifacts:</p>
+<pre><code>nodes
+topics
+services
+actions
+message types
+publisher/subscriber counts
+action server availability
+/rosout</code></pre>
+<p>This is central because the supervisor has repeatedly requested visibility into the actual ROS interactions.</p>
+<h2>4. Proposed architecture</h2>
+<pre><code>dashboard_web_ui
+  &lt;-&gt; websocket/http
+dashboard_backend_node
+  -&gt; ROS graph introspection
+  -&gt; topic subscriptions
+  -&gt; service/action introspection
+  -&gt; skill_common / AB registry loader
+  -&gt; stack_observer event stream
+  -&gt; trace memory reader
+  -&gt; launch profile manager</code></pre>
+<p>Suggested package:</p>
+<pre><code>src/nao_dashboard/
+  package.xml
+  setup.py
+  nao_dashboard/
+    backend_node.py
+    ros_graph_introspector.py
+    topic_tap.py
+    action_introspector.py
+    service_introspector.py
+    registry_adapter.py
+    ab_graph_adapter.py
+    trace_store.py
+    launch_profiles.py
+    node_health.py
+    websocket_server.py
+    models.py
+  web/
+    index.html
+    app.js
+    styles.css
+  launch/
+    nao_dashboard.launch.py
+  test/</code></pre>
+<p>Simpler alternative: place early version inside <code>stack_observer</code>.</p>
+<h2>5. Main screens</h2>
+<h3>5.1 Live flow view</h3>
+<p>Visual graph/timeline:</p>
+<pre><code>User -&gt; DialogueManager -&gt; ChatbotLLM -&gt; PlannerLLM -&gt; Workbench? -&gt; Orchestrator -&gt; Skill -&gt; Feedback -&gt; DialogueAct -&gt; Speech</code></pre>
+<p>Each edge shows:</p>
+<pre><code>topic/service/action name
+last timestamp
+message count
+latency
+payload summary</code></pre>
+<p>Clicking an edge opens the latest payload.</p>
+<h3>5.2 ROS graph view</h3>
+<p>Show actual ROS graph:</p>
+<pre><code>nodes as boxes
+topics as blue edges
+services as purple edges
+actions as orange edges
+parameters as metadata</code></pre>
+<p>Highlight:</p>
+<pre><code>missing expected nodes
+inactive action servers
+orphan topics
+high-error nodes
+stale publishers</code></pre>
+<h3>5.3 Plan execution view</h3>
+<p>Show current plan:</p>
+<pre><code>Plan ID: plan_023
+Goal: &quot;find the cup and tell me where it is&quot;
+
+1. find_object(target=cup)       running/succeeded/failed
+2. report_result(source=step_1)  pending/succeeded</code></pre>
+<p>For each step show:</p>
+<pre><code>AB object ID
+skill/action endpoint
+args
+expected effects
+result payload
+failure code
+recovery suggestion</code></pre>
+<h3>5.4 NAO skill/action view</h3>
+<p>For each skill:</p>
+<pre><code>name
+AB level
+real/fake
+owner package
+action server status
+last call
+success count
+failure count
+latency
+result schema</code></pre>
+<p>NAO-specific panels:</p>
+<pre><code>head/gaze status
+speech status
+posture/motion status
+camera/perception status
+NAOqi connection status
+fake skill scenario mode</code></pre>
+<h3>5.5 Scene / KB / WME-like state</h3>
+<p>Show:</p>
+<pre><code>/scene/summary
+visible people
+visible objects
+person IDs
+object labels/confidence
+knowledge snapshot
+KB query/revise activity
+latest skill payloads
+active uncertainties</code></pre>
+<h3>5.6 AB registry graph</h3>
+<p>Visualize:</p>
+<pre><code>AB=0 primitives
+AB=1 executable skills
+AB=2 macro proposals
+AB=3 strategy proposals</code></pre>
+<p>Color by:</p>
+<pre><code>implemented
+fake
+proposal
+deprecated
+failed validation</code></pre>
+<p>Example decomposition:</p>
+<pre><code>perform_motion -&gt; wave_greet
+look_at + wave_greet -&gt; wave_at
+find_object + report_result -&gt; find_object_and_report
+navigate_to + recovery branch -&gt; navigate_with_recovery</code></pre>
+<h3>5.7 Neural Workbench search view</h3>
+<p>When enabled, show:</p>
+<pre><code>Goal: &quot;wave at the person&quot;
+
+Candidate A:
+  look_at -&gt; wave_greet
+  valid: true
+  energy: 0.21
+  entropy_after: 0.18
+
+Candidate B:
+  report_result only
+  valid: false
+  reason: missing social gesture
+
+Selected:
+  wave_at expanded to look_at + wave_greet</code></pre>
+<p>Even if selection is fast, capture events and allow replay.</p>
+<h3>5.8 Energy / entropy / AB maturity view</h3>
+<p>Future research visualizations:</p>
+<pre><code>selected program energy over traces
+entropy_before / entropy_after
+delta_entropy
+AB maturity A1/A2/A3
+success/failure by AB object
+probability shift after traces</code></pre>
+<h3>5.9 Launch profile and health view</h3>
+<p>Profiles:</p>
+<pre><code>base_demo
+fake_skill_validation
+robot_live
+neural_workbench
+dashboard_only</code></pre>
+<p>For each profile show:</p>
+<pre><code>required nodes
+optional nodes
+expected topics
+expected actions
+expected services
+status
+start/restart command</code></pre>
+<p>Start read-only. Add guarded restart controls later.</p>
+<h2>6. Backend data model</h2>
+<pre><code>@dataclass
+class DashboardEvent:
+    timestamp: float
+    event_id: str
+    run_id: str
+    trace_id: str | None
+    source: str
+    event_type: str
+    channel: str
+    ab_object_id: str | None
+    ab_level: int | None
+    payload_summary: str
+    payload: dict</code></pre>
+<pre><code>@dataclass
+class RosGraphSnapshot:
+    timestamp: float
+    nodes: list
+    topics: list
+    services: list
+    actions: list
+    edges: list</code></pre>
+<pre><code>@dataclass
+class ABRegistrySnapshot:
+    timestamp: float
+    objects: list
+    edges: list
+    validation_errors: list[str]</code></pre>
+<h2>7. ROS discovery</h2>
+<p>Use <code>rclpy</code> introspection where possible:</p>
+<pre><code>get_node_names()
+get_topic_names_and_types()
+get_service_names_and_types()
+get_publishers_info_by_topic()
+get_subscriptions_info_by_topic()</code></pre>
+<p>For actions, use ROS2 APIs if available; otherwise shell fallback with timeout protection:</p>
+<pre><code>ros2 action list
+ros2 action info /action_name</code></pre>
+<h2>8. Event sources</h2>
+<p>Minimum:</p>
+<pre><code>/planner/request
+/intents
+/planner/execution_feedback
+/planner/dialogue_act
+/scene/summary
+/rosout</code></pre>
+<p>Recommended:</p>
+<pre><code>/fake_skills/events
+/stack_observer/events
+/neural_workbench/candidates
+/neural_workbench/selection
+/neural_workbench/trace
+/skill_common/registry_snapshot
+/ab_registry/snapshot</code></pre>
+<h2>9. Reports and exports</h2>
+<p>Export:</p>
+<pre><code>current trace JSON
+trace HTML report
+ROS graph snapshot JSON
+AB registry snapshot JSON
+dashboard snapshot HTML
+experiment run bundle</code></pre>
+<p>Experiment bundle:</p>
+<pre><code>run_id/
+  trace.jsonl
+  ros_graph_snapshot.json
+  ab_registry_snapshot.json
+  errors.jsonl
+  report.html</code></pre>
+<h2>10. Implementation phases</h2>
+<h3>Phase 0 — Spec and mock</h3>
+<p>Add this spec and optionally a static mock.</p>
+<h3>Phase 1 — Web live timeline</h3>
+<p>Reuse simple trace viewer event model. Show live timeline and payload inspector.</p>
+<h3>Phase 2 — ROS graph introspection</h3>
+<p>Add nodes/topics/services/actions snapshot and expected-vs-missing artifacts.</p>
+<h3>Phase 3 — AB registry visualization</h3>
+<p>Load <code>skill_common</code>/AB registry and render decomposition graph.</p>
+<h3>Phase 4 — Skill/action server panel</h3>
+<p>Show skill endpoints, fake scenarios, payloads, counters.</p>
+<h3>Phase 5 — Neural Workbench panel</h3>
+<p>Show candidates, verification, energy/entropy, selected program.</p>
+<h3>Phase 6 — Reports and replay</h3>
+<p>Save and replay trace bundles.</p>
+<h3>Phase 7 — Launch profiles and safe controls</h3>
+<p>Read launch profiles, show health, then add guarded restart/scenario controls.</p>
+<h2>11. Safety rules</h2>
+<p>Do not allow early dashboard controls to:</p>
+<pre><code>bypass nao_orchestrator
+publish arbitrary robot speech
+call robot actions directly
+enable movement without explicit operator guard
+restart nodes without confirmation
+mutate AB registry live without review</code></pre>
+<p>First dashboard should be read-only plus export.</p>
+<h2>12. Why this matters</h2>
+<p>This is not only a developer tool. For Neural Workbench it becomes a visual microscope for:</p>
+<pre><code>AB object usage
+candidate pulse search
+symbolic verification
+energy/entropy scoring
+trace memory
+macro crystallization
+probability landscape shifts</code></pre>
+<p>The future dashboard can show the agent searching capability space in replay, even when runtime planning is fast.</p></main></body></html>

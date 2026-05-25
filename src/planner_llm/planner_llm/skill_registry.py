@@ -9,6 +9,7 @@ import warnings
 
 from planner_common import ExportedSkillManifest
 from planner_common import load_exported_skill_manifests
+from planner_common import load_shared_skill_manifest
 
 try:  # pragma: no cover - runtime dependency
     from ament_index_python.packages import PackageNotFoundError
@@ -183,6 +184,14 @@ class SkillRegistry:
 
     @classmethod
     def load(cls, path: str = '', *, logger=None) -> 'SkillRegistry':
+        shared_registry = _load_shared_registry(path, logger=logger)
+        if shared_registry is not None:
+            shared_skills = _planner_skills_from_shared_registry(shared_registry)
+            return cls(
+                step_types=_DEFAULT_STEP_TYPES,
+                skills=tuple(shared_skills),
+            )
+
         registry_path, used_fallback = _resolve_registry_path(path)
         overlay_payload = _load_registry_overlay(registry_path)
         if used_fallback and not str(path or '').strip():
@@ -498,3 +507,53 @@ def _warn(logger, message: str) -> None:
         logger.warn(message)
         return
     warnings.warn(message, stacklevel=2)
+
+
+def _load_shared_registry(path: str, *, logger=None):
+    clean_path = str(path or '').strip()
+    try:
+        shared_registry = load_shared_skill_manifest(clean_path)
+        return tuple(shared_registry) if shared_registry else None
+    except Exception as err:  # pragma: no cover - runtime dependency/errors
+        _warn(
+            logger,
+            'planner_llm shared skill_common registry unavailable, using legacy overlay: %s'
+            % err,
+        )
+        return None
+
+
+def _planner_skill_payload_from_shared(payload: dict) -> dict:
+    data = dict(payload or {})
+    return {
+        'name': str(data.get('name', '')).strip().lower(),
+        'aliases': list(data.get('aliases', []) or []),
+        'category': str(data.get('category', '')).strip(),
+        'params': list(data.get('params', []) or []),
+        'required_params': list(data.get('required_params', []) or []),
+        'preconditions': list(data.get('preconditions', []) or []),
+        'expected_effects': list(data.get('expected_effects', []) or []),
+        'observable_success': list(data.get('observable_success', []) or []),
+        'failure_modes': list(data.get('failure_modes', []) or []),
+        'planner_guidance': list(data.get('planner_guidance', []) or []),
+        'safety_flags': list(data.get('safety_flags', []) or []),
+        'robot_adapter_mapping': str(data.get('robot_adapter_mapping', '')).strip(),
+        'retryable': True,
+        'can_request_user_help': False,
+        'can_request_clarification': True,
+        'timeout_hint': float(
+            data.get('metadata', {}).get('timeout_hint_sec', 10.0)
+            if isinstance(data.get('metadata', {}), dict)
+            else 10.0
+        ),
+    }
+
+
+def _planner_skills_from_shared_registry(shared_registry) -> list[PlannerSkill]:
+    skills = []
+    for item in shared_registry:
+        normalized = _planner_skill_payload_from_shared(item)
+        if not normalized.get('name', ''):
+            continue
+        skills.append(PlannerSkill.from_dict(normalized))
+    return skills

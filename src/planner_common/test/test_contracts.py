@@ -19,6 +19,7 @@ def test_planner_request_defaults_missing_fields() -> None:
     assert request.goal_text == ''
     assert request.request_id.startswith('request_')
     assert request.goal_id.startswith('goal_')
+    assert request.goal_token == request.goal_id
     assert request.request_kind == 'new_goal'
     assert request.normalized_intents == ()
     assert request.requested_plan == ()
@@ -51,6 +52,7 @@ def test_planner_request_keeps_supervisor_metadata() -> None:
         {
             'request_id': 'turn_7',
             'goal_id': 'goal_7',
+            'goal_token': 'goal_7:turn_7',
             'parent_goal_id': 'goal_parent',
             'supersedes_goal_id': 'goal_old',
             'request_kind': 'clarification_answer',
@@ -71,6 +73,7 @@ def test_planner_request_keeps_supervisor_metadata() -> None:
         }
     )
     assert request.goal_id == 'goal_7'
+    assert request.goal_token == 'goal_7:turn_7'
     assert request.parent_goal_id == 'goal_parent'
     assert request.supersedes_goal_id == 'goal_old'
     assert request.request_kind == 'clarification_answer'
@@ -107,6 +110,7 @@ def test_execution_feedback_parses_nested_step_and_supervisor_fields() -> None:
         '{"goal_id":"goal_1","plan_id":"plan_1","plan_version":2,"event_type":"step_failed","status":"failed","blocking":true,"needs_user_input":true,"unmet_preconditions":["cup_visible"],"scene_targets":["cup"],"step":{"id":"step_2","type":"skill","name":"perform_motion","retry_budget":1,"on_failure":"replan","requires":["cup_visible"]}}'
     )
     assert feedback.goal_id == 'goal_1'
+    assert feedback.goal_token == 'goal_1'
     assert feedback.plan_id == 'plan_1'
     assert feedback.plan_version == 2
     assert feedback.event_type == 'step_failed'
@@ -188,6 +192,7 @@ def test_planner_dialogue_act_payload_round_trips() -> None:
     )
     act = PlannerDialogueAct.from_payload(payload)
     assert act.goal_id == 'goal_8'
+    assert act.goal_token == 'goal_8'
     assert act.act == 'ask_clarification'
     assert act.await_user_response is True
     assert act.slots_needed == ('target_object',)
@@ -274,9 +279,11 @@ def test_build_plan_payload_keeps_supervisor_envelope_shape() -> None:
         communication_policy={'emit_progress': True},
     )
     assert payload['goal_id'] == 'goal_1'
+    assert payload['goal_token'] == 'goal_1'
     assert payload['grounded_context']['knowledge_snapshot'] == {}
     assert payload['scene_targets'] == ['cup']
     assert payload['plan']['goal_id'] == 'goal_1'
+    assert payload['plan']['goal_token'] == 'goal_1'
     assert payload['plan']['plan_version'] == 4
     assert payload['plan']['status'] == 'executing'
     assert payload['plan']['scene_targets'] == ['cup']

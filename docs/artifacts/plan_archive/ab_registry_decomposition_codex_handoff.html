@@ -1,0 +1,622 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Codex Handoff — Canonical AB Registry</title><style>:root{--bg:#f7f3ea;--ink:#2b2118;--line:#dfd2bf;--accent:#c46a2b;--code:#f0e6d6}
+body{margin:0;background:radial-gradient(circle at 20% 0%,#fff7e8 0,var(--bg) 42%,#eee3d2 100%);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;line-height:1.58}
+main{max-width:1120px;margin:0 auto;padding:42px 24px 96px}h1{font-size:2.3rem;letter-spacing:-.035em}h2{margin-top:2.3rem;padding-top:.7rem;border-top:1px solid var(--line)}h3{margin-top:1.55rem}blockquote{border-left:4px solid var(--accent);padding:.8rem 1rem;background:rgba(255,255,255,.55);border-radius:0 12px 12px 0}pre{background:#2b2118;color:#fff7ea;border-radius:14px;padding:14px 16px;overflow-x:auto}code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);border-radius:5px;padding:.08rem .28rem}pre code{background:transparent;color:inherit;padding:0}table{width:100%;border-collapse:collapse;margin:1rem 0;background:rgba(255,255,255,.56)}th,td{border:1px solid var(--line);padding:9px 11px;vertical-align:top}th{background:#eadcc8;text-align:left}</style></head><body><main><h1>Codex Handoff — Canonical AB Registry and Decomposition Layer</h1>
+<p><strong>Target branch:</strong> <code>feat(R)/Neural-Workbench</code></p>
+<p><strong>Backport relevance:</strong> selected registry-view utilities may later be backported to <code>feat/TFM-LLM_planner</code></p>
+<p><strong>Primary repo:</strong> <code>ieverythng/nao-ros4hri-bridge</code></p>
+<p><strong>Purpose:</strong> turn the current generated AB registry into the canonical symbolic decomposition graph for skills, fake skills, macro-skills, strategies, and future Neural Workbench validation.</p>
+<p>---</p>
+<h2>1. Executive intent</h2>
+<p>This handoff documents the design pass where we made the AB registry explicit.</p>
+<p>The final architecture should have:</p>
+<pre><code>skill_common      = what can be called/executed
+ab_registry       = what each abstraction is made of
+trace_memory      = what happened when it was used
+embedding_index   = what it is similar to
+verifier          = whether it is valid/safe/grounded
+crystallizer      = when repeated traces become new AB objects</code></pre>
+<p>The important addition is the second line: <code>ab_registry</code>.</p>
+<p>The registry should not be only a list of available skills. It should become a symbolic abstraction graph where every AB object has a compositional lineage.</p>
+<p>Core rule:</p>
+<pre><code>AB_k_object = composition(AB_{k-1,1}, AB_{k-1,2}, ..., AB_{k-1,n})</code></pre>
+<p>However, this should be a structured composition, not a flat list. It must include order, control policy, preconditions, expected effects, result schemas, failure transitions, safety flags, trace support, entropy profile, and implementation status.</p>
+<p>---</p>
+<h2>2. Why this matters now</h2>
+<p>The fake skills package makes this urgent.</p>
+<p>We are adding executable/fake AB=1 skills such as:</p>
+<pre><code>navigate_to
+find_object
+wave_greet
+inspect_area</code></pre>
+<p>and macro candidates such as:</p>
+<pre><code>wave_at = look_at -&gt; wave_greet
+find_object_and_report = find_object -&gt; report_result
+inspect_area_and_report = inspect_area -&gt; report_result
+navigate_with_recovery = navigate_to + recovery/clarification branch</code></pre>
+<p>If these are represented only as isolated YAML skill entries, the Workbench will not know how high-level behaviours relate to lower-level components. That weakens:</p>
+<ul>
+<li>symbolic validation;</li>
+<li>fake-skill scenario testing;</li>
+<li>Neural Workbench candidate verification;</li>
+<li>macro proposal and crystallization;</li>
+<li>entropy/energy scoring;</li>
+<li>trace memory interpretation;</li>
+<li>dashboard visualization;</li>
+<li>future AB=2/AB=3 strategy formation.</li>
+</ul>
+<p>The AB registry should therefore become the canonical symbolic skeleton of the system.</p>
+<p>---</p>
+<h2>3. Required conceptual split</h2>
+<p>Do not collapse everything into one skill list.</p>
+<table><thead><tr><th>Component</th><th>Role</th></tr></thead><tbody>
+<tr><td><code>skill_common</code></td><td>executable skill interface and compact views</td></tr>
+<tr><td><code>ab_registry</code></td><td>symbolic abstraction graph and decomposition lineage</td></tr>
+<tr><td><code>trace_memory</code></td><td>empirical outcomes from full interaction traces</td></tr>
+<tr><td><code>embedding_index</code></td><td>geometric/semantic similarity over objects and traces</td></tr>
+<tr><td><code>verifier</code></td><td>symbolic validity, safety, and grounding checks</td></tr>
+<tr><td><code>crystallizer</code></td><td>proposes new AB objects from repeated successful traces</td></tr>
+<tr><td><code>stack_observer</code></td><td>visualizes runtime events, AB lineage, traces, and payloads</td></tr>
+</tbody></table>
+<p><code>skill_common</code> can host the first implementation for practical reasons, but architecturally the AB registry is a separate responsibility.</p>
+<p>---</p>
+<h2>4. Current state assumption</h2>
+<p>Codex should inspect the current generated registry JSON/YAML before editing.</p>
+<p>Expected current state includes AB=0 ROS/runtime affordances such as:</p>
+<pre><code>/planner/request
+/intents
+/planner/execution_feedback
+/planner/dialogue_act
+/scene/summary
+query_kb
+revise_kb
+verify_evidence_payload
+store_trace
+retrieve_memory</code></pre>
+<p>and AB=1 planner-visible skills such as:</p>
+<pre><code>scan
+find_object
+navigate_to
+walk_to
+perform_motion
+look_at
+report_result</code></pre>
+<p>The target is to support the following long-term range:</p>
+<pre><code>AB=0 primitive vectors / ROS topics / services / actions / cognitive affordances
+AB=1 executable skills
+AB=2 macro-skills and adaptive skill surfaces
+AB=3 strategies
+AB=4 orchestration policies
+AB=5 policy surfaces / meta-workbench proposals</code></pre>
+<p>Only AB=0, AB=1, and a few AB=2 proposal objects need to be practical immediately.</p>
+<p>---</p>
+<h2>5. Proposed package/module location</h2>
+<p>Preferred initial implementation inside <code>skill_common</code>:</p>
+<pre><code>src/skill_common/
+  skill_common/
+    contracts.py
+    registry.py
+    loader.py
+    ab_objects.py
+    ab_registry.py
+    ab_loader.py
+    ab_expansion.py
+    ab_validation.py
+    defaults/
+      skill_registry.yaml
+      ab_registry.yaml
+  test/
+    test_ab_registry_loader.py
+    test_ab_expansion.py
+    test_ab_validation.py
+    test_ab_dag_integrity.py</code></pre>
+<p>If the package becomes too large later, split into:</p>
+<pre><code>src/ab_registry/</code></pre>
+<p>Do not split too early if it complicates dependencies.</p>
+<p>---</p>
+<h2>6. <code>ABObjectSpec</code> schema</h2>
+<p>Add a general object specification.</p>
+<pre><code>@dataclass(frozen=True)
+class ABObjectSpec:
+    object_id: str
+    name: str
+    ab_level: int
+    kind: str
+    category: str = &quot;&quot;
+    implementation_status: str = &quot;unknown&quot;  # implemented | fake | proposal | deprecated
+    owner_package: str = &quot;&quot;
+    aliases: list[str] = field(default_factory=list)
+
+    interface: dict[str, Any] = field(default_factory=dict)
+    transport: dict[str, Any] = field(default_factory=dict)
+    decomposition: dict[str, Any] = field(default_factory=dict)
+    validation: dict[str, Any] = field(default_factory=dict)
+    safety_flags: list[str] = field(default_factory=list)
+
+    expected_effects: list[str] = field(default_factory=list)
+    observable_success: list[str] = field(default_factory=list)
+    failure_modes: list[str] = field(default_factory=list)
+
+    trace_support: dict[str, Any] = field(default_factory=dict)
+    entropy_profile: dict[str, Any] = field(default_factory=dict)
+    embedding: dict[str, Any] = field(default_factory=dict)
+    notes: str = &quot;&quot;</code></pre>
+<p>Minimum YAML object shape:</p>
+<pre><code>objects:
+  - object_id: wave_at
+    name: Wave At Target
+    ab_level: 2
+    kind: macro_skill
+    category: social_hri
+    implementation_status: proposal
+    owner_package: neural_workbench
+    aliases: [greet_target, wave_to_person]
+    interface:
+      inputs:
+        target: string
+      outputs:
+        result_payload: SkillResultPayload
+    decomposition:
+      lower_level: 1
+      expansion_type: sequence
+      nodes:
+        - {id: s1, ref: look_at}
+        - {id: s2, ref: wave_greet}
+      edges:
+        - [s1, s2]
+    validation:
+      executable_if_expanded_to_level: 1
+      result_schema: SkillResultPayload
+    safety_flags: [attention, social_motion]</code></pre>
+<p>---</p>
+<h2>7. Composition graph requirements</h2>
+<p>The AB registry should behave like a typed DAG or hypergraph.</p>
+<p>Object kinds:</p>
+<pre><code>primitive_affordance
+ros_topic
+ros_service
+ros_action
+runtime_contract
+skill
+fake_skill
+macro_skill
+strategy
+orchestration_policy
+policy_surface</code></pre>
+<p>Edge/relation types:</p>
+<pre><code>composes
+requires
+supports
+inhibits
+recovers_from
+generalizes
+specializes
+promoted_from_trace</code></pre>
+<p>Required utilities:</p>
+<pre><code>get_object(object_id)
+children(object_id, depth=1)
+parents(object_id)
+expand(object_id, target_level=None, max_depth=1)
+validate_dag()
+validate_references()
+compute_depth(object_id)
+compute_compression_ratio(object_id)
+find_objects_by_ab_level(k)
+find_executable_expansion(object_id)</code></pre>
+<p>Important rule:</p>
+<blockquote>Expansion is depth-controlled. Do not expand AB=4 or AB=3 objects all the way to AB=0 by default.</blockquote>
+<p>Example:</p>
+<pre><code>expand(&quot;try_recover_clarify&quot;, max_depth=1)
+# returns AB=2 components
+
+expand(&quot;try_recover_clarify&quot;, target_level=1)
+# returns AB=1 executable skills
+
+expand(&quot;try_recover_clarify&quot;, target_level=0)
+# only for deep debugging, validation, or simulation</code></pre>
+<p>---</p>
+<h2>8. Symbolic validation requirements</h2>
+<p>The Neural Workbench verifier should use the AB registry to check candidate programs.</p>
+<p>For any candidate pulse program or macro object, validate:</p>
+<h3>8.1 Object existence</h3>
+<pre><code>Does every referenced object_id exist?</code></pre>
+<h3>8.2 Level validity</h3>
+<pre><code>Is AB=k composed from approved lower-level objects?
+Is the candidate unnecessarily decomposed?
+Is the candidate too abstract for the requested task?</code></pre>
+<h3>8.3 Interface compatibility</h3>
+<pre><code>Do outputs of one node satisfy inputs of the next?
+Are required parameters provided?
+Are result schemas known?</code></pre>
+<h3>8.4 Safety</h3>
+<pre><code>Does expansion include unsafe movement?
+Does walking require an explicit operator flag?
+Does speech bypass dialogue_manager?
+Does anything bypass nao_orchestrator?</code></pre>
+<h3>8.5 Implementation status</h3>
+<pre><code>implemented = executable
+fake = executable only in validation/simulation mode
+proposal = expand first or keep non-executable
+deprecated = reject</code></pre>
+<h3>8.6 Trace support</h3>
+<pre><code>Does this macro have enough empirical support?
+Is failure rate acceptable?
+Is mean energy low enough?
+Is entropy reduction positive?</code></pre>
+<p>---</p>
+<h2>9. Relationship to embeddings</h2>
+<p>The AB registry is not redundant with embeddings.</p>
+<p>Embeddings answer:</p>
+<pre><code>What is similar?
+What worked in related contexts?
+Which trace cluster resembles this task?</code></pre>
+<p>AB registry answers:</p>
+<pre><code>What is this abstraction made of?
+Can it be expanded safely?
+Can its components execute?
+Can it be explained?
+Can it be verified?
+Can it be promoted?</code></pre>
+<p>Correct architecture:</p>
+<pre><code>AB registry     = symbolic skeleton
+trace memory    = lived experience
+embedding index = geometric similarity
+verifier        = immune system
+crystallizer    = abstraction formation mechanism</code></pre>
+<p>Use embeddings to propose or retrieve candidates. Use the AB registry to validate them.</p>
+<p>---</p>
+<h2>10. Relationship to Entropy Machines</h2>
+<p>Entropy-machine metadata should attach to AB objects, but it should be optional at first.</p>
+<p>Suggested metadata:</p>
+<pre><code>entropy_profile:
+  observable_variables:
+    - target_found
+    - ambiguity_count
+    - confidence
+    - remaining_uncertainty
+  expected_entropy_reduction:
+    empirical_mean: null
+    empirical_std: null
+    sample_count: 0
+  entropy_machine_status: unmeasured  # unmeasured | candidate | verified | deprecated</code></pre>
+<p>After full interaction traces, update:</p>
+<pre><code>trace -&gt; selected AB object -&gt; result payload -&gt; entropy delta -&gt; AB object profile</code></pre>
+<p>An object becomes an entropy-machine candidate when:</p>
+<pre><code>E[ΔH(object)] &gt; 0</code></pre>
+<p>and later verified when:</p>
+<pre><code>sample_count &gt;= N
+mean_delta_entropy &gt;= threshold
+failure_rate &lt;= threshold
+safety_status == approved</code></pre>
+<p>Do not block the first registry implementation on entropy fields. Add the fields now so future metrics can use them.</p>
+<p>---</p>
+<h2>11. Concrete objects to add or update</h2>
+<h3>11.1 AB=0 primitives</h3>
+<p>Examples:</p>
+<pre><code>- object_id: set_gaze
+  ab_level: 0
+  kind: primitive_affordance
+  category: motor_attention
+  implementation_status: implemented
+  expected_effects:
+    - camera/head orientation changes
+
+- object_id: read_scene_summary
+  ab_level: 0
+  kind: ros_topic
+  category: perception
+  implementation_status: implemented
+  transport:
+    type: topic
+    name: /scene/summary
+
+- object_id: query_kb
+  ab_level: 0
+  kind: ros_service
+  category: memory
+  implementation_status: implemented</code></pre>
+<h3>11.2 AB=1 fake skills</h3>
+<pre><code>- object_id: navigate_to
+  ab_level: 1
+  kind: fake_skill
+  category: navigation
+  implementation_status: fake
+  owner_package: fake_skills
+  aliases: [go_to, move_to, navigate]
+  interface:
+    inputs:
+      target: string
+      result_mode: string
+    outputs:
+      result_payload: SkillResultPayload
+  validation:
+    result_schema: SkillResultPayload
+  safety_flags: [simulated_navigation]</code></pre>
+<pre><code>- object_id: wave_greet
+  ab_level: 1
+  kind: fake_skill
+  category: social_motion
+  implementation_status: fake
+  owner_package: fake_skills
+  aliases: [wave, greet_wave, wave_hello]
+  decomposition:
+    lower_level: 0
+    expansion_type: sequence
+    nodes:
+      - {id: p1, ref: perform_motion, args: {motion: wave}}</code></pre>
+<h3>11.3 AB=2 macro candidates</h3>
+<pre><code>- object_id: wave_at
+  ab_level: 2
+  kind: macro_skill
+  category: social_hri
+  implementation_status: proposal
+  decomposition:
+    lower_level: 1
+    expansion_type: sequence
+    nodes:
+      - {id: s1, ref: look_at}
+      - {id: s2, ref: wave_greet}
+    edges:
+      - [s1, s2]
+  validation:
+    executable_if_expanded_to_level: 1
+  safety_flags: [attention, social_motion]</code></pre>
+<pre><code>- object_id: find_object_and_report
+  ab_level: 2
+  kind: macro_skill
+  category: perception_dialogue
+  implementation_status: proposal
+  decomposition:
+    lower_level: 1
+    expansion_type: sequence
+    nodes:
+      - {id: s1, ref: find_object}
+      - {id: s2, ref: report_result}</code></pre>
+<h3>11.4 AB=3 strategy proposals</h3>
+<pre><code>- object_id: try_recover_clarify
+  ab_level: 3
+  kind: strategy
+  category: recovery
+  implementation_status: proposal
+  decomposition:
+    lower_level: 2
+    expansion_type: conditional_graph
+    nodes:
+      - {id: m1, ref: navigate_with_recovery}
+      - {id: m2, ref: find_object_and_report}
+      - {id: m3, ref: ask_clarification}
+    policy:
+      - if: failure.recoverable == true
+        then: choose_recovery_or_clarify</code></pre>
+<p>Keep AB=3 examples proposal-only until trace support exists.</p>
+<p>---</p>
+<h2>12. Interaction with fake skills</h2>
+<p>The fake skills package should use the AB registry in two ways.</p>
+<h3>12.1 Executor mapping</h3>
+<p>Executable fake skills:</p>
+<pre><code>navigate_to -&gt; fake_skills.navigate_to
+find_object -&gt; fake_skills.find_object
+wave_greet -&gt; fake_skills.wave_greet
+inspect_area -&gt; fake_skills.inspect_area</code></pre>
+<h3>12.2 Macro expansion</h3>
+<p>AB=2 proposals:</p>
+<pre><code>wave_at -&gt; look_at -&gt; wave_greet
+find_object_and_report -&gt; find_object -&gt; report_result
+inspect_area_and_report -&gt; inspect_area -&gt; report_result</code></pre>
+<p>If no macro executor exists, the Workbench or planner should expand the macro to AB=1 components before sending to <code>nao_orchestrator</code>.</p>
+<p>Fake skills should return metadata:</p>
+<pre><code>{
+  &quot;ab_object_id&quot;: &quot;navigate_to&quot;,
+  &quot;fake&quot;: true,
+  &quot;result_mode&quot;: &quot;path_blocked&quot;,
+  &quot;trace_support&quot;: {
+    &quot;scenario_id&quot;: &quot;path_blocked&quot;
+  }
+}</code></pre>
+<p>---</p>
+<h2>13. Registry views</h2>
+<p>Different modules need different slices of the registry.</p>
+<table><thead><tr><th>View</th><th>Consumer</th><th>Contents</th></tr></thead><tbody>
+<tr><td>planner view</td><td><code>planner_llm</code></td><td>high-level callable or expandable objects with prompt guidance</td></tr>
+<tr><td>chatbot view</td><td><code>chatbot_llm</code></td><td>aliases, user-language affordances, routing hints</td></tr>
+<tr><td>executor view</td><td><code>nao_orchestrator</code></td><td>only executable AB=1 mappings and approved macros</td></tr>
+<tr><td>workbench view</td><td><code>neural_workbench</code></td><td>full decomposition, status, safety, trace/entropy metadata</td></tr>
+<tr><td>dashboard view</td><td><code>stack_observer</code></td><td>graph nodes/edges, status, runtime mapping, trace IDs</td></tr>
+</tbody></table>
+<p>Acceptance rule:</p>
+<pre><code>The planner should not receive massive AB=4 recipes.
+The orchestrator should not receive proposal-only objects as executable.
+The Workbench should receive full lineage.</code></pre>
+<p>---</p>
+<h2>14. Workbench integration</h2>
+<p>The Workbench should use the AB registry during:</p>
+<h3>Candidate generation</h3>
+<pre><code>registry.find_by_category(&quot;navigation&quot;, max_ab_level=2)
+registry.find_executable_or_expandable(&quot;wave_at&quot;)</code></pre>
+<h3>Candidate verification</h3>
+<pre><code>object exists
+AB level appropriate
+decomposition valid
+executable expansion exists
+safety OK
+required params available</code></pre>
+<h3>Energy scoring</h3>
+<p>Add penalties:</p>
+<pre><code>unsupported_object_penalty
+proposal_without_expansion_penalty
+ab_mismatch_penalty
+unsafe_expansion_penalty
+low_trace_support_penalty</code></pre>
+<h3>Trace storage</h3>
+<pre><code>{
+  &quot;selected_ab_object&quot;: &quot;wave_at&quot;,
+  &quot;expanded_to&quot;: [&quot;look_at&quot;, &quot;wave_greet&quot;],
+  &quot;ab_level&quot;: 2,
+  &quot;result_payloads&quot;: [],
+  &quot;outcome&quot;: &quot;success&quot;
+}</code></pre>
+<h3>Crystallization</h3>
+<p>Repeated traces:</p>
+<pre><code>find_object -&gt; report_result</code></pre>
+<p>can become:</p>
+<pre><code>find_object_and_report</code></pre>
+<p>as an AB=2 candidate.</p>
+<p>---</p>
+<h2>15. Dashboard requirements</h2>
+<p>The dashboard should display:</p>
+<pre><code>selected object
+AB level
+kind
+implementation status
+owner package
+transport
+decomposition children
+parents / higher-level users
+safety flags
+trace support
+entropy profile</code></pre>
+<p>For runtime events:</p>
+<pre><code>active skill -&gt; AB object -&gt; decomposition -&gt; result payload -&gt; trace update</code></pre>
+<p>This makes supervisor demos much clearer.</p>
+<p>---</p>
+<h2>16. Implementation phases</h2>
+<h3>Phase A — Schema and loader</h3>
+<ul>
+<li>Add <code>ABObjectSpec</code>.</li>
+<li>Add <code>ab_registry.yaml</code>.</li>
+<li>Load registry.</li>
+<li>Validate required fields.</li>
+<li>Export compact JSON.</li>
+</ul>
+<p>Acceptance:</p>
+<ul>
+<li>current JSON state can be loaded or migrated;</li>
+<li>AB=0 and AB=1 objects load;</li>
+<li>tests cover missing fields and invalid references.</li>
+</ul>
+<h3>Phase B — Graph validation</h3>
+<ul>
+<li>Validate object references.</li>
+<li>Validate acyclic decomposition graph.</li>
+<li>Validate allowed lower-level composition.</li>
+<li>Add <code>expand()</code> utility.</li>
+</ul>
+<p>Acceptance:</p>
+<ul>
+<li><code>wave_at</code> expands to <code>look_at</code>, <code>wave_greet</code>;</li>
+<li>invalid references fail tests;</li>
+<li>AB=3/AB=4 objects are not flattened by default.</li>
+</ul>
+<h3>Phase C — Registry views</h3>
+<p>Export planner, chatbot, executor, workbench, and dashboard views.</p>
+<p>Acceptance:</p>
+<ul>
+<li>orchestrator receives executable mappings only;</li>
+<li>Workbench receives full symbolic lineage.</li>
+</ul>
+<h3>Phase D — Fake skill integration</h3>
+<ul>
+<li>Add fake skill AB entries.</li>
+<li>Connect executor mappings.</li>
+<li>Add macro proposals for <code>wave_at</code>, <code>find_object_and_report</code>, and <code>inspect_area_and_report</code>.</li>
+</ul>
+<p>Acceptance:</p>
+<ul>
+<li>fake skills route through registry;</li>
+<li>macro proposals expand to executable AB=1 steps.</li>
+</ul>
+<h3>Phase E — Workbench verifier integration</h3>
+<ul>
+<li>Verifier checks AB registry.</li>
+<li>Energy scorer uses AB mismatch and implementation status.</li>
+<li>Trace memory stores AB object lineage.</li>
+</ul>
+<p>Acceptance:</p>
+<ul>
+<li>invalid macro candidate rejected;</li>
+<li>proposal macro can execute only if expanded;</li>
+<li>trace stores selected object and expansion.</li>
+</ul>
+<h3>Phase F — Dashboard integration</h3>
+<ul>
+<li>Render AB registry graph.</li>
+<li>Show selected object&#x27;s decomposition.</li>
+<li>Show runtime event to AB object mapping.</li>
+</ul>
+<p>Acceptance:</p>
+<ul>
+<li>dashboard can show <code>wave_at -&gt; look_at -&gt; wave_greet</code>.</li>
+</ul>
+<h3>Phase G — Entropy profile support</h3>
+<ul>
+<li>Add optional entropy profile fields.</li>
+<li>Add symbolic entropy proxy fields to traces.</li>
+<li>Update AB object empirical stats after traces.</li>
+</ul>
+<p>Acceptance:</p>
+<ul>
+<li>entropy fields optional;</li>
+<li>no dependency on a full probabilistic WME;</li>
+<li>trace-derived stats can later update registry metadata.</li>
+</ul>
+<p>---</p>
+<h2>17. Tests</h2>
+<p>Add tests:</p>
+<pre><code>test_ab_object_schema.py
+test_ab_registry_loader.py
+test_ab_registry_reference_validation.py
+test_ab_registry_dag_integrity.py
+test_ab_expand_depth_control.py
+test_ab_registry_views.py
+test_ab_macro_proposal_status.py
+test_ab_fake_skill_mapping.py
+test_ab_workbench_verifier.py</code></pre>
+<p>Specific cases:</p>
+<table><thead><tr><th>Test</th><th>Expected</th></tr></thead><tbody>
+<tr><td><code>wave_at</code> proposal</td><td>not directly executable without macro executor</td></tr>
+<tr><td><code>wave_at</code> expansion</td><td>expands to <code>look_at</code>, <code>wave_greet</code></td></tr>
+<tr><td>invalid child ref</td><td>loader validation fails</td></tr>
+<tr><td>AB=2 direct AB=0 flattening</td><td>not default; only if <code>target_level=0</code></td></tr>
+<tr><td>fake <code>navigate_to</code></td><td>has executor mapping and result schema</td></tr>
+<tr><td><code>navigate_with_recovery</code></td><td>proposal unless implemented</td></tr>
+<tr><td>deprecated object</td><td>rejected by planner/workbench</td></tr>
+<tr><td>entropy fields missing</td><td>accepted with default <code>unmeasured</code> status</td></tr>
+<tr><td>dashboard view export</td><td>includes nodes and decomposition edges</td></tr>
+</tbody></table>
+<p>---</p>
+<h2>18. Acceptance checklist</h2>
+<ul>
+<li>One canonical AB registry exists.</li>
+<li>All executable planner-visible skills have AB entries.</li>
+<li>All AB=2+ objects have explicit decomposition or proposal status.</li>
+<li><code>skill_common</code> can still provide a simple executable skill view.</li>
+<li>Workbench can access full symbolic lineage.</li>
+<li>Orchestrator can access only executable mappings.</li>
+<li>Dashboard can render decomposition graph.</li>
+<li>Fake skills have registry entries and executor mappings.</li>
+<li>Macro proposals are not silently treated as live executable skills.</li>
+<li>Verifier can reject unsupported or unsafe expansions.</li>
+<li>Trace memory can attach outcomes to AB object IDs.</li>
+</ul>
+<p>---</p>
+<h2>19. Warnings</h2>
+<p>Do not:</p>
+<ul>
+<li>flatten all AB=4/AB=3 objects to AB=0 by default;</li>
+<li>let embeddings replace symbolic decomposition;</li>
+<li>treat proposal macros as executable without expansion or approval;</li>
+<li>let fake skills bypass <code>nao_orchestrator</code>;</li>
+<li>let skill descriptions drift separately in planner and chatbot;</li>
+<li>let registry become prompt-only documentation;</li>
+<li>remove backward-compatible simple skill views needed by existing planner/orchestrator code.</li>
+</ul>
+<p>---</p>
+<h2>20. First PR recommendation</h2>
+<pre><code>PR 1: Add ABObjectSpec + ab_registry loader
+PR 2: Add graph validation + expansion utilities
+PR 3: Add registry views for planner/chatbot/orchestrator/workbench/dashboard
+PR 4: Add fake skill AB entries and macro proposal objects
+PR 5: Wire Workbench verifier to AB registry
+PR 6: Dashboard decomposition view</code></pre>
+<p>---</p>
+<h2>21. Summary sentence</h2>
+<blockquote>The AB Registry provides a symbolic compositional lineage for every abstraction object, allowing the Neural Workbench to validate, expand, compress, compare, visualize, and eventually promote behaviours across abstraction levels without flattening all high-level strategies into primitive AB=0 recipes.</blockquote></main></body></html>
