@@ -39,6 +39,8 @@ def test_skill_registry_derives_planner_skills_from_package_exports() -> None:
     assert 'perception' in scan.safety_flags
     assert report_result.robot_adapter_mapping == 'nao_orchestrator.report_result'
     assert report_result.params == ('summary_text',)
+    assert skills_by_name['navigate_to'].timeout_hint == 20.0
+    assert scan.timeout_hint == 3.0
 
 
 def test_skill_prompt_summary_exposes_planner_contract_fields() -> None:

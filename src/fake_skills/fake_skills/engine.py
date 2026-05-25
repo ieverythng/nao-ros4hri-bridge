@@ -39,29 +39,7 @@ class FakeSkillEngine:
         clean_skill = str(skill or '').strip().lower()
         executor = SKILL_EXECUTORS.get(clean_skill)
         if executor is None:
-            return (
-                {
-                    'skill': clean_skill,
-                    'status': 'failed',
-                    'target': '',
-                    'target_kind': '',
-                    'target_found': False,
-                    'summary_text': 'Unknown fake skill: %s' % clean_skill,
-                    'evidence': {},
-                    'failure': {
-                        'code': 'unsupported_skill',
-                        'message': 'No fake executor exists for %s.' % clean_skill,
-                        'recoverable': False,
-                        'suggested_recovery': 'replan',
-                    },
-                    'metadata': {
-                        'ab_object_id': clean_skill,
-                        'fake': True,
-                        'result_mode': 'unsupported_skill',
-                    },
-                },
-                self._default_delay_sec,
-            )
+            return self._unsupported_skill_result(clean_skill), self._default_delay_sec
 
         merged_config = self._scenario_store.resolve_skill_config(
             skill=clean_skill,
@@ -115,3 +93,26 @@ class FakeSkillEngine:
         text = repr(signature).encode('utf-8')
         digest = hashlib.sha1(text).hexdigest()[:16]
         return '%s:%s' % (self._deterministic_seed, digest)
+
+    @staticmethod
+    def _unsupported_skill_result(skill: str) -> dict:
+        return {
+            'skill': skill,
+            'status': 'failed',
+            'target': '',
+            'target_kind': '',
+            'target_found': False,
+            'summary_text': 'Unknown fake skill: %s' % (skill or '<empty>'),
+            'evidence': {},
+            'failure': {
+                'code': 'unsupported_skill',
+                'message': 'No fake executor exists for %s.' % (skill or '<empty>'),
+                'recoverable': False,
+                'suggested_recovery': 'replan',
+            },
+            'metadata': {
+                'ab_object_id': skill,
+                'fake': True,
+                'result_mode': 'unsupported_skill',
+            },
+        }

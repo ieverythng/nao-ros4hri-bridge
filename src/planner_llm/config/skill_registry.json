@@ -40,7 +40,7 @@
       "planner_guidance": [
         "use for a specific named object or person target"
       ],
-      "robot_adapter_mapping": "fake_find_object_skill.find_object",
+      "robot_adapter_mapping": "fake_skills.find_object",
       "result_schema": {
         "required": [
           "skill",
@@ -57,15 +57,79 @@
       "is_fake": true,
       "runtime_callable": true,
       "decomposes_to": [
-        "/skill/fake/find_object",
+        "resolve_target_reference",
         "read_scene_summary",
         "confirm_target_visibility",
         "verify_evidence_payload"
       ],
       "decomposition": {
         "max_depth": -1,
-        "policy": "full_to_ab0",
-        "notes": "Requires fresh scene evidence and explicit target visibility checks."
+        "policy": "ab1_to_effect_primitives",
+        "notes": "Find-object traces reduce target-reference and visibility uncertainty using scene evidence and payload validation."
+      }
+    },
+    {
+      "name": "inspect_area",
+      "category": "perception",
+      "aliases": [
+        "inspect_zone",
+        "check_area"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "target",
+        "target_area",
+        "result_mode"
+      ],
+      "required_params": [
+        "target"
+      ],
+      "preconditions": [
+        "target area should be named"
+      ],
+      "expected_effects": [
+        "scene evidence for target area is returned"
+      ],
+      "observable_success": [
+        "status",
+        "target_found",
+        "evidence.people",
+        "evidence.objects"
+      ],
+      "failure_modes": [
+        "ambiguous",
+        "area_unknown",
+        "backend_unavailable"
+      ],
+      "planner_guidance": [
+        "use inspect_area to validate area state before reporting"
+      ],
+      "robot_adapter_mapping": "fake_skills.inspect_area",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "perception"
+      ],
+      "supports_failure_injection": true,
+      "is_composite": true,
+      "is_fake": true,
+      "runtime_callable": true,
+      "decomposes_to": [
+        "resolve_navigation_goal",
+        "navigate_to",
+        "scan",
+        "find_object",
+        "report_result"
+      ],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "ab1_composite_skill",
+        "notes": "Composite fake-skill experiment: area inspection combines navigation, fresh scan, target evidence, and grounded report."
       }
     },
     {
@@ -113,14 +177,15 @@
       "is_fake": false,
       "runtime_callable": true,
       "decomposes_to": [
-        "/skill/look_at",
+        "resolve_attention_target",
         "validate_motion_payload",
-        "wait_for_perception"
+        "dispatch_attention_control",
+        "observe_attention_settled"
       ],
       "decomposition": {
         "max_depth": -1,
-        "policy": "full_to_ab0",
-        "notes": "Attention control decomposes to motion validation + dispatch + bounded wait."
+        "policy": "ab1_to_effect_primitives",
+        "notes": "Attention control decomposes into target/frame grounding, motion payload validation, orchestrator-owned look_at dispatch, and gaze-settlement observation."
       }
     },
     {
@@ -156,7 +221,7 @@
       "planner_guidance": [
         "use for semantic destinations such as kitchen or table"
       ],
-      "robot_adapter_mapping": "fake_navigation_skill.navigate_to",
+      "robot_adapter_mapping": "fake_skills.navigate_to",
       "result_schema": {
         "required": [
           "skill",
@@ -172,15 +237,16 @@
       "is_fake": true,
       "runtime_callable": true,
       "decomposes_to": [
-        "/skill/fake/navigate_to",
+        "resolve_navigation_goal",
         "validate_navigation_request",
         "estimate_navigation_path",
+        "dispatch_navigation_control",
         "verify_evidence_payload"
       ],
       "decomposition": {
         "max_depth": -1,
-        "policy": "full_to_ab0",
-        "notes": "AB1 runtime skill with AB0 decomposition; semantically destination-oriented."
+        "policy": "ab1_to_effect_primitives",
+        "notes": "Navigation decomposes into semantic goal grounding, safety validation, path uncertainty, orchestrator-owned dispatch, and result validation."
       }
     },
     {
@@ -231,15 +297,15 @@
       "is_fake": false,
       "runtime_callable": true,
       "decomposes_to": [
-        "/skill/replay_motion",
-        "/skill/do_head_motion",
         "validate_motion_payload",
+        "dispatch_motion_control",
+        "observe_motion_settled",
         "verify_evidence_payload"
       ],
       "decomposition": {
         "max_depth": -1,
-        "policy": "full_to_ab0",
-        "notes": "Motion dispatch decomposes into validation + deterministic action dispatch."
+        "policy": "ab1_to_effect_primitives",
+        "notes": "Motion decomposes into validation, orchestrator-owned dispatch, effect observation, and result payload validation."
       }
     },
     {
@@ -288,14 +354,14 @@
       "is_fake": false,
       "runtime_callable": true,
       "decomposes_to": [
-        "/skill/report_result",
         "verify_evidence_payload",
-        "emit_robot_speech"
+        "prepare_grounded_summary",
+        "emit_planner_dialogue_act"
       ],
       "decomposition": {
         "max_depth": -1,
-        "policy": "full_to_ab0",
-        "notes": "Result reporting validates payload then emits speech via deterministic channel."
+        "policy": "ab1_to_effect_primitives",
+        "notes": "Result reporting validates evidence, prepares a grounded summary, and emits a planner dialogue act; final speech remains dialogue_manager/chatbot-owned."
       }
     },
     {
@@ -361,15 +427,16 @@
       "is_fake": false,
       "runtime_callable": true,
       "decomposes_to": [
-        "/skill/scan",
+        "select_scan_pattern",
+        "dispatch_scan_motion",
         "wait_for_perception",
         "read_scene_summary",
         "verify_evidence_payload"
       ],
       "decomposition": {
         "max_depth": -1,
-        "policy": "full_to_ab0",
-        "notes": "Execute as AB1 skill but decompose to AB0 for analysis and future deterministic routing."
+        "policy": "ab1_to_effect_primitives",
+        "notes": "Scan remains the planner-callable AB1 affordance; AB0 children expose policy, dispatch, observation, and evidence validation terms without duplicating /skill/scan as an AB0 object."
       }
     },
     {
@@ -402,7 +469,7 @@
       "planner_guidance": [
         "keep dry-run enabled until real walking is explicitly approved"
       ],
-      "robot_adapter_mapping": "walk_to_skill.walk_to",
+      "robot_adapter_mapping": "fake_skills.walk_to",
       "result_schema": {
         "required": [
           "skill",
@@ -419,14 +486,75 @@
       "is_fake": true,
       "runtime_callable": true,
       "decomposes_to": [
-        "/skill/fake/walk_to",
         "validate_navigation_request",
+        "dispatch_walk_segment",
         "verify_evidence_payload"
       ],
       "decomposition": {
         "max_depth": -1,
-        "policy": "full_to_ab0",
-        "notes": "AB1 primitive locomotion segment skill used by higher-level navigation flows."
+        "policy": "ab1_to_effect_primitives",
+        "notes": "Short walking is represented as a safety-checked movement segment; real walking remains operator-gated and adapter-owned."
+      }
+    },
+    {
+      "name": "wave_greet",
+      "category": "social_motion",
+      "aliases": [
+        "wave",
+        "greet_wave",
+        "wave_hello"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "style",
+        "hand",
+        "duration_sec",
+        "dry_run",
+        "result_mode"
+      ],
+      "required_params": [],
+      "preconditions": [],
+      "expected_effects": [
+        "robot performs greeting wave gesture"
+      ],
+      "observable_success": [
+        "status",
+        "summary_text"
+      ],
+      "failure_modes": [
+        "motion_unavailable",
+        "safety_disabled",
+        "unexpected_payload"
+      ],
+      "planner_guidance": [
+        "use wave_greet for social greeting gestures"
+      ],
+      "robot_adapter_mapping": "fake_skills.wave_greet",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "social_motion",
+        "motion"
+      ],
+      "supports_failure_injection": true,
+      "is_composite": false,
+      "is_fake": true,
+      "runtime_callable": true,
+      "decomposes_to": [
+        "validate_motion_payload",
+        "dispatch_motion_control",
+        "observe_motion_settled",
+        "verify_evidence_payload"
+      ],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "ab1_to_effect_primitives",
+        "notes": "Greeting wave is currently fake-callable but semantically grounded as a safety-checked motion effect."
       }
     }
   ]

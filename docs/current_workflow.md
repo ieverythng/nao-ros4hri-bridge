@@ -1,6 +1,6 @@
 # Current Workflow
 
-Last updated: 2026-04-27
+Last updated: 2026-05-25
 
 This is the canonical workflow map for the active NAO ROS4HRI bridge. Historical
 handoffs and old integration notes live in `docs/artifacts/`.
@@ -14,8 +14,9 @@ handoffs and old integration notes live in `docs/artifacts/`.
 | Planning | `planner_llm` | Goal supervision, plan generation, replanning, planner dialogue acts |
 | Research planner seam | Neural Workbench | Optional candidate abstract skill program proposal before provider LLM planning |
 | Contracts | `planner_common` | JSON contract normalization and helpers |
-| AB registry | `skill_common` / Neural Workbench | Optional canonical AB object registry and exported planner skill view |
+| AB registry | `skill_common` / Neural Workbench | Canonical AB object registry with generated planner/docs projections |
 | Execution | `nao_orchestrator` | Deterministic intent validation, ordered skill execution, execution feedback |
+| Controlled validation | `fake_skills` | Deterministic fake action-server substrate for success/failure scenarios |
 | Knowledge | `kb_skills` | KnowledgeCore query/revise boundary |
 | Object grounding | `nao_scene_grounding` | Detector-to-KB object facts and `/scene/summary` |
 | Launch | `nao_chatbot` | Demo and robot launch profiles |
@@ -38,6 +39,9 @@ flowchart LR
 
     dm -->|robot response| speech_out["Robot speech<br/>dialogue output"]
     orch --> say["/nao/say"]
+    orch --> report["/skill/report_result"]
+    orch --> scan["/skill/scan"]
+    orch --> fake["/skill/fake/*"]
     orch --> replay["/skill/replay_motion"]
     orch --> head["/skill/do_head_motion"]
     orch --> look["/skill/look_at"]
@@ -54,6 +58,13 @@ The Neural Workbench seam is optional and planner-owned. When enabled,
 program before calling the configured LLM provider. The candidate is still
 validated by the local `planner_llm` skill registry, and execution still flows
 through `/intents` into `nao_orchestrator`.
+
+Current status: `scan` and `report_result` are action-server-owned AB=1 skills,
+and `fake_skills` provides deterministic fake `navigate_to`, `find_object`,
+`walk_to`, `wave_greet`, and `inspect_area` behavior for validation scenarios.
+Final user-facing wording remains owned by `dialogue_manager -> chatbot_llm`;
+planner/executor layers should carry factual hints and result payloads, not
+invent final speech.
 
 ## Grounded Scene Flow
 
@@ -145,9 +156,29 @@ print(registry.resolve_skill_name("look_around"))
 PY
 ```
 
-This is the first bridge-side step toward one shared capability vocabulary for
-`planner_llm`, `chatbot_llm`, Neural Workbench, stack observation, and executor
-mapping views.
+The canonical source is:
+
+```text
+src/Neural-Wokbench/src/skill_common/skill_common/defaults/ab_registry.json
+```
+
+AB=1 planner skills decompose into semantic AB=0 effect primitives rather than
+duplicate `/skill/...` endpoint objects. For example, `look_at` decomposes
+through `resolve_attention_target`, `validate_motion_payload`,
+`dispatch_attention_control`, and `observe_attention_settled`; `/skill/look_at`
+remains ROS grounding metadata on the dispatch primitive, and execution still
+flows through `nao_orchestrator`.
+
+Generated views and mirrors are checked by:
+
+```bash
+python3 scripts/sync_skill_registry_views.py --check
+python3 scripts/check_skill_registry_consistency.py
+```
+
+This is the bridge-side path toward one shared capability vocabulary for
+`planner_llm`, `chatbot_llm`, Neural Workbench, trace viewing, dashboarding, and
+executor mapping views.
 
 ## Stack Observer
 

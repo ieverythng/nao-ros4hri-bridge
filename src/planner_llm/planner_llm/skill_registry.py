@@ -525,6 +525,7 @@ def _load_shared_registry(path: str, *, logger=None):
 
 def _planner_skill_payload_from_shared(payload: dict) -> dict:
     data = dict(payload or {})
+    metadata = data.get('metadata', {}) if isinstance(data.get('metadata', {}), dict) else {}
     return {
         'name': str(data.get('name', '')).strip().lower(),
         'aliases': list(data.get('aliases', []) or []),
@@ -541,11 +542,7 @@ def _planner_skill_payload_from_shared(payload: dict) -> dict:
         'retryable': True,
         'can_request_user_help': False,
         'can_request_clarification': True,
-        'timeout_hint': float(
-            data.get('metadata', {}).get('timeout_hint_sec', 10.0)
-            if isinstance(data.get('metadata', {}), dict)
-            else 10.0
-        ),
+        'timeout_hint': _shared_timeout_hint(data, metadata),
     }
 
 
@@ -557,3 +554,9 @@ def _planner_skills_from_shared_registry(shared_registry) -> list[PlannerSkill]:
             continue
         skills.append(PlannerSkill.from_dict(normalized))
     return skills
+
+
+def _shared_timeout_hint(data: dict, metadata: dict) -> float:
+    if 'timeout_hint_sec' in metadata:
+        return _coerce_float(metadata.get('timeout_hint_sec'))
+    return _timeout_hint_from_ab_object(data)

@@ -1,7 +1,8 @@
 # ROS4HRI Integration Master Plan (Consolidated, Active)
 
-**Date:** 2026-05-18  
-**Branch context:** `feat/TFM-LLM_planner` (+ nested repos and Neural-Wokbench integration seam)  
+**Date:** 2026-05-18
+**Last reviewed:** 2026-05-25
+**Branch context:** `feat/TFM-LLM_planner` (+ nested repos and Neural-Wokbench integration seam)
 **Scope:** Single active execution plan for non-fake-skill integration, AB registry normalization, and observability/dashboard rollout.
 
 ## 1. Consolidation Policy (What This File Replaces)
@@ -31,6 +32,9 @@ To avoid docs churn, active docs are constrained to:
 - `docs/architecture/ab_registry_input.json`
 - `docs/architecture/ros4hri_neural_workbench_interactive_architecture.html`
 - `docs/plans/` (this master plan + fake skills handoff)
+- `src/Neural-Wokbench/docs/plans/neural_workbench_codex_handoff.md`
+  (research-to-runtime Workbench masterplan; subordinate to this operational
+  tracker)
 
 Everything else should be archived under `docs/artifacts/` unless it is actively used in runtime operations.
 
@@ -42,6 +46,9 @@ Everything else should be archived under `docs/artifacts/` unless it is actively
 - **Done**: `report_result` now executes as action-server-owned AB=1 skill (`/skill/report_result`) instead of a dialogue-act shortcut.
 - **Done**: planner/orchestrator action routing validated for `/skill/scan`, `/skill/report_result`, `/skill/say`, `/skill/do_head_motion`.
 - **Done**: goal token/version guardrails and supersede semantics are present in planner-orchestrator seam.
+- **Done/active seam**: optional `planner_llm` Neural Workbench adapter exists
+  and falls back to provider planning when Workbench is unavailable or invalid
+  unless required mode is enabled.
 - **Pending**: final route-hardening for ambiguous utterances (`knowledge_query` vs `execution`) in edge dialogue cases.
 
 ### B. Registry Consistency and Canonicalization
@@ -82,18 +89,24 @@ This track is now narrowed to practical implementation milestones.
 - No drift among canonical AB file, planner registry projection, and docs architecture mirror.
 - CI/local pre-commit fails on mismatch.
 
-### AB-F2: Decomposition Fields for AB>=2 (P1)
+### AB-F2: Semantic Decomposition Fields (P1)
 
-Add decomposition-ready fields in canonical AB schema for higher-level objects:
+Add decomposition-ready fields in canonical AB schema for skills and higher-level
+objects. AB=1 skills should decompose into semantic AB=0 effect primitives, not
+duplicate `/skill/...` endpoint objects. ROS topics/actions/services remain as
+runtime grounding metadata when they are not themselves the conceptual object.
 
-- ordered sub-objects
-- control policy
-- failure transitions
-- validation constraints
-- trace-support hints
+- ordered sub-objects;
+- control policy;
+- failure transitions;
+- validation constraints;
+- trace-support hints;
+- uncertainty/entropy terms;
+- ROS grounding metadata with `bypass_allowed=false` where relevant.
 
 **Exit criteria**
 
+- runtime AB=1 skills expose meaningful AB=0 effect-primitive decompositions.
 - at least 2 concrete AB=2 objects modeled with decomposition metadata (proposal status acceptable).
 
 ### AB-F3: Verification Utilities (P1)
@@ -172,22 +185,24 @@ This track merges prior simple-viewer and full-dashboard plans.
 4. **P1** Begin AB decomposition schema expansion and tests.
 5. **P1** Begin dashboard backend skeleton (`nao_dashboard`).
 6. **P2** Stage upstream nested-repo merges per inventory artifact.
+7. **P2** Add symbolic entropy proxy fields to Workbench traces after live trace
+   capture is stable.
 
 ## 7. Mandatory Validation Gates (Per Change Slice)
 
-1. **Pre-edit audit**  
+1. **Pre-edit audit**
    `python3 scripts/ros4hri_change_audit.py --mode working`
 
-2. **Deslop gate**  
+2. **Deslop gate**
    behavior-preserving simplification in touched files only.
 
-3. **IIIA ROS4HRI gate**  
+3. **IIIA ROS4HRI gate**
    ownership/lifecycle/interface guardrail check for affected packages.
 
-4. **Registry consistency gate**  
+4. **Registry consistency gate**
    `python3 scripts/check_skill_registry_consistency.py`
 
-5. **Runtime gate (no relaunch unless requested)**  
+5. **Runtime gate (no relaunch unless requested)**
    for live stack checks:
    - action availability
    - one success path

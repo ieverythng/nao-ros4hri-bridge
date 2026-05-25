@@ -63,3 +63,12 @@ def test_engine_find_object_treats_success_mode_as_found() -> None:
 
     assert payload['status'] == 'succeeded'
     assert payload['target_found'] is True
+
+
+def test_engine_unknown_skill_returns_structured_failure() -> None:
+    payload, delay_sec = _engine().execute(skill='dance', args={})
+
+    assert delay_sec == 0.0
+    assert payload['status'] == 'failed'
+    assert payload['failure']['code'] == 'unsupported_skill'
+    assert payload['metadata']['result_mode'] == 'unsupported_skill'

@@ -1,86 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ROS4HRI Integration Master Plan (Consolidated, Active)</title>
-  <style>
-    :root {
-      color-scheme: light dark;
-      --fg: #1a1a1a;
-      --muted: #5a5a5a;
-      --bg: #f8f8f8;
-      --card: #ffffff;
-      --border: #d8d8d8;
-      --accent: #0b5fff;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --fg: #e8e8e8;
-        --muted: #9e9e9e;
-        --bg: #111111;
-        --card: #1d1d1d;
-        --border: #333333;
-        --accent: #7fb4ff;
-      }
-    }
-    body {
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
-      max-width: 58rem;
-      margin: 0 auto;
-      padding: 1.5rem 1.25rem 3rem;
-      line-height: 1.58;
-      color: var(--fg);
-      background: var(--bg);
-    }
-    h1, h2, h3 { line-height: 1.25; }
-    h2 { border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
-    pre {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.8rem;
-      overflow-x: auto;
-    }
-    code {
-      font-family: ui-monospace, "Cascadia Code", monospace;
-      font-size: 0.9em;
-      background: rgba(0, 0, 0, 0.06);
-      padding: 0.12em 0.3em;
-      border-radius: 4px;
-    }
-    pre code {
-      background: transparent;
-      padding: 0;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: var(--card);
-      border: 1px solid var(--border);
-    }
-    th, td {
-      border: 1px solid var(--border);
-      padding: 0.45rem 0.55rem;
-      text-align: left;
-      vertical-align: top;
-    }
-    th { background: rgba(0,0,0,0.04); }
-    blockquote {
-      border-left: 4px solid var(--accent);
-      margin: 0.7rem 0;
-      padding: 0.1rem 0.9rem;
-      color: var(--muted);
-    }
-    a { color: var(--accent); }
-  </style>
-</head>
-<body>
-<h1>ROS4HRI Integration Master Plan (Consolidated, Active)</h1>
-<p><strong>Date:</strong> 2026-05-18</p>
-<p><strong>Branch context:</strong> <code>feat/TFM-LLM_planner</code> (+ nested repos and Neural-Wokbench integration seam)</p>
-<p><strong>Scope:</strong> Single active execution plan for non-fake-skill integration, AB registry normalization, and observability/dashboard rollout.</p>
-<h2>1. Consolidation Policy (What This File Replaces)</h2>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ROS4HRI Integration Master Plan</title><style>
+:root{--ink:#172033;--muted:#667085;--line:#d7deea;--panel:#fffaf1;--panel2:#f6f8fb;--accent:#b85c38;--accent2:#315f72;--code:#101828;}
+*{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at top left,#fff3df 0,#f7f3eb 34%,#eef4f7 100%);color:var(--ink);font-family:Charter, Georgia, 'Times New Roman', serif;line-height:1.62}.shell{max-width:1180px;margin:0 auto;padding:38px 26px 90px}.hero{border:1px solid rgba(49,95,114,.22);border-radius:28px;padding:34px 36px;background:linear-gradient(135deg,rgba(255,250,241,.96),rgba(239,247,249,.93));box-shadow:0 24px 60px rgba(36,48,68,.12);margin-bottom:28px}.eyebrow{font:700 12px/1.2 ui-sans-serif,system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2)}h1{font-size:clamp(2.1rem,5vw,4.2rem);line-height:.98;margin:.35rem 0 1rem;letter-spacing:-.055em}h2{font-size:1.55rem;margin:2.1rem 0 .75rem;padding-bottom:.35rem;border-bottom:1px solid var(--line);letter-spacing:-.025em}h3{font-size:1.18rem;margin:1.4rem 0 .5rem;color:#25465a}p{margin:.68rem 0}a{color:#9a452a}code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:rgba(184,92,56,.09);padding:.1rem .28rem;border-radius:6px;font-size:.92em}pre{background:#111827;color:#f9fafb;border-radius:18px;padding:18px 20px;overflow:auto;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}pre code{background:transparent;color:inherit;padding:0}.panel{background:rgba(255,255,255,.72);border:1px solid rgba(49,95,114,.16);border-radius:22px;padding:20px 24px;margin:18px 0;box-shadow:0 14px 34px rgba(36,48,68,.08)}table{border-collapse:separate;border-spacing:0;width:100%;margin:1rem 0;background:rgba(255,255,255,.82);border:1px solid var(--line);border-radius:16px;overflow:hidden}th,td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}th{font-family:ui-sans-serif,system-ui,sans-serif;text-align:left;background:#edf3f5;color:#25394d;font-size:.9rem}tr:last-child td{border-bottom:0}ul,ol{padding-left:1.3rem}li{margin:.28rem 0}blockquote{border-left:5px solid var(--accent);background:rgba(255,255,255,.62);padding:.75rem 1rem;border-radius:12px}.toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.toc a{font-family:ui-sans-serif,system-ui,sans-serif;text-decoration:none;border:1px solid rgba(49,95,114,.22);border-radius:999px;padding:7px 10px;background:rgba(255,255,255,.6);font-size:.86rem;color:#24475a}@media(max-width:760px){.shell{padding:22px 14px 70px}.hero{padding:24px 20px;border-radius:22px}table{font-size:.86rem}}
+</style></head><body><main class="shell"><section class="hero"><div class="eyebrow">Operational bridge tracker</div><h1>ROS4HRI Integration Master Plan</h1><div class="toc"><a href="#1-consolidation-policy-what-this-file-replaces">1. Consolidation Policy (What This File Replaces)</a><a href="#2-repo-doc-structure-contract">2. Repo-Doc Structure Contract</a><a href="#3-current-execution-status">3. Current Execution Status</a><a href="#4-active-track-ab-registry-full-integration">4. Active Track: AB Registry Full Integration</a><a href="#5-active-track-observability-dashboard-rollout">5. Active Track: Observability Dashboard Rollout</a><a href="#6-backlog-prioritized-cross-track">6. Backlog (Prioritized, Cross-Track)</a><a href="#7-mandatory-validation-gates-per-change-slice">7. Mandatory Validation Gates (Per Change Slice)</a><a href="#8-documentation-hygiene-rules-going-forward">8. Documentation Hygiene Rules (Going Forward)</a><a href="#9-immediate-next-session-checklist">9. Immediate Next Session Checklist</a></div></section><section class="panel"><h1 id="ros4hri-integration-master-plan-consolidated-active">ROS4HRI Integration Master Plan (Consolidated, Active)</h1>
+<p><strong>Date:</strong> 2026-05-18 <strong>Last reviewed:</strong> 2026-05-25 <strong>Branch context:</strong> <code>feat/TFM-LLM_planner</code> (+ nested repos and Neural-Wokbench integration seam) <strong>Scope:</strong> Single active execution plan for non-fake-skill integration, AB registry normalization, and observability/dashboard rollout.</p>
+<h2 id="1-consolidation-policy-what-this-file-replaces">1. Consolidation Policy (What This File Replaces)</h2>
 <p>This file is now the canonical integration plan and absorbs execution tracking from:</p>
 <ul>
 <li><code>docs/artifacts/plan_archive/ros4hri_integration_master_plan_2026-05-15.md</code></li>
@@ -90,11 +14,11 @@
 <li><code>docs/artifacts/plan_archive/full_nao_dashboard_spec.md</code></li>
 </ul>
 <p>These source plans are preserved in <code>docs/artifacts/plan_archive/</code> for provenance.</p>
-<p>The fake skills stream is now archived and linked into the unified registry track:</p>
+<p>The fake skills stream remains separate by design:</p>
 <ul>
-<li><code>docs/artifacts/plan_archive/fake_skills_codex_handoff.md</code> (+ HTML)</li>
+<li><code>fake_skills_codex_handoff.md</code> (+ HTML)</li>
 </ul>
-<h2>2. Repo-Doc Structure Contract</h2>
+<h2 id="2-repo-doc-structure-contract">2. Repo-Doc Structure Contract</h2>
 <p>To avoid docs churn, active docs are constrained to:</p>
 <ul>
 <li><code>docs/contracts.md</code></li>
@@ -104,32 +28,35 @@
 <li><code>docs/architecture/ab_registry_input.json</code></li>
 <li><code>docs/architecture/ros4hri_neural_workbench_interactive_architecture.html</code></li>
 <li><code>docs/plans/</code> (this master plan + fake skills handoff)</li>
+<li><code>src/Neural-Wokbench/docs/plans/neural_workbench_codex_handoff.md</code></li>
+<p>(research-to-runtime Workbench masterplan; subordinate to this operational tracker)</p>
 </ul>
 <p>Everything else should be archived under <code>docs/artifacts/</code> unless it is actively used in runtime operations.</p>
-<h2>3. Current Execution Status</h2>
-<h3>A. Planner-Orchestrator Runtime Path</h3>
+<h2 id="3-current-execution-status">3. Current Execution Status</h2>
+<h3 id="a-planner-orchestrator-runtime-path">A. Planner-Orchestrator Runtime Path</h3>
 <ul>
 <li><strong>Done</strong>: <code>scan</code> is action-server owned and dispatched by orchestrator.</li>
 <li><strong>Done</strong>: <code>report_result</code> now executes as action-server-owned AB=1 skill (<code>/skill/report_result</code>) instead of a dialogue-act shortcut.</li>
 <li><strong>Done</strong>: planner/orchestrator action routing validated for <code>/skill/scan</code>, <code>/skill/report_result</code>, <code>/skill/say</code>, <code>/skill/do_head_motion</code>.</li>
 <li><strong>Done</strong>: goal token/version guardrails and supersede semantics are present in planner-orchestrator seam.</li>
+<li><strong>Done/active seam</strong>: optional <code>planner_llm</code> Neural Workbench adapter exists</li>
+<p>and falls back to provider planning when Workbench is unavailable or invalid unless required mode is enabled.</p>
 <li><strong>Pending</strong>: final route-hardening for ambiguous utterances (<code>knowledge_query</code> vs <code>execution</code>) in edge dialogue cases.</li>
 </ul>
-<h3>B. Registry Consistency and Canonicalization</h3>
+<h3 id="b-registry-consistency-and-canonicalization">B. Registry Consistency and Canonicalization</h3>
 <ul>
 <li><strong>Done</strong>: canonical registry contract aligned for <code>report_result</code> across planner + skill_common + architecture docs.</li>
 <li><strong>Done</strong>: automated consistency checker added (<code>scripts/check_skill_registry_consistency.py</code>) and wired to pre-commit.</li>
 <li><strong>Done</strong>: planner skill alias normalization aligned with canonical skill_common views.</li>
 <li><strong>Pending</strong>: full AB decomposition migration (AB=2+ symbolic lineage and decomposition metadata).</li>
-<li><strong>In progress</strong>: AB=1 runtime skills now carry AB=0 leaf decomposition metadata with <code>max_depth=-1</code> policy for staged full decomposition.</li>
 </ul>
-<h3>C. Lifecycle and Launch Reliability</h3>
+<h3 id="c-lifecycle-and-launch-reliability">C. Lifecycle and Launch Reliability</h3>
 <ul>
 <li><strong>Done</strong>: current live stack can expose expected action servers and dispatch path reliably.</li>
 <li><strong>In progress</strong>: reduce lifecycle-race/operator confusion in mixed sim/robot toggles.</li>
 <li><strong>Pending</strong>: document strict operator guidance for “live stack already running” workflows to avoid duplicate launch side effects.</li>
 </ul>
-<h3>D. Upstream/Nested Repo Reconciliation</h3>
+<h3 id="d-upstream-nested-repo-reconciliation">D. Upstream/Nested Repo Reconciliation</h3>
 <ul>
 <li><strong>Done</strong>: upstream inventory exists (<code>docs/artifacts/upstream_sync_inventory_2026-05-14.md</code>).</li>
 <li><strong>Pending</strong>: staged merge application order:</li>
@@ -142,9 +69,9 @@
 <ul>
 <li><strong>Pending</strong>: align nested <code>skill_common</code> integration with Neural-Wokbench branch strategy (<code>feat/TFM_planner_only</code> flow).</li>
 </ul>
-<h2>4. Active Track: AB Registry Full Integration</h2>
+<h2 id="4-active-track-ab-registry-full-integration">4. Active Track: AB Registry Full Integration</h2>
 <p>This track is now narrowed to practical implementation milestones.</p>
-<h3>AB-F1: Canonical AB Object Schema Stabilization (P0)</h3>
+<h3 id="ab-f1-canonical-ab-object-schema-stabilization-p0">AB-F1: Canonical AB Object Schema Stabilization (P0)</h3>
 <ul>
 <li>Keep <code>ab_registry.json</code> as canonical symbolic source for AB objects.</li>
 <li>Keep <code>skill_registry.yaml</code> as planner-facing projection generated/aligned from canonical AB entries.</li>
@@ -156,20 +83,23 @@
 <li>No drift among canonical AB file, planner registry projection, and docs architecture mirror.</li>
 <li>CI/local pre-commit fails on mismatch.</li>
 </ul>
-<h3>AB-F2: Decomposition Fields for AB&gt;=2 (P1)</h3>
-<p>Add decomposition-ready fields in canonical AB schema for higher-level objects:</p>
+<h3 id="ab-f2-semantic-decomposition-fields-p1">AB-F2: Semantic Decomposition Fields (P1)</h3>
+<p>Add decomposition-ready fields in canonical AB schema for skills and higher-level objects. AB=1 skills should decompose into semantic AB=0 effect primitives, not duplicate <code>/skill/...</code> endpoint objects. ROS topics/actions/services remain as runtime grounding metadata when they are not themselves the conceptual object.</p>
 <ul>
-<li>ordered sub-objects</li>
-<li>control policy</li>
-<li>failure transitions</li>
-<li>validation constraints</li>
-<li>trace-support hints</li>
+<li>ordered sub-objects;</li>
+<li>control policy;</li>
+<li>failure transitions;</li>
+<li>validation constraints;</li>
+<li>trace-support hints;</li>
+<li>uncertainty/entropy terms;</li>
+<li>ROS grounding metadata with <code>bypass_allowed=false</code> where relevant.</li>
 </ul>
 <p><strong>Exit criteria</strong></p>
 <ul>
+<li>runtime AB=1 skills expose meaningful AB=0 effect-primitive decompositions.</li>
 <li>at least 2 concrete AB=2 objects modeled with decomposition metadata (proposal status acceptable).</li>
 </ul>
-<h3>AB-F3: Verification Utilities (P1)</h3>
+<h3 id="ab-f3-verification-utilities-p1">AB-F3: Verification Utilities (P1)</h3>
 <ul>
 <li>add graph integrity checks (existence, cycle prevention, level constraints).</li>
 <li>add schema compatibility checks for decomposition nodes.</li>
@@ -178,26 +108,22 @@
 <ul>
 <li>automated tests for DAG integrity + decomposition validation run green.</li>
 </ul>
-<h3>AB-F4: P3 Prompt + Nested Registry Updates (P3)</h3>
+<h3 id="ab-f4-p3-prompt-nested-registry-updates-p3">AB-F4: P3 Prompt + Nested Registry Updates (P3)</h3>
 <ul>
 <li>tighten planner/chatbot routing prompts and response schemas for non-execution turns.</li>
 <li>publish structured chatbot routing trace events for dialogue vs planner handoff visibility.</li>
 <li>enforce canonical registry projection sync across planner fallback config and docs mirrors via pre-commit checks.</li>
+<li>route planner dialogue-act user wording through <code>chatbot_llm</code> by default, with direct wording only as explicit compatibility mode.</li>
 </ul>
 <p><strong>Exit criteria</strong></p>
 <ul>
 <li>no drift between canonical AB registry and projected planner/docs registry surfaces.</li>
 <li>trace viewer can show planner/execution plus chatbot routing outcomes from structured payloads.</li>
+<li>planner clarification/failure/completion user-facing wording remains chatbot-owned in live launch profiles.</li>
 </ul>
-<p><strong>Status update (2026-05-22)</strong></p>
-<ul>
-<li>planner dialogue wording seam expanded: clarification/failure/help/completion dialogue acts can route through <code>chatbot_llm</code> before TTS.</li>
-<li>new dialogue-manager mode parameter introduced: <code>planner_dialogue_wording_mode</code> (<code>chatbot</code> default in stack profiles).</li>
-<li>compatibility mode retained for completion-only wording override via <code>planner_completion_wording_mode</code>.</li>
-</ul>
-<h2>5. Active Track: Observability Dashboard Rollout</h2>
+<h2 id="5-active-track-observability-dashboard-rollout">5. Active Track: Observability Dashboard Rollout</h2>
 <p>This track merges prior simple-viewer and full-dashboard plans.</p>
-<h3>OBS-0: Shared Event Model (P0)</h3>
+<h3 id="obs-0-shared-event-model-p0">OBS-0: Shared Event Model (P0)</h3>
 <ul>
 <li>define one normalized event model reusable by trace viewer and dashboard.</li>
 <li>include:</li>
@@ -208,7 +134,7 @@
 <li>summary</li>
 <li>full payload</li>
 </ul>
-<h3>OBS-1: Simple Dialogue Trace Viewer (P0)</h3>
+<h3 id="obs-1-simple-dialogue-trace-viewer-p0">OBS-1: Simple Dialogue Trace Viewer (P0)</h3>
 <ul>
 <li>first deliverable: lightweight trace tool for supervisor demos.</li>
 <li>required flow visibility:</li>
@@ -220,61 +146,63 @@
 <li>planner dialogue act</li>
 <li>final speech</li>
 </ul>
-<h3>OBS-2: Full Dashboard Skeleton (P1)</h3>
+<h3 id="obs-2-full-dashboard-skeleton-p1">OBS-2: Full Dashboard Skeleton (P1)</h3>
 <ul>
 <li>web backend + UI skeleton with:</li>
 <li>live timeline</li>
 <li>ROS graph snapshot</li>
 <li>action server health panel</li>
 </ul>
-<h3>OBS-3: AB Registry + Workbench Panels (P2)</h3>
+<h3 id="obs-3-ab-registry-workbench-panels-p2">OBS-3: AB Registry + Workbench Panels (P2)</h3>
 <ul>
 <li>AB object graph pane</li>
 <li>fake/real skill status view</li>
 <li>candidate/verification overlays (as NW integration lands)</li>
 </ul>
-<h3>OBS-4: Reports/Replay/Export (P2)</h3>
+<h3 id="obs-4-reports-replay-export-p2">OBS-4: Reports/Replay/Export (P2)</h3>
 <ul>
 <li>JSONL traces</li>
 <li>static HTML report generation</li>
 <li>optional replay bundle for postmortems</li>
 </ul>
-<h2>6. Backlog (Prioritized, Cross-Track)</h2>
+<h2 id="6-backlog-prioritized-cross-track">6. Backlog (Prioritized, Cross-Track)</h2>
 <ol>
 <li><strong>P0</strong> Finalize chatbot routing policy edge-cases (<code>knowledge_query</code> default where appropriate).</li>
 <li><strong>P0</strong> Add operator-facing troubleshooting section in <code>launch_profiles.md</code> for live-stack/no-relaunch constraints.</li>
 <li><strong>P0</strong> Land simple trace viewer package scaffold (<code>interaction_trace_viewer</code>).</li>
-<li><strong>P1</strong> Extend AB=1 decomposition coverage to remaining runtime skills and add DAG/depth validators.</li>
+<li><strong>P1</strong> Begin AB decomposition schema expansion and tests.</li>
 <li><strong>P1</strong> Begin dashboard backend skeleton (<code>nao_dashboard</code>).</li>
 <li><strong>P2</strong> Stage upstream nested-repo merges per inventory artifact.</li>
+<li><strong>P2</strong> Add symbolic entropy proxy fields to Workbench traces after live trace</li>
+<p>capture is stable.</p>
 </ol>
-<h2>7. Mandatory Validation Gates (Per Change Slice)</h2>
+<h2 id="7-mandatory-validation-gates-per-change-slice">7. Mandatory Validation Gates (Per Change Slice)</h2>
 <ol>
 <li><strong>Pre-edit audit</strong></li>
-</ol>
 <p><code>python3 scripts/ros4hri_change_audit.py --mode working</code></p>
+</ol>
 <ol>
 <li><strong>Deslop gate</strong></li>
-</ol>
 <p>behavior-preserving simplification in touched files only.</p>
+</ol>
 <ol>
 <li><strong>IIIA ROS4HRI gate</strong></li>
-</ol>
 <p>ownership/lifecycle/interface guardrail check for affected packages.</p>
+</ol>
 <ol>
 <li><strong>Registry consistency gate</strong></li>
-</ol>
 <p><code>python3 scripts/check_skill_registry_consistency.py</code></p>
+</ol>
 <ol>
 <li><strong>Runtime gate (no relaunch unless requested)</strong></li>
-</ol>
 <p>for live stack checks:</p>
+</ol>
 <ul>
 <li>action availability</li>
 <li>one success path</li>
 <li>one failure/supersede path where applicable</li>
 </ul>
-<h2>8. Documentation Hygiene Rules (Going Forward)</h2>
+<h2 id="8-documentation-hygiene-rules-going-forward">8. Documentation Hygiene Rules (Going Forward)</h2>
 <ul>
 <li>New tactical notes go to <code>docs/artifacts/</code> unless they are active operator docs.</li>
 <li>Plans in <code>docs/plans/</code> must be either:</li>
@@ -283,13 +211,11 @@
 <li>All plan files must keep <code>.md</code> + <code>.html</code> pairs.</li>
 <li>When a sub-plan is implemented, fold its status into this master plan and archive the sub-plan.</li>
 </ul>
-<h2>9. Immediate Next Session Checklist</h2>
+<h2 id="9-immediate-next-session-checklist">9. Immediate Next Session Checklist</h2>
 <ol>
 <li>Re-run focused tests for touched planner/orchestrator/registry seams.</li>
 <li>Verify live stack action endpoints remain healthy (<code>scan</code>, <code>report_result</code>, <code>say</code>, <code>head_motion</code>).</li>
 <li>Start OBS-1 implementation scaffold (<code>interaction_trace_viewer</code>).</li>
 <li>Start AB-F2 decomposition metadata pass with tests.</li>
 <li>Prepare upstream merge staging branch sequence from inventory doc.</li>
-</ol>
-</body>
-</html>
+</ol></section></main></body></html>

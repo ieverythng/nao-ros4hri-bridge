@@ -320,6 +320,34 @@ def _compare_docs_copies(
         )
 
 
+def _validate_decomposition_graph(*, errors: list[str], canonical_ab_payload: dict) -> None:
+    objects = [
+        item
+        for item in canonical_ab_payload.get("objects", [])
+        if isinstance(item, dict) and str(item.get("object_id", "")).strip()
+    ]
+    by_id = {str(item.get("object_id", "")).strip(): item for item in objects}
+
+    for item in objects:
+        object_id = str(item.get("object_id", "")).strip()
+        source_level = int(item.get("ab_level", 0) or 0)
+        for target_id in _norm_list(item.get("decomposes_to", [])):
+            target = by_id.get(target_id)
+            if target is None:
+                errors.append(
+                    "AB object `%s` decomposes to unknown object `%s`"
+                    % (object_id, target_id)
+                )
+                continue
+
+            target_level = int(target.get("ab_level", 0) or 0)
+            if target_level > source_level:
+                errors.append(
+                    "AB object `%s` at AB=%s decomposes upward to `%s` at AB=%s"
+                    % (object_id, source_level, target_id, target_level)
+                )
+
+
 def _validate_runtime_callability_policy(*, errors: list[str], canonical_ab_payload: dict) -> None:
     for item in canonical_ab_payload.get("objects", []):
         if not isinstance(item, dict):
@@ -388,6 +416,7 @@ def main() -> int:
         docs_ab_payload=docs_ab_payload,
         nw_docs_ab_payload=nw_docs_ab_payload,
     )
+    _validate_decomposition_graph(errors=errors, canonical_ab_payload=canonical_ab_payload)
     _validate_runtime_callability_policy(errors=errors, canonical_ab_payload=canonical_ab_payload)
     _compare_interactive_html_registry(
         errors=errors,
