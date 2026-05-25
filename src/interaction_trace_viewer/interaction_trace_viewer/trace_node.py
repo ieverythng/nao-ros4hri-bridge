@@ -100,6 +100,7 @@ class InteractionTraceNode(Node):
             '/planner/execution_feedback': ('std_msgs/msg/String', self._subscribe_string),
             '/planner/dialogue_act': ('std_msgs/msg/String', self._subscribe_string),
             '/chatbot_llm/turn_trace': ('std_msgs/msg/String', self._subscribe_string),
+            '/fake_skills/events': ('std_msgs/msg/String', self._subscribe_string),
             '/rosout': ('rcl_interfaces/msg/Log', self._subscribe_rosout),
         }
         if self.enable_scene_summary_channel:

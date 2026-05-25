@@ -48,6 +48,12 @@ def normalize_string_message(*, channel: str, msg, max_payload_chars: int) -> In
     raw_text = str(getattr(msg, 'data', '')).strip()
     parsed_data = _try_parse_json_dict(raw_text)
     payload = parsed_data if parsed_data is not None else {'text': raw_text}
+    if str(channel).strip() == '/fake_skills/events' and isinstance(payload, dict):
+        nested_payload = payload.get('payload', {})
+        if isinstance(nested_payload, dict):
+            for key in ('status', 'summary_text', 'failure', 'result_mode'):
+                if key not in payload and key in nested_payload:
+                    payload[key] = nested_payload.get(key)
 
     event_type = _event_type_for_channel(channel)
     trace_id = _extract_trace_id(payload)
@@ -161,6 +167,7 @@ def _event_type_for_channel(channel: str) -> str:
         '/planner/execution_feedback': 'execution_feedback',
         '/planner/dialogue_act': 'planner_dialogue_act',
         '/chatbot_llm/turn_trace': 'chatbot_turn_trace',
+        '/fake_skills/events': 'skill_result',
         '/scene/summary': 'scene_update',
     }
     return mapping.get(str(channel).strip(), 'message')

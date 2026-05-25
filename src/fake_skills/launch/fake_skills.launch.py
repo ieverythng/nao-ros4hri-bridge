@@ -12,6 +12,11 @@ def generate_launch_description() -> LaunchDescription:
         default_value='',
         description='Optional YAML scenario file for fake skill outcomes.',
     )
+    active_scenario_arg = DeclareLaunchArgument(
+        'fake_skill_active_scenario_id',
+        default_value='',
+        description='Optional named scenario applied globally by fake_skill_server.',
+    )
     default_delay_arg = DeclareLaunchArgument(
         'fake_skill_default_delay_sec',
         default_value='0.75',
@@ -32,6 +37,21 @@ def generate_launch_description() -> LaunchDescription:
         default_value='42',
         description='Deterministic seed for fail_once tracking.',
     )
+    global_mode_arg = DeclareLaunchArgument(
+        'fake_skill_global_mode',
+        default_value='every_other',
+        description='Global fake-skill policy: scenario|always_success|always_fail|every_other|random_seeded.',
+    )
+    random_failure_prob_arg = DeclareLaunchArgument(
+        'fake_skill_random_failure_prob',
+        default_value='0.50',
+        description='Failure probability used by random_seeded mode.',
+    )
+    mode_overrides_arg = DeclareLaunchArgument(
+        'fake_skill_mode_overrides_json',
+        default_value='{}',
+        description='JSON map for per-skill mode overrides, e.g. {"find_object":"always_fail"}.',
+    )
 
     fake_skill_server = Node(
         package='fake_skills',
@@ -41,10 +61,14 @@ def generate_launch_description() -> LaunchDescription:
         parameters=[
             {
                 'scenario_file': LaunchConfiguration('fake_skill_scenario_file'),
+                'active_scenario_id': LaunchConfiguration('fake_skill_active_scenario_id'),
                 'default_delay_sec': LaunchConfiguration('fake_skill_default_delay_sec'),
                 'publish_events': LaunchConfiguration('fake_skill_publish_events'),
                 'event_topic': LaunchConfiguration('fake_skill_event_topic'),
                 'deterministic_seed': LaunchConfiguration('fake_skill_deterministic_seed'),
+                'global_mode': LaunchConfiguration('fake_skill_global_mode'),
+                'random_failure_prob': LaunchConfiguration('fake_skill_random_failure_prob'),
+                'mode_overrides_json': LaunchConfiguration('fake_skill_mode_overrides_json'),
             }
         ],
     )
@@ -52,10 +76,14 @@ def generate_launch_description() -> LaunchDescription:
     return LaunchDescription(
         [
             scenario_file_arg,
+            active_scenario_arg,
             default_delay_arg,
             publish_events_arg,
             event_topic_arg,
             seed_arg,
+            global_mode_arg,
+            random_failure_prob_arg,
+            mode_overrides_arg,
             fake_skill_server,
         ]
     )

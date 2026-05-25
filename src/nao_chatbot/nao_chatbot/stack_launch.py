@@ -149,6 +149,19 @@ _DEMO_DEFAULTS = {
     "scan_result_mode": "success",
     "scan_summary": "I looked around and can report the current scene summary.",
     "scan_report_after_success": "false",
+    "interaction_trace_compact_mode": "false",
+    "interaction_trace_include_raw_payloads": "true",
+    "interaction_trace_include_channels_csv": (
+        "planner/request,intents,planner/execution_feedback,planner/dialogue_act,"
+        "chatbot_llm/turn_trace,fake_skills/events"
+    ),
+    "interaction_trace_include_event_types_csv": (
+        "planner_request,planner_output,execution_feedback,planner_dialogue_act,"
+        "chatbot_turn_trace,skill_result"
+    ),
+    "fake_skill_global_mode": "every_other",
+    "fake_skill_random_failure_prob": "0.50",
+    "fake_skill_mode_overrides_json": "{}",
 }
 
 
@@ -1058,6 +1071,51 @@ def generate_profile_launch_description(
         default_value=_profile_default(profile_defaults, "start_fake_skills", "true"),
         description="Launch deterministic fake skill action servers (/skill/fake/*).",
     )
+    fake_skill_scenario_file_arg = DeclareLaunchArgument(
+        "fake_skill_scenario_file",
+        default_value=_profile_default(profile_defaults, "fake_skill_scenario_file", ""),
+        description="Optional YAML scenario file for fake skill outcomes.",
+    )
+    fake_skill_active_scenario_id_arg = DeclareLaunchArgument(
+        "fake_skill_active_scenario_id",
+        default_value=_profile_default(profile_defaults, "fake_skill_active_scenario_id", ""),
+        description="Optional named fake-skill scenario applied globally by fake_skill_server.",
+    )
+    fake_skill_default_delay_sec_arg = DeclareLaunchArgument(
+        "fake_skill_default_delay_sec",
+        default_value=_profile_default(profile_defaults, "fake_skill_default_delay_sec", "0.75"),
+        description="Default simulated duration for fake skill execution.",
+    )
+    fake_skill_publish_events_arg = DeclareLaunchArgument(
+        "fake_skill_publish_events",
+        default_value=_profile_default(profile_defaults, "fake_skill_publish_events", "true"),
+        description="Publish fake skill lifecycle events.",
+    )
+    fake_skill_event_topic_arg = DeclareLaunchArgument(
+        "fake_skill_event_topic",
+        default_value=_profile_default(profile_defaults, "fake_skill_event_topic", "/fake_skills/events"),
+        description="Topic for fake skill lifecycle events.",
+    )
+    fake_skill_deterministic_seed_arg = DeclareLaunchArgument(
+        "fake_skill_deterministic_seed",
+        default_value=_profile_default(profile_defaults, "fake_skill_deterministic_seed", "42"),
+        description="Deterministic seed for fake-skill policy modes.",
+    )
+    fake_skill_global_mode_arg = DeclareLaunchArgument(
+        "fake_skill_global_mode",
+        default_value=_profile_default(profile_defaults, "fake_skill_global_mode", "every_other"),
+        description="Global fake-skill policy: scenario|always_success|always_fail|every_other|random_seeded.",
+    )
+    fake_skill_random_failure_prob_arg = DeclareLaunchArgument(
+        "fake_skill_random_failure_prob",
+        default_value=_profile_default(profile_defaults, "fake_skill_random_failure_prob", "0.50"),
+        description="Failure probability applied when fake_skill_global_mode=random_seeded.",
+    )
+    fake_skill_mode_overrides_json_arg = DeclareLaunchArgument(
+        "fake_skill_mode_overrides_json",
+        default_value=_profile_default(profile_defaults, "fake_skill_mode_overrides_json", "{}"),
+        description="JSON map for per-skill overrides, e.g. {\"find_object\":\"always_fail\"}.",
+    )
     start_nao_say_skill_arg = DeclareLaunchArgument(
         "start_nao_say_skill",
         default_value=_profile_default(profile_defaults, "start_nao_say_skill", "true"),
@@ -1172,6 +1230,42 @@ def generate_profile_launch_description(
             "4000",
         ),
         description="Maximum summary characters per interaction trace event.",
+    )
+    interaction_trace_include_channels_csv_arg = DeclareLaunchArgument(
+        "interaction_trace_include_channels_csv",
+        default_value=_profile_default(
+            profile_defaults,
+            "interaction_trace_include_channels_csv",
+            "",
+        ),
+        description="CSV allowlist for trace channels (empty means include all).",
+    )
+    interaction_trace_exclude_channels_csv_arg = DeclareLaunchArgument(
+        "interaction_trace_exclude_channels_csv",
+        default_value=_profile_default(
+            profile_defaults,
+            "interaction_trace_exclude_channels_csv",
+            "",
+        ),
+        description="CSV denylist for trace channels.",
+    )
+    interaction_trace_include_event_types_csv_arg = DeclareLaunchArgument(
+        "interaction_trace_include_event_types_csv",
+        default_value=_profile_default(
+            profile_defaults,
+            "interaction_trace_include_event_types_csv",
+            "",
+        ),
+        description="CSV allowlist for trace event types (empty means include all).",
+    )
+    interaction_trace_exclude_event_types_csv_arg = DeclareLaunchArgument(
+        "interaction_trace_exclude_event_types_csv",
+        default_value=_profile_default(
+            profile_defaults,
+            "interaction_trace_exclude_event_types_csv",
+            "",
+        ),
+        description="CSV denylist for trace event types.",
     )
     interaction_trace_enable_scene_summary_channel_arg = DeclareLaunchArgument(
         "interaction_trace_enable_scene_summary_channel",
@@ -2386,6 +2480,10 @@ def generate_profile_launch_description(
                 "html_output_dir": LaunchConfiguration("interaction_trace_html_output_dir"),
                 "include_raw_payloads": LaunchConfiguration("interaction_trace_include_raw_payloads"),
                 "max_payload_chars": LaunchConfiguration("interaction_trace_max_payload_chars"),
+                "include_channels_csv": LaunchConfiguration("interaction_trace_include_channels_csv"),
+                "exclude_channels_csv": LaunchConfiguration("interaction_trace_exclude_channels_csv"),
+                "include_event_types_csv": LaunchConfiguration("interaction_trace_include_event_types_csv"),
+                "exclude_event_types_csv": LaunchConfiguration("interaction_trace_exclude_event_types_csv"),
                 "enable_scene_summary_channel": LaunchConfiguration(
                     "interaction_trace_enable_scene_summary_channel"
                 ),
@@ -2590,6 +2688,15 @@ def generate_profile_launch_description(
             start_scan_skill_arg,
             start_report_result_skill_arg,
             start_fake_skills_arg,
+            fake_skill_scenario_file_arg,
+            fake_skill_active_scenario_id_arg,
+            fake_skill_default_delay_sec_arg,
+            fake_skill_publish_events_arg,
+            fake_skill_event_topic_arg,
+            fake_skill_deterministic_seed_arg,
+            fake_skill_global_mode_arg,
+            fake_skill_random_failure_prob_arg,
+            fake_skill_mode_overrides_json_arg,
             start_nao_say_skill_arg,
             start_nao_replay_motion_arg,
             head_motion_allow_open_loop_without_joint_state_arg,
@@ -2606,6 +2713,10 @@ def generate_profile_launch_description(
             interaction_trace_html_output_dir_arg,
             interaction_trace_include_raw_payloads_arg,
             interaction_trace_max_payload_chars_arg,
+            interaction_trace_include_channels_csv_arg,
+            interaction_trace_exclude_channels_csv_arg,
+            interaction_trace_include_event_types_csv_arg,
+            interaction_trace_exclude_event_types_csv_arg,
             interaction_trace_enable_scene_summary_channel_arg,
             interaction_trace_scene_summary_emit_on_change_only_arg,
             interaction_trace_scene_summary_min_interval_sec_arg,
@@ -2831,6 +2942,21 @@ def generate_profile_launch_description(
                     "launch_file_name": "fake_skills.launch.py",
                     "launch_arg_name": "start_fake_skills",
                     "display_name": "fake_skills",
+                    "launch_arguments": {
+                        "fake_skill_scenario_file": LaunchConfiguration("fake_skill_scenario_file"),
+                        "fake_skill_active_scenario_id": LaunchConfiguration("fake_skill_active_scenario_id"),
+                        "fake_skill_default_delay_sec": LaunchConfiguration("fake_skill_default_delay_sec"),
+                        "fake_skill_publish_events": LaunchConfiguration("fake_skill_publish_events"),
+                        "fake_skill_event_topic": LaunchConfiguration("fake_skill_event_topic"),
+                        "fake_skill_deterministic_seed": LaunchConfiguration("fake_skill_deterministic_seed"),
+                        "fake_skill_global_mode": LaunchConfiguration("fake_skill_global_mode"),
+                        "fake_skill_random_failure_prob": LaunchConfiguration(
+                            "fake_skill_random_failure_prob"
+                        ),
+                        "fake_skill_mode_overrides_json": LaunchConfiguration(
+                            "fake_skill_mode_overrides_json"
+                        ),
+                    },
                     "required_packages": ["fake_skills"],
                 },
             ),

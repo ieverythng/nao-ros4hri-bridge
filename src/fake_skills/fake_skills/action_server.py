@@ -41,6 +41,9 @@ class FakeSkillActionServer(Node):
         self.declare_parameter('publish_events', True)
         self.declare_parameter('event_topic', '/fake_skills/events')
         self.declare_parameter('active_scenario_id', '')
+        self.declare_parameter('global_mode', 'scenario')
+        self.declare_parameter('random_failure_prob', 0.5)
+        self.declare_parameter('mode_overrides_json', '{}')
 
         scenario_path = str(self.get_parameter('scenario_file').value).strip()
         if not scenario_path and get_package_share_directory is not None:
@@ -56,10 +59,22 @@ class FakeSkillActionServer(Node):
         else:
             self._scenario_store = ScenarioStore({})
 
+        initial_mode_overrides = self._parse_mode_overrides_json(
+            self.get_parameter('mode_overrides_json').value
+        )
+        if initial_mode_overrides is None:
+            self.get_logger().warn(
+                'mode_overrides_json is invalid JSON; starting with empty overrides'
+            )
+            initial_mode_overrides = {}
+
         self._engine = FakeSkillEngine(
             scenario_store=self._scenario_store,
             default_delay_sec=float(self.get_parameter('default_delay_sec').value),
             deterministic_seed=int(self.get_parameter('deterministic_seed').value),
+            global_mode=str(self.get_parameter('global_mode').value).strip(),
+            random_failure_prob=float(self.get_parameter('random_failure_prob').value),
+            mode_overrides=initial_mode_overrides,
         )
         self._active_scenario_id = str(self.get_parameter('active_scenario_id').value).strip()
         self.declare_parameter('available_scenario_ids', list(self._scenario_store.scenario_ids()))
@@ -104,12 +119,13 @@ class FakeSkillActionServer(Node):
             )
 
         self.get_logger().info(
-            'fake_skill_server ready | execute=%s skills=%s active_scenario=%s available_scenarios=%s'
+            'fake_skill_server ready | execute=%s skills=%s active_scenario=%s available_scenarios=%s global_mode=%s'
             % (
                 str(self.get_parameter('execute_action_name').value).strip(),
                 ','.join(self._engine.supported_skills),
                 (self._active_scenario_id or '<none>'),
                 ','.join(self._scenario_store.scenario_ids()) or '<none>',
+                str(self.get_parameter('global_mode').value).strip() or 'scenario',
             )
         )
 
@@ -168,6 +184,8 @@ class FakeSkillActionServer(Node):
             {
                 'status': status,
                 'result_mode': payload.get('metadata', {}).get('result_mode', ''),
+                'mode_source': payload.get('metadata', {}).get('mode_source', ''),
+                'global_mode': payload.get('metadata', {}).get('global_mode', ''),
                 'summary_text': summary_text,
                 'failure': payload.get('failure', {}),
             },
@@ -233,25 +251,86 @@ class FakeSkillActionServer(Node):
         return ''
 
     def _on_set_parameters(self, parameters) -> SetParametersResult:
+        requested_active_scenario_id = self._active_scenario_id
+        requested_global_mode = str(self.get_parameter('global_mode').value).strip()
+        requested_random_failure_prob = float(self.get_parameter('random_failure_prob').value)
+        requested_mode_overrides = self._parse_mode_overrides_json(
+            self.get_parameter('mode_overrides_json').value
+        )
+        if requested_mode_overrides is None:
+            requested_mode_overrides = {}
+
         for parameter in parameters:
-            if parameter.name != 'active_scenario_id':
+            if parameter.name == 'active_scenario_id':
+                requested = str(parameter.value or '').strip()
+                if requested and not self._scenario_store.has_scenario(requested):
+                    available = ','.join(self._scenario_store.scenario_ids()) or '<none>'
+                    return SetParametersResult(
+                        successful=False,
+                        reason=(
+                            'Unknown active_scenario_id "%s". Available: %s'
+                            % (requested, available)
+                        ),
+                    )
+                requested_active_scenario_id = requested
                 continue
-            requested = str(parameter.value or '').strip()
-            if requested and not self._scenario_store.has_scenario(requested):
-                available = ','.join(self._scenario_store.scenario_ids()) or '<none>'
-                return SetParametersResult(
-                    successful=False,
-                    reason=(
-                        'Unknown active_scenario_id "%s". Available: %s'
-                        % (requested, available)
-                    ),
-                )
-            self._active_scenario_id = requested
-            self.get_logger().info(
-                'active_scenario_id updated to %s'
-                % (self._active_scenario_id or '<none>')
+
+            if parameter.name == 'global_mode':
+                requested_global_mode = str(parameter.value or '').strip()
+                continue
+
+            if parameter.name == 'random_failure_prob':
+                try:
+                    requested_random_failure_prob = float(parameter.value)
+                except (TypeError, ValueError):
+                    return SetParametersResult(
+                        successful=False,
+                        reason='random_failure_prob must be a float value',
+                    )
+                continue
+
+            if parameter.name == 'mode_overrides_json':
+                parsed = self._parse_mode_overrides_json(parameter.value)
+                if parsed is None:
+                    return SetParametersResult(
+                        successful=False,
+                        reason='mode_overrides_json must be a JSON object (skill->mode)',
+                    )
+                requested_mode_overrides = parsed
+
+        self._active_scenario_id = requested_active_scenario_id
+        self._engine.update_policy(
+            global_mode=requested_global_mode,
+            random_failure_prob=requested_random_failure_prob,
+            mode_overrides=requested_mode_overrides,
+        )
+        self.get_logger().info(
+            'fake_skill policy updated | active_scenario=%s global_mode=%s random_failure_prob=%.3f overrides=%d'
+            % (
+                (self._active_scenario_id or '<none>'),
+                str(requested_global_mode or 'scenario'),
+                float(requested_random_failure_prob),
+                len(requested_mode_overrides),
             )
+        )
         return SetParametersResult(successful=True)
+
+    @staticmethod
+    def _parse_mode_overrides_json(raw_value):
+        text = str(raw_value or '').strip()
+        if not text:
+            return {}
+        try:
+            parsed = json.loads(text)
+        except json.JSONDecodeError:
+            return None
+        if not isinstance(parsed, dict):
+            return None
+        return {
+            str(key).strip().lower(): str(value).strip().lower()
+            for key, value in parsed.items()
+            if str(key).strip() and str(value).strip()
+        }
 
     @staticmethod
     def _parse_evidence_policy(value: str) -> dict:

@@ -20,6 +20,25 @@ def _engine() -> FakeSkillEngine:
     )
 
 
+def _engine_with_policy(**kwargs) -> FakeSkillEngine:
+    return FakeSkillEngine(
+        scenario_store=ScenarioStore(
+            {
+                'default': {
+                    'navigate_to': {'result_mode': 'success', 'delay_sec': 0.0},
+                    'find_object': {'result_mode': 'found', 'delay_sec': 0.0},
+                },
+                'scenarios': {
+                    'blocked': {'navigate_to': {'result_mode': 'path_blocked'}},
+                },
+            }
+        ),
+        default_delay_sec=0.0,
+        deterministic_seed=7,
+        **kwargs,
+    )
+
+
 def test_engine_navigate_success() -> None:
     payload, delay_sec = _engine().execute(skill='navigate_to', args={'target': 'kitchen'})
 
@@ -63,3 +82,86 @@ def test_engine_find_object_treats_success_mode_as_found() -> None:
 
     assert payload['status'] == 'succeeded'
     assert payload['target_found'] is True
+
+
+def test_engine_unknown_skill_returns_structured_failure() -> None:
+    payload, delay_sec = _engine().execute(skill='dance', args={})
+
+    assert delay_sec == 0.0
+    assert payload['status'] == 'failed'
+    assert payload['failure']['code'] == 'unsupported_skill'
+    assert payload['metadata']['result_mode'] == 'unsupported_skill'
+
+
+def test_engine_global_every_other_alternates_for_same_request() -> None:
+    engine = _engine_with_policy(global_mode='every_other')
+
+    first, _ = engine.execute(skill='navigate_to', args={'target': 'kitchen'})
+    second, _ = engine.execute(skill='navigate_to', args={'target': 'kitchen'})
+    third, _ = engine.execute(skill='navigate_to', args={'target': 'kitchen'})
+
+    assert first['status'] == 'succeeded'
+    assert second['status'] == 'failed'
+    assert third['status'] == 'succeeded'
+    assert first['metadata']['mode_source'] == 'global_mode'
+
+
+def test_engine_random_seeded_is_reproducible() -> None:
+    first_engine = _engine_with_policy(
+        global_mode='random_seeded',
+        random_failure_prob=0.4,
+    )
+    second_engine = _engine_with_policy(
+        global_mode='random_seeded',
+        random_failure_prob=0.4,
+    )
+
+    first_sequence = [
+        first_engine.execute(skill='navigate_to', args={'target': 'kitchen'})[0]['status']
+        for _ in range(6)
+    ]
+    second_sequence = [
+        second_engine.execute(skill='navigate_to', args={'target': 'kitchen'})[0]['status']
+        for _ in range(6)
+    ]
+
+    assert first_sequence == second_sequence
+
+
+def test_engine_mode_resolution_precedence() -> None:
+    engine = _engine_with_policy(
+        global_mode='always_success',
+        mode_overrides={'find_object': 'always_fail'},
+    )
+
+    payload, _ = engine.execute(
+        skill='find_object',
+        args={'target': 'cup', 'result_mode': 'found'},
+        scenario_id='blocked',
+        scenario_override={'result_mode': 'ambiguous'},
+    )
+
+    assert payload['status'] == 'failed'
+    assert payload['failure']['code'] == 'ambiguous'
+    assert payload['metadata']['mode_source'] == 'scenario_override'
+
+
+def test_engine_skill_override_beats_global_mode() -> None:
+    engine = _engine_with_policy(
+        global_mode='always_success',
+        mode_overrides={'find_object': 'always_fail'},
+    )
+
+    payload, _ = engine.execute(skill='find_object', args={'target': 'cup'})
+
+    assert payload['status'] == 'failed'
+    assert payload['failure']['code'] == 'not_found'
+    assert payload['metadata']['mode_source'] == 'skill_override'
+
+
+def test_engine_invalid_mode_override_is_ignored() -> None:
+    engine = _engine_with_policy(mode_overrides={'find_object': ''})
+    payload, _ = engine.execute(skill='find_object', args={'target': 'cup'})
+
+    assert payload['status'] == 'succeeded'
+    assert payload['metadata']['mode_source'] == 'scenario_default'

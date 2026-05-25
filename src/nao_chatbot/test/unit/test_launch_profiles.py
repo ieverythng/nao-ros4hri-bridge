@@ -145,9 +145,16 @@ def test_demo_profile_is_sim_only_with_mock_scan_and_planner_enabled():
     assert defaults["start_planner_llm"] == "true"
     assert defaults["chatbot_planner_mode_enabled"] == "true"
     assert defaults["start_fake_skills"] == "true"
+    assert defaults["fake_skill_global_mode"] == "every_other"
+    assert defaults["fake_skill_random_failure_prob"] == "0.50"
+    assert defaults["fake_skill_mode_overrides_json"] == "{}"
     assert defaults["scan_result_mode"] == "success"
     assert "current scene summary" in defaults["scan_summary"]
     assert defaults["scan_report_after_success"] == "false"
+    assert defaults["interaction_trace_compact_mode"] == "false"
+    assert defaults["interaction_trace_include_raw_payloads"] == "true"
+    assert "fake_skills/events" in defaults["interaction_trace_include_channels_csv"]
+    assert "execution_feedback" in defaults["interaction_trace_include_event_types_csv"]
     _assert_lab_vllm_defaults(defaults)
     _assert_asr_is_opt_in(defaults)
 

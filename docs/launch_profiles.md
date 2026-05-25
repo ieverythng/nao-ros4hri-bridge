@@ -133,6 +133,12 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
   `fake_skills/config/fake_skill_scenarios.yaml` from package share).
 - `fake_skill_active_scenario_id`: optional named scenario applied globally by
   `fake_skill_server` unless a per-request `scenario_id` override is provided.
+- `fake_skill_global_mode`: global fake-skill policy:
+  `scenario|always_success|always_fail|every_other|random_seeded`.
+- `fake_skill_random_failure_prob`: failure probability for
+  `fake_skill_global_mode=random_seeded`.
+- `fake_skill_mode_overrides_json`: JSON map for per-skill mode overrides, for
+  example `{"find_object":"always_fail"}`.
 - `start_interaction_trace_viewer`: launches `interaction_trace_viewer/trace_node`.
 - `interaction_trace_compact_mode`: compact terminal output (`true`) or verbose payload view (`false`).
 - `interaction_trace_write_jsonl`: writes JSONL traces under `interaction_trace_jsonl_output_dir`.
@@ -151,7 +157,8 @@ Launch with an initial named scenario:
 ```bash
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   start_fake_skills:=true \
-  fake_skill_active_scenario_id:=path_blocked
+  fake_skill_active_scenario_id:=path_blocked \
+  fake_skill_global_mode:=scenario
 ```
 
 Inspect available and active scenario ids:
@@ -177,6 +184,40 @@ Semi-interactive selector (same container, same running stack):
 
 ```bash
 ./scripts/fake_skill_scenario_menu.sh /fake_skill_server
+```
+
+Demo alternation mode (one run shows both success/failure paths):
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_demo.launch.py \
+  fake_skill_global_mode:=every_other \
+  fake_skill_mode_overrides_json:='{}'
+```
+
+Switch global policy live:
+
+```bash
+ros2 param set /fake_skill_server global_mode always_success
+ros2 param set /fake_skill_server global_mode always_fail
+ros2 param set /fake_skill_server global_mode random_seeded
+ros2 param set /fake_skill_server random_failure_prob 0.35
+```
+
+Override one skill live:
+
+```bash
+ros2 param set /fake_skill_server mode_overrides_json '{"find_object":"always_fail"}'
+```
+
+Trace-viewer-first one-copy demo command:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_demo.launch.py \
+  start_interaction_trace_viewer:=true \
+  interaction_trace_compact_mode:=false \
+  interaction_trace_include_raw_payloads:=true \
+  interaction_trace_include_channels_csv:="planner/request,intents,planner/execution_feedback,planner/dialogue_act,chatbot_llm/turn_trace,fake_skills/events" \
+  interaction_trace_include_event_types_csv:="planner_request,planner_output,execution_feedback,planner_dialogue_act,chatbot_turn_trace,skill_result"
 ```
 
 ## ASR And Perception Startup

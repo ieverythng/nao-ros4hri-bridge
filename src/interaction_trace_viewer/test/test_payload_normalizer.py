@@ -90,3 +90,19 @@ def test_normalize_turn_trace_string_message() -> None:
 
     assert event.event_type == 'chatbot_turn_trace'
     assert 'route=dialogue' in event.summary
+
+
+def test_normalize_fake_skill_event_maps_to_skill_result() -> None:
+    msg = SimpleNamespace(
+        data='{"event_type":"fake_skill_completed","skill":"navigate_to","payload":{"status":"failed","summary_text":"path blocked","failure":{"code":"path_blocked"}}}'
+    )
+    event = normalize_string_message(
+        channel='/fake_skills/events',
+        msg=msg,
+        max_payload_chars=4000,
+    )
+
+    assert event.event_type == 'skill_result'
+    assert event.payload['skill'] == 'navigate_to'
+    assert event.payload['status'] == 'failed'
+    assert event.payload['failure']['code'] == 'path_blocked'
