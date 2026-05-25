@@ -1,7 +1,7 @@
 # ROS4HRI Integration Master Plan (Consolidated, Active)
 
-**Date:** 2026-05-18  
-**Branch context:** `feat/TFM-LLM_planner` (+ nested repos and Neural-Wokbench integration seam)  
+**Date:** 2026-05-21  
+**Branch context:** `feat/TFM-LLM_planner` (+ `feat(R)/full_nao_dashboard` implementation seam)  
 **Scope:** Single active execution plan for non-fake-skill integration, AB registry normalization, and observability/dashboard rollout.
 
 ## 1. Consolidation Policy (What This File Replaces)
@@ -65,6 +65,13 @@ Everything else should be archived under `docs/artifacts/` unless it is actively
   2. `dialogue_manager`
   3. `chatbot_llm`
 - **Pending**: align nested `skill_common` integration with Neural-Wokbench branch strategy (`feat/TFM_planner_only` flow).
+
+### E. Fake Skills + Dashboard Runtime Seams
+
+- **Done**: deterministic `fake_skills` action-server package exists with scenario-driven success/failure control and event publication on `/fake_skills/events`.
+- **In progress**: stack launch wiring for `fake_skills` and `nao_dashboard` optional bring-up in sim/demo profiles.
+- **In progress**: `nao_dashboard` package scaffold implemented with HTTP API, shared trace normalization, ROS graph snapshots, action-health panel, and AB registry projection through `skill_common`.
+- **Pending**: add Workbench candidate/verification overlays once NW candidate feeds are available in this branch line.
 
 ## 4. Active Track: AB Registry Full Integration
 
@@ -135,7 +142,8 @@ This track merges prior simple-viewer and full-dashboard plans.
 
 ### OBS-1: Simple Dialogue Trace Viewer (P0)
 
-- first deliverable: lightweight trace tool for supervisor demos.
+- **Status: Done**
+- lightweight trace tool for supervisor demos.
 - required flow visibility:
   - user input
   - chatbot route
@@ -147,10 +155,16 @@ This track merges prior simple-viewer and full-dashboard plans.
 
 ### OBS-2: Full Dashboard Skeleton (P1)
 
+- **Status: In progress**
 - web backend + UI skeleton with:
   - live timeline
   - ROS graph snapshot
   - action server health panel
+- initial implementation landed under `src/nao_dashboard/`:
+  - backend node with normalized timeline ingestion
+  - `/api/state`, `/api/events`, `/api/ros_graph`, `/api/ab_registry`
+  - compact web hub UI (`index.html`, `app.js`, `styles.css`)
+  - stack launch knobs for `start_nao_dashboard` and `start_fake_skills`
 
 ### OBS-3: AB Registry + Workbench Panels (P2)
 
@@ -168,9 +182,9 @@ This track merges prior simple-viewer and full-dashboard plans.
 
 1. **P0** Finalize chatbot routing policy edge-cases (`knowledge_query` default where appropriate).
 2. **P0** Add operator-facing troubleshooting section in `launch_profiles.md` for live-stack/no-relaunch constraints.
-3. **P0** Land simple trace viewer package scaffold (`interaction_trace_viewer`).
+3. **P0** Keep `interaction_trace_viewer` aligned with dashboard shared event model.
 4. **P1** Begin AB decomposition schema expansion and tests.
-5. **P1** Begin dashboard backend skeleton (`nao_dashboard`).
+5. **P1** Complete dashboard P1 hardening: tests + launch-level smoke checks + operator quickstart.
 6. **P2** Stage upstream nested-repo merges per inventory artifact.
 
 ## 7. Mandatory Validation Gates (Per Change Slice)
@@ -206,6 +220,6 @@ This track merges prior simple-viewer and full-dashboard plans.
 
 1. Re-run focused tests for touched planner/orchestrator/registry seams.
 2. Verify live stack action endpoints remain healthy (`scan`, `report_result`, `say`, `head_motion`).
-3. Start OBS-1 implementation scaffold (`interaction_trace_viewer`).
+3. Run launch-level smoke for `start_fake_skills=true` and `start_nao_dashboard=true` in sim profile.
 4. Start AB-F2 decomposition metadata pass with tests.
 5. Prepare upstream merge staging branch sequence from inventory doc.

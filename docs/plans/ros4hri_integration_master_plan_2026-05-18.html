@@ -77,8 +77,8 @@
 </head>
 <body>
 <h1>ROS4HRI Integration Master Plan (Consolidated, Active)</h1>
-<p><strong>Date:</strong> 2026-05-18</p>
-<p><strong>Branch context:</strong> <code>feat/TFM-LLM_planner</code> (+ nested repos and Neural-Wokbench integration seam)</p>
+<p><strong>Date:</strong> 2026-05-21</p>
+<p><strong>Branch context:</strong> <code>feat/TFM-LLM_planner</code> (+ <code>feat(R)/full_nao_dashboard</code> implementation seam)</p>
 <p><strong>Scope:</strong> Single active execution plan for non-fake-skill integration, AB registry normalization, and observability/dashboard rollout.</p>
 <h2>1. Consolidation Policy (What This File Replaces)</h2>
 <p>This file is now the canonical integration plan and absorbs execution tracking from:</p>
@@ -141,6 +141,13 @@
 </ol>
 <ul>
 <li><strong>Pending</strong>: align nested <code>skill_common</code> integration with Neural-Wokbench branch strategy (<code>feat/TFM_planner_only</code> flow).</li>
+</ul>
+<h3>E. Fake Skills + Dashboard Runtime Seams</h3>
+<ul>
+<li><strong>Done</strong>: deterministic <code>fake_skills</code> action-server package exists with scenario-driven success/failure control and event publication on <code>/fake_skills/events</code>.</li>
+<li><strong>In progress</strong>: stack launch wiring for <code>fake_skills</code> and <code>nao_dashboard</code> optional bring-up in sim/demo profiles.</li>
+<li><strong>In progress</strong>: <code>nao_dashboard</code> package scaffold implemented with HTTP API, shared trace normalization, ROS graph snapshots, action-health panel, and AB registry projection through <code>skill_common</code>.</li>
+<li><strong>Pending</strong>: add Workbench candidate/verification overlays once NW candidate feeds are available in this branch line.</li>
 </ul>
 <h2>4. Active Track: AB Registry Full Integration</h2>
 <p>This track is now narrowed to practical implementation milestones.</p>
@@ -210,7 +217,8 @@
 </ul>
 <h3>OBS-1: Simple Dialogue Trace Viewer (P0)</h3>
 <ul>
-<li>first deliverable: lightweight trace tool for supervisor demos.</li>
+<li><strong>Status: Done</strong></li>
+<li>lightweight trace tool for supervisor demos.</li>
 <li>required flow visibility:</li>
 <li>user input</li>
 <li>chatbot route</li>
@@ -222,10 +230,16 @@
 </ul>
 <h3>OBS-2: Full Dashboard Skeleton (P1)</h3>
 <ul>
+<li><strong>Status: In progress</strong></li>
 <li>web backend + UI skeleton with:</li>
 <li>live timeline</li>
 <li>ROS graph snapshot</li>
 <li>action server health panel</li>
+<li>initial implementation landed under <code>src/nao_dashboard/</code>:</li>
+<li>backend node with normalized timeline ingestion</li>
+<li><code>/api/state</code>, <code>/api/events</code>, <code>/api/ros_graph</code>, <code>/api/ab_registry</code></li>
+<li>compact web hub UI (<code>index.html</code>, <code>app.js</code>, <code>styles.css</code>)</li>
+<li>stack launch knobs for <code>start_nao_dashboard</code> and <code>start_fake_skills</code></li>
 </ul>
 <h3>OBS-3: AB Registry + Workbench Panels (P2)</h3>
 <ul>
@@ -243,9 +257,9 @@
 <ol>
 <li><strong>P0</strong> Finalize chatbot routing policy edge-cases (<code>knowledge_query</code> default where appropriate).</li>
 <li><strong>P0</strong> Add operator-facing troubleshooting section in <code>launch_profiles.md</code> for live-stack/no-relaunch constraints.</li>
-<li><strong>P0</strong> Land simple trace viewer package scaffold (<code>interaction_trace_viewer</code>).</li>
+<li><strong>P0</strong> Keep <code>interaction_trace_viewer</code> aligned with dashboard shared event model.</li>
 <li><strong>P1</strong> Extend AB=1 decomposition coverage to remaining runtime skills and add DAG/depth validators.</li>
-<li><strong>P1</strong> Begin dashboard backend skeleton (<code>nao_dashboard</code>).</li>
+<li><strong>P1</strong> Complete dashboard P1 hardening: tests + launch-level smoke checks + operator quickstart.</li>
 <li><strong>P2</strong> Stage upstream nested-repo merges per inventory artifact.</li>
 </ol>
 <h2>7. Mandatory Validation Gates (Per Change Slice)</h2>
@@ -287,7 +301,7 @@
 <ol>
 <li>Re-run focused tests for touched planner/orchestrator/registry seams.</li>
 <li>Verify live stack action endpoints remain healthy (<code>scan</code>, <code>report_result</code>, <code>say</code>, <code>head_motion</code>).</li>
-<li>Start OBS-1 implementation scaffold (<code>interaction_trace_viewer</code>).</li>
+<li>Run launch-level smoke for <code>start_fake_skills=true</code> and <code>start_nao_dashboard=true</code> in sim profile.</li>
 <li>Start AB-F2 decomposition metadata pass with tests.</li>
 <li>Prepare upstream merge staging branch sequence from inventory doc.</li>
 </ol>

@@ -1,659 +1,29 @@
 {
   "objects": [
     {
-      "object_id": "/skill/do_head_motion",
+      "object_id": "/planner/request",
       "ab_level": 0,
-      "kind": "action",
-      "category": "execution_action",
-      "owner_package": "nao_replay_motion",
+      "kind": "topic",
+      "category": "planner_ingress",
+      "owner_package": "planner_llm",
       "transport": {
-        "type": "action",
-        "ros_type": "planner_msgs/action/SkillStep",
+        "type": "topic",
+        "ros_type": "hri_actions_msgs/msg/Intent",
         "payload_format": "json"
       },
       "expected_effects": [
-        "head motion action endpoint"
+        "planner receives a normalized task request"
       ],
       "observable_success": [
-        "goal_accepted",
-        "result_payload"
+        "Intent.intent=planner_request",
+        "Intent.data.goal_text"
       ],
       "safety_flags": [
-        "execution"
+        "planner_ingress"
       ],
       "implementation_status": "bridge_runtime",
       "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 action endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "/skill/fake/find_object",
-      "ab_level": 0,
-      "kind": "action",
-      "category": "execution_action",
-      "owner_package": "fake_skills",
-      "transport": {
-        "type": "action",
-        "ros_type": "planner_msgs/action/SkillStep",
-        "payload_format": "json"
-      },
-      "expected_effects": [
-        "fake find_object action endpoint"
-      ],
-      "observable_success": [
-        "goal_accepted",
-        "result_payload"
-      ],
-      "safety_flags": [
-        "execution"
-      ],
-      "implementation_status": "bridge_runtime",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 action endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "/skill/fake/navigate_to",
-      "ab_level": 0,
-      "kind": "action",
-      "category": "execution_action",
-      "owner_package": "fake_skills",
-      "transport": {
-        "type": "action",
-        "ros_type": "planner_msgs/action/SkillStep",
-        "payload_format": "json"
-      },
-      "expected_effects": [
-        "fake navigate_to action endpoint"
-      ],
-      "observable_success": [
-        "goal_accepted",
-        "result_payload"
-      ],
-      "safety_flags": [
-        "execution"
-      ],
-      "implementation_status": "bridge_runtime",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 action endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "/skill/fake/walk_to",
-      "ab_level": 0,
-      "kind": "action",
-      "category": "execution_action",
-      "owner_package": "fake_skills",
-      "transport": {
-        "type": "action",
-        "ros_type": "planner_msgs/action/SkillStep",
-        "payload_format": "json"
-      },
-      "expected_effects": [
-        "fake walk_to action endpoint"
-      ],
-      "observable_success": [
-        "goal_accepted",
-        "result_payload"
-      ],
-      "safety_flags": [
-        "execution"
-      ],
-      "implementation_status": "bridge_runtime",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 action endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "/skill/look_at",
-      "ab_level": 0,
-      "kind": "action",
-      "category": "execution_action",
-      "owner_package": "nao_look_at",
-      "transport": {
-        "type": "action",
-        "ros_type": "planner_msgs/action/SkillStep",
-        "payload_format": "json"
-      },
-      "expected_effects": [
-        "look_at action endpoint"
-      ],
-      "observable_success": [
-        "goal_accepted",
-        "result_payload"
-      ],
-      "safety_flags": [
-        "execution"
-      ],
-      "implementation_status": "bridge_runtime",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 action endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "/skill/replay_motion",
-      "ab_level": 0,
-      "kind": "action",
-      "category": "execution_action",
-      "owner_package": "nao_replay_motion",
-      "transport": {
-        "type": "action",
-        "ros_type": "planner_msgs/action/SkillStep",
-        "payload_format": "json"
-      },
-      "expected_effects": [
-        "replay motion action endpoint"
-      ],
-      "observable_success": [
-        "goal_accepted",
-        "result_payload"
-      ],
-      "safety_flags": [
-        "execution"
-      ],
-      "implementation_status": "bridge_runtime",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 action endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "/skill/report_result",
-      "ab_level": 0,
-      "kind": "action",
-      "category": "execution_action",
-      "owner_package": "nao_orchestrator",
-      "transport": {
-        "type": "action",
-        "ros_type": "planner_msgs/action/SkillStep",
-        "payload_format": "json"
-      },
-      "expected_effects": [
-        "report_result action endpoint"
-      ],
-      "observable_success": [
-        "goal_accepted",
-        "result_payload"
-      ],
-      "safety_flags": [
-        "execution"
-      ],
-      "implementation_status": "bridge_runtime",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 action endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "/skill/scan",
-      "ab_level": 0,
-      "kind": "action",
-      "category": "execution_action",
-      "owner_package": "nao_orchestrator",
-      "transport": {
-        "type": "action",
-        "ros_type": "planner_msgs/action/SkillStep",
-        "payload_format": "json"
-      },
-      "expected_effects": [
-        "scan skill action endpoint"
-      ],
-      "observable_success": [
-        "goal_accepted",
-        "result_payload"
-      ],
-      "safety_flags": [
-        "execution"
-      ],
-      "implementation_status": "bridge_runtime",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 action endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "confirm_target_visibility",
-      "ab_level": 0,
-      "kind": "primitive",
-      "category": "perception_validation",
-      "params": [
-        "target",
-        "target_kind",
-        "scene_summary"
-      ],
-      "expected_effects": [
-        "visibility check is produced for one target"
-      ],
-      "observable_success": [
-        "target_found",
-        "matching_entities"
-      ],
-      "safety_flags": [
-        "perception",
-        "validation"
-      ],
-      "implementation_status": "internal_helper",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "dispatch_skill_goal",
-      "ab_level": 0,
-      "kind": "primitive",
-      "category": "execution_dispatch",
-      "params": [
-        "skill",
-        "args"
-      ],
-      "expected_effects": [
-        "action goal is sent to the owning skill server"
-      ],
-      "observable_success": [
-        "goal_accepted",
-        "result_received"
-      ],
-      "safety_flags": [
-        "execution"
-      ],
-      "implementation_status": "bridge_runtime",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "dispatch_walk_segment",
-      "ab_level": 0,
-      "kind": "primitive",
-      "category": "navigation",
-      "params": [
-        "distance_m",
-        "direction",
-        "target"
-      ],
-      "expected_effects": [
-        "one locomotion segment is dispatched"
-      ],
-      "observable_success": [
-        "segment_started",
-        "segment_completed"
-      ],
-      "safety_flags": [
-        "navigation",
-        "movement"
-      ],
-      "implementation_status": "bridge_runtime",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "emit_robot_speech",
-      "ab_level": 0,
-      "kind": "primitive",
-      "category": "communication",
-      "params": [
-        "summary_text"
-      ],
-      "expected_effects": [
-        "speech utterance is emitted through the robot channel"
-      ],
-      "observable_success": [
-        "speech_dispatched"
-      ],
-      "safety_flags": [
-        "communication"
-      ],
-      "implementation_status": "bridge_runtime",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "estimate_navigation_path",
-      "ab_level": 0,
-      "kind": "primitive",
-      "category": "navigation",
-      "params": [
-        "target",
-        "location"
-      ],
-      "expected_effects": [
-        "path feasibility estimate is produced"
-      ],
-      "observable_success": [
-        "path_estimate",
-        "blocked"
-      ],
-      "safety_flags": [
-        "navigation"
-      ],
-      "implementation_status": "internal_helper",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "read_scene_summary",
-      "ab_level": 0,
-      "kind": "primitive",
-      "category": "perception_state",
-      "expected_effects": [
-        "latest scene summary is read into workbench context"
-      ],
-      "observable_success": [
-        "/scene/summary"
-      ],
-      "safety_flags": [
-        "perception"
-      ],
-      "implementation_status": "internal_helper",
-      "decomposes_to": [
-        "/scene/summary"
-      ],
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "retrieve_memory",
-      "ab_level": 0,
-      "kind": "primitive",
-      "category": "memory",
-      "params": [
-        "goal_text",
-        "limit"
-      ],
-      "expected_effects": [
-        "similar traces are retrieved for candidate scoring"
-      ],
-      "observable_success": [
-        "trace_ids"
-      ],
-      "safety_flags": [
-        "memory"
-      ],
-      "implementation_status": "internal_helper",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "store_trace",
-      "ab_level": 0,
-      "kind": "primitive",
-      "category": "memory",
-      "params": [
-        "trace"
-      ],
-      "expected_effects": [
-        "execution trace is appended to trace memory"
-      ],
-      "observable_success": [
-        "trace_id"
-      ],
-      "safety_flags": [
-        "memory"
-      ],
-      "implementation_status": "internal_helper",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "validate_motion_payload",
-      "ab_level": 0,
-      "kind": "primitive",
-      "category": "motion_validation",
-      "params": [
-        "object",
-        "target_frame",
-        "policy"
-      ],
-      "expected_effects": [
-        "motion/look-at request compatibility is validated"
-      ],
-      "observable_success": [
-        "valid",
-        "errors"
-      ],
-      "safety_flags": [
-        "motion",
-        "validation"
-      ],
-      "implementation_status": "internal_helper",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "validate_navigation_request",
-      "ab_level": 0,
-      "kind": "primitive",
-      "category": "navigation_validation",
-      "params": [
-        "target",
-        "location"
-      ],
-      "expected_effects": [
-        "navigation request validity is determined"
-      ],
-      "observable_success": [
-        "valid",
-        "errors"
-      ],
-      "safety_flags": [
-        "navigation",
-        "validation"
-      ],
-      "implementation_status": "internal_helper",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "verify_evidence_payload",
-      "ab_level": 0,
-      "kind": "primitive",
-      "category": "validation",
-      "params": [
-        "result_payload",
-        "result_schema"
-      ],
-      "expected_effects": [
-        "skill result payload is checked before dialogue or trace use"
-      ],
-      "observable_success": [
-        "valid",
-        "errors"
-      ],
-      "safety_flags": [
-        "validation"
-      ],
-      "implementation_status": "internal_helper",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "wait_for_perception",
-      "ab_level": 0,
-      "kind": "primitive",
-      "category": "perception",
-      "params": [
-        "duration_sec",
-        "evidence_policy"
-      ],
-      "expected_effects": [
-        "perception pipeline has time to update observable state"
-      ],
-      "observable_success": [
-        "elapsed_time",
-        "fresh_scene_possible"
-      ],
-      "safety_flags": [
-        "perception"
-      ],
-      "implementation_status": "internal_helper",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "query_kb",
-      "ab_level": 0,
-      "kind": "service",
-      "category": "memory",
-      "owner_package": "kb_skills",
-      "transport": {
-        "type": "service",
-        "payload_format": "knowledge_core_query"
-      },
-      "expected_effects": [
-        "symbolic facts are retrieved through the KB boundary"
-      ],
-      "observable_success": [
-        "facts",
-        "confidence",
-        "lifespan"
-      ],
-      "safety_flags": [
-        "memory"
-      ],
-      "implementation_status": "bridge_runtime",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "revise_kb",
-      "ab_level": 0,
-      "kind": "service",
-      "category": "memory",
-      "owner_package": "kb_skills",
-      "transport": {
-        "type": "service",
-        "payload_format": "knowledge_core_revise"
-      },
-      "expected_effects": [
-        "symbolic facts are revised through the KB boundary"
-      ],
-      "observable_success": [
-        "revision accepted"
-      ],
-      "safety_flags": [
-        "memory"
-      ],
-      "implementation_status": "bridge_runtime",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
+        "runtime_callable": false
       }
     },
     {
@@ -678,44 +48,7 @@
       ],
       "implementation_status": "bridge_runtime",
       "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
-      }
-    },
-    {
-      "object_id": "/planner/dialogue_act",
-      "ab_level": 0,
-      "kind": "topic",
-      "category": "planner_dialogue",
-      "owner_package": "planner_llm",
-      "transport": {
-        "type": "topic",
-        "ros_type": "std_msgs/msg/String",
-        "payload_format": "json"
-      },
-      "expected_effects": [
-        "dialogue layer receives planner communication intent"
-      ],
-      "observable_success": [
-        "act",
-        "text_hint",
-        "await_user_response"
-      ],
-      "safety_flags": [
-        "communication"
-      ],
-      "implementation_status": "bridge_runtime",
-      "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
+        "runtime_callable": false
       }
     },
     {
@@ -743,43 +76,34 @@
       ],
       "implementation_status": "bridge_runtime",
       "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
+        "runtime_callable": false
       }
     },
     {
-      "object_id": "/planner/request",
+      "object_id": "/planner/dialogue_act",
       "ab_level": 0,
       "kind": "topic",
-      "category": "planner_ingress",
+      "category": "planner_dialogue",
       "owner_package": "planner_llm",
       "transport": {
         "type": "topic",
-        "ros_type": "hri_actions_msgs/msg/Intent",
+        "ros_type": "std_msgs/msg/String",
         "payload_format": "json"
       },
       "expected_effects": [
-        "planner receives a normalized task request"
+        "dialogue layer receives planner communication intent"
       ],
       "observable_success": [
-        "Intent.intent=planner_request",
-        "Intent.data.goal_text"
+        "act",
+        "text_hint",
+        "await_user_response"
       ],
       "safety_flags": [
-        "planner_ingress"
+        "communication"
       ],
       "implementation_status": "bridge_runtime",
       "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
+        "runtime_callable": false
       }
     },
     {
@@ -806,320 +130,172 @@
       ],
       "implementation_status": "bridge_runtime",
       "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "terminal_ab0",
-          "notes": "AB0 primitive or interface endpoint."
-        }
+        "runtime_callable": false
       }
     },
     {
-      "object_id": "find_object",
-      "ab_level": 1,
-      "kind": "skill",
-      "category": "perception",
-      "aliases": [
-        "find",
-        "locate_object",
-        "find_person"
-      ],
-      "params": [
-        "target",
-        "target_kind"
-      ],
-      "required_params": [
-        "target"
-      ],
-      "preconditions": [
-        "target must be named"
-      ],
+      "object_id": "query_kb",
+      "ab_level": 0,
+      "kind": "service",
+      "category": "memory",
+      "owner_package": "kb_skills",
+      "transport": {
+        "type": "service",
+        "payload_format": "knowledge_core_query"
+      },
       "expected_effects": [
-        "object or person evidence is returned"
+        "symbolic facts are retrieved through the KB boundary"
       ],
       "observable_success": [
-        "target_found",
-        "evidence.entity_id"
+        "facts",
+        "confidence",
+        "lifespan"
       ],
-      "failure_modes": [
-        "not_found",
-        "ambiguous",
-        "backend_unavailable"
+      "safety_flags": [
+        "memory"
       ],
-      "planner_guidance": [
-        "use for a specific named object or person target"
-      ],
-      "robot_adapter_mapping": "fake_find_object_skill.find_object",
-      "result_schema": {
-        "required": [
-          "skill",
-          "status",
-          "target_found",
-          "summary_text"
-        ]
+      "implementation_status": "bridge_runtime",
+      "metadata": {
+        "runtime_callable": false
+      }
+    },
+    {
+      "object_id": "revise_kb",
+      "ab_level": 0,
+      "kind": "service",
+      "category": "memory",
+      "owner_package": "kb_skills",
+      "transport": {
+        "type": "service",
+        "payload_format": "knowledge_core_revise"
       },
+      "expected_effects": [
+        "symbolic facts are revised through the KB boundary"
+      ],
+      "observable_success": [
+        "revision accepted"
+      ],
+      "safety_flags": [
+        "memory"
+      ],
+      "implementation_status": "bridge_runtime",
+      "metadata": {
+        "runtime_callable": false
+      }
+    },
+    {
+      "object_id": "wait_for_perception",
+      "ab_level": 0,
+      "kind": "primitive",
+      "category": "perception",
+      "params": [
+        "duration_sec",
+        "evidence_policy"
+      ],
+      "expected_effects": [
+        "perception pipeline has time to update observable state"
+      ],
+      "observable_success": [
+        "elapsed_time",
+        "fresh_scene_possible"
+      ],
       "safety_flags": [
         "perception"
       ],
-      "implementation_status": "fake",
-      "supports_failure_injection": true,
-      "is_composite": true,
-      "is_fake": true,
-      "decomposes_to": [
-        "/skill/fake/find_object",
-        "read_scene_summary",
-        "confirm_target_visibility",
-        "verify_evidence_payload"
-      ],
+      "implementation_status": "internal_helper",
       "metadata": {
-        "runtime_callable": true,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "full_to_ab0",
-          "notes": "Requires fresh scene evidence and explicit target visibility checks."
-        },
-        "fresh_scan_policy": {
-          "when_stale_or_missing": true,
-          "preferred_ab1_dependency": "scan"
-        }
+        "runtime_callable": false
       }
     },
     {
-      "object_id": "look_at",
-      "ab_level": 1,
-      "kind": "skill",
-      "category": "attention",
-      "aliases": [
-        "gaze_at"
-      ],
-      "params": [
-        "target_frame",
-        "frame_id",
-        "policy",
-        "x",
-        "y",
-        "z"
-      ],
-      "required_params": [],
-      "preconditions": [],
+      "object_id": "read_scene_summary",
+      "ab_level": 0,
+      "kind": "primitive",
+      "category": "perception_state",
       "expected_effects": [
-        "robot gaze is redirected or reset"
+        "latest scene summary is read into workbench context"
       ],
       "observable_success": [
-        "status"
+        "/scene/summary"
       ],
-      "failure_modes": [
-        "missing_target",
-        "dispatch_failed"
-      ],
-      "planner_guidance": [
-        "use for target-frame gaze control, not for full scene scan"
-      ],
-      "robot_adapter_mapping": "nao_orchestrator.look_at",
-      "result_schema": {
-        "required": [
-          "skill",
-          "status"
-        ]
-      },
       "safety_flags": [
-        "attention"
+        "perception"
       ],
-      "implementation_status": "first_party",
+      "implementation_status": "internal_helper",
       "decomposes_to": [
-        "/skill/look_at",
-        "validate_motion_payload",
-        "wait_for_perception"
+        "/scene/summary"
       ],
       "metadata": {
-        "runtime_callable": true,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "full_to_ab0",
-          "notes": "Attention control decomposes to motion validation + dispatch + bounded wait."
-        }
+        "runtime_callable": false
       }
     },
     {
-      "object_id": "navigate_to",
-      "ab_level": 1,
-      "kind": "skill",
-      "category": "navigation",
-      "aliases": [
-        "go_to",
-        "move_to_location"
-      ],
+      "object_id": "verify_evidence_payload",
+      "ab_level": 0,
+      "kind": "primitive",
+      "category": "validation",
       "params": [
-        "target",
-        "location"
-      ],
-      "required_params": [
-        "target"
-      ],
-      "preconditions": [
-        "navigation must be enabled",
-        "target location must be known or resolvable"
+        "result_payload",
+        "result_schema"
       ],
       "expected_effects": [
-        "robot arrives at target location"
+        "skill result payload is checked before dialogue or trace use"
       ],
       "observable_success": [
-        "status"
+        "valid",
+        "errors"
       ],
-      "failure_modes": [
-        "path_blocked",
-        "unknown_location",
-        "safety_disabled"
-      ],
-      "planner_guidance": [
-        "use for semantic destinations such as kitchen or table"
-      ],
-      "robot_adapter_mapping": "fake_navigation_skill.navigate_to",
-      "result_schema": {
-        "required": [
-          "skill",
-          "status",
-          "summary_text"
-        ]
-      },
       "safety_flags": [
-        "navigation"
+        "validation"
       ],
-      "implementation_status": "fake",
-      "supports_failure_injection": true,
-      "is_composite": true,
-      "is_fake": true,
-      "decomposes_to": [
-        "/skill/fake/navigate_to",
-        "validate_navigation_request",
-        "estimate_navigation_path",
-        "verify_evidence_payload"
-      ],
+      "implementation_status": "internal_helper",
       "metadata": {
-        "runtime_callable": true,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "full_to_ab0",
-          "notes": "AB1 runtime skill with AB0 decomposition; semantically destination-oriented."
-        },
-        "ab_role": "destination_navigation"
+        "runtime_callable": false
       }
     },
     {
-      "object_id": "perform_motion",
-      "ab_level": 1,
-      "kind": "skill",
-      "category": "embodiment",
-      "aliases": [
-        "motion",
-        "posture",
-        "head_motion"
-      ],
+      "object_id": "store_trace",
+      "ab_level": 0,
+      "kind": "primitive",
+      "category": "memory",
       "params": [
-        "object",
-        "speed",
-        "relative",
-        "yaw",
-        "pitch"
+        "trace"
       ],
-      "required_params": [
-        "object"
-      ],
-      "preconditions": [],
       "expected_effects": [
-        "robot posture or head orientation changes"
+        "execution trace is appended to trace memory"
       ],
       "observable_success": [
-        "status"
+        "trace_id"
       ],
-      "failure_modes": [
-        "unsupported_motion",
-        "dispatch_failed"
-      ],
-      "planner_guidance": [
-        "use for known posture and head-motion labels"
-      ],
-      "robot_adapter_mapping": "nao_orchestrator.perform_motion",
-      "result_schema": {
-        "required": [
-          "skill",
-          "status"
-        ]
-      },
       "safety_flags": [
-        "motion"
+        "memory"
       ],
-      "implementation_status": "first_party",
-      "decomposes_to": [
-        "/skill/replay_motion",
-        "/skill/do_head_motion",
-        "validate_motion_payload",
-        "verify_evidence_payload"
-      ],
+      "implementation_status": "internal_helper",
       "metadata": {
-        "runtime_callable": true,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "full_to_ab0",
-          "notes": "Motion dispatch decomposes into validation + deterministic action dispatch."
-        }
+        "runtime_callable": false
       }
     },
     {
-      "object_id": "report_result",
-      "ab_level": 1,
-      "kind": "skill",
-      "category": "communication",
-      "aliases": [
-        "notify_completion",
-        "say_result"
-      ],
+      "object_id": "retrieve_memory",
+      "ab_level": 0,
+      "kind": "primitive",
+      "category": "memory",
       "params": [
-        "summary_text"
-      ],
-      "required_params": [],
-      "preconditions": [
-        "summary text must be grounded in result payload or trace evidence"
+        "goal_text",
+        "limit"
       ],
       "expected_effects": [
-        "user receives completion/result summary through robot speech"
+        "similar traces are retrieved for candidate scoring"
       ],
       "observable_success": [
-        "step_succeeded",
-        "plan_completed"
+        "trace_ids"
       ],
-      "failure_modes": [
-        "missing_summary",
-        "say_dispatch_failed"
-      ],
-      "planner_guidance": [
-        "use report_result as the final step after perception/action skills when a user-facing summary is needed",
-        "prefer summary_text grounded on result payloads from previous steps"
-      ],
-      "robot_adapter_mapping": "nao_orchestrator.report_result",
-      "result_schema": {
-        "required": [
-          "skill",
-          "status",
-          "summary_text"
-        ]
-      },
       "safety_flags": [
-        "communication"
+        "memory"
       ],
-      "implementation_status": "first_party",
-      "decomposes_to": [
-        "/skill/report_result",
-        "verify_evidence_payload",
-        "emit_robot_speech"
-      ],
+      "implementation_status": "internal_helper",
       "metadata": {
-        "runtime_callable": true,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "full_to_ab0",
-          "notes": "Result reporting validates payload then emits speech via deterministic channel."
-        }
+        "runtime_callable": false
       }
     },
     {
@@ -1186,18 +362,120 @@
       "is_composite": true,
       "is_fake": false,
       "decomposes_to": [
-        "/skill/scan",
-        "wait_for_perception",
-        "read_scene_summary",
-        "verify_evidence_payload"
+        "perform_motion",
+        "/scene/summary",
+        "query_kb"
       ],
       "metadata": {
-        "runtime_callable": true,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "full_to_ab0",
-          "notes": "Execute as AB1 skill but decompose to AB0 for analysis and future deterministic routing."
-        }
+        "runtime_callable": true
+      }
+    },
+    {
+      "object_id": "find_object",
+      "ab_level": 1,
+      "kind": "skill",
+      "category": "perception",
+      "aliases": [
+        "find",
+        "locate_object",
+        "find_person"
+      ],
+      "params": [
+        "target",
+        "target_kind"
+      ],
+      "required_params": [
+        "target"
+      ],
+      "preconditions": [
+        "target must be named"
+      ],
+      "expected_effects": [
+        "object or person evidence is returned"
+      ],
+      "observable_success": [
+        "target_found",
+        "evidence.entity_id"
+      ],
+      "failure_modes": [
+        "not_found",
+        "ambiguous",
+        "backend_unavailable"
+      ],
+      "planner_guidance": [
+        "use for a specific named object or person target"
+      ],
+      "robot_adapter_mapping": "fake_skills.find_object",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "target_found",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "perception"
+      ],
+      "implementation_status": "fake",
+      "supports_failure_injection": true,
+      "is_composite": true,
+      "is_fake": true,
+      "metadata": {
+        "runtime_callable": true
+      }
+    },
+    {
+      "object_id": "navigate_to",
+      "ab_level": 1,
+      "kind": "skill",
+      "category": "navigation",
+      "aliases": [
+        "go_to",
+        "move_to_location"
+      ],
+      "params": [
+        "target",
+        "location"
+      ],
+      "required_params": [
+        "target"
+      ],
+      "preconditions": [
+        "navigation must be enabled",
+        "target location must be known or resolvable"
+      ],
+      "expected_effects": [
+        "robot arrives at target location"
+      ],
+      "observable_success": [
+        "status"
+      ],
+      "failure_modes": [
+        "path_blocked",
+        "unknown_location",
+        "safety_disabled"
+      ],
+      "planner_guidance": [
+        "use for semantic destinations such as kitchen or table"
+      ],
+      "robot_adapter_mapping": "fake_skills.navigate_to",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "navigation"
+      ],
+      "implementation_status": "fake",
+      "supports_failure_injection": true,
+      "is_composite": true,
+      "is_fake": true,
+      "metadata": {
+        "runtime_callable": true
       }
     },
     {
@@ -1231,7 +509,7 @@
       "planner_guidance": [
         "keep dry-run enabled until real walking is explicitly approved"
       ],
-      "robot_adapter_mapping": "walk_to_skill.walk_to",
+      "robot_adapter_mapping": "fake_skills.walk_to",
       "result_schema": {
         "required": [
           "skill",
@@ -1247,122 +525,378 @@
       "supports_failure_injection": true,
       "is_composite": false,
       "is_fake": true,
-      "decomposes_to": [
-        "/skill/fake/walk_to",
-        "validate_navigation_request",
-        "verify_evidence_payload"
-      ],
       "metadata": {
-        "runtime_callable": true,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "full_to_ab0",
-          "notes": "AB1 primitive locomotion segment skill used by higher-level navigation flows."
-        },
-        "ab_role": "primitive_locomotion"
+        "runtime_callable": true
       }
     },
     {
-      "object_id": "locate_and_report",
-      "ab_level": 2,
-      "kind": "composite_skill",
+      "object_id": "perform_motion",
+      "ab_level": 1,
+      "kind": "skill",
+      "category": "embodiment",
+      "aliases": [
+        "motion",
+        "posture",
+        "head_motion"
+      ],
+      "params": [
+        "object",
+        "speed",
+        "relative",
+        "yaw",
+        "pitch"
+      ],
+      "required_params": [
+        "object"
+      ],
+      "preconditions": [],
+      "expected_effects": [
+        "robot posture or head orientation changes"
+      ],
+      "observable_success": [
+        "status"
+      ],
+      "failure_modes": [
+        "unsupported_motion",
+        "dispatch_failed"
+      ],
+      "planner_guidance": [
+        "use for known posture and head-motion labels"
+      ],
+      "robot_adapter_mapping": "nao_orchestrator.perform_motion",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status"
+        ]
+      },
+      "safety_flags": [
+        "motion"
+      ],
+      "implementation_status": "first_party",
+      "metadata": {
+        "runtime_callable": true
+      }
+    },
+    {
+      "object_id": "look_at",
+      "ab_level": 1,
+      "kind": "skill",
+      "category": "attention",
+      "aliases": [
+        "gaze_at"
+      ],
+      "params": [
+        "target_frame",
+        "frame_id",
+        "policy",
+        "x",
+        "y",
+        "z"
+      ],
+      "required_params": [],
+      "preconditions": [],
+      "expected_effects": [
+        "robot gaze is redirected or reset"
+      ],
+      "observable_success": [
+        "status"
+      ],
+      "failure_modes": [
+        "missing_target",
+        "dispatch_failed"
+      ],
+      "planner_guidance": [
+        "use for target-frame gaze control, not for full scene scan"
+      ],
+      "robot_adapter_mapping": "nao_orchestrator.look_at",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status"
+        ]
+      },
+      "safety_flags": [
+        "attention"
+      ],
+      "implementation_status": "first_party",
+      "metadata": {
+        "runtime_callable": true
+      }
+    },
+    {
+      "object_id": "report_result",
+      "ab_level": 1,
+      "kind": "skill",
+      "category": "communication",
+      "aliases": [
+        "notify_completion",
+        "say_result"
+      ],
+      "params": [
+        "summary_text"
+      ],
+      "required_params": [],
+      "preconditions": [
+        "summary text must be grounded in result payload or trace evidence"
+      ],
+      "expected_effects": [
+        "user receives completion/result summary through robot speech"
+      ],
+      "observable_success": [
+        "step_succeeded",
+        "plan_completed"
+      ],
+      "failure_modes": [
+        "missing_summary",
+        "say_dispatch_failed"
+      ],
+      "planner_guidance": [
+        "use report_result as the final step after perception/action skills when a user-facing summary is needed",
+        "prefer summary_text grounded on result payloads from previous steps"
+      ],
+      "robot_adapter_mapping": "nao_orchestrator.report_result",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "communication"
+      ],
+      "implementation_status": "first_party",
+      "metadata": {
+        "runtime_callable": true
+      }
+    },
+    {
+      "object_id": "wave_greet",
+      "ab_level": 1,
+      "kind": "skill",
+      "category": "social_motion",
+      "aliases": [
+        "wave",
+        "greet_wave",
+        "wave_hello"
+      ],
+      "params": [
+        "style",
+        "hand",
+        "duration_sec",
+        "dry_run",
+        "result_mode"
+      ],
+      "required_params": [],
+      "preconditions": [],
+      "expected_effects": [
+        "robot performs greeting wave gesture"
+      ],
+      "observable_success": [
+        "status",
+        "summary_text"
+      ],
+      "failure_modes": [
+        "motion_unavailable",
+        "safety_disabled",
+        "unexpected_payload"
+      ],
+      "planner_guidance": [
+        "use wave_greet for social greeting gestures"
+      ],
+      "robot_adapter_mapping": "fake_skills.wave_greet",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "social_motion",
+        "motion"
+      ],
+      "implementation_status": "fake",
+      "supports_failure_injection": true,
+      "is_composite": false,
+      "is_fake": true,
+      "decomposes_to": [
+        "perform_motion"
+      ],
+      "metadata": {
+        "runtime_callable": true
+      }
+    },
+    {
+      "object_id": "inspect_area",
+      "ab_level": 1,
+      "kind": "skill",
       "category": "perception",
       "aliases": [
-        "find_and_report"
+        "inspect_zone",
+        "check_area"
       ],
       "params": [
         "target",
-        "target_kind"
+        "target_area",
+        "result_mode"
       ],
       "required_params": [
         "target"
       ],
+      "preconditions": [
+        "target area should be named"
+      ],
       "expected_effects": [
-        "target is searched and a user-facing report is produced"
+        "scene evidence for target area is returned"
       ],
       "observable_success": [
-        "find_object.result",
-        "report_result.summary_text"
+        "status",
+        "target_found",
+        "evidence.people",
+        "evidence.objects"
       ],
       "failure_modes": [
-        "not_found",
         "ambiguous",
+        "area_unknown",
         "backend_unavailable"
       ],
       "planner_guidance": [
-        "Prefer this as a future macro for find + report user flows."
+        "use inspect_area to validate area state before reporting"
       ],
+      "robot_adapter_mapping": "fake_skills.inspect_area",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
       "safety_flags": [
-        "perception",
-        "communication"
+        "perception"
       ],
-      "implementation_status": "proposal",
+      "implementation_status": "fake",
+      "supports_failure_injection": true,
       "is_composite": true,
-      "is_fake": false,
+      "is_fake": true,
       "decomposes_to": [
-        "find_object",
+        "navigate_to",
+        "scan",
         "report_result"
       ],
       "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "expand_to_ab0_via_ab1",
-          "notes": "Proposal only; runtime stays AB1/AB0 until promoted."
-        }
+        "runtime_callable": true
       }
     },
     {
-      "object_id": "navigate_with_scan",
+      "object_id": "wave_at",
       "ab_level": 2,
-      "kind": "composite_skill",
-      "category": "navigation",
+      "kind": "macro_skill",
+      "category": "social_hri",
       "aliases": [
-        "scan_and_navigate"
+        "greet_person_wave"
       ],
       "params": [
-        "target",
-        "location"
+        "target"
       ],
       "required_params": [
         "target"
       ],
+      "preconditions": [
+        "target should be referenceable in scene context"
+      ],
       "expected_effects": [
-        "scene is scanned and robot navigates with user-facing report"
+        "robot attends to target and performs greeting wave"
       ],
       "observable_success": [
-        "scan.result",
-        "navigate_to.result",
+        "look_at.status",
+        "wave_greet.status"
+      ],
+      "failure_modes": [
+        "target_missing",
+        "motion_unavailable"
+      ],
+      "planner_guidance": [
+        "expand wave_at into look_at then wave_greet until macro executor is available"
+      ],
+      "robot_adapter_mapping": "",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "attention",
+        "motion"
+      ],
+      "implementation_status": "proposal",
+      "supports_failure_injection": false,
+      "is_composite": true,
+      "is_fake": true,
+      "decomposes_to": [
+        "look_at",
+        "wave_greet"
+      ],
+      "metadata": {
+        "runtime_callable": false
+      }
+    },
+    {
+      "object_id": "navigate_with_recovery",
+      "ab_level": 2,
+      "kind": "macro_skill",
+      "category": "navigation",
+      "aliases": [
+        "recovering_navigation"
+      ],
+      "params": [
+        "target"
+      ],
+      "required_params": [
+        "target"
+      ],
+      "preconditions": [
+        "navigation must be enabled"
+      ],
+      "expected_effects": [
+        "robot reaches target or asks for route recovery"
+      ],
+      "observable_success": [
+        "navigate_to.status",
         "report_result.summary_text"
       ],
       "failure_modes": [
         "path_blocked",
         "unknown_location",
-        "backend_unavailable"
+        "safety_disabled"
       ],
       "planner_guidance": [
-        "Future AB2 macro for robust navigation flows."
+        "expand navigate_with_recovery to navigate_to plus clarification/report steps"
       ],
+      "robot_adapter_mapping": "",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
       "safety_flags": [
-        "navigation",
-        "perception",
-        "communication"
+        "navigation"
       ],
       "implementation_status": "proposal",
+      "supports_failure_injection": false,
       "is_composite": true,
-      "is_fake": false,
+      "is_fake": true,
       "decomposes_to": [
-        "scan",
         "navigate_to",
         "report_result"
       ],
       "metadata": {
-        "runtime_callable": false,
-        "decomposition": {
-          "max_depth": -1,
-          "policy": "expand_to_ab0_via_ab1",
-          "notes": "Proposal only; runtime stays AB1/AB0 until promoted."
-        }
+        "runtime_callable": false
       }
     }
   ]

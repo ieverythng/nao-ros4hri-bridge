@@ -40,7 +40,7 @@
       "planner_guidance": [
         "use for a specific named object or person target"
       ],
-      "robot_adapter_mapping": "fake_find_object_skill.find_object",
+      "robot_adapter_mapping": "fake_skills.find_object",
       "result_schema": {
         "required": [
           "skill",
@@ -156,7 +156,7 @@
       "planner_guidance": [
         "use for semantic destinations such as kitchen or table"
       ],
-      "robot_adapter_mapping": "fake_navigation_skill.navigate_to",
+      "robot_adapter_mapping": "fake_skills.navigate_to",
       "result_schema": {
         "required": [
           "skill",
@@ -361,10 +361,9 @@
       "is_fake": false,
       "runtime_callable": true,
       "decomposes_to": [
-        "/skill/scan",
-        "wait_for_perception",
-        "read_scene_summary",
-        "verify_evidence_payload"
+        "perform_motion",
+        "/scene/summary",
+        "query_kb"
       ],
       "decomposition": {
         "max_depth": -1,
@@ -402,7 +401,7 @@
       "planner_guidance": [
         "keep dry-run enabled until real walking is explicitly approved"
       ],
-      "robot_adapter_mapping": "walk_to_skill.walk_to",
+      "robot_adapter_mapping": "fake_skills.walk_to",
       "result_schema": {
         "required": [
           "skill",
@@ -428,6 +427,116 @@
         "policy": "full_to_ab0",
         "notes": "AB1 primitive locomotion segment skill used by higher-level navigation flows."
       }
+    },
+    {
+      "name": "inspect_area",
+      "category": "perception",
+      "aliases": [
+        "inspect_zone",
+        "check_area"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "target",
+        "target_area",
+        "result_mode"
+      ],
+      "required_params": [
+        "target"
+      ],
+      "preconditions": [
+        "target area should be named"
+      ],
+      "expected_effects": [
+        "scene evidence for target area is returned"
+      ],
+      "observable_success": [
+        "status",
+        "target_found",
+        "evidence.people",
+        "evidence.objects"
+      ],
+      "failure_modes": [
+        "ambiguous",
+        "area_unknown",
+        "backend_unavailable"
+      ],
+      "planner_guidance": [
+        "use inspect_area to validate area state before reporting"
+      ],
+      "robot_adapter_mapping": "fake_skills.inspect_area",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "perception"
+      ],
+      "supports_failure_injection": true,
+      "is_composite": true,
+      "is_fake": true,
+      "runtime_callable": true,
+      "decomposes_to": [
+        "navigate_to",
+        "scan",
+        "report_result"
+      ]
+    },
+    {
+      "name": "wave_greet",
+      "category": "social_motion",
+      "aliases": [
+        "wave",
+        "greet_wave",
+        "wave_hello"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "style",
+        "hand",
+        "duration_sec",
+        "dry_run",
+        "result_mode"
+      ],
+      "required_params": [],
+      "preconditions": [],
+      "expected_effects": [
+        "robot performs greeting wave gesture"
+      ],
+      "observable_success": [
+        "status",
+        "summary_text"
+      ],
+      "failure_modes": [
+        "motion_unavailable",
+        "safety_disabled",
+        "unexpected_payload"
+      ],
+      "planner_guidance": [
+        "use wave_greet for social greeting gestures"
+      ],
+      "robot_adapter_mapping": "fake_skills.wave_greet",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "social_motion",
+        "motion"
+      ],
+      "supports_failure_injection": true,
+      "is_composite": false,
+      "is_fake": true,
+      "runtime_callable": true,
+      "decomposes_to": [
+        "perform_motion"
+      ]
     }
   ]
 }

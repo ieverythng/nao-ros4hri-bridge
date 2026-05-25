@@ -107,6 +107,8 @@ def test_sim_profile_provides_gscam_camera_and_rqt_with_planner():
     assert defaults["enable_orchestrator_planner_gate"] == "true"
     assert defaults["start_fake_skills"] == "true"
     assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
+    assert defaults["start_fake_skills"] == "true"
+    assert defaults["start_nao_dashboard"] == "true"
     _assert_lab_vllm_defaults(defaults)
     _assert_asr_is_opt_in(defaults)
 
@@ -126,6 +128,7 @@ def test_robot_profile_uses_robot_camera_and_planner_mode_by_default():
     assert defaults["chatbot_planner_mode_enabled"] == "true"
     assert defaults["enable_orchestrator_planner_gate"] == "true"
     assert defaults["start_fake_skills"] == "true"
+    assert defaults["start_nao_dashboard"] == "true"
     _assert_lab_vllm_defaults(defaults)
     _assert_asr_is_opt_in(defaults)
 
@@ -148,6 +151,7 @@ def test_demo_profile_is_sim_only_with_mock_scan_and_planner_enabled():
     assert defaults["scan_result_mode"] == "success"
     assert "current scene summary" in defaults["scan_summary"]
     assert defaults["scan_report_after_success"] == "false"
+    assert defaults["start_nao_dashboard"] == "true"
     _assert_lab_vllm_defaults(defaults)
     _assert_asr_is_opt_in(defaults)
 

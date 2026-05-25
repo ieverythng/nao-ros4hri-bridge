@@ -93,6 +93,7 @@ _SIM_CAMERA_DEFAULTS = {
         "report_result_skill_server,fake_skill_server,dialogue_manager,nao_say_skill,"
         "head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug"
     ),
+    "start_nao_dashboard": "true",
     "start_fake_skills": "true",
     "head_motion_allow_open_loop_without_joint_state": "true",
     "head_motion_assume_success_on_convergence_timeout": "true",
@@ -129,6 +130,7 @@ _ROBOT_CAMERA_DEFAULTS = {
         "report_result_skill_server,fake_skill_server,dialogue_manager,nao_say_skill,"
         "head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug"
     ),
+    "start_nao_dashboard": "true",
     "start_fake_skills": "true",
 }
 _GROUNDING_DEFAULTS = {
@@ -1058,6 +1060,31 @@ def generate_profile_launch_description(
         default_value=_profile_default(profile_defaults, "start_fake_skills", "true"),
         description="Launch deterministic fake skill action servers (/skill/fake/*).",
     )
+    fake_skill_scenario_file_arg = DeclareLaunchArgument(
+        "fake_skill_scenario_file",
+        default_value=_profile_default(profile_defaults, "fake_skill_scenario_file", ""),
+        description="Optional YAML scenario file for fake skill outcomes.",
+    )
+    fake_skill_default_delay_sec_arg = DeclareLaunchArgument(
+        "fake_skill_default_delay_sec",
+        default_value=_profile_default(profile_defaults, "fake_skill_default_delay_sec", "0.75"),
+        description="Default simulated duration for fake skill execution.",
+    )
+    fake_skill_publish_events_arg = DeclareLaunchArgument(
+        "fake_skill_publish_events",
+        default_value=_profile_default(profile_defaults, "fake_skill_publish_events", "true"),
+        description="Publish fake skill lifecycle events on the configured event topic.",
+    )
+    fake_skill_event_topic_arg = DeclareLaunchArgument(
+        "fake_skill_event_topic",
+        default_value=_profile_default(profile_defaults, "fake_skill_event_topic", "/fake_skills/events"),
+        description="Topic where fake skill lifecycle events are published.",
+    )
+    fake_skill_deterministic_seed_arg = DeclareLaunchArgument(
+        "fake_skill_deterministic_seed",
+        default_value=_profile_default(profile_defaults, "fake_skill_deterministic_seed", "42"),
+        description="Deterministic seed used for fail_once and repeatability.",
+    )
     start_nao_say_skill_arg = DeclareLaunchArgument(
         "start_nao_say_skill",
         default_value=_profile_default(profile_defaults, "start_nao_say_skill", "true"),
@@ -1221,6 +1248,31 @@ def generate_profile_launch_description(
             "warn",
         ),
         description="Minimum rosout severity for interaction trace viewer (debug|info|warn|error|fatal).",
+    )
+    start_nao_dashboard_arg = DeclareLaunchArgument(
+        "start_nao_dashboard",
+        default_value=_profile_default(profile_defaults, "start_nao_dashboard", "false"),
+        description="Launch the NAO web observability dashboard backend + UI.",
+    )
+    nao_dashboard_http_host_arg = DeclareLaunchArgument(
+        "nao_dashboard_http_host",
+        default_value=_profile_default(profile_defaults, "nao_dashboard_http_host", "127.0.0.1"),
+        description="Host interface for the NAO dashboard HTTP server.",
+    )
+    nao_dashboard_http_port_arg = DeclareLaunchArgument(
+        "nao_dashboard_http_port",
+        default_value=_profile_default(profile_defaults, "nao_dashboard_http_port", "8765"),
+        description="Port for the NAO dashboard HTTP server.",
+    )
+    nao_dashboard_max_events_arg = DeclareLaunchArgument(
+        "nao_dashboard_max_events",
+        default_value=_profile_default(profile_defaults, "nao_dashboard_max_events", "400"),
+        description="Maximum number of timeline events retained by nao_dashboard.",
+    )
+    nao_dashboard_max_payload_chars_arg = DeclareLaunchArgument(
+        "nao_dashboard_max_payload_chars",
+        default_value=_profile_default(profile_defaults, "nao_dashboard_max_payload_chars", "4000"),
+        description="Maximum payload summary characters for dashboard timeline events.",
     )
     start_demo_log_window_arg = DeclareLaunchArgument(
         "start_demo_log_window",
@@ -2590,6 +2642,11 @@ def generate_profile_launch_description(
             start_scan_skill_arg,
             start_report_result_skill_arg,
             start_fake_skills_arg,
+            fake_skill_scenario_file_arg,
+            fake_skill_default_delay_sec_arg,
+            fake_skill_publish_events_arg,
+            fake_skill_event_topic_arg,
+            fake_skill_deterministic_seed_arg,
             start_nao_say_skill_arg,
             start_nao_replay_motion_arg,
             head_motion_allow_open_loop_without_joint_state_arg,
@@ -2611,6 +2668,11 @@ def generate_profile_launch_description(
             interaction_trace_scene_summary_min_interval_sec_arg,
             interaction_trace_rosout_node_allowlist_csv_arg,
             interaction_trace_rosout_min_level_arg,
+            start_nao_dashboard_arg,
+            nao_dashboard_http_host_arg,
+            nao_dashboard_http_port_arg,
+            nao_dashboard_max_events_arg,
+            nao_dashboard_max_payload_chars_arg,
             start_demo_log_window_arg,
             start_managed_ollama_arg,
             managed_chatbot_ollama_host_arg,
@@ -2735,6 +2797,8 @@ def generate_profile_launch_description(
                     LaunchConfiguration("start_object_detection"),
                     " trace_viewer=",
                     LaunchConfiguration("start_interaction_trace_viewer"),
+                    " dashboard=",
+                    LaunchConfiguration("start_nao_dashboard"),
                 ]
             ),
             LogInfo(
@@ -2772,6 +2836,39 @@ def generate_profile_launch_description(
             demo_log_window,
             managed_chatbot_ollama,
             managed_planner_ollama,
+            OpaqueFunction(
+                function=_optional_launch_description,
+                kwargs={
+                    "package_name": "fake_skills",
+                    "launch_file_name": "fake_skills.launch.py",
+                    "launch_arg_name": "start_fake_skills",
+                    "display_name": "fake_skills",
+                    "launch_arguments": {
+                        "fake_skill_scenario_file": LaunchConfiguration("fake_skill_scenario_file"),
+                        "fake_skill_default_delay_sec": LaunchConfiguration("fake_skill_default_delay_sec"),
+                        "fake_skill_publish_events": LaunchConfiguration("fake_skill_publish_events"),
+                        "fake_skill_event_topic": LaunchConfiguration("fake_skill_event_topic"),
+                        "fake_skill_deterministic_seed": LaunchConfiguration("fake_skill_deterministic_seed"),
+                    },
+                    "required_packages": ["fake_skills"],
+                },
+            ),
+            OpaqueFunction(
+                function=_optional_launch_description,
+                kwargs={
+                    "package_name": "nao_dashboard",
+                    "launch_file_name": "nao_dashboard.launch.py",
+                    "launch_arg_name": "start_nao_dashboard",
+                    "display_name": "nao_dashboard",
+                    "launch_arguments": {
+                        "http_host": LaunchConfiguration("nao_dashboard_http_host"),
+                        "http_port": LaunchConfiguration("nao_dashboard_http_port"),
+                        "max_events": LaunchConfiguration("nao_dashboard_max_events"),
+                        "max_payload_chars": LaunchConfiguration("nao_dashboard_max_payload_chars"),
+                    },
+                    "required_packages": ["nao_dashboard"],
+                },
+            ),
             OpaqueFunction(
                 function=_optional_launch_description,
                 kwargs={
