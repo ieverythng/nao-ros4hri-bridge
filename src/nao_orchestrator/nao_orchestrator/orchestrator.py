@@ -66,6 +66,7 @@ _DEFAULT_FAKE_SKILL_ALIASES = {
     'inspect_area': {'inspect_area', 'inspect', 'check_area'},
     'walk_to': {'walk_to', 'walk_forward', 'step_to'},
 }
+_ASK_USER_STEP_NAMES = frozenset({'ask_user', 'ask_clarification', 'ask_for_help'})
 
 
 def _first_non_empty_text(*values) -> str:
@@ -848,6 +849,12 @@ class NaoOrchestrator(Node):
                 continue
 
             failure_policy = str(step.get('on_failure', 'fail')).strip().lower()
+            step_name = str(step.get('name', '')).strip().lower()
+            if step_name in _ASK_USER_STEP_NAMES and failure_policy not in (
+                'ask_user',
+                'clarify',
+            ):
+                failure_policy = 'ask_user'
             if failure_policy == 'continue':
                 self._publish_plan_feedback(
                     intent_name=intent_name,
@@ -886,9 +893,9 @@ class NaoOrchestrator(Node):
                 step=step,
                 blocking=True,
                 unmet_preconditions=list(step.get('requires', [])),
-                needs_user_input=str(step.get('on_failure', '')).strip().lower() in (
-                    'ask_user',
-                    'clarify',
+                needs_user_input=(
+                    failure_policy in ('ask_user', 'clarify')
+                    or step_name in _ASK_USER_STEP_NAMES
                 ),
             )
             self.get_logger().warn(
@@ -980,6 +987,12 @@ class NaoOrchestrator(Node):
                     fallback_data,
                     on_started=on_started,
                 )
+            if step_name in _ASK_USER_STEP_NAMES:
+                return self._execute_ask_user_step(
+                    step_args,
+                    fallback_data,
+                    on_started=on_started,
+                )
             if step_name in self._scan_skill_names:
                 return self._execute_scan_step(
                     step_args,
@@ -1015,7 +1028,16 @@ class NaoOrchestrator(Node):
                 return True, ''
             return False, reason or 'look_at reset dispatch failed'
         target_frame = str(
-            step_args.get('target_frame', step_args.get('frame_id', ''))
+            step_args.get(
+                'target_frame',
+                step_args.get(
+                    'frame_id',
+                    step_args.get(
+                        'target',
+                        step_args.get('entity_id', ''),
+                    ),
+                ),
+            )
         ).strip()
         if not target_frame:
             self._stats.dispatch_failures += 1
@@ -1173,6 +1195,55 @@ class NaoOrchestrator(Node):
         if success:
             return True, report_text, payload
         return False, reason or 'report_result action failed', payload
+
+    def _execute_ask_user_step(
+        self,
+        step_args: dict,
+        fallback_data: dict,
+        *,
+        on_started=None,
+    ) -> tuple[bool, str, dict]:
+        prompt_text = _first_non_empty_value(
+            step_args,
+            'question',
+            'text',
+            'summary_text',
+            'text_hint',
+            'message',
+            'utterance',
+            'object',
+            'reason',
+        )
+        slots_needed = [
+            str(item).strip()
+            for item in list(step_args.get('slots_needed', []))
+            if str(item).strip()
+        ]
+        if not prompt_text and slots_needed:
+            prompt_text = 'I need a bit more detail about %s before I continue.' % ', '.join(
+                slots_needed
+            )
+        if not prompt_text:
+            prompt_text = 'I need a bit more detail before I continue.'
+
+        payload = {
+            'skill': 'ask_user',
+            'status': 'awaiting_user',
+            'await_user_response': True,
+            'prompt_text': prompt_text,
+            'slots_needed': slots_needed,
+        }
+
+        speech_ok, speech_reason = self._execute_say_plan_step(
+            {'text': prompt_text},
+            fallback_data,
+            on_started=on_started,
+        )
+        if not speech_ok:
+            payload['status'] = 'failed'
+            return False, speech_reason or 'ask_user prompt dispatch failed', payload
+
+        return False, prompt_text, payload
 
     def _execute_motion_plan_step(
         self,

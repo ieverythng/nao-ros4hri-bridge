@@ -39,6 +39,7 @@ PLAN_FAILURE_POLICIES = (
     'ask_user',
     'ignore',
 )
+_ASK_USER_STEP_NAMES = ('ask_user', 'ask_clarification', 'ask_for_help')
 PLANNER_REQUEST_KINDS = (
     'new_goal',
     'goal_update',
@@ -78,6 +79,24 @@ _DEFAULT_COMMUNICATION_POLICY = {
     'emit_completion': True,
     'emit_failure': True,
 }
+_LOOK_AT_RESET_POLICY_ALIASES = frozenset(
+    (
+        'reset',
+        'look_at_reset',
+        'look_reset',
+        'gaze_reset',
+        'reset_gaze',
+        'reset_look_at',
+    )
+)
+_LOOK_AT_RESET_TARGET_ALIASES = frozenset(
+    (
+        'head_center',
+        'center',
+        'forward',
+        'straight',
+    )
+)
 
 _FROZEN_DATACLASS_KWARGS = {'frozen': True}
 if sys.version_info >= (3, 10):  # pragma: no branch - local macOS uses Python 3.9
@@ -230,6 +249,47 @@ def _normalize_result_payload(value) -> dict:
     return normalized
 
 
+def _normalize_look_at_args(step_args: dict) -> dict:
+    if not isinstance(step_args, dict):
+        return {}
+
+    normalized = _clean_payload(step_args)
+    policy = str(
+        normalized.get('policy', normalized.get('object', ''))
+    ).strip().lower()
+    if policy in _LOOK_AT_RESET_POLICY_ALIASES:
+        normalized['policy'] = 'reset'
+        normalized.pop('target_frame', None)
+        normalized.pop('frame_id', None)
+        normalized.pop('target', None)
+        normalized.pop('entity_id', None)
+        return normalized
+
+    target_frame = _first_non_empty(
+        normalized.get('target_frame', ''),
+        normalized.get('frame_id', ''),
+        normalized.get('target', ''),
+        normalized.get('entity_id', ''),
+    )
+    if not target_frame:
+        return normalized
+
+    clean_target = str(target_frame).strip()
+    if clean_target.lower() in _LOOK_AT_RESET_TARGET_ALIASES:
+        normalized['policy'] = 'reset'
+        normalized.pop('target_frame', None)
+        normalized.pop('frame_id', None)
+        normalized.pop('target', None)
+        normalized.pop('entity_id', None)
+        return normalized
+
+    normalized['target_frame'] = clean_target
+    normalized.pop('frame_id', None)
+    normalized.pop('target', None)
+    normalized.pop('entity_id', None)
+    return normalized
+
+
 def _normalize_choice(value: str, allowed: tuple[str, ...], fallback: str) -> str:
     clean_value = str(value or '').strip().lower()
     if clean_value in allowed:
@@ -291,6 +351,20 @@ def normalize_plan_steps(steps) -> list[dict]:
         step_type = str(step.get('type', '')).strip().lower()
         if step_type not in PLAN_STEP_TYPES:
             continue
+        step_name = str(step.get('name', '')).strip().lower()
+        raw_failure_policy = _first_non_empty(
+            step.get('on_failure', ''),
+            step.get('failure_policy', ''),
+        )
+        normalized_failure_policy = _coerce_failure_policy(
+            raw_failure_policy or 'fail'
+        )
+        if step_type == 'skill' and step_name in _ASK_USER_STEP_NAMES and not raw_failure_policy:
+            normalized_failure_policy = 'ask_user'
+        step_args = _clean_payload(step.get('args', {}))
+        if step_type == 'look_at' or step_name == 'look_at':
+            step_args = _normalize_look_at_args(step_args)
+
         normalized_steps.append(
             {
                 'id': _first_non_empty(
@@ -299,12 +373,10 @@ def normalize_plan_steps(steps) -> list[dict]:
                     f'step_{index}',
                 ),
                 'type': step_type,
-                'name': str(step.get('name', '')).strip().lower(),
-                'args': _clean_payload(step.get('args', {})),
+                'name': step_name,
+                'args': step_args,
                 'requires': coerce_str_list(step.get('requires', step.get('preconditions', []))),
-                'on_failure': _coerce_failure_policy(
-                    step.get('on_failure', step.get('failure_policy', 'fail'))
-                ),
+                'on_failure': normalized_failure_policy,
                 'retry_budget': _coerce_nonnegative_int(
                     step.get('retry_budget', step.get('retries', 0))
                 ),

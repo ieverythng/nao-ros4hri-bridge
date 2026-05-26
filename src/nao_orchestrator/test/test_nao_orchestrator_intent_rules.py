@@ -183,6 +183,32 @@ def test_validate_execution_plan_rejects_invalid_look_at_step() -> None:
     ]
 
 
+def test_validate_execution_plan_accepts_look_at_target_alias() -> None:
+    envelope = validate_execution_plan(
+        Intent.PRESENT_CONTENT,
+        {
+            'plan': [
+                {'type': 'look_at', 'args': {'target': 'anonymous person bcbhb'}},
+            ]
+        },
+    )
+    assert envelope['errors'] == []
+    assert envelope['steps'][0]['args']['target_frame'] == 'anonymous person bcbhb'
+
+
+def test_validate_execution_plan_maps_look_at_head_center_to_reset() -> None:
+    envelope = validate_execution_plan(
+        Intent.PRESENT_CONTENT,
+        {
+            'plan': [
+                {'type': 'look_at', 'args': {'target': 'head_center'}},
+            ]
+        },
+    )
+    assert envelope['errors'] == []
+    assert envelope['steps'][0]['args']['policy'] == 'reset'
+
+
 def test_validate_execution_plan_accepts_clarify_failure_policy() -> None:
     envelope = validate_execution_plan(
         Intent.PERFORM_MOTION,
@@ -271,6 +297,43 @@ def test_validate_execution_plan_accepts_report_result_skill() -> None:
     )
     assert envelope['errors'] == []
     assert envelope['steps'][0]['name'] == 'report_result'
+
+
+def test_validate_execution_plan_accepts_ask_user_skill_and_defaults_failure_policy() -> None:
+    envelope = validate_execution_plan(
+        Intent.SAY,
+        {
+            'plan': [
+                {
+                    'type': 'skill',
+                    'name': 'ask_user',
+                    'args': {'question': 'Should I scan again now?'},
+                }
+            ]
+        },
+    )
+    assert envelope['errors'] == []
+    assert envelope['steps'][0]['name'] == 'ask_user'
+    assert envelope['steps'][0]['on_failure'] == 'ask_user'
+
+
+def test_validate_execution_plan_rejects_ask_user_without_prompt_or_slots() -> None:
+    envelope = validate_execution_plan(
+        Intent.SAY,
+        {
+            'plan': [
+                {
+                    'type': 'skill',
+                    'name': 'ask_user',
+                    'args': {},
+                }
+            ]
+        },
+    )
+    assert envelope['steps'] == []
+    assert envelope['errors'] == [
+        'step_1: ask_user step is missing prompt text or slots_needed'
+    ]
 
 
 def test_validate_execution_plan_accepts_wave_greet_fake_skill() -> None:

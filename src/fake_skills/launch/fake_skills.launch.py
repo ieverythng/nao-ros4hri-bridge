@@ -4,6 +4,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description() -> LaunchDescription:
@@ -15,7 +16,7 @@ def generate_launch_description() -> LaunchDescription:
     active_scenario_arg = DeclareLaunchArgument(
         'fake_skill_active_scenario_id',
         default_value='',
-        description='Optional named scenario applied globally by fake_skill_server.',
+        description='Optional named scenario id applied by default to every fake skill request.',
     )
     default_delay_arg = DeclareLaunchArgument(
         'fake_skill_default_delay_sec',
@@ -68,7 +69,10 @@ def generate_launch_description() -> LaunchDescription:
                 'deterministic_seed': LaunchConfiguration('fake_skill_deterministic_seed'),
                 'global_mode': LaunchConfiguration('fake_skill_global_mode'),
                 'random_failure_prob': LaunchConfiguration('fake_skill_random_failure_prob'),
-                'mode_overrides_json': LaunchConfiguration('fake_skill_mode_overrides_json'),
+                'mode_overrides_json': ParameterValue(
+                    LaunchConfiguration('fake_skill_mode_overrides_json'),
+                    value_type=str,
+                ),
             }
         ],
     )

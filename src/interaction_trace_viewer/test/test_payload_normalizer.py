@@ -106,3 +106,17 @@ def test_normalize_fake_skill_event_maps_to_skill_result() -> None:
     assert event.payload['skill'] == 'navigate_to'
     assert event.payload['status'] == 'failed'
     assert event.payload['failure']['code'] == 'path_blocked'
+
+
+def test_normalize_world_model_snapshot_maps_to_kb_snapshot() -> None:
+    msg = SimpleNamespace(
+        data='{"entities":[{"entity_id":"anonymous_person_1","kb_class":"Human"}]}'
+    )
+    event = normalize_string_message(
+        channel='/world_model/enriched_snapshot',
+        msg=msg,
+        max_payload_chars=4000,
+    )
+
+    assert event.event_type == 'kb_snapshot'
+    assert 'entities=1' in event.summary

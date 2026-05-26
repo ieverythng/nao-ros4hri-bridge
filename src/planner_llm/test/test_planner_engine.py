@@ -99,6 +99,26 @@ def test_planner_engine_uses_provider_for_non_rule_request() -> None:
     assert '"invalid_examples": [{"name": "say", "type": "skill"}' in provider.messages[1]['content']
 
 
+def test_planner_engine_canonicalizes_look_at_target_alias_from_model() -> None:
+    provider = _FakeProvider(
+        '{"steps":[{"type":"look_at","name":"look_at","args":{"target":"anonymous person bcbhb"}}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=2)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r2b',
+            'goal_id': 'goal_2b',
+            'goal_text': 'look at that human',
+            'scene_targets': ['anonymous person bcbhb'],
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_2b', plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['steps'][0]['args']['target_frame'] == 'anonymous person bcbhb'
+
+
 def test_planner_engine_reports_invalid_model_output_as_failure() -> None:
     provider = _FakeProvider(
         '{"ack_text":"Trying a custom action.","steps":[{"type":"skill","name":"dance","args":{"style":"wave"},"requires":[],"on_failure":"fail","retry_budget":0}]}'

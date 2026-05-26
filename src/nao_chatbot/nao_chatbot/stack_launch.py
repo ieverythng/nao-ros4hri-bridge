@@ -97,6 +97,9 @@ _SIM_CAMERA_DEFAULTS = {
         "head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug"
     ),
     "start_fake_skills": "true",
+    "fake_skill_global_mode": "scenario",
+    "fake_skill_random_failure_prob": "0.50",
+    "fake_skill_mode_overrides_json": "{}",
     "head_motion_allow_open_loop_without_joint_state": "true",
     "head_motion_assume_success_on_convergence_timeout": "true",
 }
@@ -135,6 +138,9 @@ _ROBOT_CAMERA_DEFAULTS = {
         "head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug"
     ),
     "start_fake_skills": "true",
+    "fake_skill_global_mode": "scenario",
+    "fake_skill_random_failure_prob": "0.50",
+    "fake_skill_mode_overrides_json": "{}",
 }
 _GROUNDING_DEFAULTS = {
     "object_detection_threshold": "0.40",
@@ -1072,6 +1078,24 @@ def generate_profile_launch_description(
         "fake_skill_active_scenario_id",
         default_value=_profile_default(profile_defaults, "fake_skill_active_scenario_id", ""),
         description="Optional named scenario id applied by default to fake skill requests.",
+    )
+    fake_skill_global_mode_arg = DeclareLaunchArgument(
+        "fake_skill_global_mode",
+        default_value=_profile_default(profile_defaults, "fake_skill_global_mode", "scenario"),
+        description=(
+            "Global fake-skill policy mode: scenario|always_success|always_fail|"
+            "every_other|random_seeded."
+        ),
+    )
+    fake_skill_random_failure_prob_arg = DeclareLaunchArgument(
+        "fake_skill_random_failure_prob",
+        default_value=_profile_default(profile_defaults, "fake_skill_random_failure_prob", "0.50"),
+        description="Failure probability used by fake_skill_global_mode=random_seeded.",
+    )
+    fake_skill_mode_overrides_json_arg = DeclareLaunchArgument(
+        "fake_skill_mode_overrides_json",
+        default_value=_profile_default(profile_defaults, "fake_skill_mode_overrides_json", "{}"),
+        description='JSON map for per-skill mode overrides, e.g. {"find_object":"always_fail"}.',
     )
     start_nao_say_skill_arg = DeclareLaunchArgument(
         "start_nao_say_skill",
@@ -2688,6 +2712,9 @@ def generate_profile_launch_description(
             start_fake_skills_arg,
             fake_skill_scenario_file_arg,
             fake_skill_active_scenario_id_arg,
+            fake_skill_global_mode_arg,
+            fake_skill_random_failure_prob_arg,
+            fake_skill_mode_overrides_json_arg,
             start_nao_say_skill_arg,
             start_nao_replay_motion_arg,
             head_motion_allow_open_loop_without_joint_state_arg,
@@ -2939,6 +2966,13 @@ def generate_profile_launch_description(
                     "launch_arguments": {
                         "fake_skill_scenario_file": LaunchConfiguration("fake_skill_scenario_file"),
                         "fake_skill_active_scenario_id": LaunchConfiguration("fake_skill_active_scenario_id"),
+                        "fake_skill_global_mode": LaunchConfiguration("fake_skill_global_mode"),
+                        "fake_skill_random_failure_prob": LaunchConfiguration(
+                            "fake_skill_random_failure_prob"
+                        ),
+                        "fake_skill_mode_overrides_json": LaunchConfiguration(
+                            "fake_skill_mode_overrides_json"
+                        ),
                     },
                 },
             ),

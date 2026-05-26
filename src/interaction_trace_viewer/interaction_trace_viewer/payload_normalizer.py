@@ -149,6 +149,9 @@ def summarize_event_payload(*, event_type: str, channel: str, payload: dict, max
             max_payload_chars,
         )
 
+    if event_type == 'kb_snapshot':
+        return _clip(_summarize_kb_snapshot(payload), max_payload_chars)
+
     compact = json.dumps(payload, ensure_ascii=True, separators=(',', ':'))
     return _clip('%s %s' % (channel, compact), max_payload_chars)
 
@@ -168,6 +171,8 @@ def _event_type_for_channel(channel: str) -> str:
         '/planner/dialogue_act': 'planner_dialogue_act',
         '/chatbot_llm/turn_trace': 'chatbot_turn_trace',
         '/fake_skills/events': 'skill_result',
+        '/world_model/enriched_snapshot': 'kb_snapshot',
+        '/world_model/enriched_text': 'kb_snapshot',
         '/scene/summary': 'scene_update',
     }
     return mapping.get(str(channel).strip(), 'message')
@@ -233,6 +238,29 @@ def _extract_plan_steps(payload: dict) -> list[str]:
         elif step_type:
             labels.append(step_type)
     return labels
+
+
+def _summarize_kb_snapshot(payload: dict) -> str:
+    entities = payload.get('entities', [])
+    if isinstance(entities, list):
+        preview = []
+        for item in entities[:5]:
+            if not isinstance(item, dict):
+                continue
+            label = _first_non_empty(item, 'label', 'entity_id')
+            kb_class = _first_non_empty(item, 'kb_class')
+            if label and kb_class:
+                preview.append('%s(%s)' % (label, kb_class))
+            elif label:
+                preview.append(label)
+        if preview:
+            return 'entities=%d | %s' % (len(entities), ', '.join(preview))
+        return 'entities=%d' % len(entities)
+
+    text = _first_non_empty(payload, 'text')
+    if text:
+        return text
+    return json.dumps(payload, ensure_ascii=True, separators=(',', ':'))
 
 
 def _first_non_empty(payload: dict, *keys: str) -> str:

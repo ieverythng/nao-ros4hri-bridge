@@ -7,6 +7,66 @@
   ],
   "skills": [
     {
+      "name": "ask_user",
+      "category": "communication",
+      "aliases": [
+        "ask_clarification",
+        "ask_for_help"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "question",
+        "slots_needed",
+        "reason"
+      ],
+      "required_params": [],
+      "preconditions": [],
+      "expected_effects": [
+        "robot asks the user for missing details",
+        "planner supervision pauses for user response"
+      ],
+      "observable_success": [
+        "needs_user_input",
+        "await_user_response"
+      ],
+      "failure_modes": [
+        "missing_prompt",
+        "say_dispatch_failed"
+      ],
+      "planner_guidance": [
+        "use when execution is blocked by missing user-provided details",
+        "include question text when available; otherwise include slots_needed"
+      ],
+      "robot_adapter_mapping": "nao_orchestrator.ask_user",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "prompt_text"
+        ],
+        "optional": [
+          "slots_needed",
+          "await_user_response"
+        ]
+      },
+      "safety_flags": [
+        "communication"
+      ],
+      "supports_failure_injection": false,
+      "is_composite": false,
+      "is_fake": false,
+      "runtime_callable": true,
+      "decomposes_to": [
+        "emit_robot_speech",
+        "verify_evidence_payload"
+      ],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "full_to_ab0",
+        "notes": "Planner ask-user prompts are executed through orchestrator-owned speech dispatch without a dedicated external skill server."
+      }
+    },
+    {
       "name": "find_object",
       "category": "perception",
       "aliases": [
@@ -427,6 +487,65 @@
         "max_depth": -1,
         "policy": "full_to_ab0",
         "notes": "AB1 primitive locomotion segment skill used by higher-level navigation flows."
+      }
+    },
+    {
+      "name": "wave_greet",
+      "category": "interaction",
+      "aliases": [
+        "wave",
+        "wave_at",
+        "greet_wave",
+        "wave_hello"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "style",
+        "target"
+      ],
+      "required_params": [],
+      "preconditions": [],
+      "expected_effects": [
+        "robot performs a greeting wave motion",
+        "planner receives a deterministic skill outcome payload"
+      ],
+      "observable_success": [
+        "status",
+        "summary_text"
+      ],
+      "failure_modes": [
+        "motion_unavailable",
+        "dispatch_failed"
+      ],
+      "planner_guidance": [
+        "use for requests like wave, wave at me, or greet with a wave",
+        "prefer wave_greet over perform_motion for greeting gestures"
+      ],
+      "robot_adapter_mapping": "fake_wave_greet_skill.wave_greet",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "interaction",
+        "motion"
+      ],
+      "supports_failure_injection": true,
+      "is_composite": false,
+      "is_fake": true,
+      "runtime_callable": true,
+      "decomposes_to": [
+        "/skill/fake/wave_greet",
+        "dispatch_skill_goal",
+        "verify_evidence_payload"
+      ],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "full_to_ab0",
+        "notes": "Demo fake-skill seam for greeting wave behavior."
       }
     }
   ]

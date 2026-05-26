@@ -259,6 +259,75 @@ def test_normalize_plan_steps_filters_invalid_step_types() -> None:
     ]
 
 
+def test_normalize_plan_steps_defaults_ask_user_failure_policy() -> None:
+    steps = normalize_plan_steps(
+        [
+            {
+                'type': 'skill',
+                'name': 'ask_user',
+                'args': {'question': 'Should I scan again?'},
+            }
+        ]
+    )
+    assert steps == [
+        {
+            'id': 'step_1',
+            'type': 'skill',
+            'name': 'ask_user',
+            'args': {'question': 'Should I scan again?'},
+            'requires': [],
+            'on_failure': 'ask_user',
+            'retry_budget': 0,
+        }
+    ]
+
+
+def test_normalize_plan_steps_canonicalizes_look_at_target_alias() -> None:
+    steps = normalize_plan_steps(
+        [
+            {
+                'type': 'look_at',
+                'name': 'look_at',
+                'args': {'target': 'anonymous person bcbhb'},
+            }
+        ]
+    )
+    assert steps == [
+        {
+            'id': 'step_1',
+            'type': 'look_at',
+            'name': 'look_at',
+            'args': {'target_frame': 'anonymous person bcbhb'},
+            'requires': [],
+            'on_failure': 'fail',
+            'retry_budget': 0,
+        }
+    ]
+
+
+def test_normalize_plan_steps_maps_look_at_head_center_to_reset() -> None:
+    steps = normalize_plan_steps(
+        [
+            {
+                'type': 'look_at',
+                'name': 'look_at',
+                'args': {'target': 'head_center'},
+            }
+        ]
+    )
+    assert steps == [
+        {
+            'id': 'step_1',
+            'type': 'look_at',
+            'name': 'look_at',
+            'args': {'policy': 'reset'},
+            'requires': [],
+            'on_failure': 'fail',
+            'retry_budget': 0,
+        }
+    ]
+
+
 def test_build_plan_payload_keeps_supervisor_envelope_shape() -> None:
     request = PlannerRequest.from_payload(
         {
