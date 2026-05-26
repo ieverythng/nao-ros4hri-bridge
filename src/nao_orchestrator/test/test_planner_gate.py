@@ -46,6 +46,20 @@ def test_planner_gate_requires_supersede_for_second_new_goal() -> None:
     assert 'supersede or cancel' in decision.reason
 
 
+def test_planner_gate_auto_supersedes_when_waiting_user() -> None:
+    gate = PlannerGate()
+    assert gate.decide(_payload('goal_1')).accepted is True
+    gate.observe_feedback(json.dumps({'goal_id': 'goal_1', 'status': 'waiting_user'}))
+
+    decision = gate.decide(_payload('goal_2'))
+
+    assert decision.accepted is True
+    assert decision.reason == 'auto_supersede_waiting_user'
+    assert isinstance(decision.forward_payload, dict)
+    assert decision.forward_payload['supersedes_goal_id'] == 'goal_1'
+    assert gate.active_goal_id == 'goal_2'
+
+
 def test_planner_gate_accepts_superseding_goal() -> None:
     gate = PlannerGate()
     assert gate.decide(_payload('goal_1')).accepted is True

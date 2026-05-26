@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
 from interaction_trace_viewer.payload_normalizer import classify_speech_topic
+from interaction_trace_viewer.payload_normalizer import normalize_include_event_types
 from interaction_trace_viewer.payload_normalizer import normalize_intent_message
 from interaction_trace_viewer.payload_normalizer import normalize_rosout_message
 from interaction_trace_viewer.payload_normalizer import normalize_string_message
@@ -120,3 +121,13 @@ def test_normalize_world_model_snapshot_maps_to_kb_snapshot() -> None:
 
     assert event.event_type == 'kb_snapshot'
     assert 'entities=1' in event.summary
+
+
+def test_normalize_include_event_types_adds_kb_snapshot_when_world_model_channel_selected() -> None:
+    include_event_types = normalize_include_event_types(
+        include_channels={'planner/request', 'world_model/enriched_snapshot'},
+        include_event_types={'planner_request', 'execution_feedback'},
+        exclude_event_types=set(),
+    )
+
+    assert 'kb_snapshot' in include_event_types

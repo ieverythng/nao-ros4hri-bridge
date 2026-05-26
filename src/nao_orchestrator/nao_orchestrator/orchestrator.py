@@ -577,6 +577,7 @@ class NaoOrchestrator(Node):
         decision = self._planner_gate.decide(msg.data)
         if not decision.accepted:
             self._stats.last_route = 'planner_gate:rejected'
+            self._publish_planner_gate_feedback(decision=decision, status='rejected')
             self.get_logger().warn(
                 'Planner gate rejected request | goal_id=%s kind=%s reason=%s'
                 % (
@@ -587,18 +588,60 @@ class NaoOrchestrator(Node):
             )
             return
 
-        self._planner_request_pub.publish(msg)
+        forward_msg = msg
+        if isinstance(decision.forward_payload, dict):
+            forward_msg = Intent()
+            forward_msg.intent = msg.intent
+            forward_msg.source = msg.source
+            forward_msg.modality = msg.modality
+            forward_msg.confidence = msg.confidence
+            forward_msg.priority = msg.priority
+            forward_msg.person_id = msg.person_id
+            forward_msg.intent_type = msg.intent_type
+            forward_msg.data = json.dumps(
+                decision.forward_payload,
+                separators=(',', ':'),
+                ensure_ascii=True,
+            )
+
+        self._planner_request_pub.publish(forward_msg)
         self._stats.last_route = 'planner_gate:forwarded'
+        if decision.reason:
+            self._publish_planner_gate_feedback(decision=decision, status='accepted')
         self.get_logger().info(
-            'Planner gate forwarded request | goal_id=%s kind=%s active_goal=%s active_token=%s topic=%s'
+            'Planner gate forwarded request | goal_id=%s kind=%s reason=%s active_goal=%s active_token=%s topic=%s'
             % (
                 decision.request.goal_id,
                 decision.request.request_kind,
+                decision.reason or '-',
                 self._planner_gate.active_goal_id or '-',
                 self._planner_gate.active_goal_token or '-',
                 self.planner_request_topic,
             )
         )
+
+    def _publish_planner_gate_feedback(self, *, decision, status: str) -> None:
+        if self._planner_feedback_pub is None:
+            return
+        request = decision.request
+        payload = {
+            'goal_id': request.goal_id,
+            'goal_token': request.goal_token,
+            'plan_id': 'planner_gate',
+            'plan_version': 0,
+            'event_type': 'planner_gate_%s' % str(status).strip().lower(),
+            'status': str(status).strip().lower(),
+            'intent': 'planner_request',
+            'source': 'nao_orchestrator',
+            'reason': str(decision.reason or '').strip(),
+            'request_kind': request.request_kind,
+            'supersedes_goal_id': request.supersedes_goal_id,
+            'goal_text': request.goal_text,
+            'timestamp_sec': round(time.time(), 3),
+        }
+        msg = String()
+        msg.data = json.dumps(payload, sort_keys=True, separators=(',', ':'))
+        self._planner_feedback_pub.publish(msg)
 
     def _on_planner_dialogue_act(self, msg: String) -> None:
         """Observe non-speaking planner acts so gate state clears on planner failure."""

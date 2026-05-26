@@ -13,6 +13,7 @@ from rcl_interfaces.msg import Log
 from std_msgs.msg import String
 
 from interaction_trace_viewer.payload_normalizer import classify_speech_topic
+from interaction_trace_viewer.payload_normalizer import normalize_include_event_types
 from interaction_trace_viewer.payload_normalizer import normalize_intent_message
 from interaction_trace_viewer.payload_normalizer import normalize_rosout_message
 from interaction_trace_viewer.payload_normalizer import normalize_string_message
@@ -70,6 +71,19 @@ class InteractionTraceNode(Node):
         self._exclude_channels = _parse_csv_set(self.get_parameter('exclude_channels_csv').value)
         self._include_event_types = _parse_csv_set(self.get_parameter('include_event_types_csv').value)
         self._exclude_event_types = _parse_csv_set(self.get_parameter('exclude_event_types_csv').value)
+        self._include_event_types = normalize_include_event_types(
+            include_channels=self._include_channels,
+            include_event_types=self._include_event_types,
+            exclude_event_types=self._exclude_event_types,
+        )
+        if (
+            self._include_event_types
+            and 'kb_snapshot' in self._include_event_types
+            and self._include_channels & {'world_model/enriched_snapshot', 'world_model/enriched_text'}
+        ):
+            self.get_logger().info(
+                'interaction_trace_viewer include_event_types normalized with kb_snapshot for world_model channels'
+            )
         self.discovery_period_sec = max(0.5, float(self.get_parameter('discovery_period_sec').value))
         self.kb_snapshot_emit_period_sec = max(
             0.0,

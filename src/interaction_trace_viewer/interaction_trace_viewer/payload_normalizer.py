@@ -279,6 +279,29 @@ def _clip(text: str, max_chars: int) -> str:
     return clean_text[: max(0, max_chars - 3)] + '...'
 
 
+def normalize_include_event_types(
+    *,
+    include_channels: set[str],
+    include_event_types: set[str],
+    exclude_event_types: set[str],
+) -> set[str]:
+    """Ensure event filters stay compatible with selected channels."""
+    if not include_event_types:
+        return include_event_types
+    if 'kb_snapshot' in include_event_types or 'kb_snapshot' in exclude_event_types:
+        return include_event_types
+    if not include_channels:
+        return include_event_types
+
+    kb_channels = {'world_model/enriched_snapshot', 'world_model/enriched_text'}
+    if not (include_channels & kb_channels):
+        return include_event_types
+
+    normalized = set(include_event_types)
+    normalized.add('kb_snapshot')
+    return normalized
+
+
 def _try_parse_json_dict(raw_text: str) -> dict | None:
     text = str(raw_text or '').strip()
     if not text:
