@@ -1,8 +1,8 @@
 # ROS4HRI Integration Master Plan (Consolidated, Active)
 
-**Date:** 2026-05-18  
+**Date:** 2026-05-26 (status refresh)  
 **Branch context:** `feat/TFM-LLM_planner` (+ nested repos and Neural-Wokbench integration seam)  
-**Scope:** Single active execution plan for non-fake-skill integration, AB registry normalization, and observability/dashboard rollout.
+**Scope:** Single active execution plan for planner/chatbot/orchestrator seams, canonical registry alignment, fake-skill operational hardening, and observability/dashboard rollout.
 
 ## 1. Consolidation Policy (What This File Replaces)
 
@@ -30,6 +30,8 @@ To avoid docs churn, active docs are constrained to:
 - `docs/planner_status.md`
 - `docs/architecture/ab_registry_input.json`
 - `docs/architecture/ros4hri_neural_workbench_interactive_architecture.html`
+- `docs/architecture/demo_stack_seam_contract_2026-05-26.md` (+ `.html`)
+- `docs/architecture/fake_skills_scenarios_playbook.md` (+ `.html`)
 - `docs/plans/` (this master plan + fake skills handoff)
 
 Everything else should be archived under `docs/artifacts/` unless it is actively used in runtime operations.
@@ -42,7 +44,11 @@ Everything else should be archived under `docs/artifacts/` unless it is actively
 - **Done**: `report_result` now executes as action-server-owned AB=1 skill (`/skill/report_result`) instead of a dialogue-act shortcut.
 - **Done**: planner/orchestrator action routing validated for `/skill/scan`, `/skill/report_result`, `/skill/say`, `/skill/do_head_motion`.
 - **Done**: goal token/version guardrails and supersede semantics are present in planner-orchestrator seam.
-- **Pending**: final route-hardening for ambiguous utterances (`knowledge_query` vs `execution`) in edge dialogue cases.
+- **Done**: route-hardening now defaults visibility-only scene checks to `knowledge_query` unless explicit scan/action wording is requested.
+- **Done**: planner dialogue-act wording is chatbot-owned by default (`dialogue_manager` -> `chatbot_llm`) including completion/failure/clarification user-facing turns.
+- **Done**: structured `chatbot_turn_trace` visibility is available for dialogue vs planner-handoff attribution.
+- **Done (2026-05-26)**: planner-mode routing now guards visibility-only scene questions toward `knowledge_query` unless the user explicitly requests a new scan/action.
+- **In progress**: proactive wording + speech arbitration pass to avoid duplicate user-facing utterances when execution acknowledgements and planner dialogue completions occur in the same interaction.
 
 ### B. Registry Consistency and Canonicalization
 
@@ -55,7 +61,10 @@ Everything else should be archived under `docs/artifacts/` unless it is actively
 
 - **Done**: current live stack can expose expected action servers and dispatch path reliably.
 - **In progress**: reduce lifecycle-race/operator confusion in mixed sim/robot toggles.
-- **Pending**: document strict operator guidance for “live stack already running” workflows to avoid duplicate launch side effects.
+- **Done**: interaction trace viewer can be run as a separate operator window; sim default no longer auto-launches it.
+- **Done**: compact trace channel/event filtering args are exposed through stack launch and can be toggled without code edits.
+- **Done (2026-05-26)**: fixed fake-skills launch coercion seam where `fake_skill_mode_overrides_json` could be treated as dict and abort startup (`ParameterValue(..., value_type=str)`).
+- **In progress (2026-05-26 live probe)**: planner request-admission behavior after entering `waiting_user` needs hardening; later `/planner/request` fixtures were trace-visible but not admitted by `planner_llm` in the same run.
 
 ### D. Upstream/Nested Repo Reconciliation
 
@@ -111,6 +120,7 @@ Add decomposition-ready fields in canonical AB schema for higher-level objects:
 - publish structured chatbot routing trace events for dialogue vs planner handoff visibility.
 - enforce canonical registry projection sync across planner fallback config and docs mirrors via pre-commit checks.
 - route planner dialogue-act user wording through `chatbot_llm` by default, with direct wording only as explicit compatibility mode.
+- harden planner-mode KB visibility routing so non-action perception checks prefer `knowledge_query`.
 
 **Exit criteria**
 
@@ -133,10 +143,10 @@ This track merges prior simple-viewer and full-dashboard plans.
   - summary
   - full payload
 
-### OBS-1: Simple Dialogue Trace Viewer (P0)
+### OBS-1: Simple Dialogue Trace Viewer (P0) — Done
 
-- first deliverable: lightweight trace tool for supervisor demos.
-- required flow visibility:
+- delivered: lightweight trace tool for supervisor demos.
+- flow visibility includes:
   - user input
   - chatbot route
   - planner request/plan
@@ -144,6 +154,7 @@ This track merges prior simple-viewer and full-dashboard plans.
   - skill result
   - planner dialogue act
   - final speech
+- JSON-only payload rendering is supported in verbose mode, with compact/verbose runtime toggles and channel/event filtering.
 
 ### OBS-2: Full Dashboard Skeleton (P1)
 
@@ -166,12 +177,16 @@ This track merges prior simple-viewer and full-dashboard plans.
 
 ## 6. Backlog (Prioritized, Cross-Track)
 
-1. **P0** Finalize chatbot routing policy edge-cases (`knowledge_query` default where appropriate).
-2. **P0** Add operator-facing troubleshooting section in `launch_profiles.md` for live-stack/no-relaunch constraints.
-3. **P0** Land simple trace viewer package scaffold (`interaction_trace_viewer`).
-4. **P1** Begin AB decomposition schema expansion and tests.
-5. **P1** Begin dashboard backend skeleton (`nao_dashboard`).
-6. **P2** Stage upstream nested-repo merges per inventory artifact.
+1. **P0** Complete speech-ownership arbitration so each turn has one user-facing utterance authority (no duplicate execution-ack + planner-dialogue speech).
+2. **P0** Resolve planner request-admission/backpressure seam after `waiting_user` transitions; ensure subsequent `new_goal` requests are deterministically handled (accepted/superseded/rejected with explicit reason).
+3. **P1** Continue AB decomposition schema expansion and tests (AB=2+ lineage coverage).
+4. **P1** Begin dashboard backend skeleton (`nao_dashboard`).
+5. **P2** Stage upstream nested-repo merges per inventory artifact.
+
+## Additional Runtime Evidence
+
+- Live stack validation artifact:
+  - `docs/artifacts/runtime_validation_report_2026-05-26_stack_live.md`
 
 ## 7. Mandatory Validation Gates (Per Change Slice)
 
@@ -204,8 +219,8 @@ This track merges prior simple-viewer and full-dashboard plans.
 
 ## 9. Immediate Next Session Checklist
 
-1. Re-run focused tests for touched planner/orchestrator/registry seams.
-2. Verify live stack action endpoints remain healthy (`scan`, `report_result`, `say`, `head_motion`).
-3. Start OBS-1 implementation scaffold (`interaction_trace_viewer`).
-4. Start AB-F2 decomposition metadata pass with tests.
-5. Prepare upstream merge staging branch sequence from inventory doc.
+1. Re-run focused tests for touched planner/chatbot/orchestrator/fake-skill seams.
+2. Verify live stack endpoints remain healthy (`scan`, `report_result`, `say`, `head_motion`, fake-skill endpoints).
+3. Validate no duplicate user-facing speech in KB visibility and execution-failure flows.
+4. Port validated seam changes into demo branch and reconcile launch defaults there.
+5. Continue AB-F2 decomposition metadata pass with tests.

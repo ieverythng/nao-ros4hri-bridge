@@ -125,6 +125,37 @@
       }
     },
     {
+      "object_id": "/skill/fake/wave_greet",
+      "ab_level": 0,
+      "kind": "action",
+      "category": "execution_action",
+      "owner_package": "fake_skills",
+      "transport": {
+        "type": "action",
+        "ros_type": "planner_msgs/action/SkillStep",
+        "payload_format": "json"
+      },
+      "expected_effects": [
+        "fake wave_greet action endpoint"
+      ],
+      "observable_success": [
+        "goal_accepted",
+        "result_payload"
+      ],
+      "safety_flags": [
+        "execution"
+      ],
+      "implementation_status": "bridge_runtime",
+      "metadata": {
+        "runtime_callable": false,
+        "decomposition": {
+          "max_depth": -1,
+          "policy": "terminal_ab0",
+          "notes": "AB0 action endpoint."
+        }
+      }
+    },
+    {
       "object_id": "/skill/look_at",
       "ab_level": 0,
       "kind": "action",
@@ -1123,6 +1154,70 @@
       }
     },
     {
+      "object_id": "ask_user",
+      "ab_level": 1,
+      "kind": "skill",
+      "category": "communication",
+      "aliases": [
+        "ask_clarification",
+        "ask_for_help"
+      ],
+      "params": [
+        "question",
+        "slots_needed",
+        "reason"
+      ],
+      "required_params": [],
+      "preconditions": [],
+      "expected_effects": [
+        "robot asks the user for missing details",
+        "planner supervision pauses for user response"
+      ],
+      "observable_success": [
+        "needs_user_input",
+        "await_user_response"
+      ],
+      "failure_modes": [
+        "missing_prompt",
+        "say_dispatch_failed"
+      ],
+      "planner_guidance": [
+        "use when execution is blocked by missing user-provided details",
+        "include question text when available; otherwise include slots_needed"
+      ],
+      "robot_adapter_mapping": "nao_orchestrator.ask_user",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "prompt_text"
+        ],
+        "optional": [
+          "slots_needed",
+          "await_user_response"
+        ]
+      },
+      "safety_flags": [
+        "communication"
+      ],
+      "implementation_status": "first_party",
+      "supports_failure_injection": false,
+      "is_composite": false,
+      "is_fake": false,
+      "decomposes_to": [
+        "emit_robot_speech",
+        "verify_evidence_payload"
+      ],
+      "metadata": {
+        "runtime_callable": true,
+        "decomposition": {
+          "max_depth": -1,
+          "policy": "full_to_ab0",
+          "notes": "Planner ask-user prompts are executed through orchestrator-owned speech dispatch without a dedicated external skill server."
+        }
+      }
+    },
+    {
       "object_id": "scan",
       "ab_level": 1,
       "kind": "skill",
@@ -1260,6 +1355,69 @@
           "notes": "AB1 primitive locomotion segment skill used by higher-level navigation flows."
         },
         "ab_role": "primitive_locomotion"
+      }
+    },
+    {
+      "object_id": "wave_greet",
+      "ab_level": 1,
+      "kind": "skill",
+      "category": "interaction",
+      "aliases": [
+        "wave",
+        "wave_at",
+        "greet_wave",
+        "wave_hello"
+      ],
+      "params": [
+        "style",
+        "target"
+      ],
+      "required_params": [],
+      "preconditions": [],
+      "expected_effects": [
+        "robot performs a greeting wave motion",
+        "planner receives a deterministic skill outcome payload"
+      ],
+      "observable_success": [
+        "status",
+        "summary_text"
+      ],
+      "failure_modes": [
+        "motion_unavailable",
+        "dispatch_failed"
+      ],
+      "planner_guidance": [
+        "use for requests like wave, wave at me, or greet with a wave",
+        "prefer wave_greet over perform_motion for greeting gestures"
+      ],
+      "robot_adapter_mapping": "fake_wave_greet_skill.wave_greet",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "interaction",
+        "motion"
+      ],
+      "implementation_status": "fake",
+      "supports_failure_injection": true,
+      "is_composite": false,
+      "is_fake": true,
+      "decomposes_to": [
+        "/skill/fake/wave_greet",
+        "dispatch_skill_goal",
+        "verify_evidence_payload"
+      ],
+      "metadata": {
+        "runtime_callable": true,
+        "decomposition": {
+          "max_depth": -1,
+          "policy": "full_to_ab0",
+          "notes": "Demo fake-skill seam for greeting wave behavior."
+        }
       }
     },
     {

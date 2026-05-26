@@ -16,6 +16,15 @@
 - For AB=1 runtime skills, `decomposes_to` should point to AB=0 leaves (actions/interfaces/primitives).
 - AB=2 proposal objects remain non-runtime-callable unless explicitly promoted.
 
+## Current AB Assertions (Demo-Critical)
+- `walk_to` is AB=1 runtime callable (short locomotion semantic skill).
+- `navigate_to` is AB=1 runtime callable (destination-oriented navigation skill).
+- AB=0 entries for these are the ROS/action/interface seams (`/skill/fake/walk_to`,
+  `/skill/fake/navigate_to`) and related primitives, not replacements for AB=1
+  skill semantics.
+- Any AB=2+ navigation decomposition remains proposal-level unless promoted with
+  explicit runtime callable updates.
+
 ## Runtime Callability
 - `metadata.runtime_callable` gates what can appear in planner runtime projections.
 - AB=0 and proposal objects must keep `runtime_callable=false`.

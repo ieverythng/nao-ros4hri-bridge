@@ -1,6 +1,6 @@
 # Current Workflow
 
-Last updated: 2026-04-27
+Last updated: 2026-05-26
 
 This is the canonical workflow map for the active NAO ROS4HRI bridge. Historical
 handoffs and old integration notes live in `docs/artifacts/`.
@@ -27,7 +27,8 @@ flowchart LR
     chatbot --> route{"Direct or planner route"}
 
     route -->|direct mode<br/>/intents| orch["nao_orchestrator<br/>deterministic executor"]
-    route -->|planner mode<br/>/planner/request| planner["planner_llm<br/>planner + supervisor"]
+    route -->|planner mode<br/>/nao_orchestrator/planner_request| gate["nao_orchestrator<br/>planner gate"]
+    gate -->|admitted request<br/>/planner/request| planner["planner_llm<br/>planner + supervisor"]
 
     planner -->|executable plan<br/>/intents| orch
     orch -.->|execution status<br/>/planner/execution_feedback| planner
@@ -43,8 +44,12 @@ flowchart LR
 The interaction starts with user text on `/humans/voices/*/speech`.
 `dialogue_manager` owns the dialogue turn and calls `chatbot_llm`.
 `chatbot_llm` then chooses either direct execution through `/intents` or planner
-execution through `/planner/request`. The planner never speaks directly; it
-publishes `/planner/dialogue_act` back to `dialogue_manager`.
+execution through orchestrator planner-gate ingress
+(`/nao_orchestrator/planner_request`), then `nao_orchestrator` forwards admitted
+requests to `/planner/request`. The planner never speaks directly; it publishes
+`/planner/dialogue_act` back to `dialogue_manager`.
+In planner mode, visibility-only scene questions stay on `knowledge_query`
+unless the user explicitly asks for a fresh scan/action.
 
 ## Grounded Scene Flow
 
@@ -81,7 +86,8 @@ sequenceDiagram
         O->>S: action goal for command
         S-->>O: action result
     else planner mode
-        C->>P: /planner/request
+        C->>O: /nao_orchestrator/planner_request
+        O->>P: /planner/request
         P->>O: /intents with Intent.data.plan
         O->>P: /planner/execution_feedback plan_accepted
         O->>S: action goal for step
@@ -100,7 +106,8 @@ before adding richer demo behavior.
 
 The important runtime currencies are:
 
-- `/planner/request`: task ingress from `chatbot_llm` to `planner_llm`.
+- `/nao_orchestrator/planner_request`: planner-ingress request from `chatbot_llm`.
+- `/planner/request`: admitted planner requests forwarded by `nao_orchestrator` gate.
 - `/intents`: executable downstream intent/plan from `planner_llm` or direct mode.
 - `/planner/execution_feedback`: executor status back to the planner.
 - `/planner/dialogue_act`: planner communication request without direct execution.

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Demo Stack Seam Contract (2026-05-26)</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --fg: #1a1a1a;
+      --muted: #5a5a5a;
+      --bg: #f8f8f8;
+      --card: #ffffff;
+      --border: #d8d8d8;
+      --accent: #0b5fff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fg: #e8e8e8;
+        --muted: #9e9e9e;
+        --bg: #111111;
+        --card: #1d1d1d;
+        --border: #333333;
+        --accent: #7fb4ff;
+      }
+    }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
+      max-width: 58rem;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 3rem;
+      line-height: 1.58;
+      color: var(--fg);
+      background: var(--bg);
+    }
+    h1, h2, h3 { line-height: 1.25; }
+    h2 { border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+    pre {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.8rem;
+      overflow-x: auto;
+    }
+    code {
+      font-family: ui-monospace, "Cascadia Code", monospace;
+      font-size: 0.9em;
+      background: rgba(0, 0, 0, 0.06);
+      padding: 0.12em 0.3em;
+      border-radius: 4px;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      border: 1px solid var(--border);
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.45rem 0.55rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: rgba(0,0,0,0.04); }
+    blockquote {
+      border-left: 4px solid var(--accent);
+      margin: 0.7rem 0;
+      padding: 0.1rem 0.9rem;
+      color: var(--muted);
+    }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+<h1>Demo Stack Seam Contract (2026-05-26)</h1>
+<h2>Scope</h2>
+<p>This document captures the contract-critical routing seams for the live demo</p>
+<p>stack (<code>chatbot_llm</code>, <code>planner_llm</code>, <code>nao_orchestrator</code>, <code>dialogue_manager</code>,</p>
+<p><code>fake_skills</code>) and the expected behavior boundaries for ROS4HRI-safe operation.</p>
+<h2>Contract-Critical Ownership</h2>
+<table><thead><tr>
+<th>Concern</th>
+<th>Owner</th>
+<th>Must Not</th>
+</tr></thead><tbody>
+<tr>
+<td>User-facing wording and TTS path</td>
+<td><code>dialogue_manager</code> + <code>chatbot_llm</code></td>
+<td><code>planner_llm</code> or <code>nao_orchestrator</code> speaking planner dialogue directly</td>
+</tr>
+<tr>
+<td>Task planning and supervision</td>
+<td><code>planner_llm</code></td>
+<td>Emitting robot speech actions as mixed executable plan steps</td>
+</tr>
+<tr>
+<td>Deterministic execution</td>
+<td><code>nao_orchestrator</code></td>
+<td>Re-owning dialogue decisions or bypassing planner/dialogue seams</td>
+</tr>
+<tr>
+<td>KB boundary</td>
+<td><code>kb_skills</code></td>
+<td>Ad-hoc direct KB transport shortcuts in unrelated nodes</td>
+</tr>
+<tr>
+<td>Scene grounding bridge</td>
+<td><code>nao_scene_grounding</code></td>
+<td>Planner-side detector coupling</td>
+</tr>
+</tbody></table>
+<h2>Routing Seams (Authoritative)</h2>
+<h3>A) Planner request ingress</h3>
+<pre><code class="language-text">user -&gt; dialogue_manager -&gt; chatbot_llm -&gt; nao_orchestrator(planner gate) -&gt; planner_llm</code></pre>
+<ul>
+<li><code>chatbot_llm</code> routes execution-mode turns toward planner request transport.</li>
+<li><code>nao_orchestrator</code> planner gate validates/supersedes and forwards accepted</li>
+</ul>
+<p>planner requests.</p>
+<h3>B) Planner dialogue act egress</h3>
+<pre><code class="language-text">planner_llm -&gt; /planner/dialogue_act -&gt; dialogue_manager -&gt; chatbot_llm(default) -&gt; TTS</code></pre>
+<ul>
+<li><code>planner_llm</code> publishes structured dialogue acts only.</li>
+<li><code>dialogue_manager</code> owns planner-act consumption and wording policy.</li>
+<li><code>dialogue_manager</code> delegates planner dialogue wording to <code>chatbot_llm</code> by</li>
+</ul>
+<p>default.</p>
+<ul>
+<li><code>nao_orchestrator</code> may observe planner dialogue acts for gate cleanup but is</li>
+</ul>
+<p>not a speech owner.</p>
+<h2>Duplicate-Speech Guardrails</h2>
+<ul>
+<li><code>dialogue_manager</code> ignores planner <code>acknowledge</code> dialogue acts to avoid</li>
+</ul>
+<p>duplicate speech when an execution acknowledgement already happened.</p>
+<ul>
+<li>Planner models are prevented from mixing speech steps with executable skill</li>
+</ul>
+<p>steps in a single plan.</p>
+<ul>
+<li>Scan completion speaking should be chatbot-owned (<code>scan_report_after_success=false</code></li>
+</ul>
+<p>in demo/sim profiles) unless explicitly testing direct execution speech.</p>
+<h2>KB Visibility and Proactive Behavior</h2>
+<ul>
+<li>Visibility-only questions default to <code>knowledge_query</code> unless the user</li>
+</ul>
+<p>explicitly asks for a fresh scan/action.</p>
+<ul>
+<li>Chatbot wording should answer current KB-grounded state and proactively offer</li>
+</ul>
+<p>an optional fresh scan.</p>
+<h2>Fake Skills in Demo Contract</h2>
+<p><code>scan</code> is <strong>not</strong> a fake skill in this stack contract; it is a first-party runtime skill exposed by <code>nao_orchestrator</code> (<code>/skill/scan</code>).</p>
+<h3>Runtime controls</h3>
+<ul>
+<li><code>active_scenario_id</code></li>
+<li><code>global_mode</code>: <code>scenario|always_success|always_fail|every_other|random_seeded</code></li>
+<li><code>random_failure_prob</code></li>
+<li><code>mode_overrides_json</code></li>
+</ul>
+<h3>Scenario precedence</h3>
+<pre><code class="language-text">request scenario override &gt; per-skill override mode &gt; global_mode policy &gt; scenario/default mode</code></pre>
+<h3>AB alignment</h3>
+<ul>
+<li>AB=0: ROS/interface primitives and action/service/topic seams.</li>
+<li>AB=1: runtime callable skills (<code>scan</code>, <code>find_object</code>, <code>navigate_to</code>, <code>walk_to</code>,</li>
+</ul>
+<p><code>wave_greet</code>, <code>report_result</code>, <code>look_at</code>, <code>perform_motion</code>).</p>
+<ul>
+<li>AB&gt;=2: decomposition proposals, non-runtime-callable unless promoted.</li>
+</ul>
+<p>Planner can intentionally include <code>ask_user</code> / <code>ask_clarification</code> skill steps; orchestrator executes the prompt utterance and returns blocking feedback with <code>needs_user_input=true</code> so planner supervision can wait for user input.</p>
+<h2>Operator Validation Checklist</h2>
+<ol>
+<li>Check planner dialogue path:</li>
+</ol>
+<ul>
+<li>planner emits <code>/planner/dialogue_act</code></li>
+<li>dialogue_manager consumes it</li>
+<li>chatbot produces final wording</li>
+</ul>
+<ol>
+<li>Confirm no duplicate utterances for visibility questions and failure</li>
+</ol>
+<p>completions.</p>
+<ol>
+<li>Confirm fake-skill scenario selection is reflected by <code>/fake_skill_server</code></li>
+</ol>
+<p>parameters.</p>
+<ol>
+<li>Confirm interaction traces include planner request/output/feedback,</li>
+</ol>
+<p>planner-dialogue acts, chatbot turn traces, and fake-skill events.</p>
+<h2>Source-of-Truth Files</h2>
+<ul>
+<li><code>src/planner_llm/planner_llm/planner_node.py</code></li>
+<li><code>src/planner_llm/planner_llm/planner_engine.py</code></li>
+<li><code>src/dialogue_manager/dialogue_manager/manager_node.py</code></li>
+<li><code>src/dialogue_manager/dialogue_manager/chatbot_client.py</code></li>
+<li><code>src/nao_orchestrator/nao_orchestrator/orchestrator.py</code></li>
+<li><code>src/fake_skills/fake_skills/action_server.py</code></li>
+<li><code>src/Neural-Wokbench/src/skill_common/skill_common/defaults/ab_registry.json</code></li>
+</ul>
+</body>
+</html>

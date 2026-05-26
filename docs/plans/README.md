@@ -7,7 +7,7 @@ This folder is intentionally minimal.
 - `ros4hri_integration_master_plan_2026-05-18.md` (+ `.html`)  
   Canonical integration tracker (planner/orchestrator, AB registry integration, observability/dashboard stream, upstream reconciliation).
 - `fake_skills_codex_handoff.md` (+ `.html`)  
-  Separate active stream for fake skills implementation.
+  Separate active stream for fake-skills runtime policy/scenario operations and Workbench validation support.
 
 ## Archival rule
 

@@ -77,9 +77,9 @@
 </head>
 <body>
 <h1>ROS4HRI Integration Master Plan (Consolidated, Active)</h1>
-<p><strong>Date:</strong> 2026-05-18</p>
+<p><strong>Date:</strong> 2026-05-26 (status refresh)</p>
 <p><strong>Branch context:</strong> <code>feat/TFM-LLM_planner</code> (+ nested repos and Neural-Wokbench integration seam)</p>
-<p><strong>Scope:</strong> Single active execution plan for non-fake-skill integration, AB registry normalization, and observability/dashboard rollout.</p>
+<p><strong>Scope:</strong> Single active execution plan for planner/chatbot/orchestrator seams, canonical registry alignment, fake-skill operational hardening, and observability/dashboard rollout.</p>
 <h2>1. Consolidation Policy (What This File Replaces)</h2>
 <p>This file is now the canonical integration plan and absorbs execution tracking from:</p>
 <ul>
@@ -90,9 +90,9 @@
 <li><code>docs/artifacts/plan_archive/full_nao_dashboard_spec.md</code></li>
 </ul>
 <p>These source plans are preserved in <code>docs/artifacts/plan_archive/</code> for provenance.</p>
-<p>The fake skills stream is now archived and linked into the unified registry track:</p>
+<p>The fake skills stream remains separate by design:</p>
 <ul>
-<li><code>docs/artifacts/plan_archive/fake_skills_codex_handoff.md</code> (+ HTML)</li>
+<li><code>fake_skills_codex_handoff.md</code> (+ HTML)</li>
 </ul>
 <h2>2. Repo-Doc Structure Contract</h2>
 <p>To avoid docs churn, active docs are constrained to:</p>
@@ -103,6 +103,8 @@
 <li><code>docs/planner_status.md</code></li>
 <li><code>docs/architecture/ab_registry_input.json</code></li>
 <li><code>docs/architecture/ros4hri_neural_workbench_interactive_architecture.html</code></li>
+<li><code>docs/architecture/demo_stack_seam_contract_2026-05-26.md</code> (+ <code>.html</code>)</li>
+<li><code>docs/architecture/fake_skills_scenarios_playbook.md</code> (+ <code>.html</code>)</li>
 <li><code>docs/plans/</code> (this master plan + fake skills handoff)</li>
 </ul>
 <p>Everything else should be archived under <code>docs/artifacts/</code> unless it is actively used in runtime operations.</p>
@@ -113,7 +115,11 @@
 <li><strong>Done</strong>: <code>report_result</code> now executes as action-server-owned AB=1 skill (<code>/skill/report_result</code>) instead of a dialogue-act shortcut.</li>
 <li><strong>Done</strong>: planner/orchestrator action routing validated for <code>/skill/scan</code>, <code>/skill/report_result</code>, <code>/skill/say</code>, <code>/skill/do_head_motion</code>.</li>
 <li><strong>Done</strong>: goal token/version guardrails and supersede semantics are present in planner-orchestrator seam.</li>
-<li><strong>Pending</strong>: final route-hardening for ambiguous utterances (<code>knowledge_query</code> vs <code>execution</code>) in edge dialogue cases.</li>
+<li><strong>Done</strong>: route-hardening now defaults visibility-only scene checks to <code>knowledge_query</code> unless explicit scan/action wording is requested.</li>
+<li><strong>Done</strong>: planner dialogue-act wording is chatbot-owned by default (<code>dialogue_manager</code> -&gt; <code>chatbot_llm</code>) including completion/failure/clarification user-facing turns.</li>
+<li><strong>Done</strong>: structured <code>chatbot_turn_trace</code> visibility is available for dialogue vs planner-handoff attribution.</li>
+<li><strong>Done (2026-05-26)</strong>: planner-mode routing now guards visibility-only scene questions toward <code>knowledge_query</code> unless the user explicitly requests a new scan/action.</li>
+<li><strong>In progress</strong>: proactive wording + speech arbitration pass to avoid duplicate user-facing utterances when execution acknowledgements and planner dialogue completions occur in the same interaction.</li>
 </ul>
 <h3>B. Registry Consistency and Canonicalization</h3>
 <ul>
@@ -121,13 +127,15 @@
 <li><strong>Done</strong>: automated consistency checker added (<code>scripts/check_skill_registry_consistency.py</code>) and wired to pre-commit.</li>
 <li><strong>Done</strong>: planner skill alias normalization aligned with canonical skill_common views.</li>
 <li><strong>Pending</strong>: full AB decomposition migration (AB=2+ symbolic lineage and decomposition metadata).</li>
-<li><strong>In progress</strong>: AB=1 runtime skills now carry AB=0 leaf decomposition metadata with <code>max_depth=-1</code> policy for staged full decomposition.</li>
 </ul>
 <h3>C. Lifecycle and Launch Reliability</h3>
 <ul>
 <li><strong>Done</strong>: current live stack can expose expected action servers and dispatch path reliably.</li>
 <li><strong>In progress</strong>: reduce lifecycle-race/operator confusion in mixed sim/robot toggles.</li>
-<li><strong>Pending</strong>: document strict operator guidance for “live stack already running” workflows to avoid duplicate launch side effects.</li>
+<li><strong>Done</strong>: interaction trace viewer can be run as a separate operator window; sim default no longer auto-launches it.</li>
+<li><strong>Done</strong>: compact trace channel/event filtering args are exposed through stack launch and can be toggled without code edits.</li>
+<li><strong>Done (2026-05-26)</strong>: fixed fake-skills launch coercion seam where <code>fake_skill_mode_overrides_json</code> could be treated as dict and abort startup (<code>ParameterValue(..., value_type=str)</code>).</li>
+<li><strong>In progress (2026-05-26 live probe)</strong>: planner request-admission behavior after entering <code>waiting_user</code> needs hardening; later <code>/planner/request</code> fixtures were trace-visible but not admitted by <code>planner_llm</code> in the same run.</li>
 </ul>
 <h3>D. Upstream/Nested Repo Reconciliation</h3>
 <ul>
@@ -183,17 +191,14 @@
 <li>tighten planner/chatbot routing prompts and response schemas for non-execution turns.</li>
 <li>publish structured chatbot routing trace events for dialogue vs planner handoff visibility.</li>
 <li>enforce canonical registry projection sync across planner fallback config and docs mirrors via pre-commit checks.</li>
+<li>route planner dialogue-act user wording through <code>chatbot_llm</code> by default, with direct wording only as explicit compatibility mode.</li>
+<li>harden planner-mode KB visibility routing so non-action perception checks prefer <code>knowledge_query</code>.</li>
 </ul>
 <p><strong>Exit criteria</strong></p>
 <ul>
 <li>no drift between canonical AB registry and projected planner/docs registry surfaces.</li>
 <li>trace viewer can show planner/execution plus chatbot routing outcomes from structured payloads.</li>
-</ul>
-<p><strong>Status update (2026-05-22)</strong></p>
-<ul>
-<li>planner dialogue wording seam expanded: clarification/failure/help/completion dialogue acts can route through <code>chatbot_llm</code> before TTS.</li>
-<li>new dialogue-manager mode parameter introduced: <code>planner_dialogue_wording_mode</code> (<code>chatbot</code> default in stack profiles).</li>
-<li>compatibility mode retained for completion-only wording override via <code>planner_completion_wording_mode</code>.</li>
+<li>planner clarification/failure/completion user-facing wording remains chatbot-owned in live launch profiles.</li>
 </ul>
 <h2>5. Active Track: Observability Dashboard Rollout</h2>
 <p>This track merges prior simple-viewer and full-dashboard plans.</p>
@@ -208,10 +213,10 @@
 <li>summary</li>
 <li>full payload</li>
 </ul>
-<h3>OBS-1: Simple Dialogue Trace Viewer (P0)</h3>
+<h3>OBS-1: Simple Dialogue Trace Viewer (P0) — Done</h3>
 <ul>
-<li>first deliverable: lightweight trace tool for supervisor demos.</li>
-<li>required flow visibility:</li>
+<li>delivered: lightweight trace tool for supervisor demos.</li>
+<li>flow visibility includes:</li>
 <li>user input</li>
 <li>chatbot route</li>
 <li>planner request/plan</li>
@@ -219,6 +224,7 @@
 <li>skill result</li>
 <li>planner dialogue act</li>
 <li>final speech</li>
+<li>JSON-only payload rendering is supported in verbose mode, with compact/verbose runtime toggles and channel/event filtering.</li>
 </ul>
 <h3>OBS-2: Full Dashboard Skeleton (P1)</h3>
 <ul>
@@ -241,13 +247,17 @@
 </ul>
 <h2>6. Backlog (Prioritized, Cross-Track)</h2>
 <ol>
-<li><strong>P0</strong> Finalize chatbot routing policy edge-cases (<code>knowledge_query</code> default where appropriate).</li>
-<li><strong>P0</strong> Add operator-facing troubleshooting section in <code>launch_profiles.md</code> for live-stack/no-relaunch constraints.</li>
-<li><strong>P0</strong> Land simple trace viewer package scaffold (<code>interaction_trace_viewer</code>).</li>
-<li><strong>P1</strong> Extend AB=1 decomposition coverage to remaining runtime skills and add DAG/depth validators.</li>
+<li><strong>P0</strong> Complete speech-ownership arbitration so each turn has one user-facing utterance authority (no duplicate execution-ack + planner-dialogue speech).</li>
+<li><strong>P0</strong> Resolve planner request-admission/backpressure seam after <code>waiting_user</code> transitions; ensure subsequent <code>new_goal</code> requests are deterministically handled (accepted/superseded/rejected with explicit reason).</li>
+<li><strong>P1</strong> Continue AB decomposition schema expansion and tests (AB=2+ lineage coverage).</li>
 <li><strong>P1</strong> Begin dashboard backend skeleton (<code>nao_dashboard</code>).</li>
 <li><strong>P2</strong> Stage upstream nested-repo merges per inventory artifact.</li>
 </ol>
+<h2>Additional Runtime Evidence</h2>
+<ul>
+<li>Live stack validation artifact:</li>
+<li><code>docs/artifacts/runtime_validation_report_2026-05-26_stack_live.md</code></li>
+</ul>
 <h2>7. Mandatory Validation Gates (Per Change Slice)</h2>
 <ol>
 <li><strong>Pre-edit audit</strong></li>
@@ -285,11 +295,11 @@
 </ul>
 <h2>9. Immediate Next Session Checklist</h2>
 <ol>
-<li>Re-run focused tests for touched planner/orchestrator/registry seams.</li>
-<li>Verify live stack action endpoints remain healthy (<code>scan</code>, <code>report_result</code>, <code>say</code>, <code>head_motion</code>).</li>
-<li>Start OBS-1 implementation scaffold (<code>interaction_trace_viewer</code>).</li>
-<li>Start AB-F2 decomposition metadata pass with tests.</li>
-<li>Prepare upstream merge staging branch sequence from inventory doc.</li>
+<li>Re-run focused tests for touched planner/chatbot/orchestrator/fake-skill seams.</li>
+<li>Verify live stack endpoints remain healthy (<code>scan</code>, <code>report_result</code>, <code>say</code>, <code>head_motion</code>, fake-skill endpoints).</li>
+<li>Validate no duplicate user-facing speech in KB visibility and execution-failure flows.</li>
+<li>Port validated seam changes into demo branch and reconcile launch defaults there.</li>
+<li>Continue AB-F2 decomposition metadata pass with tests.</li>
 </ol>
 </body>
 </html>

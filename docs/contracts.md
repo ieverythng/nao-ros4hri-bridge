@@ -1,6 +1,6 @@
 # Runtime Contracts
 
-Last updated: 2026-04-27
+Last updated: 2026-05-26
 
 This document is the richer reference for the JSON payloads that move task,
 scene, and execution state between nodes. The root README contains compact
@@ -42,6 +42,7 @@ dialogue | knowledge_query | execution
 chatbot_llm declares the user-facing intent and routes execution turns.
 planner_llm owns executable planning and supervision.
 nao_orchestrator owns deterministic execution.
+visibility-only scene checks default to knowledge_query unless explicit scan/action wording is present.
 ```
 
 ---
@@ -50,19 +51,21 @@ nao_orchestrator owns deterministic execution.
 
 Topic:
 
-- `/planner/request`
+- `/nao_orchestrator/planner_request` (chatbot -> orchestrator gate ingress)
+- `/planner/request` (orchestrator-admitted request -> planner ingress)
 - type: `hri_actions_msgs/msg/Intent`
-- publisher: `chatbot_llm`
+- publisher (ingress): `chatbot_llm`
+- publisher (`/planner/request`): `nao_orchestrator`
 - consumer: `planner_llm`
 
 ROS envelope policy:
 
 - `Intent.priority` and `Intent.confidence` are part of
-  `hri_actions_msgs/msg/Intent`, so they will always appear in
-  `ros2 topic echo /planner/request`.
-- `chatbot_llm` now publishes planner requests with a deterministic priority
-  (`128`) and a bounded route confidence. Execution-routed turns with no model
-  confidence use a conservative floor rather than `0.0`.
+  `hri_actions_msgs/msg/Intent`, so they will appear in both
+  planner-ingress topics.
+- `chatbot_llm` sets deterministic planner priority/confidence on ingress
+  requests, and `nao_orchestrator` planner-gate forwards admitted requests to
+  `/planner/request`.
 - Planner semantics live in `Intent.data`; do not duplicate priority or
   confidence inside the JSON payload unless a planner policy genuinely needs it.
 
@@ -258,6 +261,7 @@ Topic:
 - type: `std_msgs/msg/String`
 - publisher: `planner_llm`
 - consumer: `dialogue_manager`
+- downstream wording owner: `chatbot_llm` (via dialogue manager handoff)
 
 ```json
 {

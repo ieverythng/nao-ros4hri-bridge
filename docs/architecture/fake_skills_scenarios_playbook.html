@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fake Skills Scenarios Playbook</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --fg: #1a1a1a;
+      --muted: #5a5a5a;
+      --bg: #f8f8f8;
+      --card: #ffffff;
+      --border: #d8d8d8;
+      --accent: #0b5fff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fg: #e8e8e8;
+        --muted: #9e9e9e;
+        --bg: #111111;
+        --card: #1d1d1d;
+        --border: #333333;
+        --accent: #7fb4ff;
+      }
+    }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
+      max-width: 58rem;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 3rem;
+      line-height: 1.58;
+      color: var(--fg);
+      background: var(--bg);
+    }
+    h1, h2, h3 { line-height: 1.25; }
+    h2 { border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+    pre {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.8rem;
+      overflow-x: auto;
+    }
+    code {
+      font-family: ui-monospace, "Cascadia Code", monospace;
+      font-size: 0.9em;
+      background: rgba(0, 0, 0, 0.06);
+      padding: 0.12em 0.3em;
+      border-radius: 4px;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      border: 1px solid var(--border);
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.45rem 0.55rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: rgba(0,0,0,0.04); }
+    blockquote {
+      border-left: 4px solid var(--accent);
+      margin: 0.7rem 0;
+      padding: 0.1rem 0.9rem;
+      color: var(--muted);
+    }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+<h1>Fake Skills Scenarios Playbook</h1>
+<h2>Purpose</h2>
+<p>This is the operator/developer playbook for running fake skill scenarios with</p>
+<p>deterministic controls and trace visibility in the same container session.</p>
+<h2>What Is Controlled</h2>
+<p><code>fake_skill_server</code> controls skill outcomes for:</p>
+<ul>
+<li><code>find_object</code></li>
+<li><code>navigate_to</code></li>
+<li><code>walk_to</code></li>
+<li>other fake-skill endpoints exposed by the package</li>
+</ul>
+<p>Policy inputs are read from:</p>
+<ul>
+<li>scenario YAML (<code>fake_skill_scenario_file</code>)</li>
+<li>active named scenario (<code>active_scenario_id</code>)</li>
+<li>global policy mode (<code>global_mode</code>)</li>
+<li>per-skill mode overrides (<code>mode_overrides_json</code>)</li>
+<li>optional per-request <code>scenario_id</code> and <code>scenario</code> override payloads</li>
+</ul>
+<h2>Launch-Time Controls</h2>
+<pre><code class="language-bash">ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_fake_skills:=true \
+  fake_skill_active_scenario_id:=path_blocked \
+  fake_skill_global_mode:=scenario \
+  fake_skill_random_failure_prob:=0.35 \
+  fake_skill_mode_overrides_json:=&#x27;{}&#x27;</code></pre>
+<h2>Live Controls (No Relaunch Required)</h2>
+<p>Inspect:</p>
+<pre><code class="language-bash">ros2 param get /fake_skill_server available_scenario_ids
+ros2 param get /fake_skill_server active_scenario_id
+ros2 param get /fake_skill_server global_mode
+ros2 param get /fake_skill_server mode_overrides_json</code></pre>
+<p>Switch scenario:</p>
+<pre><code class="language-bash">ros2 param set /fake_skill_server active_scenario_id ambiguous_cup</code></pre>
+<p>Reset named scenario:</p>
+<pre><code class="language-bash">ros2 param set /fake_skill_server active_scenario_id &quot;&quot;</code></pre>
+<p>Force policy mode:</p>
+<pre><code class="language-bash">ros2 param set /fake_skill_server global_mode always_fail
+ros2 param set /fake_skill_server global_mode always_success
+ros2 param set /fake_skill_server global_mode random_seeded
+ros2 param set /fake_skill_server random_failure_prob 0.35</code></pre>
+<p>Per-skill override:</p>
+<pre><code class="language-bash">ros2 param set /fake_skill_server mode_overrides_json &#x27;{&quot;find_object&quot;:&quot;always_fail&quot;}&#x27;</code></pre>
+<p>Semi-interactive selector:</p>
+<pre><code class="language-bash">./scripts/fake_skill_scenario_menu.sh /fake_skill_server</code></pre>
+<h2>Scenario Precedence Model</h2>
+<p>Outcome mode is resolved in this order:</p>
+<ol>
+<li>Request-level <code>scenario</code> override (<code>evidence_policy</code> payload)</li>
+<li>Request-level <code>scenario_id</code></li>
+<li>Runtime <code>mode_overrides_json</code></li>
+<li>Runtime <code>global_mode</code></li>
+<li>Scenario/default YAML skill mode</li>
+</ol>
+<h2>Quick Action-Level Probes</h2>
+<p><code>find_object</code> probe:</p>
+<pre><code class="language-bash">ros2 action send_goal /skill/fake/find_object communication_skills/action/ScanScene \
+  &quot;{target: &#x27;apple&#x27;, target_kind: &#x27;object&#x27;, max_sweeps: 1}&quot;</code></pre>
+<p><code>navigate_to</code> probe:</p>
+<pre><code class="language-bash">ros2 action send_goal /skill/fake/navigate_to communication_skills/action/ScanScene \
+  &quot;{target: &#x27;kitchen&#x27;, target_kind: &#x27;location&#x27;, max_sweeps: 1}&quot;</code></pre>
+<h2>Trace Viewer Pairing (JSON-First)</h2>
+<p>Run viewer in a separate shell:</p>
+<pre><code class="language-bash">source /opt/ros/jazzy/setup.bash
+source /home/ubuntu/ws/install/setup.bash
+pkill -f interaction_trace_viewer.trace_node || true
+ros2 run interaction_trace_viewer trace_node --ros-args \
+  -p compact_mode:=false \
+  -p include_raw_payloads:=true \
+  -p include_channels_csv:=&quot;planner/request,intents,planner/execution_feedback,planner/dialogue_act,chatbot_llm/turn_trace,fake_skills/events,world_model/enriched_snapshot,world_model/enriched_text&quot; \
+  -p include_event_types_csv:=&quot;planner_request,planner_output,execution_feedback,planner_dialogue_act,chatbot_turn_trace,skill_result,kb_snapshot&quot;</code></pre>
+<h2>Troubleshooting</h2>
+<ul>
+<li>If <code>available_scenario_ids</code> is empty:</li>
+<li>verify <code>fake_skill_scenario_file</code> path and package share installation.</li>
+<li>If params cannot be read:</li>
+<li>verify ROS domain and sourced workspace in that shell.</li>
+<li>If action goals fail immediately:</li>
+<li>check fake skill server node state and action server availability.</li>
+<li>If duplicate speech appears:</li>
+<li>verify <code>scan_report_after_success=false</code> for chatbot-owned completion wording.</li>
+</ul>
+<h2>Related Contracts</h2>
+<ul>
+<li><code>docs/architecture/skill_registry_contract.md</code></li>
+<li><code>docs/architecture/demo_stack_seam_contract_2026-05-26.md</code></li>
+<li><code>docs/plans/ros4hri_integration_master_plan_2026-05-18.md</code></li>
+</ul>
+</body>
+</html>
