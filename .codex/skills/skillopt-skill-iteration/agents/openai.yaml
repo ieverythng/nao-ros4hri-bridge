@@ -1,0 +1,7 @@
+interface:
+  display_name: "SkillOpt Skill Iteration"
+  short_description: "Optimize skills/prompts with bounded edits and validation gates."
+  default_prompt: "Use $skillopt-skill-iteration to improve this skill or prompt pack with a baseline, bounded mutation, holdout gate, and accept/reject log."
+
+policy:
+  allow_implicit_invocation: true

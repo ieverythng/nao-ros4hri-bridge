@@ -26,6 +26,8 @@ package structure, and upstream-sensitive edits.
 4. Apply the narrowest useful fixes.
 5. Validate with targeted tests, `py_compile`, launch checks, or containerized
    ROS checks as appropriate.
+6. When adjusting prompt/skill wording or routing rules, prefer a bounded
+   SkillOpt-style pass (`baseline -> mutate -> holdout gate -> accept/reject log`).
 
 ## Workflow
 
