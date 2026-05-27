@@ -1,0 +1,82 @@
+[INFO] [1779846368.544603080] [trace04_head_motion_strict_viewer]: trace subscribed: /rosout
+[INFO] [1779846368.546036905] [trace04_head_motion_strict_viewer]: interaction_trace_viewer started
+[INFO] [1779846370.522330489] [trace04_head_motion_strict_viewer]: trace subscribed: /planner/request
+[INFO] [1779846370.525160569] [trace04_head_motion_strict_viewer]: trace subscribed: /intents
+[INFO] [1779846370.528772032] [trace04_head_motion_strict_viewer]: trace subscribed: /planner/execution_feedback
+[INFO] [1779846370.533579336] [trace04_head_motion_strict_viewer]: trace subscribed: /planner/dialogue_act
+[INFO] [1779846370.539664101] [trace04_head_motion_strict_viewer]: trace subscribed: /nao_orchestrator/planner_dialogue_act
+[INFO] [1779846370.541889499] [trace04_head_motion_strict_viewer]: trace subscribed: /chatbot_llm/turn_trace
+[INFO] [1779846370.543939458] [trace04_head_motion_strict_viewer]: trace subscribed: /fake_skills/events
+[INFO] [1779846370.546114982] [trace04_head_motion_strict_viewer]: trace subscribed: /world_model/enriched_snapshot
+[INFO] [1779846370.548712176] [trace04_head_motion_strict_viewer]: trace subscribed: /world_model/enriched_text
+[INFO] [1779846370.552021985] [trace04_head_motion_strict_viewer]: trace subscribed (speech): /debug/nao_say/speech
+[INFO] [1779846370.555752552] [trace04_head_motion_strict_viewer]: trace subscribed (speech): /speech
+[1779846371.755] trace_0001 | planner_request | /planner/request
+  summary: goal=
+  payload:
+    {
+      "confidence": 1.0,
+      "data": null,
+      "data_raw": "goal_id:trace04_goal",
+      "intent": "planner_request",
+      "intent_type": "",
+      "person_id": "",
+      "priority": 180
+    }
+[1779846372.554] goal_1779846371756 | planner_dialogue_act | /planner/dialogue_act | flow=goal_id=goal_1779846371756,plan_id=plan_1779846372552
+  summary: /planner/dialogue_act {"act":"explain_failure","await_user_response":false,"context":{"plan_step_count":1,"result_payload":{},"status":"failed"},"goal_id":"goal_1779846371756","plan_id":"plan_1779846372552","plan_version":1,"priority":"normal","reason":"goal_text is empty and no valid intent or request is provided. Cannot proceed without a clear goal or task.","slots_needed":[],"text_hint":"goal_text is empty and no valid intent or request is provided. Cannot proceed without a clear goal or task."}
+  payload:
+    {
+      "act": "explain_failure",
+      "await_user_response": false,
+      "context": {
+        "plan_step_count": 1,
+        "result_payload": {},
+        "status": "failed"
+      },
+      "goal_id": "goal_1779846371756",
+      "plan_id": "plan_1779846372552",
+      "plan_version": 1,
+      "priority": "normal",
+      "reason": "goal_text is empty and no valid intent or request is provided. Cannot proceed without a clear goal or task.",
+      "slots_needed": [],
+      "text_hint": "goal_text is empty and no valid intent or request is provided. Cannot proceed without a clear goal or task."
+    }
+[1779846372.556] goal_1779846371756 | planner_dialogue_act | /nao_orchestrator/planner_dialogue_act | flow=goal_id=goal_1779846371756,plan_id=plan_1779846372552
+  summary: /nao_orchestrator/planner_dialogue_act {"act":"explain_failure","await_user_response":false,"context":{"plan_step_count":1,"result_payload":{},"status":"failed"},"goal_id":"goal_1779846371756","plan_id":"plan_1779846372552","plan_version":1,"priority":"normal","reason":"goal_text is empty and no valid intent or request is provided. Cannot proceed without a clear goal or task.","slots_needed":[],"text_hint":"goal_text is empty and no valid intent or request is provided. Cannot proceed without a clear goal or task."}
+  payload:
+    {
+      "act": "explain_failure",
+      "await_user_response": false,
+      "context": {
+        "plan_step_count": 1,
+        "result_payload": {},
+        "status": "failed"
+      },
+      "goal_id": "goal_1779846371756",
+      "plan_id": "plan_1779846372552",
+      "plan_version": 1,
+      "priority": "normal",
+      "reason": "goal_text is empty and no valid intent or request is provided. Cannot proceed without a clear goal or task.",
+      "slots_needed": [],
+      "text_hint": "goal_text is empty and no valid intent or request is provided. Cannot proceed without a clear goal or task."
+    }
+Traceback (most recent call last):
+  File "/home/ubuntu/ws/install/interaction_trace_viewer/lib/interaction_trace_viewer/trace_node", line 33, in <module>
+    sys.exit(load_entry_point('interaction-trace-viewer', 'console_scripts', 'trace_node')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/ws/build/interaction_trace_viewer/interaction_trace_viewer/trace_node.py", line 339, in main
+    rclpy.spin(node)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+    executor.spin_once()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 845, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 829, in _spin_once_impl
+    handler, entity, node = self.wait_for_ready_callbacks(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 799, in wait_for_ready_callbacks
+    return next(self._cb_iter)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 707, in _wait_for_ready_callbacks
+    raise ExternalShutdownException()
+rclpy.executors.ExternalShutdownException

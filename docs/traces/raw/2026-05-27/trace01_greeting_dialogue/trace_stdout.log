@@ -1,0 +1,67 @@
+[INFO] [1779846255.074999602] [trace01_greeting_dialogue_viewer]: trace subscribed: /rosout
+[INFO] [1779846255.076264711] [trace01_greeting_dialogue_viewer]: interaction_trace_viewer started
+[INFO] [1779846257.075961138] [trace01_greeting_dialogue_viewer]: trace subscribed: /planner/request
+[INFO] [1779846257.079168895] [trace01_greeting_dialogue_viewer]: trace subscribed: /intents
+[INFO] [1779846257.083850082] [trace01_greeting_dialogue_viewer]: trace subscribed: /planner/execution_feedback
+[INFO] [1779846257.086317784] [trace01_greeting_dialogue_viewer]: trace subscribed: /planner/dialogue_act
+[INFO] [1779846257.090455213] [trace01_greeting_dialogue_viewer]: trace subscribed: /nao_orchestrator/planner_dialogue_act
+[INFO] [1779846257.093373418] [trace01_greeting_dialogue_viewer]: trace subscribed: /world_model/enriched_snapshot
+[INFO] [1779846257.095574230] [trace01_greeting_dialogue_viewer]: trace subscribed: /world_model/enriched_text
+[INFO] [1779846257.098510980] [trace01_greeting_dialogue_viewer]: trace subscribed (speech): /debug/nao_say/speech
+[INFO] [1779846257.103085848] [trace01_greeting_dialogue_viewer]: trace subscribed (speech): /speech
+[INFO] [1779846259.047306367] [trace01_greeting_dialogue_viewer]: trace subscribed: /chatbot_llm/turn_trace
+[INFO] [1779846259.050331483] [trace01_greeting_dialogue_viewer]: trace subscribed: /fake_skills/events
+[1779846259.915] __default__:7 | chatbot_turn_trace | /chatbot_llm/turn_trace | flow=event_type=chatbot_turn_result,route=dialogue
+  summary: route=dialogue | intent=greet | source=llm_response_inferred_route
+  payload:
+    {
+      "direct_intent_count": 1,
+      "event_type": "chatbot_turn_result",
+      "intent": "greet",
+      "intent_confidence": 0.0,
+      "intent_source": "llm_response_inferred_route",
+      "planner_handoff_allowed": true,
+      "planner_handoff_published": false,
+      "planner_mode_enabled": true,
+      "route": "dialogue",
+      "turn_id": "__default__:7",
+      "user_intent": {
+        "type": "greet"
+      },
+      "verbal_ack": "Hello! How can I help you today?"
+    }
+[1779846259.931] trace_0001 | planner_output | /intents
+  summary: planner output
+  payload:
+    {
+      "confidence": 0.0,
+      "data": {
+        "ack_mode": "say",
+        "ack_text": "Hello! How can I help you today?",
+        "suggested_response": "Hello! How can I help you today?"
+      },
+      "data_raw": "{\"ack_text\":\"Hello! How can I help you today?\",\"ack_mode\":\"say\",\"suggested_response\":\"Hello! How can I help you today?\"}",
+      "intent": "__intent_greet__",
+      "intent_type": "",
+      "person_id": "",
+      "priority": 0
+    }
+Traceback (most recent call last):
+  File "/home/ubuntu/ws/install/interaction_trace_viewer/lib/interaction_trace_viewer/trace_node", line 33, in <module>
+    sys.exit(load_entry_point('interaction-trace-viewer', 'console_scripts', 'trace_node')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/ws/build/interaction_trace_viewer/interaction_trace_viewer/trace_node.py", line 339, in main
+    rclpy.spin(node)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+    executor.spin_once()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 845, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 829, in _spin_once_impl
+    handler, entity, node = self.wait_for_ready_callbacks(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 799, in wait_for_ready_callbacks
+    return next(self._cb_iter)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 707, in _wait_for_ready_callbacks
+    raise ExternalShutdownException()
+rclpy.executors.ExternalShutdownException

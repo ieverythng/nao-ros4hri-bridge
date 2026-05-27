@@ -1,0 +1,337 @@
+[INFO] [1779846309.151669089] [trace03_path_blocked_viewer]: trace subscribed: /rosout
+[INFO] [1779846309.152969494] [trace03_path_blocked_viewer]: interaction_trace_viewer started
+[INFO] [1779846311.138827217] [trace03_path_blocked_viewer]: trace subscribed: /planner/request
+[INFO] [1779846311.143527429] [trace03_path_blocked_viewer]: trace subscribed: /intents
+[INFO] [1779846311.150582542] [trace03_path_blocked_viewer]: trace subscribed: /planner/execution_feedback
+[INFO] [1779846311.154617699] [trace03_path_blocked_viewer]: trace subscribed: /planner/dialogue_act
+[INFO] [1779846311.157602850] [trace03_path_blocked_viewer]: trace subscribed: /nao_orchestrator/planner_dialogue_act
+[INFO] [1779846311.161402687] [trace03_path_blocked_viewer]: trace subscribed: /chatbot_llm/turn_trace
+[INFO] [1779846311.164707015] [trace03_path_blocked_viewer]: trace subscribed: /fake_skills/events
+[INFO] [1779846311.167190696] [trace03_path_blocked_viewer]: trace subscribed: /world_model/enriched_snapshot
+[INFO] [1779846311.169531390] [trace03_path_blocked_viewer]: trace subscribed: /world_model/enriched_text
+[INFO] [1779846311.172137631] [trace03_path_blocked_viewer]: trace subscribed (speech): /debug/nao_say/speech
+[INFO] [1779846311.175005833] [trace03_path_blocked_viewer]: trace subscribed (speech): /speech
+[1779846311.541] trace03_turn | planner_request | /planner/request
+  summary: goal=
+  payload:
+    {
+      "confidence": 1.0,
+      "data": {
+        "goal_id": "trace03_goal",
+        "goal_text": "navigate to the kitchen and report back",
+        "kind": "new_goal",
+        "normalized_intents": [
+          "navigate_to"
+        ],
+        "request_kind": "new_goal",
+        "scene_targets": [
+          "kitchen"
+        ],
+        "source": "trace_probe",
+        "turn_id": "trace03_turn"
+      },
+      "data_raw": "{\"goal_id\":\"trace03_goal\",\"turn_id\":\"trace03_turn\",\"goal_text\":\"navigate to the kitchen and report back\",\"kind\":\"new_goal\",\"request_kind\":\"new_goal\",\"source\":\"trace_probe\",\"normalized_intents\":[\"navigate_to\"],\"scene_targets\":[\"kitchen\"]}",
+      "intent": "planner_request",
+      "intent_type": "",
+      "person_id": "",
+      "priority": 180
+    }
+[1779846313.170] trace03_goal | planner_output | /intents
+  summary: planner output
+  payload:
+    {
+      "confidence": 0.0,
+      "data": {
+        "ack_mode": "",
+        "ack_text": "",
+        "goal_id": "trace03_goal",
+        "goal_token": "trace03_goal",
+        "grounded_context": {
+          "knowledge_snapshot": {},
+          "scene_summary": {},
+          "world_model_snapshot": {},
+          "world_model_text": ""
+        },
+        "plan": {
+          "communication_policy": {
+            "emit_acknowledge": false,
+            "emit_completion": true,
+            "emit_failure": true,
+            "emit_progress": false
+          },
+          "communication_policy_source": "planner_engine:plan",
+          "failure_reason": "",
+          "goal_id": "trace03_goal",
+          "goal_token": "trace03_goal",
+          "plan_id": "plan_1779846313161",
+          "plan_version": 1,
+          "replan_hint": "",
+          "retry_budget": 2,
+          "scene_targets": [
+            "kitchen"
+          ],
+          "status": "planning",
+          "steps": [
+            {
+              "args": {
+                "target": "kitchen"
+              },
+              "id": "step_1",
+              "name": "navigate_to",
+              "on_failure": "ask_user",
+              "requires": [],
+              "retry_budget": 2,
+              "type": "skill"
+            },
+            {
+              "args": {
+                "target": "kitchen"
+              },
+              "id": "step_2",
+              "name": "scan",
+              "on_failure": "ask_user",
+              "requires": [
+                "navigate_to"
+              ],
+              "retry_budget": 1,
+              "type": "skill"
+            },
+            {
+              "args": {
+                "summary_text": "I have navigated to the kitchen and confirmed the environment."
+              },
+              "id": "step_3",
+              "name": "report_result",
+              "on_failure": "ask_user",
+              "requires": [
+                "scan"
+              ],
+              "retry_budget": 1,
+              "type": "skill"
+            }
+          ],
+          "user_facing_reason": "",
+          "validation_status": "valid"
+        },
+        "scene_targets": [
+          "kitchen"
+        ]
+      },
+      "data_raw": "{\"ack_mode\":\"\",\"ack_text\":\"\",\"goal_id\":\"trace03_goal\",\"goal_token\":\"trace03_goal\",\"grounded_context\":{\"knowledge_snapshot\":{},\"scene_summary\":{},\"world_model_snapshot\":{},\"world_model_text\":\"\"},\"plan\":{\"communication_policy\":{\"emit_acknowledge\":false,\"emit_completion\":true,\"emit_failure\":true,\"emit_progress\":false},\"communication_policy_source\":\"planner_engine:plan\",\"failure_reason\":\"\",\"goal_id\":\"trace03_goal\",\"goal_token\":\"trace03_goal\",\"plan_id\":\"plan_1779846313161\",\"plan_version\":1,\"replan_hint\":\"\",\"retry_budget\":2,\"scene_targets\":[\"kitchen\"],\"status\":\"planning\",\"steps\":[{\"args\":{\"target\":\"kitchen\"},\"id\":\"step_1\",\"name\":\"navigate_to\",\"on_failure\":\"ask_user\",\"requires\":[],\"retry_budget\":2,\"type\":\"skill\"},{\"args\":{\"target\":\"kitchen\"},\"id\":\"step_2\",\"name\":\"scan\",\"on_failure\":\"ask_user\",\"requires\":[\"navigate_to\"],\"retry_budget\":1,\"type\":\"skill\"},{\"args\":{\"summary_text\":\"I have navigated to the kitchen and confirmed the environment.\"},\"id\":\"step_3\",\"name\":\"report_result\",\"on_failure\":\"ask_user\",\"requires\":[\"scan\"],\"retry_budget\":1,\"type\":\"skill\"}],\"user_facing_reason\":\"\",\"validation_status\":\"valid\"},\"scene_targets\":[\"kitchen\"]}",
+      "intent": "raw_user_input",
+      "intent_type": "",
+      "person_id": "",
+      "priority": 0
+    }
+[1779846313.172] trace03_goal | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=trace03_goal,plan_id=plan_1779846313161,event_type=plan_accepted
+  summary: accepted
+  payload:
+    {
+      "blocking": false,
+      "event_type": "plan_accepted",
+      "goal_id": "trace03_goal",
+      "goal_token": "trace03_goal",
+      "intent": "raw_user_input",
+      "needs_user_input": false,
+      "plan_id": "plan_1779846313161",
+      "plan_version": 1,
+      "reason": "",
+      "replan_hint": "",
+      "result_payload": {},
+      "result_summary": "",
+      "retry_budget": 2,
+      "scene_targets": [
+        "kitchen"
+      ],
+      "source": "planner_llm",
+      "status": "accepted",
+      "timestamp_sec": 1779846313.171,
+      "unmet_preconditions": [],
+      "validation_errors": [],
+      "validation_status": "valid"
+    }
+[1779846313.174] trace03_goal | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=trace03_goal,plan_id=plan_1779846313161,event_type=step_started,step=navigate_to
+  summary: running
+  payload:
+    {
+      "blocking": false,
+      "event_type": "step_started",
+      "goal_id": "trace03_goal",
+      "goal_token": "trace03_goal",
+      "intent": "raw_user_input",
+      "needs_user_input": false,
+      "plan_id": "plan_1779846313161",
+      "plan_version": 1,
+      "reason": "",
+      "replan_hint": "",
+      "result_payload": {},
+      "result_summary": "",
+      "retry_budget": 2,
+      "scene_targets": [
+        "kitchen"
+      ],
+      "source": "planner_llm",
+      "status": "running",
+      "step": {
+        "id": "step_1",
+        "name": "navigate_to",
+        "on_failure": "ask_user",
+        "requires": [],
+        "retry_budget": 2,
+        "type": "skill"
+      },
+      "timestamp_sec": 1779846313.173,
+      "unmet_preconditions": [],
+      "validation_errors": [],
+      "validation_status": "valid"
+    }
+[1779846313.180] trace_0001 | skill_result | /fake_skills/events | flow=event_type=fake_skill_started
+  summary: navigate_to | fake_skill_started
+  payload:
+    {
+      "event_type": "fake_skill_started",
+      "payload": {
+        "args": {
+          "max_sweeps": 0,
+          "target": "kitchen",
+          "target_kind": ""
+        },
+        "scenario_id": "path_blocked"
+      },
+      "skill": "navigate_to"
+    }
+[1779846314.190] trace_0001 | skill_result | /fake_skills/events | flow=event_type=fake_skill_completed
+  summary: navigate_to | failed | I could not navigate to kitchen.
+  payload:
+    {
+      "event_type": "fake_skill_completed",
+      "failure": {
+        "code": "path_blocked",
+        "message": "The simulated path to the target is blocked.",
+        "recoverable": true,
+        "suggested_recovery": "ask_user_for_alternative_route"
+      },
+      "payload": {
+        "failure": {
+          "code": "path_blocked",
+          "message": "The simulated path to the target is blocked.",
+          "recoverable": true,
+          "suggested_recovery": "ask_user_for_alternative_route"
+        },
+        "global_mode": "scenario",
+        "mode_source": "scenario_default",
+        "result_mode": "path_blocked",
+        "status": "failed",
+        "summary_text": "I could not navigate to kitchen."
+      },
+      "result_mode": "path_blocked",
+      "skill": "navigate_to",
+      "status": "failed",
+      "summary_text": "I could not navigate to kitchen."
+    }
+[1779846314.193] trace03_goal | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=trace03_goal,plan_id=plan_1779846313161,event_type=step_failed,step=navigate_to
+  summary: failed | I could not navigate to kitchen.
+  payload:
+    {
+      "blocking": true,
+      "event_type": "step_failed",
+      "goal_id": "trace03_goal",
+      "goal_token": "trace03_goal",
+      "intent": "raw_user_input",
+      "needs_user_input": true,
+      "plan_id": "plan_1779846313161",
+      "plan_version": 1,
+      "reason": "I could not navigate to kitchen.",
+      "replan_hint": "",
+      "result_payload": {},
+      "result_summary": "",
+      "retry_budget": 2,
+      "scene_targets": [
+        "kitchen"
+      ],
+      "source": "planner_llm",
+      "status": "failed",
+      "step": {
+        "id": "step_1",
+        "name": "navigate_to",
+        "on_failure": "ask_user",
+        "requires": [],
+        "retry_budget": 2,
+        "type": "skill"
+      },
+      "timestamp_sec": 1779846314.192,
+      "unmet_preconditions": [],
+      "validation_errors": [],
+      "validation_status": "valid"
+    }
+[1779846314.196] trace03_goal | planner_dialogue_act | /planner/dialogue_act | flow=goal_id=trace03_goal,plan_id=plan_1779846313161
+  summary: /planner/dialogue_act {"act":"ask_clarification","await_user_response":true,"context":{"goal_text":"navigate to the kitchen and report back","plan_step_count":3,"requested_intents":["navigate_to"],"result_payload":{},"scene_targets":["kitchen"],"status":"waiting_user"},"goal_id":"trace03_goal","plan_id":"plan_1779846313161","plan_version":1,"priority":"normal","reason":"I could not navigate to kitchen.","slots_needed":[],"text_hint":"I could not navigate to kitchen."}
+  payload:
+    {
+      "act": "ask_clarification",
+      "await_user_response": true,
+      "context": {
+        "goal_text": "navigate to the kitchen and report back",
+        "plan_step_count": 3,
+        "requested_intents": [
+          "navigate_to"
+        ],
+        "result_payload": {},
+        "scene_targets": [
+          "kitchen"
+        ],
+        "status": "waiting_user"
+      },
+      "goal_id": "trace03_goal",
+      "plan_id": "plan_1779846313161",
+      "plan_version": 1,
+      "priority": "normal",
+      "reason": "I could not navigate to kitchen.",
+      "slots_needed": [],
+      "text_hint": "I could not navigate to kitchen."
+    }
+[1779846314.197] trace03_goal | planner_dialogue_act | /nao_orchestrator/planner_dialogue_act | flow=goal_id=trace03_goal,plan_id=plan_1779846313161
+  summary: /nao_orchestrator/planner_dialogue_act {"act":"ask_clarification","await_user_response":true,"context":{"goal_text":"navigate to the kitchen and report back","plan_step_count":3,"requested_intents":["navigate_to"],"result_payload":{},"scene_targets":["kitchen"],"status":"waiting_user"},"goal_id":"trace03_goal","plan_id":"plan_1779846313161","plan_version":1,"priority":"normal","reason":"I could not navigate to kitchen.","slots_needed":[],"text_hint":"I could not navigate to kitchen."}
+  payload:
+    {
+      "act": "ask_clarification",
+      "await_user_response": true,
+      "context": {
+        "goal_text": "navigate to the kitchen and report back",
+        "plan_step_count": 3,
+        "requested_intents": [
+          "navigate_to"
+        ],
+        "result_payload": {},
+        "scene_targets": [
+          "kitchen"
+        ],
+        "status": "waiting_user"
+      },
+      "goal_id": "trace03_goal",
+      "plan_id": "plan_1779846313161",
+      "plan_version": 1,
+      "priority": "normal",
+      "reason": "I could not navigate to kitchen.",
+      "slots_needed": [],
+      "text_hint": "I could not navigate to kitchen."
+    }
+Traceback (most recent call last):
+  File "/home/ubuntu/ws/install/interaction_trace_viewer/lib/interaction_trace_viewer/trace_node", line 33, in <module>
+    sys.exit(load_entry_point('interaction-trace-viewer', 'console_scripts', 'trace_node')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/ws/build/interaction_trace_viewer/interaction_trace_viewer/trace_node.py", line 339, in main
+    rclpy.spin(node)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+    executor.spin_once()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 845, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 829, in _spin_once_impl
+    handler, entity, node = self.wait_for_ready_callbacks(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 799, in wait_for_ready_callbacks
+    return next(self._cb_iter)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 707, in _wait_for_ready_callbacks
+    raise ExternalShutdownException()
+rclpy.executors.ExternalShutdownException

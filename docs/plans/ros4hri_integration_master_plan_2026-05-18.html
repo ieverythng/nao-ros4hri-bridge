@@ -186,18 +186,59 @@
 <ul>
 <li>automated tests for DAG integrity + decomposition validation run green.</li>
 </ul>
-<h3>AB-F4: P3 Prompt + Nested Registry Updates (P3)</h3>
+<h3>AB-F4: Prompt Hardening + Nested Registry Updates (P0)</h3>
+<p>Prompt hardening is now a critical seam track (not backlog-only), because route misclassification can trigger duplicate planner/chatbot utterances.</p>
+<p><strong>Phase status (SkillOpt baseline: 2026-05-27)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F4-A Chatbot route hardening (<code>dialogue</code> vs <code>knowledge_query</code> vs <code>execution</code>)</td>
+<td><strong>DONE</strong></td>
+<td>Greeting/social turns now explicitly default to dialogue unless action is explicit; execution acknowledgements are constrained to intent-to-act wording.</td>
+</tr>
+<tr>
+<td>F4-B Planner prompt hardening for social/greeting spillover</td>
+<td><strong>DONE</strong></td>
+<td>Planner prompt now forbids inferring <code>wave_greet</code> from greeting-only text and requires <code>decision=clarify</code> for social-only requests without explicit action.</td>
+</tr>
+<tr>
+<td>F4-C Prompt-pack fallback parity</td>
+<td><strong>DONE</strong></td>
+<td>Equivalent hardening added to runtime fallback prompt defaults so behavior remains stable when YAML overrides are missing.</td>
+</tr>
+<tr>
+<td>F4-D Live seam validation in rebuilt container</td>
+<td><strong>MISSING</strong></td>
+<td>Must run full stack and verify first-turn greeting does not produce planner execution or duplicate speech.</td>
+</tr>
+<tr>
+<td>F4-E Prompt mutation cadence and regression suite</td>
+<td><strong>IN PROGRESS</strong></td>
+<td>Continue bounded SkillOpt iterations using trace-backed train/holdout cases.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Prompt-hardening references used</strong></p>
 <ul>
-<li>tighten planner/chatbot routing prompts and response schemas for non-execution turns.</li>
-<li>publish structured chatbot routing trace events for dialogue vs planner handoff visibility.</li>
-<li>enforce canonical registry projection sync across planner fallback config and docs mirrors via pre-commit checks.</li>
-<li>route planner dialogue-act user wording through <code>chatbot_llm</code> by default, with direct wording only as explicit compatibility mode.</li>
-<li>harden planner-mode KB visibility routing so non-action perception checks prefer <code>knowledge_query</code>.</li>
+<li><code>docs/planner_status.md</code> (known weak spot: occasional execution over-routing)</li>
+<li><code>docs/architecture/demo_stack_seam_contract_2026-05-26.md</code> (ownership + duplicate-speech guardrails)</li>
+<li><code>docs/launch_profiles.md</code> (planner/dialogue wording mode and planner ingress args)</li>
+<li><code>src/chatbot_llm/test/test_turn_engine.py</code> (greeting/KB/execution route expectations)</li>
+<li><code>src/planner_llm/test/test_planner_engine.py</code> (planner output-contract enforcement)</li>
+<li><code>docs/artifacts/prompt_hardening_skillopt_2026-05-27.md</code> (iteration log + acceptance gate)</li>
 </ul>
 <p><strong>Exit criteria</strong></p>
 <ul>
 <li>no drift between canonical AB registry and projected planner/docs registry surfaces.</li>
-<li>trace viewer can show planner/execution plus chatbot routing outcomes from structured payloads.</li>
+<li>trace viewer shows chatbot route, planner request, planner decision, and final user-facing speech with one authority per turn.</li>
+<li>first-turn social greeting remains <code>dialogue</code> in planner mode (no planner request publish).</li>
 <li>planner clarification/failure/completion user-facing wording remains chatbot-owned in live launch profiles.</li>
 </ul>
 <h2>5. Active Track: Observability Dashboard Rollout</h2>
