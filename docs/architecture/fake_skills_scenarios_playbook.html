@@ -78,92 +78,133 @@
 <body>
 <h1>Fake Skills Scenarios Playbook</h1>
 <h2>Purpose</h2>
-<p>This is the operator/developer playbook for running fake skill scenarios with</p>
-<p>deterministic controls and trace visibility in the same container session.</p>
-<h2>What Is Controlled</h2>
-<p><code>fake_skill_server</code> controls skill outcomes for:</p>
-<ul>
-<li><code>find_object</code></li>
-<li><code>navigate_to</code></li>
-<li><code>walk_to</code></li>
-<li>other fake-skill endpoints exposed by the package</li>
-</ul>
-<p>Policy inputs are read from:</p>
-<ul>
-<li>scenario YAML (<code>fake_skill_scenario_file</code>)</li>
-<li>active named scenario (<code>active_scenario_id</code>)</li>
-<li>global policy mode (<code>global_mode</code>)</li>
-<li>per-skill mode overrides (<code>mode_overrides_json</code>)</li>
-<li>optional per-request <code>scenario_id</code> and <code>scenario</code> override payloads</li>
-</ul>
-<h2>Launch-Time Controls</h2>
+<p>Operator/developer playbook for running fake-skill scenarios with deterministic controls and copy-paste CLI commands.</p>
+<h2>Fastest Path (CLI Only)</h2>
+<p>If you only want launch params + live <code>ros2 param set</code> controls, use this section.</p>
+<h3>Launch-Time Parameter Set</h3>
 <pre><code class="language-bash">ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   start_fake_skills:=true \
-  fake_skill_active_scenario_id:=path_blocked \
   fake_skill_global_mode:=scenario \
-  fake_skill_random_failure_prob:=0.35 \
-  fake_skill_mode_overrides_json:=&#x27;{}&#x27;</code></pre>
-<h2>Live Controls (No Relaunch Required)</h2>
-<p>Inspect:</p>
-<pre><code class="language-bash">ros2 param get /fake_skill_server available_scenario_ids
-ros2 param get /fake_skill_server active_scenario_id
-ros2 param get /fake_skill_server global_mode
-ros2 param get /fake_skill_server mode_overrides_json</code></pre>
-<p>Switch scenario:</p>
-<pre><code class="language-bash">ros2 param set /fake_skill_server active_scenario_id ambiguous_cup</code></pre>
-<p>Reset named scenario:</p>
-<pre><code class="language-bash">ros2 param set /fake_skill_server active_scenario_id &quot;&quot;</code></pre>
-<p>Force policy mode:</p>
-<pre><code class="language-bash">ros2 param set /fake_skill_server global_mode always_fail
+  fake_skill_active_scenario_id:= \
+  fake_skill_random_failure_prob:=0.50 \
+  fake_skill_mode_overrides_json:=&#x27;{}&#x27; \
+  head_motion_allow_open_loop_without_joint_state:=true \
+  head_motion_assume_success_on_convergence_timeout:=true</code></pre>
+<h3>Live Runtime Parameter Set (No Relaunch)</h3>
+<pre><code class="language-bash"># fake_skill_server
+ros2 param set /fake_skill_server global_mode scenario
+ros2 param set /fake_skill_server active_scenario_id &quot;&quot;
+ros2 param set /fake_skill_server random_failure_prob 0.50
+ros2 param set /fake_skill_server mode_overrides_json &#x27;{}&#x27;
+
+# head_motion_skill_server (open-loop enabled for no-robot testing)
+ros2 param set /head_motion_skill_server allow_open_loop_without_joint_state true
+ros2 param set /head_motion_skill_server assume_success_on_convergence_timeout true</code></pre>
+<h2>Available Choices (Copy/Paste)</h2>
+<h3><code>/fake_skill_server</code> Global Mode</h3>
+<pre><code class="language-bash">ros2 param set /fake_skill_server global_mode scenario
 ros2 param set /fake_skill_server global_mode always_success
-ros2 param set /fake_skill_server global_mode random_seeded
-ros2 param set /fake_skill_server random_failure_prob 0.35</code></pre>
-<p>Per-skill override:</p>
-<pre><code class="language-bash">ros2 param set /fake_skill_server mode_overrides_json &#x27;{&quot;find_object&quot;:&quot;always_fail&quot;}&#x27;</code></pre>
-<p>Semi-interactive selector:</p>
-<pre><code class="language-bash">./scripts/fake_skill_scenario_menu.sh /fake_skill_server</code></pre>
-<h2>Scenario Precedence Model</h2>
-<p>Outcome mode is resolved in this order:</p>
-<ol>
-<li>Request-level <code>scenario</code> override (<code>evidence_policy</code> payload)</li>
-<li>Request-level <code>scenario_id</code></li>
-<li>Runtime <code>mode_overrides_json</code></li>
-<li>Runtime <code>global_mode</code></li>
-<li>Scenario/default YAML skill mode</li>
-</ol>
-<h2>Quick Action-Level Probes</h2>
-<p><code>find_object</code> probe:</p>
-<pre><code class="language-bash">ros2 action send_goal /skill/fake/find_object communication_skills/action/ScanScene \
-  &quot;{target: &#x27;apple&#x27;, target_kind: &#x27;object&#x27;, max_sweeps: 1}&quot;</code></pre>
-<p><code>navigate_to</code> probe:</p>
-<pre><code class="language-bash">ros2 action send_goal /skill/fake/navigate_to communication_skills/action/ScanScene \
-  &quot;{target: &#x27;kitchen&#x27;, target_kind: &#x27;location&#x27;, max_sweeps: 1}&quot;</code></pre>
-<h2>Trace Viewer Pairing (JSON-First)</h2>
-<p>Run viewer in a separate shell:</p>
+ros2 param set /fake_skill_server global_mode always_fail
+ros2 param set /fake_skill_server global_mode every_other
+ros2 param set /fake_skill_server global_mode random_seeded</code></pre>
+<h3><code>/fake_skill_server</code> Scenarios (Current Stack)</h3>
+<p>Read current list:</p>
+<pre><code class="language-bash">ros2 param get /fake_skill_server available_scenario_ids</code></pre>
+<p>Current IDs:</p>
+<ul>
+<li><code>ambiguous_cup</code></li>
+<li><code>area_person_found</code></li>
+<li><code>head_motion_strict</code></li>
+<li><code>path_blocked</code></li>
+<li><code>social_wave_unavailable</code></li>
+</ul>
+<p>Set/reset:</p>
+<pre><code class="language-bash">ros2 param set /fake_skill_server active_scenario_id ambiguous_cup
+ros2 param set /fake_skill_server active_scenario_id area_person_found
+ros2 param set /fake_skill_server active_scenario_id head_motion_strict
+ros2 param set /fake_skill_server active_scenario_id path_blocked
+ros2 param set /fake_skill_server active_scenario_id social_wave_unavailable
+ros2 param set /fake_skill_server active_scenario_id &quot;&quot;</code></pre>
+<h3><code>/fake_skill_server</code> Skill-Level Override Map</h3>
+<pre><code class="language-bash"># fail only find_object regardless of scenario/global mode
+ros2 param set /fake_skill_server mode_overrides_json &#x27;{&quot;find_object&quot;:&quot;always_fail&quot;}&#x27;
+
+# mix policies by skill
+ros2 param set /fake_skill_server mode_overrides_json &#x27;{&quot;find_object&quot;:&quot;always_fail&quot;,&quot;navigate_to&quot;:&quot;always_success&quot;,&quot;wave_greet&quot;:&quot;always_fail&quot;}&#x27;</code></pre>
+<h3><code>/head_motion_skill_server</code> Open-Loop Controls</h3>
+<p>Default (good for no-robot testing):</p>
+<pre><code class="language-bash">ros2 param set /head_motion_skill_server allow_open_loop_without_joint_state true
+ros2 param set /head_motion_skill_server assume_success_on_convergence_timeout true</code></pre>
+<p>Strict (disable open-loop fallback):</p>
+<pre><code class="language-bash">ros2 param set /head_motion_skill_server allow_open_loop_without_joint_state false
+ros2 param set /head_motion_skill_server assume_success_on_convergence_timeout false</code></pre>
+<h3>Quick Interactive Menu</h3>
+<pre><code class="language-bash">./scripts/fake_skill_scenario_menu.sh /fake_skill_server /head_motion_skill_server</code></pre>
+<h2>Scenario Effect Matrix</h2>
+<table><thead><tr>
+<th>Scenario ID</th>
+<th>Main Effect</th>
+</tr></thead><tbody>
+<tr>
+<td><code>ambiguous_cup</code></td>
+<td><code>find_object</code> returns ambiguous</td>
+</tr>
+<tr>
+<td><code>area_person_found</code></td>
+<td><code>inspect_area</code> returns person found</td>
+</tr>
+<tr>
+<td><code>head_motion_strict</code></td>
+<td>no fake-skill override; use with head-motion strict flags (open-loop off)</td>
+</tr>
+<tr>
+<td><code>path_blocked</code></td>
+<td><code>navigate_to</code> returns path blocked</td>
+</tr>
+<tr>
+<td><code>social_wave_unavailable</code></td>
+<td><code>wave_greet</code> returns motion unavailable</td>
+</tr>
+</tbody></table>
+<h2>Planner/Dialogue Seam Checks</h2>
+<p>Verify the critical seam contract:</p>
+<pre><code class="language-bash">ros2 param get /dialogue_manager planner_dialogue_act_topic
+ros2 param get /dialogue_manager planner_dialogue_wording_mode
+ros2 param get /dialogue_manager planner_completion_wording_mode
+ros2 param get /nao_orchestrator planner_dialogue_act_topic
+ros2 param get /nao_orchestrator planner_dialogue_relay_topic</code></pre>
+<p>Expected:</p>
+<ul>
+<li><code>dialogue_manager.planner_dialogue_act_topic = /nao_orchestrator/planner_dialogue_act</code></li>
+<li><code>dialogue_manager.planner_dialogue_wording_mode = direct</code></li>
+<li><code>dialogue_manager.planner_completion_wording_mode = direct</code></li>
+<li><code>nao_orchestrator.planner_dialogue_act_topic = /planner/dialogue_act</code></li>
+<li><code>nao_orchestrator.planner_dialogue_relay_topic = /nao_orchestrator/planner_dialogue_act</code></li>
+</ul>
+<h2>Investigation Note: Why &quot;Hey Pop!&quot; Triggered Planner + Wave</h2>
+<p>From live logs in the rebuilt container:</p>
+<ul>
+<li><code>chatbot_llm</code> classified first turn as execution:</li>
+<li><code>ROUTE_RESOLVED | route=execution intent=greet</code></li>
+<li>request was forwarded through orchestrator gate:</li>
+<li><code>Planner gate forwarded request | goal_id=goal_default___1</code></li>
+<li><code>planner_llm</code> received <code>intents=[&#x27;greeting&#x27;,&#x27;greet&#x27;]</code> and planned:</li>
+<li><code>step=skill/wave_greet</code></li>
+<li>then <code>step=skill/report_result</code></li>
+<li><code>dialogue_manager</code> spoke both:</li>
+<li>initial chatbot response (<code>&quot;Hello! How can I help you today?&quot;</code>)</li>
+<li>planner completion (<code>&quot;I have greeted you with a wave...&quot;</code>)</li>
+</ul>
+<p>That specific first turn was not random: planner wave came from greeting being routed as execution.</p>
+<h2>Trace Pairing</h2>
 <pre><code class="language-bash">source /opt/ros/jazzy/setup.bash
 source /home/ubuntu/ws/install/setup.bash
-pkill -f interaction_trace_viewer.trace_node || true
-ros2 run interaction_trace_viewer trace_node --ros-args \
-  -p compact_mode:=false \
-  -p include_raw_payloads:=true \
-  -p include_channels_csv:=&quot;planner/request,intents,planner/execution_feedback,planner/dialogue_act,chatbot_llm/turn_trace,fake_skills/events,world_model/enriched_snapshot,world_model/enriched_text&quot; \
-  -p include_event_types_csv:=&quot;planner_request,planner_output,execution_feedback,planner_dialogue_act,chatbot_turn_trace,skill_result,kb_snapshot&quot;</code></pre>
-<h2>Troubleshooting</h2>
-<ul>
-<li>If <code>available_scenario_ids</code> is empty:</li>
-<li>verify <code>fake_skill_scenario_file</code> path and package share installation.</li>
-<li>If params cannot be read:</li>
-<li>verify ROS domain and sourced workspace in that shell.</li>
-<li>If action goals fail immediately:</li>
-<li>check fake skill server node state and action server availability.</li>
-<li>If duplicate speech appears:</li>
-<li>verify <code>scan_report_after_success=false</code> for chatbot-owned completion wording.</li>
-</ul>
+scripts/run_interaction_trace_viewer_compact_json.sh</code></pre>
 <h2>Related Contracts</h2>
 <ul>
 <li><code>docs/architecture/skill_registry_contract.md</code></li>
 <li><code>docs/architecture/demo_stack_seam_contract_2026-05-26.md</code></li>
-<li><code>docs/plans/ros4hri_integration_master_plan_2026-05-18.md</code></li>
+<li><code>docs/plans/ros4hri_integration_master_plan_2026-05-18.html</code></li>
 </ul>
 </body>
 </html>

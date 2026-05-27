@@ -36,6 +36,26 @@ if [[ -f install/setup.bash ]]; then
 fi
 set -u
 
+# Keep the active virtualenv site-packages ahead of ROS underlay PYTHONPATH.
+# This allows project-local Python overlays (for example, pinned chatbot_msgs
+# compatibility shims) to take precedence in test execution.
+if [[ "${PYTHON_BIN}" == "${REPO_ROOT}/.venv/bin/python3" ]]; then
+  VENV_SITE_PACKAGES="$("${PYTHON_BIN}" - <<'PY'
+import site
+
+paths = [p for p in site.getsitepackages() if "site-packages" in p]
+print(paths[0] if paths else "")
+PY
+)"
+  if [[ -n "${VENV_SITE_PACKAGES}" ]]; then
+    export PYTHONPATH="${VENV_SITE_PACKAGES}:${PYTHONPATH:-}"
+  fi
+  CHATBOT_MSGS_COMPAT_LIB_DIR="${REPO_ROOT}/.venv/lib/chatbot_msgs_v3_lib"
+  if [[ -d "${CHATBOT_MSGS_COMPAT_LIB_DIR}" ]]; then
+    export LD_LIBRARY_PATH="${CHATBOT_MSGS_COMPAT_LIB_DIR}:${LD_LIBRARY_PATH:-}"
+  fi
+fi
+
 have_python_module() {
   "${PYTHON_BIN}" - "$1" <<'PY'
 import importlib.util

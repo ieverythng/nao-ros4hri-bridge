@@ -140,6 +140,15 @@ RUN bash -lc 'source /opt/ros/jazzy/setup.bash && \
     done; \
     colcon build --symlink-install --packages-up-to "${rebuild_packages[@]}"'
 
+# launch_tui ships via SocialMinds apt and evolves quickly; refresh it on overlay
+# rebuilds even when an older copy is already baked into the base image.
+RUN bash -lc 'set -euo pipefail; \
+    apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update && \
+    apt-get install -y --no-install-recommends socialminds-ros-jazzy-launch-tui && \
+    rm -rf /var/lib/apt/lists/*; \
+    python3 -m pip install --no-cache-dir --break-system-packages --ignore-installed \
+      "textual>=0.50,<1"'
+
 # Keep entrypoint from this repo for deterministic sourcing behavior.
 COPY docker/ros_entrypoint.sh /
 RUN chmod +x /ros_entrypoint.sh

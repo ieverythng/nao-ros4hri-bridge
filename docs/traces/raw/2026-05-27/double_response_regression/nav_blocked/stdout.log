@@ -1,0 +1,56 @@
+[INFO] [1779889010.036257045] [interaction_trace_viewer]: trace subscribed: /nao_orchestrator/planner_dialogue_act
+[INFO] [1779889010.038454187] [interaction_trace_viewer]: trace subscribed: /fake_skills/events
+[INFO] [1779889010.040179204] [interaction_trace_viewer]: trace subscribed: /rosout
+[INFO] [1779889010.041056741] [interaction_trace_viewer]: interaction_trace_viewer started
+[INFO] [1779889012.142621848] [interaction_trace_viewer]: trace subscribed: /planner/request
+[INFO] [1779889012.145913524] [interaction_trace_viewer]: trace subscribed: /intents
+[INFO] [1779889012.153957638] [interaction_trace_viewer]: trace subscribed: /planner/execution_feedback
+[INFO] [1779889012.156111710] [interaction_trace_viewer]: trace subscribed: /planner/dialogue_act
+[INFO] [1779889012.158516062] [interaction_trace_viewer]: trace subscribed: /chatbot_llm/turn_trace
+[INFO] [1779889012.160775752] [interaction_trace_viewer]: trace subscribed: /world_model/enriched_snapshot
+[INFO] [1779889012.162774723] [interaction_trace_viewer]: trace subscribed: /world_model/enriched_text
+[INFO] [1779889012.165474559] [interaction_trace_viewer]: trace subscribed (speech): /debug/nao_say/speech
+[INFO] [1779889012.168614861] [interaction_trace_viewer]: trace subscribed (speech): /speech
+[1779889016.225] __default__:4 | chatbot_turn_trace | /chatbot_llm/turn_trace | flow=event_type=chatbot_turn_result,route=execution
+  route=execution | intent=navigate_to | source=llm_response_inferred_route
+[1779889016.226] __default__:4 | planner_request | /planner/request
+  goal=
+[1779889016.238] trace_0001 | robot_speech | /debug/nao_say/speech
+  /debug/nao_say/speech {"text":"Sure, I will navigate to the kitchen."}
+[1779889016.241] trace_0002 | robot_speech | /speech
+  /speech {"text":"Sure, I will navigate to the kitchen."}
+[1779889017.116] goal_default___4 | planner_output | /intents
+  planner output
+[1779889017.118] goal_default___4 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___4,plan_id=plan_1779889017113,event_type=plan_accepted
+  accepted
+[1779889017.118] goal_default___4 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___4,plan_id=plan_1779889017113,event_type=step_started,step=navigate_to
+  running
+[1779889018.158] goal_default___4 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___4,plan_id=plan_1779889017113,event_type=step_failed,step=navigate_to
+  failed | I could not navigate to kitchen.
+[1779889018.159] goal_default___4 | planner_dialogue_act | /planner/dialogue_act | flow=goal_id=goal_default___4,plan_id=plan_1779889017113
+  /planner/dialogue_act {"act":"ask_clarification","await_user_response":true,"context":{"goal_text":"Navigate to the kitchen.","plan_step_count":1,"requested_intents":["navigate_to"],"result_payload":{},"status":"waiting_user"},"goal_id":"goal_default___4","plan_id":"plan_1779889017113","plan_version":1,"priority":"normal","reason":"I could not navigate to kitchen.","slots_needed":[],"text_hint":"I could not navigate to kitchen."}
+[1779889018.161] goal_default___4 | planner_dialogue_act | /nao_orchestrator/planner_dialogue_act | flow=goal_id=goal_default___4,plan_id=plan_1779889017113
+  /nao_orchestrator/planner_dialogue_act {"act":"ask_clarification","await_user_response":true,"context":{"goal_text":"Navigate to the kitchen.","plan_step_count":1,"requested_intents":["navigate_to"],"result_payload":{},"status":"waiting_user"},"goal_id":"goal_default___4","plan_id":"plan_1779889017113","plan_version":1,"priority":"normal","reason":"I could not navigate to kitchen.","slots_needed":[],"text_hint":"I could not navigate to kitchen."}
+[1779889018.169] trace_0003 | robot_speech | /debug/nao_say/speech
+  /debug/nao_say/speech {"text":"I could not navigate to kitchen."}
+[1779889018.173] trace_0004 | robot_speech | /speech
+  /speech {"text":"I could not navigate to kitchen."}
+Traceback (most recent call last):
+  File "/home/ubuntu/ws/install/interaction_trace_viewer/lib/interaction_trace_viewer/trace_node", line 33, in <module>
+    sys.exit(load_entry_point('interaction-trace-viewer', 'console_scripts', 'trace_node')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/ws/build/interaction_trace_viewer/interaction_trace_viewer/trace_node.py", line 339, in main
+    rclpy.spin(node)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+    executor.spin_once()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 845, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 829, in _spin_once_impl
+    handler, entity, node = self.wait_for_ready_callbacks(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 799, in wait_for_ready_callbacks
+    return next(self._cb_iter)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 707, in _wait_for_ready_callbacks
+    raise ExternalShutdownException()
+rclpy.executors.ExternalShutdownException

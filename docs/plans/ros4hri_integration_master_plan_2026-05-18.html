@@ -77,7 +77,7 @@
 </head>
 <body>
 <h1>ROS4HRI Integration Master Plan (Consolidated, Active)</h1>
-<p><strong>Date:</strong> 2026-05-26 (status refresh)</p>
+<p><strong>Date:</strong> 2026-05-27 (status refresh)</p>
 <p><strong>Branch context:</strong> <code>feat/TFM-LLM_planner</code> (+ nested repos and Neural-Wokbench integration seam)</p>
 <p><strong>Scope:</strong> Single active execution plan for planner/chatbot/orchestrator seams, canonical registry alignment, fake-skill operational hardening, and observability/dashboard rollout.</p>
 <h2>1. Consolidation Policy (What This File Replaces)</h2>
@@ -109,6 +109,20 @@
 </ul>
 <p>Everything else should be archived under <code>docs/artifacts/</code> unless it is actively used in runtime operations.</p>
 <h2>3. Current Execution Status</h2>
+<h3>Phase Board (DONE vs Remaining)</h3>
+<table>
+<thead>
+<tr><th>Phase</th><th>Status</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td>Phase A - Planner/Orchestrator Runtime Path</td><td><strong>DONE</strong></td><td>Execution ownership and planner gate are active; planner dialogue now relays through orchestrator-owned seam.</td></tr>
+<tr><td>Phase B - Registry Consistency</td><td><strong>DONE</strong></td><td>Canonical contract and consistency tooling are in place for current AB=1 paths.</td></tr>
+<tr><td>Phase C - Lifecycle/Launch Reliability</td><td><strong>IN PROGRESS</strong></td><td>Core stack is stable, but lifecycle/operator race reduction and admission edge-cases are still pending.</td></tr>
+<tr><td>Phase D - Upstream/Nested Reconciliation</td><td><strong>IN PROGRESS</strong></td><td>Inventory is complete; staged nested merges are still pending.</td></tr>
+<tr><td>Phase E - AB Decomposition (AB&gt;=2)</td><td><strong>NOT STARTED</strong></td><td>Schema expansion and validation are still backlog items.</td></tr>
+<tr><td>Phase F - Dashboard Rollout</td><td><strong>IN PROGRESS</strong></td><td>Trace viewer baseline is done; full dashboard milestones remain.</td></tr>
+</tbody>
+</table>
 <h3>A. Planner-Orchestrator Runtime Path</h3>
 <ul>
 <li><strong>Done</strong>: <code>scan</code> is action-server owned and dispatched by orchestrator.</li>
@@ -116,7 +130,8 @@
 <li><strong>Done</strong>: planner/orchestrator action routing validated for <code>/skill/scan</code>, <code>/skill/report_result</code>, <code>/skill/say</code>, <code>/skill/do_head_motion</code>.</li>
 <li><strong>Done</strong>: goal token/version guardrails and supersede semantics are present in planner-orchestrator seam.</li>
 <li><strong>Done</strong>: route-hardening now defaults visibility-only scene checks to <code>knowledge_query</code> unless explicit scan/action wording is requested.</li>
-<li><strong>Done</strong>: planner dialogue-act wording is chatbot-owned by default (<code>dialogue_manager</code> -&gt; <code>chatbot_llm</code>) including completion/failure/clarification user-facing turns.</li>
+<li><strong>Done (2026-05-27)</strong>: planner dialogue acts are consumed via orchestrator relay seam (<code>/planner/dialogue_act</code> -&gt; <code>/nao_orchestrator/planner_dialogue_act</code> -&gt; <code>dialogue_manager</code>) instead of direct planner-to-dialogue-manager ownership.</li>
+<li><strong>Done (2026-05-27)</strong>: live launch defaults now force <code>dialogue_manager_planner_dialogue_wording_mode=direct</code> and <code>dialogue_manager_planner_completion_wording_mode=direct</code> so planner dialogue is not auto-routed back into <code>chatbot_llm</code>.</li>
 <li><strong>Done</strong>: structured <code>chatbot_turn_trace</code> visibility is available for dialogue vs planner-handoff attribution.</li>
 <li><strong>Done (2026-05-26)</strong>: planner-mode routing now guards visibility-only scene questions toward <code>knowledge_query</code> unless the user explicitly requests a new scan/action.</li>
 <li><strong>In progress</strong>: proactive wording + speech arbitration pass to avoid duplicate user-facing utterances when execution acknowledgements and planner dialogue completions occur in the same interaction.</li>
@@ -234,12 +249,20 @@
 <li><code>src/planner_llm/test/test_planner_engine.py</code> (planner output-contract enforcement)</li>
 <li><code>docs/artifacts/prompt_hardening_skillopt_2026-05-27.md</code> (iteration log + acceptance gate)</li>
 </ul>
+<p><strong>Prompt-hardening seam targets</strong></p>
+<ul>
+<li>tighten planner/chatbot routing prompts and response schemas for non-execution turns.</li>
+<li>publish structured chatbot routing trace events for dialogue vs planner handoff visibility.</li>
+<li>enforce canonical registry projection sync across planner fallback config and docs mirrors via pre-commit checks.</li>
+<li>keep planner dialogue-act payload ownership in planner/orchestrator seam, with live launch defaults using direct dialogue_manager wording (no auto chatbot rewording).</li>
+<li>harden planner-mode KB visibility routing so non-action perception checks prefer <code>knowledge_query</code>.</li>
+</ul>
 <p><strong>Exit criteria</strong></p>
 <ul>
 <li>no drift between canonical AB registry and projected planner/docs registry surfaces.</li>
-<li>trace viewer shows chatbot route, planner request, planner decision, and final user-facing speech with one authority per turn.</li>
+<li>trace viewer shows chatbot route, planner request, planner decision, planner/execution outcomes, and final user-facing speech with one authority per turn (from structured payloads).</li>
 <li>first-turn social greeting remains <code>dialogue</code> in planner mode (no planner request publish).</li>
-<li>planner clarification/failure/completion user-facing wording remains chatbot-owned in live launch profiles.</li>
+<li>planner clarification/failure/completion user-facing wording remains chatbot-owned in live launch profiles, with deterministic ownership and no planner-dialogue auto re-entry into chatbot.</li>
 </ul>
 <h2>5. Active Track: Observability Dashboard Rollout</h2>
 <p>This track merges prior simple-viewer and full-dashboard plans.</p>

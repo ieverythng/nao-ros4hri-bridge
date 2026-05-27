@@ -1,0 +1,62 @@
+[INFO] [1779888815.863556117] [interaction_trace_viewer]: trace subscribed: /rosout
+[INFO] [1779888815.864439284] [interaction_trace_viewer]: interaction_trace_viewer started
+[INFO] [1779888817.949095834] [interaction_trace_viewer]: trace subscribed: /planner/request
+[INFO] [1779888817.953005500] [interaction_trace_viewer]: trace subscribed: /intents
+[INFO] [1779888817.957558473] [interaction_trace_viewer]: trace subscribed: /planner/execution_feedback
+[INFO] [1779888817.960347617] [interaction_trace_viewer]: trace subscribed: /planner/dialogue_act
+[INFO] [1779888817.963401727] [interaction_trace_viewer]: trace subscribed: /nao_orchestrator/planner_dialogue_act
+[INFO] [1779888817.967786495] [interaction_trace_viewer]: trace subscribed: /chatbot_llm/turn_trace
+[INFO] [1779888817.970989465] [interaction_trace_viewer]: trace subscribed: /fake_skills/events
+[INFO] [1779888817.974831875] [interaction_trace_viewer]: trace subscribed: /world_model/enriched_snapshot
+[INFO] [1779888817.977676132] [interaction_trace_viewer]: trace subscribed: /world_model/enriched_text
+[INFO] [1779888817.980021633] [interaction_trace_viewer]: trace subscribed (speech): /debug/nao_say/speech
+[INFO] [1779888817.982267097] [interaction_trace_viewer]: trace subscribed (speech): /speech
+[1779888822.442] __default__:2 | chatbot_turn_trace | /chatbot_llm/turn_trace | flow=event_type=chatbot_turn_result,route=execution
+  route=execution | intent=scan | source=llm_response_route
+[1779888822.449] __default__:2 | planner_request | /planner/request
+  goal=
+[1779888822.460] trace_0001 | robot_speech | /debug/nao_say/speech
+  /debug/nao_say/speech {"text":"Sure, I will look around and report what I can see."}
+[1779888822.469] trace_0002 | robot_speech | /speech
+  /speech {"text":"Sure, I will look around and report what I can see."}
+[1779888823.864] goal_default___2 | planner_output | /intents
+  planner output
+[1779888823.866] goal_default___2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___2,plan_id=plan_1779888823861,event_type=plan_accepted
+  accepted
+[1779888823.867] goal_default___2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___2,plan_id=plan_1779888823861,event_type=step_started,step=scan
+  running
+[1779888829.389] goal_default___2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___2,plan_id=plan_1779888823861,event_type=step_succeeded,step=scan
+  succeeded | I looked around and can report the current scene summary.
+[1779888829.400] goal_default___2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___2,plan_id=plan_1779888823861,event_type=step_started,step=report_result
+  running
+[1779888829.431] goal_default___2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___2,plan_id=plan_1779888823861,event_type=step_succeeded,step=report_result
+  succeeded | I looked around and can report the current scene summary.
+[1779888829.432] goal_default___2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___2,plan_id=plan_1779888823861,event_type=plan_completed
+  completed | I looked around and can report the current scene summary.
+[1779888829.435] goal_default___2 | planner_dialogue_act | /planner/dialogue_act | flow=goal_id=goal_default___2
+  /planner/dialogue_act {"act":"notify_completion","await_user_response":false,"context":{"goal_text":"look around and report what is visible","plan_step_count":2,"requested_intents":["scan"],"result_payload":{"skill":"report_result","status":"completed","summary_text":"I looked around and can report the current scene summary."},"result_summary":"I looked around and can report the current scene summary.","status":"completed"},"goal_id":"goal_default___2","plan_id":"","plan_version":1,"priority":"normal","reason":"goal completed","slots_needed":[],"text_hint":"I looked around and can report the current scene summary."}
+[1779888829.437] goal_default___2 | planner_dialogue_act | /nao_orchestrator/planner_dialogue_act | flow=goal_id=goal_default___2
+  /nao_orchestrator/planner_dialogue_act {"act":"notify_completion","await_user_response":false,"context":{"goal_text":"look around and report what is visible","plan_step_count":2,"requested_intents":["scan"],"result_payload":{"skill":"report_result","status":"completed","summary_text":"I looked around and can report the current scene summary."},"result_summary":"I looked around and can report the current scene summary.","status":"completed"},"goal_id":"goal_default___2","plan_id":"","plan_version":1,"priority":"normal","reason":"goal completed","slots_needed":[],"text_hint":"I looked around and can report the current scene summary."}
+[1779888829.464] trace_0003 | robot_speech | /debug/nao_say/speech
+  /debug/nao_say/speech {"text":"I looked around and can report the current scene summary."}
+[1779888829.470] trace_0004 | robot_speech | /speech
+  /speech {"text":"I looked around and can report the current scene summary."}
+Traceback (most recent call last):
+  File "/home/ubuntu/ws/install/interaction_trace_viewer/lib/interaction_trace_viewer/trace_node", line 33, in <module>
+    sys.exit(load_entry_point('interaction-trace-viewer', 'console_scripts', 'trace_node')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/ws/build/interaction_trace_viewer/interaction_trace_viewer/trace_node.py", line 339, in main
+    rclpy.spin(node)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+    executor.spin_once()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 845, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 829, in _spin_once_impl
+    handler, entity, node = self.wait_for_ready_callbacks(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 799, in wait_for_ready_callbacks
+    return next(self._cb_iter)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 707, in _wait_for_ready_callbacks
+    raise ExternalShutdownException()
+rclpy.executors.ExternalShutdownException

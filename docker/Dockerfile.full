@@ -118,6 +118,13 @@ RUN bash -lc 'source /opt/ros/jazzy/setup.bash && \
     done; \
     colcon build --symlink-install --packages-up-to "${rebuild_packages[@]}"'
 
+RUN bash -lc 'set -euo pipefail; \
+    apt-get update && \
+    apt-get install -y --no-install-recommends socialminds-ros-jazzy-launch-tui && \
+    rm -rf /var/lib/apt/lists/*; \
+    python3 -m pip install --no-cache-dir --break-system-packages --ignore-installed \
+      "textual>=0.50,<1"'
+
 COPY docker/ros_entrypoint.sh /
 RUN chmod +x /ros_entrypoint.sh
 

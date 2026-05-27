@@ -138,12 +138,20 @@ misclassification can trigger duplicate planner/chatbot utterances.
 - `src/planner_llm/test/test_planner_engine.py` (planner output-contract enforcement)
 - `docs/artifacts/prompt_hardening_skillopt_2026-05-27.md` (iteration log + acceptance gate)
 
+**Prompt-hardening seam targets**
+
+- tighten planner/chatbot routing prompts and response schemas for non-execution turns.
+- publish structured chatbot routing trace events for dialogue vs planner handoff visibility.
+- enforce canonical registry projection sync across planner fallback config and docs mirrors via pre-commit checks.
+- keep planner dialogue-act payload ownership in planner/orchestrator seam, with live launch defaults using direct dialogue_manager wording (no auto chatbot rewording).
+- harden planner-mode KB visibility routing so non-action perception checks prefer `knowledge_query`.
+
 **Exit criteria**
 
 - no drift between canonical AB registry and projected planner/docs registry surfaces.
-- trace viewer shows chatbot route, planner request, planner decision, and final user-facing speech with one authority per turn.
+- trace viewer shows chatbot route, planner request, planner decision, planner/execution outcomes, and final user-facing speech with one authority per turn (from structured payloads).
 - first-turn social greeting remains `dialogue` in planner mode (no planner request publish).
-- planner clarification/failure/completion user-facing wording remains chatbot-owned in live launch profiles.
+- planner clarification/failure/completion user-facing wording remains chatbot-owned in live launch profiles, with deterministic ownership and no planner-dialogue auto re-entry into chatbot.
 
 ## 5. Active Track: Observability Dashboard Rollout
 

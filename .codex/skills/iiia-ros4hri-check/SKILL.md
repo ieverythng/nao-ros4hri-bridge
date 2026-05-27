@@ -46,11 +46,19 @@ package structure, and upstream-sensitive edits.
 - Keep `dialogue_manager` as the dialogue and speaking owner.
 - Keep `chatbot_llm` as the user-facing LLM and grounded dialogue owner.
 - Keep `planner_llm` as the task supervisor and planner.
-- Keep `nao_orchestrator` as the deterministic executor.
+- Keep `nao_orchestrator` as the deterministic executor and planner-dialogue relay
+  seam owner.
 - Keep `kb_skills` as the KnowledgeCore boundary.
 - Keep `nao_scene_grounding` as the detector-to-KB grounding bridge.
 - Do not bypass exposed ROS interfaces with direct robot-specific shortcuts when
   the ROS driver or skill seam already exists.
+- In this stack, keep planner dialogue flow as
+  `planner_llm -> /planner/dialogue_act -> nao_orchestrator relay -> dialogue_manager`;
+  do not wire `dialogue_manager` directly to planner dialogue in live seam
+  profiles.
+- Preserve orchestrator as pure executor/relay: planner dialogue must not become
+  direct chatbot wording by default in seam-test profiles unless the active
+  contract explicitly says so.
 
 ### 3. Check ROS interface choices
 

@@ -252,6 +252,42 @@ ros2 run interaction_trace_viewer trace_node --ros-args \
   -p include_event_types_csv:="planner_request,planner_output,execution_feedback,planner_dialogue_act,chatbot_turn_trace,skill_result"
 ```
 
+## Launch TUI (SocialMinds operator GUI)
+
+`launch_tui` is a terminal GUI around ROS 2 launch that visualizes the launch
+graph, node lifecycle, and log stream while a profile is running. It is shipped
+as the SocialMinds apt package `socialminds-ros-jazzy-launch-tui` and exposed
+as a ros2cli extension:
+
+```bash
+ros2 launch_tui <package_name> <launch_file> [launch_arguments...]
+```
+
+Common sim profile:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source /home/ubuntu/ws/install/setup.bash
+ros2 launch_tui nao_chatbot nao_chatbot_sim.launch.py
+```
+
+Helper wrapper (repo script):
+
+```bash
+./scripts/run_launch_tui.sh nao_chatbot nao_chatbot_sim.launch.py
+./scripts/run_launch_tui.sh nao_chatbot nao_chatbot_robot.launch.py start_asr:=false
+```
+
+Notes:
+
+- Use `ros2 launch_tui`, not `ros2 launch launch_tui ...`.
+- The overlay Dockerfiles refresh `socialminds-ros-jazzy-launch-tui` on rebuild
+  so the container tracks the latest SocialMinds apt release.
+- `textual>=0.50` is pinned in Docker because Ubuntu 24.04's default Textual is
+  too old for the current `launch_tui` API.
+- Run inside a TTY (`docker exec -it nao_ros2 bash`) so the Textual UI renders
+  correctly.
+
 Trace-viewer-first one-copy demo command:
 
 ```bash
