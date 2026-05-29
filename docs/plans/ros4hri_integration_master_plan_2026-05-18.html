@@ -77,7 +77,7 @@
 </head>
 <body>
 <h1>ROS4HRI Integration Master Plan (Consolidated, Active)</h1>
-<p><strong>Date:</strong> 2026-05-27 (status refresh)</p>
+<p><strong>Date:</strong> 2026-05-29 (status refresh)</p>
 <p><strong>Branch context:</strong> <code>feat/TFM-LLM_planner</code> (+ nested repos and Neural-Wokbench integration seam)</p>
 <p><strong>Scope:</strong> Single active execution plan for planner/chatbot/orchestrator seams, canonical registry alignment, fake-skill operational hardening, and observability/dashboard rollout.</p>
 <h2>1. Consolidation Policy (What This File Replaces)</h2>
@@ -118,7 +118,7 @@
 <tr><td>Phase A - Planner/Orchestrator Runtime Path</td><td><strong>DONE</strong></td><td>Execution ownership and planner gate are active; planner dialogue now relays through orchestrator-owned seam.</td></tr>
 <tr><td>Phase B - Registry Consistency</td><td><strong>DONE</strong></td><td>Canonical contract and consistency tooling are in place for current AB=1 paths.</td></tr>
 <tr><td>Phase C - Lifecycle/Launch Reliability</td><td><strong>IN PROGRESS</strong></td><td>Core stack is stable, but lifecycle/operator race reduction and admission edge-cases are still pending.</td></tr>
-<tr><td>Phase D - Upstream/Nested Reconciliation</td><td><strong>IN PROGRESS</strong></td><td>Inventory is complete; staged nested merges are still pending.</td></tr>
+<tr><td>Phase D - Upstream/Nested Reconciliation</td><td><strong>DONE</strong></td><td>Nested upstream merges landed on working branches and the chatbot contract was reconciled to stateless <code>chatbot_msgs</code> services.</td></tr>
 <tr><td>Phase E - AB Decomposition (AB&gt;=2)</td><td><strong>NOT STARTED</strong></td><td>Schema expansion and validation are still backlog items.</td></tr>
 <tr><td>Phase F - Dashboard Rollout</td><td><strong>IN PROGRESS</strong></td><td>Trace viewer baseline is done; full dashboard milestones remain.</td></tr>
 </tbody>
@@ -155,14 +155,10 @@
 <h3>D. Upstream/Nested Repo Reconciliation</h3>
 <ul>
 <li><strong>Done</strong>: upstream inventory exists (<code>docs/artifacts/upstream_sync_inventory_2026-05-14.md</code>).</li>
-<li><strong>Pending</strong>: staged merge application order:</li>
-</ul>
-<ol>
-<li><code>chatbot_msgs</code></li>
-<li><code>dialogue_manager</code></li>
-<li><code>chatbot_llm</code></li>
-</ol>
-<ul>
+<li><strong>Done (2026-05-29)</strong>: staged upstream reconciliation landed for <code>chatbot_msgs</code>, <code>dialogue_manager</code>, and <code>chatbot_llm</code> with upstream-first conflict resolution.</li>
+<li><strong>Done (2026-05-29)</strong>: nested working branches formalized as <code>dialogue_manager: juan-feat-1</code> and <code>chatbot_llm: feat/planner_llm_hooks</code>.</li>
+<li><strong>Done (2026-05-29)</strong>: chatbot runtime surface now matches stateless contract seams (<code>prepare_dialogue</code> + <code>dialogue_interaction</code>) and no longer depends on <code>chatbot_msgs/action/Dialogue</code>.</li>
+<li><strong>Done (2026-05-29)</strong>: overlay image rebuild validated with refreshed sources (<code>iiia:nao-e2e-20260529</code>), including <code>chatbot_msgs</code> in overlay package rebuild order.</li>
 <li><strong>Pending</strong>: align nested <code>skill_common</code> integration with Neural-Wokbench branch strategy (<code>feat/TFM_planner_only</code> flow).</li>
 </ul>
 <h2>4. Active Track: AB Registry Full Integration</h2>

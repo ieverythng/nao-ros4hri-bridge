@@ -114,10 +114,11 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
 - `planner_request_topic`: defaults to `/planner/request`.
 - `planner_request_intent`: defaults to `planner_request`.
 - `planner_dialogue_act_topic`: defaults to `/planner/dialogue_act`.
-- `dialogue_manager_planner_dialogue_wording_mode`: defaults to `chatbot` so
-  planner dialogue acts are rendered by `chatbot_llm`.
-- `dialogue_manager_planner_completion_wording_mode`: compatibility override
-  for completion wording (`chatbot` or `direct`).
+- `dialogue_manager_planner_dialogue_wording_mode`: defaults to `direct` in
+  live/sim stack profiles so planner dialogue acts are spoken from planner text.
+- `dialogue_manager_planner_completion_wording_mode`: defaults to `direct` in
+  live/sim stack profiles; set to `chatbot` only when you explicitly want
+  chatbot rewording for planner completion acts.
 - `planner_skill_registry_path`: optional planner skill registry overlay.
 - `planner_llm_provider`: `ollama` by default.
 - `planner_llm_model`: planner model name.

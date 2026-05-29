@@ -5,6 +5,10 @@ node/topic/service/action relationships that are otherwise hidden
 behind ROS APIs and launch indirection.
 """
 
+def ros_service_any_prepare_dialogue():
+    """ROS service endpoint /*/prepare_dialogue."""
+    return "/*/prepare_dialogue"
+
 def ros_topic_audio():
     """ROS topic endpoint /audio."""
     return "/audio"
@@ -41,13 +45,13 @@ def ros_service_chatbot_llm_get_supported_locales():
     """ROS service endpoint /chatbot_llm/get_supported_locales."""
     return "/chatbot_llm/get_supported_locales"
 
+def ros_service_chatbot_llm_prepare_dialogue():
+    """ROS service endpoint /chatbot_llm/prepare_dialogue."""
+    return "/chatbot_llm/prepare_dialogue"
+
 def ros_action_chatbot_llm_set_default_locale():
     """ROS action endpoint /chatbot_llm/set_default_locale."""
     return "/chatbot_llm/set_default_locale"
-
-def ros_action_chatbot_llm_start_dialogue():
-    """ROS action endpoint /chatbot_llm/start_dialogue."""
-    return "/chatbot_llm/start_dialogue"
 
 def ros_topic_debug_nao_say_speech():
     """ROS topic endpoint /debug/nao_say/speech."""
@@ -81,6 +85,10 @@ def ros_topic_dialogue_manager_currently_waiting_for_chatbot_response():
     """ROS topic endpoint /dialogue_manager/currently_waiting_for_chatbot_response."""
     return "/dialogue_manager/currently_waiting_for_chatbot_response"
 
+def ros_topic_dialogue_manager_debug_state():
+    """ROS topic endpoint /dialogue_manager/debug_state."""
+    return "/dialogue_manager/debug_state"
+
 def ros_topic_dialogue_manager_robot_speech():
     """ROS topic endpoint /dialogue_manager/robot_speech."""
     return "/dialogue_manager/robot_speech"
@@ -96,6 +104,10 @@ def ros_topic_enriched_text_topic():
 def ros_topic_fake_skills_events():
     """ROS topic endpoint /fake_skills/events."""
     return "/fake_skills/events"
+
+def ros_topic_humans_interactions_groups():
+    """ROS topic endpoint /humans/interactions/groups."""
+    return "/humans/interactions/groups"
 
 def ros_topic_humans_persons_tracked():
     """ROS topic endpoint /humans/persons/tracked."""
@@ -184,6 +196,10 @@ def ros_service_kb_sparql():
 def ros_action_nao_say():
     """ROS action endpoint /nao/say."""
     return "/nao/say"
+
+def ros_topic_nao_orchestrator_planner_dialogue_act():
+    """ROS topic endpoint /nao_orchestrator/planner_dialogue_act."""
+    return "/nao_orchestrator/planner_dialogue_act"
 
 def ros_topic_nao_orchestrator_planner_request():
     """ROS topic endpoint /nao_orchestrator/planner_request."""
@@ -339,8 +355,8 @@ def ros_node_chatbot_llm():
     ros_topic_diagnostics()
     ros_service_chatbot_llm_dialogue_interaction()
     ros_service_chatbot_llm_get_supported_locales()
+    ros_service_chatbot_llm_prepare_dialogue()
     ros_action_chatbot_llm_set_default_locale()
-    ros_action_chatbot_llm_start_dialogue()
 
 def ros_contract_communication_skills():
     """Interface contracts exported by communication_skills."""
@@ -361,13 +377,16 @@ def ros_node_dialogue_manager():
     ros_topic_diagnostics()
     ros_topic_dialogue_manager_closed_captions()
     ros_topic_dialogue_manager_currently_waiting_for_chatbot_response()
+    ros_topic_dialogue_manager_debug_state()
     ros_topic_dialogue_manager_robot_speech()
     ros_topic_intents()
+    ros_topic_dialogue_manager_debug_state()
+    ros_topic_humans_interactions_groups()
     ros_topic_humans_voices_any_speech()
     ros_topic_humans_voices_tracked()
     ros_topic_planner_dialogue_act()
+    ros_service_any_prepare_dialogue()
     ros_service_chatbot_llm_dialogue_interaction()
-    ros_action_chatbot_llm_start_dialogue()
     ros_action_skill_ask()
     ros_action_skill_chat()
     ros_action_skill_say()
@@ -480,6 +499,7 @@ def ros_node_nao_orchestrator():
     ros_topic_chatbot_posture_command()
     ros_topic_diagnostics()
     ros_topic_joint_angles()
+    ros_topic_nao_orchestrator_planner_dialogue_act()
     ros_topic_planner_execution_feedback()
     ros_topic_planner_request()
     ros_topic_chatbot_intent()
@@ -575,12 +595,6 @@ def ros_flow_service_chatbot_llm_dialogue_interaction():
     ros_service_chatbot_llm_dialogue_interaction()
     ros_node_dialogue_manager()
 
-def ros_flow_action_chatbot_llm_start_dialogue():
-    """Action server/client flow for /chatbot_llm/start_dialogue."""
-    ros_node_chatbot_llm()
-    ros_action_chatbot_llm_start_dialogue()
-    ros_node_dialogue_manager()
-
 def ros_flow_topic_debug_nao_say_speech():
     """Publisher/subscriber flow for /debug/nao_say/speech."""
     ros_node_nao_say_skill()
@@ -598,6 +612,12 @@ def ros_flow_topic_dialogue_manager_closed_captions():
     ros_node_dialogue_manager()
     ros_topic_dialogue_manager_closed_captions()
     ros_node_nao_chatbot()
+
+def ros_flow_topic_dialogue_manager_debug_state():
+    """Publisher/subscriber flow for /dialogue_manager/debug_state."""
+    ros_node_dialogue_manager()
+    ros_topic_dialogue_manager_debug_state()
+    ros_node_dialogue_manager()
 
 def ros_flow_topic_humans_voices_tracked():
     """Publisher/subscriber flow for /humans/voices/tracked."""
