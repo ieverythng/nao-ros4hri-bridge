@@ -31,3 +31,4 @@ scenarios:
   area_person_found:
     inspect_area:
       result_mode: person_found
+  head_motion_strict: {}

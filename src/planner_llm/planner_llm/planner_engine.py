@@ -798,15 +798,22 @@ class PlannerEngine:
         parsed: dict,
         feedback: ExecutionFeedback | None,
     ) -> tuple[int, bool]:
+        if feedback is not None:
+            remaining_from_feedback = max(0, int(feedback.retry_budget) - 1)
+        else:
+            remaining_from_feedback = self._default_retry_budget
         if feedback is not None and feedback.status in ('failed', 'invalid'):
             exhausted = int(feedback.retry_budget) <= 0
         else:
             exhausted = False
         explicit = self._parsed_retry_budget(parsed)
         if explicit is not None:
+            if feedback is not None:
+                # Do not let model output increase/reset remaining retries on replans.
+                return min(explicit, remaining_from_feedback), exhausted
             return explicit, exhausted
         if feedback is not None:
-            return max(0, int(feedback.retry_budget) - 1), exhausted
+            return remaining_from_feedback, exhausted
         return self._default_retry_budget, exhausted
 
     @staticmethod

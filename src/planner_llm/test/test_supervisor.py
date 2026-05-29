@@ -315,6 +315,66 @@ def test_supervisor_replans_after_retryable_failure() -> None:
     assert outcome.decision.payload['plan']['plan_version'] == 2
 
 
+def test_supervisor_replans_blocking_retryable_failure_without_unmet_preconditions() -> None:
+    engine = _StubEngine()
+    supervisor = PlannerSupervisor(engine, auto_replan=True)
+    request = PlannerRequest.from_payload(
+        {'goal_id': 'goal_retry_blocking', 'request_id': 'turn_1', 'user_text': 'find the cup'}
+    )
+    first_outcome = supervisor.handle_request(request)
+    feedback = ExecutionFeedback.from_payload(
+        {
+            'goal_id': 'goal_retry_blocking',
+            'plan_id': first_outcome.decision.plan_id,
+            'plan_version': 1,
+            'event_type': 'step_failed',
+            'status': 'failed',
+            'reason': 'vision unstable',
+            'retry_budget': 1,
+            'blocking': True,
+            'unmet_preconditions': [],
+            'step': {
+                'id': 'step_1',
+                'type': 'skill',
+                'name': 'find_object',
+                'on_failure': 'replan',
+                'retry_budget': 1,
+            },
+        }
+    )
+
+    outcome = supervisor.handle_feedback(feedback)
+    assert outcome.decision is not None
+    assert outcome.decision.payload['plan']['plan_version'] == 2
+
+
+def test_supervisor_asks_for_help_when_retry_budget_exhausted_for_retryable_failure() -> None:
+    engine = _StubEngine()
+    supervisor = PlannerSupervisor(engine, auto_replan=True)
+    request = PlannerRequest.from_payload(
+        {'goal_id': 'goal_retry_exhausted', 'request_id': 'turn_1', 'user_text': 'go to the cup'}
+    )
+    first_outcome = supervisor.handle_request(request)
+    feedback = ExecutionFeedback.from_payload(
+        {
+            'goal_id': 'goal_retry_exhausted',
+            'plan_id': first_outcome.decision.plan_id,
+            'plan_version': 1,
+            'event_type': 'step_failed',
+            'status': 'failed',
+            'reason': 'path blocked',
+            'retry_budget': 0,
+            'blocking': True,
+        }
+    )
+
+    outcome = supervisor.handle_feedback(feedback)
+    assert outcome.decision is None
+    assert len(outcome.dialogue_acts) == 1
+    assert outcome.dialogue_acts[0].act == 'ask_for_help'
+    assert outcome.dialogue_acts[0].await_user_response is True
+
+
 def test_supervisor_does_not_replan_when_step_failure_policy_is_fail() -> None:
     engine = _StubEngine()
     supervisor = PlannerSupervisor(engine, auto_replan=True)

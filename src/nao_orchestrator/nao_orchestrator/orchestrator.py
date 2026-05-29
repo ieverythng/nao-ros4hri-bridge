@@ -31,6 +31,7 @@ from std_msgs.msg import String
 
 from nao_orchestrator.intent_rules import (
     classify_motion_target,
+    is_unresolved_report_template,
     make_intent_signature,
     normalize_incoming_intent,
     normalize_legacy_intent,
@@ -146,6 +147,10 @@ class NaoOrchestrator(Node):
         self.declare_parameter('fallback_to_joint_angles_topic', True)
         self.declare_parameter('planner_feedback_topic', '/planner/execution_feedback')
         self.declare_parameter('planner_dialogue_act_topic', '/planner/dialogue_act')
+        self.declare_parameter(
+            'planner_dialogue_relay_topic',
+            '/nao_orchestrator/planner_dialogue_act',
+        )
         self.declare_parameter('enable_planner_gate', False)
         self.declare_parameter('planner_gate_request_topic', '/nao_orchestrator/planner_request')
         self.declare_parameter('planner_request_topic', '/planner/request')
@@ -242,6 +247,9 @@ class NaoOrchestrator(Node):
         self.planner_dialogue_act_topic = str(
             self.get_parameter('planner_dialogue_act_topic').value
         )
+        self.planner_dialogue_relay_topic = str(
+            self.get_parameter('planner_dialogue_relay_topic').value
+        )
         self.enable_planner_gate = bool(self.get_parameter('enable_planner_gate').value)
         self.planner_gate_request_topic = str(
             self.get_parameter('planner_gate_request_topic').value
@@ -304,6 +312,7 @@ class NaoOrchestrator(Node):
         self._planner_feedback_pub = None
         self._planner_gate_sub = None
         self._planner_dialogue_act_sub = None
+        self._planner_dialogue_act_pub = None
         self._planner_request_pub = None
         self._is_active = False
         self._stats = _RuntimeStats()
@@ -387,6 +396,11 @@ class NaoOrchestrator(Node):
             self.planner_feedback_topic,
             10,
         )
+        self._planner_dialogue_act_pub = self.create_publisher(
+            String,
+            self.planner_dialogue_relay_topic,
+            10,
+        )
         if self.enable_planner_gate:
             self._planner_request_pub = self.create_publisher(
                 Intent,
@@ -404,7 +418,7 @@ class NaoOrchestrator(Node):
                 'JointAnglesWithSpeed unavailable; joint-topic fallback is disabled'
             )
         self.get_logger().info(
-            'nao_orchestrator configured | intents:%s legacy:%s say:%s replay:%s head:%s look:%s scan:%s report:%s fake:%s planner_gate:%s->%s'
+            'nao_orchestrator configured | intents:%s legacy:%s say:%s replay:%s head:%s look:%s scan:%s report:%s fake:%s planner_gate:%s->%s planner_dialogue:%s->%s'
             % (
                 self.intent_topic,
                 self.legacy_intent_topic,
@@ -417,6 +431,8 @@ class NaoOrchestrator(Node):
                 ','.join(sorted(self._fake_skill_clients.keys())) or 'none',
                 self.planner_gate_request_topic if self.enable_planner_gate else 'disabled',
                 self.planner_request_topic,
+                self.planner_dialogue_act_topic,
+                self.planner_dialogue_relay_topic,
             )
         )
         return TransitionCallbackReturn.SUCCESS
@@ -515,6 +531,9 @@ class NaoOrchestrator(Node):
         if self._planner_feedback_pub is not None:
             self.destroy_publisher(self._planner_feedback_pub)
             self._planner_feedback_pub = None
+        if self._planner_dialogue_act_pub is not None:
+            self.destroy_publisher(self._planner_dialogue_act_pub)
+            self._planner_dialogue_act_pub = None
         if self._planner_request_pub is not None:
             self.destroy_publisher(self._planner_request_pub)
             self._planner_request_pub = None
@@ -644,14 +663,24 @@ class NaoOrchestrator(Node):
         self._planner_feedback_pub.publish(msg)
 
     def _on_planner_dialogue_act(self, msg: String) -> None:
-        """Observe non-speaking planner acts so gate state clears on planner failure."""
-        before = self._planner_gate.active_goal_id
+        """Observe and relay planner acts through orchestrator-owned topic seam."""
+        active_goal_before = self._planner_gate.active_goal_id
         self._planner_gate.observe_dialogue_act(msg.data)
-        after = self._planner_gate.active_goal_id
-        if before and not after:
+        active_goal_after = self._planner_gate.active_goal_id
+        if active_goal_before and not active_goal_after:
             self.get_logger().info(
-                'Planner gate cleared by planner dialogue act | goal_id=%s' % before
+                'Planner gate cleared by planner dialogue act | goal_id=%s'
+                % active_goal_before
             )
+        self._relay_planner_dialogue_act(msg.data)
+
+    def _relay_planner_dialogue_act(self, payload: str) -> None:
+        """Publish planner dialogue acts on the orchestrator-owned relay topic."""
+        if self._planner_dialogue_act_pub is None:
+            return
+        relay_msg = String()
+        relay_msg.data = payload
+        self._planner_dialogue_act_pub.publish(relay_msg)
 
     def _handle_intent(self, intent_name: str, data: dict, source: str) -> None:
         """Route one normalized intent through planned or legacy dispatch paths."""
@@ -742,6 +771,14 @@ class NaoOrchestrator(Node):
         plan_id = self._resolve_plan_id(plan_context)
         plan_token = self._resolve_plan_token(plan_context)
         plan_version = self._plan_version_from_context(plan_context)
+        if self._is_exact_execution_plan_active(plan_token, plan_version):
+            self._stats.duplicates_ignored += 1
+            self._stats.last_route = 'ignored:duplicate_plan'
+            self.get_logger().warn(
+                'Ignored duplicate planned intent | intent=%s source=%s plan_id=%s token=%s version=%s'
+                % (intent_name, source, plan_id, plan_token or '-', plan_version)
+            )
+            return True
         self._claim_execution_plan(plan_token, plan_version)
         self._stats.plans_started += 1
         self._stats.last_plan_id = plan_id
@@ -908,7 +945,7 @@ class NaoOrchestrator(Node):
                     reason=reason,
                     step=step,
                     blocking=False,
-                    unmet_preconditions=list(step.get('requires', [])),
+                    unmet_preconditions=[],
                     needs_user_input=False,
                 )
                 self.get_logger().warn(
@@ -935,7 +972,10 @@ class NaoOrchestrator(Node):
                 reason=reason,
                 step=step,
                 blocking=True,
-                unmet_preconditions=list(step.get('requires', [])),
+                # `requires` enumerates declared dependencies, not unmet runtime
+                # preconditions. Publishing it here makes supervisor treat any
+                # retryable step failure as blocked/clarification.
+                unmet_preconditions=[],
                 needs_user_input=(
                     failure_policy in ('ask_user', 'clarify')
                     or step_name in _ASK_USER_STEP_NAMES
@@ -1189,6 +1229,8 @@ class NaoOrchestrator(Node):
             'text_hint',
             'object',
         )
+        if is_unresolved_report_template(report_text):
+            report_text = ''
         if not report_text:
             report_text = _first_non_empty_value(
                 fallback_data,
@@ -1196,6 +1238,8 @@ class NaoOrchestrator(Node):
                 'result_summary',
                 'summary_text',
             )
+            if is_unresolved_report_template(report_text):
+                report_text = ''
         if not report_text:
             last_result_payload = fallback_data.get('last_result_payload', {})
             if isinstance(last_result_payload, dict):
@@ -1205,6 +1249,8 @@ class NaoOrchestrator(Node):
                     'result_summary',
                     'message',
                 )
+                if is_unresolved_report_template(report_text):
+                    report_text = ''
         if not report_text:
             self._stats.dispatch_failures += 1
             return False, 'report_result step missing summary text', {
@@ -1913,6 +1959,17 @@ class NaoOrchestrator(Node):
         if str(plan_token or '').strip() != active_token:
             return False
         return max(0, int(plan_version or 0)) >= active_version
+
+    def _is_exact_execution_plan_active(self, plan_token: str, plan_version: int) -> bool:
+        with self._execution_lock:
+            active_token = self._active_execution_token
+            active_version = self._active_execution_plan_version
+        if not active_token:
+            return False
+        return (
+            str(plan_token or '').strip() == active_token
+            and max(0, int(plan_version or 0)) == active_version
+        )
 
     def _finalize_execution_plan(self, plan_token: str, plan_version: int) -> None:
         with self._execution_lock:

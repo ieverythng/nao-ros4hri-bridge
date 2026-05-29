@@ -285,6 +285,26 @@ class PlannerSupervisor:
                 ),)
             )
 
+        if (
+            self._auto_replan
+            and state.last_request is not None
+            and feedback.retry_budget <= 0
+            and failure_policy not in ('fail', 'ask_user', 'clarify', 'ignore')
+        ):
+            state.current_status = 'waiting_user'
+            state.awaiting_user_response = True
+            self._forget_plan(feedback.plan_id)
+            return SupervisorOutcome(
+                dialogue_acts=(self._dialogue_act(
+                    state,
+                    act='ask_for_help',
+                    reason=feedback.reason or 'retry budget exhausted',
+                    text_hint=feedback.reason or 'I ran out of retries. How would you like me to continue?',
+                    await_user_response=True,
+                    slots_needed=list(feedback.unmet_preconditions or feedback.step_requires),
+                ),)
+            )
+
         should_replan = (
             self._auto_replan
             and state.last_request is not None

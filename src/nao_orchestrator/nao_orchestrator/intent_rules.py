@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 from planner_common.contracts import PLAN_FAILURE_POLICIES
 from planner_common.contracts import PLAN_STEP_TYPES
@@ -172,6 +173,11 @@ _PEOPLE_SCAN_TARGET_KINDS = {
     'human',
     'humans',
 }
+_UNRESOLVED_REPORT_TEMPLATE_RE = re.compile(
+    r'(\[[^\]]*(?:evidence|result|object|people|person)[^\]]*\])'
+    r'|(\{[^\}]*(?:evidence|result|object|people|person)[^\}]*\})',
+    re.IGNORECASE,
+)
 
 
 def _load_supported_skill_names() -> tuple[set[str], set[str], set[str]]:
@@ -334,6 +340,14 @@ def resolve_ack_text(
     if explicit_ack:
         return explicit_ack
     return resolve_say_text(intent_name, payload, default_greeting)
+
+
+def is_unresolved_report_template(text: str) -> bool:
+    """Return true when report_result text still contains model template slots."""
+    clean_text = str(text or '').strip()
+    if not clean_text:
+        return False
+    return bool(_UNRESOLVED_REPORT_TEMPLATE_RE.search(clean_text))
 
 
 def resolve_scan_result(

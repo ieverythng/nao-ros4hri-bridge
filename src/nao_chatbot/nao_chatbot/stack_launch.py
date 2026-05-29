@@ -40,6 +40,8 @@ from nao_chatbot.interaction_sim_support import build_interaction_sim_actions
 DEFAULT_VLLM_MODEL = "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ"
 DEFAULT_VLLM_BASE_URL = "http://10.7.138.215:8004"
 DEFAULT_VLLM_CHAT_URL = DEFAULT_VLLM_BASE_URL + "/v1/chat/completions"
+DEFAULT_PLANNER_DIALOGUE_WORDING_MODE = "direct"
+DEFAULT_PLANNER_COMPLETION_WORDING_MODE = "direct"
 
 _LAB_VLLM_DEFAULTS = {
     "chatbot_model": DEFAULT_VLLM_MODEL,
@@ -85,8 +87,8 @@ _SIM_CAMERA_DEFAULTS = {
     "sim_use_laptop_tts": "false",
     "start_interaction_trace_viewer": "false",
     "interaction_trace_compact_mode": "false",
-    "dialogue_manager_planner_dialogue_wording_mode": "chatbot",
-    "dialogue_manager_planner_completion_wording_mode": "chatbot",
+    "dialogue_manager_planner_dialogue_wording_mode": DEFAULT_PLANNER_DIALOGUE_WORDING_MODE,
+    "dialogue_manager_planner_completion_wording_mode": DEFAULT_PLANNER_COMPLETION_WORDING_MODE,
     "interaction_trace_enable_scene_summary_channel": "false",
     "interaction_trace_scene_summary_emit_on_change_only": "true",
     "interaction_trace_scene_summary_min_interval_sec": "1.0",
@@ -126,8 +128,8 @@ _ROBOT_CAMERA_DEFAULTS = {
     "start_rqt_console": "false",
     "sim_use_laptop_tts": "false",
     "start_interaction_trace_viewer": "false",
-    "dialogue_manager_planner_dialogue_wording_mode": "chatbot",
-    "dialogue_manager_planner_completion_wording_mode": "chatbot",
+    "dialogue_manager_planner_dialogue_wording_mode": DEFAULT_PLANNER_DIALOGUE_WORDING_MODE,
+    "dialogue_manager_planner_completion_wording_mode": DEFAULT_PLANNER_COMPLETION_WORDING_MODE,
     "interaction_trace_enable_scene_summary_channel": "false",
     "interaction_trace_scene_summary_emit_on_change_only": "true",
     "interaction_trace_scene_summary_min_interval_sec": "1.0",
@@ -910,6 +912,13 @@ def generate_profile_launch_description(
         "planner_dialogue_act_topic",
         default_value="/planner/dialogue_act",
         description="Planner-owned dialogue act topic published by planner_llm.",
+    )
+    planner_dialogue_relay_topic_arg = DeclareLaunchArgument(
+        "planner_dialogue_relay_topic",
+        default_value="/nao_orchestrator/planner_dialogue_act",
+        description=(
+            "Orchestrator-owned planner dialogue relay topic consumed by dialogue_manager."
+        ),
     )
     planner_skill_registry_path_arg = DeclareLaunchArgument(
         "planner_skill_registry_path",
@@ -1821,7 +1830,7 @@ def generate_profile_launch_description(
             },
             {
                 "planner_dialogue_act_topic": ParameterValue(
-                    LaunchConfiguration("planner_dialogue_act_topic"),
+                    LaunchConfiguration("planner_dialogue_relay_topic"),
                     value_type=str,
                 )
             },
@@ -1896,6 +1905,12 @@ def generate_profile_launch_description(
             {
                 "planner_dialogue_act_topic": ParameterValue(
                     LaunchConfiguration("planner_dialogue_act_topic"),
+                    value_type=str,
+                )
+            },
+            {
+                "planner_dialogue_relay_topic": ParameterValue(
+                    LaunchConfiguration("planner_dialogue_relay_topic"),
                     value_type=str,
                 )
             },
@@ -2790,6 +2805,7 @@ def generate_profile_launch_description(
             orchestrator_planner_gate_topic_arg,
             planner_request_intent_arg,
             planner_dialogue_act_topic_arg,
+            planner_dialogue_relay_topic_arg,
             planner_skill_registry_path_arg,
             scan_result_mode_arg,
             scan_summary_arg,

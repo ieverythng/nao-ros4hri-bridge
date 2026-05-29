@@ -2,6 +2,7 @@
 set -euo pipefail
 
 NODE_NAME="${1:-/fake_skill_server}"
+HEAD_MOTION_NODE="${2:-/head_motion_skill_server}"
 
 if ! command -v ros2 >/dev/null 2>&1; then
   echo "ros2 command not found. Source your ROS environment first." >&2
@@ -65,6 +66,19 @@ select selected in "${options[@]}"; do
     ros2 param set "$NODE_NAME" active_scenario_id ""
   else
     ros2 param set "$NODE_NAME" active_scenario_id "$selected"
+  fi
+
+  # Keep head-motion open-loop behavior scenario-driven for replanning tests.
+  if ros2 param get "$HEAD_MOTION_NODE" allow_open_loop_without_joint_state >/dev/null 2>&1; then
+    if [[ "${selected}" == "head_motion_strict" ]]; then
+      ros2 param set "$HEAD_MOTION_NODE" allow_open_loop_without_joint_state false >/dev/null 2>&1 || true
+      ros2 param set "$HEAD_MOTION_NODE" assume_success_on_convergence_timeout false >/dev/null 2>&1 || true
+      echo "Applied head-motion strict mode on ${HEAD_MOTION_NODE} (open-loop disabled)."
+    else
+      ros2 param set "$HEAD_MOTION_NODE" allow_open_loop_without_joint_state true >/dev/null 2>&1 || true
+      ros2 param set "$HEAD_MOTION_NODE" assume_success_on_convergence_timeout true >/dev/null 2>&1 || true
+      echo "Applied default head-motion mode on ${HEAD_MOTION_NODE} (open-loop enabled)."
+    fi
   fi
   echo
   ros2 param get "$NODE_NAME" active_scenario_id

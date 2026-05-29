@@ -120,6 +120,7 @@ class InteractionTraceNode(Node):
             '/intents': ('hri_actions_msgs/msg/Intent', self._subscribe_intent),
             '/planner/execution_feedback': ('std_msgs/msg/String', self._subscribe_string),
             '/planner/dialogue_act': ('std_msgs/msg/String', self._subscribe_string),
+            '/nao_orchestrator/planner_dialogue_act': ('std_msgs/msg/String', self._subscribe_string),
             '/chatbot_llm/turn_trace': ('std_msgs/msg/String', self._subscribe_string),
             '/fake_skills/events': ('std_msgs/msg/String', self._subscribe_string),
             '/world_model/enriched_snapshot': ('std_msgs/msg/String', self._subscribe_string),

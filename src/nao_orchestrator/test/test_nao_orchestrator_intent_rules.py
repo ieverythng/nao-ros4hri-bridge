@@ -16,6 +16,7 @@ from nao_orchestrator.intent_rules import resolve_ack_text
 from nao_orchestrator.intent_rules import resolve_say_text
 from nao_orchestrator.intent_rules import resolve_scan_result
 from nao_orchestrator.intent_rules import is_people_scan_target
+from nao_orchestrator.intent_rules import is_unresolved_report_template
 from nao_orchestrator.intent_rules import summarize_people_detection
 from nao_orchestrator.intent_rules import validate_execution_plan
 
@@ -297,6 +298,14 @@ def test_validate_execution_plan_accepts_report_result_skill() -> None:
     )
     assert envelope['errors'] == []
     assert envelope['steps'][0]['name'] == 'report_result'
+
+
+def test_unresolved_report_template_detects_evidence_placeholders() -> None:
+    assert is_unresolved_report_template(
+        'I found the following: [evidence.objects], [evidence.people].'
+    )
+    assert is_unresolved_report_template('Report {result.summary_text}.')
+    assert not is_unresolved_report_template('I found one person near the table.')
 
 
 def test_validate_execution_plan_accepts_ask_user_skill_and_defaults_failure_policy() -> None:

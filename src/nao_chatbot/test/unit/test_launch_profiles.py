@@ -89,6 +89,16 @@ def _assert_asr_is_opt_in(defaults: dict[str, str]) -> None:
     assert defaults["sim_use_laptop_tts"] == "false"
 
 
+def _assert_planner_dialogue_seam_defaults(defaults: dict[str, str]) -> None:
+    assert defaults["planner_dialogue_act_topic"] == "/planner/dialogue_act"
+    assert (
+        defaults["planner_dialogue_relay_topic"]
+        == "/nao_orchestrator/planner_dialogue_act"
+    )
+    assert defaults["dialogue_manager_planner_dialogue_wording_mode"] == "direct"
+    assert defaults["dialogue_manager_planner_completion_wording_mode"] == "direct"
+
+
 def test_sim_profile_provides_gscam_camera_and_rqt_with_planner():
     defaults = _launch_defaults(
         "launch/nao_chatbot_sim.launch.py",
@@ -107,6 +117,7 @@ def test_sim_profile_provides_gscam_camera_and_rqt_with_planner():
     assert defaults["enable_orchestrator_planner_gate"] == "true"
     assert defaults["start_fake_skills"] == "true"
     assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
+    _assert_planner_dialogue_seam_defaults(defaults)
     _assert_lab_vllm_defaults(defaults)
     _assert_asr_is_opt_in(defaults)
 
@@ -126,6 +137,7 @@ def test_robot_profile_uses_robot_camera_and_planner_mode_by_default():
     assert defaults["chatbot_planner_mode_enabled"] == "true"
     assert defaults["enable_orchestrator_planner_gate"] == "true"
     assert defaults["start_fake_skills"] == "true"
+    _assert_planner_dialogue_seam_defaults(defaults)
     _assert_lab_vllm_defaults(defaults)
     _assert_asr_is_opt_in(defaults)
 
@@ -151,6 +163,7 @@ def test_demo_profile_is_sim_only_with_mock_scan_and_planner_enabled():
     assert defaults["scan_result_mode"] == "success"
     assert "current scene summary" in defaults["scan_summary"]
     assert defaults["scan_report_after_success"] == "false"
+    _assert_planner_dialogue_seam_defaults(defaults)
     assert defaults["interaction_trace_compact_mode"] == "false"
     assert defaults["interaction_trace_include_raw_payloads"] == "false"
     assert defaults["interaction_trace_include_channels_csv"] == ""

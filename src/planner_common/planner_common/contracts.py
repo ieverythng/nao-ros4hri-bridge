@@ -490,6 +490,8 @@ def build_execution_feedback_payload(
 ) -> dict:
     """Build one normalized planner feedback payload."""
     resolved_step = step if isinstance(step, dict) else None
+    # Retry budget is plan-level remaining budget. Keep it independent from any
+    # per-step retry metadata so supervisor replan accounting cannot stall.
     resolved_retry_budget = _coerce_nonnegative_int(plan_context.get('retry_budget', 0))
     normalized_result_payload = _normalize_result_payload(result_payload or {})
     normalized_result_summary = str(result_summary or '').strip()
@@ -497,11 +499,6 @@ def build_execution_feedback_payload(
         normalized_result_summary = str(
             normalized_result_payload.get('summary_text', '')
         ).strip()
-    if resolved_step is not None:
-        resolved_retry_budget = _coerce_nonnegative_int(
-            resolved_step.get('retry_budget', resolved_retry_budget)
-        )
-
     payload = {
         'goal_id': str(plan_context.get('goal_id', '')).strip(),
         'goal_token': str(

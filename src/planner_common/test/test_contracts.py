@@ -234,6 +234,31 @@ def test_execution_feedback_builder_keeps_supervisor_shape() -> None:
     assert feedback.step_requires == ()
 
 
+def test_execution_feedback_builder_keeps_plan_retry_budget_independent_of_step() -> None:
+    payload = build_execution_feedback_payload(
+        intent='raw_user_input',
+        source='nao_orchestrator',
+        plan_context={
+            'goal_id': 'goal_2',
+            'plan_id': 'plan_2',
+            'plan_version': 5,
+            'retry_budget': 0,
+        },
+        status='failed',
+        event_type='step_failed',
+        step={
+            'id': 'step_1',
+            'type': 'skill',
+            'name': 'find_object',
+            'retry_budget': 3,
+            'on_failure': 'replan',
+        },
+    )
+    feedback = ExecutionFeedback.from_payload(payload)
+    assert feedback.retry_budget == 0
+    assert feedback.step_retry_budget == 3
+
+
 def test_extract_json_object_accepts_fenced_json() -> None:
     payload = '```json\n{"plan":{"plan_id":"plan_7"}}\n```'
     assert extract_json_object(payload) == {'plan': {'plan_id': 'plan_7'}}

@@ -257,6 +257,30 @@ def test_planner_engine_clarifies_when_retry_budget_is_exhausted() -> None:
     assert decision.payload['plan']['replan_hint'] == 'clarify_user'
 
 
+def test_planner_engine_caps_model_retry_budget_to_remaining_feedback_budget() -> None:
+    provider = _FakeProvider(
+        '{"ack_text":"Retrying.","retry_budget":3,"steps":[{"type":"skill","name":"find_object","args":{"target":"cup"},"requires":[],"on_failure":"replan","retry_budget":3}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=2)
+    request = PlannerRequest.from_payload(
+        {'request_id': 'r3b', 'goal_id': 'goal_3b', 'user_text': 'find the cup'}
+    )
+    feedback = ExecutionFeedback.from_payload(
+        {
+            'goal_id': 'goal_3b',
+            'plan_id': 'plan_1',
+            'plan_version': 1,
+            'status': 'failed',
+            'reason': 'target moved',
+            'retry_budget': 2,
+        }
+    )
+
+    decision = engine.plan_request(request, feedback=feedback, goal_id='goal_3b', plan_version=2)
+    assert decision.mode == 'replan'
+    assert decision.payload['plan']['retry_budget'] == 1
+
+
 def test_planner_engine_uses_provider_for_multi_step_requests_even_with_rule_intent() -> None:
     provider = _FakeProvider(
         '{"ack_text":"Moving my head up, then sitting down.","steps":[{"type":"skill","name":"perform_motion","args":{"object":"head_look_up"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"perform_motion","args":{"object":"sit"},"requires":[],"on_failure":"replan","retry_budget":0}]}'

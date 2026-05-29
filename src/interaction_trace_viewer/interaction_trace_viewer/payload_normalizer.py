@@ -169,6 +169,7 @@ def _event_type_for_channel(channel: str) -> str:
         '/intents': 'planner_output',
         '/planner/execution_feedback': 'execution_feedback',
         '/planner/dialogue_act': 'planner_dialogue_act',
+        '/nao_orchestrator/planner_dialogue_act': 'planner_dialogue_act',
         '/chatbot_llm/turn_trace': 'chatbot_turn_trace',
         '/fake_skills/events': 'skill_result',
         '/world_model/enriched_snapshot': 'kb_snapshot',
