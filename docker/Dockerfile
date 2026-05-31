@@ -126,6 +126,7 @@ RUN bash -lc 'source /opt/ros/jazzy/setup.bash && \
       kb_skills \
       chatbot_msgs \
       dialogue_manager \
+      rqt_dialogues \
       asr_vosk \
       chatbot_llm \
       planner_common \

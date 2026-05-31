@@ -1433,6 +1433,18 @@ def generate_profile_launch_description(
         default_value="",
         description="Optional JSON configuration passed to the default dialogue session.",
     )
+    dialogue_manager_say_action_arg = DeclareLaunchArgument(
+        "dialogue_manager_say_action",
+        default_value=_profile_default(
+            profile_defaults,
+            "dialogue_manager_say_action",
+            "/nao/say",
+        ),
+        description=(
+            "Say action consumed by dialogue_manager for spoken output. "
+            "Use /nao/say for the NAO stack."
+        ),
+    )
     dialogue_manager_planner_dialogue_wording_mode_arg = DeclareLaunchArgument(
         "dialogue_manager_planner_dialogue_wording_mode",
         default_value=_profile_default(
@@ -1825,6 +1837,12 @@ def generate_profile_launch_description(
             {
                 "default_chat_configuration": ParameterValue(
                     LaunchConfiguration("dialogue_manager_default_chat_configuration"),
+                    value_type=str,
+                )
+            },
+            {
+                "say_action": ParameterValue(
+                    LaunchConfiguration("dialogue_manager_say_action"),
                     value_type=str,
                 )
             },
@@ -2778,6 +2796,7 @@ def generate_profile_launch_description(
             dialogue_manager_enable_default_chat_arg,
             dialogue_manager_default_chat_role_arg,
             dialogue_manager_default_chat_configuration_arg,
+            dialogue_manager_say_action_arg,
             dialogue_manager_planner_dialogue_wording_mode_arg,
             dialogue_manager_planner_completion_wording_mode_arg,
             chat_input_tracked_topic_arg,

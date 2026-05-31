@@ -114,6 +114,8 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
 - `planner_request_topic`: defaults to `/planner/request`.
 - `planner_request_intent`: defaults to `planner_request`.
 - `planner_dialogue_act_topic`: defaults to `/planner/dialogue_act`.
+- `dialogue_manager_say_action`: defaults to `/nao/say` in this stack so
+  Dialogue Manager talks through `nao_say_skill`.
 - `dialogue_manager_planner_dialogue_wording_mode`: defaults to `direct` in
   live/sim stack profiles so planner dialogue acts are spoken from planner text.
 - `dialogue_manager_planner_completion_wording_mode`: defaults to `direct` in
