@@ -40,8 +40,6 @@ from nao_chatbot.interaction_sim_support import build_interaction_sim_actions
 DEFAULT_VLLM_MODEL = "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ"
 DEFAULT_VLLM_BASE_URL = "http://10.7.138.215:8004"
 DEFAULT_VLLM_CHAT_URL = DEFAULT_VLLM_BASE_URL + "/v1/chat/completions"
-DEFAULT_PLANNER_DIALOGUE_WORDING_MODE = "direct"
-DEFAULT_PLANNER_COMPLETION_WORDING_MODE = "direct"
 
 _LAB_VLLM_DEFAULTS = {
     "chatbot_model": DEFAULT_VLLM_MODEL,
@@ -87,8 +85,6 @@ _SIM_CAMERA_DEFAULTS = {
     "sim_use_laptop_tts": "false",
     "start_interaction_trace_viewer": "false",
     "interaction_trace_compact_mode": "false",
-    "dialogue_manager_planner_dialogue_wording_mode": DEFAULT_PLANNER_DIALOGUE_WORDING_MODE,
-    "dialogue_manager_planner_completion_wording_mode": DEFAULT_PLANNER_COMPLETION_WORDING_MODE,
     "interaction_trace_enable_scene_summary_channel": "false",
     "interaction_trace_scene_summary_emit_on_change_only": "true",
     "interaction_trace_scene_summary_min_interval_sec": "1.0",
@@ -128,8 +124,6 @@ _ROBOT_CAMERA_DEFAULTS = {
     "start_rqt_console": "false",
     "sim_use_laptop_tts": "false",
     "start_interaction_trace_viewer": "false",
-    "dialogue_manager_planner_dialogue_wording_mode": DEFAULT_PLANNER_DIALOGUE_WORDING_MODE,
-    "dialogue_manager_planner_completion_wording_mode": DEFAULT_PLANNER_COMPLETION_WORDING_MODE,
     "interaction_trace_enable_scene_summary_channel": "false",
     "interaction_trace_scene_summary_emit_on_change_only": "true",
     "interaction_trace_scene_summary_min_interval_sec": "1.0",
@@ -1433,41 +1427,6 @@ def generate_profile_launch_description(
         default_value="",
         description="Optional JSON configuration passed to the default dialogue session.",
     )
-    dialogue_manager_say_action_arg = DeclareLaunchArgument(
-        "dialogue_manager_say_action",
-        default_value=_profile_default(
-            profile_defaults,
-            "dialogue_manager_say_action",
-            "/nao/say",
-        ),
-        description=(
-            "Say action consumed by dialogue_manager for spoken output. "
-            "Use /nao/say for the NAO stack."
-        ),
-    )
-    dialogue_manager_planner_dialogue_wording_mode_arg = DeclareLaunchArgument(
-        "dialogue_manager_planner_dialogue_wording_mode",
-        default_value=_profile_default(
-            profile_defaults,
-            "dialogue_manager_planner_dialogue_wording_mode",
-            "chatbot",
-        ),
-        description=(
-            "How planner dialogue acts are spoken by dialogue_manager: "
-            "chatbot routes all wording through chatbot_llm, direct uses planner text."
-        ),
-    )
-    dialogue_manager_planner_completion_wording_mode_arg = DeclareLaunchArgument(
-        "dialogue_manager_planner_completion_wording_mode",
-        default_value=_profile_default(
-            profile_defaults,
-            "dialogue_manager_planner_completion_wording_mode",
-            "chatbot",
-        ),
-        description=(
-            "Compatibility override for notify_completion wording: chatbot or direct."
-        ),
-    )
     chat_input_tracked_topic_arg = DeclareLaunchArgument(
         "chat_input_tracked_topic",
         default_value=_profile_default(
@@ -1849,18 +1808,6 @@ def generate_profile_launch_description(
             {
                 "planner_dialogue_act_topic": ParameterValue(
                     LaunchConfiguration("planner_dialogue_relay_topic"),
-                    value_type=str,
-                )
-            },
-            {
-                "planner_dialogue_wording_mode": ParameterValue(
-                    LaunchConfiguration("dialogue_manager_planner_dialogue_wording_mode"),
-                    value_type=str,
-                )
-            },
-            {
-                "planner_completion_wording_mode": ParameterValue(
-                    LaunchConfiguration("dialogue_manager_planner_completion_wording_mode"),
                     value_type=str,
                 )
             },
@@ -2796,9 +2743,6 @@ def generate_profile_launch_description(
             dialogue_manager_enable_default_chat_arg,
             dialogue_manager_default_chat_role_arg,
             dialogue_manager_default_chat_configuration_arg,
-            dialogue_manager_say_action_arg,
-            dialogue_manager_planner_dialogue_wording_mode_arg,
-            dialogue_manager_planner_completion_wording_mode_arg,
             chat_input_tracked_topic_arg,
             chat_input_speech_topic_arg,
             chat_input_is_speaking_topic_arg,

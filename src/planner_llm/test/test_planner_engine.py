@@ -83,8 +83,6 @@ def test_planner_engine_uses_provider_for_non_rule_request() -> None:
 
     decision = engine.plan_request(
         request,
-        world_model_text='Current world model context: cup visible',
-        world_model_snapshot={'scene_targets': ['cup']},
         goal_id='goal_2',
         plan_version=2,
         status='replanning',

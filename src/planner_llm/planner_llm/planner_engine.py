@@ -61,8 +61,7 @@ class PlannerEngine:
         self,
         request: PlannerRequest,
         *,
-        world_model_text: str = '',
-        world_model_snapshot: dict | None = None,
+        state_t0: dict | None = None,
         feedback: ExecutionFeedback | None = None,
         goal_id: str = '',
         plan_version: int = 1,
@@ -101,8 +100,7 @@ class PlannerEngine:
             raw_model_output = self._provider.generate(
                 self._build_messages(
                     request,
-                    world_model_text=world_model_text,
-                    world_model_snapshot=world_model_snapshot or {},
+                    state_t0=state_t0 or {},
                     feedback=feedback,
                     goal_id=resolved_goal_id,
                     plan_version=resolved_plan_version,
@@ -146,8 +144,7 @@ class PlannerEngine:
                 retry_raw_model_output = self._provider.generate(
                     self._build_messages(
                         request,
-                        world_model_text=world_model_text,
-                        world_model_snapshot=world_model_snapshot or {},
+                        state_t0=state_t0 or {},
                         feedback=feedback,
                         goal_id=resolved_goal_id,
                         plan_version=resolved_plan_version,
@@ -202,8 +199,7 @@ class PlannerEngine:
         self,
         request: PlannerRequest,
         *,
-        world_model_text: str,
-        world_model_snapshot: dict,
+        state_t0: dict,
         feedback: ExecutionFeedback | None,
         goal_id: str,
         plan_version: int,
@@ -214,8 +210,7 @@ class PlannerEngine:
             'request': self._request_payload(request),
             'goal_id': goal_id,
             'plan_version': plan_version,
-            'world_model_text': str(world_model_text or '').strip(),
-            'world_model_snapshot': world_model_snapshot,
+            'state_t0': state_t0 if isinstance(state_t0, dict) else {},
             'execution_feedback': self._feedback_payload(feedback),
             'skill_registry': self._skill_registry.prompt_manifest(),
             'allowed_step_types': list(self._skill_registry.step_types),
@@ -287,8 +282,6 @@ class PlannerEngine:
             request=request,
             feedback=feedback,
             steps=steps,
-            ack_text=str(parsed.get('ack_text', '')).strip(),
-            ack_mode=str(parsed.get('ack_mode', request.ack_mode)).strip(),
             validation_status=str(parsed.get('validation_status', 'draft')).strip() or 'draft',
             failure_reason=str(parsed.get('failure_reason', '')).strip(),
             user_facing_reason=str(parsed.get('user_facing_reason', '')).strip(),
@@ -366,8 +359,6 @@ class PlannerEngine:
             request=request,
             feedback=feedback,
             steps=steps,
-            ack_text=str(parsed.get('ack_text', '')).strip(),
-            ack_mode=str(parsed.get('ack_mode', request.ack_mode)).strip(),
             validation_status=str(parsed.get('validation_status', 'draft')).strip() or 'draft',
             failure_reason=str(parsed.get('failure_reason', '')).strip(),
             user_facing_reason=str(parsed.get('user_facing_reason', '')).strip(),
@@ -407,8 +398,6 @@ class PlannerEngine:
                     args={'text': clean_reason},
                 )
             ],
-            ack_text='',
-            ack_mode='',
             validation_status='draft',
             failure_reason=clean_reason if mode == 'fail' else '',
             user_facing_reason=clean_reason,
@@ -444,8 +433,6 @@ class PlannerEngine:
                     args={'text': reason},
                 )
             ],
-            ack_text='',
-            ack_mode='',
             validation_status='failed',
             failure_reason=reason,
             user_facing_reason=reason,
@@ -482,8 +469,6 @@ class PlannerEngine:
                     args={'text': clean_reason},
                 )
             ],
-            ack_text='',
-            ack_mode='',
             validation_status='invalid',
             failure_reason=clean_reason,
             user_facing_reason=clean_reason,
@@ -538,8 +523,6 @@ class PlannerEngine:
                             on_failure='replan',
                         )
                     ],
-                    ack_text='',
-                    ack_mode='',
                     validation_status='draft',
                     retry_budget=retry_budget,
                     scene_targets=scene_targets,
@@ -551,19 +534,17 @@ class PlannerEngine:
                 )
 
         if any(intent_name in ('greet', IntentLabels.GREET) for intent_name in request.normalized_intents):
-            return self._build_decision(
-                request=request,
-                feedback=feedback,
+                return self._build_decision(
+                    request=request,
+                    feedback=feedback,
                 steps=[
                     self._step(
                         step_type='say',
                         name='say',
-                        args={'text': request.ack_text or 'Hello!'},
+                        args={'text': 'Hello! What task should I perform?'},
                     )
                 ],
-                ack_text='',
-                ack_mode='',
-                validation_status='draft',
+                    validation_status='draft',
                 retry_budget=retry_budget,
                 scene_targets=scene_targets,
                 mode='rule',
@@ -600,8 +581,6 @@ class PlannerEngine:
             request=request,
             feedback=feedback,
             steps=steps,
-            ack_text=request.ack_text,
-            ack_mode=request.ack_mode,
             validation_status='draft',
             retry_budget=self._default_retry_budget,
             scene_targets=self._scene_targets_for_decision(request, feedback, {}),
@@ -623,8 +602,6 @@ class PlannerEngine:
             'request_kind': request.request_kind,
             'goal_text': request.goal_text,
             'normalized_intents': list(request.normalized_intents),
-            'ack_text': request.ack_text,
-            'ack_mode': request.ack_mode,
             'scene_targets': list(request.scene_targets),
             'dialogue_context': list(request.dialogue_context),
             'requested_plan': list(request.requested_plan),
@@ -742,8 +719,6 @@ class PlannerEngine:
         request: PlannerRequest,
         feedback: ExecutionFeedback | None,
         steps: list[dict],
-        ack_text: str,
-        ack_mode: str,
         validation_status: str,
         failure_reason: str = '',
         user_facing_reason: str = '',
@@ -760,8 +735,6 @@ class PlannerEngine:
     ) -> PlannerDecision:
         payload = build_plan_payload(
             request=request,
-            ack_text=ack_text,
-            ack_mode=ack_mode,
             validation_status=validation_status,
             failure_reason=failure_reason,
             user_facing_reason=user_facing_reason,

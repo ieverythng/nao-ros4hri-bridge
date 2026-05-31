@@ -37,3 +37,16 @@ Use package-local AGENTS guidance before large edits in these stacks:
 Canonical registry contract:
 
 - `docs/architecture/skill_registry_contract.md`
+
+Canonical active integration plan:
+
+- `docs/plans/nao_ros4hri_masterplan.md` (+ `.html`)
+
+Planner seam contract reminders:
+
+- planner request/output contracts no longer use `goal_token`.
+- remove/avoid `grounded_context.world_model_*`; use Hybrid Minimal T0
+  (`knowledge_snapshot`, `scene_summary`, `state_t0`).
+- planner dialogue wording mode launch/param seams were removed; keep direct
+  planner dialogue act flow and completion relay behavior consistent with
+  `dialogue_manager`.

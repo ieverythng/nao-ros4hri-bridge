@@ -70,8 +70,7 @@ PLANNER_DIALOGUE_ACTS = (
 _DEFAULT_GROUNDED_CONTEXT = {
     'knowledge_snapshot': {},
     'scene_summary': {},
-    'world_model_snapshot': {},
-    'world_model_text': '',
+    'state_t0': {},
 }
 _DEFAULT_COMMUNICATION_POLICY = {
     'emit_acknowledge': False,
@@ -320,10 +319,9 @@ def normalize_grounded_context(value) -> dict:
     if not isinstance(raw_payload, dict):
         return payload
 
-    for key in ('knowledge_snapshot', 'scene_summary', 'world_model_snapshot'):
+    for key in ('knowledge_snapshot', 'scene_summary', 'state_t0'):
         item = raw_payload.get(key, {})
         payload[key] = item if isinstance(item, dict) else {}
-    payload['world_model_text'] = str(raw_payload.get('world_model_text', '')).strip()
     return payload
 
 
@@ -389,8 +387,6 @@ def build_plan_payload(
     *,
     request,
     steps,
-    ack_text: str = '',
-    ack_mode: str = '',
     validation_status: str = 'draft',
     failure_reason: str = '',
     user_facing_reason: str = '',
@@ -407,24 +403,15 @@ def build_plan_payload(
     """Build one planner result payload using the shared envelope shape."""
     resolved_scene_targets = list(scene_targets or getattr(request, 'scene_targets', []))
     resolved_goal_id = str(goal_id or getattr(request, 'goal_id', '')).strip()
-    resolved_goal_token = str(getattr(request, 'goal_token', resolved_goal_id)).strip() or resolved_goal_id
     resolved_plan_id = str(plan_id or make_plan_id()).strip()
-    resolved_ack_text = str(ack_text or getattr(request, 'ack_text', '')).strip()
-    resolved_ack_mode = str(ack_mode or getattr(request, 'ack_mode', '')).strip()
     resolved_policy = normalize_communication_policy(communication_policy)
 
     return {
-        'goal_id': resolved_goal_id,
-        'goal_token': resolved_goal_token,
-        'ack_text': resolved_ack_text,
-        'ack_mode': resolved_ack_mode,
-        'scene_targets': resolved_scene_targets,
         'grounded_context': normalize_grounded_context(
             getattr(request, 'grounded_context', {})
         ),
         'plan': {
             'goal_id': resolved_goal_id,
-            'goal_token': resolved_goal_token,
             'plan_id': resolved_plan_id,
             'plan_version': max(1, int(plan_version or 1)),
             'status': str(status or '').strip().lower() or 'draft',
@@ -445,7 +432,6 @@ def build_dialogue_act_payload(
     *,
     goal_id: str,
     act: str,
-    goal_token: str = '',
     plan_id: str = '',
     plan_version: int = 0,
     priority: str = 'normal',
@@ -458,7 +444,6 @@ def build_dialogue_act_payload(
     """Build one planner dialogue act payload."""
     return {
         'goal_id': str(goal_id or '').strip(),
-        'goal_token': str(goal_token or '').strip() or str(goal_id or '').strip(),
         'plan_id': str(plan_id or '').strip(),
         'plan_version': max(0, int(plan_version or 0)),
         'act': _normalize_choice(act, PLANNER_DIALOGUE_ACTS, 'progress_update'),
@@ -501,9 +486,6 @@ def build_execution_feedback_payload(
         ).strip()
     payload = {
         'goal_id': str(plan_context.get('goal_id', '')).strip(),
-        'goal_token': str(
-            plan_context.get('goal_token', plan_context.get('goal_id', ''))
-        ).strip(),
         'plan_id': str(plan_context.get('plan_id', '')).strip(),
         'plan_version': max(0, _coerce_nonnegative_int(plan_context.get('plan_version', 0))),
         'intent': str(intent or '').strip(),
@@ -549,15 +531,12 @@ class PlannerRequest:
 
     request_id: str
     goal_id: str
-    goal_token: str
     parent_goal_id: str
     supersedes_goal_id: str
     request_kind: str
     goal_text: str
     user_text: str
     normalized_intents: tuple[str, ...]
-    ack_text: str
-    ack_mode: str
     scene_targets: tuple[str, ...]
     dialogue_context: tuple[str, ...]
     requested_plan: tuple[dict, ...]
@@ -584,7 +563,6 @@ class PlannerRequest:
         return cls(
             request_id=request_id,
             goal_id=goal_id,
-            goal_token=str(data.get('goal_token', goal_id)).strip() or goal_id,
             parent_goal_id=str(data.get('parent_goal_id', '')).strip(),
             supersedes_goal_id=str(data.get('supersedes_goal_id', '')).strip(),
             request_kind=_normalize_choice(
@@ -597,8 +575,6 @@ class PlannerRequest:
             ).strip(),
             user_text=str(data.get('user_text', '')).strip(),
             normalized_intents=tuple(coerce_str_list(data.get('normalized_intents', []))),
-            ack_text=str(data.get('ack_text', '')).strip(),
-            ack_mode=str(data.get('ack_mode', '')).strip(),
             scene_targets=tuple(coerce_str_list(data.get('scene_targets', []))),
             dialogue_context=tuple(coerce_str_list(dialogue_context)),
             requested_plan=requested_plan,
@@ -680,7 +656,6 @@ class ExecutionFeedback:
     """Normalized planner/executor feedback payload."""
 
     goal_id: str
-    goal_token: str
     plan_id: str
     plan_version: int
     event_type: str
@@ -721,7 +696,6 @@ class ExecutionFeedback:
             result_summary = str(result_payload.get('summary_text', '')).strip()
         return cls(
             goal_id=str(data.get('goal_id', '')).strip(),
-            goal_token=str(data.get('goal_token', data.get('goal_id', ''))).strip(),
             plan_id=str(data.get('plan_id', '')).strip(),
             plan_version=max(0, _coerce_nonnegative_int(data.get('plan_version', 0))),
             event_type=str(
@@ -766,7 +740,6 @@ class PlannerDialogueAct:
     """Normalized planner-owned dialogue act payload."""
 
     goal_id: str
-    goal_token: str
     plan_id: str
     plan_version: int
     act: str
@@ -782,7 +755,6 @@ class PlannerDialogueAct:
         data = parse_json_object(payload)
         return cls(
             goal_id=str(data.get('goal_id', '')).strip(),
-            goal_token=str(data.get('goal_token', data.get('goal_id', ''))).strip(),
             plan_id=str(data.get('plan_id', '')).strip(),
             plan_version=max(0, _coerce_nonnegative_int(data.get('plan_version', 0))),
             act=_normalize_choice(data.get('act', ''), PLANNER_DIALOGUE_ACTS, 'progress_update'),
@@ -793,118 +765,3 @@ class PlannerDialogueAct:
             slots_needed=tuple(coerce_str_list(data.get('slots_needed', []))),
             context=_clean_payload(data.get('context', {})),
         )
-
-
-@dataclass(**_FROZEN_DATACLASS_KWARGS)
-class EnrichedEntity:
-    """One WME entity entry shared between planner and enrichment code."""
-
-    entity_id: str
-    label: str
-    kb_class: str
-    state: str
-    score: float
-    source: str
-    last_seen_sec: float
-    age_sec: float
-    is_plan_relevant: bool
-    risk_tags: tuple[str, ...]
-
-    @classmethod
-    def from_dict(cls, payload: dict) -> 'EnrichedEntity':
-        return cls(
-            entity_id=str(payload.get('entity_id', '')).strip(),
-            label=str(payload.get('label', '')).strip(),
-            kb_class=str(payload.get('kb_class', '')).strip(),
-            state=str(payload.get('state', '')).strip().lower(),
-            score=_coerce_float(payload.get('score', 0.0)),
-            source=str(payload.get('source', '')).strip(),
-            last_seen_sec=_coerce_float(payload.get('last_seen_sec', 0.0)),
-            age_sec=_coerce_float(payload.get('age_sec', 0.0)),
-            is_plan_relevant=bool(payload.get('is_plan_relevant', False)),
-            risk_tags=tuple(coerce_str_list(payload.get('risk_tags', []))),
-        )
-
-
-@dataclass(**_FROZEN_DATACLASS_KWARGS)
-class EnrichedSnapshot:
-    """Normalized WME world-model snapshot."""
-
-    observer: str
-    backend: str
-    active_plan_id: str
-    execution_status: str
-    execution_reason: str
-    scene_targets: tuple[str, ...]
-    entities: tuple[EnrichedEntity, ...]
-    kb_rows: tuple[dict, ...]
-    timestamp_sec: float
-
-    @classmethod
-    def from_payload(cls, payload) -> 'EnrichedSnapshot':
-        data = parse_json_object(payload)
-        raw_entities = data.get('entities', [])
-        if not isinstance(raw_entities, list):
-            raw_entities = []
-        raw_kb_rows = data.get('kb_rows', [])
-        if not isinstance(raw_kb_rows, list):
-            raw_kb_rows = []
-        return cls(
-            observer=str(data.get('observer', '')).strip(),
-            backend=str(data.get('backend', '')).strip(),
-            active_plan_id=str(data.get('active_plan_id', '')).strip(),
-            execution_status=str(data.get('execution_status', '')).strip().lower(),
-            execution_reason=str(data.get('execution_reason', '')).strip(),
-            scene_targets=tuple(coerce_str_list(data.get('scene_targets', []))),
-            entities=tuple(
-                EnrichedEntity.from_dict(item)
-                for item in raw_entities
-                if isinstance(item, dict)
-            ),
-            kb_rows=tuple(item for item in raw_kb_rows if isinstance(item, dict)),
-            timestamp_sec=_coerce_float(data.get('timestamp_sec', 0.0)),
-        )
-
-
-def build_world_model_text(
-    snapshot: EnrichedSnapshot,
-    *,
-    max_chars: int = 2400,
-    max_entities: int = 12,
-    max_kb_rows: int = 8,
-) -> str:
-    """Render a bounded text block for prompt injection."""
-    lines = [
-        'Current world model context:',
-        f'- observer: {snapshot.observer or "unknown"}',
-        f'- backend: {snapshot.backend or "unknown"}',
-    ]
-    if snapshot.active_plan_id:
-        lines.append(
-            f'- active plan: {snapshot.active_plan_id} ({snapshot.execution_status or "unknown"})'
-        )
-    if snapshot.execution_reason:
-        lines.append(f'- execution note: {snapshot.execution_reason}')
-    if snapshot.scene_targets:
-        lines.append('- scene targets: ' + ', '.join(snapshot.scene_targets))
-
-    if snapshot.entities:
-        lines.append('- entities:')
-        for entity in snapshot.entities[:max_entities]:
-            parts = [
-                entity.entity_id or entity.label or 'unknown_entity',
-                entity.kb_class or entity.label or 'Unknown',
-                f'state={entity.state or "unknown"}',
-            ]
-            if entity.is_plan_relevant:
-                parts.append('plan-relevant')
-            if entity.risk_tags:
-                parts.append('risk=' + '|'.join(entity.risk_tags))
-            lines.append('  - ' + ', '.join(parts))
-
-    if snapshot.kb_rows:
-        lines.append('- kb rows:')
-        for row in snapshot.kb_rows[:max_kb_rows]:
-            lines.append('  - ' + truncate_text(json.dumps(row, sort_keys=True), 180))
-
-    return truncate_text('\n'.join(lines), max_chars)

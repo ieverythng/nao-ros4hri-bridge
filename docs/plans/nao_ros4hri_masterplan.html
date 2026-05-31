@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ROS4HRI Integration Master Plan (Consolidated, Active)</title>
+  <title>NAO ROS4HRI Masterplan (Consolidated, Active)</title>
   <style>
     :root {
       color-scheme: light dark;
@@ -76,20 +76,20 @@
   </style>
 </head>
 <body>
-<h1>ROS4HRI Integration Master Plan (Consolidated, Active)</h1>
-<p><strong>Date:</strong> 2026-05-29 (status refresh)</p>
+<h1>NAO ROS4HRI Masterplan (Consolidated, Active)</h1>
+<p><strong>Date:</strong> 2026-05-31 (status refresh)</p>
 <p><strong>Branch context:</strong> <code>feat/TFM-LLM_planner</code> (+ nested repos and Neural-Wokbench integration seam)</p>
 <p><strong>Scope:</strong> Single active execution plan for planner/chatbot/orchestrator seams, canonical registry alignment, fake-skill operational hardening, and observability/dashboard rollout.</p>
 <h2>1. Consolidation Policy (What This File Replaces)</h2>
 <p>This file is now the canonical integration plan and absorbs execution tracking from:</p>
 <ul>
-<li><code>docs/artifacts/plan_archive/ros4hri_integration_master_plan_2026-05-15.md</code></li>
 <li><code>docs/artifacts/plan_archive/ab_registry_decomposition_codex_handoff.md</code></li>
 <li><code>docs/artifacts/plan_archive/dashboard_implementation_roadmap.md</code></li>
 <li><code>docs/artifacts/plan_archive/simple_dialogue_trace_viewer_spec.md</code></li>
 <li><code>docs/artifacts/plan_archive/full_nao_dashboard_spec.md</code></li>
 </ul>
-<p>These source plans are preserved in <code>docs/artifacts/plan_archive/</code> for provenance.</p>
+<p>The older <code>ros4hri_integration_master_plan_2026-05-15</code> baseline has now been fully merged into this file and removed from the archive to keep one canonical masterplan surface.</p>
+<p>The remaining source plans are preserved in <code>docs/artifacts/plan_archive/</code> for provenance.</p>
 <p>The fake skills stream remains separate by design:</p>
 <ul>
 <li><code>fake_skills_codex_handoff.md</code> (+ HTML)</li>
@@ -128,10 +128,11 @@
 <li><strong>Done</strong>: <code>scan</code> is action-server owned and dispatched by orchestrator.</li>
 <li><strong>Done</strong>: <code>report_result</code> now executes as action-server-owned AB=1 skill (<code>/skill/report_result</code>) instead of a dialogue-act shortcut.</li>
 <li><strong>Done</strong>: planner/orchestrator action routing validated for <code>/skill/scan</code>, <code>/skill/report_result</code>, <code>/skill/say</code>, <code>/skill/do_head_motion</code>.</li>
-<li><strong>Done</strong>: goal token/version guardrails and supersede semantics are present in planner-orchestrator seam.</li>
+<li><strong>Done</strong>: planner lineage now uses <code>goal_id</code> continuity plus <code>plan_id</code>/<code>plan_version</code>; token-based ownership seams were removed.</li>
 <li><strong>Done</strong>: route-hardening now defaults visibility-only scene checks to <code>knowledge_query</code> unless explicit scan/action wording is requested.</li>
 <li><strong>Done (2026-05-27)</strong>: planner dialogue acts are consumed via orchestrator relay seam (<code>/planner/dialogue_act</code> -&gt; <code>/nao_orchestrator/planner_dialogue_act</code> -&gt; <code>dialogue_manager</code>) instead of direct planner-to-dialogue-manager ownership.</li>
-<li><strong>Done (2026-05-27)</strong>: live launch defaults now force <code>dialogue_manager_planner_dialogue_wording_mode=direct</code> and <code>dialogue_manager_planner_completion_wording_mode=direct</code> so planner dialogue is not auto-routed back into <code>chatbot_llm</code>.</li>
+<li><strong>Done</strong>: planner dialogue acts run in direct mode by default, while completion wording stays chatbot-relay-owned when a chatbot client is available.</li>
+<li><strong>Done</strong>: planner grounding contracts now use Hybrid Minimal T0 (<code>knowledge_snapshot</code>, <code>scene_summary</code>, <code>state_t0</code>) with world-model seams removed.</li>
 <li><strong>Done</strong>: structured <code>chatbot_turn_trace</code> visibility is available for dialogue vs planner-handoff attribution.</li>
 <li><strong>Done (2026-05-26)</strong>: planner-mode routing now guards visibility-only scene questions toward <code>knowledge_query</code> unless the user explicitly requests a new scan/action.</li>
 <li><strong>In progress</strong>: proactive wording + speech arbitration pass to avoid duplicate user-facing utterances when execution acknowledgements and planner dialogue completions occur in the same interaction.</li>

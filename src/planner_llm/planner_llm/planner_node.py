@@ -13,7 +13,6 @@ from std_msgs.msg import String
 from planner_common import DEFAULT_PLANNER_REQUEST_INTENT
 from planner_common import ExecutionFeedback
 from planner_common import PlannerRequest
-from planner_common import parse_json_object
 from planner_llm.planner_engine import PlannerDecision
 from planner_llm.planner_engine import PlannerEngine
 from planner_llm.providers import PlannerProviderConfig
@@ -41,8 +40,6 @@ class PlannerNode(Node):
         self.declare_parameter('intent_topic', '/intents')
         self.declare_parameter('planner_feedback_topic', '/planner/execution_feedback')
         self.declare_parameter('planner_dialogue_act_topic', '/planner/dialogue_act')
-        self.declare_parameter('enriched_snapshot_topic', '/world_model/enriched_snapshot')
-        self.declare_parameter('enriched_text_topic', '/world_model/enriched_text')
         self.declare_parameter('planner_request_intent', DEFAULT_PLANNER_REQUEST_INTENT)
         self.declare_parameter('default_intent_name', Intent.RAW_USER_INPUT)
         self.declare_parameter('skill_registry_path', '')
@@ -71,8 +68,6 @@ class PlannerNode(Node):
             'planner_dialogue_act_topic',
             '/planner/dialogue_act',
         )
-        self._enriched_snapshot_topic = self._text_parameter('enriched_snapshot_topic')
-        self._enriched_text_topic = self._text_parameter('enriched_text_topic')
         self._planner_request_intent = self._text_parameter(
             'planner_request_intent',
             DEFAULT_PLANNER_REQUEST_INTENT,
@@ -125,21 +120,14 @@ class PlannerNode(Node):
         )
         self.create_subscription(Intent, self._planner_request_topic, self._on_planner_request, 10)
         self.create_subscription(String, self._planner_feedback_topic, self._on_feedback, 10)
-        self.create_subscription(String, self._enriched_snapshot_topic, self._on_world_snapshot, 10)
-        self.create_subscription(String, self._enriched_text_topic, self._on_world_text, 10)
-
-        self._world_snapshot_payload: dict = {}
-        self._world_text = ''
 
         self.get_logger().info(
-            '[STACK READY] planner_llm ready | request=%s intents=%s feedback=%s dialogue_act=%s snapshot=%s text=%s provider=%s model=%s auto_replan=%s'
+            '[STACK READY] planner_llm ready | request=%s intents=%s feedback=%s dialogue_act=%s provider=%s model=%s auto_replan=%s'
             % (
                 self._planner_request_topic,
                 self._intent_topic,
                 self._planner_feedback_topic,
                 self._planner_dialogue_act_topic,
-                self._enriched_snapshot_topic,
-                self._enriched_text_topic,
                 provider_config.provider,
                 provider_config.model,
                 self._auto_replan,
@@ -152,12 +140,6 @@ class PlannerNode(Node):
                 str(getattr(prompt_pack, 'prompt_pack_version', '')),
             )
         )
-
-    def _on_world_snapshot(self, msg: String) -> None:
-        self._world_snapshot_payload = parse_json_object(msg.data)
-
-    def _on_world_text(self, msg: String) -> None:
-        self._world_text = str(msg.data or '').strip()
 
     def _text_parameter(self, name: str, fallback: str = '') -> str:
         return str(self.get_parameter(name).value).strip() or str(fallback or '')
@@ -317,8 +299,6 @@ class PlannerNode(Node):
 
         outcome = self._supervisor.handle_request(
             planner_request,
-            world_model_text=self._world_text,
-            world_model_snapshot=self._world_snapshot_payload,
         )
         self._publish_outcome(
             outcome,
@@ -345,8 +325,6 @@ class PlannerNode(Node):
 
         outcome = self._supervisor.handle_feedback(
             feedback,
-            world_model_text=self._world_text,
-            world_model_snapshot=self._world_snapshot_payload,
         )
         self._publish_outcome(outcome, modality='planner_feedback', source='planner_llm')
 

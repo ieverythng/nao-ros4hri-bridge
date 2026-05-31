@@ -87,8 +87,6 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
 - `start_dialogue_manager`
 - `start_planner_llm`
 - `chatbot_planner_mode_enabled`
-- `dialogue_manager_planner_dialogue_wording_mode`
-- `dialogue_manager_planner_completion_wording_mode`
 - `start_nao_orchestrator`
 - `start_nao_say_skill`
 - `start_nao_replay_motion`

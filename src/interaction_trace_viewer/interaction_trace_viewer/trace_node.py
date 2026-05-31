@@ -76,14 +76,6 @@ class InteractionTraceNode(Node):
             include_event_types=self._include_event_types,
             exclude_event_types=self._exclude_event_types,
         )
-        if (
-            self._include_event_types
-            and 'kb_snapshot' in self._include_event_types
-            and self._include_channels & {'world_model/enriched_snapshot', 'world_model/enriched_text'}
-        ):
-            self.get_logger().info(
-                'interaction_trace_viewer include_event_types normalized with kb_snapshot for world_model channels'
-            )
         self.discovery_period_sec = max(0.5, float(self.get_parameter('discovery_period_sec').value))
         self.kb_snapshot_emit_period_sec = max(
             0.0,
@@ -123,8 +115,6 @@ class InteractionTraceNode(Node):
             '/nao_orchestrator/planner_dialogue_act': ('std_msgs/msg/String', self._subscribe_string),
             '/chatbot_llm/turn_trace': ('std_msgs/msg/String', self._subscribe_string),
             '/fake_skills/events': ('std_msgs/msg/String', self._subscribe_string),
-            '/world_model/enriched_snapshot': ('std_msgs/msg/String', self._subscribe_string),
-            '/world_model/enriched_text': ('std_msgs/msg/String', self._subscribe_string),
             '/rosout': ('rcl_interfaces/msg/Log', self._subscribe_rosout),
         }
         if self.enable_scene_summary_channel:

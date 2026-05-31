@@ -172,8 +172,6 @@ def _event_type_for_channel(channel: str) -> str:
         '/nao_orchestrator/planner_dialogue_act': 'planner_dialogue_act',
         '/chatbot_llm/turn_trace': 'chatbot_turn_trace',
         '/fake_skills/events': 'skill_result',
-        '/world_model/enriched_snapshot': 'kb_snapshot',
-        '/world_model/enriched_text': 'kb_snapshot',
         '/scene/summary': 'scene_update',
     }
     return mapping.get(str(channel).strip(), 'message')
@@ -287,20 +285,9 @@ def normalize_include_event_types(
     exclude_event_types: set[str],
 ) -> set[str]:
     """Ensure event filters stay compatible with selected channels."""
-    if not include_event_types:
-        return include_event_types
-    if 'kb_snapshot' in include_event_types or 'kb_snapshot' in exclude_event_types:
-        return include_event_types
-    if not include_channels:
-        return include_event_types
-
-    kb_channels = {'world_model/enriched_snapshot', 'world_model/enriched_text'}
-    if not (include_channels & kb_channels):
-        return include_event_types
-
-    normalized = set(include_event_types)
-    normalized.add('kb_snapshot')
-    return normalized
+    _ = include_channels
+    _ = exclude_event_types
+    return include_event_types
 
 
 def _try_parse_json_dict(raw_text: str) -> dict | None:

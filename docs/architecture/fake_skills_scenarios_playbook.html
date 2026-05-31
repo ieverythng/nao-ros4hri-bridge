@@ -169,15 +169,11 @@ ros2 param set /head_motion_skill_server assume_success_on_convergence_timeout f
 <h2>Planner/Dialogue Seam Checks</h2>
 <p>Verify the critical seam contract:</p>
 <pre><code class="language-bash">ros2 param get /dialogue_manager planner_dialogue_act_topic
-ros2 param get /dialogue_manager planner_dialogue_wording_mode
-ros2 param get /dialogue_manager planner_completion_wording_mode
 ros2 param get /nao_orchestrator planner_dialogue_act_topic
 ros2 param get /nao_orchestrator planner_dialogue_relay_topic</code></pre>
 <p>Expected:</p>
 <ul>
 <li><code>dialogue_manager.planner_dialogue_act_topic = /nao_orchestrator/planner_dialogue_act</code></li>
-<li><code>dialogue_manager.planner_dialogue_wording_mode = direct</code></li>
-<li><code>dialogue_manager.planner_completion_wording_mode = direct</code></li>
 <li><code>nao_orchestrator.planner_dialogue_act_topic = /planner/dialogue_act</code></li>
 <li><code>nao_orchestrator.planner_dialogue_relay_topic = /nao_orchestrator/planner_dialogue_act</code></li>
 </ul>
@@ -204,7 +200,7 @@ scripts/run_interaction_trace_viewer_compact_json.sh</code></pre>
 <ul>
 <li><code>docs/architecture/skill_registry_contract.md</code></li>
 <li><code>docs/architecture/demo_stack_seam_contract_2026-05-26.md</code></li>
-<li><code>docs/plans/ros4hri_integration_master_plan_2026-05-18.html</code></li>
+<li><code>docs/plans/nao_ros4hri_masterplan.html</code></li>
 </ul>
 </body>
 </html>

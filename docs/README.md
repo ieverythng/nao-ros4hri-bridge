@@ -16,7 +16,7 @@ This top-level docs surface is intentionally small and operational.
 
 ## Plans
 
-- `plans/ros4hri_integration_master_plan_2026-05-18.md` (+ HTML) — canonical integration tracker.
+- `plans/nao_ros4hri_masterplan.md` (+ HTML) — canonical integration tracker.
 - `plans/fake_skills_codex_handoff.md` (+ HTML) — separate fake-skills stream.
 
 ## Reference/Generated Material

@@ -111,6 +111,13 @@ class _ActionExecutionResult:
     raw_result: object | None = None
 
 
+@dataclass(slots=True, frozen=True)
+class _ExecutionJoinDecision:
+    start_index: int
+    join_strategy: str
+    mapped_step_id: str = ''
+
+
 class NaoOrchestrator(Node):
     """Dispatch ROS4HRI intents to NAO-specific skill endpoints."""
 
@@ -332,8 +339,10 @@ class NaoOrchestrator(Node):
         self._planner_gate = PlannerGate()
         self._scan_skill_names = self._load_scan_skill_names()
         self._fake_skill_aliases = self._load_fake_skill_aliases()
-        self._active_execution_token = ''
+        self._active_execution_goal_id = ''
+        self._active_execution_plan_id = ''
         self._active_execution_plan_version = 0
+        self._active_execution_step_id = ''
         self._execution_lock = threading.Lock()
 
     # -------------------------------------------------------------------------
@@ -628,13 +637,13 @@ class NaoOrchestrator(Node):
         if decision.reason:
             self._publish_planner_gate_feedback(decision=decision, status='accepted')
         self.get_logger().info(
-            'Planner gate forwarded request | goal_id=%s kind=%s reason=%s active_goal=%s active_token=%s topic=%s'
+            'Planner gate forwarded request | goal_id=%s kind=%s reason=%s active_goal=%s active_plan=%s topic=%s'
             % (
                 decision.request.goal_id,
                 decision.request.request_kind,
                 decision.reason or '-',
                 self._planner_gate.active_goal_id or '-',
-                self._planner_gate.active_goal_token or '-',
+                self._planner_gate.active_plan_id or '-',
                 self.planner_request_topic,
             )
         )
@@ -645,7 +654,6 @@ class NaoOrchestrator(Node):
         request = decision.request
         payload = {
             'goal_id': request.goal_id,
-            'goal_token': request.goal_token,
             'plan_id': 'planner_gate',
             'plan_version': 0,
             'event_type': 'planner_gate_%s' % str(status).strip().lower(),
@@ -769,17 +777,23 @@ class NaoOrchestrator(Node):
         source: str,
     ) -> bool:
         plan_id = self._resolve_plan_id(plan_context)
-        plan_token = self._resolve_plan_token(plan_context)
+        goal_id = str(plan_context.get('goal_id', '')).strip()
         plan_version = self._plan_version_from_context(plan_context)
-        if self._is_exact_execution_plan_active(plan_token, plan_version):
+        if self._is_exact_execution_plan_active(goal_id, plan_id, plan_version):
             self._stats.duplicates_ignored += 1
             self._stats.last_route = 'ignored:duplicate_plan'
             self.get_logger().warn(
-                'Ignored duplicate planned intent | intent=%s source=%s plan_id=%s token=%s version=%s'
-                % (intent_name, source, plan_id, plan_token or '-', plan_version)
+                'Ignored duplicate planned intent | intent=%s source=%s plan_id=%s version=%s'
+                % (intent_name, source, plan_id, plan_version)
             )
             return True
-        self._claim_execution_plan(plan_token, plan_version)
+        join_decision = self._claim_execution_plan(
+            goal_id=goal_id,
+            plan_id=plan_id,
+            plan_version=plan_version,
+            plan=plan,
+        )
+        execution_plan = list(plan[join_decision.start_index :])
         self._stats.plans_started += 1
         self._stats.last_plan_id = plan_id
 
@@ -803,7 +817,11 @@ class NaoOrchestrator(Node):
                 'Planned intent validation failed | intent=%s source=%s plan_id=%s errors=%s'
                 % (intent_name, source, plan_id, plan_context['errors'])
             )
-            self._finalize_execution_plan(plan_token, plan_version)
+            self._finalize_execution_plan(
+                goal_id=goal_id,
+                plan_id=plan_id,
+                plan_version=plan_version,
+            )
             return False
 
         self._publish_plan_feedback(
@@ -826,11 +844,14 @@ class NaoOrchestrator(Node):
             kwargs={
                 'intent_name': intent_name,
                 'data': dict(data),
-                'plan': list(plan),
+                'plan': execution_plan,
                 'plan_context': dict(plan_context),
                 'source': source,
-                'plan_token': plan_token,
+                'goal_id': goal_id,
+                'plan_id': plan_id,
                 'plan_version': plan_version,
+                'join_strategy': join_decision.join_strategy,
+                'mapped_step_id': join_decision.mapped_step_id,
             },
             daemon=True,
         )
@@ -858,17 +879,31 @@ class NaoOrchestrator(Node):
         plan: list[dict],
         plan_context: dict,
         source: str,
-        plan_token: str,
+        goal_id: str,
+        plan_id: str,
         plan_version: int,
+        join_strategy: str,
+        mapped_step_id: str,
     ) -> None:
         """Execute a validated plan in a background worker so action results can be awaited."""
-        plan_id = self._resolve_plan_id(plan_context)
         executed_any = False
         latest_result_summary = ''
         latest_result_payload: dict = {}
+        self.get_logger().info(
+            'Executing plan worker | goal_id=%s plan_id=%s version=%s join=%s mapped_step=%s steps=%d'
+            % (
+                goal_id or '-',
+                plan_id or '-',
+                plan_version,
+                join_strategy,
+                mapped_step_id or '-',
+                len(plan),
+            )
+        )
 
         for step in plan:
-            if not self._is_execution_plan_active(plan_token, plan_version):
+            self._set_active_execution_step(step)
+            if not self._is_execution_plan_active(goal_id, plan_id, plan_version):
                 self._publish_plan_feedback(
                     intent_name=intent_name,
                     source=source,
@@ -877,10 +912,14 @@ class NaoOrchestrator(Node):
                     event_type='plan_cancelled',
                     reason='superseded by a newer planner goal',
                 )
-                self._finalize_execution_plan(plan_token, plan_version)
+                self._finalize_execution_plan(
+                    goal_id=goal_id,
+                    plan_id=plan_id,
+                    plan_version=plan_version,
+                )
                 self.get_logger().info(
-                    'Stopped stale plan worker | plan_id=%s token=%s version=%s'
-                    % (plan_id, plan_token or '-', plan_version)
+                    'Stopped stale plan worker | plan_id=%s version=%s'
+                    % (plan_id, plan_version)
                 )
                 return
             step_started = False
@@ -985,7 +1024,11 @@ class NaoOrchestrator(Node):
                 'Planned intent step failed | intent=%s source=%s plan_id=%s step=%s reason=%s'
                 % (intent_name, source, plan_id, step, reason)
             )
-            self._finalize_execution_plan(plan_token, plan_version)
+            self._finalize_execution_plan(
+                goal_id=goal_id,
+                plan_id=plan_id,
+                plan_version=plan_version,
+            )
             return
 
         if executed_any:
@@ -1001,7 +1044,11 @@ class NaoOrchestrator(Node):
                 result_summary=latest_result_summary,
                 result_payload=latest_result_payload,
             )
-            self._finalize_execution_plan(plan_token, plan_version)
+            self._finalize_execution_plan(
+                goal_id=goal_id,
+                plan_id=plan_id,
+                plan_version=plan_version,
+            )
             return
 
         self._stats.plans_failed += 1
@@ -1015,7 +1062,11 @@ class NaoOrchestrator(Node):
             reason='plan contained no executable steps',
             blocking=True,
         )
-        self._finalize_execution_plan(plan_token, plan_version)
+        self._finalize_execution_plan(
+            goal_id=goal_id,
+            plan_id=plan_id,
+            plan_version=plan_version,
+        )
 
     def _dispatch_plan_step(
         self,
@@ -1935,50 +1986,111 @@ class NaoOrchestrator(Node):
         except (TypeError, ValueError):
             return 0
 
-    def _resolve_plan_token(self, plan_context: dict) -> str:
-        explicit_token = str(plan_context.get('goal_token', '')).strip()
-        if explicit_token:
-            return explicit_token
-        goal_id = str(plan_context.get('goal_id', '')).strip()
-        plan_version = self._plan_version_from_context(plan_context)
-        if goal_id and plan_version > 0:
-            return f'{goal_id}:v{plan_version}'
-        return goal_id
+    @staticmethod
+    def _find_plan_step_index(plan: list[dict], step_id: str) -> int:
+        clean_step_id = str(step_id or '').strip()
+        if not clean_step_id:
+            return -1
+        for index, step in enumerate(plan):
+            if not isinstance(step, dict):
+                continue
+            if str(step.get('id', '')).strip() == clean_step_id:
+                return index
+        return -1
 
-    def _claim_execution_plan(self, plan_token: str, plan_version: int) -> None:
-        with self._execution_lock:
-            self._active_execution_token = str(plan_token or '').strip()
-            self._active_execution_plan_version = max(0, int(plan_version or 0))
+    def _claim_execution_plan(
+        self,
+        *,
+        goal_id: str,
+        plan_id: str,
+        plan_version: int,
+        plan: list[dict],
+    ) -> _ExecutionJoinDecision:
+        clean_goal_id = str(goal_id or '').strip()
+        clean_plan_id = str(plan_id or '').strip()
+        resolved_version = max(0, int(plan_version or 0))
 
-    def _is_execution_plan_active(self, plan_token: str, plan_version: int) -> bool:
         with self._execution_lock:
-            active_token = self._active_execution_token
+            previous_goal_id = self._active_execution_goal_id
+            previous_plan_version = self._active_execution_plan_version
+            previous_step_id = self._active_execution_step_id
+
+            start_index = 0
+            join_strategy = 'front_join'
+            mapped_step_id = ''
+            if (
+                clean_goal_id
+                and clean_goal_id == previous_goal_id
+                and resolved_version > previous_plan_version
+                and previous_step_id
+            ):
+                mapped_index = self._find_plan_step_index(plan, previous_step_id)
+                if mapped_index >= 0:
+                    start_index = mapped_index
+                    join_strategy = 'mid_join'
+                    mapped_step_id = previous_step_id
+
+            self._active_execution_goal_id = clean_goal_id
+            self._active_execution_plan_id = clean_plan_id
+            self._active_execution_plan_version = resolved_version
+            if 0 <= start_index < len(plan) and isinstance(plan[start_index], dict):
+                self._active_execution_step_id = str(plan[start_index].get('id', '')).strip()
+            else:
+                self._active_execution_step_id = ''
+
+        return _ExecutionJoinDecision(
+            start_index=start_index,
+            join_strategy=join_strategy,
+            mapped_step_id=mapped_step_id,
+        )
+
+    def _set_active_execution_step(self, step: dict) -> None:
+        if not isinstance(step, dict):
+            return
+        step_id = str(step.get('id', '')).strip()
+        with self._execution_lock:
+            self._active_execution_step_id = step_id
+
+    def _is_execution_plan_active(self, goal_id: str, plan_id: str, plan_version: int) -> bool:
+        with self._execution_lock:
+            active_goal_id = self._active_execution_goal_id
+            active_plan_id = self._active_execution_plan_id
             active_version = self._active_execution_plan_version
-        if not active_token:
+        if not active_goal_id:
             return False
-        if str(plan_token or '').strip() != active_token:
+        if str(goal_id or '').strip() != active_goal_id:
+            return False
+        clean_plan_id = str(plan_id or '').strip()
+        if active_plan_id and clean_plan_id != active_plan_id:
             return False
         return max(0, int(plan_version or 0)) >= active_version
 
-    def _is_exact_execution_plan_active(self, plan_token: str, plan_version: int) -> bool:
+    def _is_exact_execution_plan_active(self, goal_id: str, plan_id: str, plan_version: int) -> bool:
         with self._execution_lock:
-            active_token = self._active_execution_token
+            active_goal_id = self._active_execution_goal_id
+            active_plan_id = self._active_execution_plan_id
             active_version = self._active_execution_plan_version
-        if not active_token:
+        if not active_goal_id:
             return False
         return (
-            str(plan_token or '').strip() == active_token
+            str(goal_id or '').strip() == active_goal_id
+            and str(plan_id or '').strip() == active_plan_id
             and max(0, int(plan_version or 0)) == active_version
         )
 
-    def _finalize_execution_plan(self, plan_token: str, plan_version: int) -> None:
+    def _finalize_execution_plan(self, *, goal_id: str, plan_id: str, plan_version: int) -> None:
         with self._execution_lock:
-            if str(plan_token or '').strip() != self._active_execution_token:
+            if str(goal_id or '').strip() != self._active_execution_goal_id:
+                return
+            clean_plan_id = str(plan_id or '').strip()
+            if clean_plan_id and self._active_execution_plan_id and clean_plan_id != self._active_execution_plan_id:
                 return
             if max(0, int(plan_version or 0)) < self._active_execution_plan_version:
                 return
-            self._active_execution_token = ''
+            self._active_execution_goal_id = ''
+            self._active_execution_plan_id = ''
             self._active_execution_plan_version = 0
+            self._active_execution_step_id = ''
 
     def _publish_plan_feedback(
         self,
@@ -2001,7 +2113,6 @@ class NaoOrchestrator(Node):
             return
         normalized_plan_context = dict(plan_context)
         normalized_plan_context['plan_id'] = self._resolve_plan_id(plan_context)
-        normalized_plan_context['goal_token'] = self._resolve_plan_token(normalized_plan_context)
         payload = build_execution_feedback_payload(
             intent=str(intent_name).strip(),
             source=str(source).strip(),
@@ -2203,8 +2314,14 @@ class NaoOrchestrator(Node):
                 ),
                 KeyValue(key='planner_gate_enabled', value=str(self.enable_planner_gate)),
                 KeyValue(key='planner_gate_active_goal', value=self._planner_gate.active_goal_id),
-                KeyValue(key='planner_gate_active_token', value=self._planner_gate.active_goal_token),
-                KeyValue(key='active_execution_token', value=self._active_execution_token),
+                KeyValue(key='planner_gate_active_plan', value=self._planner_gate.active_plan_id),
+                KeyValue(key='active_execution_goal', value=self._active_execution_goal_id),
+                KeyValue(key='active_execution_plan', value=self._active_execution_plan_id),
+                KeyValue(
+                    key='active_execution_plan_version',
+                    value=str(self._active_execution_plan_version),
+                ),
+                KeyValue(key='active_execution_step', value=self._active_execution_step_id),
                 KeyValue(
                     key='intents_received',
                     value=str(self._stats.intents_received),

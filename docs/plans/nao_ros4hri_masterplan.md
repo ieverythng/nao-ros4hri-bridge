@@ -1,6 +1,6 @@
-# ROS4HRI Integration Master Plan (Consolidated, Active)
+# NAO ROS4HRI Masterplan (Consolidated, Active)
 
-**Date:** 2026-05-26 (status refresh)  
+**Date:** 2026-05-31 (status refresh)  
 **Branch context:** `feat/TFM-LLM_planner` (+ nested repos and Neural-Wokbench integration seam)  
 **Scope:** Single active execution plan for planner/chatbot/orchestrator seams, canonical registry alignment, fake-skill operational hardening, and observability/dashboard rollout.
 
@@ -8,13 +8,17 @@
 
 This file is now the canonical integration plan and absorbs execution tracking from:
 
-- `docs/artifacts/plan_archive/ros4hri_integration_master_plan_2026-05-15.md`
 - `docs/artifacts/plan_archive/ab_registry_decomposition_codex_handoff.md`
 - `docs/artifacts/plan_archive/dashboard_implementation_roadmap.md`
 - `docs/artifacts/plan_archive/simple_dialogue_trace_viewer_spec.md`
 - `docs/artifacts/plan_archive/full_nao_dashboard_spec.md`
 
-These source plans are preserved in `docs/artifacts/plan_archive/` for provenance.
+The older `ros4hri_integration_master_plan_2026-05-15` baseline has now been
+fully merged into this file and removed from the archive to keep one canonical
+masterplan surface.
+
+The remaining source plans are preserved in `docs/artifacts/plan_archive/` for
+provenance.
 
 The fake skills stream remains separate by design:
 
@@ -43,9 +47,10 @@ Everything else should be archived under `docs/artifacts/` unless it is actively
 - **Done**: `scan` is action-server owned and dispatched by orchestrator.
 - **Done**: `report_result` now executes as action-server-owned AB=1 skill (`/skill/report_result`) instead of a dialogue-act shortcut.
 - **Done**: planner/orchestrator action routing validated for `/skill/scan`, `/skill/report_result`, `/skill/say`, `/skill/do_head_motion`.
-- **Done**: goal token/version guardrails and supersede semantics are present in planner-orchestrator seam.
+- **Done**: planner lineage now uses `goal_id` continuity plus `plan_id`/`plan_version`; token-based ownership seams were removed.
 - **Done**: route-hardening now defaults visibility-only scene checks to `knowledge_query` unless explicit scan/action wording is requested.
-- **Done**: planner dialogue-act wording is chatbot-owned by default (`dialogue_manager` -> `chatbot_llm`) including completion/failure/clarification user-facing turns.
+- **Done**: planner dialogue acts run in direct mode by default, while completion wording stays chatbot-relay-owned when a chatbot client is available.
+- **Done**: planner grounding contracts now use Hybrid Minimal T0 (`knowledge_snapshot`, `scene_summary`, `state_t0`) with world-model seams removed.
 - **Done**: structured `chatbot_turn_trace` visibility is available for dialogue vs planner-handoff attribution.
 - **Done (2026-05-26)**: planner-mode routing now guards visibility-only scene questions toward `knowledge_query` unless the user explicitly requests a new scan/action.
 - **In progress**: proactive wording + speech arbitration pass to avoid duplicate user-facing utterances when execution acknowledgements and planner dialogue completions occur in the same interaction.

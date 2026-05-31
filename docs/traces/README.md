@@ -10,9 +10,8 @@ This folder defines the operator workflow to validate the entire planner/chatbot
   - `/planner/dialogue_act` (planner-owned publish)
   - `/nao_orchestrator/planner_dialogue_act` (orchestrator-owned relay)
   - `dialogue_manager` consumes relay topic
-- planner dialogue is **not auto-routed back to chatbot** in this stack:
-  - `dialogue_manager_planner_dialogue_wording_mode=direct`
-  - `dialogue_manager_planner_completion_wording_mode=direct`
+- planner dialogue contract is direct-mode by default; completion wording is
+  relayed through `chatbot_llm` when chatbot client wiring is available.
 
 ## 1) Launch the Full Stack (Exact Profile)
 
@@ -53,8 +52,6 @@ scripts/run_full_stack_planner_seam_session.sh
 ```bash
 ros2 node list | grep -E 'planner_llm|chatbot_llm|nao_orchestrator|dialogue_manager|interaction_trace_viewer'
 ros2 param get /dialogue_manager planner_dialogue_act_topic
-ros2 param get /dialogue_manager planner_dialogue_wording_mode
-ros2 param get /dialogue_manager planner_completion_wording_mode
 ros2 param get /nao_orchestrator planner_dialogue_act_topic
 ros2 param get /nao_orchestrator planner_dialogue_relay_topic
 ros2 topic info /nao_orchestrator/planner_dialogue_act -v
@@ -63,8 +60,6 @@ ros2 topic info /nao_orchestrator/planner_dialogue_act -v
 Expected:
 
 - `dialogue_manager.planner_dialogue_act_topic = /nao_orchestrator/planner_dialogue_act`
-- `dialogue_manager.planner_dialogue_wording_mode = direct`
-- `dialogue_manager.planner_completion_wording_mode = direct`
 - `nao_orchestrator.planner_dialogue_act_topic = /planner/dialogue_act`
 - `nao_orchestrator.planner_dialogue_relay_topic = /nao_orchestrator/planner_dialogue_act`
 
