@@ -24,8 +24,8 @@ The stack now demonstrates five major capabilities working together:
 3. `chatbot_llm` injects a bounded symbolic scene snapshot into the response
    stage and planner/direct routing path.
 4. `nao_orchestrator` consumes richer `Intent.data` payloads, including
-   `ack_text`, `ack_mode`, `scene_targets`, and optional structured `plan`
-   steps.
+   deterministic `scene_targets`, grounded context, and optional structured
+   `plan` steps.
 5. `planner_llm` now provides an optional planner ingress on `/planner/request`
    and acts as a goal-level supervisor: it emits executable `/intents`,
    planner-owned `/planner/dialogue_act`, and bounded replanning decisions from
@@ -136,17 +136,19 @@ Expected planner-facing payload fields inside `Intent.data`:
   "request_id": "turn_123",
   "goal_id": "goal_123",
   "request_kind": "new_goal",
-  "user_text": "bring me the cup",
+  "goal_text": "bring me the cup",
   "normalized_intents": ["bring_object"],
-  "ack_text": "I will try to bring you the cup.",
-  "ack_mode": "say",
   "scene_targets": ["cup"],
   "dialogue_context": [],
+  "requested_plan": [],
   "grounded_context": {
-    "knowledge_snapshot": {},
+    "knowledge_snapshot": {
+      "references": [
+        {"normalized_name": "cup", "id": "cup_1", "type": "Object"}
+      ]
+    },
     "scene_summary": {},
-    "world_model_snapshot": {},
-    "world_model_text": ""
+    "state_t0": {}
   },
   "planner_mode": "default",
   "interaction_mode": "default"
@@ -509,13 +511,8 @@ Current useful keys:
 - `input`
 - `suggested_response`
 - `ack_text`
-- `ack_mode`
 - `scene_targets`
-- `plan_id`
-- `validation_status`
-- `failure_reason`
-- `replan_hint`
-- `retry_budget`
+- `grounded_context`
 - `plan`
 
 Example KB-query intent payload:
@@ -524,8 +521,7 @@ Example KB-query intent payload:
 {
   "goal": "visible_people",
   "suggested_response": "I can currently see one person.",
-  "ack_text": "I can currently see one person.",
-  "ack_mode": "say"
+  "ack_text": "I can currently see one person."
 }
 ```
 
@@ -535,7 +531,6 @@ Example motion payload:
 {
   "object": "stand",
   "ack_text": "Sure.",
-  "ack_mode": "say",
   "plan": [
     {
       "type": "skill",
@@ -554,7 +549,6 @@ Example object-aware action payload:
 {
   "object": "cup",
   "ack_text": "I will bring the cup.",
-  "ack_mode": "say",
   "scene_targets": ["cup"],
   "plan": [
     {
@@ -582,7 +576,7 @@ Current downstream behavior:
 - `skill/perform_motion` is routed to replay motion or head motion
 - `look_at` supports reset or target-frame dispatch
 - `ack_text` is used as a spoken acknowledgement when speech dispatch is enabled
-- `ack_mode` is currently informational, with `say` as the active convention
+- planner-side acknowledgement mode fields were removed from planner seams
 - planner-facing metadata can now carry validation and retry hints without
   changing the ROS message type
 - `nao_orchestrator` publishes structured execution feedback on
@@ -639,7 +633,7 @@ A short story that matches the current stack well:
   props should stay close to `blueberry`, `corn`, `pear`, `tomato`, and
   `zucchini`
 - body regions can still be misclassified as one of those labels
-- `ack_mode` is present in the contract, but only `say` is currently meaningful
+- planner dialogue remains direct-only, with completion relayed by chatbot seams
 - `/scene/summary` is published as JSON in a `std_msgs/String`, not a custom
   typed scene message yet
 - planner-facing KB mutation support now lives in `kb_skills`, while

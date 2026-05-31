@@ -11,8 +11,8 @@ Prompt packs were rebuilt in-container before testing (`planner_llm`, `chatbot_l
 ## Runtime context checked
 
 - `dialogue_manager.planner_dialogue_act_topic = /nao_orchestrator/planner_dialogue_act`
-- `dialogue_manager.planner_dialogue_wording_mode = direct`
-- `dialogue_manager.planner_completion_wording_mode = direct`
+- Planner dialogue mode is direct-only in the current seam contract.
+- Planner completion utterances are relayed via chatbot-owned direct wording.
 - Available fake scenarios included:
   - `ambiguous_cup`
   - `path_blocked`

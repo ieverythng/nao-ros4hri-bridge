@@ -55,8 +55,8 @@ flowchart LR
 - Grounded object-aware dialogue through the KB, not direct raw CV prompting.
 - A detector-to-KB bridge for transient symbolic scene facts.
 - A compact `/scene/summary` output for debug and future consumers.
-- Richer `Intent.data` payloads including `ack_text`, `ack_mode`,
-  `scene_targets`, and optional `plan`.
+- Richer `Intent.data` payloads including deterministic `scene_targets`,
+  grounded context, and optional structured `plan`.
 - A planner scaffold with provider adapters, a planner-local launch profile,
   and planner feedback consumption on `/planner/execution_feedback`.
 - A deterministic orchestrator that executes allowed downstream actions.
