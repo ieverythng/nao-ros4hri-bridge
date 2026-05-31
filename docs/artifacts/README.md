@@ -15,7 +15,7 @@ sources of truth.
 - `../current_workflow.md`
 - `../launch_profiles.md`
 - `../planner_status.md`
-- `../plans/ros4hri_integration_master_plan_2026-05-18.md`
+- `../plans/nao_ros4hri_masterplan.md`
 - `../plans/fake_skills_codex_handoff.md`
 
 When a historical artifact still contains required current behavior, copy the

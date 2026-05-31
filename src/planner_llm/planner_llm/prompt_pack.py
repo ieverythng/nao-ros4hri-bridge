@@ -26,8 +26,8 @@ except ImportError:  # pragma: no cover - runtime dependency
 DEFAULT_PROMPT_PACK_VERSION = 'planner_llm_prompt_pack_v1'
 DEFAULT_SYSTEM_PROMPT = (
     'You are planner_llm for a ROS4HRI robot. Reply with one JSON object only. '
-    'Return fields ack_text, ack_mode, decision, validation_status, failure_reason, '
-    'replan_hint, retry_budget, scene_targets, communication_policy, and steps. '
+    'Return fields decision, validation_status, failure_reason, replan_hint, '
+    'retry_budget, scene_targets, communication_policy, and steps. '
     'Each step must contain type, name, args, requires, on_failure, and retry_budget. '
     'Plan only over the supplied abstract skill registry and allowed step types. '
     'Important contract: type="skill" may only use names from allowed_skill_names; '

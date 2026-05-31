@@ -72,7 +72,7 @@ Known weak spots:
 Use:
 
 - `docs/current_workflow.md` for the canonical ownership/runtime map.
-- `docs/plans/ros4hri_integration_master_plan_2026-05-18.md` for active
+- `docs/plans/nao_ros4hri_masterplan.md` for active
   implementation status and next-phase execution order.
 - `docs/artifacts/handoffs/planner_architecture_current.md` for archived
   architecture provenance from earlier sweeps.

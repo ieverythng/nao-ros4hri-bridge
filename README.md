@@ -53,7 +53,8 @@ flowchart LR
     dm -->|dialogue turn request| chatbot["chatbot_llm<br/>response + intent routing"]
     chatbot --> route{"Direct or planner route"}
     route -->|direct mode<br/>/intents| orch["nao_orchestrator<br/>deterministic executor"]
-    route -->|planner mode<br/>/planner/request| planner["planner_llm<br/>planner + supervisor"]
+    route -->|planner mode<br/>/nao_orchestrator/planner_request| gate["nao_orchestrator<br/>planner gate"]
+    gate -->|admitted request<br/>/planner/request| planner["planner_llm<br/>planner + supervisor"]
     planner -->|executable plan<br/>/intents| orch
     orch -.->|execution status<br/>/planner/execution_feedback| planner
     planner -.->|clarify/report<br/>/planner/dialogue_act| dm
@@ -79,7 +80,8 @@ Important distinction:
 
 - `knowledge_snapshot` is chatbot-facing prompt context from `/kb/query`.
 - `/scene/summary` is detector-grounded object summary for operators and future consumers.
-- `/world_model/enriched_snapshot` and `/world_model/enriched_text` are planned WME inputs for the planner, but WME is not the Monday priority.
+- `state_t0` is the compact planner-facing world state assembled from current
+  grounded scene facts.
 
 ## Core Contracts
 
@@ -100,10 +102,22 @@ Published by `chatbot_llm` as `hri_actions_msgs/msg/Intent`.
   "scene_targets": ["cup"],
   "requested_plan": [],
   "grounded_context": {
-    "knowledge_snapshot": {"summary_text": "cup is currently visible"},
-    "scene_summary": {},
-    "world_model_snapshot": {},
-    "world_model_text": ""
+    "knowledge_snapshot": {
+      "references": [
+        {"normalized_name": "cup_1", "id": "cup_1", "type": "Cup"}
+      ]
+    },
+    "scene_summary": {
+      "observer": "myself",
+      "backend": "emorobcare_cv",
+      "objects": []
+    },
+    "state_t0": {
+      "observer": "myself",
+      "backend": "emorobcare_cv",
+      "captured_at_sec": 1777040000.0,
+      "entities": []
+    }
   },
   "planner_mode": "default",
   "interaction_mode": "speech",
@@ -127,8 +141,11 @@ inside `Intent.data.plan`.
 
 ```json
 {
-  "goal_id": "goal_turn_123",
-  "scene_targets": ["cup"],
+  "grounded_context": {
+    "knowledge_snapshot": {},
+    "scene_summary": {},
+    "state_t0": {}
+  },
   "plan": {
     "goal_id": "goal_turn_123",
     "plan_id": "plan_123",
@@ -154,7 +171,8 @@ inside `Intent.data.plan`.
         "on_failure": "replan",
         "retry_budget": 0
       }
-    ]
+    ],
+    "scene_targets": ["cup"]
   }
 }
 ```

@@ -122,8 +122,6 @@ Verify the critical seam contract:
 
 ```bash
 ros2 param get /dialogue_manager planner_dialogue_act_topic
-ros2 param get /dialogue_manager planner_dialogue_wording_mode
-ros2 param get /dialogue_manager planner_completion_wording_mode
 ros2 param get /nao_orchestrator planner_dialogue_act_topic
 ros2 param get /nao_orchestrator planner_dialogue_relay_topic
 ```
@@ -131,8 +129,6 @@ ros2 param get /nao_orchestrator planner_dialogue_relay_topic
 Expected:
 
 - `dialogue_manager.planner_dialogue_act_topic = /nao_orchestrator/planner_dialogue_act`
-- `dialogue_manager.planner_dialogue_wording_mode = direct`
-- `dialogue_manager.planner_completion_wording_mode = direct`
 - `nao_orchestrator.planner_dialogue_act_topic = /planner/dialogue_act`
 - `nao_orchestrator.planner_dialogue_relay_topic = /nao_orchestrator/planner_dialogue_act`
 
@@ -165,4 +161,4 @@ scripts/run_interaction_trace_viewer_compact_json.sh
 
 - `docs/architecture/skill_registry_contract.md`
 - `docs/architecture/demo_stack_seam_contract_2026-05-26.md`
-- `docs/plans/ros4hri_integration_master_plan_2026-05-18.html`
+- `docs/plans/nao_ros4hri_masterplan.html`

@@ -109,25 +109,11 @@ def test_normalize_fake_skill_event_maps_to_skill_result() -> None:
     assert event.payload['failure']['code'] == 'path_blocked'
 
 
-def test_normalize_world_model_snapshot_maps_to_kb_snapshot() -> None:
-    msg = SimpleNamespace(
-        data='{"entities":[{"entity_id":"anonymous_person_1","kb_class":"Human"}]}'
-    )
-    event = normalize_string_message(
-        channel='/world_model/enriched_snapshot',
-        msg=msg,
-        max_payload_chars=4000,
-    )
-
-    assert event.event_type == 'kb_snapshot'
-    assert 'entities=1' in event.summary
-
-
-def test_normalize_include_event_types_adds_kb_snapshot_when_world_model_channel_selected() -> None:
+def test_normalize_include_event_types_keeps_selection_stable() -> None:
     include_event_types = normalize_include_event_types(
-        include_channels={'planner/request', 'world_model/enriched_snapshot'},
+        include_channels={'planner/request', 'scene/summary'},
         include_event_types={'planner_request', 'execution_feedback'},
         exclude_event_types=set(),
     )
 
-    assert 'kb_snapshot' in include_event_types
+    assert include_event_types == {'planner_request', 'execution_feedback'}

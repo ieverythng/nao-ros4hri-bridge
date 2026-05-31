@@ -575,13 +575,6 @@ def parse_plan_envelope(data: dict) -> dict:
             _plan_metadata_value(data, parsed_plan_dict, 'goal_id', 'goalId'),
             '',
         ),
-        'goal_token': _first_non_empty(
-            _plan_metadata_value(data, parsed_plan_dict, 'goal_token', 'goalToken'),
-            _first_non_empty(
-                _plan_metadata_value(data, parsed_plan_dict, 'goal_id', 'goalId'),
-                '',
-            ),
-        ),
         'plan_id': _first_non_empty(
             _plan_metadata_value(data, parsed_plan_dict, 'plan_id', 'id', 'planId'),
             '',
@@ -749,7 +742,6 @@ def _first_non_empty(*values: str) -> str:
 def _empty_plan_envelope() -> dict:
     return {
         'goal_id': '',
-        'goal_token': '',
         'plan_id': '',
         'plan_version': 0,
         'status': '',
@@ -786,11 +778,10 @@ def _plan_steps(data: dict) -> list[dict]:
 
 
 def _plan_metadata_value(data: dict, plan_data: dict, *keys: str):
+    _ = data
     for key in keys:
         if key in plan_data:
             return plan_data.get(key)
-        if key in data:
-            return data.get(key)
     return None
 
 

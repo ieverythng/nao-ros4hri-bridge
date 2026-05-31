@@ -21,13 +21,10 @@ examples; this file is the contract-focused view.
     "type": "head_look_left",
     "goal": "look left",
     "goal_text": "look left",
-    "ack_text": "Okay, I will look left.",
-    "ack_mode": "say",
     "scene_targets": [],
     "request_kind": "new_goal",
     "interaction_mode": "speech"
   }
-}
 ```
 
 **Allowed route values**
@@ -80,16 +77,26 @@ Preferred payload:
   "request_kind": "new_goal",
   "goal_text": "navigate to the kitchen and report completion",
   "normalized_intents": ["navigate_to"],
-  "ack_text": "I will work on that.",
-  "ack_mode": "say",
   "scene_targets": ["kitchen"],
   "dialogue_context": [],
   "requested_plan": [],
   "grounded_context": {
-    "knowledge_snapshot": {},
-    "scene_summary": {},
-    "world_model_snapshot": {},
-    "world_model_text": ""
+    "knowledge_snapshot": {
+      "references": [
+        {"normalized_name": "kitchen", "id": "kitchen", "type": "Location"}
+      ]
+    },
+    "scene_summary": {
+      "observer": "myself",
+      "backend": "emorobcare_cv",
+      "objects": []
+    },
+    "state_t0": {
+      "observer": "myself",
+      "backend": "emorobcare_cv",
+      "captured_at_sec": 1777040000.0,
+      "entities": []
+    }
   },
   "planner_mode": "default",
   "interaction_mode": "speech",
@@ -123,15 +130,10 @@ Payload:
 
 ```json
 {
-  "goal_id": "goal_turn_123",
-  "ack_text": "",
-  "ack_mode": "",
-  "scene_targets": ["kitchen"],
   "grounded_context": {
     "knowledge_snapshot": {},
     "scene_summary": {},
-    "world_model_snapshot": {},
-    "world_model_text": ""
+    "state_t0": {}
   },
   "plan": {
     "goal_id": "goal_turn_123",
@@ -162,6 +164,7 @@ Payload:
       }
     ]
   }
+}
 }
 ```
 
@@ -261,7 +264,8 @@ Topic:
 - type: `std_msgs/msg/String`
 - publisher: `planner_llm`
 - consumer: `dialogue_manager`
-- downstream wording owner: `chatbot_llm` (via dialogue manager handoff)
+- dialogue policy: direct-mode planner acts; completion wording may be relayed
+  through `chatbot_llm` when available
 
 ```json
 {
@@ -319,7 +323,9 @@ myself sees ?entity && ?entity rdf:type ?type
 
 ```json
 {
-  "summary_text": "Entities currently seen by the robot: cup_1 (Cup)"
+  "references": [
+    {"normalized_name": "cup_1", "id": "cup_1", "type": "Cup"}
+  ]
 }
 ```
 
@@ -376,13 +382,27 @@ Example payload:
 `/scene/summary` is not the same as `knowledge_snapshot`: it is a current object
 summary, while `knowledge_snapshot` is prompt-ready text from KB queries.
 
-## World Model Context
+## State T0 Context
 
-Planned/enriched context fields:
+`grounded_context.state_t0` carries deterministic planner-facing context for
+pre/postcondition reasoning without free-text world-model seams.
 
-- `/world_model/enriched_snapshot`
-- `/world_model/enriched_text`
+Example:
 
-These feed `grounded_context.world_model_snapshot` and
-`grounded_context.world_model_text`. The WME layer is future work relative to
-the Monday planner-loop priority.
+```json
+{
+  "observer": "myself",
+  "backend": "emorobcare_cv",
+  "captured_at_sec": 1777040000.0,
+  "scene_targets": ["kitchen"],
+  "entities": [
+    {
+      "normalized_name": "kitchen",
+      "id": "kitchen",
+      "type": "Location",
+      "source": "emorobcare_cv",
+      "last_seen_sec": 1777040000.0
+    }
+  ]
+}
+```

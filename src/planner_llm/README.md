@@ -27,8 +27,6 @@ It does not own:
 | publish | `/intents` | `hri_actions_msgs/msg/Intent` | Executable downstream plan |
 | subscribe | `/planner/execution_feedback` | `std_msgs/msg/String` | Executor feedback from `nao_orchestrator` |
 | publish | `/planner/dialogue_act` | `std_msgs/msg/String` | Planner communication request |
-| subscribe | `/world_model/enriched_snapshot` | `std_msgs/msg/String` | Optional future WME snapshot |
-| subscribe | `/world_model/enriched_text` | `std_msgs/msg/String` | Optional future WME text |
 
 ## Contract Role
 
@@ -51,8 +49,6 @@ Defaults live in `config/00-defaults.yml`.
 - `intent_topic`
 - `planner_feedback_topic`
 - `planner_dialogue_act_topic`
-- `enriched_snapshot_topic`
-- `enriched_text_topic`
 - `skill_registry_path`
 - `provider`
 - `model`

@@ -20,9 +20,6 @@ class _StubEngine:
             plan_id=plan_id,
             mode='plan',
             payload={
-                'goal_id': goal_id,
-                'ack_text': '',
-                'ack_mode': '',
                 'scene_targets': list(request.scene_targets),
                 'grounded_context': request.grounded_context,
                 'plan': {
@@ -67,9 +64,6 @@ class _ClarifyEngine(_StubEngine):
             plan_id='plan_%s_v%d' % (goal_id, plan_version),
             mode='clarify',
             payload={
-                'goal_id': goal_id,
-                'ack_text': '',
-                'ack_mode': '',
                 'scene_targets': list(request.scene_targets),
                 'grounded_context': request.grounded_context,
                 'plan': {
@@ -215,7 +209,6 @@ def test_supervisor_creates_new_goal_session_without_duplicate_ack_dialogue_act(
             'request_id': 'turn_1',
             'request_kind': 'new_goal',
             'user_text': 'look forward',
-            'ack_text': 'I will do that.',
             'normalized_intents': ['head_center'],
         }
     )
@@ -281,7 +274,6 @@ def test_supervisor_handles_cancel_request_without_publishing_intent() -> None:
             'goal_id': 'goal_cancel',
             'request_id': 'turn_2',
             'request_kind': 'cancel_request',
-            'ack_text': 'Okay, cancel that.',
         }
     )
     outcome = supervisor.handle_request(cancel_request)
@@ -590,7 +582,6 @@ def test_supervisor_emits_acknowledgement_dialogue_act_when_policy_allows_it() -
             'goal_id': 'goal_ack',
             'request_id': 'turn_1',
             'user_text': 'look ahead',
-            'ack_text': 'Okay, I am starting now.',
         }
     )
     first_outcome = supervisor.handle_request(request)

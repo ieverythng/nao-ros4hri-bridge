@@ -17,13 +17,12 @@ def _payload(goal_id: str, **overrides):
 
 def test_planner_gate_accepts_first_new_goal() -> None:
     gate = PlannerGate()
-
     decision = gate.decide(_payload('goal_1'))
 
     assert decision.accepted is True
     assert decision.request.goal_id == 'goal_1'
     assert gate.active_goal_id == 'goal_1'
-    assert gate.active_goal_token == 'goal_1'
+    assert gate.active_plan_id == ''
 
 
 def test_planner_gate_rejects_duplicate_active_goal() -> None:
@@ -31,7 +30,6 @@ def test_planner_gate_rejects_duplicate_active_goal() -> None:
     assert gate.decide(_payload('goal_1')).accepted is True
 
     decision = gate.decide(_payload('goal_1'))
-
     assert decision.accepted is False
     assert decision.reason == 'duplicate active planner goal'
 
@@ -41,7 +39,6 @@ def test_planner_gate_requires_supersede_for_second_new_goal() -> None:
     assert gate.decide(_payload('goal_1')).accepted is True
 
     decision = gate.decide(_payload('goal_2'))
-
     assert decision.accepted is False
     assert 'supersede or cancel' in decision.reason
 
@@ -52,7 +49,6 @@ def test_planner_gate_auto_supersedes_when_waiting_user() -> None:
     gate.observe_feedback(json.dumps({'goal_id': 'goal_1', 'status': 'waiting_user'}))
 
     decision = gate.decide(_payload('goal_2'))
-
     assert decision.accepted is True
     assert decision.reason == 'auto_supersede_waiting_user'
     assert isinstance(decision.forward_payload, dict)
@@ -65,7 +61,6 @@ def test_planner_gate_accepts_superseding_goal() -> None:
     assert gate.decide(_payload('goal_1')).accepted is True
 
     decision = gate.decide(_payload('goal_2', supersedes_goal_id='goal_1'))
-
     assert decision.accepted is True
     assert gate.active_goal_id == 'goal_2'
 
@@ -81,7 +76,6 @@ def test_planner_gate_accepts_matching_clarification_answer() -> None:
             goal_text='the red cup',
         )
     )
-
     assert decision.accepted is True
 
 
@@ -90,7 +84,6 @@ def test_planner_gate_rejects_unmatched_clarification_answer() -> None:
     assert gate.decide(_payload('goal_1')).accepted is True
 
     decision = gate.decide(_payload('goal_2', request_kind='clarification_answer'))
-
     assert decision.accepted is False
     assert 'does not match active' in decision.reason
 
@@ -100,19 +93,21 @@ def test_planner_gate_cancel_clears_matching_active_goal() -> None:
     assert gate.decide(_payload('goal_1')).accepted is True
 
     decision = gate.decide(_payload('goal_1', request_kind='cancel_request'))
-
     assert decision.accepted is True
     assert gate.active_goal_id == ''
+    assert gate.active_plan_id == ''
 
 
 def test_planner_gate_feedback_completion_clears_goal() -> None:
     gate = PlannerGate()
     assert gate.decide(_payload('goal_1')).accepted is True
 
-    gate.observe_feedback(json.dumps({'goal_id': 'goal_1', 'event_type': 'plan_completed'}))
+    gate.observe_feedback(
+        json.dumps({'goal_id': 'goal_1', 'plan_id': 'plan_1', 'event_type': 'plan_completed'})
+    )
 
     assert gate.active_goal_id == ''
-    assert gate.active_goal_token == ''
+    assert gate.active_plan_id == ''
 
 
 def test_planner_gate_dialogue_failure_clears_goal() -> None:
@@ -120,7 +115,6 @@ def test_planner_gate_dialogue_failure_clears_goal() -> None:
     assert gate.decide(_payload('goal_1')).accepted is True
 
     gate.observe_dialogue_act(json.dumps({'goal_id': 'goal_1', 'act': 'explain_failure'}))
-
     assert gate.active_goal_id == ''
 
 
@@ -129,19 +123,28 @@ def test_planner_gate_clarification_keeps_goal_active() -> None:
     assert gate.decide(_payload('goal_1')).accepted is True
 
     gate.observe_dialogue_act(json.dumps({'goal_id': 'goal_1', 'act': 'ask_clarification'}))
-
     assert gate.active_goal_id == 'goal_1'
 
 
-def test_planner_gate_ignores_feedback_with_stale_token() -> None:
+def test_planner_gate_ignores_feedback_with_stale_plan_version() -> None:
     gate = PlannerGate()
-    assert gate.decide(_payload('goal_1', goal_token='goal_1:turn_1')).accepted is True
+    assert gate.decide(_payload('goal_1')).accepted is True
+    gate.observe_feedback(
+        json.dumps(
+            {
+                'goal_id': 'goal_1',
+                'plan_id': 'plan_1',
+                'plan_version': 2,
+                'status': 'running',
+            }
+        )
+    )
 
     gate.observe_feedback(
         json.dumps(
             {
                 'goal_id': 'goal_1',
-                'goal_token': 'goal_1:old_turn',
+                'plan_id': 'plan_1',
                 'plan_version': 1,
                 'event_type': 'plan_completed',
             }
@@ -149,4 +152,4 @@ def test_planner_gate_ignores_feedback_with_stale_token() -> None:
     )
 
     assert gate.active_goal_id == 'goal_1'
-    assert gate.active_goal_token == 'goal_1:turn_1'
+    assert gate.active_plan_id == 'plan_1'

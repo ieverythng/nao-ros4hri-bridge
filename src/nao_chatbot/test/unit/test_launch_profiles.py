@@ -95,8 +95,6 @@ def _assert_planner_dialogue_seam_defaults(defaults: dict[str, str]) -> None:
         defaults["planner_dialogue_relay_topic"]
         == "/nao_orchestrator/planner_dialogue_act"
     )
-    assert defaults["dialogue_manager_planner_dialogue_wording_mode"] == "direct"
-    assert defaults["dialogue_manager_planner_completion_wording_mode"] == "direct"
 
 
 def test_sim_profile_provides_gscam_camera_and_rqt_with_planner():
