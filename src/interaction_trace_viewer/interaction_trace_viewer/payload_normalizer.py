@@ -143,11 +143,11 @@ def summarize_event_payload(*, event_type: str, channel: str, payload: dict, max
         route = _first_non_empty(payload, 'route')
         intent = _first_non_empty(payload, 'intent')
         source = _first_non_empty(payload, 'intent_source')
-        return _clip(
-            'route=%s | intent=%s | source=%s'
-            % (route or '-', intent or '-', source or '-'),
-            max_payload_chars,
-        )
+        kb_summary = _summarize_turn_trace_kb(payload)
+        summary = 'route=%s | intent=%s | source=%s' % (route or '-', intent or '-', source or '-')
+        if kb_summary:
+            summary += ' | %s' % kb_summary
+        return _clip(summary, max_payload_chars)
 
     if event_type == 'kb_snapshot':
         return _clip(_summarize_kb_snapshot(payload), max_payload_chars)
@@ -260,6 +260,40 @@ def _summarize_kb_snapshot(payload: dict) -> str:
     if text:
         return text
     return json.dumps(payload, ensure_ascii=True, separators=(',', ':'))
+
+
+def _summarize_turn_trace_kb(payload: dict) -> str:
+    grounded_context = payload.get('grounded_context', {})
+    scene_summary = {}
+    if isinstance(grounded_context, dict):
+        maybe_scene = grounded_context.get('scene_summary', {})
+        if isinstance(maybe_scene, dict):
+            scene_summary = maybe_scene
+
+    objects = scene_summary.get('objects', []) if isinstance(scene_summary, dict) else []
+    object_preview: list[str] = []
+    if isinstance(objects, list):
+        for item in objects[:3]:
+            if not isinstance(item, dict):
+                continue
+            label = _first_non_empty(item, 'label', 'id')
+            if label:
+                object_preview.append(label)
+
+    people = scene_summary.get('people', []) if isinstance(scene_summary, dict) else []
+    people_count = len(people) if isinstance(people, list) else 0
+    object_count = len(objects) if isinstance(objects, list) else 0
+
+    snapshot_text = str(payload.get('knowledge_snapshot', '') or '').strip()
+    parts: list[str] = []
+    if snapshot_text:
+        parts.append('kb_chars=%d' % len(snapshot_text))
+    if object_count > 0:
+        suffix = (':' + ','.join(object_preview)) if object_preview else ''
+        parts.append('objects=%d%s' % (object_count, suffix))
+    if people_count > 0:
+        parts.append('people=%d' % people_count)
+    return ' | '.join(parts)
 
 
 def _first_non_empty(payload: dict, *keys: str) -> str:

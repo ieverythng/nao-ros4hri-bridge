@@ -93,6 +93,26 @@ def test_normalize_turn_trace_string_message() -> None:
     assert 'route=dialogue' in event.summary
 
 
+def test_normalize_turn_trace_summary_includes_kb_context_details() -> None:
+    msg = SimpleNamespace(
+        data=(
+            '{"event_type":"chatbot_turn_result","route":"dialogue","intent":"ask_scene","intent_source":"llm_response_route",'
+            '"knowledge_snapshot":"Entities currently seen by the robot: cup, apple",'
+            '"grounded_context":{"scene_summary":{"objects":[{"label":"cup"},{"label":"apple"}],"people":[{"label":"anonymous_person_1"}]}}}'
+        )
+    )
+    event = normalize_string_message(
+        channel='/chatbot_llm/turn_trace',
+        msg=msg,
+        max_payload_chars=4000,
+    )
+
+    assert event.event_type == 'chatbot_turn_trace'
+    assert 'kb_chars=' in event.summary
+    assert 'objects=2:cup,apple' in event.summary
+    assert 'people=1' in event.summary
+
+
 def test_normalize_fake_skill_event_maps_to_skill_result() -> None:
     msg = SimpleNamespace(
         data='{"event_type":"fake_skill_completed","skill":"navigate_to","payload":{"status":"failed","summary_text":"path blocked","failure":{"code":"path_blocked"}}}'
