@@ -468,6 +468,29 @@ def test_scene_scan_payload_summarizes_objects() -> None:
     assert payload['summary_text'].startswith('I completed the scene scan')
 
 
+def test_scene_scan_payload_preserves_positional_evidence() -> None:
+    payload = build_scan_result_payload(
+        {
+            'target_kind': 'scene',
+            'objects': [
+                {
+                    'id': 'cup_1',
+                    'label': 'cup',
+                    'source': 'scene_summary',
+                    'center_x': 0.22,
+                    'center_y': 0.61,
+                    'confidence': 0.94,
+                }
+            ],
+        }
+    )
+
+    assert payload['objects'][0]['id'] == 'cup_1'
+    assert payload['objects'][0]['center_x'] == 0.22
+    assert payload['objects'][0]['center_y'] == 0.61
+    assert payload['objects'][0]['confidence'] == 0.94
+
+
 def test_people_scan_target_detection_supports_common_aliases() -> None:
     assert is_people_scan_target('people') is True
     assert is_people_scan_target('human') is True

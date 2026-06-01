@@ -120,6 +120,32 @@ class _TrackedObject:
         }
 
 
+def _kb_spatial_statements(observer_name: str, tracked: _TrackedObject) -> list[str]:
+    """Build stable KB statements for one tracked object observation."""
+    observer = str(observer_name or '').strip() or 'myself'
+    source_token = _kb_atom(str(tracked.source or '').strip() or 'detector')
+    return [
+        f'{observer} sees {tracked.entity_id}',
+        f'{tracked.entity_id} rdf:type {tracked.kb_class}',
+        f'{tracked.entity_id} inFieldOfViewOf {observer}',
+        f'{tracked.entity_id} hasVisualCenterX {round(float(tracked.center_x), 3)}',
+        f'{tracked.entity_id} hasVisualCenterY {round(float(tracked.center_y), 3)}',
+        f'{tracked.entity_id} hasDetectionScore {round(float(tracked.score), 6)}',
+        f'{tracked.entity_id} lastSeenSec {round(float(tracked.last_seen_sec), 3)}',
+        f'{tracked.entity_id} observedBy {observer}',
+        f'{tracked.entity_id} detectionSource {source_token}',
+    ]
+
+
+def _kb_atom(value: str) -> str:
+    """Normalize free-form strings into conservative KB atom tokens."""
+    clean = ''.join(
+        char if (char.isalnum() or char in ('_', '-')) else '_'
+        for char in str(value or '').strip()
+    ).strip('_')
+    return clean or 'unknown'
+
+
 class NaoSceneGrounding(Node):
     """Ground object detections into KnowledgeCore using transient facts."""
 
@@ -311,10 +337,7 @@ class NaoSceneGrounding(Node):
             return False
 
         result = self._mutation_client.revise_facts(
-            [
-                f'{self._observer_name} sees {tracked.entity_id}',
-                f'{tracked.entity_id} rdf:type {tracked.kb_class}',
-            ],
+            _kb_spatial_statements(self._observer_name, tracked),
             models=list(self._knowledge_models),
             lifespan_sec=self._knowledge_lifespan_sec,
             wait_for_result=False,

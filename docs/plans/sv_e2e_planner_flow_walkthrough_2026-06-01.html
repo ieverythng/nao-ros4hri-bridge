@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>End-to-End Planner Flow Walkthrough (Supervisor + TFM Memory)</title>
+  <title>End-to-End Planner Flow Walkthrough (Technical Memory Draft)</title>
   <style>
     @page {
       size: A4;
@@ -160,12 +160,12 @@
         <p>Master Degree in Modelling for Science and Engineering</p>
         <p>Institution / Lab: IIIA-CSIC</p>
 
-        <h1>Supervisor Walkthrough and TFM Memory Draft Baseline<br/>End-to-End Planner Dialogue Flow</h1>
-        <p>Formal technical memory section (contract and runtime flow)</p>
+        <h1>Technical Memory Draft Baseline<br/>End-to-End Planner Dialogue Flow</h1>
+        <p>Formal architecture and contract section for technical review.</p>
       </div>
 
       <table class="title-meta">
-        <tr><td>Student:</td><td>Juan David Bendek Williamson</td></tr>
+        <tr><td>Document type:</td><td>Architecture and contract walkthrough</td></tr>
         <tr><td>Academic year:</td><td>2025-2026</td></tr>
         <tr><td>Date:</td><td>2026-06-01</td></tr>
         <tr><td>Scope:</td><td>Runtime flow, JSON contracts, replanning lineage, and dialogue relay behavior.</td></tr>
@@ -174,7 +174,8 @@
     </section>
 
     <h1>End-to-End User to Planner Dialogue Flow</h1>
-    <p>This document is a supervisor-facing and thesis-facing contract walkthrough for the active planner stack. The focus is strict payload transparency: each tracked seam includes a concrete JSON object and field-level definitions.</p>
+    <p>This document delivers a full contract walkthrough of the active planner stack, from user intent ingress to execution feedback and dialogue-act emission. The emphasis is strict payload transparency: each tracked seam includes concrete JSON structures with field-level definitions.</p>
+    <p>Its objective is to make planning, execution, and dialogue responsibilities auditable across node boundaries while preserving deterministic behavior, clean ownership, and traceable runtime decisions.</p>
 
     <h2>1) Runtime Sequence Overview</h2>
     <div class="diagram">
@@ -251,6 +252,7 @@
     </div>
 
     <h2>2) Contract Coverage Matrix</h2>
+    <p>The matrix below summarizes the stable interfaces used by the runtime stack. It is intended as a quick reference before reading each contract in detail.</p>
     <table>
       <thead>
         <tr><th>Contract</th><th>Channel</th><th>Producer</th><th>Consumer</th></tr>
@@ -260,7 +262,6 @@
         <tr><td>Planner request envelope</td><td>/nao_orchestrator/planner_request, /planner/request (Intent)</td><td>chatbot_llm, nao_orchestrator</td><td>nao_orchestrator, planner_llm</td></tr>
         <tr><td>Knowledge snapshot</td><td>grounded_context.knowledge_snapshot</td><td>chatbot_llm</td><td>planner_llm</td></tr>
         <tr><td>Scene summary</td><td>grounded_context.scene_summary</td><td>chatbot_llm</td><td>planner_llm</td></tr>
-        <tr><td>State T0</td><td>grounded_context.state_t0</td><td>chatbot_llm</td><td>planner_llm</td></tr>
         <tr><td>Planner request</td><td>Intent.data on /planner/request</td><td>chatbot_llm, nao_orchestrator</td><td>planner_llm</td></tr>
         <tr><td>Planner output</td><td>Intent.data on /intents</td><td>planner_llm</td><td>nao_orchestrator</td></tr>
         <tr><td>Execution feedback</td><td>/planner/execution_feedback</td><td>nao_orchestrator</td><td>planner_llm</td></tr>
@@ -269,6 +270,7 @@
     </table>
 
     <h2>3) Contract A: chatbot_llm Turn Output</h2>
+    <p>This contract captures intent-routing output before planner admission. It defines the semantic request frame that downstream components normalize into planner transport payloads.</p>
 <pre>{
   "verbal_ack": "Okay, I will do that.",
   "route": "execution",
@@ -293,6 +295,7 @@
     </table>
 
     <h2>4) Contract B: Planner Request Transport Envelope (Intent)</h2>
+    <p>This envelope is the ROS transport seam between dialogue-originated requests and planner ingestion. It separates transport metadata from structured planner request content.</p>
 <pre>{
   "intent": "planner_request",
   "source": "user_123",
@@ -310,8 +313,7 @@
     "requested_plan": [],
     "grounded_context": {
       "knowledge_snapshot": {},
-      "scene_summary": {},
-      "state_t0": {}
+      "scene_summary": {}
     },
     "planner_mode": "default",
     "interaction_mode": "speech",
@@ -330,6 +332,7 @@
     </table>
 
     <h2>5) Contract C: Knowledge Snapshot</h2>
+    <p>The knowledge snapshot is a compact symbolic grounding seam. It gives the planner normalized identifiers and classes without exposing full graph payloads.</p>
 <pre>{
   "schema_version": "knowledge_snapshot_v2",
   "captured_at_sec": 1777040000.0,
@@ -350,6 +353,7 @@
     </table>
 
     <h2>6) Contract D: Scene Summary</h2>
+    <p>The scene summary carries observation-driven evidence from perception backends. It is intentionally bounded and typed to keep planner context interpretable and stable.</p>
 <pre>{
   "schema_version": "scene_summary_v2",
   "observer": "myself",
@@ -391,43 +395,8 @@
       </tbody>
     </table>
 
-    <h2>7) Contract E: State T0</h2>
-<pre>{
-  "schema_version": "state_t0_v2",
-  "observer": "myself",
-  "backend": "emorobcare_cv",
-  "captured_at_sec": 1777040000.0,
-  "entity_counts": {"entities": 2, "people": 1, "objects": 1},
-  "entities": [
-    {
-      "normalized_name": "cup",
-      "id": "cup_1",
-      "type": "Cup",
-      "kind": "object",
-      "source": "emorobcare_cv",
-      "last_seen_sec": 1777040000.0
-    },
-    {
-      "normalized_name": "person",
-      "id": "person_1",
-      "type": "Person",
-      "kind": "person",
-      "source": "emorobcare_cv",
-      "last_seen_sec": 1777040000.0
-    }
-  ]
-}</pre>
-    <table>
-      <thead><tr><th>Variable</th><th>Description</th></tr></thead>
-      <tbody>
-        <tr><td><code class="inline">entity_counts</code></td><td>Deterministic totals for entities, people, and objects at T0.</td></tr>
-        <tr><td><code class="inline">entities[]</code></td><td>Canonical planner-visible entities at request time.</td></tr>
-        <tr><td><code class="inline">kind</code></td><td>Explicit disambiguation between <code class="inline">person</code> and <code class="inline">object</code>.</td></tr>
-        <tr><td><code class="inline">last_seen_sec</code></td><td>Recency cue supporting temporal reasoning and sanity checks.</td></tr>
-      </tbody>
-    </table>
-
-    <h2>8) Contract F: Planner Request (Intent.data)</h2>
+    <h2>7) Contract E: Planner Request (Intent.data)</h2>
+    <p>This is the canonical request body consumed by <code class="inline">planner_llm</code>. It consolidates intent semantics, dialogue continuity, and bounded grounding references.</p>
 <pre>{
   "request_id": "turn_123",
   "goal_id": "goal_turn_123",
@@ -439,30 +408,22 @@
   "scene_targets": ["person"],
   "dialogue_context": ["assistant:Okay, I will do that."],
   "requested_plan": [],
-  "grounded_context": {
-    "knowledge_snapshot": {
-      "schema_version": "knowledge_snapshot_v2",
-      "captured_at_sec": 1777040000.0,
-      "references": [{"normalized_name": "person", "id": "person_1", "type": "Person"}],
-      "counts": {"entities": 1, "people": 1, "objects": 0}
+    "grounded_context": {
+      "knowledge_snapshot": {
+        "schema_version": "knowledge_snapshot_v2",
+        "captured_at_sec": 1777040000.0,
+        "references": [{"normalized_name": "person", "id": "person_1", "type": "Person"}],
+        "counts": {"entities": 1, "people": 1, "objects": 0}
+      },
+      "scene_summary": {
+        "schema_version": "scene_summary_v2",
+        "observer": "myself",
+        "backend": "emorobcare_cv",
+        "captured_at_sec": 1777040000.0,
+        "objects": [],
+        "people": [{"id": "person_1", "label": "person", "type": "Person", "source": "emorobcare_cv", "score": 0.9, "center_x": 183.0, "center_y": 219.0, "last_seen_sec": 1777040000.0}]
+      }
     },
-    "scene_summary": {
-      "schema_version": "scene_summary_v2",
-      "observer": "myself",
-      "backend": "emorobcare_cv",
-      "captured_at_sec": 1777040000.0,
-      "objects": [],
-      "people": [{"id": "person_1", "label": "person", "type": "Person", "source": "emorobcare_cv", "score": 0.9, "center_x": 183.0, "center_y": 219.0, "last_seen_sec": 1777040000.0}]
-    },
-    "state_t0": {
-      "schema_version": "state_t0_v2",
-      "observer": "myself",
-      "backend": "emorobcare_cv",
-      "captured_at_sec": 1777040000.0,
-      "entity_counts": {"entities": 1, "people": 1, "objects": 0},
-      "entities": [{"normalized_name": "person", "id": "person_1", "type": "Person", "kind": "person", "source": "emorobcare_cv", "last_seen_sec": 1777040000.0}]
-    }
-  },
   "planner_mode": "default",
   "interaction_mode": "speech",
   "dialogue_turn_id": "role:turn"
@@ -478,7 +439,7 @@
         <tr><td><code class="inline">normalized_intents</code>, <code class="inline">scene_targets</code></td><td>Intent and target abstraction used for plan synthesis.</td></tr>
         <tr><td><code class="inline">dialogue_context</code></td><td>Bounded turn history slice that helps continuity for clarifications.</td></tr>
         <tr><td><code class="inline">requested_plan</code></td><td>Optional planner hint; normalized as plan-step objects when present.</td></tr>
-        <tr><td><code class="inline">grounded_context</code></td><td>Hybrid T0 grounding envelope: <code class="inline">knowledge_snapshot</code>, <code class="inline">scene_summary</code>, <code class="inline">state_t0</code>.</td></tr>
+        <tr><td><code class="inline">grounded_context</code></td><td>Grounding envelope composed of <code class="inline">knowledge_snapshot</code> and <code class="inline">scene_summary</code>.</td></tr>
         <tr><td><code class="inline">planner_mode</code></td><td>Policy profile selector (for example <code class="inline">default</code>, <code class="inline">multi_step</code>).</td></tr>
         <tr><td><code class="inline">interaction_mode</code>, <code class="inline">dialogue_turn_id</code></td><td>Dialogue-channel metadata and turn correlation id.</td></tr>
       </tbody>
@@ -486,12 +447,12 @@
 
     <div class="note"><strong>Contract guardrail.</strong> Legacy fields such as <code class="inline">goal_token</code>, <code class="inline">world_model_snapshot</code>, and <code class="inline">world_model_text</code> are intentionally excluded from the active seam.</div>
 
-    <h2>9) Contract G: Planner Output (Intent.data on /intents)</h2>
+    <h2>8) Contract F: Planner Output (Intent.data on /intents)</h2>
+    <p>Planner output defines executable step policy and communication behavior. It is the primary upstream artifact consumed by the orchestrator execution loop.</p>
 <pre>{
   "grounded_context": {
     "knowledge_snapshot": {},
-    "scene_summary": {},
-    "state_t0": {}
+    "scene_summary": {}
   },
   "plan": {
     "goal_id": "goal_turn_123",
@@ -531,14 +492,15 @@
         <tr><td><code class="inline">plan.goal_id</code>, <code class="inline">plan.plan_id</code>, <code class="inline">plan.plan_version</code></td><td>Lineage tuple for join decisions and duplicate suppression.</td></tr>
         <tr><td><code class="inline">status</code>, <code class="inline">validation_status</code></td><td>Planner lifecycle and contract validity status.</td></tr>
         <tr><td><code class="inline">failure_reason</code>, <code class="inline">user_facing_reason</code>, <code class="inline">replan_hint</code></td><td>Failure semantics and follow-up guidance.</td></tr>
-        <tr><td><code class="inline">retry_budget</code></td><td>Plan-level remaining retries for supervisor control.</td></tr>
+        <tr><td><code class="inline">retry_budget</code></td><td>Plan-level remaining retries for replanning control.</td></tr>
         <tr><td><code class="inline">communication_policy</code></td><td>Boolean flags controlling acknowledge/progress/completion/failure relays.</td></tr>
         <tr><td><code class="inline">communication_policy_source</code></td><td>Source tag for how communication policy was selected.</td></tr>
         <tr><td><code class="inline">steps[]</code></td><td>Executable sequence with stable <code class="inline">id</code>, normalized <code class="inline">type</code>, args, dependencies, and failure policy.</td></tr>
       </tbody>
     </table>
 
-    <h2>10) Contract H: Execution Feedback (/planner/execution_feedback)</h2>
+    <h2>9) Contract G: Execution Feedback (/planner/execution_feedback)</h2>
+    <p>Execution feedback is the typed return seam from orchestrator to planner supervision. It enables deterministic replanning, clarification decisions, and trace-quality diagnostics.</p>
 <pre>{
   "goal_id": "goal_turn_123",
   "plan_id": "plan_123",
@@ -578,7 +540,7 @@
     <table>
       <thead><tr><th>Variable</th><th>Description</th></tr></thead>
       <tbody>
-        <tr><td><code class="inline">goal_id</code>, <code class="inline">plan_id</code>, <code class="inline">plan_version</code></td><td>Plan lineage identifiers consumed by the supervisor loop.</td></tr>
+        <tr><td><code class="inline">goal_id</code>, <code class="inline">plan_id</code>, <code class="inline">plan_version</code></td><td>Plan lineage identifiers consumed by the replanning loop.</td></tr>
         <tr><td><code class="inline">intent</code>, <code class="inline">source</code></td><td>Producer context for trace diagnostics.</td></tr>
         <tr><td><code class="inline">event_type</code></td><td>Normalized event class (for example <code class="inline">plan_accepted</code>, <code class="inline">step_started</code>, <code class="inline">step_succeeded</code>, <code class="inline">step_failed</code>).</td></tr>
         <tr><td><code class="inline">status</code>, <code class="inline">reason</code>, <code class="inline">validation_status</code></td><td>Execution and validation state with optional diagnostic reason.</td></tr>
@@ -589,7 +551,8 @@
       </tbody>
     </table>
 
-    <h2>11) Contract I: Planner Dialogue Act (/planner/dialogue_act)</h2>
+    <h2>10) Contract H: Planner Dialogue Act (/planner/dialogue_act)</h2>
+    <p>This contract carries planner-originated dialogue intent, decoupled from final wording generation. It supports direct relay or chatbot-mediated realization paths.</p>
 <pre>{
   "goal_id": "goal_turn_123",
   "plan_id": "plan_123",
@@ -618,7 +581,8 @@
       </tbody>
     </table>
 
-    <h2>12) Replanning and Join Policy</h2>
+    <h2>11) Replanning and Join Policy</h2>
+    <p>Replanning control is lineage-driven and deterministic. The policy below defines when execution continues, when replanning is triggered, and how join points are resolved safely.</p>
     <div class="diagram">
       <svg viewBox="0 0 980 430" role="img" aria-label="Replanning and join policy">
         <defs>
@@ -686,16 +650,6 @@
       <li>Mid-join uses mapped active <code class="inline">step_id</code> when present in new plan.</li>
       <li>Fallback front-join starts from first pending step when mapping fails.</li>
       <li>Duplicate suppression compares exact tuple <code class="inline">goal_id, plan_id, plan_version</code>.</li>
-    </ol>
-
-    <h2>13) Supervisor Demonstration Sequence</h2>
-    <ol>
-      <li>Trigger a planner-eligible command and inspect chatbot routing output.</li>
-      <li>Inspect planner request transport envelope and admitted request payload.</li>
-      <li>Inspect planner output on <code class="inline">/intents</code> and highlight lineage.</li>
-      <li>Run one success path and one clarification/failure path.</li>
-      <li>Inspect execution feedback and planner dialogue act payloads.</li>
-      <li>Close with ownership statement: planner plans, orchestrator dispatches, skills provide live evidence.</li>
     </ol>
 
     <h2>References (Companion Project Documents)</h2>

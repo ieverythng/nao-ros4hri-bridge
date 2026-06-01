@@ -498,14 +498,17 @@ def _normalize_scan_objects(raw_objects) -> list[dict]:
         entity_id = str(item.get('entity_id', item.get('id', ''))).strip()
         if not label and not entity_id:
             continue
-        normalized.append(
-            {
-                'id': entity_id,
-                'label': label,
-                'kb_class': str(item.get('kb_class', '')).strip(),
-                'source': str(item.get('source', 'scene_summary')).strip() or 'scene_summary',
-            }
-        )
+        entry = {
+            'id': entity_id,
+            'label': label,
+            'kb_class': str(item.get('kb_class', '')).strip(),
+            'source': str(item.get('source', 'scene_summary')).strip() or 'scene_summary',
+        }
+        for numeric_key in ('center_x', 'center_y', 'confidence', 'last_seen_sec', 'distance_m'):
+            numeric_value = _coerce_optional_float(item.get(numeric_key))
+            if numeric_value is not None:
+                entry[numeric_key] = numeric_value
+        normalized.append(entry)
     return normalized
 
 
@@ -712,6 +715,13 @@ def _coerce_nonnegative_int(value) -> int:
         return max(0, int(value))
     except (TypeError, ValueError):
         return 0
+
+
+def _coerce_optional_float(value) -> float | None:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _plan_look_at_error(step_args: dict) -> str:
