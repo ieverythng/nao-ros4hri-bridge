@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ADR: Planner Replan Lineage And Hybrid T0 Contract</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --ink: #10243f;
+      --muted: #5d738f;
+      --accent: #0b8457;
+      --accent-soft: #e8f8f1;
+      --border: #dce6f2;
+      --code: #0d1b2a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #ecf8f3 0%, var(--bg) 260px);
+      color: var(--ink);
+      font-family: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+    }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 30px 20px 56px; }
+    .hero {
+      background: linear-gradient(135deg, #0b8457 0%, #0f766e 100%);
+      color: #fff;
+      border-radius: 18px;
+      padding: 26px 28px;
+      box-shadow: 0 14px 32px rgba(17, 66, 53, 0.23);
+      margin-bottom: 18px;
+    }
+    h1, h2, h3 { margin: 0 0 10px; line-height: 1.25; }
+    h1 { font-size: 1.9rem; }
+    h2 { font-size: 1.2rem; margin-top: 3px; }
+    .status {
+      display: inline-block;
+      margin-top: 8px;
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-weight: 700;
+      font-size: 0.86rem;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 22px;
+      margin-top: 14px;
+      box-shadow: 0 4px 14px rgba(16, 36, 63, 0.05);
+    }
+    ul, ol { margin: 10px 0 0 20px; }
+    li + li { margin-top: 6px; }
+    code {
+      font-family: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+      background: #eef2f8;
+      color: #21364d;
+      padding: 0 5px;
+      border-radius: 4px;
+    }
+    pre {
+      margin: 10px 0 0;
+      padding: 12px 13px;
+      background: var(--code);
+      color: #d7e8ff;
+      border-radius: 10px;
+      overflow: auto;
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .tile {
+      background: var(--accent-soft);
+      border: 1px solid #c7eddc;
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #0f5135;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>ADR: Planner Replan Lineage And Hybrid T0 Contract</h1>
+      <p>Accepted on 2026-05-31 for <code>feat/TFM-LLM_planner</code>.</p>
+      <div class="status">Status: Accepted</div>
+    </section>
+
+    <section class="card">
+      <h2>Context</h2>
+      <ul>
+        <li>Planner payload seams had redundant metadata at multiple levels.</li>
+        <li><code>goal_token</code> and world-model text/snapshot fields were stale.</li>
+        <li>Acknowledgement wording ownership was mixed between planner and chatbot seams.</li>
+        <li>Executor required deterministic continuation when receiving newer plans for the same goal.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Decision 1: Canonical planner payload shape</h2>
+      <ul>
+        <li>Planning metadata is canonical under nested <code>plan</code>.</li>
+        <li>Removed fields: <code>goal_token</code>, <code>world_model_snapshot</code>, <code>world_model_text</code>, planner-level <code>ack_mode</code>, planner-level raw <code>ack_text</code>.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Decision 2: Hybrid Minimal T0</h2>
+      <ul>
+        <li>Keep <code>grounded_context.knowledge_snapshot</code>, <code>scene_summary</code>, and <code>state_t0</code>.</li>
+        <li><code>knowledge_snapshot</code>: compact KB references (<code>normalized_name</code>, <code>id</code>, <code>type</code>).</li>
+        <li><code>state_t0</code>: deterministic planning facts (<code>observer</code>, <code>backend</code>, <code>captured_at_sec</code>, source/recency fields).</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Decision 3: Orchestrator lineage + replan join</h2>
+      <div class="grid">
+        <div class="tile">Single active goal queue model</div>
+        <div class="tile"><code>goal_id</code> = goal continuity</div>
+        <div class="tile"><code>plan_id</code> + <code>plan_version</code> = plan lineage</div>
+        <div class="tile">Mid-join by <code>step_id</code>, else front-join fallback</div>
+      </div>
+      <p style="margin-top: 10px;">Duplicate suppression checks exact active tuple: <code>goal_id</code>, <code>plan_id</code>, <code>plan_version</code>.</p>
+    </section>
+
+    <section class="card">
+      <h2>Decision 4: Transition contract without token locks</h2>
+      <ul>
+        <li><code>new_goal</code>: accepted when no active goal or by supersede policy.</li>
+        <li><code>goal_update</code>: must match active lineage.</li>
+        <li><code>clarification_answer</code>: must match active lineage.</li>
+        <li><code>cancel_request</code>: clears active lineage.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Decision 5: Dialogue ownership guardrail</h2>
+      <ul>
+        <li>Planner emits dialogue acts and intent-level reasoning.</li>
+        <li>User-facing completion wording remains chatbot-owned via planner-dialogue relay path.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Primary touchpoints</h2>
+      <pre><code>src/planner_common/planner_common/contracts.py
+src/nao_orchestrator/nao_orchestrator/planner_gate.py
+src/nao_orchestrator/nao_orchestrator/orchestrator.py
+src/chatbot_llm/chatbot_llm/planner_handoff.py
+src/chatbot_llm/chatbot_llm/planner_request_adapter.py</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>Deferred work</h2>
+      <ul>
+        <li>Full multi-goal scheduling.</li>
+        <li>Full executor queue rewrite.</li>
+        <li>Mid-join robustness remains dependent on stable <code>step_id</code> emission.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

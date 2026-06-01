@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Planner Grounding + MoE Ownership Contract (2026-06-01)</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --ink: #132238;
+      --muted: #4c617d;
+      --accent: #0e7c86;
+      --accent-soft: #e8f6f7;
+      --border: #dbe4ef;
+      --code: #0d1b2a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at top right, #e7efff 0%, var(--bg) 45%);
+      line-height: 1.6;
+    }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 28px 20px 60px; }
+    .hero {
+      background: linear-gradient(135deg, #0c7489 0%, #155e75 100%);
+      color: #fff;
+      border-radius: 18px;
+      padding: 28px;
+      box-shadow: 0 14px 34px rgba(10, 52, 82, 0.22);
+      margin-bottom: 18px;
+    }
+    h1, h2, h3 { margin: 0 0 10px; line-height: 1.25; }
+    h1 { font-size: 1.9rem; }
+    h2 { font-size: 1.25rem; margin-top: 4px; }
+    .subtle { color: #d9eff2; font-weight: 500; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 22px;
+      margin-top: 14px;
+      box-shadow: 0 4px 16px rgba(20, 42, 71, 0.06);
+    }
+    ul, ol { margin: 10px 0 0 20px; }
+    li + li { margin-top: 6px; }
+    code {
+      font-family: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+      background: #eef2f8;
+      padding: 0 5px;
+      border-radius: 4px;
+      color: #213750;
+    }
+    pre {
+      margin: 12px 0 0;
+      padding: 14px;
+      border-radius: 10px;
+      background: var(--code);
+      color: #d7e8ff;
+      overflow: auto;
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+    .pill {
+      display: inline-block;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid #c9eaed;
+      border-radius: 999px;
+      padding: 4px 10px;
+      margin: 4px 6px 0 0;
+      font-size: 0.86rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>Planner Grounding + MoE Ownership Contract</h1>
+      <p class="subtle">Date: 2026-06-01 · Scope: planner seams, grounded context ownership, AB specialization boundaries.</p>
+    </section>
+
+    <section class="card">
+      <h2>Goal</h2>
+      <p>Formalize grounded-context flow through planner seams without blurring ownership between <code>chatbot_llm</code>, <code>planner_llm</code>, <code>nao_orchestrator</code>, and AB=1 skills.</p>
+    </section>
+
+    <section class="card">
+      <h2>Contract Decisions</h2>
+      <ol>
+        <li><code>/planner/request</code> remains the grounding ingress seam with compact T0 context: <code>knowledge_snapshot</code>, <code>scene_summary</code>, <code>state_t0</code>.</li>
+        <li>Planner egress should stay plan-centric; grounded payloads are transitional and should converge to a lightweight <code>context_ref</code>.</li>
+        <li>AB=1 skills own live world-state resolution at execution time from AB=0 seams (<code>/scene/summary</code>, <code>/kb/query</code>, tracked-person feeds, skill-local checks).</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2>ROS4HRI Ownership Alignment</h2>
+      <div class="pill">chatbot_llm: grounding assembly</div>
+      <div class="pill">planner_llm: task decomposition</div>
+      <div class="pill">nao_orchestrator: deterministic dispatch</div>
+      <div class="pill">AB=1 skills: live evidence resolution</div>
+      <p style="margin-top: 12px;">Planner context is advisory T0 evidence, not execution-time truth. This preserves node ownership while retaining enough context for planning pre/postconditions.</p>
+    </section>
+
+    <section class="card">
+      <h2>Planner Request Shape (authoritative entry)</h2>
+      <pre><code>{
+  "grounded_context": {
+    "knowledge_snapshot": {
+      "schema_version": "knowledge_snapshot_v2",
+      "references": [],
+      "counts": {"entities": 0, "people": 0, "objects": 0}
+    },
+    "scene_summary": {
+      "schema_version": "scene_summary_v2",
+      "observer": "myself",
+      "backend": "emorobcare_cv",
+      "captured_at_sec": 0.0,
+      "objects": [],
+      "people": []
+    },
+    "state_t0": {
+      "schema_version": "state_t0_v2",
+      "observer": "myself",
+      "backend": "emorobcare_cv",
+      "captured_at_sec": 0.0,
+      "entity_counts": {"entities": 0, "people": 0, "objects": 0},
+      "entities": []
+    }
+  }
+}</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>Planner Output Target (steady state)</h2>
+      <pre><code>{
+  "plan": {
+    "goal_id": "goal_turn_123",
+    "plan_id": "plan_123",
+    "plan_version": 1,
+    "context_ref": {
+      "captured_at_sec": 1777040000.0,
+      "observer": "myself",
+      "backend": "emorobcare_cv"
+    },
+    "steps": []
+  }
+}</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>MoE-by-AB Practical Pattern</h2>
+      <ol>
+        <li>Planner chooses AB=1 skills and emits compact targets (<code>scene_targets</code>, step args).</li>
+        <li>AB=1 skills resolve live evidence from AB=0 sources at execution time.</li>
+        <li>Execution feedback publishes typed evidence and status.</li>
+        <li>Replanning uses fresh ingress context plus feedback, not stale output copies.</li>
+      </ol>
+    </section>
+  </main>
+</body>
+</html>

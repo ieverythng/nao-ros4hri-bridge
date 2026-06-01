@@ -1,562 +1,2584 @@
-[
-  {
-    "name": "Speech Recognition",
-    "slug": "speech-recognition",
-    "files": [
-      "src/asr_vosk/README.md",
-      "src/asr_vosk/asr_vosk/__init__.py",
-      "src/asr_vosk/asr_vosk/node_vosk.py",
-      "src/asr_vosk/config/00-defaults.yml",
-      "src/asr_vosk/config/asr_vosk",
-      "src/asr_vosk/launch/asr_vosk.launch.py",
-      "src/asr_vosk/package.xml",
-      "src/asr_vosk/resource/asr_vosk",
-      "src/asr_vosk/setup.cfg",
-      "src/asr_vosk/setup.py",
-      "src/asr_vosk/test/unit/test_node_vosk_unit.py",
-      "src/simple_audio_capture/README.md",
-      "src/simple_audio_capture/config/speech_recognition.yaml",
-      "src/simple_audio_capture/launch/audio_capture.launch.py",
-      "src/simple_audio_capture/package.xml",
-      "src/simple_audio_capture/resource/simple_audio_capture",
-      "src/simple_audio_capture/setup.cfg",
-      "src/simple_audio_capture/setup.py",
-      "src/simple_audio_capture/simple_audio_capture/__init__.py",
-      "src/simple_audio_capture/simple_audio_capture/audio_capture_node.py",
-      "src/simple_audio_capture/test/unit/test_audio_capture_node_unit.py"
-    ]
-  },
-  {
-    "name": "Dialogue Management",
-    "slug": "dialogue-management",
-    "files": [
-      "src/dialogue_manager/CHANGELOG.rst",
-      "src/dialogue_manager/NAO_ROS4HRI_DELTA.md",
-      "src/dialogue_manager/README.md",
-      "src/dialogue_manager/config/00-defaults.yml",
-      "src/dialogue_manager/config/dialogue_manager",
-      "src/dialogue_manager/dialogue_manager/__init__.py",
-      "src/dialogue_manager/dialogue_manager/chatbot_client.py",
-      "src/dialogue_manager/dialogue_manager/dialogue.py",
-      "src/dialogue_manager/dialogue_manager/manager_node.py",
-      "src/dialogue_manager/dialogue_manager/skill_servers.py",
-      "src/dialogue_manager/dialogue_manager/speech_handler.py",
-      "src/dialogue_manager/dialogue_manager/start_manager.py",
-      "src/dialogue_manager/dialogue_manager/tts_client.py",
-      "src/dialogue_manager/launch/dialogue_manager.launch.py",
-      "src/dialogue_manager/module/dialogue_manager",
-      "src/dialogue_manager/module/dialogue_manager_module.yaml",
-      "src/dialogue_manager/package.xml",
-      "src/dialogue_manager/res/dialogue_manager",
-      "src/dialogue_manager/setup.cfg",
-      "src/dialogue_manager/setup.py",
-      "src/dialogue_manager/test/test_chatbot_client.py",
-      "src/dialogue_manager/test/test_copyright.py",
-      "src/dialogue_manager/test/test_dialogue.py",
-      "src/dialogue_manager/test/test_flake8.py",
-      "src/dialogue_manager/test/test_integration.py",
-      "src/dialogue_manager/test/test_manager_node.py",
-      "src/dialogue_manager/test/test_pep257.py",
-      "src/dialogue_manager/test/test_skill_servers.py",
-      "src/dialogue_manager/test/test_speech_handler.py",
-      "src/dialogue_manager/test/test_tts_client.py"
-    ]
-  },
-  {
-    "name": "LLM Chatbot",
-    "slug": "llm-chatbot",
-    "files": [
-      "src/chatbot_llm/CHANGELOG.rst",
-      "src/chatbot_llm/README.md",
-      "src/chatbot_llm/ament_flake8.ini",
-      "src/chatbot_llm/chatbot_llm/__init__.py",
-      "src/chatbot_llm/chatbot_llm/backend_config.py",
-      "src/chatbot_llm/chatbot_llm/chat_history.py",
-      "src/chatbot_llm/chatbot_llm/intent_adapter.py",
-      "src/chatbot_llm/chatbot_llm/intent_rules.py",
-      "src/chatbot_llm/chatbot_llm/knowledge_snapshot.py",
-      "src/chatbot_llm/chatbot_llm/knowledge_snapshot_client.py",
-      "src/chatbot_llm/chatbot_llm/node_impl.py",
-      "src/chatbot_llm/chatbot_llm/ollama_transport.py",
-      "src/chatbot_llm/chatbot_llm/planner_request_adapter.py",
-      "src/chatbot_llm/chatbot_llm/prompt_builders.py",
-      "src/chatbot_llm/chatbot_llm/prompt_pack.py",
-      "src/chatbot_llm/chatbot_llm/skill_catalog.py",
-      "src/chatbot_llm/chatbot_llm/start_node.py",
-      "src/chatbot_llm/chatbot_llm/turn_engine.py",
-      "src/chatbot_llm/config/00-defaults.yml",
-      "src/chatbot_llm/config/chat_prompt_pack.yaml",
-      "src/chatbot_llm/config/chatbot_llm",
-      "src/chatbot_llm/launch/chatbot_llm.launch.py",
-      "src/chatbot_llm/module/chatbot_llm",
-      "src/chatbot_llm/module/chatbot_llm_module.yaml",
-      "src/chatbot_llm/package.xml",
-      "src/chatbot_llm/res/chatbot_llm",
-      "src/chatbot_llm/setup.cfg",
-      "src/chatbot_llm/setup.py",
-      "src/chatbot_llm/test/test_copyright.py",
-      "src/chatbot_llm/test/test_flake8.py",
-      "src/chatbot_llm/test/test_intent_adapter.py",
-      "src/chatbot_llm/test/test_knowledge_snapshot.py",
-      "src/chatbot_llm/test/test_pep257.py",
-      "src/chatbot_llm/test/test_planner_request_adapter.py",
-      "src/chatbot_llm/test/test_skill_catalog.py",
-      "src/chatbot_llm/test/test_turn_engine.py"
-    ]
-  },
-  {
-    "name": "Robot Motion Skills",
-    "slug": "robot-motion-skills",
-    "files": [
-      "src/nao_skills/CMakeLists.txt",
-      "src/nao_skills/README.md",
-      "src/nao_skills/action/DoHeadMotion.action",
-      "src/nao_skills/action/DoPosture.action",
-      "src/nao_skills/action/ReplayMotion.action",
-      "src/nao_skills/package.xml",
-      "src/nao_replay_motion/CMakeLists.txt",
-      "src/nao_replay_motion/README.md",
-      "src/nao_replay_motion/launch/nao_replay_motion.launch.py",
-      "src/nao_replay_motion/nao_replay_motion/__init__.py",
-      "src/nao_replay_motion/nao_replay_motion/head_motion_skill_client.py",
-      "src/nao_replay_motion/nao_replay_motion/head_motion_skill_server.py",
-      "src/nao_replay_motion/nao_replay_motion/replay_motion_client.py",
-      "src/nao_replay_motion/nao_replay_motion/replay_motion_skill_server.py",
-      "src/nao_replay_motion/package.xml",
-      "src/nao_replay_motion/src/nao_posture_bridge_node.cpp",
-      "src/nao_replay_motion/test/test_nao_replay_motion_unit.py",
-      "src/motions_skills/CHANGELOG.rst",
-      "src/motions_skills/CMakeLists.txt",
-      "src/motions_skills/README.md",
-      "src/motions_skills/action/ExecuteCartesianTrajectory.action",
-      "src/motions_skills/action/ExecuteJointTrajectory.action",
-      "src/motions_skills/package.xml",
-      "src/nao_look_at/README.md",
-      "src/nao_look_at/config/00-defaults.yml",
-      "src/nao_look_at/config/nao_look_at",
-      "src/nao_look_at/launch/nao_look_at.launch.py",
-      "src/nao_look_at/module/nao_look_at",
-      "src/nao_look_at/module/nao_look_at_module.yaml",
-      "src/nao_look_at/nao_look_at/__init__.py",
-      "src/nao_look_at/nao_look_at/skill_impl.py",
-      "src/nao_look_at/nao_look_at/start_skill.py",
-      "src/nao_look_at/package.xml",
-      "src/nao_look_at/res/nao_look_at",
-      "src/nao_look_at/setup.cfg",
-      "src/nao_look_at/setup.py",
-      "src/nao_look_at/test/test_nao_look_at_unit.py"
-    ]
-  },
-  {
-    "name": "Speech Output",
-    "slug": "speech-output",
-    "files": [
-      "src/nao_say_skill/README.md",
-      "src/nao_say_skill/config/00-defaults.yml",
-      "src/nao_say_skill/config/nao_say_skill",
-      "src/nao_say_skill/launch/nao_say_skill.launch.py",
-      "src/nao_say_skill/module/nao_say_skill",
-      "src/nao_say_skill/module/nao_say_skill_module.yaml",
-      "src/nao_say_skill/nao_say_skill/__init__.py",
-      "src/nao_say_skill/nao_say_skill/skill_impl.py",
-      "src/nao_say_skill/nao_say_skill/start_skill.py",
-      "src/nao_say_skill/package.xml",
-      "src/nao_say_skill/res/nao_say_skill",
-      "src/nao_say_skill/setup.cfg",
-      "src/nao_say_skill/setup.py",
-      "src/nao_say_skill/test/test_nao_say_skill_unit.py"
-    ]
-  },
-  {
-    "name": "Knowledge Base",
-    "slug": "knowledge-base",
-    "files": [],
-    "children": [
-      {
-        "name": "Knowledge Base — kb_skills",
-        "slug": "knowledge-base-kb-skills",
-        "files": [
-          "src/kb_skills/README.md",
-          "src/kb_skills/kb_skills/__init__.py",
-          "src/kb_skills/kb_skills/intent_labels.py",
-          "src/kb_skills/kb_skills/mutation_client.py",
-          "src/kb_skills/kb_skills/query_client.py",
-          "src/kb_skills/package.xml",
-          "src/kb_skills/res/kb_skills",
-          "src/kb_skills/setup.py",
-          "src/kb_skills/test/test_mutation_client.py",
-          "src/kb_skills/test/test_query_client.py"
-        ]
-      },
-      {
-        "name": "Knowledge Base — knowledge_sources",
-        "slug": "knowledge-base-knowledge-sources",
-        "files": [
-          "ref_src/knowledge_sources/interaction_sim/CHANGELOG.rst",
-          "ref_src/knowledge_sources/interaction_sim/CMakeLists.txt",
-          "ref_src/knowledge_sources/interaction_sim/README.md",
-          "ref_src/knowledge_sources/interaction_sim/config/camera_info.yaml",
-          "ref_src/knowledge_sources/interaction_sim/config/simulator.perspective",
-          "ref_src/knowledge_sources/interaction_sim/launch/simulator.launch.py",
-          "ref_src/knowledge_sources/interaction_sim/package.xml",
-          "ref_src/knowledge_sources/kb_msgs/CHANGELOG.rst",
-          "ref_src/knowledge_sources/kb_msgs/CMakeLists.txt",
-          "ref_src/knowledge_sources/kb_msgs/README.md",
-          "ref_src/knowledge_sources/kb_msgs/msg/ActiveConcepts.msg",
-          "ref_src/knowledge_sources/kb_msgs/package.xml",
-          "ref_src/knowledge_sources/kb_msgs/srv/About.srv",
-          "ref_src/knowledge_sources/kb_msgs/srv/Event.srv",
-          "ref_src/knowledge_sources/kb_msgs/srv/Lookup.srv",
-          "ref_src/knowledge_sources/kb_msgs/srv/Manage.srv",
-          "ref_src/knowledge_sources/kb_msgs/srv/Query.srv",
-          "ref_src/knowledge_sources/kb_msgs/srv/Revise.srv",
-          "ref_src/knowledge_sources/kb_msgs/srv/Sparql.srv",
-          "ref_src/knowledge_sources/knowledge_core/CHANGELOG.rst",
-          "ref_src/knowledge_sources/knowledge_core/MANIFEST.in",
-          "ref_src/knowledge_sources/knowledge_core/README-debian.md",
-          "ref_src/knowledge_sources/knowledge_core/README-pypi.rst",
-          "ref_src/knowledge_sources/knowledge_core/README.md",
-          "ref_src/knowledge_sources/knowledge_core/config/00-defaults.yaml",
-          "ref_src/knowledge_sources/knowledge_core/config/knowledge_core",
-          "ref_src/knowledge_sources/knowledge_core/config/knowledge_core_analyzers.yaml",
-          "ref_src/knowledge_sources/knowledge_core/doc/api.md",
-          "ref_src/knowledge_sources/knowledge_core/examples/kb_events_ros.py",
-          "ref_src/knowledge_sources/knowledge_core/launch/knowledge_core.launch.py",
-          "ref_src/knowledge_sources/knowledge_core/launch/knowledge_viewer.launch.py",
-          "ref_src/knowledge_sources/knowledge_core/module/knowledge_core",
-          "ref_src/knowledge_sources/knowledge_core/module/knowledge_core_module.yaml",
-          "ref_src/knowledge_sources/knowledge_core/package.xml",
-          "ref_src/knowledge_sources/knowledge_core/pages/README.md",
-          "ref_src/knowledge_sources/knowledge_core/pages/index.html",
-          "ref_src/knowledge_sources/knowledge_core/pages/kb_explorer.ts",
-          "ref_src/knowledge_sources/knowledge_core/pages/package.json",
-          "ref_src/knowledge_sources/knowledge_core/pages/tsconfig.json",
-          "ref_src/knowledge_sources/knowledge_core/resource/knowledge_core",
-          "ref_src/knowledge_sources/knowledge_core/setup.cfg",
-          "ref_src/knowledge_sources/knowledge_core/setup.py",
-          "ref_src/knowledge_sources/knowledge_core/src/knowledge_core/__init__.py",
-          "ref_src/knowledge_sources/knowledge_core/src/knowledge_core/ansistrm.py",
-          "ref_src/knowledge_sources/knowledge_core/src/knowledge_core/api/__init__.py",
-          "ref_src/knowledge_sources/knowledge_core/src/knowledge_core/exceptions.py",
-          "ref_src/knowledge_sources/knowledge_core/src/knowledge_core/helpers.py",
-          "ref_src/knowledge_sources/knowledge_core/src/knowledge_core/kb.py",
-          "ref_src/knowledge_sources/knowledge_core/src/knowledge_core/knowledge_core_ros.py",
-          "ref_src/knowledge_sources/knowledge_core/tests/benchmarks/__init__.py",
-          "ref_src/knowledge_sources/knowledge_core/tests/benchmarks/conftest.py",
-          "ref_src/knowledge_sources/knowledge_core/tests/benchmarks/generators.py",
-          "ref_src/knowledge_sources/knowledge_core/tests/benchmarks/test_bench_events.py",
-          "ref_src/knowledge_sources/knowledge_core/tests/benchmarks/test_bench_find.py",
-          "ref_src/knowledge_sources/knowledge_core/tests/benchmarks/test_bench_materialise.py",
-          "ref_src/knowledge_sources/knowledge_core/tests/benchmarks/test_bench_parsing.py",
-          "ref_src/knowledge_sources/knowledge_core/tests/benchmarks/test_bench_pipeline.py",
-          "ref_src/knowledge_sources/knowledge_core/tests/benchmarks/test_bench_revise.py",
-          "ref_src/knowledge_sources/knowledge_core/tests/test_base.py",
-          "ref_src/knowledge_sources/knowledge_core/tests/test_copyright.py",
-          "ref_src/knowledge_sources/knowledge_core/tests/test_flake8.py",
-          "ref_src/knowledge_sources/knowledge_core/tests/test_pep257.py",
-          "ref_src/knowledge_sources/knowledge_core/tests/test_pythonic_api_ros.py",
-          "ref_src/knowledge_sources/knowledge_core/tests/test_reasoner.py",
-          "ref_src/knowledge_sources/knowledge_core/tests/test_ros.py",
-          "ref_src/knowledge_sources/knowledge_core/tests/test_ros_events.py",
-          "ref_src/knowledge_sources/oro/CHANGELOG.rst",
-          "ref_src/knowledge_sources/oro/CMakeLists.txt",
-          "ref_src/knowledge_sources/oro/README.md",
-          "ref_src/knowledge_sources/oro/package.xml",
-          "ref_src/knowledge_sources/oro/pal-concepts.md",
-          "ref_src/knowledge_sources/oro/share/ontologies/oro.owl"
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Scene Grounding",
-    "slug": "scene-grounding",
-    "files": [
-      "src/nao_scene_grounding/README.md",
-      "src/nao_scene_grounding/config/00-defaults.yml",
-      "src/nao_scene_grounding/nao_scene_grounding/__init__.py",
-      "src/nao_scene_grounding/nao_scene_grounding/detector_adapters.py",
-      "src/nao_scene_grounding/nao_scene_grounding/identity_matching.py",
-      "src/nao_scene_grounding/nao_scene_grounding/scene_grounding_node.py",
-      "src/nao_scene_grounding/package.xml",
-      "src/nao_scene_grounding/resource/nao_scene_grounding",
-      "src/nao_scene_grounding/setup.cfg",
-      "src/nao_scene_grounding/setup.py",
-      "src/nao_scene_grounding/test/test_detector_adapters.py",
-      "src/nao_scene_grounding/test/test_identity_matching.py"
-    ]
-  },
-  {
-    "name": "Orchestration",
-    "slug": "orchestration",
-    "files": [
-      "src/nao_orchestrator/README.md",
-      "src/nao_orchestrator/config/00-defaults.yml",
-      "src/nao_orchestrator/config/nao_orchestrator",
-      "src/nao_orchestrator/launch/nao_orchestrator.launch.py",
-      "src/nao_orchestrator/module/nao_orchestrator",
-      "src/nao_orchestrator/module/nao_orchestrator_module.yaml",
-      "src/nao_orchestrator/nao_orchestrator/__init__.py",
-      "src/nao_orchestrator/nao_orchestrator/intent_rules.py",
-      "src/nao_orchestrator/nao_orchestrator/orchestrator.py",
-      "src/nao_orchestrator/nao_orchestrator/run_app.py",
-      "src/nao_orchestrator/package.xml",
-      "src/nao_orchestrator/res/nao_orchestrator",
-      "src/nao_orchestrator/setup.cfg",
-      "src/nao_orchestrator/setup.py",
-      "src/nao_orchestrator/test/test_nao_orchestrator_intent_rules.py"
-    ]
-  },
-  {
-    "name": "Planner",
-    "slug": "planner",
-    "files": [],
-    "children": [
-      {
-        "name": "Planner — planner_llm",
-        "slug": "planner-planner-llm",
-        "files": [
-          "src/planner_llm/README.md",
-          "src/planner_llm/config/00-defaults.yml",
-          "src/planner_llm/config/skill_registry.json",
-          "src/planner_llm/package.xml",
-          "src/planner_llm/planner_llm/__init__.py",
-          "src/planner_llm/planner_llm/fixture_publisher.py",
-          "src/planner_llm/planner_llm/planner_engine.py",
-          "src/planner_llm/planner_llm/planner_node.py",
-          "src/planner_llm/planner_llm/providers.py",
-          "src/planner_llm/planner_llm/skill_registry.py",
-          "src/planner_llm/planner_llm/supervisor.py",
-          "src/planner_llm/resource/planner_llm",
-          "src/planner_llm/setup.cfg",
-          "src/planner_llm/setup.py",
-          "src/planner_llm/test/test_planner_engine.py",
-          "src/planner_llm/test/test_skill_registry.py",
-          "src/planner_llm/test/test_supervisor.py"
-        ]
-      },
-      {
-        "name": "Planner — planner_common",
-        "slug": "planner-planner-common",
-        "files": [
-          "src/planner_common/package.xml",
-          "src/planner_common/planner_common/__init__.py",
-          "src/planner_common/planner_common/contracts.py",
-          "src/planner_common/resource/planner_common",
-          "src/planner_common/setup.cfg",
-          "src/planner_common/setup.py",
-          "src/planner_common/test/test_contracts.py"
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Interaction Skills",
-    "slug": "interaction-skills",
-    "files": [
-      "src/interaction_skills/CHANGELOG.rst",
-      "src/interaction_skills/CMakeLists.txt",
-      "src/interaction_skills/README.md",
-      "src/interaction_skills/action/AskHumanForHelp.action",
-      "src/interaction_skills/action/DoLedEffect.action",
-      "src/interaction_skills/action/LookAt.action",
-      "src/interaction_skills/action/LookFor.action",
-      "src/interaction_skills/msg/LedColor.msg",
-      "src/interaction_skills/msg/SetExpression.msg",
-      "src/interaction_skills/package.xml",
-      "src/communication_skills/CHANGELOG.rst",
-      "src/communication_skills/CMakeLists.txt",
-      "src/communication_skills/README.md",
-      "src/communication_skills/action/Ask.action",
-      "src/communication_skills/action/Chat.action",
-      "src/communication_skills/action/Say.action",
-      "src/communication_skills/package.xml",
-      "src/std_skills/CHANGELOG.rst",
-      "src/std_skills/CMakeLists.txt",
-      "src/std_skills/README.md",
-      "src/std_skills/action/Empty.action",
-      "src/std_skills/msg/Bool.msg",
-      "src/std_skills/msg/Byte.msg",
-      "src/std_skills/msg/Char.msg",
-      "src/std_skills/msg/ColorRGBA.msg",
-      "src/std_skills/msg/Empty.msg",
-      "src/std_skills/msg/Feedback.msg",
-      "src/std_skills/msg/Float32.msg",
-      "src/std_skills/msg/Float32Array.msg",
-      "src/std_skills/msg/Float64.msg",
-      "src/std_skills/msg/Int16.msg",
-      "src/std_skills/msg/Int16Array.msg",
-      "src/std_skills/msg/Int32.msg",
-      "src/std_skills/msg/Int32Array.msg",
-      "src/std_skills/msg/Int64.msg",
-      "src/std_skills/msg/Int8.msg",
-      "src/std_skills/msg/Int8Array.msg",
-      "src/std_skills/msg/Meta.msg",
-      "src/std_skills/msg/Result.msg",
-      "src/std_skills/msg/String.msg",
-      "src/std_skills/msg/StringArray.msg",
-      "src/std_skills/msg/UInt16.msg",
-      "src/std_skills/msg/UInt16Array.msg",
-      "src/std_skills/msg/UInt32.msg",
-      "src/std_skills/msg/UInt32Array.msg",
-      "src/std_skills/msg/UInt64.msg",
-      "src/std_skills/msg/UInt8.msg",
-      "src/std_skills/msg/UInt8Array.msg",
-      "src/std_skills/package.xml",
-      "src/std_skills/srv/Empty.srv",
-      "src/std_skills/srv/SetBool.srv",
-      "src/std_skills/srv/SetFloat32.srv",
-      "src/std_skills/srv/SetFloat32Array.srv",
-      "src/std_skills/srv/SetInt8.srv",
-      "src/std_skills/srv/SetInt8Array.srv",
-      "src/std_skills/srv/SetString.srv",
-      "src/std_skills/srv/SetStringArray.srv",
-      "src/std_skills/srv/SetUInt8.srv",
-      "src/std_skills/srv/SetUInt8Array.srv",
-      "src/std_skills/srv/Trigger.srv"
-    ]
-  },
-  {
-    "name": "Launch Profiles",
-    "slug": "launch-profiles",
-    "files": [
-      "src/nao_chatbot/README.md",
-      "src/nao_chatbot/config/interaction_sim_debug.perspective",
-      "src/nao_chatbot/config/nao_robot_safe.rviz",
-      "src/nao_chatbot/launch/nao_chatbot_asr_only.launch.py",
-      "src/nao_chatbot/launch/nao_chatbot_robot.launch.py",
-      "src/nao_chatbot/launch/nao_chatbot_robot_asr.launch.py",
-      "src/nao_chatbot/launch/nao_chatbot_sim.launch.py",
-      "src/nao_chatbot/launch/nao_chatbot_sim_asr.launch.py",
-      "src/nao_chatbot/module/nao_chatbot",
-      "src/nao_chatbot/module/nao_chatbot_module.yaml",
-      "src/nao_chatbot/nao_chatbot/__init__.py",
-      "src/nao_chatbot/nao_chatbot/asr_push_to_talk_cli.py",
-      "src/nao_chatbot/nao_chatbot/interaction_sim_support.py",
-      "src/nao_chatbot/nao_chatbot/robot_speech_debug.py",
-      "src/nao_chatbot/nao_chatbot/speech_debug_labels.py",
-      "src/nao_chatbot/nao_chatbot/stack_launch.py",
-      "src/nao_chatbot/package.xml",
-      "src/nao_chatbot/resource/nao_chatbot",
-      "src/nao_chatbot/setup.cfg",
-      "src/nao_chatbot/setup.py",
-      "src/nao_chatbot/test/test_copyright.py",
-      "src/nao_chatbot/test/test_flake8.py",
-      "src/nao_chatbot/test/test_pep257.py",
-      "src/nao_chatbot/test/unit/test_asr_push_to_talk_cli.py",
-      "src/nao_chatbot/test/unit/test_launch_profiles.py",
-      "src/nao_chatbot/test/unit/test_robot_speech_debug.py"
-    ]
-  },
-  {
-    "name": "Build & Deployment",
-    "slug": "build-deployment",
-    "files": [
-      "docker/Dockerfile",
-      "docker/Dockerfile.full",
-      "docker/ros_entrypoint.sh",
-      "scripts/bootstrap_socialminds_sources.sh",
-      "scripts/build_docker.sh",
-      "scripts/export_docker_image.sh",
-      "scripts/import_docker_image.sh",
-      "scripts/precommit_check_merge_conflict.py",
-      "scripts/precommit_check_yaml.py",
-      "scripts/precommit_fix_eof.py",
-      "scripts/precommit_trim_trailing_whitespace.py",
-      "scripts/run_precommit.sh",
-      "scripts/run_tests.sh",
-      "scripts/setup_dev_tools.sh",
-      "requirements-dev.txt",
-      "build.log"
-    ]
-  },
-  {
-    "name": "Knowledge Tools",
-    "slug": "knowledge-tools",
-    "files": [
-      "tools/knowledge/bootstrap/README.md",
-      "tools/knowledge/bootstrap/init_repo_knowledge.sh",
-      "tools/knowledge/bootstrap/templates/AGENTS.md.tpl",
-      "tools/knowledge/bootstrap/templates/INDEX_STATUS.md.tpl",
-      "tools/knowledge/bootstrap/templates/codex-config.toml.tpl",
-      "tools/knowledge/bootstrap/templates/cursor-mcp.json.tpl",
-      "tools/knowledge/bootstrap/templates/docs-knowledge-DECISIONS.md.tpl",
-      "tools/knowledge/bootstrap/templates/docs-knowledge-EVAL.md.tpl",
-      "tools/knowledge/bootstrap/templates/docs-knowledge-QUICKSTART.md.tpl",
-      "tools/knowledge/bootstrap/templates/docs-knowledge-README.md.tpl",
-      "tools/knowledge/bootstrap/templates/docs-knowledge-WORKFLOWS.md.tpl",
-      "tools/knowledge/bootstrap/templates/module_tree.json.tpl",
-      "tools/knowledge/bootstrap/templates/wiki-README.md.tpl",
-      "tools/knowledge/codex_with_gitnexus.sh",
-      "tools/knowledge/generate_ros_graph_proxy.py",
-      "tools/knowledge/generate_wiki.sh",
-      "tools/knowledge/gitnexus.sh",
-      "tools/knowledge/index_repo.sh",
-      "tools/knowledge/lib.sh",
-      "tools/knowledge/post_commit_refresh.sh",
-      "tools/knowledge/pre_commit_advisory.sh",
-      "tools/knowledge/ros_graph_overrides.json",
-      "tools/knowledge/serve_http_mcp.sh",
-      "tools/knowledge/setup_gitnexus.sh",
-      "tools/knowledge/status.sh",
-      "tools/knowledge/status_summary.py",
-      "tools/knowledge/sync_artifacts.py"
-    ]
-  },
-  {
-    "name": "Documentation",
-    "slug": "documentation",
-    "files": [],
-    "children": [
-      {
-        "name": "Documentation — AGENTS.md",
-        "slug": "documentation-agents-md",
-        "files": [
-          "AGENTS.md"
-        ]
-      },
-      {
-        "name": "Documentation — README.md",
-        "slug": "documentation-readme-md",
-        "files": [
-          "README.md"
-        ]
-      },
-      {
-        "name": "Documentation — docs",
-        "slug": "documentation-docs",
-        "files": [
-          "docs/asr_vosk_setup.md",
-          "docs/current_workflow.md",
-          "docs/demo_status_and_contracts.md",
-          "docs/knowledge_core_integration_scope.md",
-          "docs/launch_profiles.md",
-          "docs/nao_camera_vlm_research.md",
-          "docs/node_interactions_map.md",
-          "docs/ollama_chatbot_architecture.md",
-          "docs/planner_supervisor_phase_c_handoff.md",
-          "docs/ros4hri_fork_delta_ledgers.md",
-          "docs/thesis_planning_handoff.md",
-          "docs/wme_planner_alignment.md"
-        ]
-      },
-      {
-        "name": "Documentation — knowledge",
-        "slug": "documentation-knowledge",
-        "files": [
-          "docs/knowledge/DECISIONS.md",
-          "docs/knowledge/EVAL.md",
-          "docs/knowledge/INDEX_STATUS.md",
-          "docs/knowledge/QUICKSTART.md",
-          "docs/knowledge/README.md",
-          "docs/knowledge/ROS_RUNTIME_GRAPH.md",
-          "docs/knowledge/WORKFLOWS.md",
-          "docs/knowledge/module_tree.json",
-          "docs/knowledge/ros_runtime_graph.json",
-          "docs/knowledge/ros_runtime_proxy.py",
-          "docs/knowledge/wiki/README.md"
-        ]
-      }
-    ]
-  }
-]
+{
+  "repo": "nao-ros4hri-bridge",
+  "source": "git-ls-files fallback",
+  "children": [
+    {
+      "name": ".agents",
+      "type": "directory",
+      "children": [
+        {
+          "name": "skills",
+          "type": "directory",
+          "children": [
+            {
+              "name": "gitnexus",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "gitnexus-cli",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "SKILL.md",
+                      "type": "file"
+                    }
+                  ]
+                },
+                {
+                  "name": "gitnexus-debugging",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "SKILL.md",
+                      "type": "file"
+                    }
+                  ]
+                },
+                {
+                  "name": "gitnexus-exploring",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "SKILL.md",
+                      "type": "file"
+                    }
+                  ]
+                },
+                {
+                  "name": "gitnexus-guide",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "SKILL.md",
+                      "type": "file"
+                    }
+                  ]
+                },
+                {
+                  "name": "gitnexus-impact-analysis",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "SKILL.md",
+                      "type": "file"
+                    }
+                  ]
+                },
+                {
+                  "name": "gitnexus-refactoring",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "SKILL.md",
+                      "type": "file"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": ".claude",
+      "type": "directory",
+      "children": [
+        {
+          "name": "skills",
+          "type": "directory",
+          "children": [
+            {
+              "name": "gitnexus",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "gitnexus-cli",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "SKILL.md",
+                      "type": "file"
+                    }
+                  ]
+                },
+                {
+                  "name": "gitnexus-debugging",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "SKILL.md",
+                      "type": "file"
+                    }
+                  ]
+                },
+                {
+                  "name": "gitnexus-exploring",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "SKILL.md",
+                      "type": "file"
+                    }
+                  ]
+                },
+                {
+                  "name": "gitnexus-guide",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "SKILL.md",
+                      "type": "file"
+                    }
+                  ]
+                },
+                {
+                  "name": "gitnexus-impact-analysis",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "SKILL.md",
+                      "type": "file"
+                    }
+                  ]
+                },
+                {
+                  "name": "gitnexus-refactoring",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "SKILL.md",
+                      "type": "file"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": ".codex",
+      "type": "directory",
+      "children": [
+        {
+          "name": "config.toml",
+          "type": "file"
+        },
+        {
+          "name": "skills",
+          "type": "directory",
+          "children": [
+            {
+              "name": "deslop-refactor",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "SKILL.md",
+                  "type": "file"
+                },
+                {
+                  "name": "agents",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "openai.yaml",
+                      "type": "file"
+                    }
+                  ]
+                },
+                {
+                  "name": "references",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "deslop-operating-manual.md",
+                      "type": "file"
+                    },
+                    {
+                      "name": "upstream-addtodeslop.md",
+                      "type": "file"
+                    },
+                    {
+                      "name": "upstream-deslop.md",
+                      "type": "file"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "iiia-ros4hri-check",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "SKILL.md",
+                  "type": "file"
+                },
+                {
+                  "name": "agents",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "openai.yaml",
+                      "type": "file"
+                    }
+                  ]
+                },
+                {
+                  "name": "references",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "repo-boundaries.md",
+                      "type": "file"
+                    },
+                    {
+                      "name": "ros4hri-guardrails.md",
+                      "type": "file"
+                    }
+                  ]
+                },
+                {
+                  "name": "scripts",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "link_into_codex_home.sh",
+                      "type": "file"
+                    },
+                    {
+                      "name": "ros4hri_change_audit.py",
+                      "type": "file"
+                    },
+                    {
+                      "name": "ros4hri_change_audit_standalone.py",
+                      "type": "file"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "skillopt-skill-iteration",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "SKILL.md",
+                  "type": "file"
+                },
+                {
+                  "name": "agents",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "openai.yaml",
+                      "type": "file"
+                    }
+                  ]
+                },
+                {
+                  "name": "references",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "skillopt-loop-template.md",
+                      "type": "file"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": ".cursor",
+      "type": "directory",
+      "children": [
+        {
+          "name": "mcp.json",
+          "type": "file"
+        }
+      ]
+    },
+    {
+      "name": ".dockerignore",
+      "type": "file"
+    },
+    {
+      "name": ".gitignore",
+      "type": "file"
+    },
+    {
+      "name": ".gitnexus",
+      "type": "directory",
+      "children": [
+        {
+          "name": "lbug",
+          "type": "file"
+        },
+        {
+          "name": "meta.json",
+          "type": "file"
+        }
+      ]
+    },
+    {
+      "name": ".gitnexusignore",
+      "type": "file"
+    },
+    {
+      "name": ".pre-commit-config.yaml",
+      "type": "file"
+    },
+    {
+      "name": "AGENTS.md",
+      "type": "file"
+    },
+    {
+      "name": "README.md",
+      "type": "file"
+    },
+    {
+      "name": "build.log",
+      "type": "file"
+    },
+    {
+      "name": "docker",
+      "type": "directory",
+      "children": [
+        {
+          "name": "Dockerfile",
+          "type": "file"
+        },
+        {
+          "name": "Dockerfile.full",
+          "type": "file"
+        },
+        {
+          "name": "keys",
+          "type": "directory",
+          "children": [
+            {
+              "name": "socialminds.gpg",
+              "type": "file"
+            }
+          ]
+        },
+        {
+          "name": "ros_entrypoint.sh",
+          "type": "file"
+        }
+      ]
+    },
+    {
+      "name": "docs",
+      "type": "directory",
+      "children": [
+        {
+          "name": "README.md",
+          "type": "file"
+        },
+        {
+          "name": "architecture",
+          "type": "directory",
+          "children": [
+            {
+              "name": "ab_registry_input.json",
+              "type": "file"
+            },
+            {
+              "name": "demo_stack_seam_contract_2026-05-26.html",
+              "type": "file"
+            },
+            {
+              "name": "demo_stack_seam_contract_2026-05-26.md",
+              "type": "file"
+            },
+            {
+              "name": "fake_skills_scenarios_playbook.html",
+              "type": "file"
+            },
+            {
+              "name": "fake_skills_scenarios_playbook.md",
+              "type": "file"
+            },
+            {
+              "name": "planner_replan_lineage_adr.md",
+              "type": "file"
+            },
+            {
+              "name": "ros4hri_neural_workbench_interactive_architecture.html",
+              "type": "file"
+            },
+            {
+              "name": "skill_registry_contract.md",
+              "type": "file"
+            }
+          ]
+        },
+        {
+          "name": "artifacts",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "asr_vosk_setup.md",
+              "type": "file"
+            },
+            {
+              "name": "demo_planner_repo_sweep_handoff.md",
+              "type": "file"
+            },
+            {
+              "name": "demo_status_and_contracts.md",
+              "type": "file"
+            },
+            {
+              "name": "fake_skills_runtime_probe_2026-05-26.md",
+              "type": "file"
+            },
+            {
+              "name": "gpt55_container_runtime_handoff_2026-05-10.md",
+              "type": "file"
+            },
+            {
+              "name": "handoffs",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "demo_ready_handoff_2026-05-05.md",
+                  "type": "file"
+                },
+                {
+                  "name": "nao_orchestrator_planner_gate_handoff.md",
+                  "type": "file"
+                },
+                {
+                  "name": "planner_architecture_current.md",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "knowledge_core_integration_scope.md",
+              "type": "file"
+            },
+            {
+              "name": "monday_demo.md",
+              "type": "file"
+            },
+            {
+              "name": "nao_camera_vlm_research.md",
+              "type": "file"
+            },
+            {
+              "name": "node_interactions_map.md",
+              "type": "file"
+            },
+            {
+              "name": "ollama_chatbot_architecture.md",
+              "type": "file"
+            },
+            {
+              "name": "plan_archive",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "ab_registry_decomposition_codex_handoff.html",
+                  "type": "file"
+                },
+                {
+                  "name": "ab_registry_decomposition_codex_handoff.md",
+                  "type": "file"
+                },
+                {
+                  "name": "dashboard_implementation_roadmap.html",
+                  "type": "file"
+                },
+                {
+                  "name": "dashboard_implementation_roadmap.md",
+                  "type": "file"
+                },
+                {
+                  "name": "fake_skills_codex_handoff.html",
+                  "type": "file"
+                },
+                {
+                  "name": "fake_skills_codex_handoff.md",
+                  "type": "file"
+                },
+                {
+                  "name": "full_nao_dashboard_spec.html",
+                  "type": "file"
+                },
+                {
+                  "name": "full_nao_dashboard_spec.md",
+                  "type": "file"
+                },
+                {
+                  "name": "simple_dialogue_trace_viewer_spec.html",
+                  "type": "file"
+                },
+                {
+                  "name": "simple_dialogue_trace_viewer_spec.md",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "planner_phase_d_handoff.md",
+              "type": "file"
+            },
+            {
+              "name": "planner_supervisor_phase_c_handoff.md",
+              "type": "file"
+            },
+            {
+              "name": "prompt_hardening_skillopt_2026-05-27.md",
+              "type": "file"
+            },
+            {
+              "name": "ros4hri_fork_delta_ledgers.md",
+              "type": "file"
+            },
+            {
+              "name": "runtime_validation_report_2026-05-26_stack_live.md",
+              "type": "file"
+            },
+            {
+              "name": "thesis_planning_handoff.md",
+              "type": "file"
+            },
+            {
+              "name": "upstream_sync_inventory_2026-05-14.md",
+              "type": "file"
+            },
+            {
+              "name": "wme_planner_alignment.md",
+              "type": "file"
+            }
+          ]
+        },
+        {
+          "name": "contracts.md",
+          "type": "file"
+        },
+        {
+          "name": "current_workflow.md",
+          "type": "file"
+        },
+        {
+          "name": "knowledge",
+          "type": "directory",
+          "children": [
+            {
+              "name": "DECISIONS.md",
+              "type": "file"
+            },
+            {
+              "name": "EVAL.md",
+              "type": "file"
+            },
+            {
+              "name": "INDEX_STATUS.md",
+              "type": "file"
+            },
+            {
+              "name": "QUICKSTART.md",
+              "type": "file"
+            },
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "ROS_RUNTIME_GRAPH.md",
+              "type": "file"
+            },
+            {
+              "name": "WORKFLOWS.md",
+              "type": "file"
+            },
+            {
+              "name": "module_tree.json",
+              "type": "file"
+            },
+            {
+              "name": "ros_runtime_graph.json",
+              "type": "file"
+            },
+            {
+              "name": "ros_runtime_proxy.py",
+              "type": "file"
+            },
+            {
+              "name": "wiki",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "README.md",
+                  "type": "file"
+                },
+                {
+                  "name": "build-deployment.md",
+                  "type": "file"
+                },
+                {
+                  "name": "dialogue-management.md",
+                  "type": "file"
+                },
+                {
+                  "name": "documentation-agents-md.md",
+                  "type": "file"
+                },
+                {
+                  "name": "documentation-docs.md",
+                  "type": "file"
+                },
+                {
+                  "name": "documentation-knowledge.md",
+                  "type": "file"
+                },
+                {
+                  "name": "documentation-readme-md.md",
+                  "type": "file"
+                },
+                {
+                  "name": "documentation.md",
+                  "type": "file"
+                },
+                {
+                  "name": "interaction-skills.md",
+                  "type": "file"
+                },
+                {
+                  "name": "knowledge-base-kb-skills.md",
+                  "type": "file"
+                },
+                {
+                  "name": "knowledge-base-knowledge-sources.md",
+                  "type": "file"
+                },
+                {
+                  "name": "knowledge-base.md",
+                  "type": "file"
+                },
+                {
+                  "name": "knowledge-tools.md",
+                  "type": "file"
+                },
+                {
+                  "name": "launch-profiles.md",
+                  "type": "file"
+                },
+                {
+                  "name": "llm-chatbot.md",
+                  "type": "file"
+                },
+                {
+                  "name": "orchestration.md",
+                  "type": "file"
+                },
+                {
+                  "name": "overview.md",
+                  "type": "file"
+                },
+                {
+                  "name": "planner-planner-common.md",
+                  "type": "file"
+                },
+                {
+                  "name": "planner-planner-llm.md",
+                  "type": "file"
+                },
+                {
+                  "name": "planner.md",
+                  "type": "file"
+                },
+                {
+                  "name": "robot-motion-skills.md",
+                  "type": "file"
+                },
+                {
+                  "name": "scene-grounding.md",
+                  "type": "file"
+                },
+                {
+                  "name": "speech-output.md",
+                  "type": "file"
+                },
+                {
+                  "name": "speech-recognition.md",
+                  "type": "file"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "launch_profiles.md",
+          "type": "file"
+        },
+        {
+          "name": "planner_status.md",
+          "type": "file"
+        },
+        {
+          "name": "plans",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "fake_skills_codex_handoff.html",
+              "type": "file"
+            },
+            {
+              "name": "fake_skills_codex_handoff.md",
+              "type": "file"
+            },
+            {
+              "name": "nao_ros4hri_masterplan.html",
+              "type": "file"
+            },
+            {
+              "name": "nao_ros4hri_masterplan.md",
+              "type": "file"
+            }
+          ]
+        },
+        {
+          "name": "traces",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "raw",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "2026-05-27",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "double_response_regression",
+                      "type": "directory",
+                      "children": [
+                        {
+                          "name": "final_head_report",
+                          "type": "directory",
+                          "children": [
+                            {
+                              "name": "interaction_trace_20260527_134235.jsonl",
+                              "type": "file"
+                            },
+                            {
+                              "name": "pub.log",
+                              "type": "file"
+                            },
+                            {
+                              "name": "stdout.log",
+                              "type": "file"
+                            }
+                          ]
+                        },
+                        {
+                          "name": "greeting",
+                          "type": "directory",
+                          "children": [
+                            {
+                              "name": "interaction_trace_20260527_133158.jsonl",
+                              "type": "file"
+                            },
+                            {
+                              "name": "pub.log",
+                              "type": "file"
+                            },
+                            {
+                              "name": "stdout.log",
+                              "type": "file"
+                            }
+                          ]
+                        },
+                        {
+                          "name": "head_report_before_scan_tightening",
+                          "type": "directory",
+                          "children": [
+                            {
+                              "name": "interaction_trace_20260527_133515.jsonl",
+                              "type": "file"
+                            },
+                            {
+                              "name": "pub.log",
+                              "type": "file"
+                            },
+                            {
+                              "name": "stdout.log",
+                              "type": "file"
+                            }
+                          ]
+                        },
+                        {
+                          "name": "nav_blocked",
+                          "type": "directory",
+                          "children": [
+                            {
+                              "name": "interaction_trace_20260527_133650.jsonl",
+                              "type": "file"
+                            },
+                            {
+                              "name": "pub.log",
+                              "type": "file"
+                            },
+                            {
+                              "name": "stdout.log",
+                              "type": "file"
+                            }
+                          ]
+                        },
+                        {
+                          "name": "scan",
+                          "type": "directory",
+                          "children": [
+                            {
+                              "name": "interaction_trace_20260527_133335.jsonl",
+                              "type": "file"
+                            },
+                            {
+                              "name": "pub.log",
+                              "type": "file"
+                            },
+                            {
+                              "name": "stdout.log",
+                              "type": "file"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "trace01_greeting_dialogue",
+                      "type": "directory",
+                      "children": [
+                        {
+                          "name": "interaction_trace_20260527_014415.jsonl",
+                          "type": "file"
+                        },
+                        {
+                          "name": "trace_stdout.log",
+                          "type": "file"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "trace02_ambiguous_cup",
+                      "type": "directory",
+                      "children": [
+                        {
+                          "name": "interaction_trace_20260527_014440.jsonl",
+                          "type": "file"
+                        },
+                        {
+                          "name": "trace_stdout.log",
+                          "type": "file"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "trace03_path_blocked",
+                      "type": "directory",
+                      "children": [
+                        {
+                          "name": "interaction_trace_20260527_014509.jsonl",
+                          "type": "file"
+                        },
+                        {
+                          "name": "trace_stdout.log",
+                          "type": "file"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "trace04_head_motion_strict",
+                      "type": "directory",
+                      "children": [
+                        {
+                          "name": "interaction_trace_20260527_014535.jsonl",
+                          "type": "file"
+                        },
+                        {
+                          "name": "trace_stdout.log",
+                          "type": "file"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "trace_report_2026-05-27_double_response_regression.md",
+              "type": "file"
+            },
+            {
+              "name": "trace_report_2026-05-27_prompt_hardening.md",
+              "type": "file"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "requirements-dev.txt",
+      "type": "file"
+    },
+    {
+      "name": "scripts",
+      "type": "directory",
+      "children": [
+        {
+          "name": "README.md",
+          "type": "file"
+        },
+        {
+          "name": "benchmark_ollama_models.py",
+          "type": "file"
+        },
+        {
+          "name": "bootstrap_socialminds_sources.sh",
+          "type": "file"
+        },
+        {
+          "name": "build_docker.sh",
+          "type": "file"
+        },
+        {
+          "name": "chat.sh",
+          "type": "file"
+        },
+        {
+          "name": "check_skill_registry_consistency.py",
+          "type": "file"
+        },
+        {
+          "name": "export_docker_image.sh",
+          "type": "file"
+        },
+        {
+          "name": "fake_skill_scenario_menu.sh",
+          "type": "file"
+        },
+        {
+          "name": "import_docker_image.sh",
+          "type": "file"
+        },
+        {
+          "name": "precommit_check_merge_conflict.py",
+          "type": "file"
+        },
+        {
+          "name": "precommit_check_yaml.py",
+          "type": "file"
+        },
+        {
+          "name": "precommit_fix_eof.py",
+          "type": "file"
+        },
+        {
+          "name": "precommit_trim_trailing_whitespace.py",
+          "type": "file"
+        },
+        {
+          "name": "probe_vllm_chat.py",
+          "type": "file"
+        },
+        {
+          "name": "render_markdown_html.py",
+          "type": "file"
+        },
+        {
+          "name": "ros4hri_change_audit.py",
+          "type": "file"
+        },
+        {
+          "name": "run_full_stack_planner_seam_session.sh",
+          "type": "file"
+        },
+        {
+          "name": "run_interaction_trace_viewer_compact_json.sh",
+          "type": "file"
+        },
+        {
+          "name": "run_launch_tui.sh",
+          "type": "file"
+        },
+        {
+          "name": "run_live_fake_skill_scenario_probe.py",
+          "type": "file"
+        },
+        {
+          "name": "run_precommit.sh",
+          "type": "file"
+        },
+        {
+          "name": "run_tests.sh",
+          "type": "file"
+        },
+        {
+          "name": "setup_dev_tools.sh",
+          "type": "file"
+        },
+        {
+          "name": "start_demo_ollama_endpoints.sh",
+          "type": "file"
+        },
+        {
+          "name": "sync_skill_registry_views.py",
+          "type": "file"
+        }
+      ]
+    },
+    {
+      "name": "src",
+      "type": "directory",
+      "children": [
+        {
+          "name": "asr_vosk",
+          "type": "directory",
+          "children": [
+            {
+              "name": ".gitignore",
+              "type": "file"
+            },
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "asr_vosk",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "type": "file"
+                },
+                {
+                  "name": "node_vosk.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "config",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "00-defaults.yml",
+                  "type": "file"
+                },
+                {
+                  "name": "asr_vosk",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "launch",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "asr_vosk.launch.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "package.xml",
+              "type": "file"
+            },
+            {
+              "name": "resource",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "asr_vosk",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "setup.cfg",
+              "type": "file"
+            },
+            {
+              "name": "setup.py",
+              "type": "file"
+            },
+            {
+              "name": "test",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "unit",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "test_node_vosk_unit.py",
+                      "type": "file"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "communication_skills",
+          "type": "directory",
+          "children": [
+            {
+              "name": ".github",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "ISSUE_TEMPLATE",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "amend-skill.md",
+                      "type": "file"
+                    },
+                    {
+                      "name": "new-skill.md",
+                      "type": "file"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "CHANGELOG.rst",
+              "type": "file"
+            },
+            {
+              "name": "CMakeLists.txt",
+              "type": "file"
+            },
+            {
+              "name": "CONTRIBUTING.md",
+              "type": "file"
+            },
+            {
+              "name": "LICENSE",
+              "type": "file"
+            },
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "action",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "Ask.action",
+                  "type": "file"
+                },
+                {
+                  "name": "Chat.action",
+                  "type": "file"
+                },
+                {
+                  "name": "Say.action",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "package.xml",
+              "type": "file"
+            }
+          ]
+        },
+        {
+          "name": "fake_skills",
+          "type": "directory",
+          "children": [
+            {
+              "name": "AGENTS.md",
+              "type": "file"
+            },
+            {
+              "name": "config",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "fake_skill_scenarios.yaml",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "fake_skills",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "type": "file"
+                },
+                {
+                  "name": "action_server.py",
+                  "type": "file"
+                },
+                {
+                  "name": "contracts.py",
+                  "type": "file"
+                },
+                {
+                  "name": "engine.py",
+                  "type": "file"
+                },
+                {
+                  "name": "result_builders.py",
+                  "type": "file"
+                },
+                {
+                  "name": "run_fake_skill_server.py",
+                  "type": "file"
+                },
+                {
+                  "name": "scenario_store.py",
+                  "type": "file"
+                },
+                {
+                  "name": "skills",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "__init__.py",
+                      "type": "file"
+                    },
+                    {
+                      "name": "find_object.py",
+                      "type": "file"
+                    },
+                    {
+                      "name": "inspect_area.py",
+                      "type": "file"
+                    },
+                    {
+                      "name": "navigate_to.py",
+                      "type": "file"
+                    },
+                    {
+                      "name": "walk_to.py",
+                      "type": "file"
+                    },
+                    {
+                      "name": "wave_greet.py",
+                      "type": "file"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "launch",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "fake_skills.launch.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "package.xml",
+              "type": "file"
+            },
+            {
+              "name": "resource",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "fake_skills",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "setup.cfg",
+              "type": "file"
+            },
+            {
+              "name": "setup.py",
+              "type": "file"
+            },
+            {
+              "name": "test",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "test_action_server_smoke.py",
+                  "type": "file"
+                },
+                {
+                  "name": "test_engine.py",
+                  "type": "file"
+                },
+                {
+                  "name": "test_result_builders.py",
+                  "type": "file"
+                },
+                {
+                  "name": "test_scenario_store.py",
+                  "type": "file"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "interaction_trace_viewer",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "interaction_trace_viewer",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "type": "file"
+                },
+                {
+                  "name": "payload_normalizer.py",
+                  "type": "file"
+                },
+                {
+                  "name": "render_html.py",
+                  "type": "file"
+                },
+                {
+                  "name": "render_tui.py",
+                  "type": "file"
+                },
+                {
+                  "name": "trace_model.py",
+                  "type": "file"
+                },
+                {
+                  "name": "trace_node.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "launch",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "interaction_trace_viewer.launch.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "package.xml",
+              "type": "file"
+            },
+            {
+              "name": "resource",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "interaction_trace_viewer",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "setup.cfg",
+              "type": "file"
+            },
+            {
+              "name": "setup.py",
+              "type": "file"
+            },
+            {
+              "name": "test",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "test_payload_normalizer.py",
+                  "type": "file"
+                },
+                {
+                  "name": "test_trace_model.py",
+                  "type": "file"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "kb_skills",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "kb_skills",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "type": "file"
+                },
+                {
+                  "name": "intent_labels.py",
+                  "type": "file"
+                },
+                {
+                  "name": "mutation_client.py",
+                  "type": "file"
+                },
+                {
+                  "name": "query_client.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "package.xml",
+              "type": "file"
+            },
+            {
+              "name": "res",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "kb_skills",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "setup.py",
+              "type": "file"
+            },
+            {
+              "name": "test",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "test_mutation_client.py",
+                  "type": "file"
+                },
+                {
+                  "name": "test_query_client.py",
+                  "type": "file"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "nao_chatbot",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "config",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "interaction_sim_debug.perspective",
+                  "type": "file"
+                },
+                {
+                  "name": "nao_robot_safe.rviz",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "launch",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "nao_chatbot_asr_only.launch.py",
+                  "type": "file"
+                },
+                {
+                  "name": "nao_chatbot_demo.launch.py",
+                  "type": "file"
+                },
+                {
+                  "name": "nao_chatbot_robot.launch.py",
+                  "type": "file"
+                },
+                {
+                  "name": "nao_chatbot_sim.launch.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "module",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "nao_chatbot",
+                  "type": "file"
+                },
+                {
+                  "name": "nao_chatbot_module.yaml",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "nao_chatbot",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "type": "file"
+                },
+                {
+                  "name": "asr_push_to_talk_cli.py",
+                  "type": "file"
+                },
+                {
+                  "name": "demo_rosout_filter.py",
+                  "type": "file"
+                },
+                {
+                  "name": "interaction_sim_support.py",
+                  "type": "file"
+                },
+                {
+                  "name": "robot_speech_debug.py",
+                  "type": "file"
+                },
+                {
+                  "name": "speech_debug_labels.py",
+                  "type": "file"
+                },
+                {
+                  "name": "stack_launch.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "package.xml",
+              "type": "file"
+            },
+            {
+              "name": "resource",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "nao_chatbot",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "setup.cfg",
+              "type": "file"
+            },
+            {
+              "name": "setup.py",
+              "type": "file"
+            },
+            {
+              "name": "test",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "test_copyright.py",
+                  "type": "file"
+                },
+                {
+                  "name": "test_flake8.py",
+                  "type": "file"
+                },
+                {
+                  "name": "test_pep257.py",
+                  "type": "file"
+                },
+                {
+                  "name": "unit",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "test_asr_push_to_talk_cli.py",
+                      "type": "file"
+                    },
+                    {
+                      "name": "test_demo_rosout_filter.py",
+                      "type": "file"
+                    },
+                    {
+                      "name": "test_launch_profiles.py",
+                      "type": "file"
+                    },
+                    {
+                      "name": "test_robot_speech_debug.py",
+                      "type": "file"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "nao_look_at",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "config",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "00-defaults.yml",
+                  "type": "file"
+                },
+                {
+                  "name": "nao_look_at",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "launch",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "nao_look_at.launch.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "module",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "nao_look_at",
+                  "type": "file"
+                },
+                {
+                  "name": "nao_look_at_module.yaml",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "nao_look_at",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "type": "file"
+                },
+                {
+                  "name": "skill_impl.py",
+                  "type": "file"
+                },
+                {
+                  "name": "start_skill.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "package.xml",
+              "type": "file"
+            },
+            {
+              "name": "res",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "nao_look_at",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "setup.cfg",
+              "type": "file"
+            },
+            {
+              "name": "setup.py",
+              "type": "file"
+            },
+            {
+              "name": "test",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "test_nao_look_at_unit.py",
+                  "type": "file"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "nao_orchestrator",
+          "type": "directory",
+          "children": [
+            {
+              "name": "AGENTS.md",
+              "type": "file"
+            },
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "config",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "00-defaults.yml",
+                  "type": "file"
+                },
+                {
+                  "name": "nao_orchestrator",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "launch",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "nao_orchestrator.launch.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "module",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "nao_orchestrator",
+                  "type": "file"
+                },
+                {
+                  "name": "nao_orchestrator_module.yaml",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "nao_orchestrator",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "type": "file"
+                },
+                {
+                  "name": "intent_rules.py",
+                  "type": "file"
+                },
+                {
+                  "name": "orchestrator.py",
+                  "type": "file"
+                },
+                {
+                  "name": "planner_gate.py",
+                  "type": "file"
+                },
+                {
+                  "name": "report_result_skill_server.py",
+                  "type": "file"
+                },
+                {
+                  "name": "run_app.py",
+                  "type": "file"
+                },
+                {
+                  "name": "run_report_result_skill.py",
+                  "type": "file"
+                },
+                {
+                  "name": "run_scan_skill.py",
+                  "type": "file"
+                },
+                {
+                  "name": "scan_skill_server.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "package.xml",
+              "type": "file"
+            },
+            {
+              "name": "res",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "nao_orchestrator",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "setup.cfg",
+              "type": "file"
+            },
+            {
+              "name": "setup.py",
+              "type": "file"
+            },
+            {
+              "name": "test",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "test_nao_orchestrator_intent_rules.py",
+                  "type": "file"
+                },
+                {
+                  "name": "test_planner_gate.py",
+                  "type": "file"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "nao_replay_motion",
+          "type": "directory",
+          "children": [
+            {
+              "name": "CMakeLists.txt",
+              "type": "file"
+            },
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "launch",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "nao_replay_motion.launch.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "nao_replay_motion",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "type": "file"
+                },
+                {
+                  "name": "head_motion_skill_client.py",
+                  "type": "file"
+                },
+                {
+                  "name": "head_motion_skill_server.py",
+                  "type": "file"
+                },
+                {
+                  "name": "replay_motion_client.py",
+                  "type": "file"
+                },
+                {
+                  "name": "replay_motion_skill_server.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "package.xml",
+              "type": "file"
+            },
+            {
+              "name": "src",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "nao_posture_bridge_node.cpp",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "test",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "test_nao_replay_motion_unit.py",
+                  "type": "file"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "nao_say_skill",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "config",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "00-defaults.yml",
+                  "type": "file"
+                },
+                {
+                  "name": "nao_say_skill",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "launch",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "nao_say_skill.launch.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "module",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "nao_say_skill",
+                  "type": "file"
+                },
+                {
+                  "name": "nao_say_skill_module.yaml",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "nao_say_skill",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "type": "file"
+                },
+                {
+                  "name": "skill_impl.py",
+                  "type": "file"
+                },
+                {
+                  "name": "start_skill.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "package.xml",
+              "type": "file"
+            },
+            {
+              "name": "res",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "nao_say_skill",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "setup.cfg",
+              "type": "file"
+            },
+            {
+              "name": "setup.py",
+              "type": "file"
+            },
+            {
+              "name": "test",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "test_nao_say_skill_unit.py",
+                  "type": "file"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "nao_scene_grounding",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "config",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "00-defaults.yml",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "nao_scene_grounding",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "type": "file"
+                },
+                {
+                  "name": "detector_adapters.py",
+                  "type": "file"
+                },
+                {
+                  "name": "identity_matching.py",
+                  "type": "file"
+                },
+                {
+                  "name": "scene_grounding_node.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "package.xml",
+              "type": "file"
+            },
+            {
+              "name": "resource",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "nao_scene_grounding",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "setup.cfg",
+              "type": "file"
+            },
+            {
+              "name": "setup.py",
+              "type": "file"
+            },
+            {
+              "name": "test",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "test_detector_adapters.py",
+                  "type": "file"
+                },
+                {
+                  "name": "test_identity_matching.py",
+                  "type": "file"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "nao_skills",
+          "type": "directory",
+          "children": [
+            {
+              "name": "CMakeLists.txt",
+              "type": "file"
+            },
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "action",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "DoHeadMotion.action",
+                  "type": "file"
+                },
+                {
+                  "name": "DoPosture.action",
+                  "type": "file"
+                },
+                {
+                  "name": "ReplayMotion.action",
+                  "type": "file"
+                },
+                {
+                  "name": "ScanScene.action",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "package.xml",
+              "type": "file"
+            }
+          ]
+        },
+        {
+          "name": "planner_common",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "package.xml",
+              "type": "file"
+            },
+            {
+              "name": "planner_common",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "type": "file"
+                },
+                {
+                  "name": "contracts.py",
+                  "type": "file"
+                },
+                {
+                  "name": "skill_manifest.py",
+                  "type": "file"
+                },
+                {
+                  "name": "skill_registry_bridge.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "resource",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "planner_common",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "setup.cfg",
+              "type": "file"
+            },
+            {
+              "name": "setup.py",
+              "type": "file"
+            },
+            {
+              "name": "test",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "test_contracts.py",
+                  "type": "file"
+                },
+                {
+                  "name": "test_skill_manifest.py",
+                  "type": "file"
+                },
+                {
+                  "name": "test_skill_registry_bridge.py",
+                  "type": "file"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "planner_llm",
+          "type": "directory",
+          "children": [
+            {
+              "name": "AGENTS.md",
+              "type": "file"
+            },
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "config",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "00-defaults.yml",
+                  "type": "file"
+                },
+                {
+                  "name": "planner_prompt_pack.yaml",
+                  "type": "file"
+                },
+                {
+                  "name": "skill_registry.json",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "package.xml",
+              "type": "file"
+            },
+            {
+              "name": "planner_llm",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "type": "file"
+                },
+                {
+                  "name": "fixture_publisher.py",
+                  "type": "file"
+                },
+                {
+                  "name": "planner_engine.py",
+                  "type": "file"
+                },
+                {
+                  "name": "planner_node.py",
+                  "type": "file"
+                },
+                {
+                  "name": "prompt_pack.py",
+                  "type": "file"
+                },
+                {
+                  "name": "providers.py",
+                  "type": "file"
+                },
+                {
+                  "name": "skill_registry.py",
+                  "type": "file"
+                },
+                {
+                  "name": "supervisor.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "resource",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "planner_llm",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "setup.cfg",
+              "type": "file"
+            },
+            {
+              "name": "setup.py",
+              "type": "file"
+            },
+            {
+              "name": "test",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "test_live_provider.py",
+                  "type": "file"
+                },
+                {
+                  "name": "test_planner_engine.py",
+                  "type": "file"
+                },
+                {
+                  "name": "test_prompt_pack.py",
+                  "type": "file"
+                },
+                {
+                  "name": "test_skill_registry.py",
+                  "type": "file"
+                },
+                {
+                  "name": "test_supervisor.py",
+                  "type": "file"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "simple_audio_capture",
+          "type": "directory",
+          "children": [
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "config",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "speech_recognition.yaml",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "launch",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "audio_capture.launch.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "package.xml",
+              "type": "file"
+            },
+            {
+              "name": "resource",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "simple_audio_capture",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "setup.cfg",
+              "type": "file"
+            },
+            {
+              "name": "setup.py",
+              "type": "file"
+            },
+            {
+              "name": "simple_audio_capture",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "type": "file"
+                },
+                {
+                  "name": "audio_capture_node.py",
+                  "type": "file"
+                }
+              ]
+            },
+            {
+              "name": "test",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "unit",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "test_audio_capture_node_unit.py",
+                      "type": "file"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "tools",
+      "type": "directory",
+      "children": [
+        {
+          "name": "knowledge",
+          "type": "directory",
+          "children": [
+            {
+              "name": "bootstrap",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "README.md",
+                  "type": "file"
+                },
+                {
+                  "name": "init_repo_knowledge.sh",
+                  "type": "file"
+                },
+                {
+                  "name": "templates",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "AGENTS.md.tpl",
+                      "type": "file"
+                    },
+                    {
+                      "name": "INDEX_STATUS.md.tpl",
+                      "type": "file"
+                    },
+                    {
+                      "name": "codex-config.toml.tpl",
+                      "type": "file"
+                    },
+                    {
+                      "name": "cursor-mcp.json.tpl",
+                      "type": "file"
+                    },
+                    {
+                      "name": "docs-knowledge-DECISIONS.md.tpl",
+                      "type": "file"
+                    },
+                    {
+                      "name": "docs-knowledge-EVAL.md.tpl",
+                      "type": "file"
+                    },
+                    {
+                      "name": "docs-knowledge-QUICKSTART.md.tpl",
+                      "type": "file"
+                    },
+                    {
+                      "name": "docs-knowledge-README.md.tpl",
+                      "type": "file"
+                    },
+                    {
+                      "name": "docs-knowledge-WORKFLOWS.md.tpl",
+                      "type": "file"
+                    },
+                    {
+                      "name": "module_tree.json.tpl",
+                      "type": "file"
+                    },
+                    {
+                      "name": "wiki-README.md.tpl",
+                      "type": "file"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "codex_with_gitnexus.sh",
+              "type": "file"
+            },
+            {
+              "name": "generate_ros_graph_proxy.py",
+              "type": "file"
+            },
+            {
+              "name": "generate_wiki.sh",
+              "type": "file"
+            },
+            {
+              "name": "gitnexus.sh",
+              "type": "file"
+            },
+            {
+              "name": "index_repo.sh",
+              "type": "file"
+            },
+            {
+              "name": "lib.sh",
+              "type": "file"
+            },
+            {
+              "name": "post_commit_refresh.sh",
+              "type": "file"
+            },
+            {
+              "name": "pre_commit_advisory.sh",
+              "type": "file"
+            },
+            {
+              "name": "ros_graph_overrides.json",
+              "type": "file"
+            },
+            {
+              "name": "serve_http_mcp.sh",
+              "type": "file"
+            },
+            {
+              "name": "setup_gitnexus.sh",
+              "type": "file"
+            },
+            {
+              "name": "status.sh",
+              "type": "file"
+            },
+            {
+              "name": "status_summary.py",
+              "type": "file"
+            },
+            {
+              "name": "sync_artifacts.py",
+              "type": "file"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

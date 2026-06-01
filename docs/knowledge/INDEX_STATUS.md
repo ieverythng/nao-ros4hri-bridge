@@ -3,13 +3,13 @@
 - Repo: `nao-ros4hri-bridge`
 - Backend: GitNexus `1.5.3`
 - Local index: present
-- Indexed at: `2026-04-10T16:35:47.045Z`
-- Indexed commit: `10c66f626a148be87d591f48eab3fd5b85f1025a`
-- Files: `426`
-- Nodes: `3463`
-- Edges: `9503`
-- Communities: `175`
-- Processes: `276`
+- Indexed at: `2026-05-31T21:17:16.352Z`
+- Indexed commit: `e0b7cc9b6371fa050f56636ed3d69976d489babe`
+- Files: `717`
+- Nodes: `7119`
+- Edges: `18295`
+- Communities: `321`
+- Processes: `300`
 - Embeddings: `0`
 
 Refresh commands:

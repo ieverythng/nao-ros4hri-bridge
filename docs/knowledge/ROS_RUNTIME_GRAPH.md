@@ -4,17 +4,16 @@ This file is generated from the repository source to make ROS runtime
 publish/subscribe, service, and action seams explicit for humans and for
 GitNexus indexing.
 
-Generated at: 2026-05-29T14:07:26.971144+00:00
+Generated at: 2026-05-31T21:17:08.358136+00:00
 
 ## Packages
 
 | Package | Publishes | Subscribes | Service Clients | Service Servers | Action Clients | Action Servers | Contracts |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | asr_vosk | /diagnostics<br>/humans/voices/anonymous_speaker/audio<br>/humans/voices/anonymous_speaker/is_speaking<br>/humans/voices/tracked | /audio/voice_detected<br>/robot_speaking | - | - | - | - | - |
-| chatbot_llm | /diagnostics | - | - | /chatbot_llm/dialogue_interaction<br>/chatbot_llm/get_supported_locales<br>/chatbot_llm/prepare_dialogue | - | /chatbot_llm/set_default_locale | - |
+| chatbot_llm | /diagnostics | - | - | /chatbot_llm/dialogue_interaction<br>/chatbot_llm/get_supported_locales | - | /chatbot_llm/set_default_locale<br>/chatbot_llm/start_dialogue | - |
 | communication_skills | - | - | - | - | - | - | /skill/ask<br>/skill/chat<br>/skill/say |
 | dialogue_manager | /diagnostics<br>/dialogue_manager/closed_captions<br>/dialogue_manager/currently_waiting_for_chatbot_response<br>/dialogue_manager/debug_state<br>/dialogue_manager/robot_speech<br>/intents | /dialogue_manager/debug_state<br>/humans/interactions/groups<br>/humans/voices/*/speech<br>/humans/voices/tracked<br>/planner/dialogue_act | /*/prepare_dialogue<br>/chatbot_llm/dialogue_interaction | - | - | /skill/ask<br>/skill/chat<br>/skill/say | - |
-| emorobcare_cv_object_detection | /debug/object_detection<br>/detected_objects<br>/processing_time<br>/system/health/object_detect | /depth_map | /sim_scene/place_object<br>/sim_scene/remove_object | /start_detection<br>/stop_detection | - | - | - |
 | fake_skills | /fake_skills/events | - | - | - | - | /skill/fake/execute | - |
 | interaction_skills | - | - | - | - | - | - | /skill/do_led_effect<br>/skill/look_at<br>/skill/set_expression |
 | kb_skills | - | - | /kb/query<br>/kb/revise | - | - | - | /kb/query<br>/kb/revise |
@@ -27,7 +26,7 @@ Generated at: 2026-05-29T14:07:26.971144+00:00
 | nao_say_skill | /debug/nao_say/speech<br>/diagnostics<br>/speech | - | - | - | /debug/say | /nao/say<br>/tts_engine/tts | /nao/say |
 | nao_scene_grounding | /nao_scene_grounding/summary | /detected_objects | - | - | - | - | - |
 | nao_skills | - | - | - | - | - | - | /skill/do_head_motion<br>/skill/do_posture<br>/skill/replay_motion<br>/skill/scan |
-| planner_llm | /intent_topic<br>/planner_dialogue_act_topic | /enriched_snapshot_topic<br>/enriched_text_topic<br>/planner_feedback_topic<br>/planner_request_topic | - | - | - | - | - |
+| planner_llm | /intent_topic<br>/planner_dialogue_act_topic | /planner_feedback_topic<br>/planner_request_topic | - | - | - | - | - |
 | simple_audio_capture | /audio<br>/audio_info<br>/audio_stamped | - | - | - | - | - | - |
 
 ## Shared Runtime Endpoints
@@ -73,11 +72,11 @@ Generated at: 2026-05-29T14:07:26.971144+00:00
 
 - Service Servers: chatbot_llm
 
-### `/chatbot_llm/prepare_dialogue`
-
-- Service Servers: chatbot_llm
-
 ### `/chatbot_llm/set_default_locale`
+
+- Action Servers: chatbot_llm
+
+### `/chatbot_llm/start_dialogue`
 
 - Action Servers: chatbot_llm
 
@@ -86,21 +85,12 @@ Generated at: 2026-05-29T14:07:26.971144+00:00
 - Publishers: nao_say_skill
 - Subscribers: nao_chatbot
 
-### `/debug/object_detection`
-
-- Publishers: emorobcare_cv_object_detection
-
 ### `/debug/say`
 
 - Action Clients: nao_say_skill
 
-### `/depth_map`
-
-- Subscribers: emorobcare_cv_object_detection
-
 ### `/detected_objects`
 
-- Publishers: emorobcare_cv_object_detection
 - Subscribers: nao_scene_grounding
 
 ### `/diagnostics`
@@ -124,14 +114,6 @@ Generated at: 2026-05-29T14:07:26.971144+00:00
 ### `/dialogue_manager/robot_speech`
 
 - Publishers: dialogue_manager
-
-### `/enriched_snapshot_topic`
-
-- Subscribers: planner_llm
-
-### `/enriched_text_topic`
-
-- Subscribers: planner_llm
 
 ### `/fake_skills/events`
 
@@ -276,10 +258,6 @@ Generated at: 2026-05-29T14:07:26.971144+00:00
 
 - Subscribers: planner_llm
 
-### `/processing_time`
-
-- Publishers: emorobcare_cv_object_detection
-
 ### `/robot_speaking`
 
 - Subscribers: asr_vosk
@@ -291,14 +269,6 @@ Generated at: 2026-05-29T14:07:26.971144+00:00
 ### `/scene/summary`
 
 - Subscribers: nao_orchestrator
-
-### `/sim_scene/place_object`
-
-- Service Clients: emorobcare_cv_object_detection
-
-### `/sim_scene/remove_object`
-
-- Service Clients: emorobcare_cv_object_detection
 
 ### `/skill/ask`
 
@@ -373,18 +343,6 @@ Generated at: 2026-05-29T14:07:26.971144+00:00
 ### `/speech`
 
 - Publishers: nao_say_skill
-
-### `/start_detection`
-
-- Service Servers: emorobcare_cv_object_detection
-
-### `/stop_detection`
-
-- Service Servers: emorobcare_cv_object_detection
-
-### `/system/health/object_detect`
-
-- Publishers: emorobcare_cv_object_detection
 
 ### `/tts_engine/tts`
 

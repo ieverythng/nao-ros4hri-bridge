@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Supervisor Walkthrough: End-to-End User -> Planner Dialogue Flow</title>
+  <style>
+    :root {
+      --bg: #f4f7fc;
+      --hero-a: #0d5c88;
+      --hero-b: #0a8f6a;
+      --ink: #12253f;
+      --muted: #536a87;
+      --card: #ffffff;
+      --line: #d9e5f2;
+      --accent: #0f8a6f;
+      --accent-soft: #e7f7f2;
+      --code: #0f1f33;
+      --shadow: 0 8px 26px rgba(19, 37, 64, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% -4%, #d6eaff 0%, transparent 34%),
+        radial-gradient(circle at 100% 8%, #d4f6e8 0%, transparent 30%),
+        var(--bg);
+      line-height: 1.6;
+    }
+    .wrap { max-width: 1160px; margin: 0 auto; padding: 26px 20px 64px; }
+    .hero {
+      background: linear-gradient(135deg, var(--hero-a) 0%, var(--hero-b) 100%);
+      color: #fff;
+      border-radius: 22px;
+      padding: 30px 32px;
+      box-shadow: 0 16px 40px rgba(10, 50, 75, 0.28);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -60px;
+      top: -60px;
+      width: 220px;
+      height: 220px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+    }
+    h1, h2, h3 { margin: 0 0 10px; line-height: 1.24; }
+    h1 { font-size: 2rem; }
+    h2 { font-size: 1.38rem; margin-top: 2px; }
+    h3 { font-size: 1.08rem; color: #163252; }
+    .hero p { margin: 0; max-width: 820px; }
+    .tag-row { margin-top: 14px; }
+    .tag {
+      display: inline-block;
+      margin: 3px 7px 0 0;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.83rem;
+      font-weight: 700;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: rgba(255, 255, 255, 0.16);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+    }
+    .section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      margin-top: 16px;
+      overflow: hidden;
+    }
+    .section-head {
+      padding: 14px 18px;
+      background: #f7fbff;
+      border-bottom: 1px solid var(--line);
+    }
+    .section-body { padding: 16px 18px 18px; }
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .step {
+      border: 1px solid #d3e1f0;
+      background: #fbfdff;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .step .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: #e6f3ff;
+      color: #0e4f7a;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .mono {
+      font-family: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 0.9rem;
+      background: #edf2f8;
+      padding: 0 5px;
+      border-radius: 4px;
+      color: #22405e;
+    }
+    pre {
+      margin: 10px 0 0;
+      background: var(--code);
+      color: #d7e8ff;
+      border-radius: 10px;
+      padding: 12px;
+      overflow: auto;
+      font-family: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 0.92rem;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 8px 9px;
+      vertical-align: top;
+    }
+    th {
+      background: #f3f8ff;
+      text-align: left;
+      font-size: 0.86rem;
+      letter-spacing: 0.01em;
+      color: #304a68;
+    }
+    ul, ol { margin: 8px 0 0 20px; }
+    li + li { margin-top: 5px; }
+    .callout {
+      margin-top: 10px;
+      border: 1px solid #c8eadf;
+      background: var(--accent-soft);
+      color: #0e4d3b;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-weight: 600;
+    }
+    .danger {
+      border-color: #f4d4d4;
+      background: #fff5f5;
+      color: #7a2f2f;
+    }
+    .footer-note {
+      margin-top: 16px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #cddceb;
+      background: #f7fbff;
+      color: #32506f;
+    }
+    @media (max-width: 760px) {
+      h1 { font-size: 1.62rem; }
+      .hero { padding: 24px; }
+      .wrap { padding: 18px 14px 42px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="hero">
+      <h1>End-to-End User -> Planner Dialogue Flow</h1>
+      <p>Supervisor walkthrough pack for conceptual architecture + concrete JSON seams. This document is tuned for tomorrow's live presentation and mirrors the current branch contracts.</p>
+      <div class="tag-row">
+        <span class="tag">Date: 2026-06-01</span>
+        <span class="tag">Stack: chatbot_llm + planner_llm + nao_orchestrator</span>
+        <span class="tag">Policy: Hybrid Minimal T0</span>
+        <span class="tag">Dialogue: direct planner act flow</span>
+      </div>
+    </header>
+
+    <section class="grid">
+      <article class="card">
+        <h3>Objective</h3>
+        <p>Explain the full runtime path from user utterance to execution and dialogue act emission, with field-level contract clarity.</p>
+      </article>
+      <article class="card">
+        <h3>Ownership Principle</h3>
+        <p>Planner consumes compact T0 evidence for reasoning. AB=1 skills resolve live world state at execution time from AB=0 sources.</p>
+      </article>
+      <article class="card">
+        <h3>Why this matters</h3>
+        <p>Improves seam clarity, reduces payload duplication, and keeps ROS4HRI ownership boundaries deterministic.</p>
+      </article>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>1) Conceptual E2E Sequence</h2>
+      </div>
+      <div class="section-body">
+        <div class="timeline">
+          <div class="step"><div class="num">1</div><strong>User -> chatbot_llm</strong><br />Natural-language command enters route and intent parsing.</div>
+          <div class="step"><div class="num">2</div><strong>chatbot_llm -> orchestrator</strong><br /><span class="mono">/nao_orchestrator/planner_request</span> with planner request JSON in <span class="mono">Intent.data</span>.</div>
+          <div class="step"><div class="num">3</div><strong>orchestrator -> planner_llm</strong><br /><span class="mono">/planner/request</span> after gate/admission policy.</div>
+          <div class="step"><div class="num">4</div><strong>planner_llm -> orchestrator</strong><br /><span class="mono">/intents</span> with canonical <span class="mono">plan</span> object.</div>
+          <div class="step"><div class="num">5</div><strong>orchestrator -> AB=1 skill</strong><br />Skill execution dispatched via registry + AB policy.</div>
+          <div class="step"><div class="num">6</div><strong>AB=1 skill -> AB=0 sources</strong><br />Live evidence resolution via scene/KB/tracked-person seams.</div>
+          <div class="step"><div class="num">7</div><strong>orchestrator -> planner_llm</strong><br /><span class="mono">/planner/execution_feedback</span> with typed result payload.</div>
+          <div class="step"><div class="num">8</div><strong>planner_llm -> dialogue_manager</strong><br /><span class="mono">/planner/dialogue_act</span> direct-mode act; relayed to user.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>2) Contract A: chatbot_llm Output</h2>
+      </div>
+      <div class="section-body">
+        <pre>{
+  "verbal_ack": "Okay, I will do that.",
+  "route": "execution",
+  "confidence": 0.82,
+  "user_intent": {
+    "type": "look_at",
+    "goal": "look at the person",
+    "goal_text": "look at the person",
+    "scene_targets": ["person"],
+    "request_kind": "new_goal",
+    "interaction_mode": "speech"
+  }
+}</pre>
+        <table>
+          <thead><tr><th>Variable</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><span class="mono">verbal_ack</span></td><td>Optional immediate acknowledgement wording.</td></tr>
+            <tr><td><span class="mono">route</span></td><td>Turn routing decision: <span class="mono">dialogue | knowledge_query | execution</span>.</td></tr>
+            <tr><td><span class="mono">confidence</span></td><td>Chatbot confidence for route + intent prediction.</td></tr>
+            <tr><td><span class="mono">user_intent.*</span></td><td>Planner-facing intent frame (normalized type, goal text, scene targets, request transition kind).</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>3) Contract B: Planner Request (Intent.data)</h2>
+      </div>
+      <div class="section-body">
+        <p>Ingress seam for planning context. This is where Hybrid Minimal T0 is attached.</p>
+        <table>
+          <thead><tr><th>Root Variable</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><span class="mono">request_id</span></td><td>Per-turn request id for traceability/idempotence.</td></tr>
+            <tr><td><span class="mono">goal_id</span></td><td>Stable goal continuity identity.</td></tr>
+            <tr><td><span class="mono">parent_goal_id</span></td><td>Optional lineage to a parent objective.</td></tr>
+            <tr><td><span class="mono">supersedes_goal_id</span></td><td>Explicit goal replacement target.</td></tr>
+            <tr><td><span class="mono">request_kind</span></td><td><span class="mono">new_goal | goal_update | clarification_answer | cancel_request</span>.</td></tr>
+            <tr><td><span class="mono">goal_text</span></td><td>Planner objective text.</td></tr>
+            <tr><td><span class="mono">normalized_intents</span></td><td>Strict normalized intent labels.</td></tr>
+            <tr><td><span class="mono">scene_targets</span></td><td>Compact planner target list.</td></tr>
+            <tr><td><span class="mono">dialogue_context</span></td><td>Optional turn memory context list.</td></tr>
+            <tr><td><span class="mono">requested_plan</span></td><td>Optional plan hints, not mandatory for basic planning.</td></tr>
+            <tr><td><span class="mono">grounded_context</span></td><td>Hybrid Minimal T0: <span class="mono">knowledge_snapshot</span>, <span class="mono">scene_summary</span>, <span class="mono">state_t0</span>.</td></tr>
+            <tr><td><span class="mono">planner_mode</span></td><td>Planner policy profile.</td></tr>
+            <tr><td><span class="mono">interaction_mode</span></td><td>Interaction channel metadata.</td></tr>
+            <tr><td><span class="mono">dialogue_turn_id</span></td><td>Conversation turn correlation id.</td></tr>
+          </tbody>
+        </table>
+        <table>
+          <thead><tr><th>grounded_context Variable</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><span class="mono">knowledge_snapshot.references[]</span></td><td>Compact KB references with <span class="mono">normalized_name</span>, <span class="mono">id</span>, <span class="mono">type</span>.</td></tr>
+            <tr><td><span class="mono">knowledge_snapshot.counts</span></td><td>Entity, people, and object counts.</td></tr>
+            <tr><td><span class="mono">scene_summary.objects[]</span></td><td>Transient object detections (source, score, geometry, recency as available).</td></tr>
+            <tr><td><span class="mono">scene_summary.people[]</span></td><td>Transient people detections, separated from objects.</td></tr>
+            <tr><td><span class="mono">state_t0.entities[]</span></td><td>T0 entities with <span class="mono">kind</span>, source, and last-seen recency for pre/postcondition reasoning.</td></tr>
+          </tbody>
+        </table>
+        <div class="callout">Semantic rule: people are never treated as objects; use separate arrays and/or explicit <span class="mono">kind</span> labels.</div>
+        <div class="callout danger">Removed seams: <span class="mono">goal_token</span>, <span class="mono">world_model_snapshot</span>, <span class="mono">world_model_text</span>.</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>4) Contract C: Planner Output (Intent.data on /intents)</h2>
+      </div>
+      <div class="section-body">
+        <table>
+          <thead><tr><th>plan Variable</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><span class="mono">goal_id</span></td><td>Goal continuity id across replans.</td></tr>
+            <tr><td><span class="mono">plan_id</span></td><td>Plan identity for a goal.</td></tr>
+            <tr><td><span class="mono">plan_version</span></td><td>Revision index for the same <span class="mono">goal_id</span>.</td></tr>
+            <tr><td><span class="mono">status</span></td><td>Planner lifecycle state.</td></tr>
+            <tr><td><span class="mono">validation_status</span></td><td>Plan validation result status.</td></tr>
+            <tr><td><span class="mono">failure_reason</span></td><td>Planning/validation failure detail.</td></tr>
+            <tr><td><span class="mono">user_facing_reason</span></td><td>Optional reason prepared for relay.</td></tr>
+            <tr><td><span class="mono">replan_hint</span></td><td>Hint for follow-up planning pass.</td></tr>
+            <tr><td><span class="mono">retry_budget</span></td><td>Plan-level retry budget.</td></tr>
+            <tr><td><span class="mono">scene_targets</span></td><td>Target echo for traceability.</td></tr>
+            <tr><td><span class="mono">communication_policy</span></td><td>Emit toggles for acknowledge/progress/completion/failure relays.</td></tr>
+            <tr><td><span class="mono">steps[]</span></td><td>Executable sequence; each step has <span class="mono">id</span>, <span class="mono">type</span>, <span class="mono">name</span>, <span class="mono">args</span>, <span class="mono">requires</span>, <span class="mono">on_failure</span>, <span class="mono">retry_budget</span>.</td></tr>
+          </tbody>
+        </table>
+        <div class="callout">Stable <span class="mono">steps[*].id</span> is mandatory for replan mid-join.</div>
+        <div class="callout danger">Removed seams: planner <span class="mono">ack_mode</span>, planner raw <span class="mono">ack_text</span>, duplicated top-level plan fields.</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>5) Contract D: Execution Feedback (/planner/execution_feedback)</h2>
+      </div>
+      <div class="section-body">
+        <table>
+          <thead><tr><th>Variable</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><span class="mono">goal_id</span>, <span class="mono">plan_id</span>, <span class="mono">plan_version</span></td><td>Lineage tuple for deterministic replan decisions.</td></tr>
+            <tr><td><span class="mono">event_type</span></td><td>Execution event: plan accepted, step started/succeeded/failed, plan completed/invalid, etc.</td></tr>
+            <tr><td><span class="mono">status</span></td><td>Execution status snapshot.</td></tr>
+            <tr><td><span class="mono">reason</span></td><td>Failure/decision reason when applicable.</td></tr>
+            <tr><td><span class="mono">retry_budget</span></td><td>Remaining retries at event time.</td></tr>
+            <tr><td><span class="mono">blocking</span></td><td>Whether execution is blocked pending new plan or user input.</td></tr>
+            <tr><td><span class="mono">needs_user_input</span></td><td>Whether planner/dialogue clarification is needed.</td></tr>
+            <tr><td><span class="mono">result_summary</span></td><td>Backward-compatible summary text.</td></tr>
+            <tr><td><span class="mono">result_payload</span></td><td>Typed skill evidence payload used for grounded replanning.</td></tr>
+            <tr><td><span class="mono">step</span></td><td>Executed step metadata snapshot.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>6) Contract E: Planner Dialogue Act (/planner/dialogue_act)</h2>
+      </div>
+      <div class="section-body">
+        <table>
+          <thead><tr><th>Variable</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><span class="mono">goal_id</span>, <span class="mono">plan_id</span>, <span class="mono">plan_version</span></td><td>Dialogue lineage binding to planner execution state.</td></tr>
+            <tr><td><span class="mono">act</span></td><td>Dialogue act type: acknowledge, progress, clarification, failure, completion, cancellation, etc.</td></tr>
+            <tr><td><span class="mono">priority</span></td><td>Dialogue urgency/priority hint.</td></tr>
+            <tr><td><span class="mono">await_user_response</span></td><td>Whether turn blocks for user reply.</td></tr>
+            <tr><td><span class="mono">reason</span>, <span class="mono">text_hint</span></td><td>LLM rationale and wording hint for relay/rendering.</td></tr>
+            <tr><td><span class="mono">slots_needed[]</span></td><td>Missing values needed to continue planning/execution.</td></tr>
+            <tr><td><span class="mono">context</span></td><td>Compact act context (scene targets, waiting status, etc.).</td></tr>
+          </tbody>
+        </table>
+        <div class="callout">Dialogue mode policy is direct planner dialogue-act flow only (legacy fallback branches removed).</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>7) Replan Lineage and Join Behavior</h2>
+      </div>
+      <div class="section-body">
+        <ol>
+          <li>Single active-goal queue model.</li>
+          <li><span class="mono">goal_id</span> tracks goal continuity.</li>
+          <li><span class="mono">plan_id + plan_version</span> track plan lineage.</li>
+          <li>Mid-join strategy: continue from mapped active <span class="mono">step_id</span> when possible.</li>
+          <li>Fallback strategy: front-join from first pending step when mapping fails.</li>
+          <li>Duplicate suppression uses exact tuple: <span class="mono">goal_id, plan_id, plan_version</span>.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>8) Demo Run Plan (Tomorrow)</h2>
+      </div>
+      <div class="section-body">
+        <ol>
+          <li>Trigger a simple command ("look at person") and display chatbot routing output.</li>
+          <li>Inspect planner request JSON and highlight Hybrid Minimal T0 fields.</li>
+          <li>Inspect planner output and point out lineage + stable step ids.</li>
+          <li>Run one success path and one forced failure path to show typed execution feedback.</li>
+          <li>Show planner dialogue act handling for clarification/failure/completion relay.</li>
+          <li>Close with ownership map: planner plans, orchestrator dispatches, AB=1 skills resolve live state.</li>
+        </ol>
+      </div>
+    </section>
+
+    <div class="footer-note">
+      Companion references: <span class="mono">docs/contracts.md</span>, <span class="mono">docs/current_workflow.md</span>, <span class="mono">docs/plans/planner_grounding_moe_contract_2026-06-01.md</span>, <span class="mono">docs/plans/planner_replan_lineage_adr.md</span>.
+    </div>
+  </main>
+</body>
+</html>

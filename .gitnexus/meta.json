@@ -1,13 +1,13 @@
 {
   "repoPath": "/Users/juanbendek/repos/nao-ros4hri-bridge",
-  "lastCommit": "10c66f626a148be87d591f48eab3fd5b85f1025a",
-  "indexedAt": "2026-04-10T16:35:47.045Z",
+  "lastCommit": "e0b7cc9b6371fa050f56636ed3d69976d489babe",
+  "indexedAt": "2026-05-31T21:17:16.352Z",
   "stats": {
-    "files": 426,
-    "nodes": 3463,
-    "edges": 9503,
-    "communities": 175,
-    "processes": 276,
+    "files": 717,
+    "nodes": 7119,
+    "edges": 18295,
+    "communities": 321,
+    "processes": 300,
     "embeddings": 0
   }
 }

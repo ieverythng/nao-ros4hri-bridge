@@ -103,19 +103,51 @@ Published by `chatbot_llm` as `hri_actions_msgs/msg/Intent`.
   "requested_plan": [],
   "grounded_context": {
     "knowledge_snapshot": {
+      "schema_version": "knowledge_snapshot_v2",
+      "captured_at_sec": 1777040000.0,
       "references": [
-        {"normalized_name": "cup_1", "id": "cup_1", "type": "Cup"}
-      ]
+        {"normalized_name": "cup", "id": "cup_1", "type": "Cup"},
+        {"normalized_name": "person", "id": "person_1", "type": "Person"}
+      ],
+      "counts": {"entities": 2, "people": 1, "objects": 1}
     },
     "scene_summary": {
-      "observer": "myself",
-      "backend": "emorobcare_cv",
-      "objects": []
-    },
-    "state_t0": {
+      "schema_version": "scene_summary_v2",
       "observer": "myself",
       "backend": "emorobcare_cv",
       "captured_at_sec": 1777040000.0,
+      "objects": [
+        {
+          "entity_id": "cup_1",
+          "label": "cup",
+          "kb_class": "Cup",
+          "score": 0.91,
+          "tracker_id": "",
+          "source": "emorobcare_cv",
+          "center_x": 320.0,
+          "center_y": 240.0,
+          "last_seen_sec": 1777040000.0
+        }
+      ],
+      "people": [
+        {
+          "id": "person_1",
+          "label": "person",
+          "type": "Person",
+          "source": "emorobcare_cv",
+          "score": 0.84,
+          "center_x": 188.0,
+          "center_y": 205.0,
+          "last_seen_sec": 1777040000.0
+        }
+      ]
+    },
+    "state_t0": {
+      "schema_version": "state_t0_v2",
+      "observer": "myself",
+      "backend": "emorobcare_cv",
+      "captured_at_sec": 1777040000.0,
+      "entity_counts": {"entities": 2, "people": 1, "objects": 1},
       "entities": []
     }
   },
@@ -133,6 +165,8 @@ Planner input policy:
   planner work.
 - `user_text` is legacy parser input only. `chatbot_llm` should not send it to
   the planner during normal operation.
+- planner prompt policy treats every `state_t0.entities[*].id` as a valid
+  `look_at.target_frame` candidate, so no dedicated candidate list is required.
 
 ### Planner Output On `/intents`
 

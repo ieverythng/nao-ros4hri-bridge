@@ -55,12 +55,12 @@
         "chatbot_llm"
       ]
     },
-    "/chatbot_llm/prepare_dialogue": {
-      "service_servers": [
+    "/chatbot_llm/set_default_locale": {
+      "action_servers": [
         "chatbot_llm"
       ]
     },
-    "/chatbot_llm/set_default_locale": {
+    "/chatbot_llm/start_dialogue": {
       "action_servers": [
         "chatbot_llm"
       ]
@@ -73,25 +73,12 @@
         "nao_chatbot"
       ]
     },
-    "/debug/object_detection": {
-      "publishers": [
-        "emorobcare_cv_object_detection"
-      ]
-    },
     "/debug/say": {
       "action_clients": [
         "nao_say_skill"
       ]
     },
-    "/depth_map": {
-      "subscribers": [
-        "emorobcare_cv_object_detection"
-      ]
-    },
     "/detected_objects": {
-      "publishers": [
-        "emorobcare_cv_object_detection"
-      ],
       "subscribers": [
         "nao_scene_grounding"
       ]
@@ -131,16 +118,6 @@
     "/dialogue_manager/robot_speech": {
       "publishers": [
         "dialogue_manager"
-      ]
-    },
-    "/enriched_snapshot_topic": {
-      "subscribers": [
-        "planner_llm"
-      ]
-    },
-    "/enriched_text_topic": {
-      "subscribers": [
-        "planner_llm"
       ]
     },
     "/fake_skills/events": {
@@ -355,11 +332,6 @@
         "planner_llm"
       ]
     },
-    "/processing_time": {
-      "publishers": [
-        "emorobcare_cv_object_detection"
-      ]
-    },
     "/robot_speaking": {
       "subscribers": [
         "asr_vosk"
@@ -373,16 +345,6 @@
     "/scene/summary": {
       "subscribers": [
         "nao_orchestrator"
-      ]
-    },
-    "/sim_scene/place_object": {
-      "service_clients": [
-        "emorobcare_cv_object_detection"
-      ]
-    },
-    "/sim_scene/remove_object": {
-      "service_clients": [
-        "emorobcare_cv_object_detection"
       ]
     },
     "/skill/ask": {
@@ -538,28 +500,13 @@
         "nao_say_skill"
       ]
     },
-    "/start_detection": {
-      "service_servers": [
-        "emorobcare_cv_object_detection"
-      ]
-    },
-    "/stop_detection": {
-      "service_servers": [
-        "emorobcare_cv_object_detection"
-      ]
-    },
-    "/system/health/object_detect": {
-      "publishers": [
-        "emorobcare_cv_object_detection"
-      ]
-    },
     "/tts_engine/tts": {
       "action_servers": [
         "nao_say_skill"
       ]
     }
   },
-  "generatedAt": "2026-05-29T14:07:26.970140+00:00",
+  "generatedAt": "2026-05-31T21:17:08.355586+00:00",
   "packages": [
     {
       "actionClients": [],
@@ -592,7 +539,8 @@
     {
       "actionClients": [],
       "actionServers": [
-        "/chatbot_llm/set_default_locale"
+        "/chatbot_llm/set_default_locale",
+        "/chatbot_llm/start_dialogue"
       ],
       "contracts": [],
       "files": [
@@ -630,8 +578,7 @@
       "serviceClients": [],
       "serviceServers": [
         "/chatbot_llm/dialogue_interaction",
-        "/chatbot_llm/get_supported_locales",
-        "/chatbot_llm/prepare_dialogue"
+        "/chatbot_llm/get_supported_locales"
       ],
       "subscribes": []
     },
@@ -711,41 +658,6 @@
         "/humans/voices/*/speech",
         "/humans/voices/tracked",
         "/planner/dialogue_act"
-      ]
-    },
-    {
-      "actionClients": [],
-      "actionServers": [],
-      "contracts": [],
-      "files": [
-        "src/emorobcare_cv_object_detection/emorobcare_cv_object_detection/__init__.py",
-        "src/emorobcare_cv_object_detection/emorobcare_cv_object_detection/node_object_detection.py",
-        "src/emorobcare_cv_object_detection/launch/emorobot_object_detector.launch.py",
-        "src/emorobcare_cv_object_detection/launch/launch.py",
-        "src/emorobcare_cv_object_detection/launch/launch_simple_with_knowledge_base.py",
-        "src/emorobcare_cv_object_detection/setup.py"
-      ],
-      "name": "emorobcare_cv_object_detection",
-      "nodeNames": [
-        "object_detector_node"
-      ],
-      "publishes": [
-        "/debug/object_detection",
-        "/detected_objects",
-        "/processing_time",
-        "/system/health/object_detect"
-      ],
-      "root": "src/emorobcare_cv_object_detection",
-      "serviceClients": [
-        "/sim_scene/place_object",
-        "/sim_scene/remove_object"
-      ],
-      "serviceServers": [
-        "/start_detection",
-        "/stop_detection"
-      ],
-      "subscribes": [
-        "/depth_map"
       ]
     },
     {
@@ -1141,8 +1053,6 @@
       "serviceClients": [],
       "serviceServers": [],
       "subscribes": [
-        "/enriched_snapshot_topic",
-        "/enriched_text_topic",
         "/planner_feedback_topic",
         "/planner_request_topic"
       ]

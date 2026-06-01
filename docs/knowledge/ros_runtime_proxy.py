@@ -45,29 +45,21 @@ def ros_service_chatbot_llm_get_supported_locales():
     """ROS service endpoint /chatbot_llm/get_supported_locales."""
     return "/chatbot_llm/get_supported_locales"
 
-def ros_service_chatbot_llm_prepare_dialogue():
-    """ROS service endpoint /chatbot_llm/prepare_dialogue."""
-    return "/chatbot_llm/prepare_dialogue"
-
 def ros_action_chatbot_llm_set_default_locale():
     """ROS action endpoint /chatbot_llm/set_default_locale."""
     return "/chatbot_llm/set_default_locale"
+
+def ros_action_chatbot_llm_start_dialogue():
+    """ROS action endpoint /chatbot_llm/start_dialogue."""
+    return "/chatbot_llm/start_dialogue"
 
 def ros_topic_debug_nao_say_speech():
     """ROS topic endpoint /debug/nao_say/speech."""
     return "/debug/nao_say/speech"
 
-def ros_topic_debug_object_detection():
-    """ROS topic endpoint /debug/object_detection."""
-    return "/debug/object_detection"
-
 def ros_action_debug_say():
     """ROS action endpoint /debug/say."""
     return "/debug/say"
-
-def ros_topic_depth_map():
-    """ROS topic endpoint /depth_map."""
-    return "/depth_map"
 
 def ros_topic_detected_objects():
     """ROS topic endpoint /detected_objects."""
@@ -92,14 +84,6 @@ def ros_topic_dialogue_manager_debug_state():
 def ros_topic_dialogue_manager_robot_speech():
     """ROS topic endpoint /dialogue_manager/robot_speech."""
     return "/dialogue_manager/robot_speech"
-
-def ros_topic_enriched_snapshot_topic():
-    """ROS topic endpoint /enriched_snapshot_topic."""
-    return "/enriched_snapshot_topic"
-
-def ros_topic_enriched_text_topic():
-    """ROS topic endpoint /enriched_text_topic."""
-    return "/enriched_text_topic"
 
 def ros_topic_fake_skills_events():
     """ROS topic endpoint /fake_skills/events."""
@@ -233,10 +217,6 @@ def ros_topic_planner_request_topic():
     """ROS topic endpoint /planner_request_topic."""
     return "/planner_request_topic"
 
-def ros_topic_processing_time():
-    """ROS topic endpoint /processing_time."""
-    return "/processing_time"
-
 def ros_topic_robot_speaking():
     """ROS topic endpoint /robot_speaking."""
     return "/robot_speaking"
@@ -248,14 +228,6 @@ def ros_topic_rosout():
 def ros_topic_scene_summary():
     """ROS topic endpoint /scene/summary."""
     return "/scene/summary"
-
-def ros_service_sim_scene_place_object():
-    """ROS service endpoint /sim_scene/place_object."""
-    return "/sim_scene/place_object"
-
-def ros_service_sim_scene_remove_object():
-    """ROS service endpoint /sim_scene/remove_object."""
-    return "/sim_scene/remove_object"
 
 def ros_action_skill_ask():
     """ROS action endpoint /skill/ask."""
@@ -317,18 +289,6 @@ def ros_topic_speech():
     """ROS topic endpoint /speech."""
     return "/speech"
 
-def ros_service_start_detection():
-    """ROS service endpoint /start_detection."""
-    return "/start_detection"
-
-def ros_service_stop_detection():
-    """ROS service endpoint /stop_detection."""
-    return "/stop_detection"
-
-def ros_topic_system_health_object_detect():
-    """ROS topic endpoint /system/health/object_detect."""
-    return "/system/health/object_detect"
-
 def ros_action_tts_engine_tts():
     """ROS action endpoint /tts_engine/tts."""
     return "/tts_engine/tts"
@@ -355,8 +315,8 @@ def ros_node_chatbot_llm():
     ros_topic_diagnostics()
     ros_service_chatbot_llm_dialogue_interaction()
     ros_service_chatbot_llm_get_supported_locales()
-    ros_service_chatbot_llm_prepare_dialogue()
     ros_action_chatbot_llm_set_default_locale()
+    ros_action_chatbot_llm_start_dialogue()
 
 def ros_contract_communication_skills():
     """Interface contracts exported by communication_skills."""
@@ -390,22 +350,6 @@ def ros_node_dialogue_manager():
     ros_action_skill_ask()
     ros_action_skill_chat()
     ros_action_skill_say()
-
-def ros_contract_emorobcare_cv_object_detection():
-    """Interface contracts exported by emorobcare_cv_object_detection."""
-    return None
-
-def ros_node_emorobcare_cv_object_detection():
-    """Runtime ROS proxy for package/node emorobcare_cv_object_detection."""
-    ros_topic_debug_object_detection()
-    ros_topic_detected_objects()
-    ros_topic_processing_time()
-    ros_topic_system_health_object_detect()
-    ros_topic_depth_map()
-    ros_service_sim_scene_place_object()
-    ros_service_sim_scene_remove_object()
-    ros_service_start_detection()
-    ros_service_stop_detection()
 
 def ros_contract_fake_skills():
     """Interface contracts exported by fake_skills."""
@@ -574,8 +518,6 @@ def ros_node_planner_llm():
     """Runtime ROS proxy for package/node planner_llm."""
     ros_topic_intent_topic()
     ros_topic_planner_dialogue_act_topic()
-    ros_topic_enriched_snapshot_topic()
-    ros_topic_enriched_text_topic()
     ros_topic_planner_feedback_topic()
     ros_topic_planner_request_topic()
 
@@ -600,12 +542,6 @@ def ros_flow_topic_debug_nao_say_speech():
     ros_node_nao_say_skill()
     ros_topic_debug_nao_say_speech()
     ros_node_nao_chatbot()
-
-def ros_flow_topic_detected_objects():
-    """Publisher/subscriber flow for /detected_objects."""
-    ros_node_emorobcare_cv_object_detection()
-    ros_topic_detected_objects()
-    ros_node_nao_scene_grounding()
 
 def ros_flow_topic_dialogue_manager_closed_captions():
     """Publisher/subscriber flow for /dialogue_manager/closed_captions."""
