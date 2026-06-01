@@ -36,26 +36,6 @@ if [[ -f install/setup.bash ]]; then
 fi
 set -u
 
-# Keep the active virtualenv site-packages ahead of ROS underlay PYTHONPATH.
-# This allows project-local Python overlays (for example, pinned chatbot_msgs
-# compatibility shims) to take precedence in test execution.
-if [[ "${PYTHON_BIN}" == "${REPO_ROOT}/.venv/bin/python3" ]]; then
-  VENV_SITE_PACKAGES="$("${PYTHON_BIN}" - <<'PY'
-import site
-
-paths = [p for p in site.getsitepackages() if "site-packages" in p]
-print(paths[0] if paths else "")
-PY
-)"
-  if [[ -n "${VENV_SITE_PACKAGES}" ]]; then
-    export PYTHONPATH="${VENV_SITE_PACKAGES}:${PYTHONPATH:-}"
-  fi
-  CHATBOT_MSGS_COMPAT_LIB_DIR="${REPO_ROOT}/.venv/lib/chatbot_msgs_v3_lib"
-  if [[ -d "${CHATBOT_MSGS_COMPAT_LIB_DIR}" ]]; then
-    export LD_LIBRARY_PATH="${CHATBOT_MSGS_COMPAT_LIB_DIR}:${LD_LIBRARY_PATH:-}"
-  fi
-fi
-
 have_python_module() {
   "${PYTHON_BIN}" - "$1" <<'PY'
 import importlib.util
@@ -134,14 +114,31 @@ fi
 
 echo "[6/10] dialogue_manager unit tests"
 if have_python_module numpy; then
-  PYTHONPATH="src/dialogue_manager:${PYTHONPATH:-}" "${PYTHON_BIN}" -m pytest -q \
-    src/dialogue_manager/test/test_chatbot_client.py \
-    src/dialogue_manager/test/test_dialogue.py \
-    src/dialogue_manager/test/test_integration.py \
-    src/dialogue_manager/test/test_manager_node.py \
-    src/dialogue_manager/test/test_skill_servers.py \
-    src/dialogue_manager/test/test_speech_handler.py \
-    src/dialogue_manager/test/test_tts_client.py
+  dialogue_test_dir="src/dialogue_manager/test"
+  if [[ -d "src/dialogue_manager/dialogue_manager/test" ]]; then
+    dialogue_test_dir="src/dialogue_manager/dialogue_manager/test"
+  fi
+
+  dialogue_tests=(
+    "${dialogue_test_dir}/test_chatbot_client.py"
+    "${dialogue_test_dir}/test_dialogue.py"
+    "${dialogue_test_dir}/test_integration.py"
+    "${dialogue_test_dir}/test_manager_node.py"
+    "${dialogue_test_dir}/test_skill_servers.py"
+    "${dialogue_test_dir}/test_speech_handler.py"
+  )
+  if [[ -f "${dialogue_test_dir}/test_tts_client.py" ]]; then
+    dialogue_tests+=("${dialogue_test_dir}/test_tts_client.py")
+  elif [[ -f "${dialogue_test_dir}/test_say_client.py" ]]; then
+    dialogue_tests+=("${dialogue_test_dir}/test_say_client.py")
+  fi
+
+  if [[ "${#dialogue_tests[@]}" -eq 0 ]]; then
+    echo "Skipping dialogue_manager unit tests because no known dialogue_manager test files were found."
+  else
+    PYTHONPATH="src/dialogue_manager/dialogue_manager:src/dialogue_manager:${PYTHONPATH:-}" "${PYTHON_BIN}" -m pytest -q \
+      "${dialogue_tests[@]}"
+  fi
 else
   echo "Skipping dialogue_manager unit tests because python module 'numpy' is unavailable (pip install -r requirements-dev.txt in .venv)."
 fi

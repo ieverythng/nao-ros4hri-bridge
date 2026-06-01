@@ -1800,6 +1800,12 @@ def generate_profile_launch_description(
                 )
             },
             {
+                "say_action": ParameterValue(
+                    LaunchConfiguration("dialogue_manager_say_action"),
+                    value_type=str,
+                )
+            },
+            {
                 "planner_dialogue_act_topic": ParameterValue(
                     LaunchConfiguration("planner_dialogue_relay_topic"),
                     value_type=str,
