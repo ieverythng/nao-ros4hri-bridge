@@ -458,9 +458,15 @@ class PlannerSupervisor:
             return False
         step_type = str(final_step.get('type', '')).strip().lower()
         step_name = str(final_step.get('name', '')).strip().lower()
-        if step_type != 'say' and step_name != 'say':
-            return False
-        return bool(str(dict(final_step.get('args', {})).get('text', '')).strip())
+        step_args = dict(final_step.get('args', {}))
+
+        if step_type == 'say' or step_name == 'say':
+            return bool(str(step_args.get('text', '')).strip())
+
+        if step_type == 'skill' and step_name == 'report_result':
+            return True
+
+        return False
 
     @staticmethod
     def _step_for_feedback(state: SupervisorState, feedback: ExecutionFeedback) -> dict:

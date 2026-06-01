@@ -82,6 +82,7 @@ _SIM_CAMERA_DEFAULTS = {
     "start_interaction_sim_ui": "false",
     "interaction_sim_hri_log_profile": "quiet",
     "start_rqt_console": "true",
+    "start_rqt_chat": "true",
     "sim_use_laptop_tts": "false",
     "start_interaction_trace_viewer": "false",
     "interaction_trace_compact_mode": "false",
@@ -1143,8 +1144,11 @@ def generate_profile_launch_description(
     )
     start_rqt_chat_arg = DeclareLaunchArgument(
         "start_rqt_chat",
-        default_value="false",
-        description="Optionally launch a separate rqt_chat window remapped onto the debug TTS action when the simulator perspective is not in use.",
+        default_value=_profile_default(profile_defaults, "start_rqt_chat", "false"),
+        description=(
+            "Launch the dialogue UI helper window. In interaction_sim profiles this "
+            "opens rqt_dialogues; outside sim it opens standalone rqt_chat."
+        ),
     )
     start_robot_speech_debug_arg = DeclareLaunchArgument(
         "start_robot_speech_debug",
@@ -1426,6 +1430,11 @@ def generate_profile_launch_description(
         "dialogue_manager_default_chat_configuration",
         default_value="",
         description="Optional JSON configuration passed to the default dialogue session.",
+    )
+    dialogue_manager_say_action_arg = DeclareLaunchArgument(
+        "dialogue_manager_say_action",
+        default_value="/nao/say",
+        description="Say action endpoint used by dialogue_manager for speech delivery.",
     )
     chat_input_tracked_topic_arg = DeclareLaunchArgument(
         "chat_input_tracked_topic",
@@ -2401,7 +2410,7 @@ def generate_profile_launch_description(
         ],
         output="screen",
     )
-    interaction_sim_rqt_chat_note = LogInfo(
+    interaction_sim_rqt_dialogues = ExecuteProcess(
         condition=IfCondition(
             PythonExpression(
                 [
@@ -2413,11 +2422,24 @@ def generate_profile_launch_description(
                 ]
             )
         ),
-        msg=(
-            "start_rqt_chat was requested together with start_interaction_sim. "
-            "Skipping the separate rqt_chat window because the interaction_sim "
-            "perspective already loads rqt_chat on the debug TTS action."
-        ),
+        cmd=[
+            "bash",
+            "-lc",
+            [
+                "if ! command -v rqt >/dev/null 2>&1; then "
+                "echo 'rqt is not installed in this environment'; "
+                "elif ! python3 -c 'import importlib.util,sys; "
+                "sys.exit(0 if importlib.util.find_spec(\"rqt_dialogues\") else 1)' "
+                ">/dev/null 2>&1; then "
+                "echo 'rqt_dialogues is not installed in this environment'; "
+                "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
+                "echo 'rqt_dialogues launch skipped: DISPLAY/WAYLAND_DISPLAY is not set'; "
+                "else "
+                "exec rqt --clear-config --standalone rqt_dialogues.plugin.DialoguesPlugin; "
+                "fi",
+            ],
+        ],
+        output="screen",
     )
     rqt_chat = ExecuteProcess(
         condition=IfCondition(
@@ -2743,6 +2765,7 @@ def generate_profile_launch_description(
             dialogue_manager_enable_default_chat_arg,
             dialogue_manager_default_chat_role_arg,
             dialogue_manager_default_chat_configuration_arg,
+            dialogue_manager_say_action_arg,
             chat_input_tracked_topic_arg,
             chat_input_speech_topic_arg,
             chat_input_is_speaking_topic_arg,
@@ -2875,7 +2898,7 @@ def generate_profile_launch_description(
             object_detection_camera_note,
             rqt_console,
             interaction_sim_rqt,
-            interaction_sim_rqt_chat_note,
+            interaction_sim_rqt_dialogues,
             rqt_chat,
             robot_speech_debug,
             interaction_trace_viewer_node,

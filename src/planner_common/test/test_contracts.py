@@ -230,5 +230,19 @@ def test_normalize_plan_steps_filters_invalid_step_types() -> None:
     ]
 
 
+def test_normalize_plan_steps_rejects_retry_failure_policy_alias() -> None:
+    steps = normalize_plan_steps(
+        [
+            {
+                'type': 'skill',
+                'name': 'perform_motion',
+                'args': {'object': 'stand'},
+                'on_failure': 'retry',
+            }
+        ]
+    )
+    assert steps[0]['on_failure'] == 'fail'
+
+
 def test_truncate_text_adds_ellipsis_when_needed() -> None:
     assert truncate_text('hello world', 5) == 'hell…'

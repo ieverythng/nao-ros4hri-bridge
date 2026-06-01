@@ -245,6 +245,24 @@ def test_validate_execution_plan_accepts_continue_failure_policy() -> None:
     assert envelope['steps'][0]['on_failure'] == 'continue'
 
 
+def test_validate_execution_plan_rejects_retry_failure_policy_alias() -> None:
+    envelope = validate_execution_plan(
+        Intent.PERFORM_MOTION,
+        {
+            'plan': [
+                {
+                    'type': 'skill',
+                    'name': 'perform_motion',
+                    'args': {'object': 'stand'},
+                    'on_failure': 'retry',
+                }
+            ]
+        },
+    )
+    assert envelope['errors'] == []
+    assert envelope['steps'][0]['on_failure'] == 'fail'
+
+
 def test_validate_execution_plan_accepts_scan_skill() -> None:
     envelope = validate_execution_plan(
         Intent.PERFORM_MOTION,

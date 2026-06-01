@@ -201,6 +201,32 @@ class _ResultSayEngine(_StubEngine):
         return decision
 
 
+class _ResultReportEngine(_StubEngine):
+    def plan_request(self, request, **kwargs):
+        decision = super().plan_request(request, **kwargs)
+        decision.payload['plan']['steps'] = [
+            {
+                'id': 'step_1',
+                'type': 'skill',
+                'name': 'scan',
+                'args': {'target': 'people'},
+                'requires': [],
+                'on_failure': 'replan',
+                'retry_budget': 0,
+            },
+            {
+                'id': 'step_2',
+                'type': 'skill',
+                'name': 'report_result',
+                'args': {'summary_text': 'I found one person.'},
+                'requires': [],
+                'on_failure': 'continue',
+                'retry_budget': 0,
+            },
+        ]
+        return decision
+
+
 def test_supervisor_creates_new_goal_session_without_duplicate_ack_dialogue_act() -> None:
     supervisor = PlannerSupervisor(_StubEngine(), auto_replan=True)
     request = PlannerRequest.from_payload(
@@ -484,6 +510,33 @@ def test_supervisor_suppresses_completion_when_plan_ended_with_result_say() -> N
             'plan_version': 1,
             'event_type': 'plan_completed',
             'status': 'completed',
+        }
+    )
+
+    outcome = supervisor.handle_feedback(feedback)
+
+    assert outcome.decision is None
+    assert outcome.dialogue_acts == ()
+
+
+def test_supervisor_suppresses_completion_when_plan_ended_with_report_result() -> None:
+    supervisor = PlannerSupervisor(_ResultReportEngine(), auto_replan=True)
+    request = PlannerRequest.from_payload(
+        {'goal_id': 'goal_scan_result_report', 'request_id': 'turn_1', 'user_text': 'scan'}
+    )
+    first_outcome = supervisor.handle_request(request)
+    feedback = ExecutionFeedback.from_payload(
+        {
+            'goal_id': 'goal_scan_result_report',
+            'plan_id': first_outcome.decision.plan_id,
+            'plan_version': 1,
+            'event_type': 'plan_completed',
+            'status': 'completed',
+            'result_summary': 'I found one person.',
+            'result_payload': {
+                'skill': 'report_result',
+                'summary_text': 'I found one person.',
+            },
         }
     )
 

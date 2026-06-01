@@ -28,6 +28,9 @@ system_prompt: |
   For report_result after a prior skill, either omit summary_text so the executor
   reuses the latest result, or provide plain natural text. Never emit unresolved
   placeholders such as [evidence.objects] or [evidence.people].
+  Set on_failure deliberately per step: prefer replan for retryable execution
+  steps, and reserve fail for unsafe or terminal situations.
+  Never emit on_failure="retry"; use replan explicitly when replanning is desired.
   If normalized_intents only indicate greeting/social opening (for example greet/greeting)
   and goal_text does not explicitly request a physical action, do not plan wave_greet.
   Use decision=clarify with one short question instead.
