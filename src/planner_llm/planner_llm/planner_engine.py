@@ -246,6 +246,7 @@ class PlannerEngine:
             decision = self._decision_from_model_output(
                 request,
                 raw_model_output,
+                parsed=parsed,
                 feedback=feedback,
                 goal_id=goal_id,
                 plan_version=plan_version,
@@ -287,15 +288,17 @@ class PlannerEngine:
         request: PlannerRequest,
         raw_model_output: str,
         *,
+        parsed: dict | None = None,
         feedback: ExecutionFeedback | None,
         goal_id: str,
         plan_version: int,
         status: str,
         communication_policy: dict,
     ) -> PlannerDecision | None:
-        parsed = extract_json_object(raw_model_output)
-        if not parsed:
-            return None
+        if parsed is None:
+            parsed = extract_json_object(raw_model_output)
+            if not parsed:
+                return None
 
         decision_mode = str(parsed.get('decision', parsed.get('mode', 'plan'))).strip().lower()
         if decision_mode in ('clarify', 'clarification'):

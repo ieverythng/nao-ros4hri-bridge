@@ -14,6 +14,7 @@ from planner_common.contracts import (
     _first_non_empty,
     coerce_bool,
     _coerce_nonnegative_int,
+    _coerce_float,
 )
 
 
@@ -517,10 +518,3 @@ def grounded_context_to_context_ref(grounded_context: dict) -> dict:
             '',
         ),
     }
-
-
-def _coerce_float(value, fallback: float = 0.0) -> float:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return float(fallback)
