@@ -38,6 +38,106 @@ def _table_cells(line: str) -> list[str]:
     return [cell.strip() for cell in line.strip().strip("|").split("|")]
 
 
+def _render_mermaid(code_text: str) -> str:
+    stripped = code_text.strip()
+    if stripped.startswith("sequenceDiagram"):
+        return _runtime_sequence_svg()
+    escaped = _escape(code_text)
+    return (
+        '<div class="diagram"><pre><code '
+        'class="language-mermaid">%s</code></pre></div>' % escaped
+    )
+
+
+def _runtime_sequence_svg() -> str:
+    labels = [
+        ("User", 80),
+        ("chatbot_llm", 270),
+        ("nao_orchestrator", 490),
+        ("planner_llm", 710),
+        ("AB=1 Skills", 900),
+        ("KB + Scene", 1080),
+        ("dialogue\nmanager", 1238),
+    ]
+    lifelines = [80, 270, 490, 710, 900, 1080, 1280]
+    messages = [
+        (80, 270, 78, "natural language request"),
+        (270, 1080, 110, "query KB rows + scene summary"),
+        (270, 270, 142, "project compact grounded_context"),
+        (270, 490, 174, "/nao_orchestrator/planner_request"),
+        (490, 490, 206, "PlannerGate admission"),
+        (490, 710, 238, "/planner/request"),
+        (710, 710, 270, "prompt + validation"),
+        (710, 490, 302, "/intents"),
+        (490, 900, 334, "dispatch executable steps"),
+        (900, 1080, 366, "requery live evidence"),
+        (900, 490, 398, "typed skill result"),
+        (490, 710, 430, "/planner/execution_feedback"),
+        (710, 490, 462, "/planner/dialogue_act when needed"),
+        (490, 1280, 494, "/nao_orchestrator/planner_dialogue_act"),
+        (1280, 80, 526, "spoken response"),
+    ]
+    label_svg = "\n".join(
+        _svg_multiline_text(label, x, 26)
+        for label, x in labels
+    )
+    lifeline_svg = "\n".join(
+        '<line x1="%d" y1="42" x2="%d" y2="560"></line>' % (x, x)
+        for x in lifelines
+    )
+    message_svg = []
+    for x1, x2, y, text in messages:
+        marker = 'url(#arr)' if x2 >= x1 else 'url(#arr-left)'
+        message_svg.append(
+            '<line x1="%d" y1="%d" x2="%d" y2="%d" marker-end="%s"></line>'
+            % (x1, y, x2, y, marker)
+        )
+        text_x = min(x1, x2) + abs(x2 - x1) / 2
+        message_svg.append(
+            '<text x="%.1f" y="%d" text-anchor="middle">%s</text>'
+            % (text_x, y - 7, _escape(text))
+        )
+    return """
+<div class="diagram">
+  <svg viewBox="0 0 1360 590" role="img" aria-label="Runtime sequence diagram">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#111"></path>
+      </marker>
+      <marker id="arr-left" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 10 0 L 0 5 L 10 10 z" fill="#111"></path>
+      </marker>
+    </defs>
+    <g class="diagram-labels">%s</g>
+    <g class="lifelines">%s</g>
+    <g class="messages">%s</g>
+  </svg>
+  <div class="caption">Figure 1. Runtime message and responsibility sequence.</div>
+</div>
+""" % (label_svg, lifeline_svg, "\n".join(message_svg))
+
+
+def _svg_multiline_text(label: str, x: int, y: int) -> str:
+    parts = str(label).split("\n")
+    if len(parts) == 1:
+        return '<text x="%s" y="%s" text-anchor="middle">%s</text>' % (
+            x,
+            y + 6,
+            _escape(parts[0]),
+        )
+    tspans = []
+    for index, part in enumerate(parts):
+        dy = 0 if index == 0 else 24
+        tspans.append(
+            '<tspan x="%s" dy="%s">%s</tspan>' % (x, dy, _escape(part))
+        )
+    return '<text x="%s" y="%s" text-anchor="middle">%s</text>' % (
+        x,
+        y,
+        "".join(tspans),
+    )
+
+
 def render_markdown(markdown_text: str) -> tuple[str, str]:
     lines = markdown_text.splitlines()
     output: list[str] = []
@@ -59,9 +159,13 @@ def render_markdown(markdown_text: str) -> tuple[str, str]:
 
         if stripped.startswith("```"):
             if in_code:
-                code_text = _escape("\n".join(code_lines))
-                cls = f' class="language-{_escape(code_lang)}"' if code_lang else ""
-                output.append(f"<pre><code{cls}>{code_text}</code></pre>")
+                raw_code_text = "\n".join(code_lines)
+                if code_lang == "mermaid":
+                    output.append(_render_mermaid(raw_code_text))
+                else:
+                    code_text = _escape(raw_code_text)
+                    cls = f' class="language-{_escape(code_lang)}"' if code_lang else ""
+                    output.append(f"<pre><code{cls}>{code_text}</code></pre>")
                 in_code = False
                 code_lang = ""
                 code_lines = []
@@ -204,9 +308,13 @@ def render_markdown(markdown_text: str) -> tuple[str, str]:
         i += 1
 
     if in_code:
-        code_text = _escape("\n".join(code_lines))
-        cls = f' class="language-{_escape(code_lang)}"' if code_lang else ""
-        output.append(f"<pre><code{cls}>{code_text}</code></pre>")
+        raw_code_text = "\n".join(code_lines)
+        if code_lang == "mermaid":
+            output.append(_render_mermaid(raw_code_text))
+        else:
+            code_text = _escape(raw_code_text)
+            cls = f' class="language-{_escape(code_lang)}"' if code_lang else ""
+            output.append(f"<pre><code{cls}>{code_text}</code></pre>")
     if in_ul:
         output.append("</ul>")
     if in_ol:
@@ -217,8 +325,58 @@ def render_markdown(markdown_text: str) -> tuple[str, str]:
     return title, "\n".join(output)
 
 
+def _title_page(title: str) -> str:
+    escaped_title = _escape(title)
+    if "planner" not in title.lower() and "grounding" not in title.lower():
+        return ""
+    if "end-to-end" in title.lower() or "supervisor walkthrough" in title.lower():
+        heading = (
+            "Technical Memory Draft Baseline<br/>"
+            "End-to-End Planner Dialogue Flow"
+        )
+        scope = "Runtime flow, JSON contracts, replanning lineage, and dialogue relay behavior."
+        metadata_rows = [
+            '<tr><td>Document type:</td><td>Architecture and contract walkthrough</td></tr>',
+            '<tr><td>Academic year:</td><td>2025-2026</td></tr>',
+            '<tr><td>Date:</td><td>2026-06-01</td></tr>',
+        ]
+    else:
+        heading = escaped_title
+        scope = "Grounding ownership, compact context projection, and planner/skill evidence seams."
+        metadata_rows = [
+            '<tr><td>Document type:</td><td>Architecture and contract walkthrough</td></tr>',
+            '<tr><td>Academic year:</td><td>2025-2026</td></tr>',
+        ]
+    metadata_rows.extend(
+        [
+            '<tr><td>Scope:</td><td>%s</td></tr>' % _escape(scope),
+            (
+                '<tr><td>Repository:</td><td><span class="small">'
+                'https://github.com/ieverythng/nao-ros4hri-bridge'
+                '</span></td></tr>'
+            ),
+        ]
+    )
+    metadata_html = "\n        ".join(metadata_rows)
+    return f"""
+    <section class="title-page">
+      <div class="title-top">
+        <h2>Universitat Autonoma de Barcelona</h2>
+        <p>Master Degree in Modelling for Science and Engineering</p>
+        <p>Institution / Lab: IIIA-CSIC</p>
+        <h1>{heading}</h1>
+        <p>Formal architecture and contract section for technical review.</p>
+      </div>
+      <table class="title-meta">
+        {metadata_html}
+      </table>
+    </section>
+"""
+
+
 def build_html(title: str, body: str) -> str:
     page_title = _escape(title)
+    title_page = _title_page(title)
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -226,78 +384,196 @@ def build_html(title: str, body: str) -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{page_title}</title>
   <style>
+    @page {{
+      size: A4;
+      margin: 2.6cm 2.2cm 2.4cm 2.2cm;
+    }}
     :root {{
-      color-scheme: light dark;
-      --fg: #1a1a1a;
-      --muted: #5a5a5a;
-      --bg: #f8f8f8;
-      --card: #ffffff;
-      --border: #d8d8d8;
-      --accent: #0b5fff;
+      --ink: #111;
+      --muted: #3a3a3a;
+      --line: #1f1f1f;
+      --soft: #f3f3f3;
     }}
-    @media (prefers-color-scheme: dark) {{
-      :root {{
-        --fg: #e8e8e8;
-        --muted: #9e9e9e;
-        --bg: #111111;
-        --card: #1d1d1d;
-        --border: #333333;
-        --accent: #7fb4ff;
-      }}
-    }}
+    * {{ box-sizing: border-box; }}
     body {{
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
-      max-width: 58rem;
-      margin: 0 auto;
-      padding: 1.5rem 1.25rem 3rem;
-      line-height: 1.58;
-      color: var(--fg);
-      background: var(--bg);
+      margin: 0;
+      color: var(--ink);
+      background: #fff;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 11.5pt;
+      line-height: 1.42;
     }}
-    h1, h2, h3 {{ line-height: 1.25; }}
-    h2 {{ border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }}
+    .doc {{
+      max-width: 172mm;
+      margin: 0 auto;
+      padding: 0;
+    }}
+    .title-page {{
+      min-height: 247mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+    }}
+    .title-top {{
+      text-align: center;
+      margin-top: 18mm;
+    }}
+    .title-top h1 {{
+      font-size: 20pt;
+      line-height: 1.28;
+      margin: 20mm 0 8mm;
+      font-weight: 700;
+    }}
+    .title-top h2 {{
+      font-size: 13pt;
+      margin: 0 0 3mm;
+      font-weight: 600;
+      border-bottom: 0;
+    }}
+    .title-top p {{
+      margin: 2mm 0;
+      color: var(--muted);
+    }}
+    .title-meta {{
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 auto 20mm;
+      font-size: 11pt;
+    }}
+    .title-meta td {{
+      padding: 2.5mm 0;
+      vertical-align: top;
+      border: 0;
+    }}
+    .title-meta td:first-child {{
+      width: 38mm;
+      font-weight: 700;
+    }}
+    .small {{ font-size: 10.3pt; color: #222; }}
+    h1, h2, h3 {{
+      margin: 0 0 3mm;
+      line-height: 1.28;
+      font-weight: 700;
+    }}
+    h1 {{ font-size: 16.5pt; margin-top: 0; }}
+    h2 {{
+      font-size: 13pt;
+      margin-top: 9mm;
+      border-bottom: 0.5pt solid var(--line);
+      padding-bottom: 1.5mm;
+    }}
+    h3 {{
+      font-size: 11.8pt;
+      margin-top: 6mm;
+    }}
+    p {{ margin: 2.2mm 0; }}
+    ul, ol {{ margin: 2.5mm 0 2.5mm 6mm; padding: 0; }}
+    li {{ margin: 1.4mm 0; }}
     pre {{
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.8rem;
+      margin: 2.5mm 0 4mm;
+      background: var(--soft);
+      border: 0.6pt solid #666;
+      padding: 2.6mm 2.8mm;
       overflow-x: auto;
+      white-space: pre;
+      font-family: "Liberation Mono", "Courier New", monospace;
+      font-size: 9.2pt;
+      line-height: 1.3;
     }}
     code {{
-      font-family: ui-monospace, "Cascadia Code", monospace;
-      font-size: 0.9em;
-      background: rgba(0, 0, 0, 0.06);
-      padding: 0.12em 0.3em;
-      border-radius: 4px;
+      font-family: "Liberation Mono", "Courier New", monospace;
+      background: #efefef;
+      padding: 0.2mm 1mm;
+      border: 0.4pt solid #d7d7d7;
+      border-radius: 2px;
+      font-size: 10.3pt;
     }}
     pre code {{
       background: transparent;
       padding: 0;
+      border: 0;
+      font-size: inherit;
     }}
     table {{
       width: 100%;
       border-collapse: collapse;
-      background: var(--card);
-      border: 1px solid var(--border);
+      margin: 3mm 0 4mm;
+      font-size: 10.8pt;
     }}
     th, td {{
-      border: 1px solid var(--border);
-      padding: 0.45rem 0.55rem;
-      text-align: left;
+      border: 0.6pt solid #333;
+      padding: 2.2mm 2.3mm;
       vertical-align: top;
+      overflow-wrap: anywhere;
+      hyphens: auto;
     }}
-    th {{ background: rgba(0,0,0,0.04); }}
+    th {{
+      background: #fafafa;
+      text-align: left;
+      font-weight: 700;
+    }}
+    .diagram {{
+      margin: 4mm 0 5mm;
+      border: 0.6pt solid #777;
+      padding: 2mm;
+      background: #fff;
+    }}
+    .diagram pre {{
+      margin: 0;
+      border: 0;
+      background: #fcfcfc;
+      font-size: 10.2pt;
+      white-space: pre-wrap;
+    }}
+    .diagram svg {{
+      width: 100%;
+      height: auto;
+      display: block;
+    }}
+    .diagram-labels {{
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 25px;
+      font-weight: 700;
+      fill: #111;
+    }}
+    .lifelines {{
+      stroke: #999;
+      stroke-dasharray: 4 4;
+    }}
+    .messages {{
+      stroke: #111;
+      stroke-width: 1.35;
+      fill: none;
+    }}
+    .messages text {{
+      stroke: none;
+      fill: #111;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 22px;
+    }}
+    .caption {{
+      margin-top: 2mm;
+      font-size: 10.5pt;
+      color: #222;
+      font-style: italic;
+      text-align: center;
+    }}
     blockquote {{
-      border-left: 4px solid var(--accent);
-      margin: 0.7rem 0;
-      padding: 0.1rem 0.9rem;
+      border: 0.6pt solid #333;
+      background: #fcfcfc;
+      margin: 3mm 0;
+      padding: 2.6mm 3mm;
       color: var(--muted);
     }}
-    a {{ color: var(--accent); }}
+    a {{ color: #111; }}
   </style>
 </head>
 <body>
+  <main class="doc">
+{title_page}
 {body}
+  </main>
 </body>
 </html>
 """
