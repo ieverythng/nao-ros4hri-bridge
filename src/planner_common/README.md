@@ -39,10 +39,8 @@ Important normalized fields:
 - `normalized_intents`
 - `scene_targets`
 - `dialogue_context`
-- `requested_plan`
 - `grounded_context`
 - `planner_mode`
-- `interaction_mode`
 - `dialogue_turn_id`
 
 `goal_text` is the concise planner-facing objective. `user_text` remains parsed

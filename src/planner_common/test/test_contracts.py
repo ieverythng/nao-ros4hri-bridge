@@ -8,6 +8,7 @@ from planner_common.contracts import build_plan_payload
 from planner_common.contracts import extract_json_object
 from planner_common.contracts import normalize_grounded_context
 from planner_common.contracts import normalize_plan_steps
+from planner_common.contracts import project_llm_grounded_context
 from planner_common.contracts import truncate_text
 
 
@@ -19,7 +20,6 @@ def test_planner_request_defaults_missing_fields() -> None:
     assert request.goal_id.startswith('goal_')
     assert request.request_kind == 'new_goal'
     assert request.normalized_intents == ()
-    assert request.requested_plan == ()
     assert request.scene_targets == ()
     assert request.grounded_context == {
         'knowledge_snapshot': {},
@@ -36,42 +36,22 @@ def test_planner_request_keeps_supervisor_metadata() -> None:
             'parent_goal_id': 'goal_parent',
             'supersedes_goal_id': 'goal_old',
             'request_kind': 'clarification_answer',
-            'interaction_mode': 'supervised',
             'dialogue_turn_id': 'dialogue_9',
             'grounded_context': {
                 'knowledge_snapshot': {'cup': True},
                 'scene_summary': {'objects': ['cup']},
                 'state_t0': {'observer': 'myself'},
             },
-            'requested_plan': [
-                {
-                    'type': 'skill',
-                    'name': 'perform_motion',
-                    'args': {'object': 'stand'},
-                }
-            ],
         }
     )
     assert request.goal_id == 'goal_7'
     assert request.parent_goal_id == 'goal_parent'
     assert request.supersedes_goal_id == 'goal_old'
     assert request.request_kind == 'clarification_answer'
-    assert request.interaction_mode == 'supervised'
     assert request.dialogue_turn_id == 'dialogue_9'
     assert request.grounded_context['knowledge_snapshot'] == {'cup': True}
     assert request.grounded_context['scene_summary'] == {'objects': ['cup']}
     assert request.grounded_context['state_t0'] == {'observer': 'myself'}
-    assert request.requested_plan == (
-        {
-            'id': 'step_1',
-            'type': 'skill',
-            'name': 'perform_motion',
-            'args': {'object': 'stand'},
-            'requires': [],
-            'on_failure': 'fail',
-            'retry_budget': 0,
-        },
-    )
 
 
 def test_scene_summary_accepts_grounding_payload() -> None:
@@ -157,16 +137,22 @@ def test_build_plan_payload_keeps_nested_canonical_shape() -> None:
         status='executing',
         communication_policy={'emit_progress': True},
     )
-    assert payload['grounded_context']['knowledge_snapshot'] == {}
     assert payload['plan']['goal_id'] == 'goal_1'
     assert payload['plan']['plan_version'] == 4
     assert payload['plan']['status'] == 'executing'
     assert payload['plan']['scene_targets'] == ['cup']
+    assert payload['plan']['context_ref'] == {
+        'captured_at_sec': 0.0,
+        'observer': '',
+        'backend': '',
+    }
     assert payload['plan']['communication_policy']['emit_progress'] is True
     assert payload['plan']['communication_policy_source'] == ''
     assert payload['plan']['steps'][0]['args']['target_frame'] == 'cup_frame'
+    assert 'failure_reason' not in payload['plan']
     assert 'goal_id' not in payload
     assert 'scene_targets' not in payload
+    assert 'grounded_context' not in payload
 
 
 def test_normalize_grounded_context_stabilizes_missing_sections() -> None:
@@ -178,6 +164,173 @@ def test_normalize_grounded_context_stabilizes_missing_sections() -> None:
         'scene_summary': {},
         'state_t0': {'observer': 'myself'},
     }
+
+
+def test_project_llm_grounded_context_filters_backend_noise_and_relations() -> None:
+    projected = project_llm_grounded_context(
+        {
+            'scene_summary': {
+                'schema_version': 'scene_summary_v2',
+                'observer': 'myself',
+                'backend': 'emorobcare_cv',
+                'objects': [
+                    {
+                        'entity_id': 'cup_jrjic',
+                        'label': 'cup_jrjic',
+                        'kb_class': 'Tableware',
+                        'score': 0.8,
+                        'source': 'knowledge_snapshot',
+                        'center_x': 12.0,
+                        'center_y': 44.0,
+                        'last_seen_sec': 1777040000.0,
+                    }
+                ],
+                'people': [
+                    {
+                        'id': 'anonymous_person_ehfbf',
+                        'label': 'anonymous_person_ehfbf',
+                        'type': 'Human',
+                        'source': 'hri_tracked_persons',
+                    }
+                ],
+            },
+        },
+        knowledge_rows=[
+            {'entity': 'cup_jrjic', 'predicate': 'rdf:type', 'object': 'dbr:Cup'},
+            {'entity': 'cup_jrjic', 'predicate': 'isOn', 'object': 'table_1'},
+            {'entity': 'cup_jrjic', 'predicate': 'seenBy', 'object': 'myself'},
+        ],
+    )
+
+    assert projected['counts'] == {'entities': 2, 'objects': 1, 'people': 1}
+    cup = next(item for item in projected['entities'] if item['id'] == 'cup_jrjic')
+    person = next(
+        item for item in projected['entities'] if item['id'] == 'anonymous_person_ehfbf'
+    )
+    assert cup['label'] == 'cup'
+    assert cup['kind'] == 'object'
+    assert {'predicate': 'oro:isOn', 'object': 'table_1'} in cup['relations']
+    assert {'predicate': 'seenBy', 'object': 'myself'} not in cup['relations']
+    assert person['label'] is None
+    forbidden = {'schema_version', 'source', 'backend', 'center_x', 'center_y', 'score', 'last_seen_sec'}
+    assert forbidden.isdisjoint(cup.keys())
+
+
+def test_project_llm_grounded_context_keeps_state_t0_only_when_enabled() -> None:
+    raw_context = {
+        'scene_summary': {},
+        'state_t0': {'observer': 'myself', 'entities': [{'id': 'cup_1', 'type': 'Cup'}]},
+    }
+
+    assert 'state_t0' not in project_llm_grounded_context(raw_context)
+    assert project_llm_grounded_context(
+        raw_context,
+        include_state_t0=True,
+    )['state_t0'] == raw_context['state_t0']
+
+
+def test_normalize_grounded_context_accepts_compact_shape() -> None:
+    grounded_context = normalize_grounded_context(
+        {
+            'entities': [
+                {
+                    'id': 'cup_1',
+                    'label': 'cup',
+                    'kind': 'object',
+                    'class': 'Cup',
+                    'source': 'detector',
+                    'relations': [{'predicate': 'rdf:type', 'object': 'Cup'}],
+                }
+            ],
+            'counts': {'entities': 1, 'objects': 1, 'people': 0},
+        }
+    )
+
+    assert grounded_context == {
+        'entities': [
+            {
+                'id': 'cup_1',
+                'label': 'cup',
+                'kind': 'object',
+                'class': 'Cup',
+                'visible': True,
+                'relations': [{'predicate': 'rdf:type', 'object': 'Cup'}],
+            }
+        ],
+        'counts': {'entities': 1, 'objects': 1, 'people': 0},
+    }
+
+
+def test_build_plan_payload_projects_context_ref_from_grounding() -> None:
+    request = PlannerRequest.from_payload(
+        {
+            'goal_id': 'goal_42',
+            'grounded_context': {
+                'scene_summary': {
+                    'observer': 'myself',
+                    'backend': 'emorobcare_cv',
+                },
+                'state_t0': {
+                    'captured_at_sec': 1777040000.0,
+                },
+            },
+        }
+    )
+    payload = build_plan_payload(
+        request=request,
+        steps=[],
+    )
+    assert payload['plan']['context_ref'] == {
+        'captured_at_sec': 1777040000.0,
+        'observer': 'myself',
+        'backend': 'emorobcare_cv',
+    }
+    assert 'grounded_context' not in payload
+
+
+def test_project_llm_grounded_context_prioritizes_and_bounds_relations() -> None:
+    projected = project_llm_grounded_context(
+        {'scene_summary': {}},
+        knowledge_rows=[
+            {'entity': 'cup_1', 'predicate': 'rdf:type', 'object': 'dbr:Cup'},
+            {'entity': 'cup_1', 'predicate': 'rdf:type', 'object': 'dbr:Cup'},
+            {'entity': 'cup_1', 'predicate': 'dbp:name', 'object': 'blue mug'},
+            {'entity': 'cup_1', 'predicate': 'dbp:color', 'object': 'blue'},
+            {'entity': 'cup_1', 'predicate': 'oro:isAt', 'object': 'table_1'},
+            {'entity': 'cup_1', 'predicate': 'oro:isOn', 'object': 'coaster_1'},
+            {'entity': 'cup_1', 'predicate': 'oro:contains', 'object': 'water'},
+            {'entity': 'cup_1', 'predicate': 'foaf:knows', 'object': 'person_1'},
+            {'entity': 'cup_1', 'predicate': 'irrelevantPredicate', 'object': 'noise'},
+        ],
+    )
+
+    relations = projected['entities'][0]['relations']
+    assert relations == [
+        {'predicate': 'rdf:type', 'object': 'Cup'},
+        {'predicate': 'dbp:name', 'object': 'blue mug'},
+        {'predicate': 'dbp:color', 'object': 'blue'},
+        {'predicate': 'oro:isAt', 'object': 'table_1'},
+        {'predicate': 'oro:isOn', 'object': 'coaster_1'},
+        {'predicate': 'oro:contains', 'object': 'water'},
+    ]
+
+
+def test_project_llm_grounded_context_can_include_raw_relations_for_skill_payloads() -> None:
+    projected = project_llm_grounded_context(
+        {'scene_summary': {}},
+        knowledge_rows=[
+            {'entity': 'cup_1', 'predicate': 'rdf:type', 'object': 'dbr:Cup'},
+            {'entity': 'cup_1', 'predicate': 'custom:fragile', 'object': 'true'},
+        ],
+        include_raw_relations=True,
+    )
+
+    entity = projected['entities'][0]
+    assert entity['relations'] == [{'predicate': 'rdf:type', 'object': 'Cup'}]
+    assert entity['raw_relations'] == [
+        {'predicate': 'rdf:type', 'object': 'dbr:Cup'},
+        {'predicate': 'custom:fragile', 'object': 'true'},
+    ]
 
 
 def test_execution_feedback_builder_keeps_plan_retry_budget_independent_of_step() -> None:

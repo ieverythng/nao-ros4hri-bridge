@@ -45,7 +45,6 @@ _SAMPLE_REQUEST = {
         'state_t0': {},
     },
     'planner_mode': 'default',
-    'interaction_mode': 'default',
 }
 
 _SAMPLE_FEEDBACK = {

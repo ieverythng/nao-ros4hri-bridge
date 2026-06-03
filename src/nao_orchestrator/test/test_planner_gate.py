@@ -9,7 +9,6 @@ def _payload(goal_id: str, **overrides):
         'goal_id': goal_id,
         'request_kind': 'new_goal',
         'goal_text': 'stand up',
-        'requested_plan': [],
     }
     payload.update(overrides)
     return payload

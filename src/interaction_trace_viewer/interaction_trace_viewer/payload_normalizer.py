@@ -264,8 +264,12 @@ def _summarize_kb_snapshot(payload: dict) -> str:
 
 def _summarize_turn_trace_kb(payload: dict) -> str:
     grounded_context = payload.get('grounded_context', {})
+    knowledge_snapshot = {}
     scene_summary = {}
     if isinstance(grounded_context, dict):
+        maybe_knowledge_snapshot = grounded_context.get('knowledge_snapshot', {})
+        if isinstance(maybe_knowledge_snapshot, dict):
+            knowledge_snapshot = maybe_knowledge_snapshot
         maybe_scene = grounded_context.get('scene_summary', {})
         if isinstance(maybe_scene, dict):
             scene_summary = maybe_scene
@@ -281,18 +285,38 @@ def _summarize_turn_trace_kb(payload: dict) -> str:
                 object_preview.append(label)
 
     people = scene_summary.get('people', []) if isinstance(scene_summary, dict) else []
-    people_count = len(people) if isinstance(people, list) else 0
     object_count = len(objects) if isinstance(objects, list) else 0
+    people_count = len(people) if isinstance(people, list) else 0
 
-    snapshot_text = str(payload.get('knowledge_snapshot', '') or '').strip()
     parts: list[str] = []
-    if snapshot_text:
-        parts.append('kb_chars=%d' % len(snapshot_text))
+    counts = knowledge_snapshot.get('counts', {}) if isinstance(knowledge_snapshot, dict) else {}
+    if isinstance(counts, dict):
+        entities_count = int(counts.get('entities', 0) or 0)
+        objects_count = int(counts.get('objects', 0) or 0)
+        people_snapshot_count = int(counts.get('people', 0) or 0)
+        if entities_count > 0:
+            parts.append('refs=e%d/o%d/p%d' % (entities_count, objects_count, people_snapshot_count))
+
+    references = knowledge_snapshot.get('references', []) if isinstance(knowledge_snapshot, dict) else []
+    if isinstance(references, list) and references:
+        ref_preview: list[str] = []
+        for item in references[:3]:
+            if not isinstance(item, dict):
+                continue
+            label = _first_non_empty(item, 'normalized_name', 'id')
+            if label:
+                ref_preview.append(label)
+        if ref_preview:
+            parts.append('ref_preview=%s' % ','.join(ref_preview))
+
     if object_count > 0:
         suffix = (':' + ','.join(object_preview)) if object_preview else ''
         parts.append('objects=%d%s' % (object_count, suffix))
-    if people_count > 0:
-        parts.append('people=%d' % people_count)
+    parts.append('people=%d' % people_count)
+
+    snapshot_text = str(payload.get('knowledge_snapshot', '') or '').strip()
+    if snapshot_text:
+        parts.append('kb_chars=%d' % len(snapshot_text))
     return ' | '.join(parts)
 
 

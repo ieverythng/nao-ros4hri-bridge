@@ -15,6 +15,7 @@ from nao_orchestrator.intent_rules import posture_topic_fallback_for_motion
 from nao_orchestrator.intent_rules import resolve_ack_text
 from nao_orchestrator.intent_rules import resolve_say_text
 from nao_orchestrator.intent_rules import resolve_scan_result
+from nao_orchestrator.intent_rules import scan_step_should_auto_report
 from nao_orchestrator.intent_rules import is_people_scan_target
 from nao_orchestrator.intent_rules import is_unresolved_report_template
 from nao_orchestrator.intent_rules import summarize_people_detection
@@ -138,6 +139,7 @@ def test_parse_plan_envelope_accepts_dict_style_plan_metadata() -> None:
                 'goal_id': 'goal-7',
                 'plan_id': 'plan-42',
                 'plan_version': 3,
+                'context_ref': {'observer': 'myself'},
                 'status': 'executing',
                 'validation_status': 'draft',
                 'scene_targets': ['person'],
@@ -152,11 +154,22 @@ def test_parse_plan_envelope_accepts_dict_style_plan_metadata() -> None:
     assert envelope['goal_id'] == 'goal-7'
     assert envelope['plan_id'] == 'plan-42'
     assert envelope['plan_version'] == 3
+    assert envelope['context_ref'] == {'observer': 'myself'}
     assert envelope['status'] == 'executing'
     assert envelope['validation_status'] == 'draft'
     assert envelope['scene_targets'] == ['person']
     assert envelope['communication_policy']['emit_acknowledge'] is False
     assert envelope['steps'][0]['id'] == 'step_1'
+
+
+def test_scan_auto_report_only_when_no_later_speech_step() -> None:
+    plan = [
+        {'type': 'skill', 'name': 'scan', 'args': {}},
+        {'type': 'skill', 'name': 'report_result', 'args': {'summary_text': 'done'}},
+    ]
+
+    assert scan_step_should_auto_report(plan=plan, step_index=0) is False
+    assert scan_step_should_auto_report(plan=plan, step_index=1) is True
 
 
 def test_validate_execution_plan_marks_explicit_empty_plan_invalid() -> None:
@@ -315,6 +328,31 @@ def test_validate_execution_plan_accepts_report_result_skill() -> None:
     )
     assert envelope['errors'] == []
     assert envelope['steps'][0]['name'] == 'report_result'
+
+
+def test_validate_execution_plan_accepts_report_result_reusing_prior_context() -> None:
+    envelope = validate_execution_plan(
+        Intent.PRESENT_CONTENT,
+        {
+            'plan': [
+                {
+                    'type': 'skill',
+                    'name': 'scan',
+                    'args': {},
+                },
+                {
+                    'type': 'skill',
+                    'name': 'report_result',
+                    'args': {},
+                    'requires': ['step_1'],
+                },
+            ]
+        },
+    )
+
+    assert envelope['errors'] == []
+    assert envelope['steps'][1]['name'] == 'report_result'
+    assert envelope['steps'][1]['args'] == {}
 
 
 def test_unresolved_report_template_detects_evidence_placeholders() -> None:

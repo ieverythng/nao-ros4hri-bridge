@@ -596,6 +596,34 @@ def _optional_object_detection_launch(context):
                     )
                 )
             ]
+        object_detector_node = Node(
+            package="emorobcare_cv_object_detection",
+            executable="object_detector_node",
+            name="object_detector_node",
+            output="screen",
+            emulate_tty=True,
+            arguments=[
+                "--ros-args",
+                "--log-level",
+                LaunchConfiguration("object_detection_log_level"),
+            ],
+            remappings=[
+                ("/camera/image_raw", LaunchConfiguration("object_detection_input_image_topic")),
+            ],
+        )
+        object_detector_bootstrap = ExecuteProcess(
+            cmd=["bash", "-lc", _lifecycle_bootstrap_script("object_detector_node")],
+            output="screen",
+        )
+        object_detector_recovery = TimerAction(
+            period=24.0,
+            actions=[
+                ExecuteProcess(
+                    cmd=["bash", "-lc", _lifecycle_recovery_script("object_detector_node")],
+                    output="screen",
+                )
+            ],
+        )
         return [
             LogInfo(
                 msg=(
@@ -604,20 +632,9 @@ def _optional_object_detection_launch(context):
                     "use_human_radar=false, and draw_image=true when debug overlays are needed."
                 )
             ),
-            Node(
-                package="emorobcare_cv_object_detection",
-                executable="object_detector_node",
-                output="screen",
-                emulate_tty=True,
-                arguments=[
-                    "--ros-args",
-                    "--log-level",
-                    LaunchConfiguration("object_detection_log_level"),
-                ],
-                remappings=[
-                    ("/camera/image_raw", LaunchConfiguration("object_detection_input_image_topic")),
-                ],
-            ),
+            object_detector_node,
+            object_detector_bootstrap,
+            object_detector_recovery,
         ]
 
     return [

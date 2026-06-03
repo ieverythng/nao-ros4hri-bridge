@@ -34,7 +34,6 @@ Planner input should be understood as:
 
 - `goal_text`, `normalized_intents`, `scene_targets`, and `grounded_context`
   are the clean planner signals.
-- `requested_plan` is a hint/fallback, not the only way to make the planner work.
 - raw `user_text` is legacy input only and is not included in the model prompt
   payload during normal operation.
 

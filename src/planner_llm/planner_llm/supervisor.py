@@ -150,20 +150,6 @@ class PlannerSupervisor:
             state.active_plan_id = ''
             state.awaiting_user_response = False
             self._forget_plan(feedback.plan_id)
-            completion_text = state.latest_result_summary or self._completion_text(state)
-            if (
-                (completion_text or state.latest_result_summary or state.active_plan_steps)
-                and self._communication_policy_allows(state, 'emit_completion')
-                and not self._plan_already_spoke_result(state)
-            ):
-                return SupervisorOutcome(
-                    dialogue_acts=(self._dialogue_act(
-                        state,
-                        act='notify_completion',
-                        reason=feedback.reason or 'goal completed',
-                        text_hint=completion_text,
-                    ),)
-                )
             return SupervisorOutcome()
 
         if feedback.event_type in ('plan_invalid', 'step_failed'):

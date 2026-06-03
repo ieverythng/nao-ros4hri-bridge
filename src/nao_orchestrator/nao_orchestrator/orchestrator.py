@@ -38,6 +38,7 @@ from nao_orchestrator.intent_rules import (
     parse_intent_data,
     posture_topic_fallback_for_motion,
     resolve_say_text,
+    scan_step_should_auto_report,
     validate_execution_plan,
 )
 from nao_orchestrator.planner_gate import PlannerGate
@@ -901,7 +902,7 @@ class NaoOrchestrator(Node):
             )
         )
 
-        for step in plan:
+        for step_index, step in enumerate(plan):
             self._set_active_execution_step(step)
             if not self._is_execution_plan_active(goal_id, plan_id, plan_version):
                 self._publish_plan_feedback(
@@ -947,6 +948,8 @@ class NaoOrchestrator(Node):
             step_ok, reason, result_payload = self._dispatch_plan_step(
                 step,
                 fallback_data=dispatch_fallback_data,
+                plan=plan,
+                step_index=step_index,
                 on_started=_mark_step_started,
             )
             if step_ok:
@@ -1073,6 +1076,8 @@ class NaoOrchestrator(Node):
         step: dict,
         fallback_data: dict,
         *,
+        plan: list[dict] | None = None,
+        step_index: int = 0,
         on_started=None,
     ) -> tuple[bool, str, dict]:
         """Execute one step from the optional structured `Intent.data.plan`."""
@@ -1130,6 +1135,10 @@ class NaoOrchestrator(Node):
             if step_name in self._scan_skill_names:
                 return self._execute_scan_step(
                     step_args,
+                    should_auto_report=scan_step_should_auto_report(
+                        plan=plan,
+                        step_index=step_index,
+                    ),
                     on_started=on_started,
                 )
             fake_skill_name = self._resolve_fake_skill_name(step_name)
@@ -1343,6 +1352,9 @@ class NaoOrchestrator(Node):
         *,
         on_started=None,
     ) -> tuple[bool, str, dict]:
+        _ = fallback_data
+        if on_started is not None:
+            on_started()
         prompt_text = _first_non_empty_value(
             step_args,
             'question',
@@ -1373,16 +1385,6 @@ class NaoOrchestrator(Node):
             'prompt_text': prompt_text,
             'slots_needed': slots_needed,
         }
-
-        speech_ok, speech_reason = self._execute_say_plan_step(
-            {'text': prompt_text},
-            fallback_data,
-            on_started=on_started,
-        )
-        if not speech_ok:
-            payload['status'] = 'failed'
-            return False, speech_reason or 'ask_user prompt dispatch failed', payload
-
         return False, prompt_text, payload
 
     def _execute_motion_plan_step(
@@ -1430,6 +1432,7 @@ class NaoOrchestrator(Node):
         self,
         step_args: dict,
         *,
+        should_auto_report: bool = True,
         on_started=None,
     ) -> tuple[bool, str, dict]:
         if on_started is not None:
@@ -1438,9 +1441,17 @@ class NaoOrchestrator(Node):
         if self._scan_client is None or ScanScene is None:
             self._stats.dispatch_failures += 1
             return False, 'scan action client unavailable', {}
-        return self._execute_scan_action_step(step_args)
+        return self._execute_scan_action_step(
+            step_args,
+            should_auto_report=should_auto_report,
+        )
 
-    def _execute_scan_action_step(self, step_args: dict) -> tuple[bool, str, dict]:
+    def _execute_scan_action_step(
+        self,
+        step_args: dict,
+        *,
+        should_auto_report: bool = True,
+    ) -> tuple[bool, str, dict]:
         scan_args = self._scan_args_from_step(step_args)
         goal = ScanScene.Goal()
         goal.target = str(scan_args.get('target', '')).strip()
@@ -1462,7 +1473,7 @@ class NaoOrchestrator(Node):
         if not result.success:
             return False, result.reason or summary_text or 'scan action failed', payload
 
-        if self.scan_report_after_success and summary_text:
+        if self.scan_report_after_success and should_auto_report and summary_text:
             speech_ok, speech_reason = self._execute_say_plan_step({'text': summary_text}, {})
             if not speech_ok:
                 return False, speech_reason, payload

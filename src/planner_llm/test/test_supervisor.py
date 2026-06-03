@@ -28,7 +28,6 @@ class _StubEngine:
                     'plan_version': plan_version,
                     'status': status,
                     'validation_status': 'draft',
-                    'failure_reason': '',
                     'replan_hint': '',
                     'retry_budget': 1,
                     'scene_targets': list(request.scene_targets),
@@ -72,7 +71,6 @@ class _ClarifyEngine(_StubEngine):
                     'plan_version': plan_version,
                     'status': 'waiting_user',
                     'validation_status': 'draft',
-                    'failure_reason': '',
                     'replan_hint': 'clarify_user',
                     'retry_budget': 0,
                     'scene_targets': list(request.scene_targets),
@@ -451,7 +449,7 @@ def test_supervisor_reports_backend_unavailable_as_failure_not_clarification() -
     assert outcome.dialogue_acts[0].await_user_response is False
 
 
-def test_supervisor_emits_completion_dialogue_act_when_policy_allows_it() -> None:
+def test_supervisor_does_not_emit_completion_dialogue_act() -> None:
     supervisor = PlannerSupervisor(_StubEngine(), auto_replan=True)
     request = PlannerRequest.from_payload(
         {'goal_id': 'goal_done', 'request_id': 'turn_1', 'user_text': 'look ahead'}
@@ -469,12 +467,10 @@ def test_supervisor_emits_completion_dialogue_act_when_policy_allows_it() -> Non
 
     outcome = supervisor.handle_feedback(feedback)
     assert outcome.decision is None
-    assert len(outcome.dialogue_acts) == 1
-    assert outcome.dialogue_acts[0].act == 'notify_completion'
-    assert outcome.dialogue_acts[0].text_hint == 'I am looking straight ahead now.'
+    assert outcome.dialogue_acts == ()
 
 
-def test_supervisor_uses_task_specific_completion_for_motion_sequence() -> None:
+def test_supervisor_does_not_emit_motion_sequence_completion_dialogue_act() -> None:
     supervisor = PlannerSupervisor(_MotionSequenceEngine(), auto_replan=True)
     request = PlannerRequest.from_payload(
         {'goal_id': 'goal_motion_sequence', 'request_id': 'turn_1', 'user_text': 'nod'}
@@ -493,8 +489,7 @@ def test_supervisor_uses_task_specific_completion_for_motion_sequence() -> None:
     outcome = supervisor.handle_feedback(feedback)
 
     assert outcome.decision is None
-    assert len(outcome.dialogue_acts) == 1
-    assert outcome.dialogue_acts[0].text_hint == 'I am looking down now.'
+    assert outcome.dialogue_acts == ()
 
 
 def test_supervisor_suppresses_completion_when_plan_ended_with_result_say() -> None:
@@ -546,7 +541,7 @@ def test_supervisor_suppresses_completion_when_plan_ended_with_report_result() -
     assert outcome.dialogue_acts == ()
 
 
-def test_supervisor_completion_act_carries_latest_result_summary() -> None:
+def test_supervisor_does_not_emit_completion_from_latest_result_summary() -> None:
     supervisor = PlannerSupervisor(_StubEngine(), auto_replan=True)
     request = PlannerRequest.from_payload(
         {'goal_id': 'goal_scan_summary', 'request_id': 'turn_1', 'user_text': 'scan'}
@@ -583,13 +578,10 @@ def test_supervisor_completion_act_carries_latest_result_summary() -> None:
         )
     )
 
-    assert len(outcome.dialogue_acts) == 1
-    assert outcome.dialogue_acts[0].text_hint == 'I found one person.'
-    assert outcome.dialogue_acts[0].context['result_summary'] == 'I found one person.'
-    assert outcome.dialogue_acts[0].context['result_payload']['skill'] == 'scan'
+    assert outcome.dialogue_acts == ()
 
 
-def test_supervisor_prefers_scan_result_over_motion_completion_copy() -> None:
+def test_supervisor_does_not_emit_scan_result_completion_dialogue_act() -> None:
     supervisor = PlannerSupervisor(_MotionScanEngine(), auto_replan=True)
     request = PlannerRequest.from_payload(
         {'goal_id': 'goal_scan_summary', 'request_id': 'turn_1', 'user_text': 'scan for people'}
@@ -623,9 +615,7 @@ def test_supervisor_prefers_scan_result_over_motion_completion_copy() -> None:
         )
     )
 
-    assert len(outcome.dialogue_acts) == 1
-    assert outcome.dialogue_acts[0].text_hint.startswith('I completed the scan for people')
-    assert 'looking to the left' not in outcome.dialogue_acts[0].text_hint
+    assert outcome.dialogue_acts == ()
 
 
 def test_supervisor_emits_acknowledgement_dialogue_act_when_policy_allows_it() -> None:

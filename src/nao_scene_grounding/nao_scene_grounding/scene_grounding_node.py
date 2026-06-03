@@ -127,12 +127,10 @@ def _kb_spatial_statements(observer_name: str, tracked: _TrackedObject) -> list[
     return [
         f'{observer} sees {tracked.entity_id}',
         f'{tracked.entity_id} rdf:type {tracked.kb_class}',
-        f'{tracked.entity_id} inFieldOfViewOf {observer}',
         f'{tracked.entity_id} hasVisualCenterX {round(float(tracked.center_x), 3)}',
         f'{tracked.entity_id} hasVisualCenterY {round(float(tracked.center_y), 3)}',
         f'{tracked.entity_id} hasDetectionScore {round(float(tracked.score), 6)}',
         f'{tracked.entity_id} lastSeenSec {round(float(tracked.last_seen_sec), 3)}',
-        f'{tracked.entity_id} observedBy {observer}',
         f'{tracked.entity_id} detectionSource {source_token}',
     ]
 

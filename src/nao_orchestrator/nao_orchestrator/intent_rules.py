@@ -585,6 +585,9 @@ def parse_plan_envelope(data: dict) -> dict:
         'plan_version': _coerce_nonnegative_int(
             _plan_metadata_value(data, parsed_plan_dict, 'plan_version', 'version')
         ),
+        'context_ref': _coerce_dict(
+            _plan_metadata_value(data, parsed_plan_dict, 'context_ref')
+        ),
         'status': str(
             _plan_metadata_value(data, parsed_plan_dict, 'status')
             or ''
@@ -651,6 +654,20 @@ def validate_execution_plan(intent_name: str, data: dict) -> dict:
     envelope['steps'] = validated_steps
     envelope['errors'] = errors
     return envelope
+
+
+def scan_step_should_auto_report(*, plan: list[dict] | None, step_index: int) -> bool:
+    """Return whether a scan step may speak its own summary."""
+    if not isinstance(plan, list) or step_index >= len(plan) - 1:
+        return True
+    for later_step in plan[step_index + 1:]:
+        if not isinstance(later_step, dict):
+            continue
+        step_type = str(later_step.get('type', '')).strip().lower()
+        step_name = str(later_step.get('name', '')).strip().lower()
+        if step_type == 'say' or step_name in ('say', 'report_result'):
+            return False
+    return step_index >= len(plan) - 1
 
 
 def classify_motion_target(intent_name: str, data: dict) -> tuple[str, dict]:
@@ -754,6 +771,7 @@ def _empty_plan_envelope() -> dict:
         'goal_id': '',
         'plan_id': '',
         'plan_version': 0,
+        'context_ref': {},
         'status': '',
         'validation_status': '',
         'failure_reason': '',
@@ -793,6 +811,10 @@ def _plan_metadata_value(data: dict, plan_data: dict, *keys: str):
         if key in plan_data:
             return plan_data.get(key)
     return None
+
+
+def _coerce_dict(value) -> dict:
+    return dict(value) if isinstance(value, dict) else {}
 
 
 def _normalize_plan_step(step: dict, *, index: int) -> dict | None:

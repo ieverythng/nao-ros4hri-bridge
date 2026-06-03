@@ -30,6 +30,7 @@ _RULE_BASED_MOTIONS = {
     'posture_sit': 'sit',
     'posture_kneel': 'kneel',
 }
+
 @dataclass(frozen=True)
 class PlannerDecision:
     intent_name: str
@@ -107,17 +108,6 @@ class PlannerEngine:
                 )
             )
         except PlannerProviderError as err:
-            requested_plan_decision = self._requested_plan_decision(
-                request,
-                feedback=feedback,
-                goal_id=resolved_goal_id,
-                plan_version=resolved_plan_version,
-                status=status,
-                communication_policy=resolved_policy,
-                raw_model_output='planner backend unavailable: %s' % err,
-            )
-            if requested_plan_decision is not None:
-                return requested_plan_decision
             return self._backend_unavailable_decision(
                 request,
                 feedback=feedback,
@@ -171,18 +161,6 @@ class PlannerEngine:
                     raw_model_output,
                     retry_raw_model_output,
                 )
-
-        requested_plan_decision = self._requested_plan_decision(
-            request,
-            feedback=feedback,
-            goal_id=resolved_goal_id,
-            plan_version=resolved_plan_version,
-            status=status,
-            communication_policy=resolved_policy,
-            raw_model_output=raw_model_output,
-        )
-        if requested_plan_decision is not None:
-            return requested_plan_decision
 
         return self._invalid_model_output_decision(
             request,
@@ -277,6 +255,9 @@ class PlannerEngine:
             return None, validation_errors
         if not steps:
             return None, ['model output did not contain executable steps']
+        missing_report_error = self._missing_requested_report_error(request, steps)
+        if missing_report_error:
+            return None, [missing_report_error]
 
         return self._build_decision(
             request=request,
@@ -500,8 +481,6 @@ class PlannerEngine:
             'sequenced',
         ):
             return None
-        if len(request.requested_plan) > 1:
-            return None
         if len(request.normalized_intents) > 1:
             return None
 
@@ -512,6 +491,8 @@ class PlannerEngine:
         for normalized_intent in request.normalized_intents:
             motion_name = _RULE_BASED_MOTIONS.get(normalized_intent)
             if motion_name and motion_skill_name:
+                if self._request_requests_report(request):
+                    return None
                 return self._build_decision(
                     request=request,
                     feedback=feedback,
@@ -533,64 +514,7 @@ class PlannerEngine:
                     communication_policy=communication_policy,
                 )
 
-        if any(intent_name in ('greet', IntentLabels.GREET) for intent_name in request.normalized_intents):
-                return self._build_decision(
-                    request=request,
-                    feedback=feedback,
-                steps=[
-                    self._step(
-                        step_type='say',
-                        name='say',
-                        args={'text': 'Hello! What task should I perform?'},
-                    )
-                ],
-                    validation_status='draft',
-                retry_budget=retry_budget,
-                scene_targets=scene_targets,
-                mode='rule',
-                goal_id=goal_id,
-                plan_version=plan_version,
-                status=status,
-                communication_policy=communication_policy,
-            )
         return None
-
-    def _requested_plan_decision(
-        self,
-        request: PlannerRequest,
-        *,
-        feedback: ExecutionFeedback | None,
-        goal_id: str,
-        plan_version: int,
-        status: str,
-        communication_policy: dict,
-        raw_model_output: str = '',
-    ) -> PlannerDecision | None:
-        if feedback is not None or not request.requested_plan:
-            return None
-
-        steps = self._skill_registry.filter_supported_steps(
-            [dict(step) for step in request.requested_plan]
-        )
-        if len(steps) != len(request.requested_plan):
-            return None
-        if not steps:
-            return None
-
-        return self._build_decision(
-            request=request,
-            feedback=feedback,
-            steps=steps,
-            validation_status='draft',
-            retry_budget=self._default_retry_budget,
-            scene_targets=self._scene_targets_for_decision(request, feedback, {}),
-            raw_model_output=raw_model_output,
-            mode='hint',
-            goal_id=goal_id,
-            plan_version=plan_version,
-            status=status,
-            communication_policy=communication_policy,
-        )
 
     @staticmethod
     def _request_payload(request: PlannerRequest) -> dict:
@@ -604,10 +528,8 @@ class PlannerEngine:
             'normalized_intents': list(request.normalized_intents),
             'scene_targets': list(request.scene_targets),
             'dialogue_context': list(request.dialogue_context),
-            'requested_plan': list(request.requested_plan),
             'grounded_context': request.grounded_context,
             'planner_mode': request.planner_mode,
-            'interaction_mode': request.interaction_mode,
             'dialogue_turn_id': request.dialogue_turn_id,
         }
 
@@ -659,6 +581,9 @@ class PlannerEngine:
         mixed_say_error = self._mixed_say_step_error(supported_steps)
         if mixed_say_error:
             return [], [mixed_say_error]
+        report_leak_error = self._scan_report_summary_error(supported_steps)
+        if report_leak_error:
+            return [], [report_leak_error]
         return supported_steps, []
 
     def _step_rejection_reason(self, step: dict) -> str:
@@ -685,6 +610,43 @@ class PlannerEngine:
         return (
             'say steps cannot be mixed with executable steps; plan only executable '
             'robot actions and leave completion wording to chatbot_llm after execution'
+        )
+
+    @classmethod
+    def _scan_report_summary_error(cls, steps: list[dict]) -> str:
+        previous_skill_name = ''
+        for step in steps:
+            step_name = str(step.get('name', '')).strip().lower()
+            if step_name == 'report_result' and previous_skill_name == 'scan':
+                summary_text = str(
+                    (step.get('args', {}) or {}).get('summary_text', '')
+                ).strip()
+                if summary_text:
+                    return (
+                        'report_result after scan must omit summary_text so the '
+                        'executor reports the latest live scan result'
+                    )
+            if str(step.get('type', '')).strip().lower() == 'skill':
+                previous_skill_name = step_name
+        return ''
+
+    @classmethod
+    def _missing_requested_report_error(cls, request: PlannerRequest, steps: list[dict]) -> str:
+        if not cls._request_requests_report(request):
+            return ''
+        if any(str(step.get('name', '')).strip().lower() == 'report_result' for step in steps):
+            return ''
+        return (
+            'request asks for a user-facing report; include report_result after '
+            'the evidence-producing step, with empty args after scan/perception '
+            'so the executor reuses live skill evidence'
+        )
+
+    @staticmethod
+    def _request_requests_report(request: PlannerRequest) -> bool:
+        return any(
+            str(intent_name or '').strip().lower() == 'report_result'
+            for intent_name in request.normalized_intents
         )
 
     @staticmethod
