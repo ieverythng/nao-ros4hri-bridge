@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 import math
+import random
 import threading
 
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
@@ -64,6 +65,11 @@ class NaoLookAtSkill(Node):
         self.declare_parameter("reset_yaw", 0.0)
         self.declare_parameter("reset_pitch", 0.0)
         self.declare_parameter("default_speed", 0.2)
+        self.declare_parameter("social_yaw", 0.0)
+        self.declare_parameter("social_pitch", -0.08)
+        self.declare_parameter("random_yaw_abs", 0.55)
+        self.declare_parameter("random_pitch_min", -0.25)
+        self.declare_parameter("random_pitch_max", 0.25)
         self.declare_parameter("look_from_frame", "CameraTop_frame")
         self.declare_parameter("fallback_look_from_frame", "base_link")
         self.declare_parameter("tf_lookup_timeout_sec", 0.2)
@@ -81,6 +87,14 @@ class NaoLookAtSkill(Node):
         self.reset_yaw = float(self.get_parameter("reset_yaw").value)
         self.reset_pitch = float(self.get_parameter("reset_pitch").value)
         self.default_speed = float(self.get_parameter("default_speed").value)
+        self.social_yaw = float(self.get_parameter("social_yaw").value)
+        self.social_pitch = float(self.get_parameter("social_pitch").value)
+        self.random_yaw_abs = max(
+            0.0,
+            float(self.get_parameter("random_yaw_abs").value),
+        )
+        self.random_pitch_min = float(self.get_parameter("random_pitch_min").value)
+        self.random_pitch_max = float(self.get_parameter("random_pitch_max").value)
         self.look_from_frame = (
             str(self.get_parameter("look_from_frame").value).strip()
             or "CameraTop_frame"
@@ -229,6 +243,28 @@ class NaoLookAtSkill(Node):
                 self._publish_feedback(goal_handle, "completing", 1.0)
                 return self._succeed_goal(goal_handle)
 
+            if not self._has_target(request):
+                policy_pose = self._resolve_policy_pose(policy)
+                if policy_pose is None:
+                    return self._abort_goal(
+                        goal_handle,
+                        f"Policy '{policy}' requires a target frame",
+                        SkillResult.ROS_ENOTSUP,
+                    )
+                yaw, pitch, policy_status = policy_pose
+                if not self._publish_joint_pose(yaw, pitch):
+                    return self._abort_goal(
+                        goal_handle,
+                        "JointAnglesWithSpeed is unavailable; policy dispatch cannot publish",
+                        SkillResult.ROS_ENOTSUP,
+                    )
+                self._publish_feedback(goal_handle, policy_status, 0.75)
+                if policy == LookAt.Goal.GLANCE and self.glance_hold_sec > 0.0:
+                    await asyncio.sleep(self.glance_hold_sec)
+                    self._publish_reset_pose()
+                self._publish_feedback(goal_handle, "completing", 1.0)
+                return self._succeed_goal(goal_handle)
+
             if self._has_target(request):
                 resolved = self._resolve_target_angles(request)
                 if isinstance(resolved, str):
@@ -252,11 +288,6 @@ class NaoLookAtSkill(Node):
                 )
                 return self._succeed_goal(goal_handle)
 
-            return self._abort_goal(
-                goal_handle,
-                f"Policy '{policy}' is not implemented yet",
-                SkillResult.ROS_ENOTSUP,
-            )
         finally:
             self._execution_lock.release()
 
@@ -421,6 +452,39 @@ class NaoLookAtSkill(Node):
     @staticmethod
     def _clamp(value: float, lower: float, upper: float) -> float:
         return max(lower, min(upper, float(value)))
+
+    def _resolve_policy_pose(self, policy: str) -> tuple[float, float, str] | None:
+        """Map targetless look_at policies to concrete head-joint commands."""
+        clean_policy = self._normalize_policy(policy)
+        if clean_policy in ("", LookAt.Goal.AUTO):
+            return (
+                self._clamp(self.reset_yaw, -self.max_yaw_abs, self.max_yaw_abs),
+                self._clamp(self.reset_pitch, self.min_pitch, self.max_pitch),
+                "auto_reset",
+            )
+        if clean_policy == LookAt.Goal.SOCIAL:
+            return (
+                self._clamp(self.social_yaw, -self.max_yaw_abs, self.max_yaw_abs),
+                self._clamp(self.social_pitch, self.min_pitch, self.max_pitch),
+                "social_focus",
+            )
+        if clean_policy == LookAt.Goal.RANDOM:
+            random_yaw = random.uniform(-self.random_yaw_abs, self.random_yaw_abs)
+            lower_pitch = min(self.random_pitch_min, self.random_pitch_max)
+            upper_pitch = max(self.random_pitch_min, self.random_pitch_max)
+            random_pitch = random.uniform(lower_pitch, upper_pitch)
+            return (
+                self._clamp(random_yaw, -self.max_yaw_abs, self.max_yaw_abs),
+                self._clamp(random_pitch, self.min_pitch, self.max_pitch),
+                "random_scan",
+            )
+        if clean_policy == LookAt.Goal.RESET:
+            return (
+                self._clamp(self.reset_yaw, -self.max_yaw_abs, self.max_yaw_abs),
+                self._clamp(self.reset_pitch, self.min_pitch, self.max_pitch),
+                "reset",
+            )
+        return None
 
     # -------------------------------------------------------------------------
     # Diagnostics and small action helpers

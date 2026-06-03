@@ -289,16 +289,9 @@ def _summarize_turn_trace_kb(payload: dict) -> str:
     people_count = len(people) if isinstance(people, list) else 0
 
     parts: list[str] = []
-    counts = knowledge_snapshot.get('counts', {}) if isinstance(knowledge_snapshot, dict) else {}
-    if isinstance(counts, dict):
-        entities_count = int(counts.get('entities', 0) or 0)
-        objects_count = int(counts.get('objects', 0) or 0)
-        people_snapshot_count = int(counts.get('people', 0) or 0)
-        if entities_count > 0:
-            parts.append('refs=e%d/o%d/p%d' % (entities_count, objects_count, people_snapshot_count))
-
     references = knowledge_snapshot.get('references', []) if isinstance(knowledge_snapshot, dict) else []
     if isinstance(references, list) and references:
+        parts.append('refs=%d' % len(references))
         ref_preview: list[str] = []
         for item in references[:3]:
             if not isinstance(item, dict):

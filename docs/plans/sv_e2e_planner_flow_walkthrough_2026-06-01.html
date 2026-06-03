@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>End-to-End User to Planner Dialogue Flow</title>
+  <title>SV E2E Planner Flow Walkthrough</title>
   <style>
     @page {
       size: A4;
@@ -198,14 +198,13 @@
         <h2>Universitat Autonoma de Barcelona</h2>
         <p>Master Degree in Modelling for Science and Engineering</p>
         <p>Institution / Lab: IIIA-CSIC</p>
-        <h1>Technical Memory Draft Baseline<br/>End-to-End Planner Dialogue Flow</h1>
+        <h1>SV E2E Planner Flow Walkthrough</h1>
         <p>Formal architecture and contract section for technical review.</p>
       </div>
       <table class="title-meta">
         <tr><td>Document type:</td><td>Architecture and contract walkthrough</td></tr>
         <tr><td>Academic year:</td><td>2025-2026</td></tr>
-        <tr><td>Date:</td><td>2026-06-01</td></tr>
-        <tr><td>Scope:</td><td>Runtime flow, JSON contracts, replanning lineage, and dialogue relay behavior.</td></tr>
+        <tr><td>Scope:</td><td>Grounding ownership, compact context projection, and planner/skill evidence seams.</td></tr>
         <tr><td>Repository:</td><td><span class="small">https://github.com/ieverythng/nao-ros4hri-bridge</span></td></tr>
       </table>
     </section>
@@ -388,7 +387,6 @@
         &quot;class&quot;: &quot;Cup&quot;,
         &quot;visible&quot;: true,
         &quot;relations&quot;: [
-          {&quot;predicate&quot;: &quot;rdf:type&quot;, &quot;object&quot;: &quot;Cup&quot;},
           {&quot;predicate&quot;: &quot;dbp:color&quot;, &quot;object&quot;: &quot;blue&quot;},
           {&quot;predicate&quot;: &quot;oro:isOn&quot;, &quot;object&quot;: &quot;table_1&quot;}
         ]
@@ -399,12 +397,9 @@
         &quot;kind&quot;: &quot;person&quot;,
         &quot;class&quot;: &quot;Human&quot;,
         &quot;visible&quot;: true,
-        &quot;relations&quot;: [
-          {&quot;predicate&quot;: &quot;rdf:type&quot;, &quot;object&quot;: &quot;Human&quot;}
-        ]
+        &quot;relations&quot;: []
       }
-    ],
-    &quot;counts&quot;: {&quot;entities&quot;: 2, &quot;objects&quot;: 1, &quot;people&quot;: 1}
+    ]
   }
 }</code></pre>
 <p>Policy:</p>
@@ -414,13 +409,15 @@
 <li><code>kind</code> is <code>object</code> or <code>person</code>.</li>
 <li><code>class</code> is the compact semantic class.</li>
 <li><code>visible</code> is the current visual grounding flag.</li>
-<li><code>relations</code> only carries prioritized semantic predicates for LLM reasoning.</li>
+<li><code>relations</code> only carries prioritized semantic predicates for LLM reasoning when they add information beyond <code>class</code>.</li>
 </ul>
 <p>Prioritized predicates:</p>
 <ul>
-<li>Always include one <code>rdf:type</code> relation when available.</li>
+<li>Use <code>class</code> as the canonical entity type. Do not duplicate the same value as <code>rdf:type</code>.</li>
+<li>Keep <code>rdf:type</code> only when it adds distinct KB type information not already represented by <code>class</code>.</li>
 <li>Include user-meaningful simulator/KB predicates when present: <code>dbp:name</code>, <code>dbp:color</code>, <code>oro:isAt</code>, <code>oro:isOn</code>, <code>oro:contains</code>, <code>foaf:knows</code>.</li>
 <li>Drop noisy/default prompt relations such as provenance, detector score, coordinates, backend, source, and <code>last_seen_*</code>.</li>
+<li>Do not emit <code>counts</code>; prompts should inspect the visible <code>entities</code> list directly.</li>
 <li>Keep raw triples available to skill-local execution paths when a skill needs exact RDF.</li>
 </ul>
 <hr />
@@ -463,10 +460,9 @@
         &quot;kind&quot;: &quot;person&quot;,
         &quot;class&quot;: &quot;Human&quot;,
         &quot;visible&quot;: true,
-        &quot;relations&quot;: [{&quot;predicate&quot;: &quot;rdf:type&quot;, &quot;object&quot;: &quot;Human&quot;}]
+        &quot;relations&quot;: []
       }
-    ],
-    &quot;counts&quot;: {&quot;entities&quot;: 1, &quot;objects&quot;: 0, &quot;people&quot;: 1}
+    ]
   },
   &quot;planner_mode&quot;: &quot;default&quot;,
   &quot;dialogue_turn_id&quot;: &quot;role:turn&quot;

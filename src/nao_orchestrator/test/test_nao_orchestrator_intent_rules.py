@@ -192,8 +192,21 @@ def test_validate_execution_plan_rejects_invalid_look_at_step() -> None:
     )
     assert envelope['steps'] == []
     assert envelope['errors'] == [
-        'step_1: look_at step is missing target_frame or reset policy'
+        'step_1: look_at step is missing target_frame or supported policy'
     ]
+
+
+def test_validate_execution_plan_accepts_targetless_look_at_policy() -> None:
+    envelope = validate_execution_plan(
+        Intent.PRESENT_CONTENT,
+        {
+            'plan': [
+                {'type': 'look_at', 'args': {'policy': 'social'}},
+            ]
+        },
+    )
+    assert envelope['errors'] == []
+    assert envelope['steps'][0]['args'] == {'policy': 'social'}
 
 
 def test_validate_execution_plan_accepts_look_at_target_alias() -> None:

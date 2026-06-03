@@ -1,4 +1,6 @@
-from nao_look_at.skill_impl import NaoLookAtSkill
+import pytest
+
+NaoLookAtSkill = pytest.importorskip("nao_look_at.skill_impl").NaoLookAtSkill
 
 
 class _Header:
@@ -54,3 +56,30 @@ def test_resolve_target_vector_uses_direct_reference_frame_without_tf():
     skill.minimum_target_distance_m = 0.05
     resolved = skill._resolve_target_vector(_Goal(frame_id="base_link", x=1.0, y=0.2, z=0.1))
     assert resolved == (1.0, 0.2, 0.1, "base_link")
+
+
+def test_resolve_policy_pose_auto_resets():
+    skill = NaoLookAtSkill.__new__(NaoLookAtSkill)
+    skill.reset_yaw = 0.0
+    skill.reset_pitch = 0.0
+    skill.max_yaw_abs = 1.5
+    skill.min_pitch = -0.67
+    skill.max_pitch = 0.51
+
+    assert skill._resolve_policy_pose("auto") == (0.0, 0.0, "auto_reset")
+
+
+def test_resolve_policy_pose_random_is_bounded():
+    skill = NaoLookAtSkill.__new__(NaoLookAtSkill)
+    skill.random_yaw_abs = 0.2
+    skill.random_pitch_min = -0.1
+    skill.random_pitch_max = 0.1
+    skill.max_yaw_abs = 1.5
+    skill.min_pitch = -0.67
+    skill.max_pitch = 0.51
+
+    yaw, pitch, label = skill._resolve_policy_pose("random")
+
+    assert label == "random_scan"
+    assert -0.2 <= yaw <= 0.2
+    assert -0.1 <= pitch <= 0.1

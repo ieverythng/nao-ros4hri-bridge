@@ -10,8 +10,11 @@ from planner_common import PlannerRequest
 from planner_common import build_plan_payload
 from planner_common import extract_json_object
 from planner_common import IntentLabels
+from planner_common import missing_requested_report_error
 from planner_common import normalize_communication_policy
 from planner_common import normalize_plan_steps
+from planner_common import request_requests_report
+from planner_common import scan_report_summary_error
 
 from planner_llm.providers import BasePlannerProvider
 from planner_llm.providers import PlannerProviderError
@@ -255,7 +258,7 @@ class PlannerEngine:
             return None, validation_errors
         if not steps:
             return None, ['model output did not contain executable steps']
-        missing_report_error = self._missing_requested_report_error(request, steps)
+        missing_report_error = missing_requested_report_error(request, steps)
         if missing_report_error:
             return None, [missing_report_error]
 
@@ -491,7 +494,7 @@ class PlannerEngine:
         for normalized_intent in request.normalized_intents:
             motion_name = _RULE_BASED_MOTIONS.get(normalized_intent)
             if motion_name and motion_skill_name:
-                if self._request_requests_report(request):
+                if request_requests_report(request):
                     return None
                 return self._build_decision(
                     request=request,
@@ -581,7 +584,7 @@ class PlannerEngine:
         mixed_say_error = self._mixed_say_step_error(supported_steps)
         if mixed_say_error:
             return [], [mixed_say_error]
-        report_leak_error = self._scan_report_summary_error(supported_steps)
+        report_leak_error = scan_report_summary_error(supported_steps)
         if report_leak_error:
             return [], [report_leak_error]
         return supported_steps, []
@@ -610,43 +613,6 @@ class PlannerEngine:
         return (
             'say steps cannot be mixed with executable steps; plan only executable '
             'robot actions and leave completion wording to chatbot_llm after execution'
-        )
-
-    @classmethod
-    def _scan_report_summary_error(cls, steps: list[dict]) -> str:
-        previous_skill_name = ''
-        for step in steps:
-            step_name = str(step.get('name', '')).strip().lower()
-            if step_name == 'report_result' and previous_skill_name == 'scan':
-                summary_text = str(
-                    (step.get('args', {}) or {}).get('summary_text', '')
-                ).strip()
-                if summary_text:
-                    return (
-                        'report_result after scan must omit summary_text so the '
-                        'executor reports the latest live scan result'
-                    )
-            if str(step.get('type', '')).strip().lower() == 'skill':
-                previous_skill_name = step_name
-        return ''
-
-    @classmethod
-    def _missing_requested_report_error(cls, request: PlannerRequest, steps: list[dict]) -> str:
-        if not cls._request_requests_report(request):
-            return ''
-        if any(str(step.get('name', '')).strip().lower() == 'report_result' for step in steps):
-            return ''
-        return (
-            'request asks for a user-facing report; include report_result after '
-            'the evidence-producing step, with empty args after scan/perception '
-            'so the executor reuses live skill evidence'
-        )
-
-    @staticmethod
-    def _request_requests_report(request: PlannerRequest) -> bool:
-        return any(
-            str(intent_name or '').strip().lower() == 'report_result'
-            for intent_name in request.normalized_intents
         )
 
     @staticmethod

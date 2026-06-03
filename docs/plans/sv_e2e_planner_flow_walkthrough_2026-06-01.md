@@ -121,7 +121,6 @@ The LLM-facing world state is a concise scene graph, not a raw RDF dump.
         "class": "Cup",
         "visible": true,
         "relations": [
-          {"predicate": "rdf:type", "object": "Cup"},
           {"predicate": "dbp:color", "object": "blue"},
           {"predicate": "oro:isOn", "object": "table_1"}
         ]
@@ -132,12 +131,9 @@ The LLM-facing world state is a concise scene graph, not a raw RDF dump.
         "kind": "person",
         "class": "Human",
         "visible": true,
-        "relations": [
-          {"predicate": "rdf:type", "object": "Human"}
-        ]
+        "relations": []
       }
-    ],
-    "counts": {"entities": 2, "objects": 1, "people": 1}
+    ]
   }
 }
 ```
@@ -149,13 +145,15 @@ Policy:
 - `kind` is `object` or `person`.
 - `class` is the compact semantic class.
 - `visible` is the current visual grounding flag.
-- `relations` only carries prioritized semantic predicates for LLM reasoning.
+- `relations` only carries prioritized semantic predicates for LLM reasoning when they add information beyond `class`.
 
 Prioritized predicates:
 
-- Always include one `rdf:type` relation when available.
+- Use `class` as the canonical entity type. Do not duplicate the same value as `rdf:type`.
+- Keep `rdf:type` only when it adds distinct KB type information not already represented by `class`.
 - Include user-meaningful simulator/KB predicates when present: `dbp:name`, `dbp:color`, `oro:isAt`, `oro:isOn`, `oro:contains`, `foaf:knows`.
 - Drop noisy/default prompt relations such as provenance, detector score, coordinates, backend, source, and `last_seen_*`.
+- Do not emit `counts`; prompts should inspect the visible `entities` list directly.
 - Keep raw triples available to skill-local execution paths when a skill needs exact RDF.
 
 ---
@@ -207,10 +205,9 @@ Transport-level envelope shape as serialized in the `Intent.data` field:
         "kind": "person",
         "class": "Human",
         "visible": true,
-        "relations": [{"predicate": "rdf:type", "object": "Human"}]
+        "relations": []
       }
-    ],
-    "counts": {"entities": 1, "objects": 0, "people": 1}
+    ]
   },
   "planner_mode": "default",
   "dialogue_turn_id": "role:turn"

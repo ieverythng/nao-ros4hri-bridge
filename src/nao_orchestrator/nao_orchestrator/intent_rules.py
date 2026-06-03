@@ -8,6 +8,7 @@ import re
 
 from planner_common.contracts import PLAN_FAILURE_POLICIES
 from planner_common.contracts import PLAN_STEP_TYPES
+from planner_common.contracts import coerce_optional_float
 from planner_common.contracts import IntentLabels as Intent
 from planner_common.skill_registry_bridge import merge_fake_skill_aliases
 from planner_common.skill_registry_bridge import merge_scan_skill_names
@@ -95,6 +96,11 @@ _LOOK_AT_RESET_TARGET_ALIASES = {
     'center',
     'forward',
     'straight',
+}
+_LOOK_AT_TARGETLESS_POLICIES = {
+    'auto',
+    'random',
+    'social',
 }
 
 _REPLAY_MOTION_MAP = {
@@ -505,7 +511,7 @@ def _normalize_scan_objects(raw_objects) -> list[dict]:
             'source': str(item.get('source', 'scene_summary')).strip() or 'scene_summary',
         }
         for numeric_key in ('center_x', 'center_y', 'confidence', 'last_seen_sec', 'distance_m'):
-            numeric_value = _coerce_optional_float(item.get(numeric_key))
+            numeric_value = coerce_optional_float(item.get(numeric_key))
             if numeric_value is not None:
                 entry[numeric_key] = numeric_value
         normalized.append(entry)
@@ -734,19 +740,12 @@ def _coerce_nonnegative_int(value) -> int:
         return 0
 
 
-def _coerce_optional_float(value) -> float | None:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-
 def _plan_look_at_error(step_args: dict) -> str:
     normalized_args = _normalize_look_at_step_args(step_args)
     policy = str(
         normalized_args.get('policy', normalized_args.get('object', ''))
     ).strip().lower()
-    if policy in ('reset', 'look_at_reset'):
+    if policy in ('reset', 'look_at_reset') or policy in _LOOK_AT_TARGETLESS_POLICIES:
         return ''
     if _first_non_empty(
         normalized_args.get('target_frame', ''),
@@ -755,7 +754,7 @@ def _plan_look_at_error(step_args: dict) -> str:
         normalized_args.get('entity_id', ''),
     ):
         return ''
-    return 'look_at step is missing target_frame or reset policy'
+    return 'look_at step is missing target_frame or supported policy'
 
 
 def _first_non_empty(*values: str) -> str:

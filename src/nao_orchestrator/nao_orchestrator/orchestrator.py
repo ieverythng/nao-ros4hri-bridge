@@ -954,8 +954,13 @@ class NaoOrchestrator(Node):
             )
             if step_ok:
                 executed_any = True
-                latest_result_summary = str(reason or '').strip()
                 latest_result_payload = dict(result_payload or {})
+                latest_result_summary = _first_non_empty_value(
+                    latest_result_payload,
+                    'summary_text',
+                    'result_summary',
+                    'message',
+                ) or str(reason or '').strip()
                 if not step_started:
                     _mark_step_started()
                 self._publish_plan_feedback(
@@ -1170,6 +1175,15 @@ class NaoOrchestrator(Node):
                 self._stats.dispatched_look_at += 1
                 return True, ''
             return False, reason or 'look_at reset dispatch failed'
+        if policy in ('random', 'social', 'auto'):
+            success, reason = self._execute_look_at_policy_step(
+                policy=policy,
+                on_started=on_started,
+            )
+            if success:
+                self._stats.dispatched_look_at += 1
+                return True, ''
+            return False, reason or 'look_at policy dispatch failed'
         target_frame = str(
             step_args.get(
                 'target_frame',
@@ -1185,10 +1199,10 @@ class NaoOrchestrator(Node):
         if not target_frame:
             self._stats.dispatch_failures += 1
             self.get_logger().warn(
-                'Planned look_at step is missing a target frame or reset policy: %s'
+                'Planned look_at step is missing a target frame or supported policy: %s'
                 % step_args
             )
-            return False, 'look_at step missing target frame or reset policy'
+            return False, 'look_at step missing target frame or supported policy'
 
         success, reason = self._execute_look_at_target_step(
             frame_id=target_frame,
@@ -1797,6 +1811,29 @@ class NaoOrchestrator(Node):
             )
             return True, ''
         return False, result.reason or 'look_at target dispatch failed'
+
+    def _execute_look_at_policy_step(
+        self,
+        *,
+        policy: str,
+        on_started=None,
+    ) -> tuple[bool, str]:
+        goal = LookAt.Goal()
+        goal.policy = str(policy).strip().lower()
+        result = self._execute_action_step(
+            client=self._look_at_client,
+            goal=goal,
+            wait_sec=self.look_at_wait_sec,
+            result_timeout_sec=self.look_at_result_timeout_sec,
+            description='look_at_policy',
+            on_started=on_started,
+        )
+        if result.success:
+            self.get_logger().info(
+                'ORCH LOOK_AT_DISPATCH | policy=%s' % (goal.policy or 'auto')
+            )
+            return True, ''
+        return False, result.reason or 'look_at policy dispatch failed'
 
     def _execute_action_step(
         self,

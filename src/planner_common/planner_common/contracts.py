@@ -72,7 +72,7 @@ _DEFAULT_GROUNDED_CONTEXT = {
     'scene_summary': {},
     'state_t0': {},
 }
-_COMPACT_GROUNDED_CONTEXT_KEYS = ('entities', 'counts')
+_COMPACT_GROUNDED_CONTEXT_KEYS = ('entities',)
 _LLM_RELATION_PREDICATE_PRIORITY = (
     'rdf:type',
     'dbp:name',
@@ -121,6 +121,7 @@ _LOOK_AT_RESET_TARGET_ALIASES = frozenset(
         'straight',
     )
 )
+_LOOK_AT_TARGETLESS_POLICIES = frozenset(('auto', 'random', 'social'))
 
 _FROZEN_DATACLASS_KWARGS = {'frozen': True}
 if sys.version_info >= (3, 10):  # pragma: no branch - local macOS uses Python 3.9
@@ -227,6 +228,54 @@ def _coerce_float(value, fallback: float = 0.0) -> float:
         return float(fallback)
 
 
+def coerce_optional_float(value) -> float | None:
+    """Coerce a value to float, returning None on failure."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def request_requests_report(request) -> bool:
+    """Return True if the request includes a report_result intent."""
+    return any(
+        str(intent_name or '').strip().lower() == 'report_result'
+        for intent_name in getattr(request, 'normalized_intents', ())
+    )
+
+
+def scan_report_summary_error(steps: list[dict]) -> str:
+    """Check that report_result after scan omits summary_text."""
+    previous_skill_name = ''
+    for step in steps:
+        step_name = str(step.get('name', '')).strip().lower()
+        if step_name == 'report_result' and previous_skill_name == 'scan':
+            summary_text = str(
+                (step.get('args', {}) or {}).get('summary_text', '')
+            ).strip()
+            if summary_text:
+                return (
+                    'report_result after scan must omit summary_text so the '
+                    'executor reports the latest live scan result'
+                )
+        if str(step.get('type', '')).strip().lower() == 'skill':
+            previous_skill_name = step_name
+    return ''
+
+
+def missing_requested_report_error(request, steps: list[dict]) -> str:
+    """Check that a report-asking request includes a report_result step."""
+    if not request_requests_report(request):
+        return ''
+    if any(str(step.get('name', '')).strip().lower() == 'report_result' for step in steps):
+        return ''
+    return (
+        'request asks for a user-facing report; include report_result after '
+        'the evidence-producing step, with empty args after scan/perception '
+        'so the executor reuses live skill evidence'
+    )
+
+
 def _first_non_empty(*values) -> str:
     for value in values:
         clean_value = str(value or '').strip()
@@ -283,6 +332,13 @@ def _normalize_look_at_args(step_args: dict) -> dict:
     ).strip().lower()
     if policy in _LOOK_AT_RESET_POLICY_ALIASES:
         normalized['policy'] = 'reset'
+        normalized.pop('target_frame', None)
+        normalized.pop('frame_id', None)
+        normalized.pop('target', None)
+        normalized.pop('entity_id', None)
+        return normalized
+    if policy in _LOOK_AT_TARGETLESS_POLICIES:
+        normalized['policy'] = policy
         normalized.pop('target_frame', None)
         normalized.pop('frame_id', None)
         normalized.pop('target', None)
@@ -353,7 +409,6 @@ def normalize_grounded_context(value) -> dict:
                 for item in entities
                 if isinstance(item, dict)
             ],
-            'counts': _normalize_grounded_counts(raw_payload.get('counts', {}), entities),
         }
         state_t0 = raw_payload.get('state_t0', {})
         if isinstance(state_t0, dict) and state_t0:
@@ -388,10 +443,6 @@ def project_llm_grounded_context(
                 if isinstance(item, dict)
             ],
         }
-        compact['counts'] = _normalize_grounded_counts(
-            normalized.get('counts', {}),
-            compact['entities'],
-        )
         if include_state_t0 and isinstance(normalized.get('state_t0'), dict):
             compact['state_t0'] = dict(normalized.get('state_t0', {}))
         return compact
@@ -412,7 +463,6 @@ def project_llm_grounded_context(
             kind='object',
             entity_class=item.get('kb_class', item.get('type', '')),
         )
-        _add_relation(entity, 'rdf:type', entity.get('class', ''))
         if include_planner_details:
             _copy_optional_planner_details(
                 entity,
@@ -431,7 +481,6 @@ def project_llm_grounded_context(
             kind='person',
             entity_class=item.get('type', item.get('kb_class', 'Human')) or 'Human',
         )
-        _add_relation(entity, 'rdf:type', entity.get('class', 'Human') or 'Human')
         if include_planner_details:
             _copy_optional_planner_details(
                 entity,
@@ -451,7 +500,6 @@ def project_llm_grounded_context(
             kind=kind,
             entity_class=item.get('type', item.get('kb_class', '')),
         )
-        _add_relation(entity, 'rdf:type', entity.get('class', ''))
         if include_planner_details:
             _copy_optional_planner_details(
                 entity,
@@ -470,7 +518,6 @@ def project_llm_grounded_context(
             kind=_normalized_kind('', item.get('type', '')),
             entity_class=item.get('type', ''),
         )
-        _add_relation(entity, 'rdf:type', entity.get('class', ''))
 
     for row in knowledge_rows or []:
         if isinstance(row, dict):
@@ -484,10 +531,7 @@ def project_llm_grounded_context(
         (_finalize_compact_entity(item) for item in entities_by_id.values()),
         key=lambda item: (item.get('kind', ''), item.get('id', '')),
     )
-    compact = {
-        'entities': entities,
-        'counts': _counts_from_entities(entities),
-    }
+    compact = {'entities': entities}
     if include_state_t0 and isinstance(state_t0, dict) and state_t0:
         compact['state_t0'] = dict(state_t0)
     return compact
@@ -535,7 +579,10 @@ def _normalize_grounded_entity(
         'kind': kind,
         'class': str(item.get('class', item.get('type', ''))).strip(),
         'visible': coerce_bool(item.get('visible', True)),
-        'relations': _normalize_relations(item.get('relations', [])),
+        'relations': _normalize_relations(
+            item.get('relations', []),
+            entity_class=item.get('class', item.get('type', '')),
+        ),
     }
     raw_relations = item.get('raw_relations', [])
     if include_raw_relations and isinstance(raw_relations, list) and raw_relations:
@@ -550,22 +597,18 @@ def _normalize_grounded_entity(
     }
 
 
-def _normalize_grounded_counts(counts, entities: list) -> dict:
-    if isinstance(counts, dict):
-        return {
-            'entities': _coerce_nonnegative_int(counts.get('entities', len(entities))),
-            'objects': _coerce_nonnegative_int(counts.get('objects', 0)),
-            'people': _coerce_nonnegative_int(counts.get('people', 0)),
-        }
-    return _counts_from_entities(entities)
-
-
-def _normalize_relations(value, *, max_relations: int = _MAX_LLM_RELATIONS_PER_ENTITY) -> list[dict]:
+def _normalize_relations(
+    value,
+    *,
+    max_relations: int = _MAX_LLM_RELATIONS_PER_ENTITY,
+    entity_class='',
+) -> list[dict]:
     if not isinstance(value, list):
         return []
     relations_by_key = {}
     seen = set()
     seen_rdf_type = False
+    compact_class = _compact_term(entity_class)
     for item in value:
         if not isinstance(item, dict):
             continue
@@ -578,6 +621,8 @@ def _normalize_relations(value, *, max_relations: int = _MAX_LLM_RELATIONS_PER_E
         if predicate not in _LLM_RELATION_PREDICATE_PRIORITY:
             continue
         if predicate == 'rdf:type':
+            if compact_class and _compact_term(obj) == compact_class:
+                continue
             if seen_rdf_type:
                 continue
             seen_rdf_type = True
@@ -762,7 +807,7 @@ def _merge_knowledge_row_relation(
         entity_id,
         label=_display_entity_label(entity_id, entity_id),
         kind=_normalized_kind('', obj if predicate in ('rdf:type', 'type') else ''),
-        entity_class=obj if predicate in ('rdf:type', 'type') else '',
+        entity_class=_compact_term(obj) if predicate in ('rdf:type', 'type') else '',
     )
     normalized_predicate = _normalize_relation_predicate(predicate)
     if normalized_predicate == 'rdf:type' and not entity.get('class'):
@@ -811,7 +856,10 @@ def _finalize_compact_entity(entity: dict) -> dict:
         'kind': str(entity.get('kind', 'object')).strip() or 'object',
         'class': str(entity.get('class', '')).strip(),
         'visible': coerce_bool(entity.get('visible', True)),
-        'relations': _normalize_relations(entity.get('relations', [])),
+        'relations': _normalize_relations(
+            entity.get('relations', []),
+            entity_class=entity.get('class', ''),
+        ),
     }
     raw_relations = _normalize_raw_relations(entity.get('raw_relations', []))
     if raw_relations:
@@ -823,21 +871,6 @@ def _finalize_compact_entity(entity: dict) -> dict:
         key: value
         for key, value in finalized.items()
         if key == 'label' or value not in ('', [], {})
-    }
-
-
-def _counts_from_entities(entities: list) -> dict:
-    clean_entities = [item for item in entities if isinstance(item, dict)]
-    people = sum(
-        1 for item in clean_entities if str(item.get('kind', '')).strip() == 'person'
-    )
-    objects = sum(
-        1 for item in clean_entities if str(item.get('kind', '')).strip() == 'object'
-    )
-    return {
-        'entities': len(clean_entities),
-        'objects': objects,
-        'people': people,
     }
 
 

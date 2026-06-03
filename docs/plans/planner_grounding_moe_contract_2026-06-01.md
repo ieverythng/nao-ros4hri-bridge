@@ -40,13 +40,11 @@ This gives a practical MoE pattern without introducing a separate coordinator no
         "class": "Cup",
         "visible": true,
         "relations": [
-          {"predicate": "rdf:type", "object": "Cup"},
           {"predicate": "dbp:color", "object": "blue"},
           {"predicate": "oro:isOn", "object": "table_1"}
         ]
       }
-    ],
-    "counts": {"entities": 1, "objects": 1, "people": 0}
+    ]
   }
 }
 ```
@@ -58,13 +56,15 @@ Entity fields:
 - `kind`: `object` or `person`.
 - `class`: compact KB/detector class.
 - `visible`: current scene visibility.
-- `relations`: bounded semantic relation list.
+- `relations`: bounded semantic relation list for facts not already represented by `class`.
 
 Relation policy:
 
-- Always include one `rdf:type` relation when available.
+- Use `class` as the canonical entity type. Do not repeat the same type as `{"predicate":"rdf:type"}`.
+- Keep an `rdf:type` relation only when it adds distinct KB type information not already represented by `class`.
 - Include user-meaningful simulator/KB predicates when present: `dbp:name`, `dbp:color`, `oro:isAt`, `oro:isOn`, `oro:contains`, `foaf:knows`.
 - Drop non-prompt details such as `source`, `backend`, coordinates, confidence scores, raw detector provenance, and `last_seen_*`.
+- Do not emit `counts`; planners and prompts should reason over the visible `entities` array directly.
 - Preserve exact triples in skill-local/raw execution contexts when needed.
 
 ## Projection Pipeline
@@ -102,8 +102,7 @@ Projection rules:
   "scene_targets": [],
   "dialogue_context": [],
   "grounded_context": {
-    "entities": [],
-    "counts": {"entities": 0, "objects": 0, "people": 0}
+    "entities": []
   },
   "planner_mode": "default",
   "dialogue_turn_id": "role:turn"
