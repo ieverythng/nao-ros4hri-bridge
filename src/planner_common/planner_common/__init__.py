@@ -16,7 +16,11 @@ from planner_common.contracts import build_dialogue_act_payload
 from planner_common.contracts import build_execution_feedback_payload
 from planner_common.contracts import build_plan_payload
 from planner_common.contracts import coerce_bool
+from planner_common.contracts import coerce_optional_float
 from planner_common.contracts import coerce_str_list
+from planner_common.contracts import missing_requested_report_error
+from planner_common.contracts import request_requests_report
+from planner_common.contracts import scan_report_summary_error
 from planner_common.contracts import extract_json_object
 from planner_common.contracts import grounded_context_to_context_ref
 from planner_common.contracts import make_goal_id
@@ -58,7 +62,11 @@ __all__ = [
     'build_execution_feedback_payload',
     'build_plan_payload',
     'coerce_bool',
+    'coerce_optional_float',
     'coerce_str_list',
+    'missing_requested_report_error',
+    'request_requests_report',
+    'scan_report_summary_error',
     'extract_json_object',
     'grounded_context_to_context_ref',
     'load_exported_skill_manifests',
