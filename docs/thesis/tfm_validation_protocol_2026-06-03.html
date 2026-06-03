@@ -1,0 +1,265 @@
+            <!doctype html>
+            <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <title>TFM Validation and Experiment Protocol</title>
+              <style>
+@page {
+  size: A4;
+  margin: 2.6cm 2.2cm 2.4cm 2.2cm;
+}
+:root {
+  --ink: #111;
+  --muted: #3a3a3a;
+  --line: #1f1f1f;
+  --soft: #f3f3f3;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  color: var(--ink);
+  background: #fff;
+  font-family: "Liberation Serif", "Times New Roman", Times, serif;
+  font-size: 11.5pt;
+  line-height: 1.42;
+}
+.doc {
+  max-width: 172mm;
+  margin: 0 auto;
+  padding: 0;
+}
+.title-page {
+  min-height: 247mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  page-break-after: always;
+}
+.title-top {
+  text-align: center;
+  margin-top: 18mm;
+}
+.title-top h1 {
+  font-size: 20pt;
+  line-height: 1.28;
+  margin: 20mm 0 8mm;
+  font-weight: 700;
+}
+.title-top h2 {
+  font-size: 13pt;
+  margin: 0 0 3mm;
+  font-weight: 600;
+}
+.title-top p {
+  margin: 2mm 0;
+  color: var(--muted);
+}
+.title-meta {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 auto 20mm;
+  font-size: 11pt;
+}
+.title-meta td {
+  padding: 2.5mm 0;
+  vertical-align: top;
+  border: 0;
+}
+.title-meta td:first-child {
+  width: 38mm;
+  font-weight: 700;
+}
+h1, h2, h3 {
+  margin: 0 0 3mm;
+  line-height: 1.28;
+  font-weight: 700;
+}
+h1 { font-size: 16.5pt; margin-top: 0; }
+h2 {
+  font-size: 13pt;
+  margin-top: 9mm;
+  border-bottom: 0.5pt solid var(--line);
+  padding-bottom: 1.5mm;
+}
+h3 {
+  font-size: 11.8pt;
+  margin-top: 6mm;
+}
+p { margin: 2.2mm 0; }
+ul, ol { margin: 2.5mm 0 2.5mm 6mm; padding: 0; }
+li { margin: 1.4mm 0; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 3mm 0 4mm;
+  font-size: 10.8pt;
+}
+th, td {
+  border: 0.6pt solid #333;
+  padding: 2.2mm 2.3mm;
+  vertical-align: top;
+}
+th {
+  background: #fafafa;
+  text-align: left;
+  font-weight: 700;
+}
+.note {
+  border: 0.6pt solid #333;
+  background: #fcfcfc;
+  padding: 2.6mm 3mm;
+  margin: 3mm 0;
+  font-size: 10.8pt;
+}
+code.inline, code {
+  font-family: "Liberation Mono", "Courier New", monospace;
+  background: #efefef;
+  padding: 0.2mm 1mm;
+  border: 0.4pt solid #d7d7d7;
+  border-radius: 2px;
+  font-size: 10.3pt;
+}
+pre {
+  margin: 2.5mm 0 4mm;
+  background: var(--soft);
+  border: 0.6pt solid #666;
+  padding: 2.6mm 2.8mm;
+  overflow: auto;
+  font-family: "Liberation Mono", "Courier New", monospace;
+  font-size: 9.2pt;
+  line-height: 1.3;
+  white-space: pre-wrap;
+}
+.diagram {
+  margin: 4mm 0 5mm;
+  border: 0.6pt solid #777;
+  padding: 2mm;
+  background: #fff;
+}
+.diagram svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.caption {
+  margin-top: 2mm;
+  font-size: 10pt;
+  color: #222;
+  font-style: italic;
+  text-align: center;
+}
+.small { font-size: 10.3pt; color: #222; }
+</style>
+            </head>
+            <body>
+              <main class="doc">
+                <section class="title-page">
+                  <div class="title-top">
+                    <h2>Universitat Autonoma de Barcelona</h2>
+                    <p>Master Degree in Modelling for Science and Engineering</p>
+                    <p>Institution / Lab: IIIA-CSIC</p>
+                    <h1>TFM Validation and Experiment Protocol<br/>Scenario Matrix, Metrics, and Trace Evidence</h1>
+                    <p>Technical thesis artifact generated from the active NAO ROS4HRI planner repository.</p>
+                  </div>
+                  <table class="title-meta">
+                    <tr><td>Document type:</td><td>Thesis architecture and implementation reference</td></tr>
+                    <tr><td>Academic year:</td><td>2025-2026</td></tr>
+                    <tr><td>Date:</td><td>2026-06-03</td></tr>
+                    <tr><td>Scope:</td><td>Validation methodology, experiment design, metrics, ablations, and evidence capture.</td></tr>
+                    <tr><td>Repository:</td><td><span class="small">https://github.com/ieverythng/nao-ros4hri-bridge</span></td></tr>
+                  </table>
+                </section>
+                <h1>TFM Validation and Experiment Protocol</h1>
+<h2>Purpose</h2>
+<p>This document converts the implementation into a thesis validation protocol. It is intended to support the methodology, results, and discussion chapters by making experiments repeatable and by naming the evidence that each run must collect.</p>
+<h2>Validation Thesis</h2>
+<p>The system should be evaluated not only by whether the robot completes a task, but by whether the architecture preserves the intended boundaries while doing so. A successful planner-mediated run should show correct routing, valid contract generation, deterministic admission, skill dispatch, feedback publication, and a single user-facing speech authority.</p>
+<h2>Research Questions Covered</h2>
+<table>
+<tr><th>Research question</th><th>Observable evidence</th></tr>
+<tr><td>Can planner-mediated execution improve multi-step task handling?</td><td>Plan validity, step completion, replanning events</td></tr>
+<tr><td>Does the skill registry reduce invalid robot-specific outputs?</td><td>Invalid-step rate, unsupported-skill rejection rate</td></tr>
+<tr><td>Does execution feedback improve recovery?</td><td>Replan success, clarification success, failure explanation quality</td></tr>
+<tr><td>Do architecture boundaries remain inspectable?</td><td>Trace completeness, contract validity, ownership violations</td></tr>
+<tr><td>What limitations remain under real HRI constraints?</td><td>Latency, duplicate speech, grounding staleness, model failure cases</td></tr>
+</table>
+<h2>Scenario Matrix</h2>
+<table>
+<tr><th>Scenario group</th><th>Example command</th><th>Expected behavior</th><th>Primary metrics</th></tr>
+<tr><td>Dialogue-only</td><td>hello</td><td>Remains dialogue, no planner request</td><td>false planner-route rate</td></tr>
+<tr><td>Knowledge query</td><td>what can you see?</td><td>Uses KB/scene answer, no unnecessary execution</td><td>route accuracy, answer groundedness</td></tr>
+<tr><td>Atomic execution</td><td>look left</td><td>Single validated skill step</td><td>completion, latency</td></tr>
+<tr><td>Grounded look-at</td><td>look at the person</td><td>Uses visible person target and <code>look_at</code> step</td><td>target correctness, person/object separation</td></tr>
+<tr><td>Multi-step task</td><td>scan for a cup and tell me what you found</td><td>Planner emits ordered steps</td><td>plan validity, step success</td></tr>
+<tr><td>Failure recovery</td><td>target disappears before execution</td><td>Feedback triggers replan or failure dialogue</td><td>recovery rate</td></tr>
+<tr><td>Clarification</td><td>ambiguous target</td><td>Planner asks for missing slot</td><td>clarification precision</td></tr>
+<tr><td>Cancellation/update</td><td>stop or changed goal</td><td>Goal transition is explicit</td><td>supersede/cancel correctness</td></tr>
+</table>
+<h2>Runtime Evidence to Capture</h2>
+<ul>
+<li>user utterance and timestamp;</li>
+<li>chatbot route and <code>user_intent</code> JSON;</li>
+<li>planner request envelope and <code>Intent.data</code>;</li>
+<li>grounded context snapshot (<code>knowledge_snapshot</code>, <code>scene_summary</code>, <code>state_t0</code>);</li>
+<li>planner output JSON;</li>
+<li>orchestrator validation result;</li>
+<li>dispatched action server and step id;</li>
+<li>execution feedback JSON;</li>
+<li>planner dialogue act, if emitted;</li>
+<li>final user-facing utterance and speech owner.</li>
+</ul>
+<h2>Quantitative Metrics</h2>
+<table>
+<tr><th>Metric</th><th>Definition</th><th>Interpretation</th></tr>
+<tr><td>Route accuracy</td><td>Fraction of turns routed to the intended class</td><td>Tests chatbot planner gating</td></tr>
+<tr><td>Plan validity</td><td>Fraction of planner outputs accepted by orchestrator</td><td>Tests planner contract discipline</td></tr>
+<tr><td>Unsupported step rate</td><td>Fraction of steps rejected as unknown or invalid</td><td>Tests registry grounding</td></tr>
+<tr><td>Task completion</td><td>Fraction of scenarios completed</td><td>Tests end-to-end behavior</td></tr>
+<tr><td>Recovery success</td><td>Fraction of failures resolved by replan or clarification</td><td>Tests closed-loop supervision</td></tr>
+<tr><td>Duplicate speech rate</td><td>Fraction of turns with multiple competing utterances</td><td>Tests dialogue ownership</td></tr>
+<tr><td>Grounding correctness</td><td>Fraction of selected targets matching scene/KB evidence</td><td>Tests perception-to-planner context</td></tr>
+<tr><td>Median latency</td><td>Time from user utterance to first action or answer</td><td>Tests HRI usability</td></tr>
+</table>
+<h2>Qualitative Analysis Dimensions</h2>
+<p>Each trace should explain why the chatbot selected the route, what grounded context was available at T0, why the planner selected the steps, whether the orchestrator accepted or rejected each step, how feedback changed planner state, whether the final user-facing response had one owner, and what the trace reveals about limitations of the architecture.</p>
+<h2>Ablation Plan</h2>
+<table>
+<tr><th>Ablation</th><th>Change</th><th>Hypothesis</th></tr>
+<tr><td>Direct execution only</td><td>Disable planner-mediated path</td><td>Multi-step and failure recovery become less robust</td></tr>
+<tr><td>No grounded context</td><td>Remove <code>knowledge_snapshot</code>, <code>scene_summary</code>, <code>state_t0</code></td><td>Target selection and perception tasks degrade</td></tr>
+<tr><td>No execution feedback</td><td>Suppress feedback to planner</td><td>Replanning and failure explanations degrade</td></tr>
+<tr><td>Minimal registry</td><td>Hide some skill metadata</td><td>Unsupported or underspecified plan steps increase</td></tr>
+<tr><td>Chatbot wording disabled</td><td>Direct planner dialogue only</td><td>Completion wording may become less conversational but easier to attribute</td></tr>
+</table>
+<h2>Validation Gates Before Experiments</h2>
+<ol>
+<li>Run contract unit tests for <code>planner_common</code>, <code>chatbot_llm</code>, <code>planner_llm</code>, and <code>nao_orchestrator</code>.</li>
+<li>Run registry consistency checks so planner-visible skills match canonical AB entries.</li>
+<li>Run ROS4HRI structural audit to confirm changed packages and ownership-sensitive files.</li>
+<li>Launch the sim profile and verify expected action servers are available.</li>
+<li>Execute one dialogue-only, one knowledge-query, one atomic action, and one failure case before collecting formal results.</li>
+</ol>
+<h2>Experiment Log Template</h2>
+<table>
+<tr><th>Field</th><th>Value</th></tr>
+<tr><td>Experiment ID</td><td><code>EXP-YYYYMMDD-###</code></td></tr>
+<tr><td>Scenario group</td><td></td></tr>
+<tr><td>User utterance</td><td></td></tr>
+<tr><td>Expected route</td><td></td></tr>
+<tr><td>Observed route</td><td></td></tr>
+<tr><td>Planner request published</td><td>yes/no</td></tr>
+<tr><td>Planner output valid</td><td>yes/no</td></tr>
+<tr><td>Executed steps</td><td></td></tr>
+<tr><td>Feedback events</td><td></td></tr>
+<tr><td>Final speech owner</td><td></td></tr>
+<tr><td>Outcome</td><td>success / failure / partial</td></tr>
+<tr><td>Notes</td><td></td></tr>
+</table>
+<h2>Threats to Validity</h2>
+<p>The main internal threats are prompt sensitivity, incomplete test coverage for live ROS timing, and possible mismatch between simulated and robot execution. External threats include model availability, cloud/local model differences, and the fact that the validation environment is centered on the NAO stack. Construct validity depends on whether metrics such as plan validity and route accuracy genuinely capture user-perceived task success. The thesis should therefore combine quantitative tables with trace-based qualitative analysis.</p>
+<h2>Expected Results Narrative</h2>
+<p>A strong thesis result would show that planner-mediated execution does not merely add complexity. It should demonstrate that the planner path improves inspectability, makes multi-step execution more explicit, and creates recovery opportunities through feedback. Even when the planner fails, the architecture should make the failure attributable: wrong route, stale grounding, invalid plan, missing skill, execution failure, or dialogue ownership issue.</p>
+              </main>
+            </body>
+            </html>

@@ -4,7 +4,7 @@
 
 This document is the supervisor-facing and thesis-facing walkthrough for the active planner stack. It is payload-first, but it now separates two world-state views:
 
-- `grounded_context`: compact scene graph for chatbot/planner LLM calls.
+- canonical LLM `grounded_context`: compact `entities[]` scene graph shared by `chatbot_llm` and `planner_llm`.
 - execution evidence: live skill-local data from `/scene/summary`, KB triples, tracked people, action results, and detector metadata.
 
 The design follows the current neurosymbolic planning pattern used by SayPlan, ProgPrompt, RePLan, and scene-graph replanning work: pass only the task-relevant symbolic subgraph to the LLM, keep symbolic validation outside the LLM, and let execution skills refresh live evidence before claiming results.
@@ -62,7 +62,7 @@ Ownership rule:
 | Contract | Channel | Producer | Consumer |
 |---|---|---|---|
 | Chatbot turn output | internal turn result JSON | `chatbot_llm` | `chatbot_llm` handoff path |
-| Compact grounding | `grounded_context` | `chatbot_llm` | `chatbot_llm`, `planner_llm` |
+| Canonical LLM grounding | `grounded_context.entities[]` | `chatbot_llm` via `planner_common` projection helper | `chatbot_llm`, `nao_orchestrator`, `planner_llm` |
 | Planner request envelope | `/nao_orchestrator/planner_request`, `/planner/request` | `chatbot_llm`, admitted by `nao_orchestrator` | `planner_llm` |
 | Planner output | `/intents` | `planner_llm` | `nao_orchestrator` |
 | Execution feedback | `/planner/execution_feedback` | `nao_orchestrator` | `planner_llm` |
@@ -71,9 +71,9 @@ Ownership rule:
 
 Removed request seams:
 
-- `requested_plan` is not part of the active planner request contract.
-- `interaction_mode` is not part of the active planner request contract.
 - Legacy fields such as `goal_token`, `world_model_snapshot`, and `world_model_text` remain removed.
+- Planner request contracts do not carry planner-owned `ack_mode` or raw planner `ack_text`.
+- `requested_plan` and `interaction_mode` are not part of the normalized shared planner request contract.
 
 ---
 
@@ -108,7 +108,7 @@ Variables:
 
 ## 5) Compact Grounded Context
 
-The LLM-facing world state is a concise scene graph, not a raw RDF dump.
+The LLM-facing world state is a concise scene graph, not a raw RDF dump. Raw KB snapshots and `/scene/summary` payloads remain source seams, but they are projected into this single `grounded_context` object before entering chatbot or planner prompts.
 
 ```json
 {
@@ -177,8 +177,8 @@ Rules:
 1. Backend seams stay intact: `/scene/summary`, `/kb/query`, `/kb/revise`, tracked people, and skill action results are not rewritten by the projection.
 2. The compact projection is deterministic and JSON-native.
 3. Text-derived hydration is fallback-only when no structured scene/KB entities exist.
-4. `state_t0` remains behind `grounded_context_include_state_t0`; default is disabled.
-5. Planner-only details such as coordinates and recency are not part of the default chatbot/planner LLM view.
+4. Optional `state_t0` is available only for specialised planner/debug paths; default LLM prompts use `entities[]`.
+5. The compact projection drops detector coordinates, scores, backend provenance, and recency unless a later prompt path explicitly requests richer grounding.
 
 ---
 
@@ -222,7 +222,7 @@ Variables:
 - Context: `dialogue_context`, `grounded_context`.
 - Runtime mode: `planner_mode`, `dialogue_turn_id`.
 
-The planner prompt receives this compact payload plus execution feedback, skill registry, allowed step types, allowed skill names, and output contract.
+The planner receives this compact payload plus execution feedback, skill registry, allowed step types, allowed skill names, and output contract. `PlannerRequest.from_payload` is the shared normalization seam, so legacy or transport-only fields outside that dataclass are dropped before planner use.
 
 ---
 
@@ -249,7 +249,7 @@ Planner prompt payload contains:
 
 - `request`: compact planner request.
 - `goal_id`, `plan_version`.
-- optional `state_t0` only when explicitly enabled by flag.
+- `grounded_context.entities[]` as the active LLM world-state context.
 - `execution_feedback` during replans.
 - `skill_registry`, `allowed_step_types`, `allowed_skill_names`, `allowed_motion_objects`.
 - `output_contract`.
@@ -257,7 +257,7 @@ Planner prompt payload contains:
 Planner prompt payload does not contain:
 
 - raw `user_text` in normal operation.
-- raw detector coordinates or scores.
+- `requested_plan` or `interaction_mode`.
 - full RDF dumps.
 - removed request seams.
 
@@ -317,7 +317,7 @@ Variables:
 
 - Plan lineage: `goal_id`, `plan_id`, `plan_version`.
 - Plan state: `status`, `validation_status`, `user_facing_reason`, `replan_hint`.
-- Failure detail: `failure_reason` is present only when there is an actual failure, invalid output, or terminal blocked condition.
+- Failure detail: `failure_reason` is omitted unless there is an actual failure, invalid output, or terminal blocked condition.
 - Resilience: `retry_budget`.
 - Traceability: `scene_targets`, `context_ref`.
 - Communication: `communication_policy`, `communication_policy_source`.
