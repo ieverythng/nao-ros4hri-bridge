@@ -17,6 +17,8 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.lifecycle import Node, State, TransitionCallbackReturn
 from std_msgs.msg import String
 
+from planner_common.contracts import coerce_optional_float
+
 from nao_orchestrator.intent_rules import (
     build_scan_result_payload,
     is_people_scan_target,
@@ -467,11 +469,11 @@ class ScanSkillServer(Node):
                 'kb_class': str(item.get('kb_class', '')).strip(),
                 'source': str(item.get('source', 'scene_summary')).strip() or 'scene_summary',
             }
-            center_x = ScanSkillServer._coerce_optional_float(item.get('center_x'))
-            center_y = ScanSkillServer._coerce_optional_float(item.get('center_y'))
-            confidence = ScanSkillServer._coerce_optional_float(item.get('confidence'))
-            last_seen_sec = ScanSkillServer._coerce_optional_float(item.get('last_seen_sec'))
-            distance_m = ScanSkillServer._coerce_optional_float(item.get('distance_m'))
+            center_x = coerce_optional_float(item.get('center_x'))
+            center_y = coerce_optional_float(item.get('center_y'))
+            confidence = coerce_optional_float(item.get('confidence'))
+            last_seen_sec = coerce_optional_float(item.get('last_seen_sec'))
+            distance_m = coerce_optional_float(item.get('distance_m'))
             if center_x is not None:
                 normalized['center_x'] = center_x
             if center_y is not None:
@@ -484,13 +486,6 @@ class ScanSkillServer(Node):
                 normalized['distance_m'] = distance_m
             objects.append(normalized)
         return objects
-
-    @staticmethod
-    def _coerce_optional_float(value) -> float | None:
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            return None
 
     @staticmethod
     def _feedback(status: str, progress: float) -> ScanScene.Feedback:

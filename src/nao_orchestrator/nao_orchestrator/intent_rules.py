@@ -8,6 +8,7 @@ import re
 
 from planner_common.contracts import PLAN_FAILURE_POLICIES
 from planner_common.contracts import PLAN_STEP_TYPES
+from planner_common.contracts import coerce_optional_float
 from planner_common.contracts import IntentLabels as Intent
 from planner_common.skill_registry_bridge import merge_fake_skill_aliases
 from planner_common.skill_registry_bridge import merge_scan_skill_names
@@ -31,6 +32,7 @@ _STANDARD_INTENTS = {
     Intent.SUSPEND,
     Intent.WAKEUP,
 }
+
 
 _LEGACY_INTENT_MAP = {
     'greet': (Intent.GREET, {}),
@@ -505,7 +507,7 @@ def _normalize_scan_objects(raw_objects) -> list[dict]:
             'source': str(item.get('source', 'scene_summary')).strip() or 'scene_summary',
         }
         for numeric_key in ('center_x', 'center_y', 'confidence', 'last_seen_sec', 'distance_m'):
-            numeric_value = _coerce_optional_float(item.get(numeric_key))
+            numeric_value = coerce_optional_float(item.get(numeric_key))
             if numeric_value is not None:
                 entry[numeric_key] = numeric_value
         normalized.append(entry)
@@ -732,13 +734,6 @@ def _coerce_nonnegative_int(value) -> int:
         return max(0, int(value))
     except (TypeError, ValueError):
         return 0
-
-
-def _coerce_optional_float(value) -> float | None:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
 
 
 def _plan_look_at_error(step_args: dict) -> str:
