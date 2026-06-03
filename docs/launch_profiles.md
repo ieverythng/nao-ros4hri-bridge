@@ -9,7 +9,7 @@ This file is the active launch guide. Historical launch notes are under
 
 | Launch file | Default purpose | Notes |
 | --- | --- | --- |
-| `nao_chatbot_sim.launch.py` | Simulator stack and operator tools | Planner and planner gate on by default; laptop camera on `/camera/image_raw`; `rqt` console on; interaction trace viewer off by default (start manually when needed) |
+| `nao_chatbot_sim.launch.py` | Simulator stack and operator tools | Planner and planner gate on by default; laptop camera on `/camera/image_raw`; standalone dialogue rqt plugin on; full `rqt` perspective off by default because image/radar plugins can crash in container GUI sessions; interaction trace viewer off by default (start manually when needed) |
 | `nao_chatbot_robot.launch.py` | Real robot camera/RViz/HRI overlays | Planner mode on; robot TF and RViz in profile defaults |
 | `nao_chatbot_demo.launch.py` | Sim-only demo with mock scan and demo-oriented defaults | Extends sim profile with demo skills and grounding |
 | `nao_chatbot_asr_only.launch.py` | Isolated ASR | No dialogue/planner/executor |

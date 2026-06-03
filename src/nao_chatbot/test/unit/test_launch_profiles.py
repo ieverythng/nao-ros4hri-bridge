@@ -97,7 +97,7 @@ def _assert_planner_dialogue_seam_defaults(defaults: dict[str, str]) -> None:
     )
 
 
-def test_sim_profile_provides_gscam_camera_and_rqt_with_planner():
+def test_sim_profile_provides_gscam_camera_and_safe_operator_tools_with_planner():
     defaults = _launch_defaults(
         "launch/nao_chatbot_sim.launch.py",
         "nao_chatbot_sim_launch_test",
@@ -109,7 +109,8 @@ def test_sim_profile_provides_gscam_camera_and_rqt_with_planner():
     assert defaults["start_nao_robot"] == "false"
     assert defaults["object_detection_input_image_topic"] == "/camera/image_raw"
     assert defaults["hri_visualization_image_topic"] == "/camera/image_raw"
-    assert defaults["start_rqt_console"] == "true"
+    assert defaults["start_rqt_console"] == "false"
+    assert defaults["start_rqt_chat"] == "true"
     assert defaults["start_planner_llm"] == "true"
     assert defaults["chatbot_planner_mode_enabled"] == "true"
     assert defaults["enable_orchestrator_planner_gate"] == "true"

@@ -81,7 +81,7 @@ _SIM_CAMERA_DEFAULTS = {
     "start_interaction_sim_expressive_face": "false",
     "start_interaction_sim_ui": "false",
     "interaction_sim_hri_log_profile": "quiet",
-    "start_rqt_console": "true",
+    "start_rqt_console": "false",
     "start_rqt_chat": "true",
     "sim_use_laptop_tts": "false",
     "start_interaction_trace_viewer": "false",
@@ -139,6 +139,12 @@ _ROBOT_CAMERA_DEFAULTS = {
     "fake_skill_random_failure_prob": "0.50",
     "fake_skill_mode_overrides_json": "{}",
 }
+
+_RQT_CONTAINER_ENV_GUARD = (
+    'export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/runtime-root}"; '
+    'mkdir -p "$XDG_RUNTIME_DIR"; '
+    'chmod 700 "$XDG_RUNTIME_DIR" 2>/dev/null || true; '
+)
 _GROUNDING_DEFAULTS = {
     "object_detection_threshold": "0.40",
     "scene_grounding_knowledge_lifespan_sec": "3.0",
@@ -2365,6 +2371,7 @@ def generate_profile_launch_description(
             "bash",
             "-lc",
             [
+                _RQT_CONTAINER_ENV_GUARD,
                 "if ! command -v rqt >/dev/null 2>&1; then "
                 "echo 'rqt is not installed in this environment'; "
                 "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
@@ -2400,6 +2407,7 @@ def generate_profile_launch_description(
             "bash",
             "-lc",
             [
+                _RQT_CONTAINER_ENV_GUARD,
                 "if ! command -v rqt >/dev/null 2>&1; then "
                 "echo 'rqt is not installed in this environment'; "
                 "elif ! ros2 pkg prefix interaction_sim >/dev/null 2>&1; then "
@@ -2443,6 +2451,7 @@ def generate_profile_launch_description(
             "bash",
             "-lc",
             [
+                _RQT_CONTAINER_ENV_GUARD,
                 "if ! command -v rqt >/dev/null 2>&1; then "
                 "echo 'rqt is not installed in this environment'; "
                 "elif ! python3 -c 'import importlib.util,sys; "
@@ -2474,14 +2483,15 @@ def generate_profile_launch_description(
             "bash",
             "-lc",
             [
-            "if ! command -v rqt >/dev/null 2>&1; then "
-            "echo 'rqt is not installed in this environment'; "
-            "elif ! python3 -c 'import importlib.util,sys; "
-            "sys.exit(0 if importlib.util.find_spec(\"rqt_chat\") else 1)' >/dev/null 2>&1; then "
-            "echo 'rqt_chat is not installed in this environment'; "
-            "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
-            "echo 'rqt_chat launch skipped: DISPLAY/WAYLAND_DISPLAY is not set'; "
-            "else "
+                _RQT_CONTAINER_ENV_GUARD,
+                "if ! command -v rqt >/dev/null 2>&1; then "
+                "echo 'rqt is not installed in this environment'; "
+                "elif ! python3 -c 'import importlib.util,sys; "
+                "sys.exit(0 if importlib.util.find_spec(\"rqt_chat\") else 1)' >/dev/null 2>&1; then "
+                "echo 'rqt_chat is not installed in this environment'; "
+                "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
+                "echo 'rqt_chat launch skipped: DISPLAY/WAYLAND_DISPLAY is not set'; "
+                "else "
                 "exec rqt --clear-config --standalone rqt_chat.chat.ChatPlugin --ros-args "
                 "-r /tts_engine/tts:=",
                 LaunchConfiguration("debug_tts_action_name"),
