@@ -954,8 +954,13 @@ class NaoOrchestrator(Node):
             )
             if step_ok:
                 executed_any = True
-                latest_result_summary = str(reason or '').strip()
                 latest_result_payload = dict(result_payload or {})
+                latest_result_summary = _first_non_empty_value(
+                    latest_result_payload,
+                    'summary_text',
+                    'result_summary',
+                    'message',
+                ) or str(reason or '').strip()
                 if not step_started:
                     _mark_step_started()
                 self._publish_plan_feedback(
