@@ -244,23 +244,49 @@ def request_requests_report(request) -> bool:
     )
 
 
-def scan_report_summary_error(steps: list[dict]) -> str:
-    """Check that report_result after scan omits summary_text."""
+_LIVE_RESULT_REPORT_SKILLS = {
+    'find_object',
+    'inspect_area',
+    'look_at',
+    'navigate_to',
+    'perform_motion',
+    'scan',
+    'walk_to',
+    'wave_greet',
+}
+
+
+def live_result_report_summary_error(steps: list[dict]) -> str:
+    """Check that report_result after executable skills reuses live result text."""
     previous_skill_name = ''
     for step in steps:
         step_name = str(step.get('name', '')).strip().lower()
-        if step_name == 'report_result' and previous_skill_name == 'scan':
+        if step_name == 'report_result' and previous_skill_name in _LIVE_RESULT_REPORT_SKILLS:
             summary_text = str(
                 (step.get('args', {}) or {}).get('summary_text', '')
             ).strip()
             if summary_text:
                 return (
-                    'report_result after scan must omit summary_text so the '
-                    'executor reports the latest live scan result'
-                )
+                    'report_result after %s must omit summary_text so the '
+                    'executor reports the latest live skill result'
+                ) % previous_skill_name
+        if step_name == 'report_result':
+            previous_skill_name = ''
+            continue
         if str(step.get('type', '')).strip().lower() == 'skill':
             previous_skill_name = step_name
     return ''
+
+
+def scan_report_summary_error(steps: list[dict]) -> str:
+    """Compatibility alias for the live-result report_result contract."""
+    error = live_result_report_summary_error(steps)
+    if error.startswith('report_result after scan must omit summary_text'):
+        return (
+            'report_result after scan must omit summary_text so the '
+            'executor reports the latest live scan result'
+        )
+    return error
 
 
 def missing_requested_report_error(request, steps: list[dict]) -> str:

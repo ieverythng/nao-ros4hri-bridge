@@ -290,6 +290,29 @@ def test_planner_engine_rejects_prefilled_report_summary_after_scan() -> None:
     )
 
 
+def test_planner_engine_rejects_prefilled_report_summary_after_motion() -> None:
+    provider = _FakeProvider(
+        '{"steps":[{"type":"skill","name":"perform_motion","args":{"object":"head_look_left"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"report_result","args":{"summary_text":"I have moved my head in all directions as requested."},"requires":["step_1"],"on_failure":"fail","retry_budget":0}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_motion_report',
+            'goal_id': 'goal_motion_report',
+            'goal_text': 'move your head in all directions and report when done',
+            'normalized_intents': ['perform_motion', 'report_result'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_motion_report', plan_version=1)
+
+    assert decision.mode == 'fail'
+    assert 'report_result after perform_motion must omit summary_text' in (
+        decision.payload['plan']['failure_reason']
+    )
+
+
 def test_planner_engine_accepts_report_result_after_scan_without_summary_text() -> None:
     provider = _FakeProvider(
         '{"steps":[{"type":"skill","name":"scan","args":{},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"report_result","args":{},"requires":["step_1"],"on_failure":"fail","retry_budget":0}]}'

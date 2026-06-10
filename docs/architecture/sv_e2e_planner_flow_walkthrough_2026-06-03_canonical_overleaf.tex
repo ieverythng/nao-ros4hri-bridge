@@ -466,10 +466,10 @@ flowchart TD
 Critical guardrail:
 
 \begin{itemize}
-\item The planner must not prefill \code{report\_result.args.summary\_text} after \code{scan}.
+\item The planner must not prefill \code{report\_result.args.summary\_text} after \code{scan}, \code{perform\_motion}, \code{look\_at}, \code{navigate\_to}, or another executable skill.
 \item The scan step owns fresh perception.
 \item \code{report\_result} with empty args tells the orchestrator to report the latest live skill result.
-\item \code{summary\_text} is only allowed for known non-perception facts or already completed non-perception results.
+\item \code{summary\_text} is only allowed for standalone reports of known facts that were not produced by a previous plan step.
 \end{itemize}
 
 This prevents a stale prompt snapshot from being mistaken for a fresh scan.

@@ -22,6 +22,7 @@ from planner_common.contracts import extract_json_object
 from planner_common.contracts import grounded_context_to_context_ref
 from planner_common.contracts import make_goal_id
 from planner_common.contracts import make_plan_id
+from planner_common.contracts import live_result_report_summary_error
 from planner_common.contracts import missing_requested_report_error
 from planner_common.contracts import normalize_communication_policy
 from planner_common.contracts import normalize_grounded_context
@@ -67,6 +68,7 @@ __all__ = [
     'extract_json_object',
     'grounded_context_to_context_ref',
     'load_exported_skill_manifests',
+    'live_result_report_summary_error',
     'make_goal_id',
     'make_plan_id',
     'missing_requested_report_error',

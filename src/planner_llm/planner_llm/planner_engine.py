@@ -14,7 +14,7 @@ from planner_common import missing_requested_report_error
 from planner_common import normalize_communication_policy
 from planner_common import normalize_plan_steps
 from planner_common import request_requests_report
-from planner_common import scan_report_summary_error
+from planner_common import live_result_report_summary_error
 
 from planner_llm.providers import BasePlannerProvider
 from planner_llm.providers import PlannerProviderError
@@ -584,7 +584,7 @@ class PlannerEngine:
         mixed_say_error = self._mixed_say_step_error(supported_steps)
         if mixed_say_error:
             return [], [mixed_say_error]
-        report_leak_error = scan_report_summary_error(supported_steps)
+        report_leak_error = live_result_report_summary_error(supported_steps)
         if report_leak_error:
             return [], [report_leak_error]
         return supported_steps, []

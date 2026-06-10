@@ -89,7 +89,7 @@ Holdout scenarios:
 
 - greeting-only social turn
 - motion plus report
-- report_result after live scan
+- report_result after live executable skill results
 - planner backend failure
 - unsupported target
 

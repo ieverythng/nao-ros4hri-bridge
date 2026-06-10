@@ -387,10 +387,12 @@ flowchart TD
 
 Critical guardrail:
 
-- The planner must not prefill `report_result.args.summary_text` after `scan`.
+- The planner must not prefill `report_result.args.summary_text` after `scan`,
+  `perform_motion`, `look_at`, `navigate_to`, or another executable skill.
 - The scan step owns fresh perception.
 - `report_result` with empty args tells the orchestrator to report the latest live skill result.
-- `summary_text` is only allowed for known non-perception facts or already completed non-perception results.
+- `summary_text` is only allowed for standalone reports of known facts that were
+  not produced by a previous plan step.
 
 This prevents a stale prompt snapshot from being mistaken for a fresh scan.
 

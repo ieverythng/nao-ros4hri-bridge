@@ -168,7 +168,9 @@ Incorrect:
 }
 ```
 
-The scan skill owns fresh perception. `report_result` with empty args lets the orchestrator reuse the latest live skill result.
+Executable skills own their own fresh result evidence. `report_result` with empty
+args lets the orchestrator reuse the latest live skill result after `scan`,
+`perform_motion`, `look_at`, `navigate_to`, and other executable steps.
 
 ## MoE-by-AB Practical Pattern
 

@@ -46,6 +46,16 @@ raise SystemExit(0 if importlib.util.find_spec(module_name) is not None else 1)
 PY
 }
 
+require_python_module() {
+  local module_name="$1"
+  local install_hint="$2"
+  if have_python_module "${module_name}"; then
+    return 0
+  fi
+  echo "Missing required python module '${module_name}'. ${install_hint}" >&2
+  exit 1
+}
+
 echo "[1/10] Syntax checks"
 "${PYTHON_BIN}" - <<'PY'
 from pathlib import Path
@@ -85,12 +95,9 @@ PYTHONPATH="src/nao_chatbot:${PYTHONPATH:-}" "${PYTHON_BIN}" -m pytest -q \
   src/nao_chatbot/test/unit/test_asr_push_to_talk_cli.py \
   src/nao_chatbot/test/unit/test_robot_speech_debug.py
 
-if have_python_module launch; then
-  PYTHONPATH="src/nao_chatbot:${PYTHONPATH:-}" "${PYTHON_BIN}" -m pytest -q \
-    src/nao_chatbot/test/unit/test_launch_profiles.py
-else
-  echo "Skipping nao_chatbot/test/unit/test_launch_profiles.py (need ROS 'launch' on PYTHONPATH; source /opt/ros/\${ROS_DISTRO:-jazzy}/setup.bash before run_tests.sh)."
-fi
+require_python_module launch "Source /opt/ros/\${ROS_DISTRO:-jazzy}/setup.bash before running the workspace suite."
+PYTHONPATH="src/nao_chatbot:${PYTHONPATH:-}" "${PYTHON_BIN}" -m pytest -q \
+  src/nao_chatbot/test/unit/test_launch_profiles.py
 
 echo "[3/10] kb_skills unit tests"
 PYTHONPATH="src/kb_skills:${PYTHONPATH:-}" "${PYTHON_BIN}" -m pytest -q \
@@ -102,15 +109,13 @@ PYTHONPATH="src/planner_common:src/planner_llm:${PYTHONPATH:-}" "${PYTHON_BIN}" 
   src/planner_llm/test/test_planner_engine.py
 
 echo "[5/10] chatbot_llm unit tests"
-if have_python_module hri_actions_msgs && have_python_module chatbot_msgs; then
-  PYTHONPATH="src/kb_skills:src/chatbot_llm:${PYTHONPATH:-}" "${PYTHON_BIN}" -m pytest -q \
-    src/chatbot_llm/test/test_intent_adapter.py \
-    src/chatbot_llm/test/test_knowledge_snapshot.py \
-    src/chatbot_llm/test/test_skill_catalog.py \
-    src/chatbot_llm/test/test_turn_engine.py
-else
-  echo "Skipping chatbot_llm ROS contract tests because required ROS message modules are unavailable."
-fi
+require_python_module hri_actions_msgs "Source the ROS underlay before running chatbot_llm contract tests."
+require_python_module chatbot_msgs "Source the ROS underlay before running chatbot_llm contract tests."
+PYTHONPATH="src/kb_skills:src/chatbot_llm:${PYTHONPATH:-}" "${PYTHON_BIN}" -m pytest -q \
+  src/chatbot_llm/test/test_intent_adapter.py \
+  src/chatbot_llm/test/test_knowledge_snapshot.py \
+  src/chatbot_llm/test/test_skill_catalog.py \
+  src/chatbot_llm/test/test_turn_engine.py
 
 echo "[6/10] dialogue_manager unit tests"
 if have_python_module numpy; then
@@ -185,3 +190,6 @@ fi
 
 echo "Done"
 echo "All available tests passed."
+if [[ -d .git ]]; then
+  python3 scripts/precommit_cache.py record
+fi

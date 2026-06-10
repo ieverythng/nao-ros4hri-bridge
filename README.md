@@ -429,10 +429,10 @@ diagnostic, then only the smallest demo code needed to prove the loop.
   ./scripts/run_tests.sh
   ```
 
-  If `launch` is missing on `PYTHONPATH`, `test_launch_profiles.py` is skipped with
-  a short message. Optional: recreate the venv with
-  `python3 -m venv .venv --system-site-packages` so the venv inherits system ROS
-  Python packages when needed.
+  If `launch` is missing on `PYTHONPATH`, the workspace suite fails because the
+  launch profile contracts are part of the pre-commit gate. Recreate the venv with
+  `python3 -m venv --system-site-packages .venv` when you need the venv to inherit
+  system ROS Python packages directly.
 
 - After adding or renaming launch files, run **`colcon build --packages-select nao_chatbot`**
   (or a full build) before robot runs. `scripts/run_tests.sh` launch smoke checks
