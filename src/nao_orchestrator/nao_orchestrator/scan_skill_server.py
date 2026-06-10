@@ -12,12 +12,11 @@ import threading
 import time
 
 from nao_skills.action import DoHeadMotion, ScanScene
+from planner_common.contracts import coerce_optional_float
 from rclpy.action import ActionClient, ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.lifecycle import Node, State, TransitionCallbackReturn
 from std_msgs.msg import String
-
-from planner_common.contracts import coerce_optional_float
 
 from nao_orchestrator.intent_rules import (
     build_scan_result_payload,

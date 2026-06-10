@@ -98,6 +98,11 @@ _LOOK_AT_RESET_TARGET_ALIASES = {
     'forward',
     'straight',
 }
+_LOOK_AT_TARGETLESS_POLICIES = {
+    'auto',
+    'random',
+    'social',
+}
 
 _REPLAY_MOTION_MAP = {
     'stand': 'stand',
@@ -741,7 +746,7 @@ def _plan_look_at_error(step_args: dict) -> str:
     policy = str(
         normalized_args.get('policy', normalized_args.get('object', ''))
     ).strip().lower()
-    if policy in ('reset', 'look_at_reset'):
+    if policy in ('reset', 'look_at_reset') or policy in _LOOK_AT_TARGETLESS_POLICIES:
         return ''
     if _first_non_empty(
         normalized_args.get('target_frame', ''),
@@ -750,7 +755,7 @@ def _plan_look_at_error(step_args: dict) -> str:
         normalized_args.get('entity_id', ''),
     ):
         return ''
-    return 'look_at step is missing target_frame or reset policy'
+    return 'look_at step is missing target_frame or supported policy'
 
 
 def _first_non_empty(*values: str) -> str:

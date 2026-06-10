@@ -110,6 +110,7 @@ def test_sim_profile_provides_gscam_camera_and_rqt_with_planner():
     assert defaults["object_detection_input_image_topic"] == "/camera/image_raw"
     assert defaults["hri_visualization_image_topic"] == "/camera/image_raw"
     assert defaults["start_rqt_console"] == "true"
+    assert defaults["start_rqt_chat"] == "true"
     assert defaults["start_planner_llm"] == "true"
     assert defaults["chatbot_planner_mode_enabled"] == "true"
     assert defaults["enable_orchestrator_planner_gate"] == "true"

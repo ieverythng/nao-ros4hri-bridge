@@ -37,7 +37,10 @@ def _normalize_grounded_entity(
         'kind': kind,
         'class': str(item.get('class', item.get('type', ''))).strip(),
         'visible': coerce_bool(item.get('visible', True)),
-        'relations': _normalize_relations(item.get('relations', [])),
+        'relations': _normalize_relations(
+            item.get('relations', []),
+            entity_class=item.get('class', item.get('type', '')),
+        ),
     }
     raw_relations = item.get('raw_relations', [])
     if include_raw_relations and isinstance(raw_relations, list) and raw_relations:
@@ -66,12 +69,18 @@ def _normalize_grounded_counts(counts, entities: list) -> dict:
 # Relation normalization
 # ---------------------------------------------------------------------------
 
-def _normalize_relations(value, *, max_relations: int = _MAX_LLM_RELATIONS_PER_ENTITY) -> list[dict]:
+def _normalize_relations(
+    value,
+    *,
+    max_relations: int = _MAX_LLM_RELATIONS_PER_ENTITY,
+    entity_class='',
+) -> list[dict]:
     if not isinstance(value, list):
         return []
     relations_by_key = {}
     seen = set()
     seen_rdf_type = False
+    compact_class = _compact_term(entity_class)
     for item in value:
         if not isinstance(item, dict):
             continue
@@ -84,6 +93,8 @@ def _normalize_relations(value, *, max_relations: int = _MAX_LLM_RELATIONS_PER_E
         if predicate not in _LLM_RELATION_PREDICATE_PRIORITY:
             continue
         if predicate == 'rdf:type':
+            if compact_class and _compact_term(obj) == compact_class:
+                continue
             if seen_rdf_type:
                 continue
             seen_rdf_type = True
@@ -329,7 +340,10 @@ def _finalize_compact_entity(entity: dict) -> dict:
         'kind': str(entity.get('kind', 'object')).strip() or 'object',
         'class': str(entity.get('class', '')).strip(),
         'visible': coerce_bool(entity.get('visible', True)),
-        'relations': _normalize_relations(entity.get('relations', [])),
+        'relations': _normalize_relations(
+            entity.get('relations', []),
+            entity_class=entity.get('class', ''),
+        ),
     }
     raw_relations = _normalize_raw_relations(entity.get('raw_relations', []))
     if raw_relations:

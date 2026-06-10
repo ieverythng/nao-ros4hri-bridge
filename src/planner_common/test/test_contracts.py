@@ -202,7 +202,7 @@ def test_project_llm_grounded_context_filters_backend_noise_and_relations() -> N
         ],
     )
 
-    assert projected['counts'] == {'entities': 2, 'objects': 1, 'people': 1}
+    assert 'counts' not in projected
     cup = next(item for item in projected['entities'] if item['id'] == 'cup_jrjic')
     person = next(
         item for item in projected['entities'] if item['id'] == 'anonymous_person_ehfbf'
@@ -239,10 +239,12 @@ def test_normalize_grounded_context_accepts_compact_shape() -> None:
                     'kind': 'object',
                     'class': 'Cup',
                     'source': 'detector',
-                    'relations': [{'predicate': 'rdf:type', 'object': 'Cup'}],
+                    'relations': [
+                        {'predicate': 'rdf:type', 'object': 'Cup'},
+                        {'predicate': 'dbp:color', 'object': 'blue'},
+                    ],
                 }
             ],
-            'counts': {'entities': 1, 'objects': 1, 'people': 0},
         }
     )
 
@@ -254,10 +256,9 @@ def test_normalize_grounded_context_accepts_compact_shape() -> None:
                 'kind': 'object',
                 'class': 'Cup',
                 'visible': True,
-                'relations': [{'predicate': 'rdf:type', 'object': 'Cup'}],
+                'relations': [{'predicate': 'dbp:color', 'object': 'blue'}],
             }
         ],
-        'counts': {'entities': 1, 'objects': 1, 'people': 0},
     }
 
 
@@ -293,7 +294,7 @@ def test_project_llm_grounded_context_prioritizes_and_bounds_relations() -> None
         {'scene_summary': {}},
         knowledge_rows=[
             {'entity': 'cup_1', 'predicate': 'rdf:type', 'object': 'dbr:Cup'},
-            {'entity': 'cup_1', 'predicate': 'rdf:type', 'object': 'dbr:Cup'},
+            {'entity': 'cup_1', 'predicate': 'rdf:type', 'object': 'Tableware'},
             {'entity': 'cup_1', 'predicate': 'dbp:name', 'object': 'blue mug'},
             {'entity': 'cup_1', 'predicate': 'dbp:color', 'object': 'blue'},
             {'entity': 'cup_1', 'predicate': 'oro:isAt', 'object': 'table_1'},
@@ -306,7 +307,7 @@ def test_project_llm_grounded_context_prioritizes_and_bounds_relations() -> None
 
     relations = projected['entities'][0]['relations']
     assert relations == [
-        {'predicate': 'rdf:type', 'object': 'Cup'},
+        {'predicate': 'rdf:type', 'object': 'Tableware'},
         {'predicate': 'dbp:name', 'object': 'blue mug'},
         {'predicate': 'dbp:color', 'object': 'blue'},
         {'predicate': 'oro:isAt', 'object': 'table_1'},
@@ -326,7 +327,7 @@ def test_project_llm_grounded_context_can_include_raw_relations_for_skill_payloa
     )
 
     entity = projected['entities'][0]
-    assert entity['relations'] == [{'predicate': 'rdf:type', 'object': 'Cup'}]
+    assert 'relations' not in entity
     assert entity['raw_relations'] == [
         {'predicate': 'rdf:type', 'object': 'dbr:Cup'},
         {'predicate': 'custom:fragile', 'object': 'true'},

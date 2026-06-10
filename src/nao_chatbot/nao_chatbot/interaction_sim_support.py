@@ -1,4 +1,5 @@
-"""Helpers for composing the official interaction_sim layers into our stack.
+"""
+Helpers for composing the official interaction_sim layers into our stack.
 
 The public launch surface stays small (`nao_chatbot_sim*.launch.py`), while the
 optional simulator perception/tools wiring lives here as reusable actions.

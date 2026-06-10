@@ -1,0 +1,399 @@
+            <!doctype html>
+            <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <title>TFM Runtime Contracts and Semantics Reference</title>
+              <style>
+@page {
+  size: A4;
+  margin: 2.6cm 2.2cm 2.4cm 2.2cm;
+}
+:root {
+  --ink: #111;
+  --muted: #3a3a3a;
+  --line: #1f1f1f;
+  --soft: #f3f3f3;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  color: var(--ink);
+  background: #fff;
+  font-family: "Liberation Serif", "Times New Roman", Times, serif;
+  font-size: 11.5pt;
+  line-height: 1.42;
+}
+.doc {
+  max-width: 172mm;
+  margin: 0 auto;
+  padding: 0;
+}
+.title-page {
+  min-height: 247mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  page-break-after: always;
+}
+.title-top {
+  text-align: center;
+  margin-top: 18mm;
+}
+.title-top h1 {
+  font-size: 20pt;
+  line-height: 1.28;
+  margin: 20mm 0 8mm;
+  font-weight: 700;
+}
+.title-top h2 {
+  font-size: 13pt;
+  margin: 0 0 3mm;
+  font-weight: 600;
+}
+.title-top p {
+  margin: 2mm 0;
+  color: var(--muted);
+}
+.title-meta {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 auto 20mm;
+  font-size: 11pt;
+}
+.title-meta td {
+  padding: 2.5mm 0;
+  vertical-align: top;
+  border: 0;
+}
+.title-meta td:first-child {
+  width: 38mm;
+  font-weight: 700;
+}
+h1, h2, h3 {
+  margin: 0 0 3mm;
+  line-height: 1.28;
+  font-weight: 700;
+}
+h1 { font-size: 16.5pt; margin-top: 0; }
+h2 {
+  font-size: 13pt;
+  margin-top: 9mm;
+  border-bottom: 0.5pt solid var(--line);
+  padding-bottom: 1.5mm;
+}
+h3 {
+  font-size: 11.8pt;
+  margin-top: 6mm;
+}
+p { margin: 2.2mm 0; }
+ul, ol { margin: 2.5mm 0 2.5mm 6mm; padding: 0; }
+li { margin: 1.4mm 0; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 3mm 0 4mm;
+  font-size: 10.8pt;
+}
+th, td {
+  border: 0.6pt solid #333;
+  padding: 2.2mm 2.3mm;
+  vertical-align: top;
+}
+th {
+  background: #fafafa;
+  text-align: left;
+  font-weight: 700;
+}
+.note {
+  border: 0.6pt solid #333;
+  background: #fcfcfc;
+  padding: 2.6mm 3mm;
+  margin: 3mm 0;
+  font-size: 10.8pt;
+}
+code.inline, code {
+  font-family: "Liberation Mono", "Courier New", monospace;
+  background: #efefef;
+  padding: 0.2mm 1mm;
+  border: 0.4pt solid #d7d7d7;
+  border-radius: 2px;
+  font-size: 10.3pt;
+}
+pre {
+  margin: 2.5mm 0 4mm;
+  background: var(--soft);
+  border: 0.6pt solid #666;
+  padding: 2.6mm 2.8mm;
+  overflow: auto;
+  font-family: "Liberation Mono", "Courier New", monospace;
+  font-size: 9.2pt;
+  line-height: 1.3;
+  white-space: pre-wrap;
+}
+.diagram {
+  margin: 4mm 0 5mm;
+  border: 0.6pt solid #777;
+  padding: 2mm;
+  background: #fff;
+}
+.diagram svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.caption {
+  margin-top: 2mm;
+  font-size: 10pt;
+  color: #222;
+  font-style: italic;
+  text-align: center;
+}
+.small { font-size: 10.3pt; color: #222; }
+</style>
+            </head>
+            <body>
+              <main class="doc">
+                <section class="title-page">
+                  <div class="title-top">
+                    <h2>Universitat Autonoma de Barcelona</h2>
+                    <p>Master Degree in Modelling for Science and Engineering</p>
+                    <p>Institution / Lab: IIIA-CSIC</p>
+                    <h1>TFM Runtime Contracts and Semantics Reference<br/>Planner, Grounding, Feedback, and Dialogue JSON</h1>
+                    <p>Technical thesis artifact generated from the active NAO ROS4HRI planner repository.</p>
+                  </div>
+                  <table class="title-meta">
+                    <tr><td>Document type:</td><td>Thesis architecture and implementation reference</td></tr>
+                    <tr><td>Academic year:</td><td>2025-2026</td></tr>
+                    <tr><td>Date:</td><td>2026-06-03</td></tr>
+                    <tr><td>Scope:</td><td>Planner request/output contracts, grounding semantics, execution feedback, and dialogue acts.</td></tr>
+                    <tr><td>Repository:</td><td><span class="small">https://github.com/ieverythng/nao-ros4hri-bridge</span></td></tr>
+                  </table>
+                </section>
+                <h1>TFM Runtime Contracts and Semantics Reference</h1>
+<h2>Purpose</h2>
+<p>This document is the thesis-facing contract reference for the planner stack. It records the JSON shapes that connect dialogue, grounding, planning, execution, feedback, and planner dialogue. The goal is to make the implementation auditable and to give the thesis a precise vocabulary for discussing runtime behavior.</p>
+<h2>Contract Design Principles</h2>
+<ul>
+<li>Payloads should be concise enough to inspect during a live run.</li>
+<li>Fields should be owned by the node that can keep them truthful.</li>
+<li>Planner requests can contain T0 evidence; planner outputs should remain plan-centric.</li>
+<li>Duplicate fields should be removed unless they represent different ownership scopes.</li>
+<li>Human detections must be represented as people, not as generic objects.</li>
+<li>Natural-language summaries may help the LLM, but they should be bounded and secondary to structured JSON.</li>
+</ul>
+<h2>Planner Request Envelope</h2>
+<p>The planner request travels as <code>hri_actions_msgs/msg/Intent</code>. The ROS envelope carries transport metadata, while <code>Intent.data</code> carries the planner request JSON.</p>
+<pre>{
+  &quot;intent&quot;: &quot;planner_request&quot;,
+  &quot;source&quot;: &quot;user_123&quot;,
+  &quot;modality&quot;: &quot;speech&quot;,
+  &quot;confidence&quot;: 0.82,
+  &quot;priority&quot;: 128,
+  &quot;data&quot;: {
+    &quot;request_id&quot;: &quot;turn_123&quot;,
+    &quot;goal_id&quot;: &quot;goal_turn_123&quot;,
+    &quot;request_kind&quot;: &quot;new_goal&quot;,
+    &quot;goal_text&quot;: &quot;look at the person and report completion&quot;,
+    &quot;normalized_intents&quot;: [&quot;look_at&quot;],
+    &quot;scene_targets&quot;: [&quot;person&quot;],
+    &quot;dialogue_context&quot;: [],
+    &quot;requested_plan&quot;: [],
+    &quot;grounded_context&quot;: {
+      &quot;knowledge_snapshot&quot;: {},
+      &quot;scene_summary&quot;: {},
+      &quot;state_t0&quot;: {}
+    },
+    &quot;planner_mode&quot;: &quot;default&quot;,
+    &quot;interaction_mode&quot;: &quot;speech&quot;,
+    &quot;dialogue_turn_id&quot;: &quot;role:turn&quot;
+  }
+}</pre>
+<table>
+<tr><th>Field</th><th>Meaning</th><th>Owner</th></tr>
+<tr><td><code>request_id</code></td><td>Unique turn/request identifier</td><td><code>chatbot_llm</code></td></tr>
+<tr><td><code>goal_id</code></td><td>Logical goal continuity identifier</td><td><code>chatbot_llm</code>, admitted by orchestrator</td></tr>
+<tr><td><code>request_kind</code></td><td>Transition type: <code>new_goal</code>, <code>goal_update</code>, <code>clarification_answer</code>, <code>cancel_request</code></td><td><code>chatbot_llm</code></td></tr>
+<tr><td><code>goal_text</code></td><td>Planner-facing task objective</td><td><code>chatbot_llm</code></td></tr>
+<tr><td><code>normalized_intents</code></td><td>Strict intent labels</td><td><code>chatbot_llm</code></td></tr>
+<tr><td><code>scene_targets</code></td><td>Compact target labels/entities</td><td><code>chatbot_llm</code></td></tr>
+<tr><td><code>grounded_context</code></td><td>Hybrid Minimal T0 evidence</td><td><code>chatbot_llm</code></td></tr>
+</table>
+<h2>Knowledge Snapshot</h2>
+<p><code>knowledge_snapshot</code> is a prompt-facing compact view of symbolic KB facts. It is not a raw KnowledgeCore transport object.</p>
+<pre>{
+  &quot;schema_version&quot;: &quot;knowledge_snapshot_v2&quot;,
+  &quot;captured_at_sec&quot;: 1777040000.2,
+  &quot;references&quot;: [
+    {&quot;normalized_name&quot;: &quot;cup&quot;, &quot;id&quot;: &quot;cup_1&quot;, &quot;type&quot;: &quot;Cup&quot;},
+    {&quot;normalized_name&quot;: &quot;person&quot;, &quot;id&quot;: &quot;person_1&quot;, &quot;type&quot;: &quot;Person&quot;}
+  ],
+  &quot;counts&quot;: {&quot;entities&quot;: 2, &quot;people&quot;: 1, &quot;objects&quot;: 1}
+}</pre>
+<p>The <code>references</code> array is deliberately small: it gives the planner names, stable identifiers, and types without forcing it to parse large text blocks. The <code>counts</code> field supports quick consistency checks and allows prompts to mention cardinality without repeating entity lists.</p>
+<h2>Scene Summary</h2>
+<p><code>scene_summary</code> carries transient detector-grounded evidence. It includes provenance, recency, image-space coordinates, and source confidence. People and objects are separated.</p>
+<pre>{
+  &quot;schema_version&quot;: &quot;scene_summary_v2&quot;,
+  &quot;observer&quot;: &quot;myself&quot;,
+  &quot;backend&quot;: &quot;emorobcare_cv&quot;,
+  &quot;captured_at_sec&quot;: 1777040000.2,
+  &quot;objects&quot;: [
+    {
+      &quot;entity_id&quot;: &quot;cup_1&quot;,
+      &quot;label&quot;: &quot;cup&quot;,
+      &quot;kb_class&quot;: &quot;Cup&quot;,
+      &quot;score&quot;: 0.92,
+      &quot;tracker_id&quot;: &quot;&quot;,
+      &quot;source&quot;: &quot;emorobcare_cv&quot;,
+      &quot;center_x&quot;: 321.0,
+      &quot;center_y&quot;: 238.0,
+      &quot;last_seen_sec&quot;: 1777040000.1
+    }
+  ],
+  &quot;people&quot;: [
+    {
+      &quot;id&quot;: &quot;person_1&quot;,
+      &quot;label&quot;: &quot;person&quot;,
+      &quot;type&quot;: &quot;Person&quot;,
+      &quot;source&quot;: &quot;emorobcare_cv&quot;,
+      &quot;score&quot;: 0.81,
+      &quot;center_x&quot;: 186.0,
+      &quot;center_y&quot;: 202.0,
+      &quot;last_seen_sec&quot;: 1777040000.2
+    }
+  ]
+}</pre>
+<p>This representation preserves the useful image-space information needed for future <code>look_at</code> arguments while avoiding a duplicate <code>look_at_candidates</code> field. The planner prompt can state that every <code>state_t0.entities[*].id</code> is a valid candidate for <code>look_at.target_frame</code> when the entity is visible.</p>
+<h2>State T0</h2>
+<p><code>state_t0</code> is the canonical planner-facing snapshot for precondition and postcondition reasoning.</p>
+<pre>{
+  &quot;schema_version&quot;: &quot;state_t0_v2&quot;,
+  &quot;observer&quot;: &quot;myself&quot;,
+  &quot;backend&quot;: &quot;emorobcare_cv&quot;,
+  &quot;captured_at_sec&quot;: 1777040000.2,
+  &quot;entity_counts&quot;: {&quot;entities&quot;: 2, &quot;people&quot;: 1, &quot;objects&quot;: 1},
+  &quot;entities&quot;: [
+    {
+      &quot;normalized_name&quot;: &quot;cup&quot;,
+      &quot;id&quot;: &quot;cup_1&quot;,
+      &quot;type&quot;: &quot;Cup&quot;,
+      &quot;kind&quot;: &quot;object&quot;,
+      &quot;source&quot;: &quot;emorobcare_cv&quot;,
+      &quot;last_seen_sec&quot;: 1777040000.1
+    },
+    {
+      &quot;normalized_name&quot;: &quot;person&quot;,
+      &quot;id&quot;: &quot;person_1&quot;,
+      &quot;type&quot;: &quot;Person&quot;,
+      &quot;kind&quot;: &quot;person&quot;,
+      &quot;source&quot;: &quot;emorobcare_cv&quot;,
+      &quot;last_seen_sec&quot;: 1777040000.2
+    }
+  ]
+}</pre>
+<p>The distinction between <code>scene_summary</code> and <code>state_t0</code> is important. <code>scene_summary</code> keeps richer detector metadata. <code>state_t0</code> is a normalized reasoning set. The former is closer to perception; the latter is closer to symbolic planning.</p>
+<h2>Planner Output</h2>
+<p>Planner output travels on <code>/intents</code> as <code>hri_actions_msgs/msg/Intent</code>. The executable part is <code>Intent.data.plan</code>.</p>
+<pre>{
+  &quot;grounded_context&quot;: {
+    &quot;knowledge_snapshot&quot;: {},
+    &quot;scene_summary&quot;: {},
+    &quot;state_t0&quot;: {}
+  },
+  &quot;plan&quot;: {
+    &quot;goal_id&quot;: &quot;goal_turn_123&quot;,
+    &quot;plan_id&quot;: &quot;plan_123&quot;,
+    &quot;plan_version&quot;: 1,
+    &quot;status&quot;: &quot;planning&quot;,
+    &quot;validation_status&quot;: &quot;draft&quot;,
+    &quot;failure_reason&quot;: &quot;&quot;,
+    &quot;user_facing_reason&quot;: &quot;&quot;,
+    &quot;replan_hint&quot;: &quot;&quot;,
+    &quot;retry_budget&quot;: 2,
+    &quot;scene_targets&quot;: [&quot;person&quot;],
+    &quot;communication_policy&quot;: {
+      &quot;emit_acknowledge&quot;: false,
+      &quot;emit_progress&quot;: false,
+      &quot;emit_completion&quot;: true,
+      &quot;emit_failure&quot;: true
+    },
+    &quot;steps&quot;: [
+      {
+        &quot;id&quot;: &quot;step_1&quot;,
+        &quot;type&quot;: &quot;look_at&quot;,
+        &quot;name&quot;: &quot;look_at&quot;,
+        &quot;args&quot;: {&quot;target_frame&quot;: &quot;person_1&quot;},
+        &quot;requires&quot;: [],
+        &quot;on_failure&quot;: &quot;replan&quot;,
+        &quot;retry_budget&quot;: 1
+      }
+    ]
+  }
+}</pre>
+<p>The plan is intentionally nested under <code>plan</code> to avoid duplicated top-level planning metadata. Removed legacy fields include <code>goal_token</code>, planner <code>ack_mode</code>, planner <code>ack_text</code>, <code>world_model_snapshot</code>, and <code>world_model_text</code>.</p>
+<h2>Execution Feedback</h2>
+<p>Execution feedback is the closed-loop signal from <code>nao_orchestrator</code> to <code>planner_llm</code>.</p>
+<pre>{
+  &quot;goal_id&quot;: &quot;goal_turn_123&quot;,
+  &quot;plan_id&quot;: &quot;plan_123&quot;,
+  &quot;plan_version&quot;: 1,
+  &quot;intent&quot;: &quot;look_at&quot;,
+  &quot;source&quot;: &quot;nao_orchestrator&quot;,
+  &quot;event_type&quot;: &quot;step_failed&quot;,
+  &quot;status&quot;: &quot;failed&quot;,
+  &quot;reason&quot;: &quot;target frame unavailable&quot;,
+  &quot;validation_status&quot;: &quot;draft&quot;,
+  &quot;replan_hint&quot;: &quot;scan for people before retrying look_at&quot;,
+  &quot;retry_budget&quot;: 1,
+  &quot;blocking&quot;: true,
+  &quot;unmet_preconditions&quot;: [&quot;target_frame_visible&quot;],
+  &quot;needs_user_input&quot;: false,
+  &quot;scene_targets&quot;: [&quot;person&quot;],
+  &quot;validation_errors&quot;: [],
+  &quot;timestamp_sec&quot;: 1777040012.4,
+  &quot;result_summary&quot;: &quot;The requested person target was not available.&quot;,
+  &quot;result_payload&quot;: {
+    &quot;target_found&quot;: false,
+    &quot;target_kind&quot;: &quot;person&quot;
+  },
+  &quot;step&quot;: {
+    &quot;id&quot;: &quot;step_1&quot;,
+    &quot;type&quot;: &quot;look_at&quot;,
+    &quot;name&quot;: &quot;look_at&quot;,
+    &quot;retry_budget&quot;: 1,
+    &quot;on_failure&quot;: &quot;replan&quot;,
+    &quot;requires&quot;: []
+  }
+}</pre>
+<p>Feedback is not just logging. It is the planner supervisor&#x27;s evidence stream. It determines whether a goal can continue, whether a step needs replanning, or whether the user should be asked for clarification.</p>
+<h2>Planner Dialogue Act</h2>
+<p>Planner dialogue acts carry planner-owned conversational intent. They do not make the planner the speech owner.</p>
+<pre>{
+  &quot;goal_id&quot;: &quot;goal_turn_123&quot;,
+  &quot;plan_id&quot;: &quot;plan_123&quot;,
+  &quot;plan_version&quot;: 1,
+  &quot;act&quot;: &quot;ask_clarification&quot;,
+  &quot;priority&quot;: &quot;normal&quot;,
+  &quot;await_user_response&quot;: true,
+  &quot;reason&quot;: &quot;multiple candidate people visible&quot;,
+  &quot;text_hint&quot;: &quot;Which person should I look at?&quot;,
+  &quot;slots_needed&quot;: [&quot;target_person&quot;],
+  &quot;context&quot;: {
+    &quot;scene_targets&quot;: [&quot;person&quot;],
+    &quot;status&quot;: &quot;waiting_user&quot;
+  }
+}</pre>
+<p>The thesis should describe this as a separation between dialogue intention and utterance realization. The planner can say that clarification is needed; the dialogue stack remains responsible for interaction lifecycle and speech delivery.</p>
+<h2>Semantics of Goal and Plan Identity</h2>
+<p><code>goal_id</code> represents continuity of the user&#x27;s objective. <code>plan_id</code> and <code>plan_version</code> represent the lineage of a particular proposed plan. This enables replanning without pretending that a new plan is a new user goal.</p>
+<table>
+<tr><th>Identifier</th><th>Meaning</th><th>Example</th></tr>
+<tr><td><code>goal_id</code></td><td>Stable objective identity</td><td><code>goal_turn_123</code></td></tr>
+<tr><td><code>plan_id</code></td><td>Plan lineage identity</td><td><code>plan_123</code></td></tr>
+<tr><td><code>plan_version</code></td><td>Revision number within lineage</td><td><code>2</code></td></tr>
+<tr><td><code>step.id</code></td><td>Stable step join point</td><td><code>step_look_person</code></td></tr>
+</table>
+              </main>
+            </body>
+            </html>

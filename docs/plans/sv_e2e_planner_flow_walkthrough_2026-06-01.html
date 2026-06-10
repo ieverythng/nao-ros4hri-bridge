@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>End-to-End User to Planner Dialogue Flow</title>
+  <title>SV E2E Planner Flow Walkthrough</title>
   <style>
     @page {
       size: A4;
@@ -198,14 +198,13 @@
         <h2>Universitat Autonoma de Barcelona</h2>
         <p>Master Degree in Modelling for Science and Engineering</p>
         <p>Institution / Lab: IIIA-CSIC</p>
-        <h1>Technical Memory Draft Baseline<br/>End-to-End Planner Dialogue Flow</h1>
+        <h1>SV E2E Planner Flow Walkthrough</h1>
         <p>Formal architecture and contract section for technical review.</p>
       </div>
       <table class="title-meta">
         <tr><td>Document type:</td><td>Architecture and contract walkthrough</td></tr>
         <tr><td>Academic year:</td><td>2025-2026</td></tr>
-        <tr><td>Date:</td><td>2026-06-01</td></tr>
-        <tr><td>Scope:</td><td>Runtime flow, JSON contracts, replanning lineage, and dialogue relay behavior.</td></tr>
+        <tr><td>Scope:</td><td>Grounding ownership, compact context projection, and planner/skill evidence seams.</td></tr>
         <tr><td>Repository:</td><td><span class="small">https://github.com/ieverythng/nao-ros4hri-bridge</span></td></tr>
       </table>
     </section>
@@ -214,7 +213,7 @@
 <h2>1) Purpose</h2>
 <p>This document is the supervisor-facing and thesis-facing walkthrough for the active planner stack. It is payload-first, but it now separates two world-state views:</p>
 <ul>
-<li><code>grounded_context</code>: compact scene graph for chatbot/planner LLM calls.</li>
+<li>canonical LLM <code>grounded_context</code>: compact <code>entities[]</code> scene graph shared by <code>chatbot_llm</code> and <code>planner_llm</code>.</li>
 <li>execution evidence: live skill-local data from <code>/scene/summary</code>, KB triples, tracked people, action results, and detector metadata.</li>
 </ul>
 <p>The design follows the current neurosymbolic planning pattern used by SayPlan, ProgPrompt, RePLan, and scene-graph replanning work: pass only the task-relevant symbolic subgraph to the LLM, keep symbolic validation outside the LLM, and let execution skills refresh live evidence before claiming results.</p>
@@ -309,10 +308,10 @@
 <td><code>chatbot_llm</code> handoff path</td>
 </tr>
 <tr>
-<td>Compact grounding</td>
-<td><code>grounded_context</code></td>
+<td>Canonical LLM grounding</td>
+<td><code>grounded_context.entities[]</code></td>
 <td><code>chatbot_llm</code></td>
-<td><code>chatbot_llm</code>, <code>planner_llm</code></td>
+<td><code>chatbot_llm</code>, <code>nao_orchestrator</code>, <code>planner_llm</code></td>
 </tr>
 <tr>
 <td>Planner request envelope</td>
@@ -347,9 +346,9 @@
 </tbody></table>
 <p>Removed request seams:</p>
 <ul>
-<li><code>requested_plan</code> is not part of the active planner request contract.</li>
-<li><code>interaction_mode</code> is not part of the active planner request contract.</li>
 <li>Legacy fields such as <code>goal_token</code>, <code>world_model_snapshot</code>, and <code>world_model_text</code> remain removed.</li>
+<li>Planner request contracts do not carry planner-owned <code>ack_mode</code> or raw planner <code>ack_text</code>.</li>
+<li><code>requested_plan</code> and <code>interaction_mode</code> are not part of the normalized shared planner request contract.</li>
 </ul>
 <hr />
 <h2>4) Chatbot Turn Output</h2>
@@ -377,7 +376,7 @@
 </ul>
 <hr />
 <h2>5) Compact Grounded Context</h2>
-<p>The LLM-facing world state is a concise scene graph, not a raw RDF dump.</p>
+<p>The LLM-facing world state is a concise scene graph, not a raw RDF dump. Raw KB snapshots and <code>/scene/summary</code> payloads remain source seams, but they are projected into this single <code>grounded_context</code> object before entering chatbot or planner prompts.</p>
 <pre><code class="language-json">{
   &quot;grounded_context&quot;: {
     &quot;entities&quot;: [
@@ -388,7 +387,6 @@
         &quot;class&quot;: &quot;Cup&quot;,
         &quot;visible&quot;: true,
         &quot;relations&quot;: [
-          {&quot;predicate&quot;: &quot;rdf:type&quot;, &quot;object&quot;: &quot;Cup&quot;},
           {&quot;predicate&quot;: &quot;dbp:color&quot;, &quot;object&quot;: &quot;blue&quot;},
           {&quot;predicate&quot;: &quot;oro:isOn&quot;, &quot;object&quot;: &quot;table_1&quot;}
         ]
@@ -399,12 +397,9 @@
         &quot;kind&quot;: &quot;person&quot;,
         &quot;class&quot;: &quot;Human&quot;,
         &quot;visible&quot;: true,
-        &quot;relations&quot;: [
-          {&quot;predicate&quot;: &quot;rdf:type&quot;, &quot;object&quot;: &quot;Human&quot;}
-        ]
+        &quot;relations&quot;: []
       }
-    ],
-    &quot;counts&quot;: {&quot;entities&quot;: 2, &quot;objects&quot;: 1, &quot;people&quot;: 1}
+    ]
   }
 }</code></pre>
 <p>Policy:</p>
@@ -414,13 +409,15 @@
 <li><code>kind</code> is <code>object</code> or <code>person</code>.</li>
 <li><code>class</code> is the compact semantic class.</li>
 <li><code>visible</code> is the current visual grounding flag.</li>
-<li><code>relations</code> only carries prioritized semantic predicates for LLM reasoning.</li>
+<li><code>relations</code> only carries prioritized semantic predicates for LLM reasoning when they add information beyond <code>class</code>.</li>
 </ul>
 <p>Prioritized predicates:</p>
 <ul>
-<li>Always include one <code>rdf:type</code> relation when available.</li>
+<li>Use <code>class</code> as the canonical entity type. Do not duplicate the same value as <code>rdf:type</code>.</li>
+<li>Keep <code>rdf:type</code> only when it adds distinct KB type information not already represented by <code>class</code>.</li>
 <li>Include user-meaningful simulator/KB predicates when present: <code>dbp:name</code>, <code>dbp:color</code>, <code>oro:isAt</code>, <code>oro:isOn</code>, <code>oro:contains</code>, <code>foaf:knows</code>.</li>
 <li>Drop noisy/default prompt relations such as provenance, detector score, coordinates, backend, source, and <code>last_seen_*</code>.</li>
+<li>Do not emit <code>counts</code>; prompts should inspect the visible <code>entities</code> list directly.</li>
 <li>Keep raw triples available to skill-local execution paths when a skill needs exact RDF.</li>
 </ul>
 <hr />
@@ -439,8 +436,8 @@
 <li>Backend seams stay intact: <code>/scene/summary</code>, <code>/kb/query</code>, <code>/kb/revise</code>, tracked people, and skill action results are not rewritten by the projection.</li>
 <li>The compact projection is deterministic and JSON-native.</li>
 <li>Text-derived hydration is fallback-only when no structured scene/KB entities exist.</li>
-<li><code>state_t0</code> remains behind <code>grounded_context_include_state_t0</code>; default is disabled.</li>
-<li>Planner-only details such as coordinates and recency are not part of the default chatbot/planner LLM view.</li>
+<li>Optional <code>state_t0</code> is available only for specialised planner/debug paths; default LLM prompts use <code>entities[]</code>.</li>
+<li>The compact projection drops detector coordinates, scores, backend provenance, and recency unless a later prompt path explicitly requests richer grounding.</li>
 </ol>
 <hr />
 <h2>7) Planner Request Envelope</h2>
@@ -463,10 +460,9 @@
         &quot;kind&quot;: &quot;person&quot;,
         &quot;class&quot;: &quot;Human&quot;,
         &quot;visible&quot;: true,
-        &quot;relations&quot;: [{&quot;predicate&quot;: &quot;rdf:type&quot;, &quot;object&quot;: &quot;Human&quot;}]
+        &quot;relations&quot;: []
       }
-    ],
-    &quot;counts&quot;: {&quot;entities&quot;: 1, &quot;objects&quot;: 0, &quot;people&quot;: 1}
+    ]
   },
   &quot;planner_mode&quot;: &quot;default&quot;,
   &quot;dialogue_turn_id&quot;: &quot;role:turn&quot;
@@ -479,7 +475,7 @@
 <li>Context: <code>dialogue_context</code>, <code>grounded_context</code>.</li>
 <li>Runtime mode: <code>planner_mode</code>, <code>dialogue_turn_id</code>.</li>
 </ul>
-<p>The planner prompt receives this compact payload plus execution feedback, skill registry, allowed step types, allowed skill names, and output contract.</p>
+<p>The planner receives this compact payload plus execution feedback, skill registry, allowed step types, allowed skill names, and output contract. <code>PlannerRequest.from_payload</code> is the shared normalization seam, so legacy or transport-only fields outside that dataclass are dropped before planner use.</p>
 <hr />
 <h2>8) Planner LLM Internals</h2>
 <div class="diagram"><pre><code class="language-mermaid">flowchart TD
@@ -500,7 +496,7 @@
 <ul>
 <li><code>request</code>: compact planner request.</li>
 <li><code>goal_id</code>, <code>plan_version</code>.</li>
-<li>optional <code>state_t0</code> only when explicitly enabled by flag.</li>
+<li><code>grounded_context.entities[]</code> as the active LLM world-state context.</li>
 <li><code>execution_feedback</code> during replans.</li>
 <li><code>skill_registry</code>, <code>allowed_step_types</code>, <code>allowed_skill_names</code>, <code>allowed_motion_objects</code>.</li>
 <li><code>output_contract</code>.</li>
@@ -508,7 +504,7 @@
 <p>Planner prompt payload does not contain:</p>
 <ul>
 <li>raw <code>user_text</code> in normal operation.</li>
-<li>raw detector coordinates or scores.</li>
+<li><code>requested_plan</code> or <code>interaction_mode</code>.</li>
 <li>full RDF dumps.</li>
 <li>removed request seams.</li>
 </ul>
@@ -563,7 +559,7 @@
 <ul>
 <li>Plan lineage: <code>goal_id</code>, <code>plan_id</code>, <code>plan_version</code>.</li>
 <li>Plan state: <code>status</code>, <code>validation_status</code>, <code>user_facing_reason</code>, <code>replan_hint</code>.</li>
-<li>Failure detail: <code>failure_reason</code> is present only when there is an actual failure, invalid output, or terminal blocked condition.</li>
+<li>Failure detail: <code>failure_reason</code> is omitted unless there is an actual failure, invalid output, or terminal blocked condition.</li>
 <li>Resilience: <code>retry_budget</code>.</li>
 <li>Traceability: <code>scene_targets</code>, <code>context_ref</code>.</li>
 <li>Communication: <code>communication_policy</code>, <code>communication_policy_source</code>.</li>

@@ -10,8 +10,11 @@ from planner_common import PlannerRequest
 from planner_common import build_plan_payload
 from planner_common import extract_json_object
 from planner_common import IntentLabels
+from planner_common import missing_requested_report_error
 from planner_common import normalize_communication_policy
 from planner_common import normalize_plan_steps
+from planner_common import request_requests_report
+from planner_common import live_result_report_summary_error
 
 from planner_common.contracts import missing_requested_report_error
 from planner_common.contracts import request_requests_report
@@ -588,7 +591,7 @@ class PlannerEngine:
         mixed_say_error = self._mixed_say_step_error(supported_steps)
         if mixed_say_error:
             return [], [mixed_say_error]
-        report_leak_error = scan_report_summary_error(supported_steps)
+        report_leak_error = live_result_report_summary_error(supported_steps)
         if report_leak_error:
             return [], [report_leak_error]
         return supported_steps, []
@@ -618,9 +621,6 @@ class PlannerEngine:
             'say steps cannot be mixed with executable steps; plan only executable '
             'robot actions and leave completion wording to chatbot_llm after execution'
         )
-
-
-
 
     @staticmethod
     def _is_say_step(step: dict) -> bool:

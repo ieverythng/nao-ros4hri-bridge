@@ -1,0 +1,643 @@
+
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage{setspace}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{caption}
+\setstretch{1.12}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\setlist[itemize]{topsep=3pt,itemsep=2pt,parsep=0pt}
+\setlist[enumerate]{topsep=3pt,itemsep=2pt,parsep=0pt}
+\hypersetup{colorlinks=true,linkcolor=blue!55!black,citecolor=blue!55!black,urlcolor=blue!55!black}
+\definecolor{softgray}{RGB}{245,245,245}
+\definecolor{linegray}{RGB}{70,70,70}
+\lstdefinestyle{jsonstyle}{basicstyle=\ttfamily\small,backgroundcolor=\color{softgray},frame=single,rulecolor=\color{linegray},breaklines=true,showstringspaces=false,tabsize=2}
+\lstset{style=jsonstyle}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\formalcover}[4]{%
+\begin{titlepage}
+\centering
+\vspace*{1.2cm}
+{\Large Universitat Autonoma de Barcelona}\\[4pt]
+{\large Master Degree in Modelling for Science and Engineering}\\[4pt]
+{\large Institution / Lab: IIIA-CSIC}\\[2.0cm]
+{\Huge\bfseries #1}\\[0.35cm]
+{\Large #2}\\[1.5cm]
+{\large Formal architecture and contract section for technical review.}\\[2.0cm]
+\begin{tabular}{>{\bfseries}p{0.28\linewidth}p{0.58\linewidth}}
+Document type: & Architecture and contract walkthrough\\
+Academic year: & 2025--2026\\
+Date: & #3\\
+Scope: & #4\\
+Repository: & \url{https://github.com/ieverythng/nao-ros4hri-bridge}\\
+\end{tabular}
+\vfill
+\end{titlepage}}
+
+\begin{document}
+\formalcover{Technical Memory Draft Baseline}{End-to-End Planner Dialogue Flow}{2026-06-01}{Runtime flow, JSON contracts, replanning lineage, and dialogue relay behavior.}
+
+\section{End-to-End User to Planner Dialogue Flow}
+
+\subsection{Purpose}
+
+This document is the supervisor-facing and thesis-facing walkthrough for the active planner stack. It is payload-first, but it now separates two world-state views:
+
+\begin{itemize}
+\item \code{grounded\_context}: compact scene graph for chatbot/planner LLM calls.
+\item execution evidence: live skill-local data from \code{/scene/summary}, KB triples, tracked people, action results, and detector metadata.
+\end{itemize}
+
+The design follows the current neurosymbolic planning pattern used by SayPlan, ProgPrompt, RePLan, and scene-graph replanning work: pass only the task-relevant symbolic subgraph to the LLM, keep symbolic validation outside the LLM, and let execution skills refresh live evidence before claiming results.
+
+Companion references:
+
+\begin{itemize}
+\item \code{docs/contracts.md}
+\item \code{docs/current\_workflow.md}
+\item \code{docs/plans/planner\_grounding\_moe\_contract\_2026-06-01.md}
+\item \code{docs/plans/planner\_replan\_lineage\_adr.md}
+\end{itemize}
+
+
+
+\subsection{End-to-End Runtime Flow}
+
+\begin{lstlisting}[caption={Diagram source from canonical Markdown}]
+sequenceDiagram
+    participant U as User
+    participant C as chatbot_llm
+    participant O as nao_orchestrator
+    participant P as planner_llm
+    participant S as AB=1 Skills
+    participant K as KB + Scene Sources
+    participant D as dialogue_manager
+
+    U->>C: Natural language request
+    C->>K: Query KB rows + scene summary
+    C->>C: Project compact grounded_context
+    C->>O: /nao_orchestrator/planner_request
+    O->>O: PlannerGate admission
+    O->>P: /planner/request
+    P->>P: Build prompt + validate model plan
+    P->>O: /intents
+    O->>S: Dispatch executable steps
+    S->>K: Requery live evidence
+    S-->>O: Typed skill result
+    O->>P: /planner/execution_feedback
+    P->>O: /planner/dialogue_act when needed
+    O->>D: /nao_orchestrator/planner_dialogue_act
+    D-->>U: Spoken response
+\end{lstlisting}
+
+Ownership rule:
+
+\begin{itemize}
+\item \code{chatbot\_llm} owns user-facing interpretation and compact grounding projection.
+\item \code{planner\_llm} owns planning, validation, retry, replan, and dialogue-act intent.
+\item \code{nao\_orchestrator} owns deterministic admission, dispatch, and feedback publication.
+\item AB=1 skills own live world interaction and evidence collection.
+\item \code{dialogue\_manager} owns speech realization.
+\end{itemize}
+
+
+
+\subsection{Contract Map}
+
+\begin{longtable}{p{0.23\linewidth}p{0.23\linewidth}p{0.23\linewidth}p{0.23\linewidth}}
+Contract & Channel & Producer & Consumer\\
+\midrule
+Chatbot turn output & internal turn result JSON & \code{chatbot\_llm} & \code{chatbot\_llm} handoff path\\
+Compact grounding & \code{grounded\_context} & \code{chatbot\_llm} & \code{chatbot\_llm}, \code{planner\_llm}\\
+Planner request envelope & \code{/nao\_orchestrator/planner\_request}, \code{/planner/request} & \code{chatbot\_llm}, admitted by \code{nao\_orchestrator} & \code{planner\_llm}\\
+Planner output & \code{/intents} & \code{planner\_llm} & \code{nao\_orchestrator}\\
+Execution feedback & \code{/planner/execution\_feedback} & \code{nao\_orchestrator} & \code{planner\_llm}\\
+Planner dialogue act & \code{/planner/dialogue\_act} & \code{planner\_llm} & \code{nao\_orchestrator} relay to \code{dialogue\_manager}\\
+Raw scene/KB evidence & \code{/scene/summary}, \code{/kb/query}, skill action results & scene/KB/skills & skill-local execution paths\\
+\end{longtable}
+
+Removed request seams:
+
+\begin{itemize}
+\item \code{requested\_plan} is not part of the active planner request contract.
+\item \code{interaction\_mode} is not part of the active planner request contract.
+\item Legacy fields such as \code{goal\_token}, \code{world\_model\_snapshot}, and \code{world\_model\_text} remain removed.
+\end{itemize}
+
+
+
+\subsection{Chatbot Turn Output}
+
+\begin{lstlisting}
+{
+  "verbal_ack": "Okay, I will do that.",
+  "route": "execution",
+  "confidence": 0.82,
+  "user_intent": {
+    "type": "look_at",
+    "goal": "look at the person",
+    "goal_text": "look at the person",
+    "scene_targets": ["person"],
+    "request_kind": "new_goal"
+  }
+}
+\end{lstlisting}
+
+Variables:
+
+\begin{itemize}
+\item \code{verbal\_ack}: optional immediate acknowledgement text.
+\item \code{route}: \code{dialogue | knowledge\_query | execution}.
+\item \code{confidence}: route/intent confidence in \code{[0.0, 1.0]}.
+\item \code{user\_intent.type}: normalized intent label.
+\item \code{user\_intent.goal} / \code{goal\_text}: planner-facing objective text.
+\item \code{user\_intent.scene\_targets}: compact target labels or entity IDs.
+\item \code{user\_intent.request\_kind}: request transition class.
+\end{itemize}
+
+
+
+\subsection{Compact Grounded Context}
+
+The LLM-facing world state is a concise scene graph, not a raw RDF dump.
+
+\begin{lstlisting}
+{
+  "grounded_context": {
+    "entities": [
+      {
+        "id": "cup_jrjic",
+        "label": "cup",
+        "kind": "object",
+        "class": "Cup",
+        "visible": true,
+        "relations": [
+          {"predicate": "dbp:color", "object": "blue"},
+          {"predicate": "oro:isOn", "object": "table_1"}
+        ]
+      },
+      {
+        "id": "anonymous_person_ehfbf",
+        "label": null,
+        "kind": "person",
+        "class": "Human",
+        "visible": true,
+        "relations": []
+      }
+    ]
+  }
+}
+\end{lstlisting}
+
+Policy:
+
+\begin{itemize}
+\item \code{id} is the stable entity handle.
+\item \code{label} is the human-readable class/name hint and may be \code{null} for anonymous people.
+\item \code{kind} is \code{object} or \code{person}.
+\item \code{class} is the compact semantic class.
+\item \code{visible} is the current visual grounding flag.
+\item \code{relations} only carries prioritized semantic predicates for LLM reasoning when they add information beyond \code{class}.
+\end{itemize}
+
+Prioritized predicates:
+
+\begin{itemize}
+\item Use \code{class} as the canonical entity type. Do not duplicate the same value as \code{rdf:type}.
+\item Keep \code{rdf:type} only when it adds distinct KB type information not already represented by \code{class}.
+\item Include user-meaningful simulator/KB predicates when present: \code{dbp:name}, \code{dbp:color}, \code{oro:isAt}, \code{oro:isOn}, \code{oro:contains}, \code{foaf:knows}.
+\item Drop noisy/default prompt relations such as provenance, detector score, coordinates, backend, source, and \code{last\_seen\_*}.
+\item Do not emit \code{counts}; prompts should inspect the visible \code{entities} list directly.
+\item Keep raw triples available to skill-local execution paths when a skill needs exact RDF.
+\end{itemize}
+
+
+
+\subsection{Grounding Projection Pipeline}
+
+\begin{lstlisting}[caption={Diagram source from canonical Markdown}]
+flowchart LR
+    A["/scene/summary"] --> P["project_llm_grounded_context"]
+    B["tracked people"] --> P
+    C["/kb/query rows and RDF triples"] --> P
+    D["state_t0 flag (disabled by default)"] --> P
+    P --> G["compact grounded_context"]
+    A --> X["execution_context / skill-local raw evidence"]
+    C --> X
+    X --> S["AB=1 skill requery and validation"]
+\end{lstlisting}
+
+Rules:
+
+\begin{enumerate}
+\item Backend seams stay intact: \code{/scene/summary}, \code{/kb/query}, \code{/kb/revise}, tracked people, and skill action results are not rewritten by the projection.
+\item The compact projection is deterministic and JSON-native.
+\item Text-derived hydration is fallback-only when no structured scene/KB entities exist.
+\item \code{state\_t0} remains behind \code{grounded\_context\_include\_state\_t0}; default is disabled.
+\item Planner-only details such as coordinates and recency are not part of the default chatbot/planner LLM view.
+\end{enumerate}
+
+
+
+\subsection{Planner Request Envelope}
+
+Transport-level envelope shape as serialized in the \code{Intent.data} field:
+
+\begin{lstlisting}
+{
+  "request_id": "turn_123",
+  "goal_id": "goal_turn_123",
+  "parent_goal_id": "",
+  "supersedes_goal_id": "",
+  "request_kind": "new_goal",
+  "goal_text": "look at the person and report completion",
+  "normalized_intents": ["look_at"],
+  "scene_targets": ["person"],
+  "dialogue_context": ["assistant:Okay, I will do that."],
+  "grounded_context": {
+    "entities": [
+      {
+        "id": "anonymous_person_ehfbf",
+        "label": null,
+        "kind": "person",
+        "class": "Human",
+        "visible": true,
+        "relations": []
+      }
+    ]
+  },
+  "planner_mode": "default",
+  "dialogue_turn_id": "role:turn"
+}
+\end{lstlisting}
+
+Variables:
+
+\begin{itemize}
+\item Identification and lineage: \code{request\_id}, \code{goal\_id}, \code{parent\_goal\_id}, \code{supersedes\_goal\_id}.
+\item Transition control: \code{request\_kind}.
+\item Planning objective: \code{goal\_text}, \code{normalized\_intents}, \code{scene\_targets}.
+\item Context: \code{dialogue\_context}, \code{grounded\_context}.
+\item Runtime mode: \code{planner\_mode}, \code{dialogue\_turn\_id}.
+\end{itemize}
+
+The planner prompt receives this compact payload plus execution feedback, skill registry, allowed step types, allowed skill names, and output contract.
+
+
+
+\subsection{Planner LLM Internals}
+
+\begin{lstlisting}[caption={Diagram source from canonical Markdown}]
+flowchart TD
+    R["PlannerRequest.from_payload"] --> G["PlannerGate admission already completed"]
+    G --> E["PlannerEngine.plan_request"]
+    E --> RB{"Rule-based simple motion?"}
+    RB -- yes --> BP["Build deterministic rule plan"]
+    RB -- no --> PR["Build LLM prompt payload"]
+    PR --> L["LLM provider"]
+    L --> V["Parse JSON + validate steps"]
+    V -->|valid| OUT["build_plan_payload"]
+    V -->|invalid| RETRY["validation retry prompt"]
+    RETRY --> V
+    V -->|still invalid| FAIL["fail/clarify payload"]
+    BP --> OUT
+    OUT --> I["/intents"]
+\end{lstlisting}
+
+Planner prompt payload contains:
+
+\begin{itemize}
+\item \code{request}: compact planner request.
+\item \code{goal\_id}, \code{plan\_version}.
+\item optional \code{state\_t0} only when explicitly enabled by flag.
+\item \code{execution\_feedback} during replans.
+\item \code{skill\_registry}, \code{allowed\_step\_types}, \code{allowed\_skill\_names}, \code{allowed\_motion\_objects}.
+\item \code{output\_contract}.
+\end{itemize}
+
+Planner prompt payload does not contain:
+
+\begin{itemize}
+\item raw \code{user\_text} in normal operation.
+\item raw detector coordinates or scores.
+\item full RDF dumps.
+\item removed request seams.
+\end{itemize}
+
+
+
+\subsection{Planner Output}
+
+\begin{lstlisting}
+{
+  "plan": {
+    "goal_id": "goal_turn_123",
+    "plan_id": "plan_123",
+    "plan_version": 2,
+    "status": "planning",
+    "validation_status": "draft",
+    "user_facing_reason": "",
+    "replan_hint": "",
+    "retry_budget": 1,
+    "scene_targets": ["person"],
+    "context_ref": {
+      "captured_at_sec": 0.0,
+      "observer": "",
+      "backend": ""
+    },
+    "communication_policy": {
+      "emit_acknowledge": false,
+      "emit_progress": false,
+      "emit_completion": true,
+      "emit_failure": true
+    },
+    "communication_policy_source": "planner_engine:plan",
+    "steps": [
+      {
+        "id": "step_1",
+        "type": "skill",
+        "name": "scan",
+        "args": {},
+        "requires": [],
+        "on_failure": "replan",
+        "retry_budget": 0
+      },
+      {
+        "id": "step_2",
+        "type": "skill",
+        "name": "report_result",
+        "args": {},
+        "requires": ["step_1"],
+        "on_failure": "fail",
+        "retry_budget": 0
+      }
+    ]
+  }
+}
+\end{lstlisting}
+
+Variables:
+
+\begin{itemize}
+\item Plan lineage: \code{goal\_id}, \code{plan\_id}, \code{plan\_version}.
+\item Plan state: \code{status}, \code{validation\_status}, \code{user\_facing\_reason}, \code{replan\_hint}.
+\item Failure detail: \code{failure\_reason} is present only when there is an actual failure, invalid output, or terminal blocked condition.
+\item Resilience: \code{retry\_budget}.
+\item Traceability: \code{scene\_targets}, \code{context\_ref}.
+\item Communication: \code{communication\_policy}, \code{communication\_policy\_source}.
+\item Execution content: \code{steps[]} with \code{id}, \code{type}, \code{name}, \code{args}, \code{requires}, \code{on\_failure}, \code{retry\_budget}.
+\end{itemize}
+
+
+
+\subsection{Communication Policy}
+
+\code{communication\_policy} is planner dialogue-act permission, not direct speech execution.
+
+\begin{itemize}
+\item \code{emit\_acknowledge}: allow a planner-owned acknowledgement dialogue act on plan acceptance.
+\item \code{emit\_progress}: allow planner-owned progress dialogue acts on step start/progress.
+\item \code{emit\_completion}: allow planner-owned completion dialogue acts on plan completion.
+\item \code{emit\_failure}: allow planner-owned failure/help dialogue acts on execution failures.
+\item \code{communication\_policy\_source}: deterministic provenance showing where the final policy was resolved, usually \code{planner\_engine:<mode>}.
+\end{itemize}
+
+Defaults come from \code{planner\_common.normalize\_communication\_policy}. The planner may override policy flags in its JSON output; the shared contract normalizes them before supervisor use.
+
+
+
+\subsection{Supervisor Lifecycle}
+
+\begin{lstlisting}[caption={Diagram source from canonical Markdown}]
+stateDiagram-v2
+    [*] --> idle
+    idle --> planning: accepted request
+    planning --> executing: valid plan
+    planning --> waiting_user: clarify
+    planning --> failed: invalid/fail
+    executing --> replanning: step failed + retry budget
+    executing --> waiting_user: needs user input
+    executing --> completed: all steps succeeded
+    executing --> failed: terminal failure
+    replanning --> executing: new valid plan
+    replanning --> waiting_user: no safe continuation
+    waiting_user --> planning: clarification_answer
+    completed --> idle
+    failed --> idle
+\end{lstlisting}
+
+Supervisor responsibilities:
+
+\begin{enumerate}
+\item Track \code{goal\_id}, \code{plan\_id}, and \code{plan\_version}.
+\item Admit new plans and suppress duplicate plan versions.
+\item Dispatch only executable steps through the orchestrator.
+\item Consume execution feedback and decrement retry budget.
+\item Ask for replans when failure policy and budget allow.
+\item Emit planner dialogue acts for clarification, progress, completion, or failure according to \code{communication\_policy}.
+\end{enumerate}
+
+
+
+\subsection{Scan and Report Evidence Flow}
+
+\begin{lstlisting}[caption={Diagram source from canonical Markdown}]
+flowchart TD
+    A["User: what do you see?"] --> B["chatbot_llm compact grounded_context"]
+    B --> C["planner_llm plans scan + report_result"]
+    C --> D["nao_orchestrator dispatches scan"]
+    D --> E["scan skill requeries scene/KB"]
+    E --> F["scan result payload with summary_text"]
+    F --> G["orchestrator stores latest result"]
+    G --> H["report_result step with empty args"]
+    H --> I["orchestrator reuses latest live result"]
+    I --> J["execution_feedback to planner"]
+\end{lstlisting}
+
+Critical guardrail:
+
+\begin{itemize}
+\item The planner must not prefill \code{report\_result.args.summary\_text} after \code{scan}, \code{perform\_motion}, \code{look\_at}, \code{navigate\_to}, or another executable skill.
+\item The scan step owns fresh perception.
+\item \code{report\_result} with empty args tells the orchestrator to report the latest live skill result.
+\item \code{summary\_text} is only allowed for standalone reports of known facts that were not produced by a previous plan step.
+\end{itemize}
+
+This prevents a stale prompt snapshot from being mistaken for a fresh scan.
+
+
+
+\subsection{Execution Feedback}
+
+\begin{lstlisting}
+{
+  "goal_id": "goal_turn_123",
+  "plan_id": "plan_123",
+  "plan_version": 2,
+  "intent": "raw_user_input",
+  "source": "planner_llm",
+  "event_type": "step_succeeded",
+  "status": "succeeded",
+  "reason": "",
+  "validation_status": "valid",
+  "replan_hint": "",
+  "retry_budget": 1,
+  "blocking": false,
+  "unmet_preconditions": [],
+  "needs_user_input": false,
+  "scene_targets": ["person"],
+  "validation_errors": [],
+  "timestamp_sec": 1777040000.0,
+  "result_summary": "Look-at completed for person_1",
+  "result_payload": {
+    "skill": "look_at",
+    "target": "person_1",
+    "target_kind": "people",
+    "target_found": true,
+    "summary_text": "Look-at completed for person_1",
+    "confidence_policy": "grounded_current_observation"
+  },
+  "step": {
+    "id": "step_1",
+    "type": "skill",
+    "name": "look_at",
+    "retry_budget": 0,
+    "on_failure": "replan",
+    "requires": []
+  }
+}
+\end{lstlisting}
+
+Evidence fields:
+
+\begin{itemize}
+\item \code{result\_summary}: compact human-readable evidence summary.
+\item \code{result\_payload}: structured skill result.
+\item \code{scene\_targets}: targets used for replan context.
+\item \code{blocking}, \code{needs\_user\_input}, \code{unmet\_preconditions}: supervisor decision hints.
+\end{itemize}
+
+
+
+\subsection{Planner Dialogue Act}
+
+\begin{lstlisting}
+{
+  "goal_id": "goal_turn_123",
+  "plan_id": "plan_123",
+  "plan_version": 2,
+  "act": "ask_clarification",
+  "priority": "normal",
+  "await_user_response": true,
+  "reason": "missing target object",
+  "text_hint": "Which person should I look at?",
+  "slots_needed": ["target"],
+  "context": {
+    "scene_targets": ["person"],
+    "status": "waiting_user"
+  }
+}
+\end{lstlisting}
+
+Allowed \code{act} values:
+
+\begin{itemize}
+\item \code{acknowledge}
+\item \code{progress\_update}
+\item \code{ask\_clarification}
+\item \code{ask\_for\_help}
+\item \code{explain\_failure}
+\item \code{notify\_completion}
+\item \code{notify\_cancellation}
+\end{itemize}
+
+Dialogue acts travel through \code{nao\_orchestrator} to \code{dialogue\_manager}. The planner does not speak directly.
+
+
+
+\subsection{Chatbot / Planner / Skill Ownership Map}
+
+\begin{lstlisting}[caption={Diagram source from canonical Markdown}]
+flowchart LR
+    C["chatbot_llm\nuser-facing grounding + planner handoff"] --> P["planner_llm\nplan + supervise"]
+    P --> O["nao_orchestrator\nadmit + dispatch + feedback"]
+    O --> S1["scan\nfresh perception"]
+    O --> S2["look_at\ntarget resolution"]
+    O --> S3["navigate_to\nmovement evidence"]
+    O --> S4["report_result\nlatest result speech payload"]
+    S1 --> K["scene/KB/tracked people"]
+    S2 --> K
+    S3 --> K
+    S4 --> O
+    O --> D["dialogue_manager\nspeech realization"]
+\end{lstlisting}
+
+Methodology:
+
+\begin{enumerate}
+\item Keep LLM context compact and semantically rich.
+\item Keep raw sensor/KB evidence out of every prompt by default.
+\item Validate planner output outside the LLM.
+\item Require skills to requery live state before reporting execution success.
+\item Use planner dialogue acts for coordination, not direct speech generation.
+\end{enumerate}
+
+
+
+\subsection{Replanning and Join Semantics}
+
+\begin{lstlisting}[caption={Diagram source from canonical Markdown}]
+flowchart TD
+    A["Receive /planner/request"] --> B{"Existing active goal?"}
+    B -- No --> C["Create new goal lineage"]
+    B -- Yes --> D{"request_kind"}
+    D -- new_goal --> E["Supersede or reject based on lineage"]
+    D -- goal_update --> F["Keep goal_id continuity"]
+    D -- clarification_answer --> F
+    D -- cancel_request --> G["Cancel active goal"]
+    C --> H["Publish /intents"]
+    E --> H
+    F --> H
+    H --> I["Execute steps"]
+    I --> J["Publish execution feedback"]
+    J --> K{"Need replan?"}
+    K -- Yes --> L["Increment plan_version and replan"]
+    K -- No --> M["Continue or complete"]
+    L --> H
+\end{lstlisting}
+
+Current policy summary:
+
+\begin{enumerate}
+\item Single active-goal queue model.
+\item \code{goal\_id} keeps goal continuity.
+\item \code{plan\_id} + \code{plan\_version} encode plan lineage.
+\item Mid-join when active \code{step\_id} is present in the new plan.
+\item Front-join from first pending step when mid-join cannot be resolved.
+\item Duplicate suppression compares \code{goal\_id}, \code{plan\_id}, and \code{plan\_version}.
+\end{enumerate}
+
+
+
+\subsection{Live Supervisor Demo Script}
+
+\begin{enumerate}
+\item Trigger one command and show chatbot output (\code{route=execution}).
+\item Show compact \code{grounded\_context} on the planner request.
+\item Show admitted request on \code{/planner/request}.
+\item Show planner output on \code{/intents} and highlight lineage fields.
+\item Run one scan/report case and show that \code{report\_result.args} is empty.
+\item Run one failure/clarification path.
+\item Show execution feedback payload and resulting dialogue act payload.
+\item Close with ownership map: chatbot grounds, planner plans, orchestrator dispatches, skills provide live evidence, dialogue manager speaks.
+\end{enumerate}
+\end{document}

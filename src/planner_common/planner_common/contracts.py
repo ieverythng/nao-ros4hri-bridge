@@ -72,7 +72,7 @@ _DEFAULT_GROUNDED_CONTEXT = {
     'scene_summary': {},
     'state_t0': {},
 }
-_COMPACT_GROUNDED_CONTEXT_KEYS = ('entities', 'counts')
+_COMPACT_GROUNDED_CONTEXT_KEYS = ('entities',)
 _LLM_RELATION_PREDICATE_PRIORITY = (
     'rdf:type',
     'dbp:name',
@@ -121,6 +121,7 @@ _LOOK_AT_RESET_TARGET_ALIASES = frozenset(
         'straight',
     )
 )
+_LOOK_AT_TARGETLESS_POLICIES = frozenset(('auto', 'random', 'social'))
 
 _FROZEN_DATACLASS_KWARGS = {'frozen': True}
 if sys.version_info >= (3, 10):  # pragma: no branch - local macOS uses Python 3.9
@@ -239,27 +240,53 @@ def request_requests_report(request) -> bool:
     """Return True if the request includes a report_result intent."""
     return any(
         str(intent_name or '').strip().lower() == 'report_result'
-        for intent_name in request.normalized_intents
+        for intent_name in getattr(request, 'normalized_intents', ())
     )
 
 
-def scan_report_summary_error(steps: list[dict]) -> str:
-    """Check that report_result after scan omits summary_text."""
+_LIVE_RESULT_REPORT_SKILLS = {
+    'find_object',
+    'inspect_area',
+    'look_at',
+    'navigate_to',
+    'perform_motion',
+    'scan',
+    'walk_to',
+    'wave_greet',
+}
+
+
+def live_result_report_summary_error(steps: list[dict]) -> str:
+    """Check that report_result after executable skills reuses live result text."""
     previous_skill_name = ''
     for step in steps:
         step_name = str(step.get('name', '')).strip().lower()
-        if step_name == 'report_result' and previous_skill_name == 'scan':
+        if step_name == 'report_result' and previous_skill_name in _LIVE_RESULT_REPORT_SKILLS:
             summary_text = str(
                 (step.get('args', {}) or {}).get('summary_text', '')
             ).strip()
             if summary_text:
                 return (
-                    'report_result after scan must omit summary_text so the '
-                    'executor reports the latest live scan result'
-                )
+                    'report_result after %s must omit summary_text so the '
+                    'executor reports the latest live skill result'
+                ) % previous_skill_name
+        if step_name == 'report_result':
+            previous_skill_name = ''
+            continue
         if str(step.get('type', '')).strip().lower() == 'skill':
             previous_skill_name = step_name
     return ''
+
+
+def scan_report_summary_error(steps: list[dict]) -> str:
+    """Compatibility alias for the live-result report_result contract."""
+    error = live_result_report_summary_error(steps)
+    if error.startswith('report_result after scan must omit summary_text'):
+        return (
+            'report_result after scan must omit summary_text so the '
+            'executor reports the latest live scan result'
+        )
+    return error
 
 
 def missing_requested_report_error(request, steps: list[dict]) -> str:
@@ -336,6 +363,13 @@ def _normalize_look_at_args(step_args: dict) -> dict:
         normalized.pop('target', None)
         normalized.pop('entity_id', None)
         return normalized
+    if policy in _LOOK_AT_TARGETLESS_POLICIES:
+        normalized['policy'] = policy
+        normalized.pop('target_frame', None)
+        normalized.pop('frame_id', None)
+        normalized.pop('target', None)
+        normalized.pop('entity_id', None)
+        return normalized
 
     target_frame = _first_non_empty(
         normalized.get('target_frame', ''),
@@ -405,7 +439,6 @@ def normalize_grounded_context(value) -> dict:
                 for item in entities
                 if isinstance(item, dict)
             ],
-            'counts': _normalize_grounded_counts(raw_payload.get('counts', {}), entities),
         }
         state_t0 = raw_payload.get('state_t0', {})
         if isinstance(state_t0, dict) and state_t0:
@@ -428,24 +461,447 @@ def project_llm_grounded_context(
     include_raw_relations: bool = False,
 ) -> dict:
     """Project raw grounding seams into the compact LLM-facing world view."""
-    from planner_common.grounded_context_projection import (
-        project_llm_grounded_context as _project,
+    normalized = normalize_grounded_context(grounded_context)
+    if 'entities' in normalized:
+        compact = {
+            'entities': [
+                _normalize_grounded_entity(
+                    item,
+                    include_raw_relations=include_raw_relations,
+                )
+                for item in normalized.get('entities', [])
+                if isinstance(item, dict)
+            ],
+        }
+        if include_state_t0 and isinstance(normalized.get('state_t0'), dict):
+            compact['state_t0'] = dict(normalized.get('state_t0', {}))
+        return compact
+
+    scene_summary = normalized.get('scene_summary', {})
+    state_t0 = normalized.get('state_t0', {})
+    knowledge_snapshot = normalized.get('knowledge_snapshot', {})
+    entities_by_id: dict[str, dict] = {}
+
+    for item in _scene_items(scene_summary, 'objects'):
+        entity_id = _first_non_empty(item.get('entity_id', ''), item.get('id', ''))
+        if not entity_id:
+            continue
+        entity = _ensure_compact_entity(
+            entities_by_id,
+            entity_id,
+            label=_display_entity_label(item.get('label', ''), entity_id),
+            kind='object',
+            entity_class=item.get('kb_class', item.get('type', '')),
+        )
+        if include_planner_details:
+            _copy_optional_planner_details(
+                entity,
+                item,
+                ('center_x', 'center_y', 'last_seen_sec', 'last_seen_age_sec'),
+            )
+
+    for item in _scene_items(scene_summary, 'people'):
+        entity_id = _first_non_empty(item.get('id', ''), item.get('entity_id', ''))
+        if not entity_id:
+            continue
+        entity = _ensure_compact_entity(
+            entities_by_id,
+            entity_id,
+            label=_person_label(item, entity_id),
+            kind='person',
+            entity_class=item.get('type', item.get('kb_class', 'Human')) or 'Human',
+        )
+        if include_planner_details:
+            _copy_optional_planner_details(
+                entity,
+                item,
+                ('center_x', 'center_y', 'last_seen_sec', 'last_seen_age_sec'),
+            )
+
+    for item in _state_entities(state_t0):
+        entity_id = _first_non_empty(item.get('id', ''), item.get('entity_id', ''))
+        if not entity_id:
+            continue
+        kind = _normalized_kind(item.get('kind', ''), item.get('type', ''))
+        entity = _ensure_compact_entity(
+            entities_by_id,
+            entity_id,
+            label=_display_entity_label(item.get('normalized_name', ''), entity_id),
+            kind=kind,
+            entity_class=item.get('type', item.get('kb_class', '')),
+        )
+        if include_planner_details:
+            _copy_optional_planner_details(
+                entity,
+                item,
+                ('last_seen_sec', 'last_seen_age_sec'),
+            )
+
+    for item in _knowledge_references(knowledge_snapshot):
+        entity_id = _first_non_empty(item.get('id', ''), item.get('entity_id', ''))
+        if not entity_id:
+            continue
+        entity = _ensure_compact_entity(
+            entities_by_id,
+            entity_id,
+            label=_display_entity_label(item.get('normalized_name', ''), entity_id),
+            kind=_normalized_kind('', item.get('type', '')),
+            entity_class=item.get('type', ''),
+        )
+
+    for row in knowledge_rows or []:
+        if isinstance(row, dict):
+            _merge_knowledge_row_relation(
+                entities_by_id,
+                row,
+                include_raw_relation=include_raw_relations,
+            )
+
+    entities = sorted(
+        (_finalize_compact_entity(item) for item in entities_by_id.values()),
+        key=lambda item: (item.get('kind', ''), item.get('id', '')),
     )
-    return _project(
-        grounded_context,
-        knowledge_rows=knowledge_rows,
-        include_state_t0=include_state_t0,
-        include_planner_details=include_planner_details,
-        include_raw_relations=include_raw_relations,
-    )
+    compact = {'entities': entities}
+    if include_state_t0 and isinstance(state_t0, dict) and state_t0:
+        compact['state_t0'] = dict(state_t0)
+    return compact
 
 
 def grounded_context_to_context_ref(grounded_context: dict) -> dict:
     """Project planner-ingress grounding into compact plan lineage metadata."""
-    from planner_common.grounded_context_projection import (
-        grounded_context_to_context_ref as _ref,
+    normalized = normalize_grounded_context(grounded_context)
+    state_t0 = normalized.get('state_t0', {})
+    scene_summary = normalized.get('scene_summary', {})
+    return {
+        'captured_at_sec': _coerce_float(
+            _first_non_empty(
+                state_t0.get('captured_at_sec', ''),
+                scene_summary.get('captured_at_sec', ''),
+                0.0,
+            ),
+            0.0,
+        ),
+        'observer': _first_non_empty(
+            state_t0.get('observer', ''),
+            scene_summary.get('observer', ''),
+            '',
+        ),
+        'backend': _first_non_empty(
+            state_t0.get('backend', ''),
+            scene_summary.get('backend', ''),
+            '',
+        ),
+    }
+
+
+def _normalize_grounded_entity(
+    item: dict,
+    *,
+    include_raw_relations: bool = False,
+) -> dict:
+    entity_id = str(item.get('id', item.get('entity_id', ''))).strip()
+    label_value = item.get('label', None)
+    label = None if label_value is None else str(label_value).strip()
+    kind = _normalized_kind(item.get('kind', ''), item.get('class', item.get('type', '')))
+    entity = {
+        'id': entity_id,
+        'label': label or None,
+        'kind': kind,
+        'class': str(item.get('class', item.get('type', ''))).strip(),
+        'visible': coerce_bool(item.get('visible', True)),
+        'relations': _normalize_relations(
+            item.get('relations', []),
+            entity_class=item.get('class', item.get('type', '')),
+        ),
+    }
+    raw_relations = item.get('raw_relations', [])
+    if include_raw_relations and isinstance(raw_relations, list) and raw_relations:
+        entity['raw_relations'] = _normalize_raw_relations(raw_relations)
+    state_t0 = item.get('state_t0', None)
+    if isinstance(state_t0, dict) and state_t0:
+        entity['state_t0'] = dict(state_t0)
+    return {
+        key: value
+        for key, value in entity.items()
+        if key == 'label' or value not in ('', [], {})
+    }
+
+
+def _normalize_relations(
+    value,
+    *,
+    max_relations: int = _MAX_LLM_RELATIONS_PER_ENTITY,
+    entity_class='',
+) -> list[dict]:
+    if not isinstance(value, list):
+        return []
+    relations_by_key = {}
+    seen = set()
+    seen_rdf_type = False
+    compact_class = _compact_term(entity_class)
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        predicate = _normalize_relation_predicate(
+            item.get('predicate', item.get('p', ''))
+        )
+        obj = str(item.get('object', item.get('o', ''))).strip()
+        if not predicate or not obj:
+            continue
+        if predicate not in _LLM_RELATION_PREDICATE_PRIORITY:
+            continue
+        if predicate == 'rdf:type':
+            if compact_class and _compact_term(obj) == compact_class:
+                continue
+            if seen_rdf_type:
+                continue
+            seen_rdf_type = True
+        key = (predicate, obj)
+        if key in seen:
+            continue
+        seen.add(key)
+        relations_by_key[key] = {'predicate': predicate, 'object': obj}
+    relations = list(relations_by_key.values())
+    relations.sort(
+        key=lambda item: (
+            _relation_priority(item.get('predicate', '')),
+            item.get('object', ''),
+        )
     )
-    return _ref(grounded_context)
+    return relations[:max(0, int(max_relations))]
+
+
+def _normalize_raw_relations(value) -> list[dict]:
+    if not isinstance(value, list):
+        return []
+    relations = []
+    seen = set()
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        predicate = str(item.get('predicate', item.get('p', ''))).strip()
+        obj = str(item.get('object', item.get('o', ''))).strip()
+        if not predicate or not obj:
+            continue
+        key = (predicate, obj)
+        if key in seen:
+            continue
+        seen.add(key)
+        relations.append({'predicate': predicate, 'object': obj})
+    return relations
+
+
+def _scene_items(scene_summary: dict, key: str) -> list[dict]:
+    if not isinstance(scene_summary, dict):
+        return []
+    items = scene_summary.get(key, [])
+    if not isinstance(items, list):
+        return []
+    return [item for item in items if isinstance(item, dict)]
+
+
+def _state_entities(state_t0: dict) -> list[dict]:
+    if not isinstance(state_t0, dict):
+        return []
+    entities = state_t0.get('entities', [])
+    if isinstance(entities, list) and entities:
+        return [item for item in entities if isinstance(item, dict)]
+    result = []
+    for key in ('objects', 'people'):
+        items = state_t0.get(key, [])
+        if isinstance(items, list):
+            result.extend(item for item in items if isinstance(item, dict))
+    return result
+
+
+def _knowledge_references(knowledge_snapshot: dict) -> list[dict]:
+    if not isinstance(knowledge_snapshot, dict):
+        return []
+    references = knowledge_snapshot.get('references', [])
+    if not isinstance(references, list):
+        return []
+    return [item for item in references if isinstance(item, dict)]
+
+
+def _ensure_compact_entity(
+    entities_by_id: dict[str, dict],
+    entity_id: str,
+    *,
+    label: str | None,
+    kind: str,
+    entity_class,
+) -> dict:
+    clean_id = str(entity_id or '').strip()
+    entity = entities_by_id.setdefault(
+        clean_id,
+        {
+            'id': clean_id,
+            'label': label,
+            'kind': kind or 'object',
+            'class': str(entity_class or '').strip(),
+            'visible': True,
+            'relations': [],
+        },
+    )
+    if not entity.get('label') and label:
+        entity['label'] = label
+    if not entity.get('class') and str(entity_class or '').strip():
+        entity['class'] = str(entity_class or '').strip()
+    if entity.get('kind') == 'object' and kind == 'person':
+        entity['kind'] = 'person'
+    return entity
+
+
+def _display_entity_label(value, entity_id: str) -> str:
+    raw = str(value or '').strip()
+    if not raw:
+        raw = str(entity_id or '').strip()
+    if not raw:
+        return ''
+    parts = raw.split('_')
+    if len(parts) > 1 and _looks_generated_suffix(parts[-1]):
+        return '_'.join(parts[:-1])
+    return raw
+
+
+def _person_label(item: dict, entity_id: str) -> str | None:
+    label = str(item.get('label', '')).strip()
+    if label and label != entity_id:
+        return _display_entity_label(label, entity_id)
+    if str(entity_id).startswith('anonymous_'):
+        return None
+    return _display_entity_label(label, entity_id)
+
+
+def _looks_generated_suffix(value: str) -> bool:
+    clean = str(value or '').strip()
+    return len(clean) >= 4 and clean.isalnum() and not clean.isdigit()
+
+
+def _normalized_kind(kind_value, type_value) -> str:
+    kind = str(kind_value or '').strip().lower()
+    if kind in ('person', 'human'):
+        return 'person'
+    if kind == 'object':
+        return 'object'
+    type_text = str(type_value or '').strip().lower()
+    if any(token in type_text for token in ('person', 'human', 'face', 'speaker')):
+        return 'person'
+    return 'object'
+
+
+def _copy_optional_planner_details(entity: dict, source: dict, keys: tuple[str, ...]) -> None:
+    for key in keys:
+        if key in source and source.get(key) not in (None, ''):
+            entity[key] = source.get(key)
+
+
+def _add_relation(entity: dict, predicate, obj) -> None:
+    clean_predicate = _normalize_relation_predicate(predicate)
+    clean_object = _compact_term(obj)
+    if not clean_predicate or not clean_object:
+        return
+    relations = entity.setdefault('relations', [])
+    candidate = {'predicate': clean_predicate, 'object': clean_object}
+    if candidate not in relations:
+        relations.append(candidate)
+
+
+def _merge_knowledge_row_relation(
+    entities_by_id: dict[str, dict],
+    row: dict,
+    *,
+    include_raw_relation: bool = False,
+) -> None:
+    entity_id = _first_non_empty(row.get('entity', ''), row.get('s', ''))
+    if not entity_id:
+        return
+    entity_id = _compact_term(entity_id)
+    predicate = _first_non_empty(
+        row.get('predicate', ''),
+        row.get('p', ''),
+        row.get('attribute', ''),
+    )
+    obj = _first_non_empty(
+        row.get('object', ''),
+        row.get('o', ''),
+        row.get('value', ''),
+        row.get('type', ''),
+    )
+    if row.get('type', '') and not predicate:
+        predicate = 'rdf:type'
+    if not predicate or not obj:
+        return
+    entity = _ensure_compact_entity(
+        entities_by_id,
+        entity_id,
+        label=_display_entity_label(entity_id, entity_id),
+        kind=_normalized_kind('', obj if predicate in ('rdf:type', 'type') else ''),
+        entity_class=_compact_term(obj) if predicate in ('rdf:type', 'type') else '',
+    )
+    normalized_predicate = _normalize_relation_predicate(predicate)
+    if normalized_predicate == 'rdf:type' and not entity.get('class'):
+        entity['class'] = _compact_term(obj)
+    _add_relation(entity, normalized_predicate, obj)
+    if include_raw_relation:
+        raw_relations = entity.setdefault('raw_relations', [])
+        raw_candidate = {'predicate': str(predicate).strip(), 'object': str(obj).strip()}
+        if raw_candidate not in raw_relations:
+            raw_relations.append(raw_candidate)
+
+
+def _normalize_relation_predicate(value) -> str:
+    text = _compact_term(value)
+    if not text:
+        return ''
+    if text in _LLM_RELATION_PREDICATE_PRIORITY:
+        return text
+    lower = text.strip().lower()
+    return _LLM_RELATION_PREDICATE_ALIASES.get(lower, text)
+
+
+def _relation_priority(predicate: str) -> int:
+    try:
+        return _LLM_RELATION_PREDICATE_PRIORITY.index(str(predicate or '').strip())
+    except ValueError:
+        return len(_LLM_RELATION_PREDICATE_PRIORITY)
+
+
+def _compact_term(value) -> str:
+    text = str(value or '').strip()
+    if not text:
+        return ''
+    if text.startswith('dbr:'):
+        return text.split(':', 1)[1]
+    for separator in ('#', '/'):
+        if separator in text:
+            text = text.rsplit(separator, 1)[-1]
+    return text
+
+
+def _finalize_compact_entity(entity: dict) -> dict:
+    finalized = {
+        'id': str(entity.get('id', '')).strip(),
+        'label': entity.get('label') if entity.get('label') else None,
+        'kind': str(entity.get('kind', 'object')).strip() or 'object',
+        'class': str(entity.get('class', '')).strip(),
+        'visible': coerce_bool(entity.get('visible', True)),
+        'relations': _normalize_relations(
+            entity.get('relations', []),
+            entity_class=entity.get('class', ''),
+        ),
+    }
+    raw_relations = _normalize_raw_relations(entity.get('raw_relations', []))
+    if raw_relations:
+        finalized['raw_relations'] = raw_relations
+    for key in ('center_x', 'center_y', 'last_seen_sec', 'last_seen_age_sec'):
+        if key in entity:
+            finalized[key] = entity[key]
+    return {
+        key: value
+        for key, value in finalized.items()
+        if key == 'label' or value not in ('', [], {})
+    }
 
 
 def normalize_communication_policy(value) -> dict:

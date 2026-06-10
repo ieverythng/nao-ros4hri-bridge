@@ -1,4 +1,5 @@
-"""Shared launch builder for the kept NAO demo profiles.
+"""
+Shared launch builder for the kept NAO demo profiles.
 
 The public launch files are intentionally small wrappers. This module owns the
 common launch arguments, optional external integrations, and lifecycle startup
@@ -139,6 +140,47 @@ _ROBOT_CAMERA_DEFAULTS = {
     "fake_skill_random_failure_prob": "0.50",
     "fake_skill_mode_overrides_json": "{}",
 }
+
+_RQT_CONTAINER_ENV_GUARD = (
+    'export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/runtime-root}"; '
+    'mkdir -p "$XDG_RUNTIME_DIR"; '
+    'chmod 700 "$XDG_RUNTIME_DIR" 2>/dev/null || true; '
+)
+_SCENE_GROUNDING_ALLOWED_LABELS = ",".join(
+    (
+        "bottle",
+        "cup",
+        "book",
+        "cell phone",
+        "backpack",
+        "remote",
+        "laptop",
+        "keyboard",
+        "mouse",
+        "chair",
+        "blueberry",
+        "corn",
+        "pear",
+        "tomato",
+        "zucchini",
+    )
+)
+_DEMO_LOG_NODES = ",".join(
+    (
+        "chatbot_llm",
+        "planner_llm",
+        "nao_orchestrator",
+        "scan_skill_server",
+        "report_result_skill_server",
+        "fake_skill_server",
+        "dialogue_manager",
+        "nao_say_skill",
+        "head_motion_skill_server",
+        "replay_motion_skill_server",
+        "nao_look_at",
+        "robot_speech_debug",
+    )
+)
 _GROUNDING_DEFAULTS = {
     "object_detection_threshold": "0.40",
     "scene_grounding_knowledge_lifespan_sec": "3.0",
@@ -319,7 +361,8 @@ def _lifecycle_bootstrap_script(node_name: str, timeout_sec: int = 120) -> str:
 node_name="{normalized_name}"
 deadline=$((SECONDS + {max(1, int(timeout_sec))}))
 while true; do
-  state="$(ros2 lifecycle get "$node_name" 2>/dev/null | awk '/^(unconfigured|inactive|active|finalized|errorprocessing)/{{print $1; exit}}')"
+  state="$(ros2 lifecycle get "$node_name" 2>/dev/null | \
+awk '/^(unconfigured|inactive|active|finalized|errorprocessing)/{{print $1; exit}}')"
   case "$state" in
     active)
       exit 0
@@ -351,7 +394,8 @@ def _lifecycle_recovery_script(node_name: str, timeout_sec: int = 240) -> str:
 node_name="{normalized_name}"
 deadline=$((SECONDS + {max(1, int(timeout_sec))}))
 while true; do
-  state="$(ros2 lifecycle get "$node_name" 2>/dev/null | awk '/^(unconfigured|inactive|active|finalized|errorprocessing)/{{print $1; exit}}')"
+  state="$(ros2 lifecycle get "$node_name" 2>/dev/null | \
+awk '/^(unconfigured|inactive|active|finalized|errorprocessing)/{{print $1; exit}}')"
   case "$state" in
     active)
       exit 0
@@ -965,7 +1009,7 @@ def generate_profile_launch_description(
     )
     scene_grounding_allowed_labels_arg = DeclareLaunchArgument(
         "scene_grounding_allowed_labels",
-        default_value="bottle,cup,book,cell phone,backpack,remote,laptop,keyboard,mouse,chair,blueberry,corn,pear,tomato,zucchini",
+        default_value=_SCENE_GROUNDING_ALLOWED_LABELS,
         description="Comma-separated detector labels to ground into KnowledgeCore.",
     )
     scene_grounding_knowledge_lifespan_sec_arg = DeclareLaunchArgument(
@@ -1005,7 +1049,10 @@ def generate_profile_launch_description(
     start_knowledge_core_arg = DeclareLaunchArgument(
         "start_knowledge_core",
         default_value=_profile_default(profile_defaults, "start_knowledge_core", "true"),
-        description="Optionally launch KnowledgeCore for chatbot_llm grounding when it is installed in the environment.",
+        description=(
+            "Optionally launch KnowledgeCore for chatbot_llm grounding when it "
+            "is installed in the environment."
+        ),
     )
     start_dialogue_manager_arg = DeclareLaunchArgument(
         "start_dialogue_manager",
@@ -1360,7 +1407,7 @@ def generate_profile_launch_description(
         default_value=_profile_default(
             profile_defaults,
             "demo_log_nodes",
-            "chatbot_llm,planner_llm,nao_orchestrator,scan_skill_server,report_result_skill_server,fake_skill_server,dialogue_manager,nao_say_skill,head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug",
+            _DEMO_LOG_NODES,
         ),
         description="Comma-separated node allowlist for the filtered demo log window.",
     )
@@ -1572,7 +1619,10 @@ def generate_profile_launch_description(
     chatbot_planner_mode_enabled_arg = DeclareLaunchArgument(
         "chatbot_planner_mode_enabled",
         default_value=_profile_default(profile_defaults, "chatbot_planner_mode_enabled", "false"),
-        description="Enable planner-mode handoff in chatbot_llm so execution-oriented turns publish to /planner/request.",
+        description=(
+            "Enable planner-mode handoff in chatbot_llm so execution-oriented "
+            "turns publish to /planner/request."
+        ),
     )
     planner_llm_provider_arg = DeclareLaunchArgument(
         "planner_llm_provider",
@@ -2365,6 +2415,7 @@ def generate_profile_launch_description(
             "bash",
             "-lc",
             [
+                _RQT_CONTAINER_ENV_GUARD,
                 "if ! command -v rqt >/dev/null 2>&1; then "
                 "echo 'rqt is not installed in this environment'; "
                 "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
@@ -2400,6 +2451,7 @@ def generate_profile_launch_description(
             "bash",
             "-lc",
             [
+                _RQT_CONTAINER_ENV_GUARD,
                 "if ! command -v rqt >/dev/null 2>&1; then "
                 "echo 'rqt is not installed in this environment'; "
                 "elif ! ros2 pkg prefix interaction_sim >/dev/null 2>&1; then "
@@ -2409,9 +2461,11 @@ def generate_profile_launch_description(
                 "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
                 "echo 'rqt launch skipped: DISPLAY/WAYLAND_DISPLAY is not set'; "
                 "else "
-                "perspective=\"$(ros2 pkg prefix nao_chatbot)/share/nao_chatbot/config/interaction_sim_debug.perspective\"; "
+                "nao_prefix=\"$(ros2 pkg prefix nao_chatbot)\"; "
+                "perspective=\"$nao_prefix/share/nao_chatbot/config/interaction_sim_debug.perspective\"; "
                 "if [ ! -f \"$perspective\" ]; then "
-                "perspective=\"$(ros2 pkg prefix interaction_sim)/share/interaction_sim/config/simulator.perspective\"; "
+                "sim_prefix=\"$(ros2 pkg prefix interaction_sim)\"; "
+                "perspective=\"$sim_prefix/share/interaction_sim/config/simulator.perspective\"; "
                 "fi; "
                 "exec rqt --clear-config --perspective-file \"$perspective\" --ros-args -r /tts_engine/tts:=",
                 LaunchConfiguration("debug_tts_action_name"),
@@ -2443,6 +2497,7 @@ def generate_profile_launch_description(
             "bash",
             "-lc",
             [
+                _RQT_CONTAINER_ENV_GUARD,
                 "if ! command -v rqt >/dev/null 2>&1; then "
                 "echo 'rqt is not installed in this environment'; "
                 "elif ! python3 -c 'import importlib.util,sys; "
@@ -2474,14 +2529,15 @@ def generate_profile_launch_description(
             "bash",
             "-lc",
             [
-            "if ! command -v rqt >/dev/null 2>&1; then "
-            "echo 'rqt is not installed in this environment'; "
-            "elif ! python3 -c 'import importlib.util,sys; "
-            "sys.exit(0 if importlib.util.find_spec(\"rqt_chat\") else 1)' >/dev/null 2>&1; then "
-            "echo 'rqt_chat is not installed in this environment'; "
-            "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
-            "echo 'rqt_chat launch skipped: DISPLAY/WAYLAND_DISPLAY is not set'; "
-            "else "
+                _RQT_CONTAINER_ENV_GUARD,
+                "if ! command -v rqt >/dev/null 2>&1; then "
+                "echo 'rqt is not installed in this environment'; "
+                "elif ! python3 -c 'import importlib.util,sys; "
+                "sys.exit(0 if importlib.util.find_spec(\"rqt_chat\") else 1)' >/dev/null 2>&1; then "
+                "echo 'rqt_chat is not installed in this environment'; "
+                "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
+                "echo 'rqt_chat launch skipped: DISPLAY/WAYLAND_DISPLAY is not set'; "
+                "else "
                 "exec rqt --clear-config --standalone rqt_chat.chat.ChatPlugin --ros-args "
                 "-r /tts_engine/tts:=",
                 LaunchConfiguration("debug_tts_action_name"),

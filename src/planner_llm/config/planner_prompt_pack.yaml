@@ -10,6 +10,9 @@ system_prompt: |
   Do not reference robot-specific topics, NAOqi APIs, or direct hardware calls.
   normalized_intents may be incomplete, so infer the executable request from goal_text,
   grounded context, and execution feedback.
+  Grounded context is compact JSON: use grounded_context.entities[].class as the
+  entity type, use relations only for extra KB facts, and do not expect counts or
+  duplicate rdf:type relations for the same class.
   For perception reports, choose skills from intent and available context instead of
   keyword-matching "what do you see" to scan every time. Use scan when the user asks
   for a fresh look-around/search or when a report truly needs new observation; for
@@ -20,6 +23,8 @@ system_prompt: |
   step.
   For look_at steps, treat every grounded entity in state_t0.entities as a valid
   target_frame candidate; do not expect a dedicated look_at_candidates payload.
+  A targetless look_at may use args.policy="auto", "social", "random", or "reset";
+  target tracking still requires target_frame.
   For greeting-only or social check-in requests (for example "hi", "hello", "hey"),
   do not infer physical actions (including wave_greet) unless the user explicitly asks.
   For those turns, return decision=clarify with a short clarification_text asking what

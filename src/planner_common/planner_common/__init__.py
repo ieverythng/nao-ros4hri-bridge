@@ -25,11 +25,15 @@ from planner_common.contracts import extract_json_object
 from planner_common.contracts import grounded_context_to_context_ref
 from planner_common.contracts import make_goal_id
 from planner_common.contracts import make_plan_id
+from planner_common.contracts import live_result_report_summary_error
+from planner_common.contracts import missing_requested_report_error
 from planner_common.contracts import normalize_communication_policy
 from planner_common.contracts import normalize_grounded_context
 from planner_common.contracts import normalize_plan_steps
 from planner_common.contracts import parse_json_object
 from planner_common.contracts import project_llm_grounded_context
+from planner_common.contracts import request_requests_report
+from planner_common.contracts import scan_report_summary_error
 from planner_common.skill_manifest import DEFAULT_PERFORM_MOTION_OBJECT_LABELS
 from planner_common.skill_manifest import ExportedSkillManifest
 from planner_common.skill_manifest import is_perform_motion_object_label
@@ -70,8 +74,10 @@ __all__ = [
     'extract_json_object',
     'grounded_context_to_context_ref',
     'load_exported_skill_manifests',
+    'live_result_report_summary_error',
     'make_goal_id',
     'make_plan_id',
+    'missing_requested_report_error',
     'merge_fake_skill_aliases',
     'merge_scan_skill_names',
     'merge_supported_skill_names',
@@ -81,7 +87,9 @@ __all__ = [
     'names_from_manifest',
     'parse_json_object',
     'project_llm_grounded_context',
+    'request_requests_report',
     'resolve_package_xml',
+    'scan_report_summary_error',
     'truncate_text',
     'load_shared_skill_manifest',
 ]

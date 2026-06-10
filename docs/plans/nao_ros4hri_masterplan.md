@@ -51,6 +51,7 @@ Everything else should be archived under `docs/artifacts/` unless it is actively
 - **Done**: route-hardening now defaults visibility-only scene checks to `knowledge_query` unless explicit scan/action wording is requested.
 - **Done**: planner dialogue acts run in direct mode by default, while completion wording stays chatbot-relay-owned when a chatbot client is available.
 - **Done**: planner grounding contracts now use Hybrid Minimal T0 (`knowledge_snapshot`, `scene_summary`, `state_t0`) with world-model seams removed.
+- **In progress (2026-06-03)**: seam contract hardening pass removes prompt-facing `counts`, removes same-class duplicate `rdf:type` relations, centralizes small contract helpers, and adds targetless `look_at` policy dispatch (`docs/plans/seam_contract_hardening_2026-06-03.md`).
 - **Done**: structured `chatbot_turn_trace` visibility is available for dialogue vs planner-handoff attribution.
 - **Done (2026-05-26)**: planner-mode routing now guards visibility-only scene questions toward `knowledge_query` unless the user explicitly requests a new scan/action.
 - **In progress**: proactive wording + speech arbitration pass to avoid duplicate user-facing utterances when execution acknowledgements and planner dialogue completions occur in the same interaction.
