@@ -145,7 +145,6 @@
     },
     "/humans/persons/tracked": {
       "subscribers": [
-        "chatbot_llm",
         "nao_orchestrator"
       ]
     },
@@ -550,7 +549,7 @@
       ]
     }
   },
-  "generatedAt": "2026-06-01T09:08:03.602495+00:00",
+  "generatedAt": "2026-06-10T01:04:10.861132+00:00",
   "packages": [
     {
       "actionClients": [],
@@ -624,9 +623,7 @@
         "/chatbot_llm/get_supported_locales",
         "/chatbot_llm/prepare_dialogue"
       ],
-      "subscribes": [
-        "/humans/persons/tracked"
-      ]
+      "subscribes": []
     },
     {
       "actionClients": [],

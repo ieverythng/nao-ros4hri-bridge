@@ -345,7 +345,6 @@ def ros_contract_chatbot_llm():
 def ros_node_chatbot_llm():
     """Runtime ROS proxy for package/node chatbot_llm."""
     ros_topic_diagnostics()
-    ros_topic_humans_persons_tracked()
     ros_service_chatbot_llm_dialogue_interaction()
     ros_service_chatbot_llm_get_supported_locales()
     ros_service_chatbot_llm_prepare_dialogue()

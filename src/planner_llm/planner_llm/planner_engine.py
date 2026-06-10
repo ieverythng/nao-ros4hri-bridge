@@ -6,19 +6,15 @@ from dataclasses import dataclass
 import json
 
 from planner_common import ExecutionFeedback
+from planner_common import IntentLabels
 from planner_common import PlannerRequest
 from planner_common import build_plan_payload
 from planner_common import extract_json_object
-from planner_common import IntentLabels
+from planner_common import live_result_report_summary_error
 from planner_common import missing_requested_report_error
 from planner_common import normalize_communication_policy
 from planner_common import normalize_plan_steps
 from planner_common import request_requests_report
-from planner_common import live_result_report_summary_error
-
-from planner_common.contracts import missing_requested_report_error
-from planner_common.contracts import request_requests_report
-from planner_common.contracts import scan_report_summary_error
 
 from planner_llm.providers import BasePlannerProvider
 from planner_llm.providers import PlannerProviderError
@@ -37,6 +33,7 @@ _RULE_BASED_MOTIONS = {
     'posture_sit': 'sit',
     'posture_kneel': 'kneel',
 }
+
 
 @dataclass(frozen=True)
 class PlannerDecision:

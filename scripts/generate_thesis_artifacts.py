@@ -10,7 +10,7 @@ import re
 import textwrap
 
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm, mm
@@ -437,8 +437,6 @@ def write_pdf(path: Path, artifact: Artifact, md: str) -> None:
     code = ParagraphStyle("Code", parent=styles["Code"], fontName="Courier", fontSize=8.3, leading=10)
     title = ParagraphStyle("Title", parent=styles["Title"], fontName="Times-Bold", fontSize=20, leading=25, alignment=TA_CENTER)
     centered = ParagraphStyle("Centered", parent=body, alignment=TA_CENTER)
-    small = ParagraphStyle("Small", parent=body, fontSize=9.5, leading=12)
-
     doc = SimpleDocTemplate(
         str(path),
         pagesize=A4,

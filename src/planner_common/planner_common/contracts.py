@@ -426,10 +426,6 @@ def normalize_grounded_context(value) -> dict:
         return dict(_DEFAULT_GROUNDED_CONTEXT)
 
     if any(key in raw_payload for key in _COMPACT_GROUNDED_CONTEXT_KEYS):
-        from planner_common.grounded_context_projection import (
-            _normalize_grounded_entity,
-            _normalize_grounded_counts,
-        )
         entities = raw_payload.get('entities', [])
         if not isinstance(entities, list):
             entities = []

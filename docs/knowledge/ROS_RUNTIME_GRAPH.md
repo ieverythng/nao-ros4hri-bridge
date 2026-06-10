@@ -4,14 +4,14 @@ This file is generated from the repository source to make ROS runtime
 publish/subscribe, service, and action seams explicit for humans and for
 GitNexus indexing.
 
-Generated at: 2026-06-01T09:08:03.604085+00:00
+Generated at: 2026-06-10T01:04:10.863521+00:00
 
 ## Packages
 
 | Package | Publishes | Subscribes | Service Clients | Service Servers | Action Clients | Action Servers | Contracts |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | asr_vosk | /diagnostics<br>/humans/voices/anonymous_speaker/audio<br>/humans/voices/anonymous_speaker/is_speaking<br>/humans/voices/tracked | /audio/voice_detected<br>/robot_speaking | - | - | - | - | - |
-| chatbot_llm | /diagnostics | /humans/persons/tracked | - | /chatbot_llm/dialogue_interaction<br>/chatbot_llm/get_supported_locales<br>/chatbot_llm/prepare_dialogue | - | /chatbot_llm/set_default_locale | - |
+| chatbot_llm | /diagnostics | - | - | /chatbot_llm/dialogue_interaction<br>/chatbot_llm/get_supported_locales<br>/chatbot_llm/prepare_dialogue | - | /chatbot_llm/set_default_locale | - |
 | communication_skills | - | - | - | - | - | - | /skill/ask<br>/skill/chat<br>/skill/say |
 | dialogue_manager | /diagnostics<br>/dialogue_manager/closed_captions<br>/dialogue_manager/currently_waiting_for_chatbot_response<br>/dialogue_manager/debug_state<br>/dialogue_manager/robot_speech<br>/intents | /dialogue_manager/debug_state<br>/humans/interactions/groups<br>/humans/voices/*/speech<br>/humans/voices/tracked<br>/planner/dialogue_act | /*/prepare_dialogue<br>/chatbot_llm/dialogue_interaction | - | - | /skill/ask<br>/skill/chat<br>/skill/say | - |
 | emorobcare_cv_object_detection | /debug/object_detection<br>/detected_objects<br>/processing_time<br>/system/health/object_detect | /depth_map | /sim_scene/place_object<br>/sim_scene/remove_object | /start_detection<br>/stop_detection | - | - | - |
@@ -135,7 +135,7 @@ Generated at: 2026-06-01T09:08:03.604085+00:00
 
 ### `/humans/persons/tracked`
 
-- Subscribers: chatbot_llm, nao_orchestrator
+- Subscribers: nao_orchestrator
 
 ### `/humans/voices/*/speech`
 
