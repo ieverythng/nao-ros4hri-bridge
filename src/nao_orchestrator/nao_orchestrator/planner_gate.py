@@ -12,6 +12,19 @@ _FROZEN_DATACLASS_KWARGS = {'frozen': True}
 if sys.version_info >= (3, 10):  # pragma: no branch - local macOS uses Python 3.9
     _FROZEN_DATACLASS_KWARGS['slots'] = True
 
+_NON_EXECUTION_INTENTS = frozenset(
+    {
+        'greet',
+        'identity',
+        'wellbeing',
+        'help',
+        'kb_query_visible_entities',
+        'kb_query_visible_people',
+        'kb_query_visible_objects',
+        'kb_query_scene_change',
+    }
+)
+
 
 @dataclass(**_FROZEN_DATACLASS_KWARGS)
 class PlannerGateDecision:
@@ -44,6 +57,13 @@ class PlannerGate:
         request_payload = parse_json_object(payload)
         request = PlannerRequest.from_payload(request_payload)
         kind = request.request_kind
+
+        if kind == 'new_goal' and _is_non_execution_request(request):
+            return PlannerGateDecision(
+                False,
+                request,
+                'non-execution request must not enter planner execution',
+            )
 
         if kind == 'cancel_request':
             if self._matches_active_goal(request):
@@ -161,3 +181,34 @@ class PlannerGate:
             request.parent_goal_id,
             request.supersedes_goal_id,
         )
+
+
+def _is_non_execution_request(request: PlannerRequest) -> bool:
+    """Reject dialogue/knowledge turns that leaked into planner admission."""
+    normalized_intents = {
+        str(intent).strip().lower()
+        for intent in request.normalized_intents
+        if str(intent).strip()
+    }
+    if normalized_intents and normalized_intents.issubset(_NON_EXECUTION_INTENTS):
+        return True
+
+    return _is_dialogue_only_capability_question(request.goal_text)
+
+
+def _is_dialogue_only_capability_question(text: str) -> bool:
+    """Backstop known capability questions if their intent was misclassified."""
+    normalized = ''.join(
+        char for char in ' '.join(str(text or '').strip().lower().split())
+        if char.isalnum() or char.isspace()
+    ).strip()
+    return any(
+        marker in normalized
+        for marker in (
+            'what can you do',
+            'what are you able to do',
+            'what capabilities do you have',
+            'what are your capabilities',
+            'tell me what you can do',
+        )
+    )

@@ -449,7 +449,7 @@ def test_supervisor_reports_backend_unavailable_as_failure_not_clarification() -
     assert outcome.dialogue_acts[0].await_user_response is False
 
 
-def test_supervisor_does_not_emit_completion_dialogue_act() -> None:
+def test_supervisor_emits_completion_for_non_speaking_plan() -> None:
     supervisor = PlannerSupervisor(_StubEngine(), auto_replan=True)
     request = PlannerRequest.from_payload(
         {'goal_id': 'goal_done', 'request_id': 'turn_1', 'user_text': 'look ahead'}
@@ -467,10 +467,11 @@ def test_supervisor_does_not_emit_completion_dialogue_act() -> None:
 
     outcome = supervisor.handle_feedback(feedback)
     assert outcome.decision is None
-    assert outcome.dialogue_acts == ()
+    assert len(outcome.dialogue_acts) == 1
+    assert outcome.dialogue_acts[0].act == 'notify_completion'
 
 
-def test_supervisor_does_not_emit_motion_sequence_completion_dialogue_act() -> None:
+def test_supervisor_emits_completion_for_motion_sequence() -> None:
     supervisor = PlannerSupervisor(_MotionSequenceEngine(), auto_replan=True)
     request = PlannerRequest.from_payload(
         {'goal_id': 'goal_motion_sequence', 'request_id': 'turn_1', 'user_text': 'nod'}
@@ -489,7 +490,8 @@ def test_supervisor_does_not_emit_motion_sequence_completion_dialogue_act() -> N
     outcome = supervisor.handle_feedback(feedback)
 
     assert outcome.decision is None
-    assert outcome.dialogue_acts == ()
+    assert len(outcome.dialogue_acts) == 1
+    assert outcome.dialogue_acts[0].act == 'notify_completion'
 
 
 def test_supervisor_suppresses_completion_when_plan_ended_with_result_say() -> None:
@@ -541,7 +543,7 @@ def test_supervisor_suppresses_completion_when_plan_ended_with_report_result() -
     assert outcome.dialogue_acts == ()
 
 
-def test_supervisor_does_not_emit_completion_from_latest_result_summary() -> None:
+def test_supervisor_emits_one_completion_with_latest_result_summary() -> None:
     supervisor = PlannerSupervisor(_StubEngine(), auto_replan=True)
     request = PlannerRequest.from_payload(
         {'goal_id': 'goal_scan_summary', 'request_id': 'turn_1', 'user_text': 'scan'}
@@ -578,10 +580,12 @@ def test_supervisor_does_not_emit_completion_from_latest_result_summary() -> Non
         )
     )
 
-    assert outcome.dialogue_acts == ()
+    assert len(outcome.dialogue_acts) == 1
+    assert outcome.dialogue_acts[0].act == 'notify_completion'
+    assert outcome.dialogue_acts[0].context['result_summary'] == 'I found one person.'
 
 
-def test_supervisor_does_not_emit_scan_result_completion_dialogue_act() -> None:
+def test_supervisor_emits_one_scan_result_completion_dialogue_act() -> None:
     supervisor = PlannerSupervisor(_MotionScanEngine(), auto_replan=True)
     request = PlannerRequest.from_payload(
         {'goal_id': 'goal_scan_summary', 'request_id': 'turn_1', 'user_text': 'scan for people'}
@@ -615,7 +619,8 @@ def test_supervisor_does_not_emit_scan_result_completion_dialogue_act() -> None:
         )
     )
 
-    assert outcome.dialogue_acts == ()
+    assert len(outcome.dialogue_acts) == 1
+    assert outcome.dialogue_acts[0].act == 'notify_completion'
 
 
 def test_supervisor_emits_acknowledgement_dialogue_act_when_policy_allows_it() -> None:

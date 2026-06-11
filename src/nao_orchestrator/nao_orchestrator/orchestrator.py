@@ -25,6 +25,7 @@ from planner_common import make_plan_id
 from planner_common import load_shared_skill_manifest
 from planner_common import merge_fake_skill_aliases
 from planner_common import merge_scan_skill_names
+from planner_common import parse_json_object
 from rclpy.action import ActionClient
 from rclpy.lifecycle import Node, State, TransitionCallbackReturn
 from std_msgs.msg import String
@@ -69,6 +70,7 @@ _DEFAULT_FAKE_SKILL_ALIASES = {
     'walk_to': {'walk_to', 'walk_forward', 'step_to'},
 }
 _ASK_USER_STEP_NAMES = frozenset({'ask_user', 'ask_clarification', 'ask_for_help'})
+_MAX_RELAYED_PLANNER_ACTS = 256
 
 
 def _first_non_empty_text(*values) -> str:
@@ -83,6 +85,44 @@ def _first_non_empty_value(data: dict, *keys: str) -> str:
     if not isinstance(data, dict):
         return ''
     return _first_non_empty_text(*(data.get(key, '') for key in keys))
+
+
+def _planner_dialogue_act_signature(payload: str) -> str:
+    """Canonicalize one semantic planner event for relay deduplication."""
+    try:
+        parsed = json.loads(str(payload or '').strip())
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return str(payload or '').strip()
+    if not isinstance(parsed, dict):
+        return str(payload or '').strip()
+    try:
+        plan_version = max(0, int(parsed.get('plan_version', 0) or 0))
+    except (TypeError, ValueError):
+        plan_version = 0
+    signature = {
+        'goal_id': str(parsed.get('goal_id', '')).strip(),
+        'plan_id': str(parsed.get('plan_id', '')).strip(),
+        'plan_version': plan_version,
+        'act': str(parsed.get('act', '')).strip().lower(),
+    }
+    if signature['act'] == 'progress_update':
+        signature.update(
+            {
+                'reason': str(parsed.get('reason', '')).strip(),
+                'text_hint': str(parsed.get('text_hint', '')).strip(),
+                'context': parsed.get('context', {})
+                if isinstance(parsed.get('context', {}), dict)
+                else {},
+            }
+        )
+    elif signature['act'] == 'ask_clarification':
+        slots_needed = parsed.get('slots_needed', [])
+        signature['slots_needed'] = sorted(
+            str(slot).strip()
+            for slot in slots_needed
+            if str(slot).strip()
+        ) if isinstance(slots_needed, list) else []
+    return json.dumps(signature, sort_keys=True, separators=(',', ':'), ensure_ascii=True)
 
 
 @dataclass(slots=True)
@@ -326,6 +366,8 @@ class NaoOrchestrator(Node):
         self._stats = _RuntimeStats()
         self._last_intent_signature = ''
         self._last_intent_ts = 0.0
+        self._relayed_planner_act_signatures: list[str] = []
+        self._relayed_planner_act_signature_set: set[str] = set()
 
         self._say_client = None
         self._replay_motion_client = None
@@ -353,6 +395,8 @@ class NaoOrchestrator(Node):
     def on_configure(self, _state: State) -> TransitionCallbackReturn:
         """Create action clients, diagnostics, and topic fallbacks."""
         self._destroy_runtime_interfaces()
+        self._relayed_planner_act_signatures.clear()
+        self._relayed_planner_act_signature_set.clear()
         self._say_client = ActionClient(self, Say, self.nao_say_action)
         self._replay_motion_client = ActionClient(
             self,
@@ -673,6 +717,23 @@ class NaoOrchestrator(Node):
 
     def _on_planner_dialogue_act(self, msg: String) -> None:
         """Observe and relay planner acts through orchestrator-owned topic seam."""
+        payload = parse_json_object(msg.data)
+        act = str(payload.get('act', '')).strip().lower()
+        if act == 'acknowledge':
+            self._stats.duplicates_ignored += 1
+            self.get_logger().info(
+                'Suppressed contract-violating planner acknowledge; '
+                'chatbot owns immediate acknowledgement'
+            )
+            return
+
+        signature = _planner_dialogue_act_signature(msg.data)
+        if signature in self._relayed_planner_act_signature_set:
+            self._stats.duplicates_ignored += 1
+            self.get_logger().warn('Ignored duplicate planner dialogue act')
+            return
+        self._remember_relayed_planner_act(signature)
+
         active_goal_before = self._planner_gate.active_goal_id
         self._planner_gate.observe_dialogue_act(msg.data)
         active_goal_after = self._planner_gate.active_goal_id
@@ -690,6 +751,17 @@ class NaoOrchestrator(Node):
         relay_msg = String()
         relay_msg.data = payload
         self._planner_dialogue_act_pub.publish(relay_msg)
+
+    def _remember_relayed_planner_act(self, signature: str) -> None:
+        """Bound the exact planner-act relay ledger while preserving recent history."""
+        if not signature:
+            return
+        self._relayed_planner_act_signatures.append(signature)
+        self._relayed_planner_act_signature_set.add(signature)
+        if len(self._relayed_planner_act_signatures) <= _MAX_RELAYED_PLANNER_ACTS:
+            return
+        expired = self._relayed_planner_act_signatures.pop(0)
+        self._relayed_planner_act_signature_set.discard(expired)
 
     def _handle_intent(self, intent_name: str, data: dict, source: str) -> None:
         """Route one normalized intent through planned or legacy dispatch paths."""

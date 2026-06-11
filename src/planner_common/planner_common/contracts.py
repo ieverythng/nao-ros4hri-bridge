@@ -103,6 +103,7 @@ _DEFAULT_COMMUNICATION_POLICY = {
     'emit_completion': True,
     'emit_failure': True,
 }
+_SPEECH_PRODUCING_STEP_NAMES = frozenset(('report_result', 'say'))
 _LOOK_AT_RESET_POLICY_ALIASES = frozenset(
     (
         'reset',
@@ -912,6 +913,21 @@ def normalize_communication_policy(value) -> dict:
     return policy
 
 
+def resolve_effective_communication_policy(value, steps) -> dict:
+    """Resolve communication flags against the validated executable plan shape."""
+    policy = normalize_communication_policy(value)
+    normalized_steps = normalize_plan_steps(list(steps or []))
+    if any(_step_produces_speech(step) for step in normalized_steps):
+        policy['emit_completion'] = False
+    return policy
+
+
+def _step_produces_speech(step: dict) -> bool:
+    step_type = str(step.get('type', '')).strip().lower()
+    step_name = str(step.get('name', '')).strip().lower()
+    return step_type == 'say' or step_name in _SPEECH_PRODUCING_STEP_NAMES
+
+
 def normalize_plan_steps(steps) -> list[dict]:
     """Normalize a plan-step list into the orchestrator-expected structure."""
     if not isinstance(steps, list):
@@ -979,7 +995,11 @@ def build_plan_payload(
     resolved_scene_targets = list(scene_targets or getattr(request, 'scene_targets', []))
     resolved_goal_id = str(goal_id or getattr(request, 'goal_id', '')).strip()
     resolved_plan_id = str(plan_id or make_plan_id()).strip()
-    resolved_policy = normalize_communication_policy(communication_policy)
+    resolved_steps = normalize_plan_steps(list(steps or []))
+    resolved_policy = resolve_effective_communication_policy(
+        communication_policy,
+        resolved_steps,
+    )
     resolved_grounded_context = normalize_grounded_context(
         getattr(request, 'grounded_context', {})
     )
@@ -997,7 +1017,7 @@ def build_plan_payload(
         'context_ref': grounded_context_to_context_ref(resolved_grounded_context),
         'communication_policy': resolved_policy,
         'communication_policy_source': str(communication_policy_source or '').strip(),
-        'steps': normalize_plan_steps(list(steps or [])),
+        'steps': resolved_steps,
     }
     clean_failure_reason = str(failure_reason or '').strip()
     if clean_failure_reason:

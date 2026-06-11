@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from planner_common import ExecutionFeedback
 from planner_common import PlannerDialogueAct
 from planner_common import PlannerRequest
+from planner_common import resolve_effective_communication_policy
 from planner_common import build_dialogue_act_payload
 from planner_llm.planner_engine import PlannerDecision
 from planner_llm.planner_engine import PlannerEngine
@@ -147,10 +148,20 @@ class PlannerSupervisor:
 
         if feedback.event_type == 'plan_completed':
             state.current_status = 'completed'
+            completion_act = ()
+            if self._communication_policy_allows(state, 'emit_completion'):
+                completion_act = (
+                    self._dialogue_act(
+                        state,
+                        act='notify_completion',
+                        reason=feedback.reason or 'plan completed',
+                        text_hint=self._completion_text(state),
+                    ),
+                )
             state.active_plan_id = ''
             state.awaiting_user_response = False
             self._forget_plan(feedback.plan_id)
-            return SupervisorOutcome()
+            return SupervisorOutcome(dialogue_acts=completion_act)
 
         if feedback.event_type in ('plan_invalid', 'step_failed'):
             return self._handle_failure_feedback(
@@ -196,7 +207,10 @@ class PlannerSupervisor:
         state.active_plan_steps = tuple(
             step for step in plan_payload.get('steps', []) if isinstance(step, dict)
         )
-        state.communication_policy = dict(plan_payload.get('communication_policy', {}))
+        state.communication_policy = resolve_effective_communication_policy(
+            plan_payload.get('communication_policy', {}),
+            state.active_plan_steps,
+        )
 
         if decision.mode in ('clarify', 'fail', 'backend_unavailable'):
             awaiting_user = decision.mode == 'clarify'
@@ -390,10 +404,7 @@ class PlannerSupervisor:
 
     @staticmethod
     def _communication_policy_allows(state: SupervisorState, flag: str) -> bool:
-        if flag == 'emit_completion' and (
-            len(state.active_plan_steps) == 1
-            and state.active_plan_steps[0].get('type') == 'say'
-        ):
+        if flag == 'emit_completion' and not state.active_plan_steps:
             return False
         policy = dict(state.communication_policy or {})
         return bool(policy.get(flag, False))
@@ -434,25 +445,6 @@ class PlannerSupervisor:
             if step_text:
                 return step_text
         return ''
-
-    @staticmethod
-    def _plan_already_spoke_result(state: SupervisorState) -> bool:
-        if not state.active_plan_steps:
-            return False
-        final_step = state.active_plan_steps[-1]
-        if not isinstance(final_step, dict):
-            return False
-        step_type = str(final_step.get('type', '')).strip().lower()
-        step_name = str(final_step.get('name', '')).strip().lower()
-        step_args = dict(final_step.get('args', {}))
-
-        if step_type == 'say' or step_name == 'say':
-            return bool(str(step_args.get('text', '')).strip())
-
-        if step_type == 'skill' and step_name == 'report_result':
-            return True
-
-        return False
 
     @staticmethod
     def _step_for_feedback(state: SupervisorState, feedback: ExecutionFeedback) -> dict:

@@ -30,6 +30,7 @@ from planner_common.contracts import normalize_plan_steps
 from planner_common.contracts import parse_json_object
 from planner_common.contracts import project_llm_grounded_context
 from planner_common.contracts import request_requests_report
+from planner_common.contracts import resolve_effective_communication_policy
 from planner_common.contracts import scan_report_summary_error
 from planner_common.skill_manifest import DEFAULT_PERFORM_MOTION_OBJECT_LABELS
 from planner_common.skill_manifest import ExportedSkillManifest
@@ -82,6 +83,7 @@ __all__ = [
     'parse_json_object',
     'project_llm_grounded_context',
     'request_requests_report',
+    'resolve_effective_communication_policy',
     'resolve_package_xml',
     'scan_report_summary_error',
     'truncate_text',

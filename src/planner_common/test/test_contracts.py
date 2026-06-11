@@ -155,6 +155,33 @@ def test_build_plan_payload_keeps_nested_canonical_shape() -> None:
     assert 'grounded_context' not in payload
 
 
+def test_build_plan_payload_forces_completion_off_for_report_result() -> None:
+    request = PlannerRequest.from_payload({'goal_id': 'goal_1', 'request_id': 'r1'})
+
+    payload = build_plan_payload(
+        request=request,
+        steps=[
+            {'type': 'skill', 'name': 'scan', 'args': {}},
+            {'type': 'skill', 'name': 'report_result', 'args': {}},
+        ],
+        communication_policy={'emit_completion': True},
+    )
+
+    assert payload['plan']['communication_policy']['emit_completion'] is False
+
+
+def test_build_plan_payload_keeps_completion_for_non_speaking_plan() -> None:
+    request = PlannerRequest.from_payload({'goal_id': 'goal_1', 'request_id': 'r1'})
+
+    payload = build_plan_payload(
+        request=request,
+        steps=[{'type': 'skill', 'name': 'perform_motion', 'args': {'object': 'stand'}}],
+        communication_policy={'emit_completion': True},
+    )
+
+    assert payload['plan']['communication_policy']['emit_completion'] is True
+
+
 def test_normalize_grounded_context_stabilizes_missing_sections() -> None:
     grounded_context = normalize_grounded_context(
         {'knowledge_snapshot': {'cup': True}, 'state_t0': {'observer': 'myself'}}

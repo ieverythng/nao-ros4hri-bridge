@@ -24,6 +24,38 @@ def test_planner_gate_accepts_first_new_goal() -> None:
     assert gate.active_plan_id == ''
 
 
+def test_planner_gate_rejects_dialogue_only_capability_question() -> None:
+    gate = PlannerGate()
+
+    decision = gate.decide(
+        _payload(
+            'goal_capabilities',
+            goal_text='I am tired. What can you do?',
+            normalized_intents=['navigate_to'],
+        )
+    )
+
+    assert decision.accepted is False
+    assert decision.reason == 'non-execution request must not enter planner execution'
+    assert gate.active_goal_id == ''
+
+
+def test_planner_gate_uses_normalized_intents_to_reject_dialogue_leakage() -> None:
+    gate = PlannerGate()
+
+    decision = gate.decide(
+        _payload(
+            'goal_identity',
+            goal_text='Who are you?',
+            normalized_intents=['identity'],
+        )
+    )
+
+    assert decision.accepted is False
+    assert decision.reason == 'non-execution request must not enter planner execution'
+    assert gate.active_goal_id == ''
+
+
 def test_planner_gate_rejects_duplicate_active_goal() -> None:
     gate = PlannerGate()
     assert gate.decide(_payload('goal_1')).accepted is True
