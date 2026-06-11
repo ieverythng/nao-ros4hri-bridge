@@ -32,6 +32,7 @@ from planner_common.contracts import project_llm_grounded_context
 from planner_common.contracts import request_requests_report
 from planner_common.contracts import resolve_effective_communication_policy
 from planner_common.contracts import scan_report_summary_error
+from planner_common.contracts import strip_live_result_report_summary_text
 from planner_common.skill_manifest import DEFAULT_PERFORM_MOTION_OBJECT_LABELS
 from planner_common.skill_manifest import ExportedSkillManifest
 from planner_common.skill_manifest import is_perform_motion_object_label
@@ -86,6 +87,7 @@ __all__ = [
     'resolve_effective_communication_policy',
     'resolve_package_xml',
     'scan_report_summary_error',
+    'strip_live_result_report_summary_text',
     'truncate_text',
     'load_shared_skill_manifest',
 ]

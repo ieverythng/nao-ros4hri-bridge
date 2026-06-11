@@ -279,6 +279,28 @@ def live_result_report_summary_error(steps: list[dict]) -> str:
     return ''
 
 
+def strip_live_result_report_summary_text(steps: list[dict]) -> list[dict]:
+    """Remove prefilled report text when report_result must reuse live step output."""
+    repaired_steps: list[dict] = []
+    previous_skill_name = ''
+    for step in steps:
+        repaired_step = dict(step)
+        step_name = str(repaired_step.get('name', '')).strip().lower()
+        if step_name == 'report_result' and previous_skill_name in _LIVE_RESULT_REPORT_SKILLS:
+            step_args = dict(repaired_step.get('args', {}) or {})
+            for key in ('summary_text', 'result_summary', 'text', 'message', 'utterance'):
+                step_args.pop(key, None)
+            repaired_step['args'] = step_args
+        repaired_steps.append(repaired_step)
+
+        if step_name == 'report_result':
+            previous_skill_name = ''
+            continue
+        if str(repaired_step.get('type', '')).strip().lower() == 'skill':
+            previous_skill_name = step_name
+    return repaired_steps
+
+
 def scan_report_summary_error(steps: list[dict]) -> str:
     """Compatibility alias for the live-result report_result contract."""
     error = live_result_report_summary_error(steps)

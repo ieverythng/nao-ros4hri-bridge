@@ -10,11 +10,11 @@ from planner_common import IntentLabels
 from planner_common import PlannerRequest
 from planner_common import build_plan_payload
 from planner_common import extract_json_object
-from planner_common import live_result_report_summary_error
 from planner_common import missing_requested_report_error
 from planner_common import normalize_communication_policy
 from planner_common import normalize_plan_steps
 from planner_common import request_requests_report
+from planner_common import strip_live_result_report_summary_text
 
 from planner_llm.providers import BasePlannerProvider
 from planner_llm.providers import PlannerProviderError
@@ -588,10 +588,7 @@ class PlannerEngine:
         mixed_say_error = self._mixed_say_step_error(supported_steps)
         if mixed_say_error:
             return [], [mixed_say_error]
-        report_leak_error = live_result_report_summary_error(supported_steps)
-        if report_leak_error:
-            return [], [report_leak_error]
-        return supported_steps, []
+        return strip_live_result_report_summary_text(supported_steps), []
 
     def _step_rejection_reason(self, step: dict) -> str:
         step_type = str(step.get('type', '')).strip().lower()

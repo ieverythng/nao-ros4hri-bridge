@@ -267,7 +267,7 @@ def test_planner_engine_rejects_partial_model_plans_when_one_step_is_unsupported
     assert decision.payload['plan']['steps'][0]['type'] == 'say'
 
 
-def test_planner_engine_rejects_prefilled_report_summary_after_scan() -> None:
+def test_planner_engine_strips_prefilled_report_summary_after_scan() -> None:
     provider = _FakeProvider(
         '{"steps":[{"type":"skill","name":"scan","args":{},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"report_result","args":{"summary_text":"I can see a cup."},"requires":["step_1"],"on_failure":"fail","retry_budget":0}]}'
     )
@@ -284,13 +284,11 @@ def test_planner_engine_rejects_prefilled_report_summary_after_scan() -> None:
 
     decision = engine.plan_request(request, goal_id='goal_scan_report', plan_version=1)
 
-    assert decision.mode == 'fail'
-    assert 'report_result after scan must omit summary_text' in (
-        decision.payload['plan']['failure_reason']
-    )
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['steps'][1]['args'] == {}
 
 
-def test_planner_engine_rejects_prefilled_report_summary_after_motion() -> None:
+def test_planner_engine_strips_prefilled_report_summary_after_motion() -> None:
     provider = _FakeProvider(
         '{"steps":[{"type":"skill","name":"perform_motion","args":{"object":"head_look_left"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"report_result","args":{"summary_text":"I have moved my head in all directions as requested."},"requires":["step_1"],"on_failure":"fail","retry_budget":0}]}'
     )
@@ -307,10 +305,29 @@ def test_planner_engine_rejects_prefilled_report_summary_after_motion() -> None:
 
     decision = engine.plan_request(request, goal_id='goal_motion_report', plan_version=1)
 
-    assert decision.mode == 'fail'
-    assert 'report_result after perform_motion must omit summary_text' in (
-        decision.payload['plan']['failure_reason']
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['steps'][1]['args'] == {}
+
+
+def test_planner_engine_strips_prefilled_report_summary_after_navigation() -> None:
+    provider = _FakeProvider(
+        '{"steps":[{"type":"skill","name":"navigate_to","args":{"target":"apple_1"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"report_result","args":{"summary_text":"I navigated to the apple."},"requires":["step_1"],"on_failure":"fail","retry_budget":0}]}'
     )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_nav_report',
+            'goal_id': 'goal_nav_report',
+            'goal_text': 'navigate to the apple and report when done',
+            'normalized_intents': ['navigate_to', 'report_result'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_nav_report', plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['steps'][1]['args'] == {}
 
 
 def test_planner_engine_accepts_report_result_after_scan_without_summary_text() -> None:
