@@ -105,6 +105,22 @@ Authoritative ROS4HRI and SocialMinds entry points:
 - Do not move speaking ownership into planner or executor packages; planner
   dialogue acts remain hints consumed by `dialogue_manager`.
 
+### LLM prompt continuity
+
+- When adding chatbot or planner LLM sub-tasks, keep the configured base prompt
+  pack as the agent identity and append task-specific instructions to that
+  prompt. Do not replace the chatbot or planner system prompt with one-off
+  hardcoded wording prompts for completion, clarification, planner dialogue, or
+  report generation.
+- If a system-only chatbot turn must omit route/planner-handoff requirements,
+  do that explicitly through the shared prompt builder and keep the configured
+  system prompt, persona, environment, skill catalog, and response addendum
+  intact.
+- Add focused tests for new LLM sub-tasks that assert both the configured base
+  prompt and the task addendum are present in the system message.
+- Tiny LLM connectivity/readiness probes may use minimal prompts, but they must
+  stay outside user-facing planning, dialogue, and execution-report seams.
+
 ### Grounding and perception
 
 - Keep detector normalization and scene grounding in `nao_scene_grounding`.

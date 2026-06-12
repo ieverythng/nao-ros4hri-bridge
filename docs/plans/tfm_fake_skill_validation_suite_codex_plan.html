@@ -1,0 +1,391 @@
+<!doctype html><html><head><meta charset="utf-8"><title>TFM Fake Skill Validation Suite Codex Plan</title><style>
+:root{--bg:#f7f3ea;--ink:#2b2118;--line:#dfd2bf;--accent:#c46a2b;--code:#f0e6d6}
+body{margin:0;background:radial-gradient(circle at 20% 0%,#fff7e8 0,var(--bg) 42%,#eee3d2 100%);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Arial,sans-serif;line-height:1.58}
+main{max-width:1160px;margin:0 auto;padding:42px 24px 96px}h1{font-size:2.28rem;letter-spacing:-.035em;margin-top:0}h2{margin-top:2.3rem;padding-top:.7rem;border-top:1px solid var(--line);letter-spacing:-.02em}h3{margin-top:1.55rem}h4{margin-top:1rem}blockquote{border-left:4px solid var(--accent);padding:.8rem 1rem;background:rgba(255,255,255,.55);border-radius:0 12px 12px 0}pre{background:#2b2118;color:#fff7ea;border-radius:14px;padding:14px 16px;overflow-x:auto}code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);border-radius:5px;padding:.08rem .28rem}pre code{background:transparent;color:inherit;padding:0}table{width:100%;border-collapse:collapse;margin:1rem 0;background:rgba(255,255,255,.56)}th,td{border:1px solid var(--line);padding:9px 11px;vertical-align:top}th{background:#eadcc8;text-align:left}li{margin:.25rem 0}
+</style></head><body><main><h1>Codex Handoff — Reproducible Fake-Skill Validation Suite for TFM Evidence</h1>
+<p><strong>Target branch:</strong> <code>refactor/deslop_repo</code></p>
+<p><strong>Primary repo:</strong> <code>ieverythng/nao-ros4hri-bridge</code></p>
+<p><strong>Purpose:</strong> build a reproducible validation harness that runs fake-skill scenarios through the live planner stack, captures traces, and produces metrics/datasets for the TFM.</p>
+<p><strong>Priority:</strong> P0/P1. Start tomorrow; expand over the next 11 days.</p>
+<p>---</p>
+<h2>1. Goal</h2>
+<p>Create a validation suite that can run controlled HRI/planner scenarios repeatedly and save evidence.</p>
+<p>The suite should answer:</p>
+<pre><code>Given a user utterance and a fake-skill outcome policy, does the stack:
+1. route correctly?
+2. plan the right skills?
+3. dispatch through nao_orchestrator?
+4. handle success/failure/ambiguity safely?
+5. replan or communicate when appropriate?
+6. produce a readable final response?
+7. leave a trace that can be analyzed for the TFM?</code></pre>
+<p>This should use existing fake-skill seams rather than building a parallel simulator.</p>
+<p>---</p>
+<h2>2. Current available seams</h2>
+<p>The repo already has the key components needed:</p>
+<pre><code>fake_skills package
+fake_skill_server
+ScenarioStore
+FakeSkillEngine
+global modes: scenario, always_success, always_fail, every_other, random_seeded
+active_scenario_id parameter
+mode_overrides_json parameter
+/fake_skills/events
+interaction_trace_viewer
+JSONL trace writer
+HTML trace report support
+run_live_fake_skill_scenario_probe.py</code></pre>
+<p>Therefore, the work should be incremental, not a rewrite.</p>
+<p>---</p>
+<h2>3. Validation suite architecture</h2>
+<p>Add a higher-level runner:</p>
+<pre><code>scripts/run_tfm_validation_suite.py</code></pre>
+<p>or package form:</p>
+<pre><code>src/tfm_validation/
+  tfm_validation/
+    suite_runner.py
+    case_loader.py
+    metrics.py
+    report_writer.py
+    fixture_builder.py
+    baseline.py
+  config/
+    tfm_validation_cases.yaml</code></pre>
+<p>Initial recommendation: script first, package later.</p>
+<p>The runner should:</p>
+<pre><code>1. set fake_skill_server policy;
+2. publish a controlled planner request or user utterance;
+3. record interaction_trace_viewer JSONL;
+4. wait for completion/failure/timeout;
+5. collect events;
+6. compute metrics;
+7. write run bundle.</code></pre>
+<p>---</p>
+<h2>4. Case definition format</h2>
+<p>Create:</p>
+<pre><code>docs/evaluation/tfm_validation_cases.yaml</code></pre>
+<p>Example:</p>
+<pre><code>suite:
+  name: planner_fake_skill_validation_v1
+  default_wait_sec: 12.0
+  repetitions: 1
+  seeds: [42]
+
+cases:
+  - id: find_cup_success
+    utterance: &quot;find the cup&quot;
+    route_mode: planner_request
+    goal_text: &quot;find the cup&quot;
+    normalized_intents: [&quot;find_object&quot;]
+    scene_targets: [&quot;cup&quot;]
+    fake_policy:
+      global_mode: scenario
+      active_scenario_id: &quot;&quot;
+      mode_overrides_json: &quot;{}&quot;
+    expected:
+      plan_contains: [&quot;find_object&quot;, &quot;report_result&quot;]
+      final_status_any: [&quot;succeeded&quot;, &quot;completed&quot;]
+      should_replan: false
+
+  - id: find_cup_ambiguous
+    utterance: &quot;find the cup&quot;
+    route_mode: planner_request
+    goal_text: &quot;find the cup&quot;
+    normalized_intents: [&quot;find_object&quot;]
+    scene_targets: [&quot;cup&quot;]
+    fake_policy:
+      global_mode: scenario
+      active_scenario_id: &quot;ambiguous_cup&quot;
+    expected:
+      plan_contains: [&quot;find_object&quot;]
+      should_ask_user: true
+      acceptable_outcomes: [&quot;clarification&quot;, &quot;blocked&quot;]
+
+  - id: navigate_path_blocked
+    utterance: &quot;go to the cup&quot;
+    route_mode: planner_request
+    goal_text: &quot;navigate to the cup&quot;
+    normalized_intents: [&quot;navigate_to&quot;]
+    scene_targets: [&quot;cup&quot;]
+    fake_policy:
+      global_mode: scenario
+      active_scenario_id: &quot;path_blocked&quot;
+    expected:
+      plan_contains: [&quot;navigate_to&quot;]
+      should_replan_or_fail_safely: true
+
+  - id: scan_report_success
+    utterance: &quot;look around and tell me what you see&quot;
+    route_mode: planner_request
+    goal_text: &quot;look around and tell me what you see&quot;
+    normalized_intents: [&quot;scan&quot;, &quot;report_result&quot;]
+    scene_targets: []
+    fake_policy:
+      global_mode: always_success
+    expected:
+      plan_contains: [&quot;scan&quot;, &quot;report_result&quot;]
+      report_result_uses_live_payload: true</code></pre>
+<p>Keep <code>route_mode=planner_request</code> for fast stability. Add true user-speech injection later.</p>
+<p>---</p>
+<h2>5. Two execution modes</h2>
+<h3>Mode A — Planner-request injection</h3>
+<p>Publish directly to <code>/planner/request</code> or the orchestrator planner-gate topic.</p>
+<p>Pros:</p>
+<pre><code>fast
+controlled
+isolates planner/orchestrator/fake skill behavior
+less ASR/dialogue noise</code></pre>
+<p>Cons:</p>
+<pre><code>does not test full chatbot routing</code></pre>
+<p>Use this for primary TFM planner validation.</p>
+<h3>Mode B — Full user-turn injection</h3>
+<p>Inject utterance through the dialogue/chatbot path.</p>
+<p>Pros:</p>
+<pre><code>tests HRI routing and chatbot prompt behavior</code></pre>
+<p>Cons:</p>
+<pre><code>slower, more flaky, harder to isolate</code></pre>
+<p>Use this for a smaller secondary validation set.</p>
+<p>Recommended for 11-day timeline:</p>
+<pre><code>Primary dataset: Mode A
+Supplementary dataset: Mode B for 8-12 cases</code></pre>
+<p>---</p>
+<h2>6. Scenario matrix</h2>
+<p>Use fake-skill global modes already available:</p>
+<pre><code>scenario
+always_success
+always_fail
+every_other
+random_seeded</code></pre>
+<p>Use named scenarios already available:</p>
+<pre><code>ambiguous_cup
+area_person_found
+head_motion_strict
+path_blocked
+social_wave_unavailable</code></pre>
+<p>Minimum tomorrow matrix:</p>
+<table><thead><tr><th>Case family</th><th>Modes</th></tr></thead><tbody>
+<tr><td>find_object</td><td>success, ambiguous, always_fail</td></tr>
+<tr><td>navigate_to</td><td>success, path_blocked</td></tr>
+<tr><td>scan/report_result</td><td>always_success, always_fail</td></tr>
+<tr><td>wave_greet</td><td>success, social_wave_unavailable</td></tr>
+<tr><td>inspect_area</td><td>clear, area_person_found</td></tr>
+</tbody></table>
+<p>Recommended P0 run count:</p>
+<pre><code>10-15 cases x 1 repetition = fast smoke dataset</code></pre>
+<p>Recommended TFM dataset:</p>
+<pre><code>8 utterance families x 5 outcome policies x 3 repetitions = 120 runs</code></pre>
+<p>If runtime is too long:</p>
+<pre><code>8 x 5 x 2 = 80 runs</code></pre>
+<p>This is enough for descriptive metrics without overclaiming statistical significance.</p>
+<p>---</p>
+<h2>7. Fixtures: objects and scene context</h2>
+<p>The current probe already publishes a controlled planner request and can include <code>grounded_context</code>.</p>
+<p>Add a fixture builder:</p>
+<pre><code>def build_grounded_context(profile: str) -&gt; dict:
+    ...</code></pre>
+<p>Profiles:</p>
+<pre><code>empty_scene
+cup_visible
+two_cups_ambiguous
+person_visible
+person_and_cup_visible
+area_table_clear
+area_table_person</code></pre>
+<p>Example:</p>
+<pre><code>{
+  &quot;entities&quot;: [
+    {
+      &quot;id&quot;: &quot;cup_1&quot;,
+      &quot;label&quot;: &quot;cup&quot;,
+      &quot;kind&quot;: &quot;object&quot;,
+      &quot;class&quot;: &quot;Cup&quot;,
+      &quot;visible&quot;: true,
+      &quot;relations&quot;: [
+        {&quot;predicate&quot;: &quot;oro:isOn&quot;, &quot;object&quot;: &quot;table_1&quot;}
+      ]
+    }
+  ]
+}</code></pre>
+<p>This does not need to fully simulate the scene graph initially. It only needs to provide deterministic planner context.</p>
+<p>Later, optionally publish simulated <code>/scene/summary</code> or KB snapshots to align the whole stack.</p>
+<p>---</p>
+<h2>8. Metrics to compute</h2>
+<p>Per run:</p>
+<pre><code>case_id
+utterance
+route_mode
+global_mode
+scenario_id
+seed
+goal_id
+event_count
+latency_total_sec
+planner_called
+plan_steps
+skills_dispatched
+skill_result_statuses
+replan_requested
+clarification_requested
+dialogue_act_type
+final_status
+final_response_text
+timeout
+errors_count
+warnings_count</code></pre>
+<p>Planner metrics:</p>
+<pre><code>plan_valid_json
+plan_contains_expected_skills
+forbidden_say_skill_present
+report_result_terminal
+report_result_summary_text_prefilled_after_scan
+on_failure_values_valid</code></pre>
+<p>Execution metrics:</p>
+<pre><code>all_steps_attempted
+first_failure_step
+safe_stop_after_failure
+feedback_published
+fake_skill_event_seen</code></pre>
+<p>HRI metrics:</p>
+<pre><code>final_response_present
+response_not_duplicate
+clarification_when_ambiguous
+failure_explained_when_blocked</code></pre>
+<p>Aggregate metrics:</p>
+<pre><code>success_rate
+route_accuracy
+plan_correctness_rate
+safe_failure_rate
+clarification_rate_when_expected
+mean_latency
+timeout_rate
+forbidden_plan_rate</code></pre>
+<p>---</p>
+<h2>9. Baselines</h2>
+<p>A perfect historical baseline may be hard to reconstruct. Do not lose time chasing it unless a stable commit is obvious.</p>
+<p>Use tiered baselines:</p>
+<h3>Baseline 1 — Static expected-plan baseline</h3>
+<p>For each case, define the expected skill sequence manually.</p>
+<p>Measure:</p>
+<pre><code>planner output vs expected sequence</code></pre>
+<p>This is not a runtime robot baseline, but it is a valid planning-correctness reference.</p>
+<h3>Baseline 2 — No-replanning baseline</h3>
+<p>Run same cases with recovery disabled or with <code>on_failure=fail</code> normalization.</p>
+<p>Measure:</p>
+<pre><code>Does planner supervision improve safe recovery / clarification compared with immediate failure?</code></pre>
+<p>This is useful and feasible.</p>
+<h3>Baseline 3 — Earlier non-planner stack</h3>
+<p>Only use if a known branch/commit can be run quickly.</p>
+<p>Measure:</p>
+<pre><code>multi-intent handling
+failure handling
+dialogue quality</code></pre>
+<p>Do not make the TFM depend on this baseline unless it is stable within one day.</p>
+<p>Recommended TFM framing:</p>
+<pre><code>Primary evaluation is scenario-based validation of the planner architecture under controlled outcomes.
+Baseline comparisons are used where reproducible, but the central evidence is correct behavior across success, ambiguity, failure, and recovery scenarios.</code></pre>
+<p>---</p>
+<h2>10. Dataset size and timeline</h2>
+<h3>Tomorrow / demo smoke</h3>
+<pre><code>12 runs</code></pre>
+<p>Suggested:</p>
+<pre><code>find_cup_success
+find_cup_ambiguous
+find_cup_always_fail
+navigate_success
+navigate_path_blocked
+scan_success
+scan_fail
+wave_success
+wave_unavailable
+inspect_clear
+inspect_person_found
+random_seeded_find</code></pre>
+<h3>TFM minimum</h3>
+<pre><code>40-60 runs</code></pre>
+<p>Enough for tables, qualitative trace examples, and basic rates.</p>
+<h3>TFM strong version</h3>
+<pre><code>80-120 runs</code></pre>
+<p>Allows scenario matrix plots and more confidence.</p>
+<p>---</p>
+<h2>11. Report outputs</h2>
+<p>Each suite run should write:</p>
+<pre><code>docs/evaluation/runs/&lt;timestamp&gt;/
+  suite_config.yaml
+  trace.jsonl
+  per_case_metrics.csv
+  aggregate_metrics.json
+  report.md
+  report.html
+  selected_traces/
+    case_id_trace.json</code></pre>
+<p>Optional:</p>
+<pre><code>plots/
+  success_rate_by_mode.png
+  plan_correctness_by_case.png
+  latency_by_case.png
+  outcome_confusion_table.csv</code></pre>
+<p>---</p>
+<h2>12. Implementation steps</h2>
+<h2>Phase 1 — Extend existing probe, do not rewrite</h2>
+<p>Copy/refactor from:</p>
+<pre><code>scripts/run_live_fake_skill_scenario_probe.py</code></pre>
+<p>Add:</p>
+<pre><code>--cases-file docs/evaluation/tfm_validation_cases.yaml
+--output-dir docs/evaluation/runs
+--mode planner_request|user_turn
+--repetitions N
+--seeds 42,43,44
+--skip-relaunch
+--skip-sync-rebuild</code></pre>
+<p>Keep the existing Docker/container pattern for now.</p>
+<h2>Phase 2 — Add metrics extraction</h2>
+<p>Implement:</p>
+<pre><code>extract_plan_steps(events)
+extract_skill_results(events)
+extract_dialogue_act(events)
+extract_errors(events)
+score_case(case, events)</code></pre>
+<h2>Phase 3 — Add fixture builder</h2>
+<p>Implement scene profiles in the planner request payload.</p>
+<h2>Phase 4 — Add report writer</h2>
+<p>Write:</p>
+<pre><code>report.md
+report.html
+per_case_metrics.csv
+aggregate_metrics.json</code></pre>
+<h2>Phase 5 — Add full user-turn mode</h2>
+<p>Only after planner-request mode is stable.</p>
+<h2>Phase 6 — Add plots</h2>
+<p>Use CSV output. Do not block validation on plots.</p>
+<p>---</p>
+<h2>13. Acceptance checklist</h2>
+<ul>
+<li>Can run at least 10 cases end-to-end.</li>
+<li>Can switch fake-skill global modes without relaunch.</li>
+<li>Can use named scenarios.</li>
+<li>Captures JSONL trace for every case.</li>
+<li>Produces per-case metrics CSV.</li>
+<li>Produces aggregate summary.</li>
+<li>Detects expected plan steps.</li>
+<li>Detects forbidden planner outputs like executable <code>say</code>.</li>
+<li>Detects whether <code>report_result</code> follows scan/find when expected.</li>
+<li>Detects failure/clarification/replan behavior.</li>
+<li>Produces at least one HTML report for TFM evidence.</li>
+<li>Does not require the physical robot for fake-skill validation.</li>
+</ul>
+<p>---</p>
+<h2>14. Risks and mitigations</h2>
+<table><thead><tr><th>Risk</th><th>Mitigation</th></tr></thead><tbody>
+<tr><td>Full user-turn mode is flaky</td><td>Use planner-request mode as primary dataset</td></tr>
+<tr><td>Too many variables</td><td>Fix seeds, scenario modes, fixture profiles</td></tr>
+<tr><td>Dataset takes too long</td><td>Start with 12-run smoke, then expand overnight</td></tr>
+<tr><td>Baseline branch is unstable</td><td>Use static expected-plan and no-replanning baselines</td></tr>
+<tr><td>Fake skills over-simplify reality</td><td>Frame as controlled scenario validation, not full real-world performance</td></tr>
+<tr><td>Trace matching misses events</td><td>Use <code>goal_id</code>, <code>turn_id</code>, and <code>trace_id</code> consistently</td></tr>
+</tbody></table>
+<p>---</p>
+<h2>15. Suggested first commit names</h2>
+<pre><code>docs: add TFM validation suite plan
+feat(validation): add case-driven fake skill suite runner
+feat(validation): add metrics extraction and HTML reports
+test(validation): add smoke scenario config</code></pre></main></body></html>

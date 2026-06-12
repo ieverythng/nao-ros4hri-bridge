@@ -234,6 +234,8 @@
 <li><strong>Done</strong>: <code>scan</code> is action-server owned and dispatched by orchestrator.</li>
 <li><strong>Done</strong>: <code>report_result</code> now executes as action-server-owned AB=1 skill (<code>/skill/report_result</code>) instead of a dialogue-act shortcut.</li>
 <li><strong>Done</strong>: planner/orchestrator action routing validated for <code>/skill/scan</code>, <code>/skill/report_result</code>, <code>/skill/say</code>, <code>/skill/do_head_motion</code>.</li>
+<li><strong>Done (2026-06-12)</strong>: real head motion is strict by default; convergence timeout is reported as execution failure unless an explicit debug override enables open-loop success.</li>
+<li><strong>Done (2026-06-12)</strong>: fake <code>perform_motion</code> is available for validation runs and is selected only through explicit orchestrator launch/config mode, keeping fake outcomes scenario-controlled.</li>
 <li><strong>Done</strong>: planner lineage now uses <code>goal_id</code> continuity plus <code>plan_id</code>/<code>plan_version</code>; token-based ownership seams were removed.</li>
 <li><strong>Done</strong>: route-hardening now defaults visibility-only scene checks to <code>knowledge_query</code> unless explicit scan/action wording is requested.</li>
 <li><strong>Done</strong>: planner dialogue acts run in direct mode by default, while completion wording stays chatbot-relay-owned when a chatbot client is available.</li>
@@ -253,6 +255,7 @@
 <h3>C. Lifecycle and Launch Reliability</h3>
 <ul>
 <li><strong>Done</strong>: current live stack can expose expected action servers and dispatch path reliably.</li>
+<li><strong>Done (2026-06-12)</strong>: sim/robot profile defaults no longer accept head-motion convergence timeout as success; fake validation can opt into <code>perform_motion_execution_mode=fake</code>.</li>
 <li><strong>In progress</strong>: reduce lifecycle-race/operator confusion in mixed sim/robot toggles.</li>
 <li><strong>Done</strong>: interaction trace viewer can be run as a separate operator window; sim default no longer auto-launches it.</li>
 <li><strong>Done</strong>: compact trace channel/event filtering args are exposed through stack launch and can be toggled without code edits.</li>
@@ -328,9 +331,9 @@
 <td>Planner prompt now forbids inferring <code>wave_greet</code> from greeting-only text and requires <code>decision=clarify</code> for social-only requests without explicit action.</td>
 </tr>
 <tr>
-<td>F4-C Prompt-pack fallback parity</td>
+<td>F4-C Canonical prompt-pack loading</td>
 <td><strong>DONE</strong></td>
-<td>Equivalent hardening added to runtime fallback prompt defaults so behavior remains stable when YAML overrides are missing.</td>
+<td>Chatbot and planner prompt text now comes from canonical YAML prompt packs; missing/invalid required prompt fields fail fast instead of falling back to hidden Python prompt prose.</td>
 </tr>
 <tr>
 <td>F4-D Live seam validation in rebuilt container</td>
@@ -463,7 +466,7 @@
 <h2>9. Immediate Next Session Checklist</h2>
 <ol>
 <li>Re-run focused tests for touched planner/chatbot/orchestrator/fake-skill seams.</li>
-<li>Verify live stack endpoints remain healthy (<code>scan</code>, <code>report_result</code>, <code>say</code>, <code>head_motion</code>, fake-skill endpoints).</li>
+<li>Verify live stack endpoints remain healthy (<code>scan</code>, <code>report_result</code>, <code>say</code>, strict <code>head_motion</code>, fake-skill endpoints including fake <code>perform_motion</code>).</li>
 <li>Validate no duplicate user-facing speech in KB visibility and execution-failure flows.</li>
 <li>Port validated seam changes into demo branch and reconcile launch defaults there.</li>
 <li>Continue AB-F2 decomposition metadata pass with tests.</li>
