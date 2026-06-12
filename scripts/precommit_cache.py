@@ -22,8 +22,6 @@ def _git(*args: str) -> bytes:
 
 def _repo_signature() -> str:
     digest = hashlib.sha256()
-    digest.update(_git("rev-parse", "HEAD"))
-    digest.update(_git("status", "--porcelain=v1", "-z"))
     paths = _git("ls-files", "-z", "--cached", "--others", "--exclude-standard")
     for raw_path in paths.split(b"\0"):
         if not raw_path:

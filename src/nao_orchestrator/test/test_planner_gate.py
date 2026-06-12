@@ -56,6 +56,22 @@ def test_planner_gate_uses_normalized_intents_to_reject_dialogue_leakage() -> No
     assert gate.active_goal_id == ''
 
 
+def test_planner_gate_rejects_fake_skill_question_with_empty_intents() -> None:
+    gate = PlannerGate()
+
+    decision = gate.decide(
+        _payload(
+            'goal_fake_skills',
+            goal_text='Perfect, do you have any fake skills?',
+            normalized_intents=[],
+        )
+    )
+
+    assert decision.accepted is False
+    assert decision.reason == 'non-execution request must not enter planner execution'
+    assert gate.active_goal_id == ''
+
+
 def test_planner_gate_rejects_duplicate_active_goal() -> None:
     gate = PlannerGate()
     assert gate.decide(_payload('goal_1')).accepted is True

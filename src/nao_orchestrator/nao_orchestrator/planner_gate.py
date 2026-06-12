@@ -210,5 +210,11 @@ def _is_dialogue_only_capability_question(text: str) -> bool:
             'what capabilities do you have',
             'what are your capabilities',
             'tell me what you can do',
+            'what skills do you have',
+            'which skills do you have',
+            'what fake skills do you have',
+            'do you have fake skills',
+            'do you have any fake skills',
+            'tell me about your skills',
         )
     )
