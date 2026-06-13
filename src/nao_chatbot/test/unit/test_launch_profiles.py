@@ -97,6 +97,13 @@ def _assert_planner_dialogue_seam_defaults(defaults: dict[str, str]) -> None:
     )
 
 
+def _assert_stable_grounding_defaults(defaults: dict[str, str]) -> None:
+    assert defaults["scene_grounding_knowledge_lifespan_sec"] == "8.0"
+    assert defaults["scene_grounding_local_stale_after_sec"] == "10.0"
+    assert defaults["scene_grounding_fallback_match_distance_px"] == "72.0"
+    assert defaults["scene_grounding_fallback_match_max_age_sec"] == "3.0"
+
+
 def test_sim_profile_provides_gscam_camera_and_rqt_with_planner():
     defaults = _launch_defaults(
         "launch/nao_chatbot_sim.launch.py",
@@ -115,6 +122,9 @@ def test_sim_profile_provides_gscam_camera_and_rqt_with_planner():
     assert defaults["chatbot_planner_mode_enabled"] == "true"
     assert defaults["enable_orchestrator_planner_gate"] == "true"
     assert defaults["start_fake_skills"] == "true"
+    assert defaults["head_motion_assume_success_on_convergence_timeout"] == "false"
+    assert defaults["perform_motion_execution_mode"] == "real"
+    _assert_stable_grounding_defaults(defaults)
     assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
     _assert_planner_dialogue_seam_defaults(defaults)
     _assert_lab_vllm_defaults(defaults)
@@ -136,6 +146,9 @@ def test_robot_profile_uses_robot_camera_and_planner_mode_by_default():
     assert defaults["chatbot_planner_mode_enabled"] == "true"
     assert defaults["enable_orchestrator_planner_gate"] == "true"
     assert defaults["start_fake_skills"] == "true"
+    assert defaults["head_motion_assume_success_on_convergence_timeout"] == "false"
+    assert defaults["perform_motion_execution_mode"] == "real"
+    _assert_stable_grounding_defaults(defaults)
     _assert_planner_dialogue_seam_defaults(defaults)
     _assert_lab_vllm_defaults(defaults)
     _assert_asr_is_opt_in(defaults)
@@ -159,6 +172,9 @@ def test_demo_profile_is_sim_only_with_mock_scan_and_planner_enabled():
     assert defaults["fake_skill_global_mode"] == "scenario"
     assert defaults["fake_skill_random_failure_prob"] == "0.50"
     assert defaults["fake_skill_mode_overrides_json"] == "{}"
+    assert defaults["head_motion_assume_success_on_convergence_timeout"] == "false"
+    assert defaults["perform_motion_execution_mode"] == "real"
+    _assert_stable_grounding_defaults(defaults)
     assert defaults["scan_result_mode"] == "success"
     assert "current scene summary" in defaults["scan_summary"]
     assert defaults["scan_report_after_success"] == "false"

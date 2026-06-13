@@ -101,7 +101,8 @@ _SIM_CAMERA_DEFAULTS = {
     "fake_skill_random_failure_prob": "0.50",
     "fake_skill_mode_overrides_json": "{}",
     "head_motion_allow_open_loop_without_joint_state": "true",
-    "head_motion_assume_success_on_convergence_timeout": "true",
+    "head_motion_assume_success_on_convergence_timeout": "false",
+    "perform_motion_execution_mode": "real",
 }
 _ROBOT_CAMERA_DEFAULTS = {
     "nao_ip": "172.26.112.25",
@@ -118,7 +119,8 @@ _ROBOT_CAMERA_DEFAULTS = {
     "posture_bridge_disable_autonomous_life_on_connect": "false",
     "posture_bridge_wake_up_on_connect": "true",
     "head_motion_allow_open_loop_without_joint_state": "true",
-    "head_motion_assume_success_on_convergence_timeout": "true",
+    "head_motion_assume_success_on_convergence_timeout": "false",
+    "perform_motion_execution_mode": "real",
     "start_interaction_sim": "false",
     "start_interaction_sim_perception": "false",
     "start_interaction_sim_tools": "true",
@@ -183,10 +185,11 @@ _DEMO_LOG_NODES = ",".join(
 )
 _GROUNDING_DEFAULTS = {
     "object_detection_threshold": "0.40",
-    "scene_grounding_knowledge_lifespan_sec": "3.0",
+    "scene_grounding_knowledge_lifespan_sec": "8.0",
     "scene_grounding_knowledge_refresh_interval_sec": "0.75",
-    "scene_grounding_fallback_match_distance_px": "40.0",
-    "scene_grounding_fallback_match_max_age_sec": "1.2",
+    "scene_grounding_local_stale_after_sec": "10.0",
+    "scene_grounding_fallback_match_distance_px": "72.0",
+    "scene_grounding_fallback_match_max_age_sec": "3.0",
 }
 _DEMO_DEFAULTS = {
     "nao_ip": "172.26.112.25",
@@ -227,6 +230,7 @@ def robot_profile_defaults() -> dict[str, str]:
         _LAB_VLLM_DEFAULTS,
         _PLANNER_GATE_DEFAULTS,
         _ROBOT_CAMERA_DEFAULTS,
+        _GROUNDING_DEFAULTS,
         {
             "start_planner_llm": "true",
             "chatbot_planner_mode_enabled": "true",
@@ -1014,13 +1018,29 @@ def generate_profile_launch_description(
     )
     scene_grounding_knowledge_lifespan_sec_arg = DeclareLaunchArgument(
         "scene_grounding_knowledge_lifespan_sec",
-        default_value="4.0",
+        default_value=_profile_default(
+            profile_defaults,
+            "scene_grounding_knowledge_lifespan_sec",
+            "8.0",
+        ),
         description="KnowledgeCore lifespan used for transient grounded object facts.",
     )
     scene_grounding_knowledge_refresh_interval_sec_arg = DeclareLaunchArgument(
         "scene_grounding_knowledge_refresh_interval_sec",
         default_value="1.0",
         description="Minimum interval between grounding refreshes for the same tracked object.",
+    )
+    scene_grounding_local_stale_after_sec_arg = DeclareLaunchArgument(
+        "scene_grounding_local_stale_after_sec",
+        default_value=_profile_default(
+            profile_defaults,
+            "scene_grounding_local_stale_after_sec",
+            "10.0",
+        ),
+        description=(
+            "How long nao_scene_grounding keeps a locally tracked object in "
+            "scene summaries after the last detector observation."
+        ),
     )
     scene_grounding_fallback_match_distance_px_arg = DeclareLaunchArgument(
         "scene_grounding_fallback_match_distance_px",
@@ -1164,6 +1184,11 @@ def generate_profile_launch_description(
         "fake_skill_mode_overrides_json",
         default_value=_profile_default(profile_defaults, "fake_skill_mode_overrides_json", "{}"),
         description='JSON map for per-skill mode overrides, e.g. {"find_object":"always_fail"}.',
+    )
+    perform_motion_execution_mode_arg = DeclareLaunchArgument(
+        "perform_motion_execution_mode",
+        default_value=_profile_default(profile_defaults, "perform_motion_execution_mode", "real"),
+        description="perform_motion dispatch mode: real|fake.",
     )
     start_nao_say_skill_arg = DeclareLaunchArgument(
         "start_nao_say_skill",
@@ -1926,6 +1951,12 @@ def generate_profile_launch_description(
                 )
             },
             {
+                "perform_motion_execution_mode": ParameterValue(
+                    LaunchConfiguration("perform_motion_execution_mode"),
+                    value_type=str,
+                )
+            },
+            {
                 "enable_planner_gate": ParameterValue(
                     LaunchConfiguration("enable_orchestrator_planner_gate"),
                     value_type=bool,
@@ -2276,7 +2307,7 @@ def generate_profile_launch_description(
             },
             {
                 "local_stale_after_sec": ParameterValue(
-                    LaunchConfiguration("scene_grounding_knowledge_lifespan_sec"),
+                    LaunchConfiguration("scene_grounding_local_stale_after_sec"),
                     value_type=float,
                 )
             },
@@ -2790,6 +2821,7 @@ def generate_profile_launch_description(
             fake_skill_global_mode_arg,
             fake_skill_random_failure_prob_arg,
             fake_skill_mode_overrides_json_arg,
+            perform_motion_execution_mode_arg,
             start_nao_say_skill_arg,
             start_nao_replay_motion_arg,
             head_motion_allow_open_loop_without_joint_state_arg,
@@ -2813,6 +2845,7 @@ def generate_profile_launch_description(
             interaction_trace_enable_scene_summary_channel_arg,
             interaction_trace_scene_summary_emit_on_change_only_arg,
             interaction_trace_scene_summary_min_interval_sec_arg,
+            scene_grounding_local_stale_after_sec_arg,
             interaction_trace_rosout_node_allowlist_csv_arg,
             interaction_trace_rosout_min_level_arg,
             start_demo_log_window_arg,
@@ -3048,6 +3081,7 @@ def generate_profile_launch_description(
                         "fake_skill_mode_overrides_json": LaunchConfiguration(
                             "fake_skill_mode_overrides_json"
                         ),
+                        "fake_skill_perform_motion_action": "/skill/fake/perform_motion",
                     },
                 },
             ),

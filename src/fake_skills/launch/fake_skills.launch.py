@@ -53,6 +53,11 @@ def generate_launch_description() -> LaunchDescription:
         default_value='{}',
         description='JSON map for per-skill mode overrides, e.g. {"find_object":"always_fail"}.',
     )
+    perform_motion_action_arg = DeclareLaunchArgument(
+        'fake_skill_perform_motion_action',
+        default_value='/skill/fake/perform_motion',
+        description='Action endpoint for fake perform_motion.',
+    )
 
     fake_skill_server = Node(
         package='fake_skills',
@@ -69,6 +74,9 @@ def generate_launch_description() -> LaunchDescription:
                 'deterministic_seed': LaunchConfiguration('fake_skill_deterministic_seed'),
                 'global_mode': LaunchConfiguration('fake_skill_global_mode'),
                 'random_failure_prob': LaunchConfiguration('fake_skill_random_failure_prob'),
+                'perform_motion_action_name': LaunchConfiguration(
+                    'fake_skill_perform_motion_action'
+                ),
                 'mode_overrides_json': ParameterValue(
                     LaunchConfiguration('fake_skill_mode_overrides_json'),
                     value_type=str,
@@ -88,6 +96,7 @@ def generate_launch_description() -> LaunchDescription:
             global_mode_arg,
             random_failure_prob_arg,
             mode_overrides_arg,
+            perform_motion_action_arg,
             fake_skill_server,
         ]
     )

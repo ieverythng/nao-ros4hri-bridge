@@ -32,6 +32,7 @@ class FakeSkillActionServer(Node):
         self.declare_parameter('execute_action_name', '/skill/fake/execute')
         self.declare_parameter('navigate_to_action_name', '/skill/fake/navigate_to')
         self.declare_parameter('find_object_action_name', '/skill/fake/find_object')
+        self.declare_parameter('perform_motion_action_name', '/skill/fake/perform_motion')
         self.declare_parameter('wave_greet_action_name', '/skill/fake/wave_greet')
         self.declare_parameter('inspect_area_action_name', '/skill/fake/inspect_area')
         self.declare_parameter('walk_to_action_name', '/skill/fake/walk_to')
@@ -101,6 +102,7 @@ class FakeSkillActionServer(Node):
         for action_param, skill_name in (
             ('navigate_to_action_name', 'navigate_to'),
             ('find_object_action_name', 'find_object'),
+            ('perform_motion_action_name', 'perform_motion'),
             ('wave_greet_action_name', 'wave_greet'),
             ('inspect_area_action_name', 'inspect_area'),
             ('walk_to_action_name', 'walk_to'),

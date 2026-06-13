@@ -9,9 +9,13 @@ def _engine() -> FakeSkillEngine:
                 'default': {
                     'navigate_to': {'result_mode': 'success', 'delay_sec': 0.0},
                     'find_object': {'result_mode': 'found', 'delay_sec': 0.0},
+                    'perform_motion': {'result_mode': 'success', 'delay_sec': 0.0},
                 },
                 'scenarios': {
                     'blocked': {'navigate_to': {'result_mode': 'path_blocked'}},
+                    'motion_timeout': {
+                        'perform_motion': {'result_mode': 'convergence_timeout'}
+                    },
                 },
             }
         ),
@@ -27,9 +31,13 @@ def _engine_with_policy(**kwargs) -> FakeSkillEngine:
                 'default': {
                     'navigate_to': {'result_mode': 'success', 'delay_sec': 0.0},
                     'find_object': {'result_mode': 'found', 'delay_sec': 0.0},
+                    'perform_motion': {'result_mode': 'success', 'delay_sec': 0.0},
                 },
                 'scenarios': {
                     'blocked': {'navigate_to': {'result_mode': 'path_blocked'}},
+                    'motion_timeout': {
+                        'perform_motion': {'result_mode': 'convergence_timeout'}
+                    },
                 },
             }
         ),
@@ -82,6 +90,50 @@ def test_engine_find_object_treats_success_mode_as_found() -> None:
 
     assert payload['status'] == 'succeeded'
     assert payload['target_found'] is True
+
+
+def test_engine_perform_motion_success_payload_is_traceable() -> None:
+    payload, delay_sec = _engine().execute(
+        skill='perform_motion',
+        args={'object': 'head_look_left'},
+    )
+
+    assert delay_sec == 0.0
+    assert payload['status'] == 'succeeded'
+    assert payload['skill'] == 'perform_motion'
+    assert payload['target'] == 'head_look_left'
+    assert payload['metadata']['fake'] is True
+    assert payload['metadata']['result_mode'] == 'success'
+    assert 'head look-left' in payload['summary_text']
+
+
+def test_engine_perform_motion_scenario_timeout_fails_deterministically() -> None:
+    payload, _delay = _engine().execute(
+        skill='perform_motion',
+        args={'object': 'head_look_left'},
+        scenario_id='motion_timeout',
+    )
+
+    assert payload['status'] == 'failed'
+    assert payload['failure']['code'] == 'convergence_timeout'
+    assert payload['metadata']['result_mode'] == 'convergence_timeout'
+
+
+def test_engine_perform_motion_fail_once_switches_to_success_on_second_call() -> None:
+    engine = _engine()
+
+    first, _ = engine.execute(
+        skill='perform_motion',
+        args={'object': 'head_look_left', 'result_mode': 'fail_once'},
+    )
+    second, _ = engine.execute(
+        skill='perform_motion',
+        args={'object': 'head_look_left', 'result_mode': 'fail_once'},
+    )
+
+    assert first['status'] == 'failed'
+    assert first['failure']['code'] == 'convergence_timeout'
+    assert second['status'] == 'succeeded'
 
 
 def test_engine_unknown_skill_returns_structured_failure() -> None:

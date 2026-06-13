@@ -6,6 +6,9 @@ default:
     result_mode: found
     target_found: true
     delay_sec: 0.8
+  perform_motion:
+    result_mode: success
+    delay_sec: 0.6
   wave_greet:
     result_mode: success
     dry_run: true
@@ -28,6 +31,12 @@ scenarios:
   social_wave_unavailable:
     wave_greet:
       result_mode: motion_unavailable
+  motion_unavailable:
+    perform_motion:
+      result_mode: motion_unavailable
+  motion_convergence_timeout:
+    perform_motion:
+      result_mode: convergence_timeout
   area_person_found:
     inspect_area:
       result_mode: person_found

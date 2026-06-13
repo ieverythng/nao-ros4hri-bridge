@@ -18,6 +18,7 @@ GLOBAL_MODES = {
 SUCCESS_MODE_BY_SKILL = {
     'navigate_to': 'success',
     'find_object': 'found',
+    'perform_motion': 'success',
     'wave_greet': 'success',
     'inspect_area': 'clear',
     'walk_to': 'success',
@@ -26,6 +27,7 @@ SUCCESS_MODE_BY_SKILL = {
 FAILURE_MODE_BY_SKILL = {
     'navigate_to': 'path_blocked',
     'find_object': 'not_found',
+    'perform_motion': 'motion_unavailable',
     'wave_greet': 'motion_unavailable',
     'inspect_area': 'backend_unavailable',
     'walk_to': 'path_blocked',
@@ -137,7 +139,7 @@ class FakeSkillEngine:
         signature = {
             'skill': skill,
             'mode': mode,
-            'target': args.get('target', args.get('location', '')),
+            'target': args.get('target', args.get('object', args.get('location', ''))),
             'target_kind': args.get('target_kind', ''),
         }
         text = repr(signature).encode('utf-8')
