@@ -1,4 +1,4 @@
-"""Prompt-pack loading and defaults for planner_llm."""
+"""Prompt-pack loading for planner_llm."""
 
 from __future__ import annotations
 
@@ -23,53 +23,8 @@ except ImportError:  # pragma: no cover - runtime dependency
     yaml = None
 
 
+# Structural defaults are safe because they are not prompt wording.
 DEFAULT_PROMPT_PACK_VERSION = 'planner_llm_prompt_pack_v1'
-DEFAULT_SYSTEM_PROMPT = (
-    'You are planner_llm for a ROS4HRI robot. Reply with one JSON object only. '
-    'Return fields decision, validation_status, failure_reason, replan_hint, '
-    'retry_budget, scene_targets, communication_policy, and steps. '
-    'Each step must contain type, name, args, requires, on_failure, and retry_budget. '
-    'Plan only over the supplied abstract skill registry and allowed step types. '
-    'Important contract: type="skill" may only use names from allowed_skill_names; '
-    'do not use skill name "say" or direct speech actions inside executable plans. '
-    'Do not reference robot-specific topics, NAOqi APIs, or direct hardware calls. '
-    'normalized_intents may be incomplete, so infer the executable request from goal_text, '
-    'grounded context, and execution feedback. '
-    'Grounded context is compact JSON: use grounded_context.entities[].class as the '
-    'entity type, use relations only for extra KB facts, and do not expect counts or '
-    'duplicate rdf:type relations for the same class. '
-    'For perception reports, choose skills from intent and available context instead '
-    'of keyword-matching "what do you see" to scan every time. Use scan when the user '
-    'asks for a fresh look-around/search or when a report truly needs new observation; '
-    'for head-motion plus report, perform the requested motion first and add scan only '
-    'if fresh perception is needed. Include target/target_kind when relevant; clarify '
-    'if the target is ambiguous. When normalized_intents includes report_result, '
-    'include report_result as the terminal skill instead of ending after the '
-    'motion/perception step. '
-    'For look_at steps, treat every grounded entity in state_t0.entities as a valid '
-    'target_frame candidate; do not expect a dedicated look_at_candidates payload. '
-    'A targetless look_at may use args.policy="auto", "social", "random", or "reset"; '
-    'target tracking still requires target_frame. '
-    'For greeting-only or social check-in requests (for example "hi", "hello", "hey"), '
-    'do not infer physical actions (including wave_greet) unless explicitly requested; '
-    'return decision=clarify with a short clarification_text asking what action is wanted. '
-    'For report_result immediately after scan, perform_motion, look_at, navigate_to, '
-    'or another executable skill, omit '
-    'summary_text so the executor reuses the latest live skill result; never prefill '
-    'a completion or perceptual summary from grounded_context or goal_text. Only provide '
-    'summary_text for a standalone report of a known fact that was not produced by a '
-    'previous plan step. Never emit '
-    'unresolved placeholders such as [evidence.objects] or [evidence.people]. '
-    'Set on_failure deliberately per step: prefer replan for retryable execution '
-    'steps, and reserve fail for unsafe or terminal situations. '
-    'Never emit on_failure="retry"; use replan explicitly when replanning is desired. '
-    'Do not add say steps to executable plans; chatbot_llm owns user-facing completion '
-    'wording after execution. '
-    'If the task is ambiguous or blocked, set '
-    'decision to clarify and include clarification_text. If no safe continuation exists, '
-    'set decision to fail and explain why.'
-)
-
 DEFAULT_OUTPUT_CONTRACT: dict[str, Any] = {
     'step_type_skill': {
         'type': 'skill',
@@ -118,71 +73,62 @@ class PlannerPromptPack:
 
 
 def default_prompt_pack() -> PlannerPromptPack:
-    """Return resilient built-in defaults used when pack loading fails."""
-    return PlannerPromptPack(
-        prompt_pack_version=DEFAULT_PROMPT_PACK_VERSION,
-        system_prompt=DEFAULT_SYSTEM_PROMPT,
-        output_contract=dict(DEFAULT_OUTPUT_CONTRACT),
-        validation_retry=dict(DEFAULT_VALIDATION_RETRY),
-    )
+    """Load the canonical packaged planner prompt pack."""
+    return load_prompt_pack('')
 
 
 def load_prompt_pack(path: str, logger=None) -> PlannerPromptPack:
-    """Load prompt pack YAML and merge into defaults."""
-    defaults = default_prompt_pack()
+    """Load planner prompt pack YAML; fail loudly on prompt defects."""
     pack_path = str(path or '').strip()
     source = Path(pack_path) if pack_path else _default_prompt_pack_path()
     if source is None:
-        return defaults
+        raise FileNotFoundError('Could not resolve planner prompt pack path')
     if not source.exists():
-        _warn(logger, f'Prompt pack path does not exist: "{source}"')
-        return _fallback_pack(defaults, source)
+        raise FileNotFoundError(f'Planner prompt pack path does not exist: "{source}"')
 
     if yaml is None:
-        _warn(logger, 'PyYAML unavailable; prompt pack ignored')
-        return _fallback_pack(defaults, source)
+        raise RuntimeError('PyYAML is required to load planner prompt packs')
 
     try:
         raw = source.read_text(encoding='utf-8')
     except Exception as err:  # pragma: no cover - filesystem dependent
-        _warn(logger, f'Could not read prompt pack: {err}')
-        return _fallback_pack(defaults, source)
+        raise RuntimeError(f'Could not read planner prompt pack "{source}": {err}') from err
 
     try:
         parsed = yaml.safe_load(raw)
     except Exception as err:
-        _warn(logger, f'Prompt pack parse failed: {err}')
-        return _fallback_pack(defaults, source)
+        raise ValueError(f'Planner prompt pack parse failed for "{source}": {err}') from err
 
     if not isinstance(parsed, dict):
-        _warn(logger, 'Prompt pack root must be a mapping')
-        return _fallback_pack(defaults, source)
+        raise ValueError(f'Planner prompt pack root must be a mapping: "{source}"')
+    if not _as_text(parsed.get('system_prompt')):
+        raise ValueError(f'Planner prompt pack "{source}" must define non-empty system_prompt')
 
     merged = _merge_dicts(
         {
-            'prompt_pack_version': defaults.prompt_pack_version,
-            'system_prompt': defaults.system_prompt,
-            'output_contract': defaults.output_contract,
-            'validation_retry': defaults.validation_retry,
+            'prompt_pack_version': DEFAULT_PROMPT_PACK_VERSION,
+            'system_prompt': '',
+            'output_contract': DEFAULT_OUTPUT_CONTRACT,
+            'validation_retry': DEFAULT_VALIDATION_RETRY,
         },
         parsed,
     )
 
-    output_contract = merged.get('output_contract', defaults.output_contract)
+    output_contract = merged.get('output_contract', DEFAULT_OUTPUT_CONTRACT)
     if not isinstance(output_contract, dict):
-        _warn(logger, 'output_contract must be a mapping; using defaults')
-        output_contract = defaults.output_contract
+        _warn(logger, 'output_contract must be a mapping; using structural defaults')
+        output_contract = DEFAULT_OUTPUT_CONTRACT
 
-    validation_retry = merged.get('validation_retry', defaults.validation_retry)
+    validation_retry = merged.get('validation_retry', DEFAULT_VALIDATION_RETRY)
     if not isinstance(validation_retry, dict):
-        _warn(logger, 'validation_retry must be a mapping; using defaults')
-        validation_retry = defaults.validation_retry
+        _warn(logger, 'validation_retry must be a mapping; using structural defaults')
+        validation_retry = DEFAULT_VALIDATION_RETRY
 
     return PlannerPromptPack(
-        prompt_pack_version=_as_text(merged.get('prompt_pack_version', defaults.prompt_pack_version)),
-        system_prompt=_as_text(merged.get('system_prompt', defaults.system_prompt)),
-        output_contract=_coerce_output_contract(output_contract, defaults.output_contract),
-        validation_retry=_coerce_validation_retry(validation_retry, defaults.validation_retry),
+        prompt_pack_version=_as_text(merged.get('prompt_pack_version', DEFAULT_PROMPT_PACK_VERSION)),
+        system_prompt=_as_text(merged.get('system_prompt')),
+        output_contract=_coerce_output_contract(output_contract, DEFAULT_OUTPUT_CONTRACT),
+        validation_retry=_coerce_validation_retry(validation_retry, DEFAULT_VALIDATION_RETRY),
         source_path=str(source),
     )
 
@@ -236,16 +182,6 @@ def _as_text(value) -> str:
     if value is None:
         return ''
     return str(value).strip()
-
-
-def _fallback_pack(defaults: PlannerPromptPack, source: Path) -> PlannerPromptPack:
-    return PlannerPromptPack(
-        prompt_pack_version=defaults.prompt_pack_version,
-        system_prompt=defaults.system_prompt,
-        output_contract=defaults.output_contract,
-        validation_retry=defaults.validation_retry,
-        source_path=str(source),
-    )
 
 
 def _default_prompt_pack_path() -> Path | None:

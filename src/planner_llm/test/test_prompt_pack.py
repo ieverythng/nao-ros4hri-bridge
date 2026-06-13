@@ -1,3 +1,5 @@
+import pytest
+
 from planner_llm.prompt_pack import default_prompt_pack
 from planner_llm.prompt_pack import load_prompt_pack
 
@@ -20,6 +22,7 @@ def test_load_prompt_pack_supports_partial_override_merge(tmp_path) -> None:
         '\n'.join(
             [
                 'prompt_pack_version: planner_llm_prompt_pack_custom',
+                'system_prompt: "custom planner system"',
                 'output_contract:',
                 '  step_type_say:',
                 '    args:',
@@ -40,13 +43,14 @@ def test_load_prompt_pack_supports_partial_override_merge(tmp_path) -> None:
     assert pack.validation_retry['previous_model_output_max_chars'] == 777
 
 
-def test_load_prompt_pack_invalid_yaml_falls_back_to_defaults(tmp_path) -> None:
+def test_load_prompt_pack_invalid_yaml_fails_without_required_system_prompt(tmp_path) -> None:
     prompt_pack_path = tmp_path / 'planner_prompt_pack.yaml'
     prompt_pack_path.write_text('::bad', encoding='utf-8')
 
-    pack = load_prompt_pack(str(prompt_pack_path))
-    defaults = default_prompt_pack()
+    with pytest.raises(ValueError, match='root must be a mapping'):
+        load_prompt_pack(str(prompt_pack_path))
 
-    assert pack.prompt_pack_version == defaults.prompt_pack_version
-    assert pack.system_prompt == defaults.system_prompt
-    assert pack.output_contract == defaults.output_contract
+
+def test_load_prompt_pack_missing_file_fails(tmp_path) -> None:
+    with pytest.raises(FileNotFoundError):
+        load_prompt_pack(str(tmp_path / 'missing.yaml'))

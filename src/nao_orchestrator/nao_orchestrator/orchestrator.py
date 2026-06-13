@@ -13,6 +13,8 @@ import json
 import threading
 import time
 
+from chatbot_msgs.msg import DialogueRole, Utterance
+from chatbot_msgs.srv import DialogueInteraction
 from communication_skills.action import Say
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from geometry_msgs.msg import PointStamped
@@ -29,8 +31,10 @@ from planner_common import parse_json_object
 from rclpy.action import ActionClient
 from rclpy.lifecycle import Node, State, TransitionCallbackReturn
 from std_msgs.msg import String
+from unique_identifier_msgs.msg import UUID as UUIDMsg
 
 from nao_orchestrator.intent_rules import (
+    build_scan_result_payload,
     classify_motion_target,
     is_unresolved_report_template,
     make_intent_signature,
@@ -65,12 +69,14 @@ _DEFAULT_SCAN_SKILL_ALIASES = (
 _DEFAULT_FAKE_SKILL_ALIASES = {
     'navigate_to': {'navigate_to', 'go_to', 'move_to_location'},
     'find_object': {'find_object', 'find', 'locate_object', 'find_person'},
+    'perform_motion': {'perform_motion', 'motion', 'posture', 'head_motion'},
     'wave_greet': {'wave_greet', 'wave', 'greet_wave', 'wave_hello'},
     'inspect_area': {'inspect_area', 'inspect', 'check_area'},
     'walk_to': {'walk_to', 'walk_forward', 'step_to'},
 }
 _ASK_USER_STEP_NAMES = frozenset({'ask_user', 'ask_clarification', 'ask_for_help'})
 _MAX_RELAYED_PLANNER_ACTS = 256
+_MAX_EXECUTION_REPORT_STEPS = 8
 
 
 def _first_non_empty_text(*values) -> str:
@@ -85,6 +91,79 @@ def _first_non_empty_value(data: dict, *keys: str) -> str:
     if not isinstance(data, dict):
         return ''
     return _first_non_empty_text(*(data.get(key, '') for key in keys))
+
+
+def _normalize_execution_mode(value) -> str:
+    clean = str(value or '').strip().lower()
+    return clean if clean in {'real', 'fake'} else 'real'
+
+
+def _looks_like_machine_payload(text: str) -> bool:
+    clean_text = str(text or '').strip()
+    return clean_text.startswith(('{', '[', '```', '"{'))
+
+
+def _report_text_from_result_payload(result_payload: dict) -> str:
+    """Resolve conservative report text from a prior live skill result payload."""
+    if not isinstance(result_payload, dict):
+        return ''
+
+    report_text = _first_non_empty_value(
+        result_payload,
+        'summary_text',
+        'result_summary',
+        'message',
+    )
+    if report_text and not is_unresolved_report_template(report_text):
+        return report_text
+
+    skill_name = str(result_payload.get('skill', '')).strip().lower()
+    if skill_name == 'scan' or any(key in result_payload for key in ('objects', 'people')):
+        scan_payload = build_scan_result_payload(result_payload)
+        report_text = str(scan_payload.get('summary_text', '')).strip()
+        if report_text and not is_unresolved_report_template(report_text):
+            return report_text
+
+    target = _first_non_empty_value(result_payload, 'target', 'object', 'location')
+    status = str(result_payload.get('status', '')).strip().lower()
+    if target and status in ('succeeded', 'success', 'completed'):
+        return 'I completed the task for %s.' % target
+    return ''
+
+
+def _execution_step_record(
+    step: dict,
+    *,
+    status: str,
+    reason: str = '',
+    result_summary: str = '',
+    result_payload: dict | None = None,
+) -> dict:
+    """Build compact execution evidence for chatbot-authored reports."""
+    return {
+        'id': str(step.get('id', '')).strip(),
+        'type': str(step.get('type', '')).strip().lower(),
+        'name': str(step.get('name', '')).strip().lower(),
+        'status': str(status or '').strip().lower(),
+        'reason': str(reason or '').strip(),
+        'result_summary': str(result_summary or '').strip(),
+        'result_payload': dict(result_payload or {}),
+    }
+
+
+def _report_text_from_execution_results(execution_results: list) -> str:
+    if not isinstance(execution_results, list):
+        return ''
+    summaries = []
+    for step in execution_results:
+        if not isinstance(step, dict):
+            continue
+        if str(step.get('status', '')).strip().lower() != 'succeeded':
+            continue
+        summary = str(step.get('result_summary', '')).strip()
+        if summary and not is_unresolved_report_template(summary):
+            summaries.append(summary)
+    return ' '.join(summaries[-3:])
 
 
 def _planner_dialogue_act_signature(payload: str) -> str:
@@ -153,6 +232,12 @@ class _ActionExecutionResult:
 
 
 @dataclass(slots=True, frozen=True)
+class _ExecutionReportResult:
+    text: str = ''
+    source: str = ''
+
+
+@dataclass(slots=True, frozen=True)
 class _ExecutionJoinDecision:
     start_index: int
     join_strategy: str
@@ -211,14 +296,20 @@ class NaoOrchestrator(Node):
         self.declare_parameter('scan_report_after_success', True)
         self.declare_parameter('fake_skill_wait_sec', 0.2)
         self.declare_parameter('fake_skill_result_timeout_sec', 20.0)
+        self.declare_parameter('perform_motion_execution_mode', 'real')
         self.declare_parameter('fake_skill_navigate_to_action', '/skill/fake/navigate_to')
         self.declare_parameter('fake_skill_find_object_action', '/skill/fake/find_object')
+        self.declare_parameter('fake_skill_perform_motion_action', '/skill/fake/perform_motion')
         self.declare_parameter('fake_skill_wave_greet_action', '/skill/fake/wave_greet')
         self.declare_parameter('fake_skill_inspect_area_action', '/skill/fake/inspect_area')
         self.declare_parameter('fake_skill_walk_to_action', '/skill/fake/walk_to')
         self.declare_parameter('report_result_action', '/skill/report_result')
         self.declare_parameter('report_result_action_wait_sec', 0.2)
         self.declare_parameter('report_result_action_result_timeout_sec', 8.0)
+        self.declare_parameter('execution_report_chatbot_enabled', True)
+        self.declare_parameter('execution_report_chatbot_service', '/chatbot/dialogue_interaction')
+        self.declare_parameter('execution_report_chatbot_wait_sec', 0.2)
+        self.declare_parameter('execution_report_chatbot_timeout_sec', 6.0)
 
         self.intent_topic = str(self.get_parameter('intent_topic').value)
         self.enable_legacy_intent_bridge = bool(
@@ -331,9 +422,13 @@ class NaoOrchestrator(Node):
             0.1,
             float(self.get_parameter('fake_skill_result_timeout_sec').value),
         )
+        self.perform_motion_execution_mode = _normalize_execution_mode(
+            self.get_parameter('perform_motion_execution_mode').value
+        )
         self._fake_skill_action_names = {
             'navigate_to': str(self.get_parameter('fake_skill_navigate_to_action').value).strip(),
             'find_object': str(self.get_parameter('fake_skill_find_object_action').value).strip(),
+            'perform_motion': str(self.get_parameter('fake_skill_perform_motion_action').value).strip(),
             'wave_greet': str(self.get_parameter('fake_skill_wave_greet_action').value).strip(),
             'inspect_area': str(self.get_parameter('fake_skill_inspect_area_action').value).strip(),
             'walk_to': str(self.get_parameter('fake_skill_walk_to_action').value).strip(),
@@ -348,6 +443,20 @@ class NaoOrchestrator(Node):
         self.report_result_action_result_timeout_sec = max(
             0.1,
             float(self.get_parameter('report_result_action_result_timeout_sec').value),
+        )
+        self.execution_report_chatbot_enabled = bool(
+            self.get_parameter('execution_report_chatbot_enabled').value
+        )
+        self.execution_report_chatbot_service = str(
+            self.get_parameter('execution_report_chatbot_service').value
+        ).strip()
+        self.execution_report_chatbot_wait_sec = max(
+            0.0,
+            float(self.get_parameter('execution_report_chatbot_wait_sec').value),
+        )
+        self.execution_report_chatbot_timeout_sec = max(
+            0.1,
+            float(self.get_parameter('execution_report_chatbot_timeout_sec').value),
         )
 
         self._intent_sub = None
@@ -376,6 +485,7 @@ class NaoOrchestrator(Node):
         self._scan_client = None
         self._fake_skill_clients: dict[str, ActionClient] = {}
         self._report_result_client = None
+        self._execution_report_chatbot_client = None
         self._posture_result_lock = threading.Lock()
         self._posture_result_event = threading.Event()
         self._latest_posture_result: dict | None = None
@@ -432,6 +542,11 @@ class NaoOrchestrator(Node):
             Say,
             self.report_result_action,
         )
+        if self.execution_report_chatbot_enabled and self.execution_report_chatbot_service:
+            self._execution_report_chatbot_client = self.create_client(
+                DialogueInteraction,
+                self.execution_report_chatbot_service,
+            )
         self._diag_pub = self.create_publisher(DiagnosticArray, '/diagnostics', 1)
         self._diag_timer = self.create_timer(1.0, self._publish_diagnostics)
         self._posture_command_pub = self.create_publisher(
@@ -591,6 +706,9 @@ class NaoOrchestrator(Node):
         if self._planner_request_pub is not None:
             self.destroy_publisher(self._planner_request_pub)
             self._planner_request_pub = None
+        if self._execution_report_chatbot_client is not None:
+            self.destroy_client(self._execution_report_chatbot_client)
+            self._execution_report_chatbot_client = None
         for client in (
             self._say_client,
             self._replay_motion_client,
@@ -962,6 +1080,7 @@ class NaoOrchestrator(Node):
         executed_any = False
         latest_result_summary = ''
         latest_result_payload: dict = {}
+        execution_results: list[dict] = []
         self.get_logger().info(
             'Executing plan worker | goal_id=%s plan_id=%s version=%s join=%s mapped_step=%s steps=%d'
             % (
@@ -1012,10 +1131,13 @@ class NaoOrchestrator(Node):
                 )
 
             dispatch_fallback_data = dict(data)
+            dispatch_fallback_data['plan_context'] = dict(plan_context)
             if latest_result_summary:
                 dispatch_fallback_data['last_result_summary'] = latest_result_summary
             if latest_result_payload:
                 dispatch_fallback_data['last_result_payload'] = dict(latest_result_payload)
+            if execution_results:
+                dispatch_fallback_data['execution_results'] = list(execution_results)
 
             step_ok, reason, result_payload = self._dispatch_plan_step(
                 step,
@@ -1033,6 +1155,15 @@ class NaoOrchestrator(Node):
                     'result_summary',
                     'message',
                 ) or str(reason or '').strip()
+                execution_results.append(
+                    _execution_step_record(
+                        step,
+                        status='succeeded',
+                        reason=reason,
+                        result_summary=latest_result_summary,
+                        result_payload=latest_result_payload,
+                    )
+                )
                 if not step_started:
                     _mark_step_started()
                 self._publish_plan_feedback(
@@ -1049,6 +1180,21 @@ class NaoOrchestrator(Node):
 
             failure_policy = str(step.get('on_failure', 'fail')).strip().lower()
             step_name = str(step.get('name', '')).strip().lower()
+            failure_result_payload = dict(result_payload or {})
+            execution_results.append(
+                _execution_step_record(
+                    step,
+                    status='failed',
+                    reason=reason,
+                    result_summary=_first_non_empty_value(
+                        failure_result_payload,
+                        'summary_text',
+                        'result_summary',
+                        'message',
+                    ) or str(reason or '').strip(),
+                    result_payload=failure_result_payload,
+                )
+            )
             if step_name in _ASK_USER_STEP_NAMES and failure_policy not in (
                 'ask_user',
                 'clarify',
@@ -1363,40 +1509,7 @@ class NaoOrchestrator(Node):
         *,
         on_started=None,
     ) -> tuple[bool, str, dict]:
-        report_text = _first_non_empty_value(
-            step_args,
-            'summary_text',
-            'result_summary',
-            'text',
-            'message',
-            'utterance',
-            'content',
-            'suggested_response',
-            'text_hint',
-            'object',
-        )
-        if is_unresolved_report_template(report_text):
-            report_text = ''
-        if not report_text:
-            report_text = _first_non_empty_value(
-                fallback_data,
-                'last_result_summary',
-                'result_summary',
-                'summary_text',
-            )
-            if is_unresolved_report_template(report_text):
-                report_text = ''
-        if not report_text:
-            last_result_payload = fallback_data.get('last_result_payload', {})
-            if isinstance(last_result_payload, dict):
-                report_text = _first_non_empty_value(
-                    last_result_payload,
-                    'summary_text',
-                    'result_summary',
-                    'message',
-                )
-                if is_unresolved_report_template(report_text):
-                    report_text = ''
+        report_text = self._resolve_report_result_text(step_args, fallback_data)
         if not report_text:
             self._stats.dispatch_failures += 1
             return False, 'report_result step missing summary text', {
@@ -1430,6 +1543,143 @@ class NaoOrchestrator(Node):
         if success:
             return True, report_text, payload
         return False, reason or 'report_result action failed', payload
+
+    def _resolve_report_result_text(self, step_args: dict, fallback_data: dict) -> str:
+        explicit_text = _first_non_empty_value(
+            step_args,
+            'summary_text',
+            'result_summary',
+            'text',
+            'message',
+            'utterance',
+            'content',
+            'suggested_response',
+            'text_hint',
+            'object',
+        )
+        if explicit_text and not is_unresolved_report_template(explicit_text):
+            return explicit_text
+
+        report_context = self._execution_report_context(fallback_data)
+        chatbot_result = self._request_execution_report_text(report_context)
+        if chatbot_result.text:
+            self.get_logger().info(
+                'Resolved report_result text via %s' % chatbot_result.source
+            )
+            return chatbot_result.text
+
+        chain_text = _report_text_from_execution_results(
+            fallback_data.get('execution_results', [])
+        )
+        if chain_text:
+            return chain_text
+
+        fallback_text = _first_non_empty_value(
+            fallback_data,
+            'last_result_summary',
+            'result_summary',
+            'summary_text',
+        )
+        if fallback_text and not is_unresolved_report_template(fallback_text):
+            return fallback_text
+        return _report_text_from_result_payload(fallback_data.get('last_result_payload', {}))
+
+    def _execution_report_context(self, fallback_data: dict) -> dict:
+        plan_context = fallback_data.get('plan_context', {})
+        if not isinstance(plan_context, dict):
+            plan_context = {}
+        execution_results = fallback_data.get('execution_results', [])
+        if not isinstance(execution_results, list):
+            execution_results = []
+        bounded_steps = [
+            dict(step)
+            for step in execution_results[-_MAX_EXECUTION_REPORT_STEPS:]
+            if isinstance(step, dict)
+        ]
+        return {
+            'goal_text': _first_non_empty_value(
+                fallback_data,
+                'goal_text',
+                'goal',
+                'task',
+                'raw_input',
+                'text',
+            ),
+            'requested_intents': [
+                str(item).strip()
+                for item in fallback_data.get('normalized_intents', [])
+                if str(item).strip()
+            ] if isinstance(fallback_data.get('normalized_intents', []), list) else [],
+            'scene_targets': list(plan_context.get('scene_targets', []))
+            if isinstance(plan_context.get('scene_targets', []), list)
+            else [],
+            'plan_id': str(plan_context.get('plan_id', '')).strip(),
+            'plan_version': int(plan_context.get('plan_version', 0) or 0),
+            'steps': bounded_steps,
+            'latest_result_summary': str(fallback_data.get('last_result_summary', '')).strip(),
+            'latest_result_payload': dict(
+                fallback_data.get('last_result_payload', {})
+                if isinstance(fallback_data.get('last_result_payload', {}), dict)
+                else {}
+            ),
+        }
+
+    def _request_execution_report_text(self, report_context: dict) -> _ExecutionReportResult:
+        if not self.execution_report_chatbot_enabled:
+            return _ExecutionReportResult(source='disabled')
+        if self._execution_report_chatbot_client is None:
+            return _ExecutionReportResult(source='unavailable')
+        if not self._execution_report_chatbot_client.wait_for_service(
+            timeout_sec=self.execution_report_chatbot_wait_sec
+        ):
+            return _ExecutionReportResult(source='unavailable')
+
+        request = DialogueInteraction.Request()
+        request.dialogue_id = UUIDMsg(uuid=[0] * 16)
+        request.role = DialogueRole(name='__default__')
+        request.summary = ''
+        request.history = [
+            Utterance(
+                speaker=Utterance.SYSTEM,
+                text=json.dumps(
+                    {'execution_report': report_context},
+                    sort_keys=True,
+                    separators=(',', ':'),
+                ),
+                timestamp=round(time.time(), 3),
+            )
+        ]
+
+        done_event = threading.Event()
+        result = {'response': None, 'error': ''}
+
+        def _on_done(future) -> None:
+            try:
+                result['response'] = future.result()
+            except Exception as err:  # pragma: no cover - ROS transport failure
+                result['error'] = str(err)
+            finally:
+                done_event.set()
+
+        future = self._execution_report_chatbot_client.call_async(request)
+        future.add_done_callback(_on_done)
+        if not done_event.wait(timeout=self.execution_report_chatbot_timeout_sec):
+            return _ExecutionReportResult(source='timeout')
+        response = result.get('response')
+        if response is None:
+            if result.get('error'):
+                self.get_logger().warn(
+                    'Execution report chatbot request failed: %s' % result['error']
+                )
+            return _ExecutionReportResult(source='failed')
+        error_msg = str(getattr(response, 'error_msg', '') or '').strip()
+        if error_msg:
+            self.get_logger().warn('Execution report chatbot returned error: %s' % error_msg)
+            return _ExecutionReportResult(source='failed')
+        text = str(getattr(response, 'response', '') or '').strip()
+        if _looks_like_machine_payload(text):
+            return _ExecutionReportResult(source='unsafe')
+        return _ExecutionReportResult(text=text, source='chatbot')
 
     def _execute_ask_user_step(
         self,
@@ -1479,6 +1729,16 @@ class NaoOrchestrator(Node):
         *,
         on_started=None,
     ) -> tuple[bool, str]:
+        if self.perform_motion_execution_mode == 'fake':
+            success, reason, _payload = self._execute_fake_skill_step(
+                'perform_motion',
+                dict(step_args or {}),
+                on_started=on_started,
+            )
+            if success:
+                return True, ''
+            return False, reason or 'fake perform_motion dispatch failed'
+
         route, resolved_payload = classify_motion_target(Intent.PERFORM_MOTION, step_args)
         if route == 'replay_motion':
             motion_name = resolved_payload['motion_name']

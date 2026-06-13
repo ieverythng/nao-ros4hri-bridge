@@ -20,6 +20,10 @@ from nao_orchestrator.intent_rules import is_people_scan_target
 from nao_orchestrator.intent_rules import is_unresolved_report_template
 from nao_orchestrator.intent_rules import summarize_people_detection
 from nao_orchestrator.intent_rules import validate_execution_plan
+from nao_orchestrator.orchestrator import _ExecutionReportResult
+from nao_orchestrator.orchestrator import _normalize_execution_mode
+from nao_orchestrator.orchestrator import _report_text_from_result_payload
+from nao_orchestrator.orchestrator import NaoOrchestrator
 
 
 def test_parse_intent_data_returns_dict_for_valid_json() -> None:
@@ -90,6 +94,12 @@ def test_classify_motion_target_maps_head_motion() -> None:
     )
     assert route == 'head_motion'
     assert payload['yaw'] == 0.45
+
+
+def test_normalize_execution_mode_defaults_to_real() -> None:
+    assert _normalize_execution_mode('fake') == 'fake'
+    assert _normalize_execution_mode('real') == 'real'
+    assert _normalize_execution_mode('unexpected') == 'real'
 
 
 def test_classify_motion_target_maps_look_at_reset_alias() -> None:
@@ -519,6 +529,120 @@ def test_scene_scan_payload_summarizes_objects() -> None:
     assert payload['summary_text'].startswith('I completed the scene scan')
 
 
+def test_report_text_from_summaryless_scan_payload_summarizes_objects() -> None:
+    report_text = _report_text_from_result_payload(
+        {
+            'skill': 'scan',
+            'target_kind': 'scene',
+            'summary_text': '',
+            'objects': [
+                {'id': 'blueberry_1', 'label': 'blueberry', 'source': 'scene_summary'},
+                {'id': 'blueberry_2', 'label': 'blueberry', 'source': 'scene_summary'},
+            ],
+        }
+    )
+
+    assert report_text.startswith('I completed the scene scan')
+    assert 'blueberry' in report_text
+
+
+def test_report_text_from_completed_target_payload_uses_conservative_completion() -> None:
+    report_text = _report_text_from_result_payload(
+        {
+            'skill': 'navigate_to',
+            'status': 'succeeded',
+            'target': 'cup',
+            'summary_text': '',
+        }
+    )
+
+    assert report_text == 'I completed the task for cup.'
+
+
+def test_report_result_text_uses_chatbot_context_for_step_chain() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    captured = {}
+
+    def request_report(context):
+        captured.update(context)
+        return _ExecutionReportResult(
+            text='I navigated to the cup and found two blueberries.',
+            source='chatbot',
+        )
+
+    orchestrator._request_execution_report_text = request_report
+    orchestrator.get_logger = lambda: type(
+        'Logger',
+        (),
+        {'info': lambda *_args, **_kwargs: None},
+    )()
+
+    report_text = orchestrator._resolve_report_result_text(
+        {},
+        {
+            'goal_text': 'navigate to the cup and report other objects',
+            'normalized_intents': ['navigate_to', 'inspect_scene', 'report_result'],
+            'plan_context': {'plan_id': 'plan_1', 'plan_version': 2},
+            'execution_results': [
+                {
+                    'id': 'step_1',
+                    'name': 'navigate_to',
+                    'type': 'skill',
+                    'status': 'succeeded',
+                    'result_summary': 'I navigated to the cup.',
+                    'result_payload': {
+                        'skill': 'navigate_to',
+                        'status': 'succeeded',
+                        'target': 'cup',
+                    },
+                },
+                {
+                    'id': 'step_2',
+                    'name': 'scan',
+                    'type': 'skill',
+                    'status': 'succeeded',
+                    'result_summary': 'I found two blueberries.',
+                    'result_payload': {
+                        'skill': 'scan',
+                        'objects': [{'label': 'blueberry'}, {'label': 'blueberry'}],
+                    },
+                },
+            ],
+        },
+    )
+
+    assert report_text == 'I navigated to the cup and found two blueberries.'
+    assert captured['goal_text'] == 'navigate to the cup and report other objects'
+    assert [step['name'] for step in captured['steps']] == ['navigate_to', 'scan']
+
+
+def test_report_result_text_falls_back_to_successful_step_chain() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    orchestrator._request_execution_report_text = (
+        lambda _context: _ExecutionReportResult(source='unavailable')
+    )
+
+    report_text = orchestrator._resolve_report_result_text(
+        {},
+        {
+            'execution_results': [
+                {
+                    'name': 'navigate_to',
+                    'status': 'succeeded',
+                    'result_summary': 'I navigated to the cup.',
+                },
+                {
+                    'name': 'scan',
+                    'status': 'succeeded',
+                    'result_summary': 'I found two blueberries.',
+                },
+            ],
+        },
+    )
+
+    assert report_text == 'I navigated to the cup. I found two blueberries.'
+
+
 def test_scene_scan_payload_preserves_positional_evidence() -> None:
     payload = build_scan_result_payload(
         {
@@ -604,3 +728,46 @@ def test_make_intent_signature_ignores_ack_text_only_differences() -> None:
         {'object': 'stand', 'ack_text': 'Okay.'},
     )
     assert left == right
+
+
+def test_orchestrator_fake_perform_motion_mode_routes_to_fake_skill() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    orchestrator.perform_motion_execution_mode = 'fake'
+    calls = []
+
+    def fake_execute(skill_name, step_args, *, on_started=None):
+        calls.append((skill_name, step_args))
+        return True, '', {'skill': skill_name, 'status': 'succeeded'}
+
+    orchestrator._execute_fake_skill_step = fake_execute
+
+    success, reason = NaoOrchestrator._execute_motion_plan_step(
+        orchestrator,
+        {'object': 'head_look_left'},
+    )
+
+    assert success is True
+    assert reason == ''
+    assert calls == [('perform_motion', {'object': 'head_look_left'})]
+
+
+def test_orchestrator_real_perform_motion_mode_keeps_head_action_route() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    orchestrator.perform_motion_execution_mode = 'real'
+    orchestrator._stats = type('Stats', (), {'dispatched_head_motion': 0})()
+    calls = []
+
+    def fake_head(payload, *, on_started=None):
+        calls.append(payload)
+        return False, 'head motion dispatch failed'
+
+    orchestrator._execute_head_motion_step = fake_head
+
+    success, reason = NaoOrchestrator._execute_motion_plan_step(
+        orchestrator,
+        {'object': 'head_look_left'},
+    )
+
+    assert success is False
+    assert reason == 'head motion dispatch failed'
+    assert calls and calls[0]['yaw'] == 0.45
