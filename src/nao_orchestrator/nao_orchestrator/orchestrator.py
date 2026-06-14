@@ -155,15 +155,62 @@ def _report_text_from_execution_results(execution_results: list) -> str:
     if not isinstance(execution_results, list):
         return ''
     summaries = []
-    for step in execution_results:
+    for step in execution_results[-_MAX_EXECUTION_REPORT_STEPS:]:
         if not isinstance(step, dict):
             continue
         if str(step.get('status', '')).strip().lower() != 'succeeded':
             continue
         summary = str(step.get('result_summary', '')).strip()
-        if summary and not is_unresolved_report_template(summary):
+        if summary and not is_unresolved_report_template(summary) and summary not in summaries:
             summaries.append(summary)
-    return ' '.join(summaries[-3:])
+    return ' '.join(summaries)
+
+
+def _motion_result_payload(route: str, step_args: dict, resolved_payload: dict) -> dict:
+    """Build non-spoken execution evidence for successful motion steps."""
+    motion_label = _first_non_empty_value(
+        resolved_payload,
+        'motion_name',
+        'motion',
+        'name',
+        'target',
+        'policy',
+    )
+    if not motion_label:
+        motion_label = _first_non_empty_value(
+            step_args,
+            'motion',
+            'name',
+            'target',
+            'object',
+            'policy',
+        )
+    clean_label = str(motion_label or route or 'motion').strip()
+    summary_text = _motion_summary_text(route, clean_label)
+    return {
+        'skill': 'perform_motion',
+        'route': str(route or '').strip(),
+        'motion': clean_label,
+        'status': 'succeeded',
+        'summary_text': summary_text,
+        'metadata': {
+            'speech_produced': False,
+        },
+    }
+
+
+def _motion_summary_text(route: str, motion_label: str) -> str:
+    clean_label = str(motion_label or '').strip().lower().replace('_', ' ')
+    if clean_label.startswith('head look '):
+        direction = clean_label.removeprefix('head look ').strip()
+        return 'I moved my head %s.' % direction
+    if clean_label == 'head center':
+        return 'I centered my head.'
+    if str(route or '').strip().lower() == 'look_at_reset':
+        return 'I reset my gaze.'
+    if clean_label:
+        return 'I performed %s.' % clean_label
+    return 'I performed the requested motion.'
 
 
 def _planner_dialogue_act_signature(payload: str) -> str:
@@ -1331,11 +1378,11 @@ class NaoOrchestrator(Node):
 
         if step_type == 'skill':
             if step_name in ('perform_motion', 'motion', ''):
-                success, reason = self._execute_motion_plan_step(
+                success, reason, payload = self._execute_motion_plan_step(
                     step_args,
                     on_started=on_started,
                 )
-                return success, reason, {}
+                return success, reason, payload
             if step_name == 'look_at':
                 success, reason = self._dispatch_planned_look_at(
                     step_name,
@@ -1728,16 +1775,16 @@ class NaoOrchestrator(Node):
         step_args: dict,
         *,
         on_started=None,
-    ) -> tuple[bool, str]:
+    ) -> tuple[bool, str, dict]:
         if self.perform_motion_execution_mode == 'fake':
-            success, reason, _payload = self._execute_fake_skill_step(
+            success, reason, payload = self._execute_fake_skill_step(
                 'perform_motion',
                 dict(step_args or {}),
                 on_started=on_started,
             )
             if success:
-                return True, ''
-            return False, reason or 'fake perform_motion dispatch failed'
+                return True, reason, payload
+            return False, reason or 'fake perform_motion dispatch failed', payload
 
         route, resolved_payload = classify_motion_target(Intent.PERFORM_MOTION, step_args)
         if route == 'replay_motion':
@@ -1748,8 +1795,9 @@ class NaoOrchestrator(Node):
             )
             if success:
                 self._stats.dispatched_replay_motion += 1
-                return True, ''
-            return False, reason or 'motion dispatch failed'
+                payload = _motion_result_payload(route, step_args, resolved_payload)
+                return True, payload['summary_text'], payload
+            return False, reason or 'motion dispatch failed', {}
 
         if route == 'head_motion':
             success, reason = self._execute_head_motion_step(
@@ -1758,8 +1806,9 @@ class NaoOrchestrator(Node):
             )
             if success:
                 self._stats.dispatched_head_motion += 1
-                return True, ''
-            return False, reason or 'motion dispatch failed'
+                payload = _motion_result_payload(route, step_args, resolved_payload)
+                return True, payload['summary_text'], payload
+            return False, reason or 'motion dispatch failed', {}
 
         if route == 'look_at_reset':
             success, reason = self._execute_look_at_reset_step(
@@ -1767,12 +1816,13 @@ class NaoOrchestrator(Node):
             )
             if success:
                 self._stats.dispatched_look_at += 1
-                return True, ''
-            return False, reason or 'look_at reset dispatch failed'
+                payload = _motion_result_payload(route, step_args, resolved_payload)
+                return True, payload['summary_text'], payload
+            return False, reason or 'look_at reset dispatch failed', {}
 
         self._stats.dispatch_failures += 1
         self.get_logger().warn('Unsupported motion payload: %s' % step_args)
-        return False, 'unsupported motion payload'
+        return False, 'unsupported motion payload', {}
 
     def _execute_scan_step(
         self,

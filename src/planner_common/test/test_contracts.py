@@ -243,6 +243,25 @@ def test_project_llm_grounded_context_filters_backend_noise_and_relations() -> N
     assert forbidden.isdisjoint(cup.keys())
 
 
+def test_project_llm_grounded_context_prioritizes_stable_entities_over_detector_churn() -> None:
+    projected = project_llm_grounded_context(
+        {'scene_summary': {'objects': [], 'people': []}},
+        knowledge_rows=[
+            {'entity': 'detected_blueberry_pvrts', 'predicate': 'rdf:type', 'object': 'dbr:Blueberry'},
+            {'entity': 'cup_qgqrd', 'predicate': 'rdf:type', 'object': 'dbr:Cup'},
+            {'entity': 'cup_qgqrd', 'predicate': 'dbp:color', 'object': 'gold'},
+        ],
+    )
+
+    assert [item['id'] for item in projected['entities']] == [
+        'cup_qgqrd',
+        'detected_blueberry_pvrts',
+    ]
+    assert projected['entities'][0]['relations'] == [
+        {'predicate': 'dbp:color', 'object': 'gold'}
+    ]
+
+
 def test_project_llm_grounded_context_keeps_state_t0_only_when_enabled() -> None:
     raw_context = {
         'scene_summary': {},
