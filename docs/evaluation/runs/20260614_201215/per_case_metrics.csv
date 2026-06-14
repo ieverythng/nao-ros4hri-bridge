@@ -1,0 +1,7 @@
+case_id,passed,duration_sec,assertions_passed,assertions_failed,skill_statuses,final_status,global_mode,scenario_id,seed,repetition
+P1_find_object_success,True,0.0001,2,0,succeeded,succeeded,scenario,-,42,0
+P1_navigate_to_success,True,0.0001,2,0,succeeded,succeeded,scenario,-,42,0
+P1_perform_motion_success,False,0.0001,1,1,failed,failed,scenario,-,42,0
+P1_wave_greet_success,True,0.0,2,0,succeeded,succeeded,scenario,-,42,0
+P1_inspect_area_clear,True,0.0,2,0,succeeded,succeeded,scenario,-,42,0
+P1_walk_to_success,False,0.0,1,1,succeeded,succeeded,scenario,-,42,0
