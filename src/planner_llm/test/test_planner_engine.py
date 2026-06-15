@@ -311,6 +311,48 @@ def test_planner_engine_rejects_partial_model_plans_when_one_step_is_unsupported
     assert decision.payload['plan']['steps'][0]['type'] == 'say'
 
 
+def test_planner_engine_repairs_unsupported_composite_motion_object() -> None:
+    provider = _SequenceProvider(
+        [
+            '{"steps":[{"type":"skill","name":"perform_motion",'
+            '"args":{"object":"head_look_all"},"requires":[],'
+            '"on_failure":"replan","retry_budget":0}]}',
+            '{"steps":['
+            '{"type":"skill","name":"perform_motion","args":{"object":"head_look_left"},'
+            '"requires":[],"on_failure":"replan","retry_budget":0},'
+            '{"type":"skill","name":"perform_motion","args":{"object":"head_look_right"},'
+            '"requires":[],"on_failure":"replan","retry_budget":0},'
+            '{"type":"skill","name":"perform_motion","args":{"object":"head_look_up"},'
+            '"requires":[],"on_failure":"replan","retry_budget":0},'
+            '{"type":"skill","name":"perform_motion","args":{"object":"head_look_down"},'
+            '"requires":[],"on_failure":"replan","retry_budget":0}]}',
+        ]
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_all_directions',
+            'goal_id': 'goal_all_directions',
+            'goal_text': 'move your head in all directions',
+            'normalized_intents': ['perform_motion'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_all_directions', plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert len(provider.messages) == 2
+    retry_prompt = provider.messages[1][1]['content']
+    assert 'unsupported perform_motion args.object \\"head_look_all\\"' in retry_prompt
+    assert [step['args']['object'] for step in decision.payload['plan']['steps']] == [
+        'head_look_left',
+        'head_look_right',
+        'head_look_up',
+        'head_look_down',
+    ]
+
+
 def test_planner_engine_strips_prefilled_report_summary_after_scan() -> None:
     provider = _FakeProvider(
         '{"steps":[{"type":"skill","name":"scan","args":{},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"report_result","args":{"summary_text":"I can see a cup."},"requires":["step_1"],"on_failure":"fail","retry_budget":0}]}'

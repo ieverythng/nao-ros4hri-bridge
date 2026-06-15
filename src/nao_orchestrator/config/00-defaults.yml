@@ -41,6 +41,10 @@
     report_result_action: "/skill/report_result"
     report_result_action_wait_sec: 0.2
     report_result_action_result_timeout_sec: 8.0
+    execution_report_chatbot_enabled: true
+    execution_report_chatbot_service: "/chatbot_llm/dialogue_interaction"
+    execution_report_chatbot_wait_sec: 0.5
+    execution_report_chatbot_timeout_sec: 12.0
 
 /scan_skill_server:
   ros__parameters:

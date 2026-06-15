@@ -45,6 +45,9 @@ system_prompt: |
   - Every executable step must contain "id", "type", "name", "args", "requires", "on_failure",
     and "retry_budget".
   - "type"="skill" and "name" must be one entry in "allowed_skill_names".
+  - For "perform_motion", use one supplied "allowed_motion_objects" value per step.
+    Decompose composite labels such as "head_look_all" into explicit supported
+    directional steps; never emit a composite label as "args.object".
   - Never emit ROS topic names, NAOqi/direct hardware calls, invalid parameters.
   - Prefer to ask for clarification instead of guessing or hallucinating a plan.
   - Use "requires" only when a step depends on a previous step succeeding or

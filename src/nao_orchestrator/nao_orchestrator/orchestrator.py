@@ -77,6 +77,7 @@ _DEFAULT_FAKE_SKILL_ALIASES = {
 }
 _ASK_USER_STEP_NAMES = frozenset({'ask_user', 'ask_clarification', 'ask_for_help'})
 _MAX_RELAYED_PLANNER_ACTS = 256
+_MAX_PLANNER_REQUEST_CONTEXTS = 64
 _MAX_EXECUTION_REPORT_STEPS = 8
 
 
@@ -145,6 +146,9 @@ def _execution_step_record(
         'id': str(step.get('id', '')).strip(),
         'type': str(step.get('type', '')).strip().lower(),
         'name': str(step.get('name', '')).strip().lower(),
+        'args': dict(step.get('args', {}))
+        if isinstance(step.get('args', {}), dict)
+        else {},
         'status': str(status or '').strip().lower(),
         'reason': str(reason or '').strip(),
         'result_summary': str(result_summary or '').strip(),
@@ -357,7 +361,10 @@ class NaoOrchestrator(Node):
         self.declare_parameter('report_result_action_wait_sec', 0.2)
         self.declare_parameter('report_result_action_result_timeout_sec', 8.0)
         self.declare_parameter('execution_report_chatbot_enabled', True)
-        self.declare_parameter('execution_report_chatbot_service', '/chatbot/dialogue_interaction')
+        self.declare_parameter(
+            'execution_report_chatbot_service',
+            '/chatbot_llm/dialogue_interaction',
+        )
         self.declare_parameter('execution_report_chatbot_wait_sec', 0.2)
         self.declare_parameter('execution_report_chatbot_timeout_sec', 12.0)
 
@@ -545,6 +552,8 @@ class NaoOrchestrator(Node):
         self._posture_result_event = threading.Event()
         self._latest_posture_result: dict | None = None
         self._planner_gate = PlannerGate()
+        self._planner_request_context_by_goal: dict[str, dict] = {}
+        self._planner_request_context_order: list[str] = []
         self._scan_skill_names = self._load_scan_skill_names()
         self._fake_skill_aliases = self._load_fake_skill_aliases()
         self._active_execution_goal_id = ''
@@ -857,6 +866,10 @@ class NaoOrchestrator(Node):
             )
 
         self._planner_request_pub.publish(forward_msg)
+        self._remember_planner_request_context(
+            decision.request.goal_id,
+            decision.forward_payload if isinstance(decision.forward_payload, dict) else msg.data,
+        )
         self._stats.last_route = 'planner_gate:forwarded'
         if decision.reason:
             self._publish_planner_gate_feedback(decision=decision, status='accepted')
@@ -1095,7 +1108,7 @@ class NaoOrchestrator(Node):
             target=self._execute_planned_intent,
             kwargs={
                 'intent_name': intent_name,
-                'data': dict(data),
+                'data': self._execution_context_for_goal(goal_id, data),
                 'plan': execution_plan,
                 'plan_context': dict(plan_context),
                 'source': source,
@@ -1109,6 +1122,26 @@ class NaoOrchestrator(Node):
         )
         worker.start()
         return True
+
+    def _remember_planner_request_context(self, goal_id: str, payload) -> None:
+        """Retain admitted request evidence for execution reports and replans."""
+        clean_goal_id = str(goal_id or '').strip()
+        request_context = parse_json_object(payload)
+        if not clean_goal_id or not request_context:
+            return
+        if clean_goal_id in self._planner_request_context_by_goal:
+            self._planner_request_context_order.remove(clean_goal_id)
+        self._planner_request_context_by_goal[clean_goal_id] = request_context
+        self._planner_request_context_order.append(clean_goal_id)
+        while len(self._planner_request_context_order) > _MAX_PLANNER_REQUEST_CONTEXTS:
+            expired_goal_id = self._planner_request_context_order.pop(0)
+            self._planner_request_context_by_goal.pop(expired_goal_id, None)
+
+    def _execution_context_for_goal(self, goal_id: str, plan_data: dict) -> dict:
+        """Merge the admitted request context with the validated planner output."""
+        context = dict(self._planner_request_context_by_goal.get(str(goal_id).strip(), {}))
+        context.update(dict(plan_data or {}))
+        return context
 
     def _maybe_dispatch_acknowledgement(
         self,
@@ -1629,16 +1662,18 @@ class NaoOrchestrator(Node):
             'text_hint',
             'object',
         )
-        if explicit_text and not is_unresolved_report_template(explicit_text):
-            return explicit_text
-
         report_context = self._execution_report_context(fallback_data)
+        if explicit_text and not is_unresolved_report_template(explicit_text):
+            report_context['requested_summary'] = explicit_text
         chatbot_result = self._request_execution_report_text(report_context)
         if chatbot_result.text:
             self.get_logger().info(
                 'Resolved report_result text via %s' % chatbot_result.source
             )
             return chatbot_result.text
+
+        if explicit_text and not is_unresolved_report_template(explicit_text):
+            return explicit_text
 
         chain_text = _report_text_from_execution_results(
             fallback_data.get('execution_results', [])
@@ -1692,6 +1727,11 @@ class NaoOrchestrator(Node):
             'scene_targets': list(plan_context.get('scene_targets', []))
             if isinstance(plan_context.get('scene_targets', []), list)
             else [],
+            'grounded_context': dict(
+                fallback_data.get('grounded_context', {})
+                if isinstance(fallback_data.get('grounded_context', {}), dict)
+                else {}
+            ),
             'plan_id': str(plan_context.get('plan_id', '')).strip(),
             'plan_version': int(plan_context.get('plan_version', 0) or 0),
             'steps': bounded_steps,

@@ -627,6 +627,31 @@ def test_report_result_text_uses_chatbot_context_for_step_chain() -> None:
     assert [step['name'] for step in captured['steps']] == ['navigate_to', 'scan']
 
 
+def test_execution_context_retains_admitted_request_for_report_result() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    orchestrator._planner_request_context_by_goal = {}
+    orchestrator._planner_request_context_order = []
+    orchestrator._remember_planner_request_context(
+        'goal_1',
+        {
+            'goal_id': 'goal_1',
+            'goal_text': 'move your head in all directions and wave',
+            'dialogue_context': ['user:move your head in all directions and wave'],
+            'grounded_context': {'entities': [{'id': 'person_1'}]},
+        },
+    )
+
+    context = orchestrator._execution_context_for_goal(
+        'goal_1',
+        {'plan': {'goal_id': 'goal_1', 'steps': []}},
+    )
+
+    assert context['goal_text'] == 'move your head in all directions and wave'
+    assert context['dialogue_context'][0].startswith('user:')
+    assert context['grounded_context']['entities'][0]['id'] == 'person_1'
+    assert context['plan']['goal_id'] == 'goal_1'
+
+
 def test_report_result_text_falls_back_to_successful_step_chain() -> None:
     orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
     orchestrator._request_execution_report_text = (
@@ -699,6 +724,37 @@ def test_report_result_text_can_reuse_motion_chain_summaries() -> None:
     assert report_text == (
         'I moved my head left. I moved my head right. I centered my head.'
     )
+
+
+def test_report_result_routes_explicit_summary_through_chatbot_first() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    captured = {}
+
+    def _chatbot_report(context):
+        captured.update(context)
+        return _ExecutionReportResult(
+            text='I completed the requested motion and waved at you.',
+            source='chatbot',
+        )
+
+    orchestrator._request_execution_report_text = _chatbot_report
+    orchestrator.get_logger = lambda: type(
+        'Logger',
+        (),
+        {'info': lambda *_args, **_kwargs: None},
+    )()
+
+    report_text = orchestrator._resolve_report_result_text(
+        {'summary_text': 'I moved left. I moved right. I waved.'},
+        {
+            'goal_text': 'move your head in all directions and wave',
+            'grounded_context': {'entities': [{'id': 'person_1', 'label': 'person'}]},
+        },
+    )
+
+    assert report_text == 'I completed the requested motion and waved at you.'
+    assert captured['requested_summary'] == 'I moved left. I moved right. I waved.'
+    assert captured['grounded_context']['entities'][0]['id'] == 'person_1'
 
 
 def test_report_result_text_preserves_motion_chain_before_terminal_result() -> None:
