@@ -578,7 +578,7 @@ def project_llm_grounded_context(
 
     entities = sorted(
         (_finalize_compact_entity(item) for item in entities_by_id.values()),
-        key=lambda item: (item.get('kind', ''), item.get('id', '')),
+        key=_llm_entity_sort_key,
     )
     compact = {'entities': entities}
     if include_state_t0 and isinstance(state_t0, dict) and state_t0:
@@ -921,6 +921,14 @@ def _finalize_compact_entity(entity: dict) -> dict:
         for key, value in finalized.items()
         if key == 'label' or value not in ('', [], {})
     }
+
+
+def _llm_entity_sort_key(entity: dict) -> tuple:
+    clean_id = str(entity.get('id', '')).strip().lower()
+    generated_rank = 1 if clean_id.startswith(('detected_', 'anonymous_')) else 0
+    kind_rank = 0 if str(entity.get('kind', '')).strip().lower() == 'object' else 1
+    relation_rank = 0 if entity.get('relations') else 1
+    return (generated_rank, kind_rank, relation_rank, clean_id)
 
 
 def normalize_communication_policy(value) -> dict:

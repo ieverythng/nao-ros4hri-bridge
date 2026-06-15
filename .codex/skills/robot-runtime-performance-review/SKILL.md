@@ -43,6 +43,49 @@ Add `--sample-topics` only when you need one-shot ROS topic payloads; sparse
 topics can slow the loop. Add `--include-heavy-topics` only when raw detector
 messages are the target of the diagnosis.
 
+For an active E2E questionnaire pass, run:
+
+```bash
+python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
+  --container nao_ros2 \
+  --case-set smoke \
+  --out /tmp/nao_active_questionnaire.json
+```
+
+Live probing requirement:
+
+- If the container is running, actively probe it. Do not rely on historical logs
+  alone for a full review.
+- Confirm node visibility with `docker exec <container> ... ros2 node list`.
+- Confirm critical live parameters with `ros2 param dump` or `ros2 param get`,
+  especially chatbot token budget, KB query budget, scene-grounding freshness,
+  orchestrator execution mode, and fake-skill mode.
+- Sample current topics when a questionnaire item depends on present state:
+  `/scene/summary`, `/chatbot_llm/turn_trace`, `/planner/request`,
+  `/planner/execution_feedback`, `/nao_orchestrator/planner_dialogue_act`,
+  `/debug/nao_say/speech`, and `/speech`.
+- When a user reports a live failure, align log timestamps with direct topic and
+  parameter probes before assigning blame to planner, chatbot, KB, or execution.
+
+Active questionnaire requirement:
+
+- For a full runtime pass, inject at least one turn from each applicable
+  questionnaire category through the ROS4HRI speech ingress instead of only
+  reading historical logs.
+- Prefer the rqt_chat/dialogue_manager input seam:
+  `/nao_chatbot/humans/voices/anonymous_speaker/speech`
+  (`hri_msgs/msg/LiveSpeech`) plus
+  `/nao_chatbot/humans/voices/tracked` (`hri_msgs/msg/IdsList`).
+- Use direct `/planner/request` publication only for planner-isolated probes.
+  Mark those probes as planner-only, because they bypass chatbot routing.
+- After each injected turn, collect `/chatbot_llm/turn_trace`,
+  `/planner/request`, `/planner/execution_feedback`,
+  `/nao_orchestrator/planner_dialogue_act`, `/debug/nao_say/speech`, and
+  recent container logs before scoring the case.
+- If a code or prompt fix was made before review, rebuild and restart the stack
+  first, then verify live params and one trace from the restarted nodes before
+  claiming the fix is live.
+
 ## Evidence Sources
 
 Use the minimum set that answers the question:
@@ -92,6 +135,19 @@ Finding rule:
   freshness/identity stability.
 - If the fact is in `grounded_context` but the answer ignores it, blame prompt
   or model behavior.
+
+Interaction_sim object rule:
+
+- Treat simulator-authored objects and relations as the primary stability probe.
+  They should not depend on detector confidence or HRI person-manager stability.
+- For interaction_sim objects, first verify the explicit simulator object id and
+  predicates in KnowledgeCore logs or `/kb/query`, then verify the same facts in
+  `grounded_context`, then judge chatbot/planner behavior.
+- If detector entities such as `detected_blueberry_*` crowd the snapshot, report
+  the KB query budget and whether stable simulator ids such as `cup_xslil`,
+  `apple_*`, or `phone_*` are still present in the rendered context.
+- Do not classify a simulator object-add miss as perception noise unless the
+  object never enters KnowledgeCore or `/scene/summary`.
 
 ### 2. HRI Person Stability
 
@@ -147,6 +203,55 @@ Compare live behavior with the TFM validation plan:
 Use fake-skill validation when perception noise is not the target of the test.
 Use full user-turn validation when chatbot routing or grounding is the target.
 
+### 6. E2E Operational Questionnaire
+
+When the user asks for a full runtime pass, score these scenarios explicitly.
+Use the live stack when the target is routing, grounding, or speech. Use fake
+skills when the target is deterministic execution, replanning, or failure policy.
+
+1. Simple dialogue turn:
+   - Prompts such as "Hey!", "How are you?", and "What is your favourite color?"
+   - Expected: route stays dialogue, planner handoff is false, exactly one speech
+     event is emitted, and no skill feedback appears.
+2. KB query dialogue turn:
+   - Prompts such as "What can you see?", then add interaction_sim objects, then
+     ask "What can you see now?" or "What is the id/name/color of ...?"
+   - Expected: fresh simulator object facts appear in `grounded_context` on the
+     next user turn, stable ids/relations are preserved, and the answer uses
+     those facts without requiring a second confirmation turn.
+3. Simple skill execution:
+   - Prompts such as "Move your head to the right" or "Wave at me."
+   - Expected: chatbot emits one acknowledgement, orchestrator dispatches one
+     skill, planner feedback is truthful, and completion/report speech is not
+     duplicated.
+4. Composite skill execution:
+   - Prompts such as "Move your head in all directions" or "Navigate to the
+     phone in the scene and tell me what else you see."
+   - Expected: planner produces multiple ordered steps, orchestrator preserves
+     step evidence, `report_result` receives a filled or derivable summary, and
+     final speech reflects the whole chain rather than only the last step.
+5. Simple fake-skill scenario execution:
+   - Run one-skill cases under all-success, all-failure, fail-once, alternating,
+     and random fake modes.
+   - Expected: fake payloads include `metadata.fake=true`, result mode, and
+     stable summary text; failures cause clarification, replanning, or safe stop
+     according to the plan policy.
+6. Composite fake-skill scenario execution:
+   - Run multi-step cases under the same fake modes.
+   - Expected: successful steps are not repeated unnecessarily, failed steps are
+     reported with structured feedback, user clarification is routed through
+     chatbot wording, and exactly one semantic speech event is emitted per stage.
+
+Questionnaire scoring:
+
+- Mark each scenario as pass, degraded, fail, or not run.
+- A fail in simple dialogue, duplicate speech, raw planner leakage, or false
+  execution success caps the total runtime score at 6/10.
+- A fail in interaction_sim object-add grounding caps the score at 7/10 unless
+  logs prove the fact never reached KnowledgeCore.
+- A fail only in detector/HRI variability should not cap the interaction_sim
+  grounding score; report it under runtime/performance pressure instead.
+
 ## Severity Bands
 
 Report findings under these bands:
@@ -180,6 +285,14 @@ Score: X/10
 
 Checks passed
 - <short evidence-backed positives>
+
+E2E questionnaire
+- Simple dialogue: <pass/degraded/fail/not run>
+- KB query dialogue: <pass/degraded/fail/not run>
+- Simple skill execution: <pass/degraded/fail/not run>
+- Composite skill execution: <pass/degraded/fail/not run>
+- Simple fake-skill scenarios: <pass/degraded/fail/not run>
+- Composite fake-skill scenarios: <pass/degraded/fail/not run>
 
 Next probes
 - <one command or action per probe>

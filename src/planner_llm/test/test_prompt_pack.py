@@ -7,13 +7,21 @@ from planner_llm.prompt_pack import load_prompt_pack
 def test_default_planner_prompt_pack_contains_core_fields() -> None:
     pack = default_prompt_pack()
 
-    assert pack.prompt_pack_version
-    assert 'You are planner_llm for a ROS4HRI robot' in pack.system_prompt
+    assert pack.prompt_pack_version == 'planner_llm_prompt_pack_v1'
+    assert 'You are a planner for a robot called Pop' in pack.system_prompt
     assert 'step_type_skill' in pack.output_contract
     assert 'step_type_say' in pack.output_contract
     assert 'invalid_examples' in pack.output_contract
     assert 'planner contract errors' in pack.validation_retry['instruction']
     assert pack.validation_retry['previous_model_output_max_chars'] == 4000
+
+
+def test_default_planner_prompt_pack_limits_routine_progress_speech() -> None:
+    pack = default_prompt_pack()
+
+    assert 'Keep emit_progress=false for short plans' in pack.system_prompt
+    assert 'Routine internal step transitions' in pack.system_prompt
+    assert 'report_result or completion speech will close the' in pack.system_prompt
 
 
 def test_load_prompt_pack_supports_partial_override_merge(tmp_path) -> None:

@@ -57,6 +57,7 @@ _LAB_VLLM_DEFAULTS = {
     "planner_llm_preflight_required": "true",
     "chatbot_request_timeout_sec": "60.0",
     "chatbot_first_request_timeout_sec": "75.0",
+    "chatbot_response_max_tokens": "192",
     "chatbot_preflight_timeout_sec": "60.0",
     "chatbot_preflight_attempts": "3",
     "chatbot_preflight_realistic_enabled": "true",
@@ -1575,7 +1576,7 @@ def generate_profile_launch_description(
     )
     chatbot_response_max_tokens_arg = DeclareLaunchArgument(
         "chatbot_response_max_tokens",
-        default_value=_profile_default(profile_defaults, "chatbot_response_max_tokens", "64"),
+        default_value=_profile_default(profile_defaults, "chatbot_response_max_tokens", "192"),
         description="Maximum response tokens requested from chatbot_llm Ollama calls.",
     )
     chatbot_intent_max_tokens_arg = DeclareLaunchArgument(

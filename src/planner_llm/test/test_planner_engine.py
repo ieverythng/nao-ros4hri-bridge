@@ -95,6 +95,50 @@ def test_planner_engine_uses_provider_for_motion_report_request() -> None:
         'report_result',
     ]
     assert provider.messages[0]['role'] == 'system'
+    assert 'Keep emit_progress=false for short plans' in provider.messages[0]['content']
+    assert 'Routine internal step transitions' in provider.messages[0]['content']
+
+
+def test_planner_engine_keeps_composite_motion_report_progress_quiet_by_default() -> None:
+    provider = _FakeProvider(
+        '{"communication_policy":{"emit_progress":false,"emit_completion":true},'
+        '"steps":['
+        '{"type":"skill","name":"perform_motion","args":{"object":"head_look_left"},'
+        '"requires":[],"on_failure":"replan","retry_budget":0},'
+        '{"type":"skill","name":"perform_motion","args":{"object":"head_look_right"},'
+        '"requires":["step_1"],"on_failure":"replan","retry_budget":0},'
+        '{"type":"skill","name":"wave_greet","args":{},'
+        '"requires":["step_2"],"on_failure":"replan","retry_budget":0},'
+        '{"type":"skill","name":"report_result","args":{},'
+        '"requires":["step_3"],"on_failure":"fail","retry_budget":0}'
+        ']}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=2)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_motion_wave_report',
+            'goal_id': 'goal_motion_wave_report',
+            'goal_text': 'move your head in all directions and then wave at me',
+            'normalized_intents': ['perform_motion', 'wave_greet', 'report_result'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(
+        request,
+        goal_id='goal_motion_wave_report',
+        plan_version=1,
+    )
+
+    policy = decision.payload['plan']['communication_policy']
+    assert policy['emit_progress'] is False
+    assert policy['emit_completion'] is False
+    assert [step['name'] for step in decision.payload['plan']['steps']] == [
+        'perform_motion',
+        'perform_motion',
+        'wave_greet',
+        'report_result',
+    ]
 
 
 def test_planner_engine_uses_provider_for_non_rule_request() -> None:

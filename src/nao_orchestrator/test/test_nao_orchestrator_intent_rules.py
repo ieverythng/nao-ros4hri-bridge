@@ -21,6 +21,7 @@ from nao_orchestrator.intent_rules import is_unresolved_report_template
 from nao_orchestrator.intent_rules import summarize_people_detection
 from nao_orchestrator.intent_rules import validate_execution_plan
 from nao_orchestrator.orchestrator import _ExecutionReportResult
+from nao_orchestrator.orchestrator import _motion_result_payload
 from nao_orchestrator.orchestrator import _normalize_execution_mode
 from nao_orchestrator.orchestrator import _report_text_from_result_payload
 from nao_orchestrator.orchestrator import NaoOrchestrator
@@ -643,6 +644,98 @@ def test_report_result_text_falls_back_to_successful_step_chain() -> None:
     assert report_text == 'I navigated to the cup. I found two blueberries.'
 
 
+def test_motion_result_payload_supplies_reportable_internal_summary() -> None:
+    payload = _motion_result_payload(
+        'head_motion',
+        {'motion': 'head_look_right'},
+        {'motion_name': 'head_look_right'},
+    )
+
+    assert payload['skill'] == 'perform_motion'
+    assert payload['status'] == 'succeeded'
+    assert payload['summary_text'] == 'I moved my head right.'
+    assert payload['metadata']['speech_produced'] is False
+
+
+def test_report_result_text_can_reuse_motion_chain_summaries() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    orchestrator._request_execution_report_text = (
+        lambda _context: _ExecutionReportResult(source='unavailable')
+    )
+
+    report_text = orchestrator._resolve_report_result_text(
+        {},
+        {
+            'execution_results': [
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I moved my head left.',
+                },
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I moved my head right.',
+                },
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I centered my head.',
+                },
+            ],
+        },
+    )
+
+    assert report_text == (
+        'I moved my head left. I moved my head right. I centered my head.'
+    )
+
+
+def test_report_result_text_preserves_full_bounded_motion_chain() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    orchestrator._request_execution_report_text = (
+        lambda _context: _ExecutionReportResult(source='unavailable')
+    )
+
+    report_text = orchestrator._resolve_report_result_text(
+        {},
+        {
+            'execution_results': [
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I moved my head left.',
+                },
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I moved my head right.',
+                },
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I moved my head up.',
+                },
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I moved my head down.',
+                },
+                {
+                    'name': 'wave_greet',
+                    'status': 'succeeded',
+                    'result_summary': 'I performed a friendly wave.',
+                },
+            ],
+        },
+    )
+
+    assert report_text == (
+        'I moved my head left. I moved my head right. I moved my head up. '
+        'I moved my head down. I performed a friendly wave.'
+    )
+
+
 def test_scene_scan_payload_preserves_positional_evidence() -> None:
     payload = build_scan_result_payload(
         {
@@ -741,13 +834,14 @@ def test_orchestrator_fake_perform_motion_mode_routes_to_fake_skill() -> None:
 
     orchestrator._execute_fake_skill_step = fake_execute
 
-    success, reason = NaoOrchestrator._execute_motion_plan_step(
+    success, reason, payload = NaoOrchestrator._execute_motion_plan_step(
         orchestrator,
         {'object': 'head_look_left'},
     )
 
     assert success is True
     assert reason == ''
+    assert payload == {'skill': 'perform_motion', 'status': 'succeeded'}
     assert calls == [('perform_motion', {'object': 'head_look_left'})]
 
 
@@ -763,11 +857,12 @@ def test_orchestrator_real_perform_motion_mode_keeps_head_action_route() -> None
 
     orchestrator._execute_head_motion_step = fake_head
 
-    success, reason = NaoOrchestrator._execute_motion_plan_step(
+    success, reason, payload = NaoOrchestrator._execute_motion_plan_step(
         orchestrator,
         {'object': 'head_look_left'},
     )
 
     assert success is False
     assert reason == 'head motion dispatch failed'
+    assert payload == {}
     assert calls and calls[0]['yaw'] == 0.45
