@@ -29,6 +29,7 @@ from planner_common import merge_fake_skill_aliases
 from planner_common import merge_scan_skill_names
 from planner_common import parse_json_object
 from rclpy.action import ActionClient
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.lifecycle import Node, State, TransitionCallbackReturn
 from std_msgs.msg import String
 from unique_identifier_msgs.msg import UUID as UUIDMsg
@@ -344,9 +345,11 @@ class NaoOrchestrator(Node):
         self.declare_parameter('fake_skill_wait_sec', 0.2)
         self.declare_parameter('fake_skill_result_timeout_sec', 20.0)
         self.declare_parameter('perform_motion_execution_mode', 'real')
+        self.declare_parameter('look_at_execution_mode', 'real')
         self.declare_parameter('fake_skill_navigate_to_action', '/skill/fake/navigate_to')
         self.declare_parameter('fake_skill_find_object_action', '/skill/fake/find_object')
         self.declare_parameter('fake_skill_perform_motion_action', '/skill/fake/perform_motion')
+        self.declare_parameter('fake_skill_look_at_action', '/skill/fake/look_at')
         self.declare_parameter('fake_skill_wave_greet_action', '/skill/fake/wave_greet')
         self.declare_parameter('fake_skill_inspect_area_action', '/skill/fake/inspect_area')
         self.declare_parameter('fake_skill_walk_to_action', '/skill/fake/walk_to')
@@ -356,7 +359,7 @@ class NaoOrchestrator(Node):
         self.declare_parameter('execution_report_chatbot_enabled', True)
         self.declare_parameter('execution_report_chatbot_service', '/chatbot/dialogue_interaction')
         self.declare_parameter('execution_report_chatbot_wait_sec', 0.2)
-        self.declare_parameter('execution_report_chatbot_timeout_sec', 6.0)
+        self.declare_parameter('execution_report_chatbot_timeout_sec', 12.0)
 
         self.intent_topic = str(self.get_parameter('intent_topic').value)
         self.enable_legacy_intent_bridge = bool(
@@ -472,10 +475,14 @@ class NaoOrchestrator(Node):
         self.perform_motion_execution_mode = _normalize_execution_mode(
             self.get_parameter('perform_motion_execution_mode').value
         )
+        self.look_at_execution_mode = _normalize_execution_mode(
+            self.get_parameter('look_at_execution_mode').value
+        )
         self._fake_skill_action_names = {
             'navigate_to': str(self.get_parameter('fake_skill_navigate_to_action').value).strip(),
             'find_object': str(self.get_parameter('fake_skill_find_object_action').value).strip(),
             'perform_motion': str(self.get_parameter('fake_skill_perform_motion_action').value).strip(),
+            'look_at': str(self.get_parameter('fake_skill_look_at_action').value).strip(),
             'wave_greet': str(self.get_parameter('fake_skill_wave_greet_action').value).strip(),
             'inspect_area': str(self.get_parameter('fake_skill_inspect_area_action').value).strip(),
             'walk_to': str(self.get_parameter('fake_skill_walk_to_action').value).strip(),
@@ -533,6 +540,7 @@ class NaoOrchestrator(Node):
         self._fake_skill_clients: dict[str, ActionClient] = {}
         self._report_result_client = None
         self._execution_report_chatbot_client = None
+        self._execution_report_callback_group = ReentrantCallbackGroup()
         self._posture_result_lock = threading.Lock()
         self._posture_result_event = threading.Event()
         self._latest_posture_result: dict | None = None
@@ -568,7 +576,12 @@ class NaoOrchestrator(Node):
         self._look_at_client = ActionClient(self, LookAt, self.look_at_action)
         if ScanScene is not None:
             self._scan_client = ActionClient(self, ScanScene, self.scan_action)
-            for skill_name in sorted(set(self._fake_skill_aliases.values())):
+            fake_skill_names = set(self._fake_skill_aliases.values())
+            if self.perform_motion_execution_mode == 'fake':
+                fake_skill_names.add('perform_motion')
+            if self.look_at_execution_mode == 'fake':
+                fake_skill_names.add('look_at')
+            for skill_name in sorted(fake_skill_names):
                 action_name = self._fake_skill_action_names.get(
                     skill_name,
                     '/skill/fake/%s' % skill_name,
@@ -593,6 +606,7 @@ class NaoOrchestrator(Node):
             self._execution_report_chatbot_client = self.create_client(
                 DialogueInteraction,
                 self.execution_report_chatbot_service,
+                callback_group=self._execution_report_callback_group,
             )
         self._diag_pub = self.create_publisher(DiagnosticArray, '/diagnostics', 1)
         self._diag_timer = self.create_timer(1.0, self._publish_diagnostics)
@@ -1431,6 +1445,17 @@ class NaoOrchestrator(Node):
         on_started=None,
     ) -> tuple[bool, str]:
         """Map a planned look-at step onto reset or target-frame dispatch."""
+        if self.look_at_execution_mode == 'fake':
+            success, reason, _payload = self._execute_fake_skill_step(
+                'look_at',
+                dict(step_args or {}),
+                on_started=on_started,
+            )
+            if success:
+                self._stats.dispatched_look_at += 1
+                return True, ''
+            return False, reason or 'fake look_at dispatch failed'
+
         policy = str(
             step_args.get('policy', step_args.get('object', step_name))
         ).strip().lower()
@@ -1657,6 +1682,13 @@ class NaoOrchestrator(Node):
                 for item in fallback_data.get('normalized_intents', [])
                 if str(item).strip()
             ] if isinstance(fallback_data.get('normalized_intents', []), list) else [],
+            'dialogue_context': [
+                str(item).strip()
+                for item in fallback_data.get('dialogue_context', [])
+                if str(item).strip()
+            ][-_MAX_EXECUTION_REPORT_STEPS:]
+            if isinstance(fallback_data.get('dialogue_context', []), list)
+            else [],
             'scene_targets': list(plan_context.get('scene_targets', []))
             if isinstance(plan_context.get('scene_targets', []), list)
             else [],

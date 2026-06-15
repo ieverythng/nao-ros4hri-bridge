@@ -21,6 +21,7 @@ SUCCESS_MODE_BY_SKILL = {
     'perform_motion': 'success',
     'wave_greet': 'success',
     'inspect_area': 'clear',
+    'look_at': 'success',
     'walk_to': 'success',
 }
 
@@ -30,6 +31,7 @@ FAILURE_MODE_BY_SKILL = {
     'perform_motion': 'motion_unavailable',
     'wave_greet': 'motion_unavailable',
     'inspect_area': 'backend_unavailable',
+    'look_at': 'target_unavailable',
     'walk_to': 'path_blocked',
 }
 

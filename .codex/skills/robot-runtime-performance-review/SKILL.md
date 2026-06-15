@@ -52,6 +52,18 @@ python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questi
   --out /tmp/nao_active_questionnaire.json
 ```
 
+The questionnaire must include an interaction_sim/KnowledgeCore-style object
+insertion probe when the KB seam is under review. The preferred probe is:
+
+1. Add a stable object id and predicates through `/kb/revise` when that service
+   is available, for example `codex_probe_cup rdf:type Cup`,
+   `codex_probe_cup dbp:name TITAS`, and `codex_probe_cup dbp:color gold`.
+2. Verify the same facts through `/kb/query`.
+3. Ask the chatbot through ROS4HRI speech ingress what the object's name/color is.
+4. Check the `GROUNDED_CONTEXT` trace for the object id and predicates before
+   blaming the model. If `/kb/revise` or `/kb/query` is unavailable, record that
+   explicitly as an observability or launch seam finding.
+
 Live probing requirement:
 
 - If the container is running, actively probe it. Do not rely on historical logs
@@ -72,10 +84,12 @@ Active questionnaire requirement:
 - For a full runtime pass, inject at least one turn from each applicable
   questionnaire category through the ROS4HRI speech ingress instead of only
   reading historical logs.
-- Prefer the rqt_chat/dialogue_manager input seam:
+- Prefer the rqt_chat/dialogue_manager input seam used by the active launch:
   `/nao_chatbot/humans/voices/anonymous_speaker/speech`
   (`hri_msgs/msg/LiveSpeech`) plus
-  `/nao_chatbot/humans/voices/tracked` (`hri_msgs/msg/IdsList`).
+  `/nao_chatbot/humans/voices/tracked` (`hri_msgs/msg/IdsList`). Verify
+  `ros2 topic info -v` shows a `dialogue_manager` subscription before injecting
+  turns. Use another topic only when the active launch explicitly exposes it.
 - Use direct `/planner/request` publication only for planner-isolated probes.
   Mark those probes as planner-only, because they bypass chatbot routing.
 - After each injected turn, collect `/chatbot_llm/turn_trace`,
@@ -219,6 +233,9 @@ skills when the target is deterministic execution, replanning, or failure policy
    - Expected: fresh simulator object facts appear in `grounded_context` on the
      next user turn, stable ids/relations are preserved, and the answer uses
      those facts without requiring a second confirmation turn.
+   - Required probe: insert or ask the operator to insert one stable simulator/KB
+     object with at least `rdf:type`, `dbp:name`, and `dbp:color`; verify
+     KnowledgeCore mutation/query evidence separately from chatbot wording.
 3. Simple skill execution:
    - Prompts such as "Move your head to the right" or "Wave at me."
    - Expected: chatbot emits one acknowledgement, orchestrator dispatches one

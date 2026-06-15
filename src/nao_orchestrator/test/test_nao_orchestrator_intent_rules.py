@@ -583,7 +583,15 @@ def test_report_result_text_uses_chatbot_context_for_step_chain() -> None:
         {
             'goal_text': 'navigate to the cup and report other objects',
             'normalized_intents': ['navigate_to', 'inspect_scene', 'report_result'],
-            'plan_context': {'plan_id': 'plan_1', 'plan_version': 2},
+            'dialogue_context': [
+                'user:Navigate to the cup and tell me what else you see.',
+                'assistant:Sure, I will navigate to the cup and look around.',
+            ],
+            'plan_context': {
+                'plan_id': 'plan_1',
+                'plan_version': 2,
+                'scene_targets': ['cup'],
+            },
             'execution_results': [
                 {
                     'id': 'step_1',
@@ -614,6 +622,8 @@ def test_report_result_text_uses_chatbot_context_for_step_chain() -> None:
 
     assert report_text == 'I navigated to the cup and found two blueberries.'
     assert captured['goal_text'] == 'navigate to the cup and report other objects'
+    assert captured['scene_targets'] == ['cup']
+    assert captured['dialogue_context'][-1].startswith('assistant:')
     assert [step['name'] for step in captured['steps']] == ['navigate_to', 'scan']
 
 
@@ -691,7 +701,47 @@ def test_report_result_text_can_reuse_motion_chain_summaries() -> None:
     )
 
 
-def test_report_result_text_preserves_full_bounded_motion_chain() -> None:
+def test_report_result_text_preserves_motion_chain_before_terminal_result() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    orchestrator._request_execution_report_text = (
+        lambda _context: _ExecutionReportResult(source='unavailable')
+    )
+
+    report_text = orchestrator._resolve_report_result_text(
+        {},
+        {
+            'execution_results': [
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I centered my head.',
+                },
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I moved my head left.',
+                },
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I moved my head right.',
+                },
+                {
+                    'name': 'wave_greet',
+                    'status': 'succeeded',
+                    'result_summary': 'I performed a friendly wave.',
+                },
+            ],
+        },
+    )
+
+    assert report_text == (
+        'I centered my head. I moved my head left. I moved my head right. '
+        'I performed a friendly wave.'
+    )
+
+
+def test_report_result_text_preserves_bounded_motion_chain_fallback() -> None:
     orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
     orchestrator._request_execution_report_text = (
         lambda _context: _ExecutionReportResult(source='unavailable')
@@ -843,6 +893,30 @@ def test_orchestrator_fake_perform_motion_mode_routes_to_fake_skill() -> None:
     assert reason == ''
     assert payload == {'skill': 'perform_motion', 'status': 'succeeded'}
     assert calls == [('perform_motion', {'object': 'head_look_left'})]
+
+
+def test_orchestrator_fake_look_at_mode_routes_to_fake_skill() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    orchestrator.look_at_execution_mode = 'fake'
+    orchestrator._stats = type('Stats', (), {'dispatched_look_at': 0})()
+    calls = []
+
+    def fake_execute(skill_name, step_args, *, on_started=None):
+        calls.append((skill_name, step_args))
+        return True, '', {'skill': skill_name, 'status': 'succeeded'}
+
+    orchestrator._execute_fake_skill_step = fake_execute
+
+    success, reason = NaoOrchestrator._dispatch_planned_look_at(
+        orchestrator,
+        'look_at',
+        {'target_frame': 'person_1'},
+    )
+
+    assert success is True
+    assert reason == ''
+    assert orchestrator._stats.dispatched_look_at == 1
+    assert calls == [('look_at', {'target_frame': 'person_1'})]
 
 
 def test_orchestrator_real_perform_motion_mode_keeps_head_action_route() -> None:

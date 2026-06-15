@@ -104,6 +104,7 @@ _SIM_CAMERA_DEFAULTS = {
     "head_motion_allow_open_loop_without_joint_state": "true",
     "head_motion_assume_success_on_convergence_timeout": "false",
     "perform_motion_execution_mode": "real",
+    "look_at_execution_mode": "fake",
 }
 _ROBOT_CAMERA_DEFAULTS = {
     "nao_ip": "172.26.112.25",
@@ -122,6 +123,7 @@ _ROBOT_CAMERA_DEFAULTS = {
     "head_motion_allow_open_loop_without_joint_state": "true",
     "head_motion_assume_success_on_convergence_timeout": "false",
     "perform_motion_execution_mode": "real",
+    "look_at_execution_mode": "real",
     "start_interaction_sim": "false",
     "start_interaction_sim_perception": "false",
     "start_interaction_sim_tools": "true",
@@ -1191,6 +1193,11 @@ def generate_profile_launch_description(
         default_value=_profile_default(profile_defaults, "perform_motion_execution_mode", "real"),
         description="perform_motion dispatch mode: real|fake.",
     )
+    look_at_execution_mode_arg = DeclareLaunchArgument(
+        "look_at_execution_mode",
+        default_value=_profile_default(profile_defaults, "look_at_execution_mode", "real"),
+        description="look_at dispatch mode: real|fake.",
+    )
     start_nao_say_skill_arg = DeclareLaunchArgument(
         "start_nao_say_skill",
         default_value=_profile_default(profile_defaults, "start_nao_say_skill", "true"),
@@ -1954,6 +1961,12 @@ def generate_profile_launch_description(
             {
                 "perform_motion_execution_mode": ParameterValue(
                     LaunchConfiguration("perform_motion_execution_mode"),
+                    value_type=str,
+                )
+            },
+            {
+                "look_at_execution_mode": ParameterValue(
+                    LaunchConfiguration("look_at_execution_mode"),
                     value_type=str,
                 )
             },
@@ -2823,6 +2836,7 @@ def generate_profile_launch_description(
             fake_skill_random_failure_prob_arg,
             fake_skill_mode_overrides_json_arg,
             perform_motion_execution_mode_arg,
+            look_at_execution_mode_arg,
             start_nao_say_skill_arg,
             start_nao_replay_motion_arg,
             head_motion_allow_open_loop_without_joint_state_arg,

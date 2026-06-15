@@ -16,6 +16,9 @@ default:
   inspect_area:
     result_mode: clear
     delay_sec: 0.9
+  look_at:
+    result_mode: success
+    delay_sec: 0.5
   walk_to:
     result_mode: dry_run
     dry_run: true
@@ -40,4 +43,7 @@ scenarios:
   area_person_found:
     inspect_area:
       result_mode: person_found
+  look_at_unavailable:
+    look_at:
+      result_mode: target_unavailable
   head_motion_strict: {}
