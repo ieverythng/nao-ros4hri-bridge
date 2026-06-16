@@ -23,6 +23,11 @@
   - writes markdown report + JSONL captures under `docs/artifacts/`
   - use as regression smoke only, not as replacement for full-stack human-in-loop tests
 
+- `summarize_validation_traces.py`
+  - converts interaction-trace JSONL into thesis-ready JSON, CSV, and a compact HTML dashboard
+  - reports per-trace duration, planner outputs, feedback, dialogue acts, and completion rate
+  - example: `python3 scripts/summarize_validation_traces.py docs/artifacts/trace_captures/<trace>.jsonl`
+
 ## Validation helpers
 
 - `check_skill_registry_consistency.py`

@@ -2,7 +2,8 @@
 
 **Date:** 2026-06-11  
 **Branch:** `refactor/deslop_repo`  
-**Status:** Implementation paused at user request; changes are uncommitted and unstaged.  
+**Status:** Consolidated with the latest `origin/refactor/deslop_repo` changes;
+implementation is staged but uncommitted.
 **Scope:** SV-driven KB mutation, node-owned refresh, spatial grounding, human-inclusive perception, validation resources, spoken execution guidance, and prompt guards.
 
 ---
@@ -32,6 +33,70 @@ spatial cases and generates JSON, CSV, and HTML metrics artifacts.
 
 Static and unit validation is green. Live ROS/container validation remains
 pending because Colima could not start: its disk was reported as already in use.
+
+---
+
+## 14/06/26 Integration Consolidation
+
+The branch was fast-forwarded through the latest incoming commits and the local
+semi-symbolic work was reconciled file by file. The combined implementation
+preserves both sides of the new seams:
+
+- chatbot-owned execution-result wording through `report_result`;
+- deterministic KB mutation dispatch through `kb_skills`;
+- fake `perform_motion` coverage for validation;
+- human/object separation and metric spatial evidence;
+- YAML-owned planner prompt wording without a duplicate Python prompt default.
+
+The deslop pass also centralized optional numeric evidence normalization in
+`planner_common`, reducing repeated coercion in orchestrator scan normalization.
+This increases locality without moving execution or grounding ownership.
+
+Current integration gates:
+
+| Gate | Result |
+| --- | --- |
+| Planner contracts, prompt pack, registry tests | 32 passed |
+| Fake-skill, KB mutation, metrics tests | 21 passed |
+| Nested `chatbot_llm` intent, grounded-context, prompt tests | 11 passed |
+| Registry consistency | passed |
+| ROS4HRI change audit | passed |
+| Python compilation and diff checks | passed |
+| ROS-dependent orchestrator/grounding tests | pending ROS environment (`chatbot_msgs`, `rclpy`) |
+| Live KnowledgeCore, spatial overlay, speech/result validation | pending main-PC ROS/container run |
+
+The root and nested repositories remain uncommitted. `.codex/config.toml` and
+`src/Neural-Wokbench/docs/.DS_Store` remain intentionally excluded from staged
+integration changes.
+
+---
+
+## 15/06/26 Runtime/Fake-Skill Consolidation
+
+The branch was fast-forwarded through commit `b33c100` and reconciled against
+the staged semi-symbolic implementation. Incoming runtime seams were treated as
+authoritative where they overlapped:
+
+- `look_at` now has a real fake-skill adapter, scenario, orchestrator execution
+  mode, launch-profile wiring, and questionnaire coverage;
+- execution-result wording uses the callback-safe chatbot interaction seam and
+  preserves bounded motion-result evidence;
+- the active questionnaire supports full ROS4HRI speech injection and
+  chatbot-service injection, including a controlled KnowledgeCore probe;
+- the expanded planner prompt pack remains canonical.
+
+The consolidation retained the additive local seams:
+
+- explicit KB mutation dispatch through `kb_skills`;
+- near/far spatial fake scenarios and metric-evidence guards;
+- human/object separation in general visibility reporting;
+- shared numeric evidence normalization and validation metrics tooling.
+
+Available static gates pass. Live runtime review is pending because Docker/Colima
+is not running on this machine. The referenced `ISSUES BEFORE 17-06-26` HTML
+could not be found in the current branch, its four incoming commits, or the
+nearby fetched remote branches; it still needs to be supplied or pulled from its
+actual source before it can inform the final review.
 
 ---
 

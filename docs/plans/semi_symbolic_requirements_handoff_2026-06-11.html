@@ -19,8 +19,8 @@
 <body>
 <header>
   <h1>Semi-Symbolic Requirements Handoff</h1>
-  <p><strong>Implementation pause — 11 June 2026</strong></p>
-  <p>Mapped directly to the 04/06/26 and 10/06/26 SV-driven notes. Changes are uncommitted and unstaged.</p>
+  <p><strong>Integration consolidation — 14 June 2026</strong></p>
+  <p>Mapped directly to the 04/06/26 and 10/06/26 SV-driven notes. Latest incoming changes are reconciled; integration changes are staged but uncommitted.</p>
 </header>
 <main>
   <div class="grid">
@@ -38,6 +38,27 @@
   → kb_skills, AB=1 skills, nao_scene_grounding
   → execution feedback and grounded dialogue</div>
     <p>Ownership remains ROS4HRI-aligned: LLM nodes do not directly write KnowledgeCore or claim live effects; the orchestrator remains deterministic; grounding and skills own their evidence.</p>
+  </section>
+
+  <section class="section">
+    <h2>14 June Integration Consolidation</h2>
+    <p>The branch was fast-forwarded through the latest incoming commits and reconciled file by file. The combined seams retain chatbot-owned <code>report_result</code> wording, deterministic KB mutation through <code>kb_skills</code>, fake <code>perform_motion</code> validation, human/object separation, and metric spatial evidence.</p>
+    <p>The deslop pass removed the duplicate Python planner prompt default and centralized optional numeric evidence normalization in <code>planner_common</code>. This improves locality without moving ROS ownership.</p>
+    <table><thead><tr><th>Gate</th><th>Result</th></tr></thead><tbody>
+      <tr><td>Planner contracts, prompt pack, registry tests</td><td>32 passed</td></tr>
+      <tr><td>Fake-skill, KB mutation, metrics tests</td><td>21 passed</td></tr>
+      <tr><td>Nested chatbot intent, grounded-context, prompt tests</td><td>11 passed</td></tr>
+      <tr><td>Registry consistency / ROS4HRI audit / compilation / diff checks</td><td>Passed</td></tr>
+      <tr><td>ROS-dependent and live-stack gates</td><td>Pending main-PC ROS/container environment</td></tr>
+    </tbody></table>
+    <p class="note"><strong>Intentionally excluded:</strong> <code>.codex/config.toml</code> and <code>src/Neural-Wokbench/docs/.DS_Store</code>. Root and nested repositories remain uncommitted.</p>
+  </section>
+
+  <section class="section">
+    <h2>15 June Runtime/Fake-Skill Consolidation</h2>
+    <p>The branch was fast-forwarded through <code>b33c100</code>. Incoming runtime seams were prioritized: <code>look_at</code> now has a proper fake-skill adapter and launch wiring; execution-result wording uses the callback-safe chatbot seam; and the active questionnaire supports full speech or chatbot-service injection with a controlled KnowledgeCore probe.</p>
+    <p>The consolidation retained explicit KB mutation dispatch, near/far spatial scenarios, metric-evidence guards, human/object separation, shared numeric normalization, and validation metrics tooling.</p>
+    <p class="note warn"><strong>Runtime review status:</strong> Docker/Colima is not running, so live scoring remains pending. The referenced <code>ISSUES BEFORE 17-06-26</code> HTML was not found in the current branch, incoming commits, or nearby fetched remote branches.</p>
   </section>
 
   <section class="section">
