@@ -13,6 +13,7 @@ def test_default_planner_prompt_pack_contains_core_fields() -> None:
     assert 'step_type_say' in pack.output_contract
     assert 'invalid_examples' in pack.output_contract
     assert 'planner contract errors' in pack.validation_retry['instruction']
+    assert 'context_ref' not in str(pack.output_contract)
     assert pack.validation_retry['previous_model_output_max_chars'] == 4000
     assert 'grounded_context.entities' in pack.system_prompt
     assert 'both currently visible people and objects' in pack.system_prompt
@@ -26,7 +27,14 @@ def test_default_planner_prompt_pack_limits_routine_progress_speech() -> None:
 
     assert 'Keep emit_progress=false for short plans' in pack.system_prompt
     assert 'Routine internal step transitions' in pack.system_prompt
-    assert 'report_result or completion speech will close the' in pack.system_prompt
+    assert '"report_result" already covers the completion' in pack.system_prompt
+
+
+def test_default_planner_prompt_pack_rejects_composite_motion_objects() -> None:
+    pack = default_prompt_pack()
+
+    assert 'use one supplied "allowed_motion_objects" value per step' in pack.system_prompt
+    assert 'never emit a composite label as "args.object"' in pack.system_prompt
 
 
 def test_load_prompt_pack_supports_partial_override_merge(tmp_path) -> None:

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 
+from planner_common import DEFAULT_PERFORM_MOTION_OBJECT_LABELS
 from planner_common import ExecutionFeedback
 from planner_common import IntentLabels
 from planner_common import PlannerRequest
@@ -197,7 +198,7 @@ class PlannerEngine:
             'skill_registry': self._skill_registry.prompt_manifest(),
             'allowed_step_types': list(self._skill_registry.step_types),
             'allowed_skill_names': list(self._skill_registry.allowed_skill_names),
-            'allowed_motion_objects': list(_RULE_BASED_MOTIONS.values()),
+            'allowed_motion_objects': sorted(DEFAULT_PERFORM_MOTION_OBJECT_LABELS),
             'output_contract': dict(self._prompt_pack.output_contract),
         }
         if validation_errors:
@@ -588,7 +589,35 @@ class PlannerEngine:
         mixed_say_error = self._mixed_say_step_error(supported_steps)
         if mixed_say_error:
             return [], [mixed_say_error]
+        argument_errors = self._step_argument_errors(supported_steps)
+        if argument_errors:
+            return [], argument_errors
         return strip_live_result_report_summary_text(supported_steps), []
+
+    @staticmethod
+    def _step_argument_errors(steps: list[dict]) -> list[str]:
+        errors: list[str] = []
+        for step in steps:
+            if str(step.get('name', '')).strip().lower() != 'perform_motion':
+                continue
+            args = step.get('args', {})
+            motion_object = (
+                str(args.get('object', '')).strip().lower()
+                if isinstance(args, dict)
+                else ''
+            )
+            if motion_object in DEFAULT_PERFORM_MOTION_OBJECT_LABELS:
+                continue
+            errors.append(
+                'unsupported perform_motion args.object "%s"; '
+                'allowed_motion_objects=%s. Decompose composite motions into '
+                'explicit supported perform_motion steps.'
+                % (
+                    motion_object or '<empty>',
+                    ','.join(sorted(DEFAULT_PERFORM_MOTION_OBJECT_LABELS)),
+                )
+            )
+        return errors
 
     def _step_rejection_reason(self, step: dict) -> str:
         step_type = str(step.get('type', '')).strip().lower()

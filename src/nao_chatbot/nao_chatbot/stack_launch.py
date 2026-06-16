@@ -187,7 +187,7 @@ _DEMO_LOG_NODES = ",".join(
     )
 )
 _GROUNDING_DEFAULTS = {
-    "object_detection_threshold": "0.40",
+    "object_detection_threshold": "0.70",
     "scene_grounding_knowledge_lifespan_sec": "8.0",
     "scene_grounding_knowledge_refresh_interval_sec": "0.75",
     "scene_grounding_local_stale_after_sec": "10.0",
@@ -366,6 +366,8 @@ def _lifecycle_bootstrap_script(node_name: str, timeout_sec: int = 120) -> str:
     normalized_name = f"/{str(node_name).lstrip('/')}"
     return f"""
 node_name="{normalized_name}"
+exec 9>"/tmp/nao_chatbot_lifecycle_${{node_name#/}}.lock"
+flock 9
 deadline=$((SECONDS + {max(1, int(timeout_sec))}))
 while true; do
   state="$(ros2 lifecycle get "$node_name" 2>/dev/null | \
@@ -399,6 +401,8 @@ def _lifecycle_recovery_script(node_name: str, timeout_sec: int = 240) -> str:
     normalized_name = f"/{str(node_name).lstrip('/')}"
     return f"""
 node_name="{normalized_name}"
+exec 9>"/tmp/nao_chatbot_lifecycle_${{node_name#/}}.lock"
+flock 9
 deadline=$((SECONDS + {max(1, int(timeout_sec))}))
 while true; do
   state="$(ros2 lifecycle get "$node_name" 2>/dev/null | \
@@ -904,7 +908,11 @@ def generate_profile_launch_description(
     )
     object_detection_threshold_arg = DeclareLaunchArgument(
         "object_detection_threshold",
-        default_value="0.35",
+        default_value=_profile_default(
+            profile_defaults,
+            "object_detection_threshold",
+            "0.70",
+        ),
         description="Detector threshold forwarded to yolo_ros and mirrored into scene grounding defaults.",
     )
     object_detection_input_image_topic_arg = DeclareLaunchArgument(

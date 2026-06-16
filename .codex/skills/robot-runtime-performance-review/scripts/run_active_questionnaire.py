@@ -75,6 +75,90 @@ SMOKE_CASES = (
     ),
 )
 
+COMPOSITE_CASES = (
+    ProbeCase("kb_visible_baseline", "kb_query_dialogue", "What can you see?", 10.0),
+    ProbeCase(
+        "kb_injected_probe_baseline",
+        "kb_query_dialogue",
+        "What is the name and color of the probe cup?",
+        12.0,
+        setup=KbInjection(
+            object_id=KB_PROBE_OBJECT_ID,
+            statements=(
+                f"myself sees {KB_PROBE_OBJECT_ID}",
+                f"{KB_PROBE_OBJECT_ID} rdf:type Cup",
+                f"{KB_PROBE_OBJECT_ID} dbp:name TITAS",
+                f"{KB_PROBE_OBJECT_ID} dbp:color gold",
+                f"{KB_PROBE_OBJECT_ID} oro:isOn table_1",
+            ),
+            query_patterns=(f"{KB_PROBE_OBJECT_ID} ?predicate ?object",),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "composite_head_wave",
+        "composite_skill_execution",
+        "Move your head in all directions and then wave at me.",
+        24.0,
+    ),
+    ProbeCase(
+        "composite_walk_every_object_reports",
+        "composite_skill_execution",
+        "Now walk to every object, let me know when you are there and then walk to the next!",
+        36.0,
+        setup=KbInjection(
+            object_id="codex_multi_object_scene",
+            statements=(
+                "myself sees codex_probe_apple",
+                "codex_probe_apple rdf:type Apple",
+                "codex_probe_apple dbp:name ATLAS",
+                "codex_probe_apple dbp:color red",
+                "codex_probe_apple oro:isOn table_1",
+                "myself sees codex_probe_book",
+                "codex_probe_book rdf:type Book",
+                "codex_probe_book dbp:name MIDAS",
+                "codex_probe_book dbp:color blue",
+                "codex_probe_book oro:isOn table_1",
+                "myself sees codex_probe_phone",
+                "codex_probe_phone rdf:type CellularTelephone",
+                "codex_probe_phone dbp:name VEGA",
+                "codex_probe_phone dbp:color silver",
+                "codex_probe_phone oro:isOn table_1",
+            ),
+            query_patterns=(
+                "codex_probe_apple ?predicate ?object",
+                "codex_probe_book ?predicate ?object",
+                "codex_probe_phone ?predicate ?object",
+            ),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "composite_look_at_probe_report",
+        "composite_skill_execution",
+        "Look at the probe cup and then tell me what you did.",
+        24.0,
+    ),
+    ProbeCase(
+        "composite_navigate_probe_report",
+        "composite_skill_execution",
+        "Navigate to the probe cup and then tell me what else you see.",
+        28.0,
+    ),
+    ProbeCase(
+        "future_action_admission_holdout",
+        "route_prompt_ambiguity",
+        "Could we navigate to the probe cup later?",
+        12.0,
+    ),
+    ProbeCase(
+        "reflective_followup",
+        "simple_dialogue",
+        "How many directions did you move your head?",
+        10.0,
+    ),
+)
+
 TOPICS_TO_SAMPLE = (
     "/chatbot_llm/turn_trace",
     "/planner/request",
@@ -88,7 +172,7 @@ TOPICS_TO_SAMPLE = (
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--container", default=DEFAULT_CONTAINER)
-    parser.add_argument("--case-set", default="smoke", choices=("smoke",))
+    parser.add_argument("--case-set", default="smoke", choices=("smoke", "composite"))
     parser.add_argument("--out", default="/tmp/nao_active_questionnaire.json")
     parser.add_argument("--since-sec", type=int, default=90)
     parser.add_argument("--global-timeout-sec", type=int, default=DEFAULT_GLOBAL_TIMEOUT_SEC)
@@ -105,7 +189,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    cases = list(SMOKE_CASES)
+    cases = list(COMPOSITE_CASES if args.case_set == "composite" else SMOKE_CASES)
     results = []
     service_history: list[dict[str, str]] = []
     started_at = time.time()
@@ -201,7 +285,7 @@ def publish_voice_turn(container: str, text: str) -> str:
 set -e
 source /opt/ros/jazzy/setup.bash
 source /home/ubuntu/ws/install/setup.bash
-timeout 8 ros2 topic pub --once -w 1 {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{VOICE_ID}']}}" >/tmp/nao_questionnaire_voice.log 2>&1 || true
+timeout 8 ros2 topic pub --once -w 1 --qos-durability transient_local {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{VOICE_ID}']}}" >/tmp/nao_questionnaire_voice.log 2>&1 || true
 sleep 1
 timeout 8 ros2 topic pub --once -w 1 {VOICE_SPEECH_TOPIC} hri_msgs/msg/LiveSpeech "{{final: \\"{escaped_text}\\", confidence: 1.0, locale: \\"en_US\\"}}" >/tmp/nao_questionnaire_speech.log 2>&1 || true
 cat /tmp/nao_questionnaire_voice.log /tmp/nao_questionnaire_speech.log 2>/dev/null || true

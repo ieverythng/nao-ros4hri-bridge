@@ -1082,10 +1082,6 @@ def build_plan_payload(
         communication_policy,
         resolved_steps,
     )
-    resolved_grounded_context = normalize_grounded_context(
-        getattr(request, 'grounded_context', {})
-    )
-
     plan = {
         'goal_id': resolved_goal_id,
         'plan_id': resolved_plan_id,
@@ -1096,7 +1092,6 @@ def build_plan_payload(
         'replan_hint': str(replan_hint or '').strip(),
         'retry_budget': _coerce_nonnegative_int(retry_budget),
         'scene_targets': resolved_scene_targets,
-        'context_ref': grounded_context_to_context_ref(resolved_grounded_context),
         'communication_policy': resolved_policy,
         'communication_policy_source': str(communication_policy_source or '').strip(),
         'steps': resolved_steps,

@@ -99,6 +99,7 @@ def _assert_planner_dialogue_seam_defaults(defaults: dict[str, str]) -> None:
 
 
 def _assert_stable_grounding_defaults(defaults: dict[str, str]) -> None:
+    assert defaults["object_detection_threshold"] == "0.70"
     assert defaults["scene_grounding_knowledge_lifespan_sec"] == "8.0"
     assert defaults["scene_grounding_local_stale_after_sec"] == "10.0"
     assert defaults["scene_grounding_fallback_match_distance_px"] == "72.0"
@@ -198,3 +199,13 @@ def test_stack_uses_launch_events_for_chatbot_and_dialogue_lifecycle():
 
     assert "EmitEvent" in entity_type_names
     assert "RegisterEventHandler" in entity_type_names
+
+
+def test_lifecycle_shell_helpers_serialize_transitions_per_node():
+    stack_launch = _load_launch_module(
+        "nao_chatbot/stack_launch.py",
+        "nao_chatbot_stack_launch_lock_test",
+    )
+
+    assert 'flock 9' in stack_launch._lifecycle_bootstrap_script("nao_orchestrator")
+    assert 'flock 9' in stack_launch._lifecycle_recovery_script("nao_orchestrator")

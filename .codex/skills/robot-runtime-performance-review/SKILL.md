@@ -244,6 +244,9 @@ skills when the target is deterministic execution, replanning, or failure policy
 4. Composite skill execution:
    - Prompts such as "Move your head in all directions" or "Navigate to the
      phone in the scene and tell me what else you see."
+   - Include ordered multi-object navigation when at least three grounded
+     objects are available: "Now walk to every object, let me know when you are
+     there and then walk to the next!"
    - Expected: planner produces multiple ordered steps, orchestrator preserves
      step evidence, `report_result` receives a filled or derivable summary, and
      final speech reflects the whole chain rather than only the last step.
@@ -327,6 +330,8 @@ For iterative live sessions:
 1. Collect runtime snapshot.
 2. Score against the review lenses.
 3. Patch only the responsible seam.
+   Use a bounded SkillOpt-style iteration before accepting prompt-pack or review
+   workflow wording changes.
 4. Run focused tests/build.
 5. Sync/rebuild container if needed.
 6. Restart stack when params or launch wiring changed.

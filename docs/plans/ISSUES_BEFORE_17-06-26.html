@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Issues Before 17-06-26</title>
+  <style>
+    :root { --bg:#f6f7f9; --ink:#20242b; --muted:#626b78; --line:#cfd5dd; --accent:#235b8c; --p0:#9f2d2d; --p1:#9a5b13; --done:#236b3b; --partial:#9a5b13; --pending:#8a463d; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:Arial,sans-serif; line-height:1.5; }
+    main { max-width:1100px; margin:auto; padding:32px 22px 72px; }
+    h1,h2,h3 { letter-spacing:0; }
+    h1 { margin:0 0 6px; font-size:2rem; }
+    h2 { border-top:1px solid var(--line); padding-top:20px; margin-top:30px; }
+    .meta { color:var(--muted); margin-bottom:24px; }
+    table { width:100%; border-collapse:collapse; background:white; }
+    th,td { border:1px solid var(--line); padding:9px 10px; text-align:left; vertical-align:top; }
+    th { background:#e9edf2; }
+    code { background:#e7ebef; padding:1px 4px; }
+    .p0 { color:var(--p0); font-weight:bold; }
+    .p1 { color:var(--p1); font-weight:bold; }
+    .done { color:var(--done); font-weight:bold; }
+    .partial { color:var(--partial); font-weight:bold; }
+    .pending { color:var(--pending); font-weight:bold; }
+    .note { border-left:4px solid var(--accent); padding:10px 14px; background:white; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Issues Before 17-06-26</h1>
+  <p class="meta">Submission readiness tracker for the NAO ROS4HRI planner, dialogue, grounding, and fake-skill stack. Last updated: 16 June 2026.</p>
+
+  <p class="note">This tracker records remaining requirements, implementation decisions, validation evidence, and regressions. Update the implementation log after each robot runtime performance review.</p>
+
+  <h2>Readiness Summary</h2>
+  <table>
+    <thead><tr><th>Area</th><th>Priority</th><th>Status</th><th>Acceptance condition</th></tr></thead>
+    <tbody>
+      <tr><td>Chatbot-authored completion and planner dialogue</td><td class="p0">P0</td><td>Partially validated</td><td>Completion, report, failure, help, and clarification wording use the configured chatbot prompt and structured runtime context. Raw planner text is never spoken.</td></tr>
+      <tr><td>Execution admission through dialogue</td><td class="p0">P0</td><td>In progress</td><td>Chatbot confirms the complete goal, required target information, grounded predicates, and skill support before planner handoff.</td></tr>
+      <tr><td>Grounded-context reliability</td><td class="p0">P0</td><td>Partially validated</td><td>Stable KB objects and relations are available on the next turn. Detector noise does not crowd out stable entities.</td></tr>
+      <tr><td>Report-result natural language</td><td class="p0">P0</td><td>Partially validated</td><td>Multi-skill results are summarized coherently by chatbot. Concatenated skill summaries are used only as an unavailable-chatbot fallback.</td></tr>
+      <tr><td>Fake-skill grounding and coverage</td><td class="p1">P1</td><td>Planned</td><td>Fake skills reference or mutate explicit KB objects. Bring, pick/grab, and place have typed contracts and deterministic scenarios.</td></tr>
+      <tr><td>Prompt-pack completion for supervisor review</td><td class="p0">P0</td><td>In progress</td><td>Canonical chatbot and planner YAML prompt packs describe the implemented contracts without contradictory hidden policy.</td></tr>
+      <tr><td>Semi-symbolic KB mutation through chat</td><td class="p0">P0</td><td>Incoming commit expected</td><td>Chatbot admits explicit add, revise, and remove requests only when the user clearly asks to mutate KB state. Ordinary questions remain non-mutating.</td></tr>
+      <tr><td>Semi-symbolic spatial grounding</td><td class="p1">P1</td><td>Incoming commit expected</td><td>Frame-qualified simulator object poses enter grounding without inventing metric positions from 2D detections. Proximity answers use explicit pose evidence.</td></tr>
+      <tr><td>Human-inclusive scene reporting</td><td class="p0">P0</td><td>Partially validated</td><td>“What can you see?” reports people and objects separately, without treating humans as object targets.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Required Behaviors</h2>
+  <h3>Raw supervisor-review checklist</h3>
+  <p>The following items are tracked verbatim from the pre-submission review notes so that implementation status can be checked without losing the original wording.</p>
+  <ul>
+    <li>Finish prompt pack (chatbot and planner) corrections for Raquel 🚩🚩🚩 (1)</li>
+    <li>Evaluate stack with new prompts and iterate through to recognize weaknesses</li>
+    <li>Harden chatbot prompt for more proper dialogue interactions to fulfill execution needs</li>
+    <li>Ensure execution turns are only allowed after thorough checks from chatbot through dialogue 🚩🚩</li>
+    <li>Improve dialogue to attempt to discern actual execution goal before sending as execution</li>
+    <li>KB check in dialogue to ensure world state matches request and execution can be safely sent</li>
+    <li>If world state disagrees with given information put leverage on chatbot to extract information</li>
+    <li>Fake skills should still enforce real KB objects when used (or at least have explicit KB object management through fake skill scenario)</li>
+    <li>When relating to predicate values, planner args passed to steps should prioritize the rdf structure when passing required objects (cup.type=object, coor=red) etc instead of vibrating “red cup”</li>
+    <li>report_result must enforce correct summary, complete stack most not fail on report_result failure,</li>
+    <li>Ensure report_result is able to take summarized test from multi-skill exec</li>
+    <li>Check for report_result failures and correct directly</li>
+    <li>Extend the fake skills:
+      <ul>
+        <li>Bring</li>
+        <li>Grab/Pick</li>
+        <li>Place</li>
+        <li>Any other that would be needed for a generic, HRI robot in a household/lab/etc setting</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h3>Dialogue and execution admission</h3>
+  <ul>
+    <li>Use dialogue to discuss and refine possible future execution goals.</li>
+    <li>Before execution handoff, identify the complete requested outcome, required targets, relevant grounded predicates, and matching skills.</li>
+    <li>When world state conflicts with the request or required information is missing, ask one concise clarification question.</li>
+    <li>Do not emit a future-tense execution acknowledgement until the request is admitted.</li>
+    <li>Preserve the seam <code>chatbot_llm -&gt; nao_orchestrator planner gate -&gt; planner_llm</code>.</li>
+  </ul>
+
+  <h3>Planning and execution</h3>
+  <ul>
+    <li>Planner arguments should use grounded entity identifiers and RDF relations where available instead of relying only on phrases such as “red cup”.</li>
+    <li>The ordered steps list defines execution order. <code>requires</code> identifies prior steps whose success or evidence is needed by a later step.</li>
+    <li>Fake skills should enforce real grounded targets or define explicit scenario-owned KB objects and mutations.</li>
+    <li>Execution failures must support safe replanning, clarification, help requests, or terminal failure according to the plan contract.</li>
+  </ul>
+
+  <h3>User-facing completion</h3>
+  <ul>
+    <li>Planner dialogue acts, report results, clarifications, failures, and completion wording must use chatbot with its canonical system prompt and relevant dialogue, goal, grounding, plan, and execution evidence.</li>
+    <li><code>report_result</code> must summarize the complete relevant skill chain naturally.</li>
+    <li>A report-result wording failure must not crash the execution stack. A bounded safe fallback remains available.</li>
+    <li>Internal entity identifiers, raw planner text, JSON, and policy fields must not leak into speech.</li>
+  </ul>
+
+  <h3>Grounding and perception</h3>
+  <ul>
+    <li>Stable interaction-sim and KnowledgeCore objects are the primary grounding acceptance probe.</li>
+    <li>Detector-derived facts require a confidence score of at least <code>0.70</code> in the active launch defaults.</li>
+    <li>Prompt and projection logic must prioritize entity identifiers, semantic classes, and relations.</li>
+    <li>Runtime reviews must distinguish missing KB facts from facts present in grounded context but ignored by the model.</li>
+  </ul>
+
+  <h3>Semi-symbolic incoming seams</h3>
+  <p>These items are consolidated from <code>semi_symbolic_requirements_handoff_2026-06-11.html</code>. They are expected to arrive in a near-term commit and should be validated against the same runtime review gates before submission.</p>
+  <ul>
+    <li>Explicit KB mutation: support guarded add, revise, and remove fact requests through chatbot intent admission and orchestrator-owned KB skill dispatch. LLM nodes must not write KnowledgeCore directly.</li>
+    <li>Non-mutating KB dialogue: ordinary questions about facts, visibility, names, colors, and relations must not revise KB state.</li>
+    <li>Frame-qualified object positions: simulator or 3D pose producers may provide positions keyed by entity id, frame id, and timestamp. 2D image detections must not be converted into metric locations without a trustworthy pose source.</li>
+    <li>Spatial relations and proximity: distance, near/far, left/right, and support predicates should be derived only from explicit spatial evidence and exposed through grounded context.</li>
+    <li>Human-inclusive reporting: mixed scene summaries must preserve people and objects as separate entity kinds.</li>
+    <li>Validation artifacts: runtime reviews should preserve JSON, CSV, and HTML evidence for the TFM where possible, not only screenshots or prose summaries.</li>
+  </ul>
+
+  <h2>Implementation Log</h2>
+  <table>
+    <thead><tr><th>Date</th><th>Change</th><th>Evidence</th><th>Remaining validation</th></tr></thead>
+    <tbody>
+      <tr><td>15 Jun 2026</td><td>Corrected execution-report chatbot service from <code>/chatbot/dialogue_interaction</code> to <code>/chatbot_llm/dialogue_interaction</code>.</td><td>Source contract corrected in orchestrator defaults and parameter declaration.</td><td>Rebuild and confirm log contains <code>Resolved report_result text via chatbot</code>.</td></tr>
+      <tr><td>15 Jun 2026</td><td>Changed report resolution so explicit planner summary text becomes chatbot evidence rather than bypassing chatbot wording.</td><td>Regression test added for chatbot-first explicit summary handling.</td><td>Composite head-motion plus wave report must be one natural sentence.</td></tr>
+      <tr><td>15 Jun 2026</td><td>Added grounded context and requested summary evidence to execution-report system turns.</td><td>Chatbot turn-engine contract and tests updated.</td><td>Verify internal entity IDs are translated into meaningful labels.</td></tr>
+      <tr><td>15 Jun 2026</td><td>Hardened canonical chatbot prompt with execution admission rules while retaining existing dialogue, knowledge-query, and execution routes.</td><td>No new ROS route or service introduced.</td><td>Probe ambiguous targets, unsupported actions, and discussion of future actions.</td></tr>
+      <tr><td>15 Jun 2026</td><td>Raised detector and scene-grounding threshold to <code>0.70</code>.</td><td>Launch-profile default and regression assertion updated.</td><td>Measure false-positive reduction and tomato recall in the live stack.</td></tr>
+      <tr><td>15 Jun 2026</td><td>Added typed fake <code>look_at</code> endpoint and serialized lifecycle bootstrap/recovery.</td><td>Local source and tests updated.</td><td>Rebuild container and confirm one fake look-at action server is live.</td></tr>
+      <tr><td>15 Jun 2026</td><td>Added planner validation for <code>perform_motion.args.object</code>.</td><td>Unsupported composite labels such as <code>head_look_all</code> now trigger a contract-repair retry using the shared motion-label contract.</td><td>Replay the composite head-motion turn and confirm explicit directional steps reach execution.</td></tr>
+      <tr><td>15 Jun 2026</td><td>Retained admitted planner-request context and execution-step arguments for chatbot-authored reports.</td><td>Live composite execution produced: “I have moved my head in all directions and waved at you.”</td><td>Repeat with navigation, perception, and failure evidence.</td></tr>
+      <tr><td>15 Jun 2026</td><td>Ran bounded SkillOpt prompt evaluation.</td><td>Planner composite-motion mutation accepted. Chatbot admission mutation did not prevent speculative or ungrounded navigation and is not accepted as a completed repair.</td><td>Resolve admission with a measurable prompt iteration and a generic structural safety gate.</td></tr>
+      <tr><td>15 Jun 2026</td><td>Ran live robot runtime performance review through ROS4HRI speech ingress.</td><td>Score: <strong>8.2/10</strong>. Simple dialogue, stable KB relation query, simple wave, composite head-motion plus wave, and reflective follow-up passed. <code>report_result</code> resolved through chatbot with natural wording.</td><td>Run fake failure-mode suite and admission holdouts before commit freeze.</td></tr>
+      <tr><td>15 Jun 2026</td><td>Fixed the runtime-review questionnaire harness to publish tracked voices with <code>TRANSIENT_LOCAL</code> durability.</td><td>Dialogue Manager subscribed to <code>/nao_chatbot/humans/voices/anonymous_speaker/speech</code> after the corrected tracked-voice publication.</td><td>Keep this as part of the review skill so future checks exercise the real ROS4HRI ingress.</td></tr>
+      <tr><td>15 Jun 2026</td><td>Relaunched the live stack with <code>start_object_detection:=false</code> to reduce thermal load.</td><td>No <code>object_detector_node</code> or <code>emorobcare_cv_object_detection</code> process remained after relaunch.</td><td>Face detection and camera capture still run in this profile and may need a separate cooling switch if temperatures remain high.</td></tr>
+      <tr><td>16 Jun 2026</td><td>Added the ordered multi-object navigation/report prompt to the runtime-review composite questionnaire.</td><td>Live trace for “Now walk to every object, let me know when you are there and then walk to the next!” produced alternating <code>navigate_to</code> and <code>report_result</code> steps for apple, book, and phone.</td><td>Run the same case under fake failure and absent-target scenarios.</td></tr>
+      <tr><td>16 Jun 2026</td><td>Removed <code>context_ref</code> from newly emitted planner payloads and planner prompt examples.</td><td>Grounded context remains the world-state contract. The orchestrator parser still tolerates legacy envelopes that contain <code>context_ref</code>.</td><td>Confirm live planner trace no longer includes <code>context_ref</code> after rebuild.</td></tr>
+      <tr><td>16 Jun 2026</td><td>Applied a bounded chatbot prompt hardening for execution admission and history noise.</td><td>The prompt now requires current grounded entity resolution for target-dependent actions and treats dialogue history as context rather than a source of new orders.</td><td>Re-run future-action, absent-target, and long-context holdouts before scoring this repair as accepted.</td></tr>
+      <tr><td>16 Jun 2026</td><td>Consolidated the semi-symbolic requirements handoff into this tracker.</td><td>KB mutation, non-mutating KB dialogue, spatial overlay, proximity, human-inclusive reporting, and validation artifact requirements are now tracked as readiness items.</td><td>When the incoming commit lands, run explicit mutation and spatial-grounding probes before marking these seams implemented.</td></tr>
+      <tr><td>16 Jun 2026</td><td>Updated the runtime-review composite harness to inject its own stable multi-object KB scene.</td><td>The targeted rerun inserted apple, book, and phone facts through <code>/kb/revise</code> and produced an eight-step alternating navigation/report plan.</td><td>Add missing-target and failure-policy variants once future-action admission is corrected.</td></tr>
+      <tr><td>16 Jun 2026</td><td>Ran the composite runtime questionnaire on the relaunched stack.</td><td>Artifacts: <code>/tmp/nao_active_questionnaire_composite_20260616.json</code>, <code>/tmp/nao_multi_object_stress_20260616.json</code>, and <code>/tmp/nao_runtime_snapshot_after_stack_up.json</code>.</td><td>Do not score above 6/10 until future-action execution and look-at route inconsistency are fixed.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Latest Runtime Review Evidence</h2>
+  <table>
+    <thead><tr><th>Scenario</th><th>Result</th><th>Evidence</th><th>Follow-up</th></tr></thead>
+    <tbody>
+      <tr><td>Simple dialogue</td><td class="done">Pass</td><td><code>route=dialogue intent=greet</code>; one robot output: “I'm doing well, thank you! How can I help you?”</td><td>None for this scenario.</td></tr>
+      <tr><td>Current KB query</td><td>Degraded</td><td>Answered current detector scene, but detector-derived objects still churn heavily.</td><td>Separate detector stability from simulator-authored KB objects.</td></tr>
+      <tr><td>Stable KB relation query</td><td class="done">Pass</td><td><code>/kb/revise</code> inserted <code>codex_probe_cup rdf:type Cup</code>, <code>dbp:name TITAS</code>, <code>dbp:color gold</code>, and <code>oro:isOn table_1</code>. Chatbot answered with the name and color on the same turn.</td><td>Repeat after a longer context window and with multiple stable objects.</td></tr>
+      <tr><td>Simple skill execution</td><td class="done">Pass</td><td>“Wave at me” planned <code>wave_greet</code> plus <code>report_result</code>. Final report: “I have waved at you in a friendly manner.”</td><td>Run fake failure and fail-once modes.</td></tr>
+      <tr><td>Composite skill execution</td><td class="done">Pass</td><td>“Move your head in all directions and then wave at me” planned four supported <code>perform_motion</code> steps, <code>wave_greet</code>, and terminal <code>report_result</code>. Final report: “I have moved my head in all directions and waved at you in a friendly manner.”</td><td>Repeat with navigation plus perception and with failure-mode scenarios.</td></tr>
+      <tr><td>Ordered multi-object navigation/report</td><td class="done">Pass</td><td>With apple, book, and phone in grounded context, the planner produced <code>navigate_to apple_nxmxx</code>, <code>report_result</code>, <code>navigate_to book_lqqte</code>, <code>report_result</code>, <code>navigate_to phone_ojldh</code>, and <code>report_result</code>. Reports closed each stop naturally and the final report summarized all three objects.</td><td>Add this as a required composite questionnaire case and repeat with one missing or ambiguous target.</td></tr>
+      <tr><td>Reflective follow-up</td><td class="done">Pass</td><td>“How many directions did you move your head?” stayed <code>route=dialogue</code> and answered “up, down, left, and right.”</td><td>Keep as a holdout for chatbot prompt SkillOpt.</td></tr>
+      <tr><td>Runtime pressure</td><td>Degraded</td><td><code>min_detection_score=0.7</code> was live, but snapshot still showed high KnowledgeCore expiry and face skip warnings. NAOqi was disconnected in this validation run.</td><td>Real-robot smoke must distinguish fake validation success from hardware connectivity.</td></tr>
+      <tr><td>Cool relaunch composite retry</td><td>Blocked</td><td>After disabling object detection, stable KB insertion still succeeded, but repeated composite questionnaire attempts did not produce chatbot route/output evidence from the first turns. An earlier leftover run also showed a target-admission bug: navigation to the probe cup was admitted when grounded context contained only a person.</td><td>Re-prime or restart the ROS4HRI speech ingress before scoring the cool profile. Keep the absent-target admission case as a SkillOpt train case or structural gate candidate.</td></tr>
+      <tr><td>Explicit KB mutation through chat</td><td class="pending">Not run</td><td>The 2026-06-11 handoff defines add, revise, and remove as expected seams, but the current tracker has no live proof for user-turn mutation requests.</td><td>After the incoming commit, ask one add, one revise, one remove, and one ordinary non-mutating KB question. Verify <code>/kb/revise</code> or equivalent mutation transport separately from chatbot wording.</td></tr>
+      <tr><td>Spatial grounding and proximity</td><td class="pending">Not run</td><td>The 2026-06-11 handoff defines frame-qualified spatial overlay and proximity answers. No current live trace proves the canonical pose source or frame.</td><td>Publish one trusted simulator pose overlay and verify scene summary, KB predicates, grounded context, and a proximity answer.</td></tr>
+      <tr><td>Post-consolidation runtime probe</td><td>Blocked</td><td>Container <code>nao_ros2</code> was running, but no stack nodes were active. ROS graph contained only <code>/parameter_events</code> and <code>/rosout</code>; <code>/chatbot_llm</code>, <code>/nao_scene_grounding</code>, and <code>/hri_person_manager</code> were not found.</td><td>Relaunch the stack before the next scored questionnaire. Use the low-thermal profile unless detector behavior is the target of the test.</td></tr>
+      <tr><td>Composite questionnaire after stack relaunch</td><td class="partial">Degraded</td><td>ROS graph was complete and LLM preflight passed. KB relation query, head-motion plus wave, navigation plus scan/report, and reflective follow-up passed. <code>context_ref</code> was absent from new planner outputs.</td><td>Fix future-action admission and look-at routing before treating the prompt stack as submission-ready.</td></tr>
+      <tr><td>Injected multi-object navigation/report stress</td><td class="done">Pass</td><td>Injected stable KB objects <code>codex_probe_apple</code>, <code>codex_probe_book</code>, and <code>codex_probe_phone</code>. Grounded context included names/colors. Planner produced eight alternating <code>navigate_to</code>/<code>report_result</code> steps across apple, book, cup, and phone. Final report summarized all objects.</td><td>Keep this probe in the runtime-review questionnaire and add failure variants after the prompt routing regressions are fixed.</td></tr>
+      <tr><td>Future-action admission holdout</td><td class="p0">Fail</td><td>“Could we navigate to the probe cup later?” routed as <code>execution</code>, published a planner request, and then repeated “Sure, we can navigate to the probe cup later” through a planner/report path.</td><td>Patch chatbot admission so discussion of later possible actions remains dialogue and cannot trigger planner execution.</td></tr>
+      <tr><td>Look-at plus report routing</td><td class="p0">Fail</td><td>“Look at the probe cup and then tell me what you did” routed as <code>knowledge_query</code> while speaking an execution acknowledgement. No planner request was published for the promised action.</td><td>Patch route consistency so action-promising acknowledgements cannot remain on a non-execution route.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Planned Fake-Skill Extensions</h2>
+  <table>
+    <thead><tr><th>Skill</th><th>Required grounded inputs</th><th>Expected KB effect</th><th>Minimum scenarios</th></tr></thead>
+    <tbody>
+      <tr><td>pick / grab</td><td>Grounded object id, reachable state, optional grasp policy</td><td>Robot holds object; previous support relation is removed or replaced</td><td>success, object unavailable, unreachable, already held, fail once</td></tr>
+      <tr><td>place</td><td>Held object id, grounded destination id or relation</td><td>Held relation removed; destination relation added</td><td>success, destination unavailable, invalid support, no held object</td></tr>
+      <tr><td>bring</td><td>Grounded object id and recipient or destination</td><td>Composite evidence from acquisition and delivery</td><td>success, acquisition failure, navigation failure, delivery blocked</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Prompt SkillOpt Log</h2>
+  <table>
+    <thead><tr><th>Artifact</th><th>Objective</th><th>Train result</th><th>Holdout result</th><th>Decision</th></tr></thead>
+    <tbody>
+      <tr><td><code>planner_prompt_pack.yaml</code></td><td>Prevent unsupported composite motion objects.</td><td>“Move your head in all directions and then wave at me” produced four supported directional motions, wave, and report.</td><td>Planner prompt and engine tests passed after updating one stale wording assertion.</td><td class="done">Accept</td></tr>
+      <tr><td><code>chat_prompt_pack.yaml</code></td><td>Admit execution only after sufficient dialogue and grounding checks.</td><td>Failed: “Could we navigate to the cup later?” and an ungrounded “Navigate to the red cup” both reached execution.</td><td>Greeting, current-scene query, and prior-action question remained dialogue turns.</td><td class="p0">Reject as completed repair</td></tr>
+      <tr><td><code>chat_prompt_pack.yaml</code></td><td>Reduce admission drift from unresolved targets and stale dialogue-history ordering.</td><td>Train evidence improved for grounded multi-object execution, but the future-action holdout still routed through execution.</td><td>Reflective follow-up stayed dialogue; look-at plus report failed route consistency.</td><td class="p0">Reject as completed repair</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Open Runtime Regressions</h2>
+  <ul>
+    <li>Dialogue Manager can hit an rclpy <code>ActionClient</code> construction race during concurrent lifecycle startup. Serialized manual configure and activate succeeded.</li>
+    <li>The emergency manual dialogue-manager probe must use the canonical downstream action <code>/nao/say</code>. Pointing it at its own public wrapper <code>/skill/say</code> creates a recursive duplicate attempt and is not a valid runtime configuration.</li>
+    <li>Execution admission still permits speculative future actions: “Could we navigate to the probe cup later?” reached planner execution and repeated the same semantic utterance.</li>
+    <li>Route consistency can fail for action-promising wording: “Look at the probe cup and then tell me what you did” spoke an execution acknowledgement while the resolved route stayed <code>knowledge_query</code>.</li>
+    <li><code>context_ref</code> is fixed in the current live planner outputs; keep legacy parser tolerance only for old traces.</li>
+    <li>Detector-derived object ids still churn even with the <code>0.70</code> threshold. Stable simulator/KnowledgeCore objects are usable, but perception-derived objects remain a separate pressure point.</li>
+    <li>The cooled profile with object detection disabled needs a clean speech-ingress validation pass. The graph can launch without the detector, but the questionnaire must verify dialogue-manager per-voice subscription before scoring.</li>
+    <li>Semi-symbolic KB mutation and spatial grounding are now tracked requirements, but are not yet live-proven in this tracker.</li>
+  </ul>
+
+  <h2>Next Runtime Gates</h2>
+  <ol>
+    <li>Rebuild and restart touched packages. Confirm the running parameters and action servers match the checkout.</li>
+    <li>Run a composite execution and require chatbot-authored natural report closure.</li>
+    <li>Run ambiguous and conflicting-target dialogue turns. Confirm no planner request is published before clarification.</li>
+    <li>Insert a stable KB object with type, name, and color. Confirm first-turn use after a long conversation.</li>
+    <li>Present a real detector object near the <code>0.70</code> threshold and measure precision and recall.</li>
+    <li>Run success, failure, fail-once, and replan fake-skill scenarios before extending the registry.</li>
+    <li>After the semi-symbolic commit lands, validate add/revise/remove KB mutation and one ordinary non-mutating KB query.</li>
+    <li>After spatial overlay wiring lands, validate one frame-qualified object pose, derived relation, and proximity answer.</li>
+  </ol>
+</main>
+</body>
+</html>

@@ -35,6 +35,7 @@ class FakeSkillActionServer(Node):
         self.declare_parameter('perform_motion_action_name', '/skill/fake/perform_motion')
         self.declare_parameter('wave_greet_action_name', '/skill/fake/wave_greet')
         self.declare_parameter('inspect_area_action_name', '/skill/fake/inspect_area')
+        self.declare_parameter('look_at_action_name', '/skill/fake/look_at')
         self.declare_parameter('walk_to_action_name', '/skill/fake/walk_to')
         self.declare_parameter('scenario_file', '')
         self.declare_parameter('default_delay_sec', 0.75)
@@ -105,6 +106,7 @@ class FakeSkillActionServer(Node):
             ('perform_motion_action_name', 'perform_motion'),
             ('wave_greet_action_name', 'wave_greet'),
             ('inspect_area_action_name', 'inspect_area'),
+            ('look_at_action_name', 'look_at'),
             ('walk_to_action_name', 'walk_to'),
         ):
             action_name = str(self.get_parameter(action_param).value).strip()
