@@ -442,6 +442,30 @@ def test_validate_execution_plan_accepts_wave_greet_fake_skill() -> None:
     assert envelope['steps'][0]['name'] == 'wave'
 
 
+def test_validate_execution_plan_accepts_manipulation_fake_skills() -> None:
+    envelope = validate_execution_plan(
+        Intent.PRESENT_CONTENT,
+        {
+            'plan': [
+                {'type': 'skill', 'name': 'pick', 'args': {'target': 'cup_1'}},
+                {
+                    'type': 'skill',
+                    'name': 'place',
+                    'args': {'target': 'cup_1', 'destination': 'shelf_1'},
+                },
+                {
+                    'type': 'skill',
+                    'name': 'bring',
+                    'args': {'target': 'book_1', 'recipient': 'person_1'},
+                },
+            ]
+        },
+    )
+
+    assert envelope['errors'] == []
+    assert [step['name'] for step in envelope['steps']] == ['pick', 'place', 'bring']
+
+
 def test_scan_step_is_available_without_demo_gate() -> None:
     success, reason, metadata = resolve_scan_result(
         {'target_kind': 'scene'},
@@ -466,7 +490,10 @@ def test_targeted_scan_without_explicit_summary_reports_missing_detection() -> N
     )
 
     assert success
-    assert reason == 'I completed the scan for people, but no confirmed detection result was reported.'
+    assert (
+        reason
+        == 'I completed the scan for people, but no confirmed detection result was reported.'
+    )
     assert metadata['target_kind'] == 'people'
 
 

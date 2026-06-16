@@ -58,6 +58,21 @@ def generate_launch_description() -> LaunchDescription:
         default_value='/skill/fake/perform_motion',
         description='Action endpoint for fake perform_motion.',
     )
+    pick_object_action_arg = DeclareLaunchArgument(
+        'fake_skill_pick_object_action',
+        default_value='/skill/fake/pick_object',
+        description='Action endpoint for fake pick_object.',
+    )
+    place_object_action_arg = DeclareLaunchArgument(
+        'fake_skill_place_object_action',
+        default_value='/skill/fake/place_object',
+        description='Action endpoint for fake place_object.',
+    )
+    bring_object_action_arg = DeclareLaunchArgument(
+        'fake_skill_bring_object_action',
+        default_value='/skill/fake/bring_object',
+        description='Action endpoint for fake bring_object.',
+    )
 
     fake_skill_server = Node(
         package='fake_skills',
@@ -76,6 +91,15 @@ def generate_launch_description() -> LaunchDescription:
                 'random_failure_prob': LaunchConfiguration('fake_skill_random_failure_prob'),
                 'perform_motion_action_name': LaunchConfiguration(
                     'fake_skill_perform_motion_action'
+                ),
+                'pick_object_action_name': LaunchConfiguration(
+                    'fake_skill_pick_object_action'
+                ),
+                'place_object_action_name': LaunchConfiguration(
+                    'fake_skill_place_object_action'
+                ),
+                'bring_object_action_name': LaunchConfiguration(
+                    'fake_skill_bring_object_action'
                 ),
                 'mode_overrides_json': ParameterValue(
                     LaunchConfiguration('fake_skill_mode_overrides_json'),
@@ -97,6 +121,9 @@ def generate_launch_description() -> LaunchDescription:
             random_failure_prob_arg,
             mode_overrides_arg,
             perform_motion_action_arg,
+            pick_object_action_arg,
+            place_object_action_arg,
+            bring_object_action_arg,
             fake_skill_server,
         ]
     )

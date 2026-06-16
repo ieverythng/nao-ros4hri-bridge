@@ -75,6 +75,9 @@ _DEFAULT_FAKE_SKILL_ALIASES = {
     'wave_greet': {'wave_greet', 'wave', 'greet_wave', 'wave_hello'},
     'inspect_area': {'inspect_area', 'inspect', 'check_area'},
     'walk_to': {'walk_to', 'walk_forward', 'step_to'},
+    'pick_object': {'pick_object', 'pick', 'grab', 'grab_object'},
+    'place_object': {'place_object', 'place', 'put_down'},
+    'bring_object': {'bring_object', 'bring', 'deliver_object'},
 }
 _ASK_USER_STEP_NAMES = frozenset({'ask_user', 'ask_clarification', 'ask_for_help'})
 _MAX_RELAYED_PLANNER_ACTS = 256
@@ -364,6 +367,9 @@ class NaoOrchestrator(Node):
         self.declare_parameter('fake_skill_wave_greet_action', '/skill/fake/wave_greet')
         self.declare_parameter('fake_skill_inspect_area_action', '/skill/fake/inspect_area')
         self.declare_parameter('fake_skill_walk_to_action', '/skill/fake/walk_to')
+        self.declare_parameter('fake_skill_pick_object_action', '/skill/fake/pick_object')
+        self.declare_parameter('fake_skill_place_object_action', '/skill/fake/place_object')
+        self.declare_parameter('fake_skill_bring_object_action', '/skill/fake/bring_object')
         self.declare_parameter('report_result_action', '/skill/report_result')
         self.declare_parameter('report_result_action_wait_sec', 0.2)
         self.declare_parameter('report_result_action_result_timeout_sec', 8.0)
@@ -502,6 +508,9 @@ class NaoOrchestrator(Node):
             'wave_greet': str(self.get_parameter('fake_skill_wave_greet_action').value).strip(),
             'inspect_area': str(self.get_parameter('fake_skill_inspect_area_action').value).strip(),
             'walk_to': str(self.get_parameter('fake_skill_walk_to_action').value).strip(),
+            'pick_object': str(self.get_parameter('fake_skill_pick_object_action').value).strip(),
+            'place_object': str(self.get_parameter('fake_skill_place_object_action').value).strip(),
+            'bring_object': str(self.get_parameter('fake_skill_bring_object_action').value).strip(),
         }
         self.report_result_action = str(
             self.get_parameter('report_result_action').value

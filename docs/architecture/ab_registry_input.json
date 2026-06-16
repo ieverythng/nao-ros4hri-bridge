@@ -1270,6 +1270,248 @@
       ]
     },
     {
+      "category": "manipulation",
+      "aliases": [
+        "bring",
+        "deliver_object"
+      ],
+      "params": [
+        "object_id",
+        "target",
+        "object",
+        "recipient_id",
+        "recipient",
+        "destination",
+        "source",
+        "result_mode"
+      ],
+      "required_params": [
+        "target",
+        "recipient"
+      ],
+      "preconditions": [
+        "target object and recipient or destination must be grounded or scenario-owned"
+      ],
+      "expected_effects": [
+        "object is delivered to recipient or destination"
+      ],
+      "observable_success": [
+        "status",
+        "evidence.recipient_id",
+        "evidence.chain",
+        "evidence.kb_effects"
+      ],
+      "failure_modes": [
+        "acquisition_failure",
+        "navigation_failure",
+        "delivery_blocked",
+        "recipient_unavailable"
+      ],
+      "planner_guidance": [
+        "use for explicit bring or deliver requests; prefer separate pick/navigate/place steps when partial progress needs independent recovery"
+      ],
+      "robot_adapter_mapping": "fake_skills.bring_object",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text",
+          "evidence"
+        ]
+      },
+      "safety_flags": [
+        "manipulation",
+        "navigation",
+        "object_contact"
+      ],
+      "supports_failure_injection": true,
+      "is_composite": true,
+      "is_fake": true,
+      "decomposes_to": [
+        "find_object",
+        "pick_object",
+        "navigate_to",
+        "place_object",
+        "verify_evidence_payload"
+      ],
+      "object_id": "bring_object",
+      "ab_level": 1,
+      "kind": "skill",
+      "implementation_status": "fake",
+      "metadata": {
+        "runtime_callable": true,
+        "decomposition": {
+          "max_depth": -1,
+          "policy": "ab1_composite_skill",
+          "notes": "Fake bring captures acquisition, navigation, and delivery outcomes as one scenario-controllable AB=1 skill."
+        },
+        "uncertainty_terms": [
+          "target_availability_uncertainty",
+          "manipulation_effect_uncertainty"
+        ]
+      }
+    },
+    {
+      "category": "manipulation",
+      "aliases": [
+        "place",
+        "put_down"
+      ],
+      "params": [
+        "object_id",
+        "target",
+        "object",
+        "destination_id",
+        "destination",
+        "support",
+        "relation",
+        "result_mode"
+      ],
+      "required_params": [
+        "target",
+        "destination"
+      ],
+      "preconditions": [
+        "robot should hold the object",
+        "destination support must be grounded or scenario-owned"
+      ],
+      "expected_effects": [
+        "object is no longer held",
+        "destination support relation is added"
+      ],
+      "observable_success": [
+        "status",
+        "evidence.destination_id",
+        "evidence.kb_effects"
+      ],
+      "failure_modes": [
+        "destination_unavailable",
+        "invalid_support",
+        "no_held_object",
+        "placement_failed"
+      ],
+      "planner_guidance": [
+        "use for explicit place or put-down requests with a grounded destination"
+      ],
+      "robot_adapter_mapping": "fake_skills.place_object",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text",
+          "evidence"
+        ]
+      },
+      "safety_flags": [
+        "manipulation",
+        "object_contact"
+      ],
+      "supports_failure_injection": true,
+      "is_composite": false,
+      "is_fake": true,
+      "decomposes_to": [
+        "verify_object_held",
+        "resolve_destination_reference",
+        "dispatch_place_control",
+        "verify_evidence_payload"
+      ],
+      "object_id": "place_object",
+      "ab_level": 1,
+      "kind": "skill",
+      "implementation_status": "fake",
+      "metadata": {
+        "runtime_callable": true,
+        "decomposition": {
+          "max_depth": -1,
+          "policy": "ab1_to_effect_primitives",
+          "notes": "Fake place simulates object release and emits support-relation evidence for reporting and validation."
+        },
+        "uncertainty_terms": [
+          "target_availability_uncertainty",
+          "manipulation_effect_uncertainty"
+        ]
+      }
+    },
+    {
+      "category": "manipulation",
+      "aliases": [
+        "pick",
+        "grab",
+        "grab_object"
+      ],
+      "params": [
+        "object_id",
+        "target",
+        "object",
+        "support",
+        "gripper",
+        "result_mode"
+      ],
+      "required_params": [
+        "target"
+      ],
+      "preconditions": [
+        "target object must be grounded or explicitly scenario-owned",
+        "robot gripper should be free"
+      ],
+      "expected_effects": [
+        "robot holds the object",
+        "previous support relation is removed or replaced"
+      ],
+      "observable_success": [
+        "status",
+        "evidence.held",
+        "evidence.kb_effects"
+      ],
+      "failure_modes": [
+        "object_unavailable",
+        "unreachable",
+        "already_held",
+        "grasp_failed"
+      ],
+      "planner_guidance": [
+        "use for explicit pick or grab requests after resolving a grounded object id"
+      ],
+      "robot_adapter_mapping": "fake_skills.pick_object",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text",
+          "evidence"
+        ]
+      },
+      "safety_flags": [
+        "manipulation",
+        "object_contact"
+      ],
+      "supports_failure_injection": true,
+      "is_composite": false,
+      "is_fake": true,
+      "decomposes_to": [
+        "resolve_target_reference",
+        "validate_reachability",
+        "dispatch_grasp_control",
+        "verify_evidence_payload"
+      ],
+      "object_id": "pick_object",
+      "ab_level": 1,
+      "kind": "skill",
+      "implementation_status": "fake",
+      "metadata": {
+        "runtime_callable": true,
+        "decomposition": {
+          "max_depth": -1,
+          "policy": "ab1_to_effect_primitives",
+          "notes": "Fake pick/grab simulates object acquisition and emits KB-effect evidence without mutating KnowledgeCore directly."
+        },
+        "uncertainty_terms": [
+          "target_availability_uncertainty",
+          "manipulation_effect_uncertainty"
+        ]
+      }
+    },
+    {
       "object_id": "perform_motion",
       "ab_level": 1,
       "kind": "skill",

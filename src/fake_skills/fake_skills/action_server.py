@@ -37,6 +37,9 @@ class FakeSkillActionServer(Node):
         self.declare_parameter('inspect_area_action_name', '/skill/fake/inspect_area')
         self.declare_parameter('look_at_action_name', '/skill/fake/look_at')
         self.declare_parameter('walk_to_action_name', '/skill/fake/walk_to')
+        self.declare_parameter('pick_object_action_name', '/skill/fake/pick_object')
+        self.declare_parameter('place_object_action_name', '/skill/fake/place_object')
+        self.declare_parameter('bring_object_action_name', '/skill/fake/bring_object')
         self.declare_parameter('scenario_file', '')
         self.declare_parameter('default_delay_sec', 0.75)
         self.declare_parameter('deterministic_seed', 42)
@@ -108,6 +111,9 @@ class FakeSkillActionServer(Node):
             ('inspect_area_action_name', 'inspect_area'),
             ('look_at_action_name', 'look_at'),
             ('walk_to_action_name', 'walk_to'),
+            ('pick_object_action_name', 'pick_object'),
+            ('place_object_action_name', 'place_object'),
+            ('bring_object_action_name', 'bring_object'),
         ):
             action_name = str(self.get_parameter(action_param).value).strip()
             self._servers.append(

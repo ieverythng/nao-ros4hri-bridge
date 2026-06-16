@@ -18,7 +18,7 @@ def test_default_planner_prompt_pack_contains_core_fields() -> None:
     assert 'grounded_context.entities' in pack.system_prompt
     assert 'both currently visible people and objects' in pack.system_prompt
     assert 'explicit user requests to change KB predicates' in pack.system_prompt
-    assert 'Never infer distance from image-plane centers' in pack.system_prompt
+    assert 'Never infer metric distance from' in pack.system_prompt
     assert 'communication_policy.emit_progress=true' in pack.system_prompt
 
 

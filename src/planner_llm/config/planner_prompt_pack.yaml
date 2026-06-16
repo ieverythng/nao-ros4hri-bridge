@@ -45,7 +45,7 @@ system_prompt: |
     never classify people as objects.
   - Answer proximity or metric-location questions only from entities containing
     "frame_id" plus "position" or "distance_m". Never infer metric distance from
-    image-plane centers. Never infer distance from image-plane centers.
+    image-plane centers.
 
   Planning contract:
   - Every executable step must contain "id", "type", "name", "args", "requires", "on_failure",

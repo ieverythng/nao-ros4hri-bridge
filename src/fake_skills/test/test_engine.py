@@ -10,11 +10,20 @@ def _engine() -> FakeSkillEngine:
                     'navigate_to': {'result_mode': 'success', 'delay_sec': 0.0},
                     'find_object': {'result_mode': 'found', 'delay_sec': 0.0},
                     'perform_motion': {'result_mode': 'success', 'delay_sec': 0.0},
+                    'pick_object': {'result_mode': 'success', 'delay_sec': 0.0},
+                    'place_object': {'result_mode': 'success', 'delay_sec': 0.0},
+                    'bring_object': {'result_mode': 'success', 'delay_sec': 0.0},
                 },
                 'scenarios': {
                     'blocked': {'navigate_to': {'result_mode': 'path_blocked'}},
                     'motion_timeout': {
                         'perform_motion': {'result_mode': 'convergence_timeout'}
+                    },
+                    'pick_unreachable': {'pick_object': {'result_mode': 'unreachable'}},
+                    'place_no_held': {'place_object': {'result_mode': 'no_held_object'}},
+                    'bring_blocked': {'bring_object': {'result_mode': 'delivery_blocked'}},
+                    'bring_no_recipient': {
+                        'bring_object': {'result_mode': 'recipient_unavailable'}
                     },
                 },
             }
@@ -32,11 +41,20 @@ def _engine_with_policy(**kwargs) -> FakeSkillEngine:
                     'navigate_to': {'result_mode': 'success', 'delay_sec': 0.0},
                     'find_object': {'result_mode': 'found', 'delay_sec': 0.0},
                     'perform_motion': {'result_mode': 'success', 'delay_sec': 0.0},
+                    'pick_object': {'result_mode': 'success', 'delay_sec': 0.0},
+                    'place_object': {'result_mode': 'success', 'delay_sec': 0.0},
+                    'bring_object': {'result_mode': 'success', 'delay_sec': 0.0},
                 },
                 'scenarios': {
                     'blocked': {'navigate_to': {'result_mode': 'path_blocked'}},
                     'motion_timeout': {
                         'perform_motion': {'result_mode': 'convergence_timeout'}
+                    },
+                    'pick_unreachable': {'pick_object': {'result_mode': 'unreachable'}},
+                    'place_no_held': {'place_object': {'result_mode': 'no_held_object'}},
+                    'bring_blocked': {'bring_object': {'result_mode': 'delivery_blocked'}},
+                    'bring_no_recipient': {
+                        'bring_object': {'result_mode': 'recipient_unavailable'}
                     },
                 },
             }
@@ -234,3 +252,106 @@ def test_engine_find_object_preserves_frame_qualified_spatial_evidence() -> None
     assert evidence['frame_id'] == 'base_link'
     assert evidence['position'] == {'x': 0.7, 'y': 0.1, 'z': 0.6}
     assert evidence['distance_m'] == 0.93
+
+
+def test_engine_pick_object_success_reports_held_kb_effects() -> None:
+    payload, _delay = _engine().execute(
+        skill='pick_object',
+        args={'target': 'cup_1', 'support': 'table_1'},
+    )
+
+    assert payload['status'] == 'succeeded'
+    assert payload['skill'] == 'pick_object'
+    assert payload['evidence']['held'] is True
+    expected_effect = {
+        'action': 'add',
+        'statement': 'robot oro:holds cup_1',
+        'simulated': True,
+    }
+    assert expected_effect in payload['evidence']['kb_effects']
+
+
+def test_engine_pick_object_failure_is_recoverable() -> None:
+    payload, _delay = _engine().execute(
+        skill='pick_object',
+        args={'target': 'cup_1'},
+        scenario_id='pick_unreachable',
+    )
+
+    assert payload['status'] == 'failed'
+    assert payload['failure']['code'] == 'unreachable'
+    assert payload['failure']['recoverable'] is True
+
+
+def test_engine_place_object_success_reports_support_relation() -> None:
+    payload, _delay = _engine().execute(
+        skill='place_object',
+        args={'target': 'cup_1', 'destination': 'shelf_1'},
+    )
+
+    assert payload['status'] == 'succeeded'
+    assert payload['skill'] == 'place_object'
+    expected_effect = {
+        'action': 'add',
+        'statement': 'cup_1 oro:isOn shelf_1',
+        'simulated': True,
+    }
+    assert expected_effect in payload['evidence']['kb_effects']
+
+
+def test_engine_place_object_no_held_object_failure() -> None:
+    payload, _delay = _engine().execute(
+        skill='place_object',
+        args={'target': 'cup_1', 'destination': 'shelf_1'},
+        scenario_id='place_no_held',
+    )
+
+    assert payload['status'] == 'failed'
+    assert payload['failure']['code'] == 'no_held_object'
+    assert payload['failure']['suggested_recovery'] == 'pick_object_first'
+
+
+def test_engine_bring_object_success_reports_delivery_chain() -> None:
+    payload, _delay = _engine().execute(
+        skill='bring_object',
+        args={'target': 'book_1', 'recipient': 'person_1', 'source': 'table_1'},
+    )
+
+    assert payload['status'] == 'succeeded'
+    assert payload['skill'] == 'bring_object'
+    assert payload['evidence']['chain'] == [
+        'find_object',
+        'pick_object',
+        'navigate_to',
+        'place_object',
+    ]
+    expected_effect = {
+        'action': 'add',
+        'statement': 'book_1 oro:isAt person_1',
+        'simulated': True,
+    }
+    assert expected_effect in payload['evidence']['kb_effects']
+
+
+def test_engine_bring_object_delivery_blocked_failure() -> None:
+    payload, _delay = _engine().execute(
+        skill='bring_object',
+        args={'target': 'book_1', 'recipient': 'person_1'},
+        scenario_id='bring_blocked',
+    )
+
+    assert payload['status'] == 'failed'
+    assert payload['failure']['code'] == 'delivery_blocked'
+    assert payload['failure']['suggested_recovery'] == 'ask_user_for_delivery_alternative'
+
+
+def test_engine_bring_object_recipient_unavailable_failure() -> None:
+    payload, _delay = _engine().execute(
+        skill='bring_object',
+        args={'target': 'book_1', 'recipient': 'person_1'},
+        scenario_id='bring_no_recipient',
+    )
+
+    assert payload['status'] == 'failed'
+    assert payload['failure']['code'] == 'recipient_unavailable'
+    assert payload['failure']['suggested_recovery'] == 'ask_user_to_identify_recipient'
