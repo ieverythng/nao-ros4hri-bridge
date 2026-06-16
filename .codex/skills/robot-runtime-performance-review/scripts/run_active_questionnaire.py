@@ -37,6 +37,7 @@ class ProbeCase:
     wait_sec: float = 10.0
     mode: str = "speech"
     setup: KbInjection | None = None
+    conversation_group: str | None = None
 
 
 SMOKE_CASES = (
@@ -72,6 +73,7 @@ SMOKE_CASES = (
         "simple_dialogue",
         "How many directions did you move your head?",
         10.0,
+        conversation_group="head_wave_reflection",
     ),
 )
 
@@ -100,6 +102,7 @@ COMPOSITE_CASES = (
         "composite_skill_execution",
         "Move your head in all directions and then wave at me.",
         24.0,
+        conversation_group="head_wave_reflection",
     ),
     ProbeCase(
         "composite_walk_every_object_reports",
@@ -156,6 +159,7 @@ COMPOSITE_CASES = (
         "simple_dialogue",
         "How many directions did you move your head?",
         10.0,
+        conversation_group="head_wave_reflection",
     ),
 )
 
@@ -191,9 +195,9 @@ def main() -> int:
 
     cases = list(COMPOSITE_CASES if args.case_set == "composite" else SMOKE_CASES)
     results = []
-    service_history: list[dict[str, str]] = []
+    service_histories: dict[str, list[dict[str, str]]] = {}
     started_at = time.time()
-    for case in cases:
+    for index, case in enumerate(cases, start=1):
         if time.time() - started_at > max(30, args.global_timeout_sec):
             results.append(
                 {
@@ -202,12 +206,12 @@ def main() -> int:
                     "text": "",
                     "mode": args.mode,
                     "turn_result": "global timeout reached before remaining cases",
-                "started_at_unix_sec": time.time(),
-                "wait_sec": 0.0,
-                "injection_scope": args.mode,
-                "topic_samples": {},
-                "log_excerpt": recent_logs(args.container, args.since_sec),
-            }
+                    "started_at_unix_sec": time.time(),
+                    "wait_sec": 0.0,
+                    "injection_scope": args.mode,
+                    "topic_samples": {},
+                    "log_excerpt": recent_logs(args.container, args.since_sec),
+                }
             )
             write_payload(args.out, args.container, args.case_set, started_at, results)
             return 2
@@ -218,25 +222,30 @@ def main() -> int:
             setup_result = inject_kb_probe(args.container, case.setup)
 
         mode = args.mode or case.mode
+        conversation_group = case.conversation_group or case.name or f"case_{index}"
+        voice_id = VOICE_ID if mode == "speech" else _voice_id_for_group(conversation_group, index)
         if mode == "speech":
-            turn_result = publish_voice_turn(args.container, case.text)
+            turn_result = publish_voice_turn(args.container, case.text, voice_id=voice_id)
         else:
+            history = service_histories.setdefault(conversation_group, [])
             turn_result = call_chatbot_turn(
                 args.container,
                 case.text,
-                len(results) + 1,
-                history=service_history,
+                len(history) + 1,
+                voice_id=voice_id,
+                history=history,
             )
-            service_history.append({"speaker": VOICE_ID, "text": case.text})
+            history.append({"speaker": voice_id, "text": case.text})
             response_text = extract_service_response(turn_result)
             if response_text:
-                service_history.append({"speaker": "__assistant__", "text": response_text})
+                history.append({"speaker": "__assistant__", "text": response_text})
         time.sleep(max(0.0, case.wait_sec))
         results.append(
             {
                 "name": case.name,
                 "category": case.category,
                 "text": case.text,
+                "voice_id": voice_id,
                 "mode": mode,
                 "setup_result": setup_result,
                 "turn_result": turn_result,
@@ -279,15 +288,21 @@ def injection_scope(mode: str) -> str:
     return mode
 
 
-def publish_voice_turn(container: str, text: str) -> str:
+def publish_voice_turn(container: str, text: str, *, voice_id: str) -> str:
     escaped_text = text.replace("\\", "\\\\").replace('"', '\\"')
+    voice_topic = _voice_speech_topic(voice_id)
     script = f"""
 set -e
 source /opt/ros/jazzy/setup.bash
 source /home/ubuntu/ws/install/setup.bash
-timeout 8 ros2 topic pub --once -w 1 --qos-durability transient_local {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{VOICE_ID}']}}" >/tmp/nao_questionnaire_voice.log 2>&1 || true
-sleep 1
-timeout 8 ros2 topic pub --once -w 1 {VOICE_SPEECH_TOPIC} hri_msgs/msg/LiveSpeech "{{final: \\"{escaped_text}\\", confidence: 1.0, locale: \\"en_US\\"}}" >/tmp/nao_questionnaire_speech.log 2>&1 || true
+timeout 8 ros2 topic pub --once -w 1 --qos-durability transient_local {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{voice_id}']}}" >/tmp/nao_questionnaire_voice.log 2>&1 || true
+for _ in $(seq 1 16); do
+  if ros2 topic info -v {voice_topic} 2>/dev/null | grep -q 'Node name: dialogue_manager'; then
+    break
+  fi
+  sleep 0.5
+done
+timeout 8 ros2 topic pub --once -w 1 {voice_topic} hri_msgs/msg/LiveSpeech "{{final: \\"{escaped_text}\\", confidence: 1.0, locale: \\"en_US\\"}}" >/tmp/nao_questionnaire_speech.log 2>&1 || true
 cat /tmp/nao_questionnaire_voice.log /tmp/nao_questionnaire_speech.log 2>/dev/null || true
 """
     return run(["docker", "exec", container, "bash", "-lc", script], timeout=20, check=False)
@@ -382,11 +397,12 @@ def call_chatbot_turn(
     text: str,
     sequence: int,
     *,
+    voice_id: str,
     history: list[dict[str, str]],
 ) -> str:
     escaped_text = text.replace("'", "''")
     uuid_tail = max(1, min(255, sequence))
-    history_items = list(history) + [{"speaker": VOICE_ID, "text": text}]
+    history_items = list(history) + [{"speaker": voice_id, "text": text}]
     history_yaml = "\n".join(
         "- speaker: \"%s\"\n  text: '%s'\n  timestamp: 0.0"
         % (
@@ -449,7 +465,7 @@ def recent_logs(container: str, since_sec: int) -> str:
         ["docker", "logs", "--since", f"{max(1, since_sec)}s", container],
         timeout=15,
         check=False,
-    )
+    ) or ""
     interesting = []
     markers = (
         "SPEECH INPUT",
@@ -498,6 +514,19 @@ def run(
             "command failed (%s):\n%s" % (" ".join(cmd), completed.stdout)
         )
     return completed.stdout.strip()
+
+
+def _voice_id_for_group(group: str, index: int) -> str:
+    text = re.sub(r"[^a-z0-9_]+", "_", str(group or "").strip().lower()).strip("_")
+    if not text:
+        text = f"case_{index}"
+    return f"codex_{text}"
+
+
+def _voice_speech_topic(voice_id: str) -> str:
+    if voice_id == VOICE_ID:
+        return VOICE_SPEECH_TOPIC
+    return f"/nao_chatbot/humans/voices/{voice_id}/speech"
 
 
 if __name__ == "__main__":

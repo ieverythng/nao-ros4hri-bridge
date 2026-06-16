@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import threading
 import time
 
 from nao_skills.action import ScanScene
@@ -20,7 +21,9 @@ except ImportError:  # pragma: no cover - unit-test fallback
 
 from fake_skills.contracts import FakeSkillRequest
 from fake_skills.engine import FakeSkillEngine
+from fake_skills.kb_guard import validate_skill_target
 from fake_skills.scenario_store import ScenarioStore
+from kb_skills.query_client import KnowledgeCoreQueryClient
 
 
 class FakeSkillActionServer(Node):
@@ -49,6 +52,10 @@ class FakeSkillActionServer(Node):
         self.declare_parameter('global_mode', 'scenario')
         self.declare_parameter('random_failure_prob', 0.5)
         self.declare_parameter('mode_overrides_json', '{}')
+        self.declare_parameter('use_real_kb', True)
+        self.declare_parameter('kb_query_service_name', '/kb/query')
+        self.declare_parameter('kb_query_timeout_sec', 0.75)
+        self.declare_parameter('kb_query_models', '')
 
         scenario_path = str(self.get_parameter('scenario_file').value).strip()
         if not scenario_path and get_package_share_directory is not None:
@@ -91,6 +98,30 @@ class FakeSkillActionServer(Node):
         self._event_pub = self.create_publisher(String, event_topic, 10)
 
         callback_group = ReentrantCallbackGroup()
+        self._kb_query_client = KnowledgeCoreQueryClient(
+            node=self,
+            callback_group=callback_group,
+            service_name=str(self.get_parameter('kb_query_service_name').value),
+            timeout_sec=float(self.get_parameter('kb_query_timeout_sec').value),
+        )
+        self._kb_query_timeout_sec = max(
+            0.1,
+            float(self.get_parameter('kb_query_timeout_sec').value),
+        )
+        self._use_real_kb = self._coerce_bool(
+            self.get_parameter('use_real_kb').value,
+            default=True,
+        )
+        kb_query_models_value = self.get_parameter('kb_query_models').value
+        self._kb_query_models = [
+            str(item).strip()
+            for item in kb_query_models_value
+            if str(item).strip()
+        ] if isinstance(kb_query_models_value, list) else [
+            item.strip()
+            for item in str(kb_query_models_value).split(',')
+            if item.strip()
+        ]
         self._servers = []
         self._servers.append(
             ActionServer(
@@ -157,6 +188,28 @@ class FakeSkillActionServer(Node):
         started = time.time()
         self._emit_event('fake_skill_started', request.skill, {'args': request.args, 'scenario_id': request.scenario_id})
         goal_handle.publish_feedback(self._feedback('preparing', 0.1))
+
+        kb_failure_payload = self._validate_real_kb(request)
+        if kb_failure_payload is not None:
+            goal_handle.abort()
+            self._emit_event(
+                'fake_skill_completed',
+                request.skill,
+                {
+                    'status': 'failed',
+                    'result_mode': 'kb_guard',
+                    'mode_source': 'kb_guard',
+                    'global_mode': '',
+                    'summary_text': kb_failure_payload.get('summary_text', ''),
+                    'failure': kb_failure_payload.get('failure', {}),
+                },
+            )
+            return self._result(
+                ok=False,
+                message=kb_failure_payload.get('summary_text', ''),
+                payload=kb_failure_payload,
+                duration=time.time() - started,
+            )
 
         payload, delay_sec = self._engine.execute(
             skill=request.skill,
@@ -352,6 +405,91 @@ class FakeSkillActionServer(Node):
         except json.JSONDecodeError:
             return {}
         return parsed if isinstance(parsed, dict) else {}
+
+    def _validate_real_kb(self, request: FakeSkillRequest) -> dict | None:
+        guard_args = self._merged_guard_args(request)
+        outcome = validate_skill_target(
+            skill=request.skill,
+            args=guard_args,
+            query_rows=self._query_kb_rows,
+            default_enabled=self._use_real_kb,
+            models=self._kb_query_models,
+        )
+        if outcome is None or outcome.ok:
+            return None
+        return outcome.payload
+
+    def _merged_guard_args(self, request: FakeSkillRequest) -> dict:
+        scenario_override = (
+            request.scenario_override
+            if isinstance(request.scenario_override, dict)
+            else {}
+        )
+        merged_config = self._scenario_store.resolve_skill_config(
+            skill=request.skill,
+            scenario_id=request.scenario_id,
+            scenario_override=scenario_override,
+        )
+        merged = dict(merged_config)
+        merged.update(dict(request.args or {}))
+        return merged
+
+    def _query_kb_rows(
+        self,
+        *,
+        patterns: list[str],
+        query_vars: list[str],
+        models: list[str],
+    ) -> list[dict]:
+        outcome: dict[str, list[dict] | BaseException | None] = {
+            'rows': [],
+            'error': None,
+        }
+        completed = threading.Event()
+
+        def _worker() -> None:
+            try:
+                outcome['rows'] = self._kb_query_client.query_rows(
+                    patterns=patterns,
+                    query_vars=query_vars,
+                    models=models,
+                    trace_stage='FAKE_SKILL_KB_GUARD',
+                )
+            except BaseException as err:  # pragma: no cover - defensive runtime path
+                outcome['error'] = err
+            finally:
+                completed.set()
+
+        threading.Thread(
+            target=_worker,
+            name='fake-skill-kb-query',
+            daemon=True,
+        ).start()
+
+        if not completed.wait(timeout=self._kb_query_timeout_sec + 0.25):
+            self.get_logger().warn(
+                'fake_skill KB query timed out after %.2fs; failing closed'
+                % (self._kb_query_timeout_sec + 0.25)
+            )
+            return []
+        if outcome['error'] is not None:
+            self.get_logger().warn(
+                'fake_skill KB query failed: %s' % outcome['error']
+            )
+            return []
+        rows = outcome['rows']
+        return list(rows) if isinstance(rows, list) else []
+
+    @staticmethod
+    def _coerce_bool(value, *, default: bool) -> bool:
+        if isinstance(value, bool):
+            return value
+        clean = str(value).strip().lower()
+        if clean in {'1', 'true', 'yes', 'on', 'enabled'}:
+            return True
+        if clean in {'0', 'false', 'no', 'off', 'disabled'}:
+            return False
+        return bool(default)
 
     @staticmethod
     def _feedback(status: str, progress: float) -> ScanScene.Feedback:

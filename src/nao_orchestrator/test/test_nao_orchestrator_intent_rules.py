@@ -654,6 +654,63 @@ def test_report_result_text_uses_chatbot_context_for_step_chain() -> None:
     assert [step['name'] for step in captured['steps']] == ['navigate_to', 'scan']
 
 
+def test_execution_report_context_marks_intermediate_report_result() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+
+    context = orchestrator._execution_report_context(
+        {
+            'current_step_index': 1,
+            'plan_steps': [
+                {'id': 'step_1', 'name': 'navigate_to', 'args': {'target': 'apple'}},
+                {'id': 'step_2', 'name': 'report_result', 'args': {}},
+                {'id': 'step_3', 'name': 'navigate_to', 'args': {'target': 'book'}},
+                {'id': 'step_4', 'name': 'report_result', 'args': {}},
+            ],
+            'execution_results': [
+                {
+                    'name': 'navigate_to',
+                    'status': 'succeeded',
+                    'result_summary': 'I navigated to the apple.',
+                }
+            ],
+            'last_result_summary': 'I navigated to the apple.',
+        }
+    )
+
+    assert context['report_role'] == 'intermediate'
+    assert context['latest_result_summary'] == 'I navigated to the apple.'
+    assert [step['name'] for step in context['future_steps']] == [
+        'navigate_to',
+        'report_result',
+    ]
+
+
+def test_execution_report_context_marks_terminal_report_result() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+
+    context = orchestrator._execution_report_context(
+        {
+            'current_step_index': 3,
+            'plan_steps': [
+                {'id': 'step_1', 'name': 'navigate_to', 'args': {'target': 'apple'}},
+                {'id': 'step_2', 'name': 'report_result', 'args': {}},
+                {'id': 'step_3', 'name': 'navigate_to', 'args': {'target': 'book'}},
+                {'id': 'step_4', 'name': 'report_result', 'args': {}},
+            ],
+            'execution_results': [
+                {
+                    'name': 'navigate_to',
+                    'status': 'succeeded',
+                    'result_summary': 'I navigated to the book.',
+                }
+            ],
+        }
+    )
+
+    assert context['report_role'] == 'final'
+    assert context['future_steps'] == []
+
+
 def test_execution_context_retains_admitted_request_for_report_result() -> None:
     orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
     orchestrator._planner_request_context_by_goal = {}

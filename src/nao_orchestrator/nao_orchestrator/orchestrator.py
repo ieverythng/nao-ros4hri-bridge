@@ -1260,6 +1260,8 @@ class NaoOrchestrator(Node):
 
             dispatch_fallback_data = dict(data)
             dispatch_fallback_data['plan_context'] = dict(plan_context)
+            dispatch_fallback_data['current_step_index'] = step_index
+            dispatch_fallback_data['plan_steps'] = list(plan)
             if latest_result_summary:
                 dispatch_fallback_data['last_result_summary'] = latest_result_summary
             if latest_result_payload:
@@ -1782,6 +1784,20 @@ class NaoOrchestrator(Node):
             for step in execution_results[-_MAX_EXECUTION_REPORT_STEPS:]
             if isinstance(step, dict)
         ]
+        plan_steps = fallback_data.get('plan_steps', [])
+        if not isinstance(plan_steps, list):
+            plan_steps = []
+        current_step_index = int(fallback_data.get('current_step_index', -1) or -1)
+        future_steps = [
+            dict(step)
+            for step in plan_steps[current_step_index + 1:]
+            if isinstance(step, dict)
+        ] if current_step_index >= 0 else []
+        future_action_steps = [
+            step for step in future_steps
+            if str(step.get('name', '')).strip().lower() != 'report_result'
+        ]
+        report_role = 'intermediate' if future_action_steps else 'final'
         return {
             'goal_text': _first_non_empty_value(
                 fallback_data,
@@ -1813,6 +1829,8 @@ class NaoOrchestrator(Node):
             ),
             'plan_id': str(plan_context.get('plan_id', '')).strip(),
             'plan_version': int(plan_context.get('plan_version', 0) or 0),
+            'report_role': report_role,
+            'future_steps': future_steps[-_MAX_EXECUTION_REPORT_STEPS:],
             'steps': bounded_steps,
             'latest_result_summary': str(fallback_data.get('last_result_summary', '')).strip(),
             'latest_result_payload': dict(
