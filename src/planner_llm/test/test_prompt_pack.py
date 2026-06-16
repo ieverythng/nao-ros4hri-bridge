@@ -13,6 +13,7 @@ def test_default_planner_prompt_pack_contains_core_fields() -> None:
     assert 'step_type_say' in pack.output_contract
     assert 'invalid_examples' in pack.output_contract
     assert 'planner contract errors' in pack.validation_retry['instruction']
+    assert 'context_ref' not in str(pack.output_contract)
     assert pack.validation_retry['previous_model_output_max_chars'] == 4000
 
 

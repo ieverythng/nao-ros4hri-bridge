@@ -159,10 +159,6 @@ output_contract:
       retry_budget: 1
       scene_targets:
         - anonymous_person_ehfbf
-      context_ref:
-        captured_at_sec: 0.0
-        observer: myself
-        backend: knowledge_core
       communication_policy:
         emit_acknowledge: false
         emit_progress: false

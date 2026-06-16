@@ -141,11 +141,7 @@ def test_build_plan_payload_keeps_nested_canonical_shape() -> None:
     assert payload['plan']['plan_version'] == 4
     assert payload['plan']['status'] == 'executing'
     assert payload['plan']['scene_targets'] == ['cup']
-    assert payload['plan']['context_ref'] == {
-        'captured_at_sec': 0.0,
-        'observer': '',
-        'backend': '',
-    }
+    assert 'context_ref' not in payload['plan']
     assert payload['plan']['communication_policy']['emit_progress'] is True
     assert payload['plan']['communication_policy_source'] == ''
     assert payload['plan']['steps'][0]['args']['target_frame'] == 'cup_frame'
@@ -308,7 +304,7 @@ def test_normalize_grounded_context_accepts_compact_shape() -> None:
     }
 
 
-def test_build_plan_payload_projects_context_ref_from_grounding() -> None:
+def test_build_plan_payload_omits_context_ref_from_new_envelopes() -> None:
     request = PlannerRequest.from_payload(
         {
             'goal_id': 'goal_42',
@@ -327,11 +323,7 @@ def test_build_plan_payload_projects_context_ref_from_grounding() -> None:
         request=request,
         steps=[],
     )
-    assert payload['plan']['context_ref'] == {
-        'captured_at_sec': 1777040000.0,
-        'observer': 'myself',
-        'backend': 'emorobcare_cv',
-    }
+    assert 'context_ref' not in payload['plan']
     assert 'grounded_context' not in payload
 
 

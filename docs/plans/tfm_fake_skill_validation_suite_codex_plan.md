@@ -161,6 +161,19 @@ cases:
     expected:
       plan_contains: ["scan", "report_result"]
       report_result_uses_live_payload: true
+
+  - id: navigate_all_objects_report_each
+    utterance: "Now walk to every object, let me know when you are there and then walk to the next!"
+    route_mode: user_turn
+    goal_text: "walk to every grounded object, report each arrival, and then continue to the next object"
+    normalized_intents: ["navigate_to", "report_result"]
+    scene_targets: ["apple", "book", "phone"]
+    fake_policy:
+      global_mode: always_success
+    expected:
+      plan_contains: ["navigate_to", "report_result"]
+      report_after_each_navigation: true
+      final_report_mentions_all_targets: true
 ```
 
 Keep `route_mode=planner_request` for fast stability. Add true user-speech injection later.
@@ -245,6 +258,7 @@ Minimum tomorrow matrix:
 |---|---|
 | find_object | success, ambiguous, always_fail |
 | navigate_to | success, path_blocked |
+| navigate_to plus report_result | all objects success, one target missing, path_blocked |
 | scan/report_result | always_success, always_fail |
 | wave_greet | success, social_wave_unavailable |
 | inspect_area | clear, area_person_found |
