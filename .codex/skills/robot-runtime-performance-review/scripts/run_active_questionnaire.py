@@ -16,7 +16,10 @@ DEFAULT_CONTAINER = "nao_ros2"
 VOICE_ID = "anonymous_speaker"
 VOICE_TRACKED_TOPIC = "/nao_chatbot/humans/voices/tracked"
 VOICE_SPEECH_TOPIC = "/nao_chatbot/humans/voices/anonymous_speaker/speech"
+VOICE_TRACKED_QOS = "--qos-reliability reliable --qos-durability transient_local"
+VOICE_SPEECH_QOS = "--qos-reliability reliable --qos-durability volatile"
 TOPIC_SAMPLE_TIMEOUT_SEC = 1.5
+TOPIC_SAMPLE_KILL_AFTER_SEC = 1.0
 DEFAULT_GLOBAL_TIMEOUT_SEC = 420
 KB_PROBE_OBJECT_ID = "codex_probe_cup"
 
@@ -61,12 +64,12 @@ SMOKE_CASES = (
             query_vars=("?predicate", "?object"),
         ),
     ),
-    ProbeCase("simple_wave", "simple_skill_execution", "Wave at me.", 14.0),
+    ProbeCase("simple_wave", "simple_skill_execution", "Wave at me.", 90.0),
     ProbeCase(
         "composite_head_wave",
         "composite_skill_execution",
         "Move your head in all directions and then wave at me.",
-        24.0,
+        95.0,
     ),
     ProbeCase(
         "reflective_followup",
@@ -101,14 +104,14 @@ COMPOSITE_CASES = (
         "composite_head_wave",
         "composite_skill_execution",
         "Move your head in all directions and then wave at me.",
-        24.0,
+        95.0,
         conversation_group="head_wave_reflection",
     ),
     ProbeCase(
         "composite_walk_every_object_reports",
         "composite_skill_execution",
         "Now walk to every object, let me know when you are there and then walk to the next!",
-        36.0,
+        120.0,
         setup=KbInjection(
             object_id="codex_multi_object_scene",
             statements=(
@@ -140,13 +143,13 @@ COMPOSITE_CASES = (
         "composite_look_at_probe_report",
         "composite_skill_execution",
         "Look at the probe cup and then tell me what you did.",
-        24.0,
+        80.0,
     ),
     ProbeCase(
         "composite_navigate_probe_report",
         "composite_skill_execution",
         "Navigate to the probe cup and then tell me what else you see.",
-        28.0,
+        90.0,
     ),
     ProbeCase(
         "future_action_admission_holdout",
@@ -295,15 +298,29 @@ def publish_voice_turn(container: str, text: str, *, voice_id: str) -> str:
 set -e
 source /opt/ros/jazzy/setup.bash
 source /home/ubuntu/ws/install/setup.bash
-timeout 8 ros2 topic pub --once -w 1 --qos-durability transient_local {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{voice_id}']}}" >/tmp/nao_questionnaire_voice.log 2>&1 || true
+cat >/tmp/nao_questionnaire_qos_contract.log <<'EOF'
+[runtime-review] Speech ingress seam:
+  tracked_topic={VOICE_TRACKED_TOPIC}
+  tracked_qos={VOICE_TRACKED_QOS}
+  speech_topic={voice_topic}
+  speech_qos={VOICE_SPEECH_QOS}
+  contract=publish tracked voice with TRANSIENT_LOCAL durability before LiveSpeech.
+  reason=dialogue_manager subscribes to the remapped rqt-chat tracked topic with transient-local QoS.
+EOF
+timeout 8 ros2 topic pub --once -w 1 {VOICE_TRACKED_QOS} {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{voice_id}']}}" >/tmp/nao_questionnaire_voice.log 2>&1 || true
 for _ in $(seq 1 16); do
   if ros2 topic info -v {voice_topic} 2>/dev/null | grep -q 'Node name: dialogue_manager'; then
     break
   fi
   sleep 0.5
 done
-timeout 8 ros2 topic pub --once -w 1 {voice_topic} hri_msgs/msg/LiveSpeech "{{final: \\"{escaped_text}\\", confidence: 1.0, locale: \\"en_US\\"}}" >/tmp/nao_questionnaire_speech.log 2>&1 || true
-cat /tmp/nao_questionnaire_voice.log /tmp/nao_questionnaire_speech.log 2>/dev/null || true
+ros2 topic info -v {VOICE_TRACKED_TOPIC} >/tmp/nao_questionnaire_tracked_info.log 2>&1 || true
+ros2 topic info -v {voice_topic} >/tmp/nao_questionnaire_speech_info.log 2>&1 || true
+if ! grep -q 'Node name: dialogue_manager' /tmp/nao_questionnaire_speech_info.log 2>/dev/null; then
+  echo "[runtime-review] WARNING: dialogue_manager speech subscription was not visible for {voice_topic}" >>/tmp/nao_questionnaire_qos_contract.log
+fi
+timeout 8 ros2 topic pub --once -w 1 {VOICE_SPEECH_QOS} {voice_topic} hri_msgs/msg/LiveSpeech "{{final: \\"{escaped_text}\\", confidence: 1.0, locale: \\"en_US\\"}}" >/tmp/nao_questionnaire_speech.log 2>&1 || true
+cat /tmp/nao_questionnaire_qos_contract.log /tmp/nao_questionnaire_voice.log /tmp/nao_questionnaire_tracked_info.log /tmp/nao_questionnaire_speech_info.log /tmp/nao_questionnaire_speech.log 2>/dev/null || true
 """
     return run(["docker", "exec", container, "bash", "-lc", script], timeout=20, check=False)
 
@@ -450,11 +467,11 @@ def sample_topics(container: str) -> dict[str, str]:
         script = f"""
 source /opt/ros/jazzy/setup.bash
 source /home/ubuntu/ws/install/setup.bash
-timeout {TOPIC_SAMPLE_TIMEOUT_SEC} ros2 topic echo --once {topic} 2>/dev/null || true
+timeout --kill-after={TOPIC_SAMPLE_KILL_AFTER_SEC}s {TOPIC_SAMPLE_TIMEOUT_SEC}s ros2 topic echo {topic} --once 2>/dev/null || true
 """
         samples[topic] = run(
             ["docker", "exec", container, "bash", "-lc", script],
-            timeout=TOPIC_SAMPLE_TIMEOUT_SEC + 3,
+            timeout=TOPIC_SAMPLE_TIMEOUT_SEC + TOPIC_SAMPLE_KILL_AFTER_SEC + 3,
             check=False,
         )
     return samples

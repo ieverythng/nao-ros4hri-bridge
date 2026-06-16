@@ -90,6 +90,10 @@ Active questionnaire requirement:
   `/nao_chatbot/humans/voices/tracked` (`hri_msgs/msg/IdsList`). Verify
   `ros2 topic info -v` shows a `dialogue_manager` subscription before injecting
   turns. Use another topic only when the active launch explicitly exposes it.
+- The tracked voice topic must be published with transient-local durability and
+  reliable reliability before `LiveSpeech`. The runtime-review questionnaire
+  script prints this QoS contract in each speech turn result. If this seam fails,
+  fix the harness first instead of retrying with volatile/default QoS.
 - Use direct `/planner/request` publication only for planner-isolated probes.
   Mark those probes as planner-only, because they bypass chatbot routing.
 - After each injected turn, collect `/chatbot_llm/turn_trace`,
