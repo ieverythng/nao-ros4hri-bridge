@@ -8,6 +8,7 @@ from planner_common.contracts import build_plan_payload
 from planner_common.contracts import extract_json_object
 from planner_common.contracts import normalize_grounded_context
 from planner_common.contracts import normalize_plan_steps
+from planner_common.contracts import optional_float_fields
 from planner_common.contracts import project_llm_grounded_context
 from planner_common.contracts import truncate_text
 
@@ -275,6 +276,41 @@ def test_project_llm_grounded_context_keeps_state_t0_only_when_enabled() -> None
     )['state_t0'] == raw_context['state_t0']
 
 
+def test_project_llm_grounded_context_keeps_only_frame_qualified_metric_position() -> None:
+    projected = project_llm_grounded_context(
+        {
+            'scene_summary': {
+                'objects': [
+                    {
+                        'entity_id': 'cup_1',
+                        'label': 'cup',
+                        'kb_class': 'Cup',
+                        'center_x': 320.0,
+                        'center_y': 240.0,
+                        'frame_id': 'base_link',
+                        'position': {'x': 1.0, 'y': 0.25, 'z': 0.6},
+                        'distance_m': 1.03,
+                    },
+                    {
+                        'entity_id': 'book_1',
+                        'label': 'book',
+                        'kb_class': 'Book',
+                        'position': {'x': 0.2, 'y': 0.1, 'z': 0.4},
+                    },
+                ]
+            }
+        }
+    )
+
+    cup = next(item for item in projected['entities'] if item['id'] == 'cup_1')
+    book = next(item for item in projected['entities'] if item['id'] == 'book_1')
+    assert cup['frame_id'] == 'base_link'
+    assert cup['position'] == {'x': 1.0, 'y': 0.25, 'z': 0.6}
+    assert cup['distance_m'] == 1.03
+    assert 'center_x' not in cup
+    assert 'position' not in book
+
+
 def test_normalize_grounded_context_accepts_compact_shape() -> None:
     grounded_context = normalize_grounded_context(
         {
@@ -446,3 +482,18 @@ def test_normalize_plan_steps_rejects_retry_failure_policy_alias() -> None:
 
 def test_truncate_text_adds_ellipsis_when_needed() -> None:
     assert truncate_text('hello world', 5) == 'hell…'
+
+
+def test_optional_float_fields_keeps_only_numeric_values() -> None:
+    assert optional_float_fields(
+        {
+            'center_x': '12.5',
+            'center_y': None,
+            'distance_m': 'not-a-number',
+            'confidence': 0.9,
+        },
+        ('center_x', 'center_y', 'distance_m', 'confidence'),
+    ) == {
+        'center_x': 12.5,
+        'confidence': 0.9,
+    }

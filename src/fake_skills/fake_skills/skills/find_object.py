@@ -22,6 +22,14 @@ def execute(*, args: dict, mode: str, metadata: dict, fail_once_active: bool) ->
         mode = 'found'
 
     if mode in SUCCESS_MODES:
+        object_evidence = {
+            'id': 'fake_%s_1' % target.replace(' ', '_'),
+            'label': target,
+            'confidence': 0.91,
+            'source': 'fake_find_object',
+            'evidence_policy': evidence_policy,
+        }
+        _copy_spatial_evidence(object_evidence, args)
         return build_skill_result(
             skill='find_object',
             status='succeeded',
@@ -30,15 +38,7 @@ def execute(*, args: dict, mode: str, metadata: dict, fail_once_active: bool) ->
             target_found=True,
             summary_text='I found one %s.' % target,
             evidence={
-                'objects': [
-                    {
-                        'id': 'fake_%s_1' % target.replace(' ', '_'),
-                        'label': target,
-                        'confidence': 0.91,
-                        'source': 'fake_find_object',
-                        'evidence_policy': evidence_policy,
-                    }
-                ]
+                'objects': [object_evidence]
             },
             metadata=metadata,
         ).to_dict()
@@ -131,3 +131,24 @@ def execute(*, args: dict, mode: str, metadata: dict, fail_once_active: bool) ->
         ),
         metadata=metadata,
     ).to_dict()
+
+
+def _copy_spatial_evidence(evidence: dict, args: dict) -> None:
+    frame_id = str(args.get('frame_id', '')).strip()
+    position = args.get('position', {})
+    if frame_id and isinstance(position, dict) and all(axis in position for axis in ('x', 'y', 'z')):
+        try:
+            normalized_position = {
+                axis: float(position[axis])
+                for axis in ('x', 'y', 'z')
+            }
+        except (TypeError, ValueError):
+            normalized_position = {}
+        if normalized_position:
+            evidence['frame_id'] = frame_id
+            evidence['position'] = normalized_position
+    try:
+        distance_m = float(args.get('distance_m'))
+    except (TypeError, ValueError):
+        return
+    evidence['distance_m'] = distance_m

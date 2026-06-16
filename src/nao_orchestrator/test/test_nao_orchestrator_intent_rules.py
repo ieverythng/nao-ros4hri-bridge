@@ -809,6 +809,22 @@ def test_scene_scan_payload_preserves_positional_evidence() -> None:
     assert payload['objects'][0]['confidence'] == 0.94
 
 
+def test_scene_scan_payload_reports_people_and_objects_separately() -> None:
+    payload = build_scan_result_payload(
+        {
+            'target_kind': 'scene',
+            'objects': [{'id': 'cup_1', 'label': 'cup', 'source': 'scene_summary'}],
+            'people': [{'id': 'anonymous_person_abc', 'source': 'hri_persons'}],
+        }
+    )
+
+    assert payload['target_found'] is True
+    assert payload['objects'][0]['label'] == 'cup'
+    assert payload['people'][0]['id'] == 'anonymous_person_abc'
+    assert 'detected cup' in payload['summary_text']
+    assert 'one person (id: anonymous_person_abc)' in payload['summary_text']
+
+
 def test_people_scan_target_detection_supports_common_aliases() -> None:
     assert is_people_scan_target('people') is True
     assert is_people_scan_target('human') is True

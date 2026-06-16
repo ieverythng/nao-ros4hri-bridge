@@ -14,6 +14,11 @@ def test_default_planner_prompt_pack_contains_core_fields() -> None:
     assert 'invalid_examples' in pack.output_contract
     assert 'planner contract errors' in pack.validation_retry['instruction']
     assert pack.validation_retry['previous_model_output_max_chars'] == 4000
+    assert 'grounded_context.entities' in pack.system_prompt
+    assert 'both currently visible people and objects' in pack.system_prompt
+    assert 'explicit user requests to change KB predicates' in pack.system_prompt
+    assert 'Never infer distance from image-plane centers' in pack.system_prompt
+    assert 'communication_policy.emit_progress=true' in pack.system_prompt
 
 
 def test_default_planner_prompt_pack_limits_routine_progress_speech() -> None:

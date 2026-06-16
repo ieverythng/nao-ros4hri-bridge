@@ -8,8 +8,8 @@ import re
 
 from planner_common.contracts import PLAN_FAILURE_POLICIES
 from planner_common.contracts import PLAN_STEP_TYPES
-from planner_common.contracts import coerce_optional_float
 from planner_common.contracts import IntentLabels as Intent
+from planner_common.contracts import optional_float_fields
 from planner_common.skill_registry_bridge import merge_fake_skill_aliases
 from planner_common.skill_registry_bridge import merge_scan_skill_names
 from planner_common.skill_registry_bridge import load_shared_skill_manifest
@@ -155,6 +155,11 @@ _DEFAULT_FAKE_SKILL_PLAN_NAMES = {
     'walk_forward',
     'step_to',
 }
+_KB_MUTATION_SKILL_PLAN_NAMES = {
+    'kb_add',
+    'kb_remove',
+    'kb_revise',
+}
 _DEFAULT_SUPPORTED_SKILL_PLAN_NAMES = {
     '',
     'perform_motion',
@@ -167,6 +172,7 @@ _DEFAULT_SUPPORTED_SKILL_PLAN_NAMES = {
     'ask_for_help',
     *_DEFAULT_SCAN_SKILL_PLAN_NAMES,
     *_DEFAULT_FAKE_SKILL_PLAN_NAMES,
+    *_KB_MUTATION_SKILL_PLAN_NAMES,
 }
 _ASK_USER_STEP_NAMES = {
     'ask_user',
@@ -444,12 +450,8 @@ def build_scan_result_payload(
             'I completed the scan for %s, but no confirmed detection result was reported.'
             % target_label
         )
-    elif objects:
-        summary_text = _summarize_scene_objects(objects)
-    elif people:
-        summary_text = summarize_people_detection(
-            [str(item.get('id', '')).strip() for item in people]
-        )
+    elif objects or people:
+        summary_text = _summarize_scene_entities(objects, people)
     else:
         summary_text = default_summary_text or 'scan completed'
 
@@ -481,11 +483,7 @@ def _normalize_scan_people(step_args: dict) -> list[dict]:
                 'id': person_id,
                 'source': str(candidate.get('source', 'unknown')).strip() or 'unknown',
             }
-            age_value = candidate.get('last_seen_age_sec', '')
-            try:
-                entry['last_seen_age_sec'] = float(age_value)
-            except (TypeError, ValueError):
-                pass
+            entry.update(optional_float_fields(candidate, ('last_seen_age_sec',)))
             normalized.append(entry)
         else:
             person_id = str(candidate).strip()
@@ -511,10 +509,12 @@ def _normalize_scan_objects(raw_objects) -> list[dict]:
             'kb_class': str(item.get('kb_class', '')).strip(),
             'source': str(item.get('source', 'scene_summary')).strip() or 'scene_summary',
         }
-        for numeric_key in ('center_x', 'center_y', 'confidence', 'last_seen_sec', 'distance_m'):
-            numeric_value = coerce_optional_float(item.get(numeric_key))
-            if numeric_value is not None:
-                entry[numeric_key] = numeric_value
+        entry.update(
+            optional_float_fields(
+                item,
+                ('center_x', 'center_y', 'confidence', 'last_seen_sec', 'distance_m'),
+            )
+        )
         normalized.append(entry)
     return normalized
 
@@ -553,6 +553,17 @@ def _summarize_scene_objects(objects: list[dict]) -> str:
         len(labels),
         preview,
     )
+
+
+def _summarize_scene_entities(objects: list[dict], people: list[dict]) -> str:
+    """Summarize all current scene entities without treating people as objects."""
+    object_summary = _summarize_scene_objects(objects) if objects else ''
+    people_summary = summarize_people_detection(
+        [str(item.get('id', '')).strip() for item in people]
+    )
+    if object_summary and people_summary:
+        return '%s %s' % (object_summary, people_summary)
+    return object_summary or people_summary
 
 
 # -----------------------------------------------------------------------------
@@ -942,6 +953,8 @@ def _plan_step_validation_error(intent_name: str, step: dict) -> str:
         return _plan_ask_user_error(step_args)
     if step_name in _SCAN_SKILL_PLAN_NAMES:
         return ''
+    if step_name in _KB_MUTATION_SKILL_PLAN_NAMES:
+        return _plan_kb_mutation_error(step_args)
 
     if step_name in _FAKE_SKILL_PLAN_NAMES:
         return ''
@@ -959,6 +972,17 @@ def _plan_step_validation_error(intent_name: str, step: dict) -> str:
             sort_keys=True,
         )
     return ''
+
+
+def _plan_kb_mutation_error(step_args: dict) -> str:
+    statements = step_args.get('statements', step_args.get('statement', []))
+    if isinstance(statements, str):
+        statements = [statements]
+    if not isinstance(statements, list):
+        return 'KB mutation step statements must be a string or list'
+    if any(str(statement).strip() for statement in statements):
+        return ''
+    return 'KB mutation step is missing concrete statements'
 
 
 def _plan_ask_user_error(step_args: dict) -> str:

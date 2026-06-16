@@ -46,4 +46,16 @@ scenarios:
   look_at_unavailable:
     look_at:
       result_mode: target_unavailable
+  object_near_robot:
+    find_object:
+      result_mode: found
+      frame_id: base_link
+      position: {x: 0.7, y: 0.1, z: 0.6}
+      distance_m: 0.93
+  object_far_from_robot:
+    find_object:
+      result_mode: found
+      frame_id: base_link
+      position: {x: 3.8, y: 0.4, z: 0.6}
+      distance_m: 3.87
   head_motion_strict: {}

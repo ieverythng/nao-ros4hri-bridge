@@ -21,6 +21,7 @@ from geometry_msgs.msg import PointStamped
 from hri_actions_msgs.msg import Intent
 from interaction_skills.action import LookAt
 from kb_skills.intent_labels import KB_QUERY_INTENTS
+from kb_skills.mutation_client import KnowledgeCoreMutationClient
 from nao_skills.action import DoHeadMotion, ReplayMotion
 from planner_common import build_execution_feedback_payload
 from planner_common import make_plan_id
@@ -78,6 +79,11 @@ _DEFAULT_FAKE_SKILL_ALIASES = {
 _ASK_USER_STEP_NAMES = frozenset({'ask_user', 'ask_clarification', 'ask_for_help'})
 _MAX_RELAYED_PLANNER_ACTS = 256
 _MAX_EXECUTION_REPORT_STEPS = 8
+_KB_MUTATION_OPERATIONS = {
+    'kb_add': 'add',
+    'kb_remove': 'remove',
+    'kb_revise': 'update',
+}
 
 
 def _first_non_empty_text(*values) -> str:
@@ -264,6 +270,7 @@ class _RuntimeStats:
     dispatched_head_motion: int = 0
     dispatched_look_at: int = 0
     dispatched_fake_skill: int = 0
+    dispatched_kb_mutation: int = 0
     dispatch_failures: int = 0
     last_intent: str = ''
     last_route: str = ''
@@ -360,6 +367,8 @@ class NaoOrchestrator(Node):
         self.declare_parameter('execution_report_chatbot_service', '/chatbot/dialogue_interaction')
         self.declare_parameter('execution_report_chatbot_wait_sec', 0.2)
         self.declare_parameter('execution_report_chatbot_timeout_sec', 12.0)
+        self.declare_parameter('kb_revise_service_name', '/kb/revise')
+        self.declare_parameter('kb_mutation_timeout_sec', 1.0)
 
         self.intent_topic = str(self.get_parameter('intent_topic').value)
         self.enable_legacy_intent_bridge = bool(
@@ -512,6 +521,13 @@ class NaoOrchestrator(Node):
             0.1,
             float(self.get_parameter('execution_report_chatbot_timeout_sec').value),
         )
+        self.kb_revise_service_name = str(
+            self.get_parameter('kb_revise_service_name').value
+        ).strip()
+        self.kb_mutation_timeout_sec = max(
+            0.05,
+            float(self.get_parameter('kb_mutation_timeout_sec').value),
+        )
 
         self._intent_sub = None
         self._legacy_intent_sub = None
@@ -541,6 +557,7 @@ class NaoOrchestrator(Node):
         self._report_result_client = None
         self._execution_report_chatbot_client = None
         self._execution_report_callback_group = ReentrantCallbackGroup()
+        self._kb_mutation_client = None
         self._posture_result_lock = threading.Lock()
         self._posture_result_event = threading.Event()
         self._latest_posture_result: dict | None = None
@@ -608,6 +625,11 @@ class NaoOrchestrator(Node):
                 self.execution_report_chatbot_service,
                 callback_group=self._execution_report_callback_group,
             )
+        self._kb_mutation_client = KnowledgeCoreMutationClient(
+            node=self,
+            service_name=self.kb_revise_service_name,
+            timeout_sec=self.kb_mutation_timeout_sec,
+        )
         self._diag_pub = self.create_publisher(DiagnosticArray, '/diagnostics', 1)
         self._diag_timer = self.create_timer(1.0, self._publish_diagnostics)
         self._posture_command_pub = self.create_publisher(
@@ -790,6 +812,9 @@ class NaoOrchestrator(Node):
         self._scan_client = None
         self._fake_skill_clients = {}
         self._report_result_client = None
+        if self._kb_mutation_client is not None:
+            self._kb_mutation_client.close()
+            self._kb_mutation_client = None
 
     # -------------------------------------------------------------------------
     # Intent ingestion
@@ -1404,6 +1429,12 @@ class NaoOrchestrator(Node):
                     on_started=on_started,
                 )
                 return success, reason, {}
+            if step_name in _KB_MUTATION_OPERATIONS:
+                return self._execute_kb_mutation_step(
+                    step_name,
+                    step_args,
+                    on_started=on_started,
+                )
             if step_name == 'report_result':
                 return self._execute_report_result_step(
                     step_args,
@@ -1436,6 +1467,45 @@ class NaoOrchestrator(Node):
         self._stats.dispatch_failures += 1
         self.get_logger().warn('Unsupported planned step: %s' % step)
         return False, 'unsupported planned step', {}
+
+    def _execute_kb_mutation_step(
+        self,
+        step_name: str,
+        step_args: dict,
+        *,
+        on_started=None,
+    ) -> tuple[bool, str, dict]:
+        """Delegate one explicit planner mutation to the KnowledgeCore seam."""
+        statements = step_args.get('statements', step_args.get('statement', []))
+        models = step_args.get('models', [])
+        if isinstance(models, str):
+            models = [models]
+        if on_started is not None:
+            on_started()
+        if self._kb_mutation_client is None:
+            self._stats.dispatch_failures += 1
+            return False, 'KnowledgeCore mutation client is unavailable', {}
+
+        result = self._kb_mutation_client.mutate(
+            operation=_KB_MUTATION_OPERATIONS[step_name],
+            statements=statements,
+            models=models if isinstance(models, list) else [],
+            lifespan_sec=step_args.get('lifespan_sec', 0.0),
+            wait_for_result=True,
+        )
+        payload = {
+            'skill': step_name,
+            'operation': result.operation,
+            'statement_count': result.statement_count,
+            'dispatched': result.dispatched,
+            'success': result.success,
+        }
+        if result.success:
+            self._stats.dispatched_kb_mutation += 1
+            return True, 'KnowledgeCore mutation completed', payload
+        self._stats.dispatch_failures += 1
+        payload['error_msg'] = result.error_msg
+        return False, result.error_msg or 'KnowledgeCore mutation failed', payload
 
     def _dispatch_planned_look_at(
         self,
@@ -2795,6 +2865,10 @@ class NaoOrchestrator(Node):
                 KeyValue(
                     key='dispatch_failures',
                     value=str(self._stats.dispatch_failures),
+                ),
+                KeyValue(
+                    key='dispatched_kb_mutation',
+                    value=str(self._stats.dispatched_kb_mutation),
                 ),
                 KeyValue(key='plans_started', value=str(self._stats.plans_started)),
                 KeyValue(

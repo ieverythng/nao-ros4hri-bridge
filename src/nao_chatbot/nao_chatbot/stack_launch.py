@@ -931,6 +931,14 @@ def generate_profile_launch_description(
         default_value="/scene/summary",
         description="JSON summary topic published by nao_scene_grounding.",
     )
+    scene_grounding_spatial_overlay_topic_arg = DeclareLaunchArgument(
+        "scene_grounding_spatial_overlay_topic",
+        default_value="",
+        description=(
+            "Optional JSON topic providing frame-qualified object positions keyed "
+            "by grounded entity id."
+        ),
+    )
     planner_request_topic_arg = DeclareLaunchArgument(
         "planner_request_topic",
         default_value="/planner/request",
@@ -2278,6 +2286,12 @@ def generate_profile_launch_description(
                 )
             },
             {
+                "spatial_overlay_topic": ParameterValue(
+                    LaunchConfiguration("scene_grounding_spatial_overlay_topic"),
+                    value_type=str,
+                )
+            },
+            {
                 "min_detection_score": ParameterValue(
                     LaunchConfiguration("object_detection_threshold"),
                     value_type=float,
@@ -2945,6 +2959,7 @@ def generate_profile_launch_description(
             object_detection_image_reliability_arg,
             scene_grounding_detector_topic_arg,
             scene_grounding_summary_topic_arg,
+            scene_grounding_spatial_overlay_topic_arg,
             scene_grounding_allowed_labels_arg,
             scene_grounding_knowledge_lifespan_sec_arg,
             scene_grounding_knowledge_refresh_interval_sec_arg,

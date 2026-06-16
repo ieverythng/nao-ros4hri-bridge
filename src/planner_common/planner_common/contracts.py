@@ -237,6 +237,16 @@ def coerce_optional_float(value) -> float | None:
         return None
 
 
+def optional_float_fields(source: dict, keys: tuple[str, ...]) -> dict[str, float]:
+    """Return requested source fields whose values are valid floats."""
+    normalized: dict[str, float] = {}
+    for key in keys:
+        value = coerce_optional_float(source.get(key))
+        if value is not None:
+            normalized[key] = value
+    return normalized
+
+
 def request_requests_report(request) -> bool:
     """Return True if the request includes a report_result intent."""
     return any(
@@ -516,8 +526,15 @@ def project_llm_grounded_context(
             _copy_optional_planner_details(
                 entity,
                 item,
-                ('center_x', 'center_y', 'last_seen_sec', 'last_seen_age_sec'),
+                (
+                    'center_x',
+                    'center_y',
+                    'last_seen_sec',
+                    'last_seen_age_sec',
+                    'distance_m',
+                ),
             )
+        _copy_frame_qualified_position(entity, item)
 
     for item in _scene_items(scene_summary, 'people'):
         entity_id = _first_non_empty(item.get('id', ''), item.get('entity_id', ''))
@@ -534,8 +551,15 @@ def project_llm_grounded_context(
             _copy_optional_planner_details(
                 entity,
                 item,
-                ('center_x', 'center_y', 'last_seen_sec', 'last_seen_age_sec'),
+                (
+                    'center_x',
+                    'center_y',
+                    'last_seen_sec',
+                    'last_seen_age_sec',
+                    'distance_m',
+                ),
             )
+        _copy_frame_qualified_position(entity, item)
 
     for item in _state_entities(state_t0):
         entity_id = _first_non_empty(item.get('id', ''), item.get('entity_id', ''))
@@ -815,6 +839,29 @@ def _copy_optional_planner_details(entity: dict, source: dict, keys: tuple[str, 
             entity[key] = source.get(key)
 
 
+def _copy_frame_qualified_position(entity: dict, source: dict) -> None:
+    frame_id = str(source.get('frame_id', '')).strip()
+    position = _normalize_position(source.get('position', {}))
+    if not frame_id or not position:
+        return
+    entity['frame_id'] = frame_id
+    entity['position'] = position
+    distance_m = coerce_optional_float(source.get('distance_m'))
+    if distance_m is not None:
+        entity['distance_m'] = distance_m
+
+
+def _normalize_position(value) -> dict:
+    if not isinstance(value, dict):
+        return {}
+    position: dict[str, float] = {}
+    for axis in ('x', 'y', 'z'):
+        parsed = coerce_optional_float(value.get(axis))
+        if parsed is not None:
+            position[axis] = parsed
+    return position if len(position) == 3 else {}
+
+
 def _add_relation(entity: dict, predicate, obj) -> None:
     clean_predicate = _normalize_relation_predicate(predicate)
     clean_object = _compact_term(obj)
@@ -916,6 +963,11 @@ def _finalize_compact_entity(entity: dict) -> dict:
     for key in ('center_x', 'center_y', 'last_seen_sec', 'last_seen_age_sec'):
         if key in entity:
             finalized[key] = entity[key]
+    if str(entity.get('frame_id', '')).strip() and isinstance(entity.get('position'), dict):
+        finalized['frame_id'] = str(entity.get('frame_id', '')).strip()
+        finalized['position'] = dict(entity['position'])
+    if 'distance_m' in entity:
+        finalized['distance_m'] = entity['distance_m']
     return {
         key: value
         for key, value in finalized.items()
@@ -1216,6 +1268,9 @@ class SceneObject:
     center_x: float
     center_y: float
     last_seen_sec: float
+    frame_id: str
+    position: dict
+    distance_m: float | None
 
     @classmethod
     def from_dict(cls, payload: dict) -> 'SceneObject':
@@ -1229,6 +1284,9 @@ class SceneObject:
             center_x=_coerce_float(payload.get('center_x', 0.0)),
             center_y=_coerce_float(payload.get('center_y', 0.0)),
             last_seen_sec=_coerce_float(payload.get('last_seen_sec', 0.0)),
+            frame_id=str(payload.get('frame_id', '')).strip(),
+            position=_normalize_position(payload.get('position', {})),
+            distance_m=coerce_optional_float(payload.get('distance_m')),
         )
 
 

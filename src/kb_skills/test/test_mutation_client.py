@@ -47,6 +47,7 @@ class _FakeNode:
     def __init__(self, client):
         self._client = client
         self._logger = _FakeLogger()
+        self.destroyed_clients = []
 
     def create_client(self, _srv_type, _service_name, callback_group=None):
         del callback_group
@@ -54,6 +55,9 @@ class _FakeNode:
 
     def get_logger(self):
         return self._logger
+
+    def destroy_client(self, client):
+        self.destroyed_clients.append(client)
 
 
 class _FakeDuration:
@@ -130,3 +134,14 @@ def test_mutation_client_returns_unavailable_when_service_not_ready(monkeypatch)
     assert result.success is False
     assert result.dispatched is False
     assert "unavailable" in result.error_msg.lower()
+
+
+def test_mutation_client_close_releases_ros_client(monkeypatch):
+    monkeypatch.setattr("kb_skills.mutation_client.Revise", _FakeRevise)
+    client = _FakeClient()
+    node = _FakeNode(client)
+    mutation_client = KnowledgeCoreMutationClient(node=node)
+
+    mutation_client.close()
+
+    assert node.destroyed_clients == [client]

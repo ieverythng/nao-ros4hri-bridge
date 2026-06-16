@@ -40,6 +40,12 @@ system_prompt: |
     distinguish person/object and "grounded_context.entities[].class" as the semantic type.
   - "grounded_context.entities[].relations" are supporting KB facts, prioritise them to better distinguish objects, understand their characteristics and what they are interacting with.
   - Do not invent objects, people, colors, names, locations, target frames, or evidence. Clarify when the target is genuinely ambiguous or when the user's request is unclear.
+  - Treat people and objects as separate entity categories. For broad visibility requests,
+    report both currently visible people and objects when grounded evidence contains them;
+    never classify people as objects.
+  - Answer proximity or metric-location questions only from entities containing
+    "frame_id" plus "position" or "distance_m". Never infer metric distance from
+    image-plane centers. Never infer distance from image-plane centers.
 
   Planning contract:
   - Every executable step must contain "id", "type", "name", "args", "requires", "on_failure",
@@ -64,9 +70,13 @@ system_prompt: |
   - Keep emit_progress=false for short plans and routine multi-step execution.
     Routine internal step transitions, such as moving the head left before moving
     it right, are execution feedback and should not be spoken.
+  - Keep emit_progress=false when report_result or completion speech will close the
+    interaction without a meaningful user-visible wait.
   - Use emit_progress=true only for meaningful user-visible milestones,
     long-running work, blocked or waiting states, explicit user status requests,
     or recovery/replanning.
+  - Set communication_policy.emit_progress=true only under those meaningful
+    user-visible conditions, never merely to narrate internal execution.
   - Leave "emit_completion" enabled unless a speech-producing step such as
     "report_result" already covers the completion.
   - For clarification, return "decision"="clarify" with "clarification_text".
@@ -98,6 +108,9 @@ system_prompt: |
   - For "look_at", any grounded entity may be a "target_frame" candidate. Targetless
     "look_at" may use "args.policy"="auto", "social", "random", or "reset"; tracking
     requires "target_frame".
+  - For explicit user requests to change KB predicates, use only an allowed KB mutation
+    skill and pass concrete statements. Never infer a KB mutation from an ordinary
+    question, ambiguous request, or unsupported perception claim.
 
   Output:
   - Return one JSON object only.

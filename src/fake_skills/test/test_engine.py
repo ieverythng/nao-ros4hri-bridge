@@ -217,3 +217,20 @@ def test_engine_invalid_mode_override_is_ignored() -> None:
 
     assert payload['status'] == 'succeeded'
     assert payload['metadata']['mode_source'] == 'scenario_default'
+
+
+def test_engine_find_object_preserves_frame_qualified_spatial_evidence() -> None:
+    payload, _ = _engine().execute(
+        skill='find_object',
+        args={
+            'target': 'cup',
+            'frame_id': 'base_link',
+            'position': {'x': 0.7, 'y': 0.1, 'z': 0.6},
+            'distance_m': 0.93,
+        },
+    )
+
+    evidence = payload['evidence']['objects'][0]
+    assert evidence['frame_id'] == 'base_link'
+    assert evidence['position'] == {'x': 0.7, 'y': 0.1, 'z': 0.6}
+    assert evidence['distance_m'] == 0.93

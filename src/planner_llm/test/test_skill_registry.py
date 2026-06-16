@@ -15,7 +15,10 @@ def test_skill_registry_loads_from_source_fallback_when_install_overlay_is_missi
     assert 'find_object' in registry.allowed_skill_names
     assert 'navigate_to' in registry.allowed_skill_names
     assert 'wave_greet' in registry.allowed_skill_names
-    assert 'wave_at' in registry.allowed_skill_names
+    assert 'wave_at' not in registry.allowed_skill_names
+    assert 'kb_add' in registry.allowed_skill_names
+    assert 'kb_revise' in registry.allowed_skill_names
+    assert 'kb_remove' in registry.allowed_skill_names
     assert 'walk_to' in registry.allowed_skill_names
 
 
@@ -48,7 +51,7 @@ def test_skill_registry_derives_planner_skills_from_package_exports() -> None:
     assert report_result.params == ('summary_text',)
     assert ask_user.robot_adapter_mapping == 'nao_orchestrator.ask_user'
     assert 'ask_clarification' in ask_user.aliases
-    assert wave_greet.robot_adapter_mapping == 'fake_wave_greet_skill.wave_greet'
+    assert wave_greet.robot_adapter_mapping == 'fake_skills.wave_greet'
 
 
 def test_skill_prompt_summary_exposes_planner_contract_fields() -> None:
