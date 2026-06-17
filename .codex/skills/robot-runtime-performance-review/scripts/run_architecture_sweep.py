@@ -27,6 +27,7 @@ def main() -> int:
     parser.add_argument("--container", default=DEFAULT_CONTAINER)
     parser.add_argument("--out", default="/tmp/nao_architecture_sweep.json")
     parser.add_argument("--include-maximal", action="store_true")
+    parser.add_argument("--kb-lifespan-sec", type=int, default=1800)
     args = parser.parse_args()
 
     questionnaire = _load_questionnaire_module()
@@ -45,6 +46,7 @@ def main() -> int:
         results["maximal_person_delivery"] = run_maximal_person_delivery(
             args.container,
             questionnaire,
+            lifespan_sec=max(1, int(args.kb_lifespan_sec)),
         )
 
     results["finished_at_unix_sec"] = time.time()
@@ -160,13 +162,13 @@ def run_fake_guard_sweep(container: str) -> dict[str, str]:
     }
 
 
-def run_maximal_person_delivery(container: str, questionnaire) -> dict[str, str]:
+def run_maximal_person_delivery(container: str, questionnaire, *, lifespan_sec: int) -> dict[str, str]:
     case = next(
         item
         for item in questionnaire.COMPOSITE_CASES
         if item.name == "maximal_kitchen_cup_to_person"
     )
-    setup = questionnaire.inject_kb_probe(container, case.setup)
+    setup = questionnaire.inject_kb_probe(container, case.setup, lifespan_sec=lifespan_sec)
     output = questionnaire.call_chatbot_turn(
         container,
         case.text,

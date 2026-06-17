@@ -41,7 +41,33 @@ Borrow the SQL review skill's posture:
 
 ## Fast Start
 
-From the repo root, run:
+For a scored cool-profile runtime review, use the operator launch profile below
+inside the container before claiming live evidence:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source /home/ubuntu/ws/install/setup.bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  posture_bridge_wake_up_on_connect:=true \
+  start_naoqi_driver:=true \
+  start_object_detection:=false \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv \
+  nao_ip:=172.26.112.130 \
+  network_interface:=wlp1s0 \
+  start_planner_llm:=true \
+  chatbot_planner_mode_enabled:=true \
+  chatbot_server_url:=http://10.7.138.215:8004/v1/chat/completions \
+  planner_llm_provider:=openai_compatible \
+  planner_llm_base_url:=http://10.7.138.215:8004 \
+  planner_llm_model:=QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ \
+  planner_llm_api_key_env:=VLLM_API_KEY \
+  start_fake_skills:=true \
+  start_interaction_trace_viewer:=true \
+  start_demo_log_window:=true
+```
+
+Then from the repo root, run:
 
 ```bash
 python3 .codex/skills/robot-runtime-performance-review/scripts/collect_runtime_snapshot.py \

@@ -10,6 +10,7 @@ from planner_common.contracts import normalize_grounded_context
 from planner_common.contracts import normalize_plan_steps
 from planner_common.contracts import optional_float_fields
 from planner_common.contracts import project_llm_grounded_context
+from planner_common.contracts import strip_live_result_report_summary_text
 from planner_common.contracts import truncate_text
 
 
@@ -177,6 +178,36 @@ def test_build_plan_payload_keeps_completion_for_non_speaking_plan() -> None:
     )
 
     assert payload['plan']['communication_policy']['emit_completion'] is True
+
+
+def test_strip_live_result_report_summary_text_covers_manipulation_skills() -> None:
+    steps = [
+        {
+            'type': 'skill',
+            'name': 'bring_object',
+            'args': {'object_id': 'codex_probe_cup'},
+        },
+        {
+            'type': 'skill',
+            'name': 'report_result',
+            'args': {'summary_text': 'I will report a generic completion.'},
+        },
+        {
+            'type': 'skill',
+            'name': 'say',
+            'args': {'text': 'done'},
+        },
+        {
+            'type': 'skill',
+            'name': 'report_result',
+            'args': {'summary_text': 'Keep this standalone report.'},
+        },
+    ]
+
+    repaired = strip_live_result_report_summary_text(steps)
+
+    assert repaired[1]['args'] == {}
+    assert repaired[3]['args'] == {'summary_text': 'Keep this standalone report.'}
 
 
 def test_normalize_grounded_context_stabilizes_missing_sections() -> None:
