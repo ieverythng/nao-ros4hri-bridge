@@ -13,6 +13,7 @@
   <depend>nao_skills</depend>
   <depend>std_msgs</depend>
   <depend>skill_common</depend>
+  <depend>kb_skills</depend>
 
   <exec_depend>python3-yaml</exec_depend>
 

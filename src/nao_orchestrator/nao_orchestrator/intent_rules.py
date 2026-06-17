@@ -154,6 +154,16 @@ _DEFAULT_FAKE_SKILL_PLAN_NAMES = {
     'walk_to',
     'walk_forward',
     'step_to',
+    'pick_object',
+    'pick',
+    'grab',
+    'grab_object',
+    'place_object',
+    'place',
+    'put_down',
+    'bring_object',
+    'bring',
+    'deliver_object',
 }
 _KB_MUTATION_SKILL_PLAN_NAMES = {
     'kb_add',

@@ -22,6 +22,7 @@ from hri_actions_msgs.msg import Intent
 from interaction_skills.action import LookAt
 from kb_skills.intent_labels import KB_QUERY_INTENTS
 from kb_skills.mutation_client import KnowledgeCoreMutationClient
+from kb_skills.query_client import KnowledgeCoreQueryClient
 from nao_skills.action import DoHeadMotion, ReplayMotion
 from planner_common import build_execution_feedback_payload
 from planner_common import make_plan_id
@@ -75,6 +76,9 @@ _DEFAULT_FAKE_SKILL_ALIASES = {
     'wave_greet': {'wave_greet', 'wave', 'greet_wave', 'wave_hello'},
     'inspect_area': {'inspect_area', 'inspect', 'check_area'},
     'walk_to': {'walk_to', 'walk_forward', 'step_to'},
+    'pick_object': {'pick_object', 'pick', 'grab', 'grab_object'},
+    'place_object': {'place_object', 'place', 'put_down'},
+    'bring_object': {'bring_object', 'bring', 'deliver_object'},
 }
 _ASK_USER_STEP_NAMES = frozenset({'ask_user', 'ask_clarification', 'ask_for_help'})
 _MAX_RELAYED_PLANNER_ACTS = 256
@@ -99,6 +103,50 @@ def _first_non_empty_value(data: dict, *keys: str) -> str:
     if not isinstance(data, dict):
         return ''
     return _first_non_empty_text(*(data.get(key, '') for key in keys))
+
+
+def _statement_parts(statement: str) -> tuple[str, str, str]:
+    tokens = str(statement or '').strip().split()
+    if len(tokens) < 3:
+        return '', '', ''
+    return tokens[0], tokens[1], ' '.join(tokens[2:])
+
+
+def _single_entity_statement(statement: str) -> str:
+    tokens = str(statement or '').strip().split()
+    if len(tokens) != 1:
+        return ''
+    token = tokens[0]
+    if any(char in token for char in ('"', "'", '{', '}', '[', ']')):
+        return ''
+    return token
+
+
+def _binding_value(row: dict, key: str) -> str:
+    if not isinstance(row, dict):
+        return ''
+    return str(row.get(key, row.get('?%s' % key, ''))).strip()
+
+
+def _statement_from_binding(subject: str, predicate: str, row: dict) -> str:
+    clean_subject = str(subject or '').strip()
+    clean_predicate = str(predicate or '').strip()
+    clean_object = _binding_value(row, 'object')
+    if not clean_subject or not clean_predicate or not clean_object:
+        return ''
+    return '%s %s %s' % (clean_subject, clean_predicate, clean_object)
+
+
+def _dedupe_statements(statements: list[str]) -> list[str]:
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for statement in statements:
+        clean = str(statement or '').strip()
+        if not clean or clean in seen:
+            continue
+        seen.add(clean)
+        deduped.append(clean)
+    return deduped
 
 
 def _normalize_execution_mode(value) -> str:
@@ -364,6 +412,9 @@ class NaoOrchestrator(Node):
         self.declare_parameter('fake_skill_wave_greet_action', '/skill/fake/wave_greet')
         self.declare_parameter('fake_skill_inspect_area_action', '/skill/fake/inspect_area')
         self.declare_parameter('fake_skill_walk_to_action', '/skill/fake/walk_to')
+        self.declare_parameter('fake_skill_pick_object_action', '/skill/fake/pick_object')
+        self.declare_parameter('fake_skill_place_object_action', '/skill/fake/place_object')
+        self.declare_parameter('fake_skill_bring_object_action', '/skill/fake/bring_object')
         self.declare_parameter('report_result_action', '/skill/report_result')
         self.declare_parameter('report_result_action_wait_sec', 0.2)
         self.declare_parameter('report_result_action_result_timeout_sec', 8.0)
@@ -376,6 +427,8 @@ class NaoOrchestrator(Node):
         self.declare_parameter('execution_report_chatbot_timeout_sec', 12.0)
         self.declare_parameter('kb_revise_service_name', '/kb/revise')
         self.declare_parameter('kb_mutation_timeout_sec', 1.0)
+        self.declare_parameter('kb_query_service_name', '/kb/query')
+        self.declare_parameter('kb_query_timeout_sec', 1.0)
 
         self.intent_topic = str(self.get_parameter('intent_topic').value)
         self.enable_legacy_intent_bridge = bool(
@@ -502,6 +555,9 @@ class NaoOrchestrator(Node):
             'wave_greet': str(self.get_parameter('fake_skill_wave_greet_action').value).strip(),
             'inspect_area': str(self.get_parameter('fake_skill_inspect_area_action').value).strip(),
             'walk_to': str(self.get_parameter('fake_skill_walk_to_action').value).strip(),
+            'pick_object': str(self.get_parameter('fake_skill_pick_object_action').value).strip(),
+            'place_object': str(self.get_parameter('fake_skill_place_object_action').value).strip(),
+            'bring_object': str(self.get_parameter('fake_skill_bring_object_action').value).strip(),
         }
         self.report_result_action = str(
             self.get_parameter('report_result_action').value
@@ -535,6 +591,13 @@ class NaoOrchestrator(Node):
             0.05,
             float(self.get_parameter('kb_mutation_timeout_sec').value),
         )
+        self.kb_query_service_name = str(
+            self.get_parameter('kb_query_service_name').value
+        ).strip()
+        self.kb_query_timeout_sec = max(
+            0.05,
+            float(self.get_parameter('kb_query_timeout_sec').value),
+        )
 
         self._intent_sub = None
         self._legacy_intent_sub = None
@@ -565,6 +628,7 @@ class NaoOrchestrator(Node):
         self._execution_report_chatbot_client = None
         self._execution_report_callback_group = ReentrantCallbackGroup()
         self._kb_mutation_client = None
+        self._kb_query_client = None
         self._posture_result_lock = threading.Lock()
         self._posture_result_event = threading.Event()
         self._latest_posture_result: dict | None = None
@@ -638,6 +702,12 @@ class NaoOrchestrator(Node):
             node=self,
             service_name=self.kb_revise_service_name,
             timeout_sec=self.kb_mutation_timeout_sec,
+        )
+        self._kb_query_client = KnowledgeCoreQueryClient(
+            node=self,
+            callback_group=self._execution_report_callback_group,
+            service_name=self.kb_query_service_name,
+            timeout_sec=self.kb_query_timeout_sec,
         )
         self._diag_pub = self.create_publisher(DiagnosticArray, '/diagnostics', 1)
         self._diag_timer = self.create_timer(1.0, self._publish_diagnostics)
@@ -824,6 +894,9 @@ class NaoOrchestrator(Node):
         if self._kb_mutation_client is not None:
             self._kb_mutation_client.close()
             self._kb_mutation_client = None
+        if self._kb_query_client is not None:
+            self._kb_query_client.close()
+            self._kb_query_client = None
 
     # -------------------------------------------------------------------------
     # Intent ingestion
@@ -1251,6 +1324,8 @@ class NaoOrchestrator(Node):
 
             dispatch_fallback_data = dict(data)
             dispatch_fallback_data['plan_context'] = dict(plan_context)
+            dispatch_fallback_data['current_step_index'] = step_index
+            dispatch_fallback_data['plan_steps'] = list(plan)
             if latest_result_summary:
                 dispatch_fallback_data['last_result_summary'] = latest_result_summary
             if latest_result_payload:
@@ -1510,6 +1585,7 @@ class NaoOrchestrator(Node):
     ) -> tuple[bool, str, dict]:
         """Delegate one explicit planner mutation to the KnowledgeCore seam."""
         statements = step_args.get('statements', step_args.get('statement', []))
+        statements = KnowledgeCoreMutationClient.coerce_statements(statements)
         models = step_args.get('models', [])
         if isinstance(models, str):
             models = [models]
@@ -1518,6 +1594,20 @@ class NaoOrchestrator(Node):
         if self._kb_mutation_client is None:
             self._stats.dispatch_failures += 1
             return False, 'KnowledgeCore mutation client is unavailable', {}
+
+        if step_name == 'kb_revise':
+            removed, reason = self._remove_previous_kb_values(statements, models)
+            if reason:
+                self._stats.dispatch_failures += 1
+                return False, reason, {
+                    'skill': step_name,
+                    'operation': 'remove_previous_values',
+                    'statement_count': len(removed),
+                    'dispatched': bool(removed),
+                    'success': False,
+                }
+        elif step_name == 'kb_remove':
+            statements = self._expand_kb_remove_statements(statements, models)
 
         result = self._kb_mutation_client.mutate(
             operation=_KB_MUTATION_OPERATIONS[step_name],
@@ -1539,6 +1629,73 @@ class NaoOrchestrator(Node):
         self._stats.dispatch_failures += 1
         payload['error_msg'] = result.error_msg
         return False, result.error_msg or 'KnowledgeCore mutation failed', payload
+
+    def _remove_previous_kb_values(
+        self,
+        statements: list[str],
+        models: list[str],
+    ) -> tuple[list[str], str]:
+        """Retract existing subject/predicate values before a KB revise update."""
+        if self._kb_query_client is None or self._kb_mutation_client is None:
+            return [], ''
+        removals: list[str] = []
+        query_models = models if isinstance(models, list) and models else ['default']
+        for statement in statements:
+            subject, predicate, new_object = _statement_parts(statement)
+            if not subject or not predicate or not new_object:
+                continue
+            rows = self._kb_query_client.query_rows(
+                patterns=['%s %s ?object' % (subject, predicate)],
+                query_vars=['?object'],
+                models=query_models,
+            )
+            removals.extend(
+                _statement_from_binding(subject, predicate, row)
+                for row in rows
+                if _binding_value(row, 'object') != new_object
+            )
+        removals = _dedupe_statements(removals)
+        if not removals:
+            return [], ''
+        result = self._kb_mutation_client.mutate(
+            operation='remove',
+            statements=removals,
+            models=models if isinstance(models, list) else [],
+            wait_for_result=True,
+        )
+        if result.success:
+            return removals, ''
+        return removals, result.error_msg or 'KnowledgeCore previous-value removal failed'
+
+    def _expand_kb_remove_statements(
+        self,
+        statements: list[str],
+        models: list[str],
+    ) -> list[str]:
+        """Expand entity-only remove requests into current concrete KB facts."""
+        if self._kb_query_client is None:
+            return statements
+        expanded: list[str] = []
+        query_models = models if isinstance(models, list) and models else ['default']
+        for statement in statements:
+            subject, predicate, obj = _statement_parts(statement)
+            if subject and predicate and obj:
+                expanded.append(statement)
+                continue
+            subject = _single_entity_statement(statement)
+            if not subject:
+                expanded.append(statement)
+                continue
+            rows = self._kb_query_client.query_rows(
+                patterns=['%s ?predicate ?object' % subject],
+                query_vars=['?predicate', '?object'],
+                models=query_models,
+            )
+            expanded.extend(
+                _statement_from_binding(subject, _binding_value(row, 'predicate'), row)
+                for row in rows
+            )
+        return _dedupe_statements(expanded)
 
     def _dispatch_planned_look_at(
         self,
@@ -1773,6 +1930,20 @@ class NaoOrchestrator(Node):
             for step in execution_results[-_MAX_EXECUTION_REPORT_STEPS:]
             if isinstance(step, dict)
         ]
+        plan_steps = fallback_data.get('plan_steps', [])
+        if not isinstance(plan_steps, list):
+            plan_steps = []
+        current_step_index = int(fallback_data.get('current_step_index', -1) or -1)
+        future_steps = [
+            dict(step)
+            for step in plan_steps[current_step_index + 1:]
+            if isinstance(step, dict)
+        ] if current_step_index >= 0 else []
+        future_action_steps = [
+            step for step in future_steps
+            if str(step.get('name', '')).strip().lower() != 'report_result'
+        ]
+        report_role = 'intermediate' if future_action_steps else 'final'
         return {
             'goal_text': _first_non_empty_value(
                 fallback_data,
@@ -1804,6 +1975,8 @@ class NaoOrchestrator(Node):
             ),
             'plan_id': str(plan_context.get('plan_id', '')).strip(),
             'plan_version': int(plan_context.get('plan_version', 0) or 0),
+            'report_role': report_role,
+            'future_steps': future_steps[-_MAX_EXECUTION_REPORT_STEPS:],
             'steps': bounded_steps,
             'latest_result_summary': str(fallback_data.get('last_result_summary', '')).strip(),
             'latest_result_payload': dict(

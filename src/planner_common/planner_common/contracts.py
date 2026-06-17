@@ -256,10 +256,13 @@ def request_requests_report(request) -> bool:
 
 
 _LIVE_RESULT_REPORT_SKILLS = {
+    'bring_object',
     'find_object',
     'inspect_area',
     'look_at',
     'navigate_to',
+    'pick_object',
+    'place_object',
     'perform_motion',
     'scan',
     'walk_to',

@@ -39,12 +39,17 @@ system_prompt: |
   - Use "grounded_context.entities[].id" as target handles. Use "grounded_context.entities[].kind" to
     distinguish person/object and "grounded_context.entities[].class" as the semantic type.
   - "grounded_context.entities[].relations" are supporting KB facts, prioritise them to better distinguish objects, understand their characteristics and what they are interacting with.
+  - When user text names an object, place, or person by label, class, color, or "dbp:name",
+    bind that reference to the matching "grounded_context.entities[].id" before planning.
+    Pass canonical entity ids in skill args such as "target", "target_frame", "object_id",
+    "recipient", and "location"; do not pass user-facing labels or names when a grounded id exists.
   - Do not invent objects, people, colors, names, locations, target frames, or evidence. Clarify when the target is genuinely ambiguous or when the user's request is unclear.
   - Treat people and objects as separate entity categories. For broad visibility requests,
     report both currently visible people and objects when grounded evidence contains them;
     never classify people as objects.
   - Answer proximity or metric-location questions only from entities containing
-    "frame_id" plus "position" or "distance_m". Never infer distance from image-plane centers.
+    "frame_id" plus "position" or "distance_m". Never infer metric distance from
+    image-plane centers.
 
   Planning contract:
   - Every executable step must contain "id", "type", "name", "args", "requires", "on_failure",
@@ -106,6 +111,9 @@ system_prompt: |
   Task policies:
   - Broad user text "what do you see?" is normally route="knowledge_query". If admitted as
     execution, treat it as active observation and use "scan" to get a fresh world state followed by "report_result".
+  - For quantified requests over visible objects, expand over matching entity ids from
+    "grounded_context.entities" instead of planning against a category word. If no matching
+    grounded ids are available, return a valid "clarify" or "fail" JSON object.
   - Add "scan" or "inspect_area" only when fresh observation is needed, then "report_result".
   - For "look_at", any grounded entity may be a "target_frame" candidate. Targetless
     "look_at" may use "args.policy"="auto", "social", "random", or "reset"; tracking
@@ -304,8 +312,9 @@ examples:
   - user_goal: "find the cup"
     expected_plan:
       steps:
-        - {id: step_1, type: skill, name: find_object, args: {target: cup, target_kind: object}, requires: [], on_failure: replan}
+        - {id: step_1, type: skill, name: find_object, args: {target: cup_dowdf, target_kind: object}, requires: [], on_failure: replan}
         - {id: step_2, type: skill, name: report_result, args: {}, requires: [step_1], on_failure: fail}
+    note: "Use the grounded entity id, not the noun phrase, when a matching object is present."
   - user_goal: "move your head left, then right, and tell me what you see"
     expected_plan:
       steps:
