@@ -44,8 +44,7 @@ system_prompt: |
     report both currently visible people and objects when grounded evidence contains them;
     never classify people as objects.
   - Answer proximity or metric-location questions only from entities containing
-    "frame_id" plus "position" or "distance_m". Never infer metric distance from
-    image-plane centers. Never infer distance from image-plane centers.
+    "frame_id" plus "position" or "distance_m". Never infer distance from image-plane centers.
 
   Planning contract:
   - Every executable step must contain "id", "type", "name", "args", "requires", "on_failure",
