@@ -99,18 +99,75 @@ def validate_skill_target(
         query_vars=['?predicate', '?object'],
         models=models,
     )
-    if rows:
-        return KbGuardOutcome(ok=True, payload={})
+    if not rows:
+        return KbGuardOutcome(
+            ok=False,
+            payload=_kb_failure_payload(
+                skill=clean_skill,
+                target=target,
+                target_kind='object',
+                code='kb_target_unavailable',
+                message='KnowledgeCore has no current facts for target "%s".' % target,
+                recoverable=True,
+                suggested_recovery='scan_or_replan_with_grounded_target',
+                rows=[],
+            ),
+        )
 
+    secondary = _skill_secondary_target(clean_skill, args)
+    if secondary is None:
+        return KbGuardOutcome(ok=True, payload={})
+    secondary_kind, secondary_target = secondary
+    if not secondary_target:
+        return KbGuardOutcome(
+            ok=False,
+            payload=_kb_failure_payload(
+                skill=clean_skill,
+                target='',
+                target_kind=secondary_kind,
+                code='kb_%s_missing' % secondary_kind,
+                message='Fake %s requires a grounded KB %s.' % (clean_skill, secondary_kind),
+                recoverable=True,
+                suggested_recovery='ask_user_to_identify_%s' % secondary_kind,
+                rows=[],
+            ),
+        )
+    if not _looks_like_kb_entity(secondary_target):
+        return KbGuardOutcome(
+            ok=False,
+            payload=_kb_failure_payload(
+                skill=clean_skill,
+                target=secondary_target,
+                target_kind=secondary_kind,
+                code='kb_%s_not_canonical' % secondary_kind,
+                message=(
+                    '%s "%s" is not a canonical KB entity id; planner args should '
+                    'pass the grounded RDF subject instead of a noun phrase.'
+                )
+                % (secondary_kind.title(), secondary_target),
+                recoverable=True,
+                suggested_recovery='resolve_%s_from_kb' % secondary_kind,
+                rows=[],
+            ),
+        )
+    secondary_rows = query_rows(
+        patterns=['%s ?predicate ?object' % secondary_target],
+        query_vars=['?predicate', '?object'],
+        models=models,
+    )
+    if secondary_rows:
+        return KbGuardOutcome(ok=True, payload={})
     return KbGuardOutcome(
         ok=False,
         payload=_kb_failure_payload(
             skill=clean_skill,
-            target=target,
-            code='kb_target_unavailable',
-            message='KnowledgeCore has no current facts for target "%s".' % target,
+            target=secondary_target,
+            target_kind=secondary_kind,
+            code='kb_%s_unavailable' % secondary_kind,
+            message='KnowledgeCore has no current facts for %s "%s".'
+            % (secondary_kind, secondary_target),
             recoverable=True,
-            suggested_recovery='scan_or_replan_with_grounded_target',
+            suggested_recovery='scan_or_replan_with_grounded_%s' % secondary_kind,
             rows=[],
         ),
     )
@@ -128,6 +185,22 @@ def _skill_target(skill: str, args: dict) -> str:
     return ''
 
 
+def _skill_secondary_target(skill: str, args: dict) -> tuple[str, str] | None:
+    if skill == 'bring_object':
+        keys = ('recipient_id', 'recipient', 'person', 'destination')
+        kind = 'recipient'
+    elif skill == 'place_object':
+        keys = ('destination_id', 'destination', 'support', 'target_location')
+        kind = 'destination'
+    else:
+        return None
+    for key in keys:
+        value = str(args.get(key, '')).strip()
+        if value:
+            return kind, value
+    return kind, ''
+
+
 def _looks_like_kb_entity(value: str) -> bool:
     clean = str(value or '').strip()
     if not clean:
@@ -143,6 +216,7 @@ def _kb_failure_payload(
     *,
     skill: str,
     target: str,
+    target_kind: str = 'object',
     code: str,
     message: str,
     recoverable: bool,
@@ -153,7 +227,7 @@ def _kb_failure_payload(
         skill=skill,
         status='failed',
         target=target,
-        target_kind='object',
+        target_kind=target_kind,
         target_found=False,
         summary_text='I could not confirm %s in the knowledge base.' % (target or 'the target'),
         evidence={

@@ -121,6 +121,20 @@ def test_mutation_client_remove_reports_service_failures(monkeypatch):
     assert result.success is False
     assert result.dispatched is True
     assert result.error_msg == "boom"
+    assert client.requests[0].method == "retract"
+
+
+def test_mutation_client_keeps_public_remove_operation_label(monkeypatch):
+    monkeypatch.setattr("kb_skills.mutation_client.Revise", _FakeRevise)
+    client = _FakeClient()
+    node = _FakeNode(client)
+    mutation_client = KnowledgeCoreMutationClient(node=node, timeout_sec=0.1)
+
+    result = mutation_client.remove_fact("book1 rdf:type Book")
+
+    assert result.success is True
+    assert result.operation == "remove"
+    assert client.requests[0].method == "retract"
 
 
 def test_mutation_client_returns_unavailable_when_service_not_ready(monkeypatch):

@@ -21,9 +21,14 @@ from nao_orchestrator.intent_rules import is_unresolved_report_template
 from nao_orchestrator.intent_rules import summarize_people_detection
 from nao_orchestrator.intent_rules import validate_execution_plan
 from nao_orchestrator.orchestrator import _ExecutionReportResult
+from nao_orchestrator.orchestrator import _binding_value
+from nao_orchestrator.orchestrator import _dedupe_statements
 from nao_orchestrator.orchestrator import _motion_result_payload
 from nao_orchestrator.orchestrator import _normalize_execution_mode
 from nao_orchestrator.orchestrator import _report_text_from_result_payload
+from nao_orchestrator.orchestrator import _single_entity_statement
+from nao_orchestrator.orchestrator import _statement_from_binding
+from nao_orchestrator.orchestrator import _statement_parts
 from nao_orchestrator.orchestrator import NaoOrchestrator
 
 
@@ -36,6 +41,32 @@ def test_normalize_legacy_intent_maps_posture_to_perform_motion() -> None:
     intent_name, data = normalize_legacy_intent('posture_stand', 'Hello there!')
     assert intent_name == Intent.PERFORM_MOTION
     assert data['object'] == 'stand'
+
+
+def test_kb_statement_helpers_parse_concrete_statements() -> None:
+    assert _statement_parts('codex_marker dbp:color blue') == (
+        'codex_marker',
+        'dbp:color',
+        'blue',
+    )
+    assert _statement_parts('codex_marker') == ('', '', '')
+    assert _single_entity_statement('codex_marker') == 'codex_marker'
+    assert _single_entity_statement('red cup') == ''
+
+
+def test_kb_statement_helpers_build_removal_statements_from_bindings() -> None:
+    row = {'?predicate': 'dbp:color', '?object': 'green'}
+
+    assert _binding_value(row, 'predicate') == 'dbp:color'
+    assert _binding_value(row, 'object') == 'green'
+    assert (
+        _statement_from_binding('codex_marker', _binding_value(row, 'predicate'), row)
+        == 'codex_marker dbp:color green'
+    )
+    assert _dedupe_statements(['a b c', '', 'a b c', 'a b d']) == [
+        'a b c',
+        'a b d',
+    ]
 
 
 def test_normalize_legacy_intent_accepts_json_payload() -> None:
