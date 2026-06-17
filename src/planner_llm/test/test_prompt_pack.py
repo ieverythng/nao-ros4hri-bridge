@@ -37,6 +37,21 @@ def test_default_planner_prompt_pack_rejects_composite_motion_objects() -> None:
     assert 'never emit a composite label as "args.object"' in pack.system_prompt
 
 
+def test_default_planner_prompt_pack_requires_canonical_grounded_targets() -> None:
+    pack = default_prompt_pack()
+
+    assert 'bind that reference to the matching "grounded_context.entities[].id"' in pack.system_prompt
+    assert 'do not pass user-facing labels or names when a grounded id exists' in pack.system_prompt
+    assert 'Pass canonical entity ids in skill args' in pack.system_prompt
+
+
+def test_default_planner_prompt_pack_handles_every_object_with_valid_json() -> None:
+    pack = default_prompt_pack()
+
+    assert 'For quantified requests over visible objects' in pack.system_prompt
+    assert 'return a valid "clarify" or "fail" JSON object' in pack.system_prompt
+
+
 def test_load_prompt_pack_supports_partial_override_merge(tmp_path) -> None:
     prompt_pack_path = tmp_path / 'planner_prompt_pack.yaml'
     prompt_pack_path.write_text(

@@ -175,9 +175,9 @@ def validate_skill_target(
 
 def _skill_target(skill: str, args: dict) -> str:
     if skill == 'look_at':
-        keys = ('target', 'object', 'entity', 'target_frame', 'policy')
+        keys = ('target', 'object_id', 'object', 'entity', 'target_frame', 'policy')
     else:
-        keys = ('target', 'object', 'entity')
+        keys = ('target', 'object_id', 'object', 'entity')
     for key in keys:
         value = str(args.get(key, '')).strip()
         if value:

@@ -17,6 +17,18 @@ Primary P0 question:
 > grounded context expose it to chatbot/planner clearly enough for dialogue and
 > execution turns to use it?
 
+Score-raising gate for the cool profile:
+
+- Treat `start_object_detection:=false` as intentional. Do not score detector
+  object recognition in the main cool-profile score; track it as a separate
+  detector-profile gap.
+- Do not raise an 8.x success-path baseline to 9.0+ unless the current run
+  proves natural-chat KB mutation, fake-skill KB guards, failure/replan
+  reporting, speech ingress health, and at least one maximal grounded-subject
+  task with artifact paths.
+- Run a bounded SkillOpt-style iteration (baseline -> mutate -> holdout gate ->
+  accept/reject log) before finalizing major wording changes.
+
 ## Review Discipline
 
 Borrow the SQL review skill's posture:
@@ -51,6 +63,19 @@ python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questi
   --case-set smoke \
   --out /tmp/nao_active_questionnaire.json
 ```
+
+For targeted architecture seams before a full speech pass, run:
+
+```bash
+python3 .codex/skills/robot-runtime-performance-review/scripts/run_architecture_sweep.py \
+  --container nao_ros2 \
+  --include-maximal \
+  --out /tmp/nao_architecture_sweep.json
+```
+
+Use this sweep to batch-check chatbot-service KB mutation, fake-skill guard
+availability, maximal grounded-subject handoff, and replan behavior. Mark it as
+service/direct-action evidence, not full ROS4HRI speech evidence.
 
 The questionnaire must include an interaction_sim/KnowledgeCore-style object
 insertion probe when the KB seam is under review. The preferred probe is:
@@ -94,8 +119,15 @@ Active questionnaire requirement:
   reliable reliability before `LiveSpeech`. The runtime-review questionnaire
   script prints this QoS contract in each speech turn result. If this seam fails,
   fix the harness first instead of retrying with volatile/default QoS.
+- When operator visibility matters, mirror each injected turn to rqt-visible
+  debug surfaces such as `/rosout` with a `runtime_review_rqt_input` logger and
+  `/dialogue_manager/closed_captions`. Treat these mirrors as display aids only;
+  the scored ingress remains the `LiveSpeech` publication into `dialogue_manager`.
 - Use direct `/planner/request` publication only for planner-isolated probes.
   Mark those probes as planner-only, because they bypass chatbot routing.
+- Use service/direct-action architecture sweeps when speech ingress or
+  action-server lifecycle is the seam under diagnosis. Record the bypass
+  explicitly and do not count it as full ROS4HRI speech evidence.
 - After each injected turn, collect `/chatbot_llm/turn_trace`,
   `/planner/request`, `/planner/execution_feedback`,
   `/nao_orchestrator/planner_dialogue_act`, `/debug/nao_say/speech`, and
@@ -326,6 +358,23 @@ Summary: N findings — 🔴 a · 🟠 b · 🟡 c · 🔵 d · 🟣 e
 
 If no material findings exist, reply with `PASS` plus the score and evidence
 sample that justified it.
+
+## Reporting Cadence
+
+Do not leave the operator to request a summary after a long run.
+
+- After any questionnaire, architecture sweep, focused retest, or runtime-review
+  loop that takes more than a couple of minutes, always finish with a concise
+  report in the output format above.
+- If the run was interrupted, timed out, or only partially completed, still emit
+  a partial report with the current score cap, completed cases, missing evidence,
+  artifact paths, and the next concrete probe.
+- Include an overall sentiment line before the detailed findings: `improving`,
+  `stable`, `degraded`, or `blocked`, with one sentence explaining why.
+- Separate source fixes that are already patched from live fixes that still need
+  rebuild/restart. Never score a source-only fix as live evidence.
+- When multiple artifacts were produced, list only the high-signal paths needed
+  to resume the next pass.
 
 ## Automation Loop
 

@@ -18,10 +18,23 @@ VOICE_TRACKED_TOPIC = "/nao_chatbot/humans/voices/tracked"
 VOICE_SPEECH_TOPIC = "/nao_chatbot/humans/voices/anonymous_speaker/speech"
 VOICE_TRACKED_QOS = "--qos-reliability reliable --qos-durability transient_local"
 VOICE_SPEECH_QOS = "--qos-reliability reliable --qos-durability volatile"
+RQT_DISPLAY_ROSOUT_TOPIC = "/rosout"
+RQT_DISPLAY_CAPTIONS_TOPIC = "/dialogue_manager/closed_captions"
+RQT_DISPLAY_ROSOUT_QOS = "--qos-reliability reliable --qos-durability transient_local"
 TOPIC_SAMPLE_TIMEOUT_SEC = 1.5
 TOPIC_SAMPLE_KILL_AFTER_SEC = 1.0
 DEFAULT_GLOBAL_TIMEOUT_SEC = 420
+DEFAULT_KB_LIFESPAN_SEC = 300
 KB_PROBE_OBJECT_ID = "codex_probe_cup"
+KB_MAXIMAL_CUP_ID = "codex_kitchen_cup"
+KB_MAXIMAL_LOCATION_ID = "codex_kitchen"
+KB_MAXIMAL_ORIGIN_ID = "codex_operator_station"
+KB_MAXIMAL_PERSON_ID = "codex_recipient_person"
+ROS_CLI_PREAMBLE = """
+source /opt/ros/jazzy/setup.bash
+source /home/ubuntu/ws/install/setup.bash
+export FASTDDS_BUILTIN_TRANSPORTS=UDPv4
+""".strip()
 
 
 @dataclass(frozen=True)
@@ -152,6 +165,108 @@ COMPOSITE_CASES = (
         90.0,
     ),
     ProbeCase(
+        "maximal_kitchen_cup_bring",
+        "maximal_semantic_execution",
+        "I am at the operator station. There is a cup in the kitchen. Go to the kitchen, pick up the cup, bring it back to me at the operator station, and report what happened.",
+        160.0,
+        setup=KbInjection(
+            object_id=KB_MAXIMAL_CUP_ID,
+            statements=(
+                f"{KB_MAXIMAL_ORIGIN_ID} rdf:type Place",
+                f"{KB_MAXIMAL_ORIGIN_ID} dbp:name operator_station",
+                f"{KB_MAXIMAL_ORIGIN_ID} dbp:frameId map",
+                f"{KB_MAXIMAL_ORIGIN_ID} dbp:poseSource semantic_fixture",
+                f"{KB_MAXIMAL_ORIGIN_ID} dbp:poseX 0.00",
+                f"{KB_MAXIMAL_ORIGIN_ID} dbp:poseY 0.00",
+                f"{KB_MAXIMAL_LOCATION_ID} rdf:type Room",
+                f"{KB_MAXIMAL_LOCATION_ID} dbp:name kitchen",
+                f"{KB_MAXIMAL_LOCATION_ID} dbp:frameId map",
+                f"{KB_MAXIMAL_LOCATION_ID} dbp:poseSource semantic_fixture",
+                f"{KB_MAXIMAL_LOCATION_ID} dbp:poseX 1.20",
+                f"{KB_MAXIMAL_LOCATION_ID} dbp:poseY 0.40",
+                f"{KB_MAXIMAL_CUP_ID} rdf:type Cup",
+                f"{KB_MAXIMAL_CUP_ID} dbp:name KITCHEN_PROBE_CUP",
+                f"{KB_MAXIMAL_CUP_ID} dbp:color white",
+                f"{KB_MAXIMAL_CUP_ID} oro:isIn {KB_MAXIMAL_LOCATION_ID}",
+                f"myself sees {KB_MAXIMAL_CUP_ID}",
+                f"myself oro:isAt {KB_MAXIMAL_ORIGIN_ID}",
+                f"nao_robot oro:isAt {KB_MAXIMAL_ORIGIN_ID}",
+                f"myself canReach {KB_MAXIMAL_LOCATION_ID}",
+                f"myself canReceiveAt {KB_MAXIMAL_ORIGIN_ID}",
+            ),
+            query_patterns=(
+                f"{KB_MAXIMAL_ORIGIN_ID} ?predicate ?object",
+                f"{KB_MAXIMAL_LOCATION_ID} ?predicate ?object",
+                f"{KB_MAXIMAL_CUP_ID} ?predicate ?object",
+            ),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "replan_absent_then_scan_report",
+        "replan_recovery",
+        "Find the codex missing cup. If you cannot find it, scan the scene and report what you can confirm.",
+        150.0,
+    ),
+    ProbeCase(
+        "replan_kitchen_cup_fallback_report",
+        "replan_recovery",
+        "Bring me the kitchen cup at the operator station. If you cannot bring it, look at the kitchen cup and report the reason.",
+        150.0,
+        setup=KbInjection(
+            object_id=KB_MAXIMAL_CUP_ID,
+            statements=(
+                f"{KB_MAXIMAL_ORIGIN_ID} rdf:type Place",
+                f"{KB_MAXIMAL_ORIGIN_ID} dbp:name operator_station",
+                f"{KB_MAXIMAL_LOCATION_ID} rdf:type Room",
+                f"{KB_MAXIMAL_LOCATION_ID} dbp:name kitchen",
+                f"{KB_MAXIMAL_CUP_ID} rdf:type Cup",
+                f"{KB_MAXIMAL_CUP_ID} dbp:name KITCHEN_PROBE_CUP",
+                f"{KB_MAXIMAL_CUP_ID} dbp:color white",
+                f"{KB_MAXIMAL_CUP_ID} oro:isIn {KB_MAXIMAL_LOCATION_ID}",
+                f"myself sees {KB_MAXIMAL_CUP_ID}",
+                f"myself oro:isAt {KB_MAXIMAL_ORIGIN_ID}",
+                f"myself canReceiveAt {KB_MAXIMAL_ORIGIN_ID}",
+            ),
+            query_patterns=(
+                f"{KB_MAXIMAL_ORIGIN_ID} ?predicate ?object",
+                f"{KB_MAXIMAL_CUP_ID} ?predicate ?object",
+            ),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "maximal_kitchen_cup_to_person",
+        "maximal_semantic_execution",
+        "There is a cup in the kitchen. Bring the kitchen cup to the person named ALEX and report what happened.",
+        160.0,
+        setup=KbInjection(
+            object_id=KB_MAXIMAL_CUP_ID,
+            statements=(
+                f"{KB_MAXIMAL_LOCATION_ID} rdf:type Room",
+                f"{KB_MAXIMAL_LOCATION_ID} dbp:name kitchen",
+                f"{KB_MAXIMAL_CUP_ID} rdf:type Cup",
+                f"{KB_MAXIMAL_CUP_ID} dbp:name KITCHEN_PROBE_CUP",
+                f"{KB_MAXIMAL_CUP_ID} dbp:color white",
+                f"{KB_MAXIMAL_CUP_ID} oro:isIn {KB_MAXIMAL_LOCATION_ID}",
+                f"myself sees {KB_MAXIMAL_CUP_ID}",
+                f"{KB_MAXIMAL_PERSON_ID} rdf:type Human",
+                f"{KB_MAXIMAL_PERSON_ID} dbp:name ALEX",
+                f"{KB_MAXIMAL_PERSON_ID} dbp:frameId {KB_MAXIMAL_PERSON_ID}",
+                f"{KB_MAXIMAL_PERSON_ID} dbp:poseSource semantic_fixture",
+                f"{KB_MAXIMAL_PERSON_ID} dbp:poseX 0.30",
+                f"{KB_MAXIMAL_PERSON_ID} dbp:poseY -0.20",
+                f"myself sees {KB_MAXIMAL_PERSON_ID}",
+            ),
+            query_patterns=(
+                f"{KB_MAXIMAL_LOCATION_ID} ?predicate ?object",
+                f"{KB_MAXIMAL_CUP_ID} ?predicate ?object",
+                f"{KB_MAXIMAL_PERSON_ID} ?predicate ?object",
+            ),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
         "future_action_admission_holdout",
         "route_prompt_ambiguity",
         "Could we navigate to the probe cup later?",
@@ -180,9 +295,25 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--container", default=DEFAULT_CONTAINER)
     parser.add_argument("--case-set", default="smoke", choices=("smoke", "composite"))
+    parser.add_argument(
+        "--case-names",
+        default="",
+        help="Comma-separated case names to run from the selected case set.",
+    )
+    parser.add_argument(
+        "--categories",
+        default="",
+        help="Comma-separated categories to run from the selected case set.",
+    )
     parser.add_argument("--out", default="/tmp/nao_active_questionnaire.json")
     parser.add_argument("--since-sec", type=int, default=90)
     parser.add_argument("--global-timeout-sec", type=int, default=DEFAULT_GLOBAL_TIMEOUT_SEC)
+    parser.add_argument(
+        "--kb-lifespan-sec",
+        type=int,
+        default=DEFAULT_KB_LIFESPAN_SEC,
+        help="Lifespan for KB facts injected by questionnaire setup cases.",
+    )
     parser.add_argument(
         "--sample-topics",
         action="store_true",
@@ -194,9 +325,19 @@ def main() -> int:
         choices=("speech", "chatbot_service"),
         help="Turn injection seam. Speech is full ROS4HRI E2E; service is chatbot-only.",
     )
+    parser.add_argument(
+        "--no-rqt-display-mirror",
+        action="store_true",
+        help="Do not mirror injected user turns to rqt-visible debug topics.",
+    )
     args = parser.parse_args()
 
     cases = list(COMPOSITE_CASES if args.case_set == "composite" else SMOKE_CASES)
+    cases = filter_cases(
+        cases,
+        case_names=parse_csv(args.case_names),
+        categories=parse_csv(args.categories),
+    )
     results = []
     service_histories: dict[str, list[dict[str, str]]] = {}
     started_at = time.time()
@@ -222,13 +363,18 @@ def main() -> int:
         case_start = time.time()
         setup_result = None
         if case.setup is not None:
-            setup_result = inject_kb_probe(args.container, case.setup)
+            setup_result = inject_kb_probe(args.container, case.setup, lifespan_sec=args.kb_lifespan_sec)
 
         mode = args.mode or case.mode
         conversation_group = case.conversation_group or case.name or f"case_{index}"
         voice_id = VOICE_ID if mode == "speech" else _voice_id_for_group(conversation_group, index)
         if mode == "speech":
-            turn_result = publish_voice_turn(args.container, case.text, voice_id=voice_id)
+            turn_result = publish_voice_turn(
+                args.container,
+                case.text,
+                voice_id=voice_id,
+                mirror_rqt_display=not args.no_rqt_display_mirror,
+            )
         else:
             history = service_histories.setdefault(conversation_group, [])
             turn_result = call_chatbot_turn(
@@ -266,6 +412,23 @@ def main() -> int:
     return 0
 
 
+def parse_csv(value: str) -> set[str]:
+    return {item.strip() for item in str(value or "").split(",") if item.strip()}
+
+
+def filter_cases(
+    cases: list[ProbeCase],
+    *,
+    case_names: set[str],
+    categories: set[str],
+) -> list[ProbeCase]:
+    if case_names:
+        cases = [case for case in cases if case.name in case_names]
+    if categories:
+        cases = [case for case in cases if case.category in categories]
+    return cases
+
+
 def write_payload(
     out_path: str,
     container: str,
@@ -291,22 +454,53 @@ def injection_scope(mode: str) -> str:
     return mode
 
 
-def publish_voice_turn(container: str, text: str, *, voice_id: str) -> str:
+def publish_voice_turn(
+    container: str,
+    text: str,
+    *,
+    voice_id: str,
+    mirror_rqt_display: bool,
+) -> str:
     escaped_text = text.replace("\\", "\\\\").replace('"', '\\"')
+    yaml_text = text.replace("'", "''")
     voice_topic = _voice_speech_topic(voice_id)
+    mirror_script = ""
+    if mirror_rqt_display:
+        mirror_script = f"""
+cat >/tmp/nao_questionnaire_rqt_rosout.yaml <<'EOF'
+stamp:
+  sec: 0
+  nanosec: 0
+level: 20
+name: runtime_review_rqt_input
+msg: '[runtime-review INPUT] {yaml_text}'
+file: run_active_questionnaire.py
+function: publish_voice_turn
+line: 0
+EOF
+timeout 4 ros2 topic pub --once -w 1 {RQT_DISPLAY_ROSOUT_QOS} {RQT_DISPLAY_ROSOUT_TOPIC} rcl_interfaces/msg/Log "$(cat /tmp/nao_questionnaire_rqt_rosout.yaml)" >/tmp/nao_questionnaire_rqt_rosout.log 2>&1 || true
+cat >/tmp/nao_questionnaire_rqt_caption.yaml <<'EOF'
+speaker_id: "{voice_id}"
+text: '{yaml_text}'
+locale: en_US
+EOF
+timeout 4 ros2 topic pub --once -w 1 {RQT_DISPLAY_CAPTIONS_TOPIC} hri_actions_msgs/msg/ClosedCaption "$(cat /tmp/nao_questionnaire_rqt_caption.yaml)" >/tmp/nao_questionnaire_rqt_caption.log 2>&1 || true
+"""
     script = f"""
 set -e
-source /opt/ros/jazzy/setup.bash
-source /home/ubuntu/ws/install/setup.bash
+{ROS_CLI_PREAMBLE}
 cat >/tmp/nao_questionnaire_qos_contract.log <<'EOF'
 [runtime-review] Speech ingress seam:
   tracked_topic={VOICE_TRACKED_TOPIC}
   tracked_qos={VOICE_TRACKED_QOS}
   speech_topic={voice_topic}
   speech_qos={VOICE_SPEECH_QOS}
+  rqt_display_mirror={str(mirror_rqt_display).lower()}
+  rqt_display_topics={RQT_DISPLAY_ROSOUT_TOPIC},{RQT_DISPLAY_CAPTIONS_TOPIC}
   contract=publish tracked voice with TRANSIENT_LOCAL durability before LiveSpeech.
   reason=dialogue_manager subscribes to the remapped rqt-chat tracked topic with transient-local QoS.
 EOF
+{mirror_script}
 timeout 8 ros2 topic pub --once -w 1 {VOICE_TRACKED_QOS} {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{voice_id}']}}" >/tmp/nao_questionnaire_voice.log 2>&1 || true
 for _ in $(seq 1 16); do
   if ros2 topic info -v {voice_topic} 2>/dev/null | grep -q 'Node name: dialogue_manager'; then
@@ -320,12 +514,12 @@ if ! grep -q 'Node name: dialogue_manager' /tmp/nao_questionnaire_speech_info.lo
   echo "[runtime-review] WARNING: dialogue_manager speech subscription was not visible for {voice_topic}" >>/tmp/nao_questionnaire_qos_contract.log
 fi
 timeout 8 ros2 topic pub --once -w 1 {VOICE_SPEECH_QOS} {voice_topic} hri_msgs/msg/LiveSpeech "{{final: \\"{escaped_text}\\", confidence: 1.0, locale: \\"en_US\\"}}" >/tmp/nao_questionnaire_speech.log 2>&1 || true
-cat /tmp/nao_questionnaire_qos_contract.log /tmp/nao_questionnaire_voice.log /tmp/nao_questionnaire_tracked_info.log /tmp/nao_questionnaire_speech_info.log /tmp/nao_questionnaire_speech.log 2>/dev/null || true
+cat /tmp/nao_questionnaire_qos_contract.log /tmp/nao_questionnaire_rqt_rosout.log /tmp/nao_questionnaire_rqt_caption.log /tmp/nao_questionnaire_voice.log /tmp/nao_questionnaire_tracked_info.log /tmp/nao_questionnaire_speech_info.log /tmp/nao_questionnaire_speech.log 2>/dev/null || true
 """
     return run(["docker", "exec", container, "bash", "-lc", script], timeout=20, check=False)
 
 
-def inject_kb_probe(container: str, injection: KbInjection) -> dict[str, str]:
+def inject_kb_probe(container: str, injection: KbInjection, *, lifespan_sec: int) -> dict[str, str]:
     statements_yaml = "\n".join("  - '%s'" % item for item in injection.statements)
     patterns_yaml = "\n".join("  - '%s'" % item for item in injection.query_patterns)
     vars_yaml = "\n".join("  - '%s'" % item for item in injection.query_vars)
@@ -336,7 +530,7 @@ statements:
 models:
   - default
 lifespan:
-  sec: 300
+  sec: {max(1, int(lifespan_sec))}
   nanosec: 0
 """
     query_request = f"""
@@ -357,6 +551,7 @@ models:
             (
                 "source /opt/ros/jazzy/setup.bash && "
                 "source /home/ubuntu/ws/install/setup.bash 2>/dev/null || true; "
+                "export FASTDDS_BUILTIN_TRANSPORTS=UDPv4; "
                 "ros2 service list -t | grep -E '/kb/(revise|query)' || true"
             ),
         ],
@@ -396,8 +591,7 @@ def call_ros_service(
 ) -> str:
     script = f"""
 set -e
-source /opt/ros/jazzy/setup.bash
-source /home/ubuntu/ws/install/setup.bash
+{ROS_CLI_PREAMBLE}
 cat >/tmp/nao_questionnaire_service_request.yaml
 timeout {timeout_sec} ros2 service call --stdin {service_name} {service_type} < /tmp/nao_questionnaire_service_request.yaml
 """
@@ -417,7 +611,6 @@ def call_chatbot_turn(
     voice_id: str,
     history: list[dict[str, str]],
 ) -> str:
-    escaped_text = text.replace("'", "''")
     uuid_tail = max(1, min(255, sequence))
     history_items = list(history) + [{"speaker": voice_id, "text": text}]
     history_yaml = "\n".join(
@@ -439,10 +632,9 @@ summary: ""
 history:
 {history_yaml}
 """
-    script = """
+    script = f"""
 set -e
-source /opt/ros/jazzy/setup.bash
-source /home/ubuntu/ws/install/setup.bash
+{ROS_CLI_PREAMBLE}
 cat >/tmp/nao_questionnaire_request.yaml
 timeout 90 ros2 service call --stdin /chatbot_llm/dialogue_interaction chatbot_msgs/srv/DialogueInteraction < /tmp/nao_questionnaire_request.yaml
 """
@@ -465,8 +657,7 @@ def sample_topics(container: str) -> dict[str, str]:
     samples = {}
     for topic in TOPICS_TO_SAMPLE:
         script = f"""
-source /opt/ros/jazzy/setup.bash
-source /home/ubuntu/ws/install/setup.bash
+{ROS_CLI_PREAMBLE}
 timeout --kill-after={TOPIC_SAMPLE_KILL_AFTER_SEC}s {TOPIC_SAMPLE_TIMEOUT_SEC}s ros2 topic echo {topic} --once 2>/dev/null || true
 """
         samples[topic] = run(
