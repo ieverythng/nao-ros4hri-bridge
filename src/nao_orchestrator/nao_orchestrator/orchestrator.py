@@ -19,11 +19,9 @@ from communication_skills.action import Say
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from geometry_msgs.msg import PointStamped
 from hri_actions_msgs.msg import Intent
-from interaction_skills.action import LookAt
 from kb_skills.intent_labels import KB_QUERY_INTENTS
 from kb_skills.mutation_client import KnowledgeCoreMutationClient
 from kb_skills.query_client import KnowledgeCoreQueryClient
-from nao_skills.action import DoHeadMotion, ReplayMotion
 from planner_common import build_execution_feedback_payload
 from planner_common import make_plan_id
 from planner_common import load_shared_skill_manifest
@@ -52,9 +50,16 @@ from nao_orchestrator.intent_rules import (
 from nao_orchestrator.planner_gate import PlannerGate
 
 try:  # pragma: no cover - available once nao_skills interfaces are rebuilt
-    from nao_skills.action import ScanScene
+    from nao_skills.action import DoHeadMotion, ReplayMotion, ScanScene
 except ImportError:  # pragma: no cover - forward-compat for stale interface install
+    DoHeadMotion = None
+    ReplayMotion = None
     ScanScene = None
+
+try:  # pragma: no cover - runtime interface dependency
+    from interaction_skills.action import LookAt
+except ImportError:  # pragma: no cover - local tests may not have generated actions
+    LookAt = None
 
 try:  # pragma: no cover - runtime dependency
     from naoqi_bridge_msgs.msg import JointAnglesWithSpeed
@@ -653,17 +658,35 @@ class NaoOrchestrator(Node):
         self._relayed_planner_act_signatures.clear()
         self._relayed_planner_act_signature_set.clear()
         self._say_client = ActionClient(self, Say, self.nao_say_action)
-        self._replay_motion_client = ActionClient(
-            self,
-            ReplayMotion,
-            self.replay_motion_action,
-        )
-        self._head_motion_client = ActionClient(
-            self,
-            DoHeadMotion,
-            self.head_motion_action,
-        )
-        self._look_at_client = ActionClient(self, LookAt, self.look_at_action)
+        if ReplayMotion is not None:
+            self._replay_motion_client = ActionClient(
+                self,
+                ReplayMotion,
+                self.replay_motion_action,
+            )
+        else:
+            self._replay_motion_client = None
+            self.get_logger().warn(
+                'nao_skills ReplayMotion action is unavailable; replay_motion dispatch disabled'
+            )
+        if DoHeadMotion is not None:
+            self._head_motion_client = ActionClient(
+                self,
+                DoHeadMotion,
+                self.head_motion_action,
+            )
+        else:
+            self._head_motion_client = None
+            self.get_logger().warn(
+                'nao_skills DoHeadMotion action is unavailable; head_motion dispatch disabled'
+            )
+        if LookAt is not None:
+            self._look_at_client = ActionClient(self, LookAt, self.look_at_action)
+        else:
+            self._look_at_client = None
+            self.get_logger().warn(
+                'interaction_skills LookAt action is unavailable; real look_at dispatch disabled'
+            )
         if ScanScene is not None:
             self._scan_client = ActionClient(self, ScanScene, self.scan_action)
             fake_skill_names = set(self._fake_skill_aliases.values())
@@ -2357,6 +2380,8 @@ class NaoOrchestrator(Node):
         if not clean_motion:
             self._stats.dispatch_failures += 1
             return False, 'replay motion dispatch failed: empty motion name'
+        if ReplayMotion is None:
+            return False, 'replay motion dispatch failed: nao_skills ReplayMotion action unavailable'
         goal = ReplayMotion.Goal()
         goal.motion_name = clean_motion
         goal.speed = float(self.replay_motion_speed)
@@ -2395,6 +2420,8 @@ class NaoOrchestrator(Node):
         yaw = float(payload.get('yaw', 0.0))
         pitch = float(payload.get('pitch', 0.0))
         relative = bool(payload.get('relative', False))
+        if DoHeadMotion is None:
+            return False, 'head motion dispatch failed: nao_skills DoHeadMotion action unavailable'
         goal = DoHeadMotion.Goal()
         goal.yaw = yaw
         goal.pitch = pitch
@@ -2437,6 +2464,8 @@ class NaoOrchestrator(Node):
         return False, result.reason or 'head motion dispatch failed'
 
     def _execute_look_at_reset_step(self, *, on_started=None) -> tuple[bool, str]:
+        if LookAt is None:
+            return False, 'look_at dispatch failed: interaction_skills LookAt action unavailable'
         goal = LookAt.Goal()
         goal.policy = LookAt.Goal.RESET
         result = self._execute_action_step(
@@ -2478,6 +2507,8 @@ class NaoOrchestrator(Node):
             self._stats.dispatch_failures += 1
             self.get_logger().warn('No target frame resolved for look_at dispatch')
             return False, 'look_at target dispatch failed: missing target frame'
+        if LookAt is None:
+            return False, 'look_at dispatch failed: interaction_skills LookAt action unavailable'
 
         goal = LookAt.Goal()
         goal.policy = str(policy).strip().lower()
@@ -2515,6 +2546,8 @@ class NaoOrchestrator(Node):
         policy: str,
         on_started=None,
     ) -> tuple[bool, str]:
+        if LookAt is None:
+            return False, 'look_at dispatch failed: interaction_skills LookAt action unavailable'
         goal = LookAt.Goal()
         goal.policy = str(policy).strip().lower()
         result = self._execute_action_step(

@@ -1,0 +1,111 @@
+{
+  "traces": [
+    {
+      "trace_id": "__default__:11",
+      "event_count": 1,
+      "duration_sec": 0.0,
+      "planner_output_count": 0,
+      "feedback_count": 0,
+      "dialogue_act_count": 0,
+      "final_status": "",
+      "completed": false
+    },
+    {
+      "trace_id": "__default__:12",
+      "event_count": 2,
+      "duration_sec": 72.711,
+      "planner_output_count": 0,
+      "feedback_count": 0,
+      "dialogue_act_count": 0,
+      "final_status": "",
+      "completed": false
+    },
+    {
+      "trace_id": "__default__:2",
+      "event_count": 2,
+      "duration_sec": 0.253,
+      "planner_output_count": 0,
+      "feedback_count": 0,
+      "dialogue_act_count": 0,
+      "final_status": "",
+      "completed": false
+    },
+    {
+      "trace_id": "goal_default___10",
+      "event_count": 8,
+      "duration_sec": 4.927,
+      "planner_output_count": 0,
+      "feedback_count": 8,
+      "dialogue_act_count": 0,
+      "final_status": "completed",
+      "completed": true
+    },
+    {
+      "trace_id": "goal_probe_01_success_default",
+      "event_count": 12,
+      "duration_sec": 6.152,
+      "planner_output_count": 2,
+      "feedback_count": 8,
+      "dialogue_act_count": 2,
+      "final_status": "failed",
+      "completed": false
+    },
+    {
+      "trace_id": "goal_probe_04_spatial_near_object",
+      "event_count": 12,
+      "duration_sec": 6.166,
+      "planner_output_count": 2,
+      "feedback_count": 8,
+      "dialogue_act_count": 2,
+      "final_status": "failed",
+      "completed": false
+    },
+    {
+      "trace_id": "goal_probe_05_spatial_far_object",
+      "event_count": 1,
+      "duration_sec": 0.0,
+      "planner_output_count": 0,
+      "feedback_count": 0,
+      "dialogue_act_count": 0,
+      "final_status": "",
+      "completed": false
+    },
+    {
+      "trace_id": "goal_probe_06_random_seeded_stress",
+      "event_count": 1,
+      "duration_sec": 0.0,
+      "planner_output_count": 0,
+      "feedback_count": 0,
+      "dialogue_act_count": 0,
+      "final_status": "",
+      "completed": false
+    },
+    {
+      "trace_id": "trace_0001",
+      "event_count": 6,
+      "duration_sec": 12.661,
+      "planner_output_count": 0,
+      "feedback_count": 0,
+      "dialogue_act_count": 0,
+      "final_status": "",
+      "completed": false
+    },
+    {
+      "trace_id": "trace_0002",
+      "event_count": 4,
+      "duration_sec": 6.154,
+      "planner_output_count": 0,
+      "feedback_count": 0,
+      "dialogue_act_count": 0,
+      "final_status": "",
+      "completed": false
+    }
+  ],
+  "aggregate": {
+    "trace_count": 3,
+    "uncorrelated_trace_count": 7,
+    "completed_count": 1,
+    "completion_rate": 0.333,
+    "median_duration_sec": 6.152
+  }
+}
