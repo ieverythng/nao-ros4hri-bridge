@@ -93,6 +93,319 @@ SMOKE_CASES = (
     ),
 )
 
+MAIN_QUESTIONNAIRE_CASES = (
+    ProbeCase("dialogue_greeting", "simple_dialogue", "Hey, how are you?", 8.0, conversation_group="dialogue_basic"),
+    ProbeCase(
+        "dialogue_favorite_movie",
+        "simple_dialogue",
+        "What is your favourite movie?",
+        8.0,
+        conversation_group="dialogue_basic",
+    ),
+    ProbeCase(
+        "dialogue_movie_followup",
+        "simple_dialogue",
+        "My favourite movie is Back to the Future!",
+        8.0,
+        conversation_group="dialogue_basic",
+    ),
+    ProbeCase(
+        "dialogue_weekend_plans",
+        "simple_dialogue",
+        "Any ideas for plans this weekend?",
+        8.0,
+        conversation_group="dialogue_basic",
+    ),
+    ProbeCase(
+        "dialogue_speed_of_light",
+        "simple_dialogue",
+        "What is the speed of light?",
+        8.0,
+        conversation_group="dialogue_basic",
+    ),
+    ProbeCase("kb_visible_now_baseline", "kb_query_dialogue", "What can you see now?", 10.0),
+    ProbeCase(
+        "kb_probe_scene_update",
+        "kb_query_dialogue",
+        "What else can you see now?",
+        12.0,
+        setup=KbInjection(
+            object_id="codex_main_scene",
+            statements=(
+                "myself sees codex_probe_cup",
+                "codex_probe_cup rdf:type Cup",
+                "codex_probe_cup dbp:name TITAS",
+                "codex_probe_cup dbp:color gold",
+                "codex_probe_cup oro:isOn codex_probe_table",
+                "codex_probe_table rdf:type Table",
+                "codex_probe_table dbp:name probe_table",
+                "myself sees codex_probe_table",
+            ),
+            query_patterns=(
+                "codex_probe_cup ?predicate ?object",
+                "codex_probe_table ?predicate ?object",
+            ),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "kb_object_on_table",
+        "kb_query_dialogue",
+        "What object is on the table?",
+        12.0,
+        setup=KbInjection(
+            object_id="codex_table_scene",
+            statements=(
+                "myself sees codex_probe_cup",
+                "codex_probe_cup rdf:type Cup",
+                "codex_probe_cup dbp:name TITAS",
+                "codex_probe_cup dbp:color gold",
+                "codex_probe_cup oro:isOn codex_probe_table",
+                "codex_probe_table rdf:type Table",
+                "codex_probe_table dbp:name table",
+                "myself sees codex_probe_table",
+            ),
+            query_patterns=(
+                "codex_probe_cup ?predicate ?object",
+                "codex_probe_table ?predicate ?object",
+            ),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "kb_cup_name",
+        "kb_query_dialogue",
+        "Can you tell me the name of the cup?",
+        12.0,
+        setup=KbInjection(
+            object_id=KB_PROBE_OBJECT_ID,
+            statements=(
+                f"myself sees {KB_PROBE_OBJECT_ID}",
+                f"{KB_PROBE_OBJECT_ID} rdf:type Cup",
+                f"{KB_PROBE_OBJECT_ID} dbp:name TITAS",
+                f"{KB_PROBE_OBJECT_ID} dbp:color gold",
+                f"{KB_PROBE_OBJECT_ID} oro:isOn codex_probe_table",
+            ),
+            query_patterns=(f"{KB_PROBE_OBJECT_ID} ?predicate ?object",),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "kb_multi_object_count",
+        "kb_query_dialogue",
+        "How many objects can you see?",
+        12.0,
+        setup=KbInjection(
+            object_id="codex_count_scene",
+            statements=(
+                "myself sees codex_count_cup",
+                "codex_count_cup rdf:type Cup",
+                "codex_count_cup dbp:name TITAS",
+                "codex_count_cup dbp:color gold",
+                "myself sees codex_count_book",
+                "codex_count_book rdf:type Book",
+                "codex_count_book dbp:name MIDAS",
+                "codex_count_book dbp:color blue",
+                "myself sees codex_count_phone",
+                "codex_count_phone rdf:type CellularTelephone",
+                "codex_count_phone dbp:name VEGA",
+                "codex_count_phone dbp:color silver",
+            ),
+            query_patterns=(
+                "codex_count_cup ?predicate ?object",
+                "codex_count_book ?predicate ?object",
+                "codex_count_phone ?predicate ?object",
+            ),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase("skill_head_up", "simple_skill_execution", "Move your head up.", 80.0),
+    ProbeCase(
+        "skill_pick_phone_generic",
+        "simple_fake_skill_execution",
+        "Pick up the phone.",
+        120.0,
+        setup=KbInjection(
+            object_id="codex_skill_phone",
+            statements=(
+                "myself sees codex_skill_phone",
+                "codex_skill_phone rdf:type CellularTelephone",
+                "codex_skill_phone dbp:name VEGA",
+                "codex_skill_phone dbp:color silver",
+                "codex_skill_phone oro:isOn codex_probe_table",
+                "myself canReach codex_skill_phone",
+            ),
+            query_patterns=("codex_skill_phone ?predicate ?object",),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "skill_pick_object_on_table",
+        "simple_fake_skill_execution",
+        "Pick up the object on the table.",
+        120.0,
+        setup=KbInjection(
+            object_id="codex_pick_scene",
+            statements=(
+                "myself sees codex_table_object",
+                "codex_table_object rdf:type Cup",
+                "codex_table_object dbp:name TABLE_PROBE",
+                "codex_table_object dbp:color red",
+                "codex_table_object oro:isOn codex_probe_table",
+                "codex_probe_table rdf:type Table",
+                "codex_probe_table dbp:name table",
+                "myself canReach codex_table_object",
+            ),
+            query_patterns=(
+                "codex_table_object ?predicate ?object",
+                "codex_probe_table ?predicate ?object",
+            ),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "skill_look_at_person",
+        "simple_skill_execution",
+        "Look at the person named ALEX.",
+        90.0,
+        setup=KbInjection(
+            object_id=KB_MAXIMAL_PERSON_ID,
+            statements=(
+                f"myself sees {KB_MAXIMAL_PERSON_ID}",
+                f"{KB_MAXIMAL_PERSON_ID} rdf:type Human",
+                f"{KB_MAXIMAL_PERSON_ID} dbp:name ALEX",
+                f"{KB_MAXIMAL_PERSON_ID} dbp:frameId {KB_MAXIMAL_PERSON_ID}",
+                f"{KB_MAXIMAL_PERSON_ID} dbp:poseSource semantic_fixture",
+            ),
+            query_patterns=(f"{KB_MAXIMAL_PERSON_ID} ?predicate ?object",),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "kb_mutation_add_red_cup",
+        "kb_mutation_dialogue",
+        "Add a red cup to your KB.",
+        20.0,
+    ),
+    ProbeCase(
+        "composite_head_all_directions",
+        "composite_skill_execution",
+        "Can you move your head in all directions?",
+        95.0,
+    ),
+    ProbeCase(
+        "composite_bring_every_object_to_person",
+        "composite_fake_skill_execution",
+        "Can you bring every object in view to the person named ALEX?",
+        180.0,
+        setup=KbInjection(
+            object_id="codex_bring_all_scene",
+            statements=(
+                "myself sees codex_bring_cup",
+                "codex_bring_cup rdf:type Cup",
+                "codex_bring_cup dbp:name TITAS",
+                "codex_bring_cup dbp:color gold",
+                "myself sees codex_bring_book",
+                "codex_bring_book rdf:type Book",
+                "codex_bring_book dbp:name MIDAS",
+                "codex_bring_book dbp:color blue",
+                f"myself sees {KB_MAXIMAL_PERSON_ID}",
+                f"{KB_MAXIMAL_PERSON_ID} rdf:type Human",
+                f"{KB_MAXIMAL_PERSON_ID} dbp:name ALEX",
+                f"{KB_MAXIMAL_PERSON_ID} dbp:frameId {KB_MAXIMAL_PERSON_ID}",
+                "myself canReach codex_bring_cup",
+                "myself canReach codex_bring_book",
+            ),
+            query_patterns=(
+                "codex_bring_cup ?predicate ?object",
+                "codex_bring_book ?predicate ?object",
+                f"{KB_MAXIMAL_PERSON_ID} ?predicate ?object",
+            ),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "maximal_kitchen_cup_to_operator",
+        "maximal_semantic_execution",
+        "Can you go to the kitchen and bring me the cup?",
+        160.0,
+        setup=KbInjection(
+            object_id=KB_MAXIMAL_CUP_ID,
+            statements=(
+                f"{KB_MAXIMAL_LOCATION_ID} rdf:type Room",
+                f"{KB_MAXIMAL_LOCATION_ID} dbp:name kitchen",
+                f"{KB_MAXIMAL_LOCATION_ID} dbp:frameId map",
+                f"{KB_MAXIMAL_LOCATION_ID} dbp:poseSource semantic_fixture",
+                f"{KB_MAXIMAL_LOCATION_ID} dbp:poseX 1.20",
+                f"{KB_MAXIMAL_LOCATION_ID} dbp:poseY 0.40",
+                f"{KB_MAXIMAL_CUP_ID} rdf:type Cup",
+                f"{KB_MAXIMAL_CUP_ID} dbp:name KITCHEN_PROBE_CUP",
+                f"{KB_MAXIMAL_CUP_ID} dbp:color white",
+                f"{KB_MAXIMAL_CUP_ID} oro:isIn {KB_MAXIMAL_LOCATION_ID}",
+                f"myself sees {KB_MAXIMAL_CUP_ID}",
+                f"myself canReceiveAt {KB_MAXIMAL_ORIGIN_ID}",
+            ),
+            query_patterns=(
+                f"{KB_MAXIMAL_LOCATION_ID} ?predicate ?object",
+                f"{KB_MAXIMAL_CUP_ID} ?predicate ?object",
+            ),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "composite_go_to_person_wave_report",
+        "composite_skill_execution",
+        "Go to the person named ALEX and wave at them. Let me know when you've done that.",
+        150.0,
+        setup=KbInjection(
+            object_id=KB_MAXIMAL_PERSON_ID,
+            statements=(
+                f"myself sees {KB_MAXIMAL_PERSON_ID}",
+                f"{KB_MAXIMAL_PERSON_ID} rdf:type Human",
+                f"{KB_MAXIMAL_PERSON_ID} dbp:name ALEX",
+                f"{KB_MAXIMAL_PERSON_ID} dbp:frameId {KB_MAXIMAL_PERSON_ID}",
+                f"{KB_MAXIMAL_PERSON_ID} dbp:poseSource semantic_fixture",
+                f"{KB_MAXIMAL_PERSON_ID} dbp:poseX 0.30",
+                f"{KB_MAXIMAL_PERSON_ID} dbp:poseY -0.20",
+            ),
+            query_patterns=(f"{KB_MAXIMAL_PERSON_ID} ?predicate ?object",),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "composite_walk_every_object_reports_main",
+        "composite_skill_execution",
+        "Walk to every object and let me know when you get to each one.",
+        160.0,
+        setup=KbInjection(
+            object_id="codex_walk_all_scene",
+            statements=(
+                "myself sees codex_probe_apple",
+                "codex_probe_apple rdf:type Apple",
+                "codex_probe_apple dbp:name ATLAS",
+                "codex_probe_apple dbp:color red",
+                "codex_probe_apple oro:isOn table_1",
+                "myself sees codex_probe_book",
+                "codex_probe_book rdf:type Book",
+                "codex_probe_book dbp:name MIDAS",
+                "codex_probe_book dbp:color blue",
+                "codex_probe_book oro:isOn table_1",
+                "myself sees codex_probe_phone",
+                "codex_probe_phone rdf:type CellularTelephone",
+                "codex_probe_phone dbp:name VEGA",
+                "codex_probe_phone dbp:color silver",
+                "codex_probe_phone oro:isOn table_1",
+            ),
+            query_patterns=(
+                "codex_probe_apple ?predicate ?object",
+                "codex_probe_book ?predicate ?object",
+                "codex_probe_phone ?predicate ?object",
+            ),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+)
+
 COMPOSITE_CASES = (
     ProbeCase("kb_visible_baseline", "kb_query_dialogue", "What can you see?", 10.0),
     ProbeCase(
@@ -361,7 +674,7 @@ TOPICS_TO_SAMPLE = (
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--container", default=DEFAULT_CONTAINER)
-    parser.add_argument("--case-set", default="smoke", choices=("smoke", "composite"))
+    parser.add_argument("--case-set", default="smoke", choices=("smoke", "main", "composite"))
     parser.add_argument(
         "--case-names",
         default="",
@@ -399,7 +712,12 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    cases = list(COMPOSITE_CASES if args.case_set == "composite" else SMOKE_CASES)
+    case_sets = {
+        "smoke": SMOKE_CASES,
+        "main": MAIN_QUESTIONNAIRE_CASES,
+        "composite": COMPOSITE_CASES,
+    }
+    cases = list(case_sets[args.case_set])
     cases = filter_cases(
         cases,
         case_names=parse_csv(args.case_names),

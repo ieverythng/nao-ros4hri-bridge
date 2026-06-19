@@ -221,3 +221,19 @@ def test_lifecycle_shell_helpers_serialize_transitions_per_node():
 
     assert 'flock 9' in stack_launch._lifecycle_bootstrap_script("nao_orchestrator")
     assert 'flock 9' in stack_launch._lifecycle_recovery_script("nao_orchestrator")
+
+
+def test_interaction_sim_hri_lifecycle_bootstrap_activates_nodes():
+    interaction_sim_support = _load_launch_module(
+        "nao_chatbot/interaction_sim_support.py",
+        "nao_chatbot_interaction_sim_support_lifecycle_test",
+    )
+
+    script = interaction_sim_support._hri_lifecycle_bootstrap_script(
+        "hri_face_detect_yunet"
+    )
+
+    assert 'flock 9' in script
+    assert 'ros2 lifecycle set "$node_name" configure' in script
+    assert 'ros2 lifecycle set "$node_name" activate' in script
+    assert 'HRI lifecycle bootstrap timed out' in script

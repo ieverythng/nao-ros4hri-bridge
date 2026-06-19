@@ -11,6 +11,7 @@ from ament_index_python.packages import PackageNotFoundError
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import EmitEvent
+from launch.actions import ExecuteProcess
 from launch.actions import GroupAction
 from launch.actions import IncludeLaunchDescription
 from launch.actions import LogInfo
@@ -118,6 +119,41 @@ def _planner_friendly_hri_log_level(context) -> str:
     return _HRI_LOG_LEVELS_BY_PROFILE.get(profile, "warn")
 
 
+def _hri_lifecycle_bootstrap_script(node_name: str, timeout_sec: int = 90) -> str:
+    """Configure and activate an upstream HRI lifecycle node after launch races."""
+    normalized_name = f"/{str(node_name).lstrip('/')}"
+    return f"""
+node_name="{normalized_name}"
+exec 9>"/tmp/nao_chatbot_hri_lifecycle_${{node_name#/}}.lock"
+flock 9
+deadline=$((SECONDS + {max(1, int(timeout_sec))}))
+while true; do
+  state="$(ros2 lifecycle get "$node_name" 2>/dev/null | \
+awk '/^(unconfigured|inactive|active|finalized|errorprocessing)/{{print $1; exit}}')"
+  case "$state" in
+    active)
+      exit 0
+      ;;
+    inactive)
+      ros2 lifecycle set "$node_name" activate >/dev/null 2>&1 || true
+      ;;
+    unconfigured)
+      ros2 lifecycle set "$node_name" configure >/dev/null 2>&1 || true
+      ;;
+    finalized|errorprocessing)
+      echo "HRI lifecycle bootstrap failed for $node_name: state=$state" >&2
+      exit 1
+      ;;
+  esac
+  if [ "$SECONDS" -ge "$deadline" ]; then
+    echo "HRI lifecycle bootstrap timed out for $node_name (last_state=${{state:-unknown}})" >&2
+    exit 1
+  fi
+  sleep 0.5
+done
+""".strip()
+
+
 def _build_hri_lifecycle_actions(
     *,
     package_name: str,
@@ -186,7 +222,12 @@ def _build_hri_lifecycle_actions(
             )
         ],
     )
-    return [node, configure_event, activate_event, analyzer]
+    bootstrap = ExecuteProcess(
+        cmd=["bash", "-lc", _hri_lifecycle_bootstrap_script(node_name)],
+        output="screen",
+        shell=False,
+    )
+    return [node, configure_event, activate_event, bootstrap, analyzer]
 
 
 def _interaction_sim_mode_description(

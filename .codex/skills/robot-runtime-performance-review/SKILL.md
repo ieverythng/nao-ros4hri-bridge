@@ -90,6 +90,15 @@ python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questi
   --out /tmp/nao_active_questionnaire.json
 ```
 
+For the thesis-facing main questionnaire, use:
+
+```bash
+python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
+  --container nao_ros2 \
+  --case-set main \
+  --out /tmp/nao_main_questionnaire.json
+```
+
 For targeted architecture seams before a full speech pass, run:
 
 ```bash
@@ -286,12 +295,16 @@ Use the live stack when the target is routing, grounding, or speech. Use fake
 skills when the target is deterministic execution, replanning, or failure policy.
 
 1. Simple dialogue turn:
-   - Prompts such as "Hey!", "How are you?", and "What is your favourite color?"
+   - Prompts such as "Hey, how are you?", "What is your favourite movie?",
+     a follow-up such as "My favourite movie is Back to the Future!", "Any
+     ideas for plans this weekend?", and "What is the speed of light?"
    - Expected: route stays dialogue, planner handoff is false, exactly one speech
      event is emitted, and no skill feedback appears.
 2. KB query dialogue turn:
-   - Prompts such as "What can you see?", then add interaction_sim objects, then
-     ask "What can you see now?" or "What is the id/name/color of ...?"
+   - Prompts such as "What can you see now?", then add interaction_sim/KB
+     objects, then ask "What else can you see now?", "What object is on the
+     table?", "Can you tell me the name of the cup?", and "How many objects can
+     you see?"
    - Expected: fresh simulator object facts appear in `grounded_context` on the
      next user turn, stable ids/relations are preserved, and the answer uses
      those facts without requiring a second confirmation turn.
@@ -299,13 +312,20 @@ skills when the target is deterministic execution, replanning, or failure policy
      object with at least `rdf:type`, `dbp:name`, and `dbp:color`; verify
      KnowledgeCore mutation/query evidence separately from chatbot wording.
 3. Simple skill execution:
-   - Prompts such as "Move your head to the right" or "Wave at me."
+   - Prompts such as "Move your head up", "Pick up the phone", "Pick up the
+     object on the table", "Look at the person named ALEX", and explicit KB
+     mutation requests such as "Add a red cup to your KB."
    - Expected: chatbot emits one acknowledgement, orchestrator dispatches one
      skill, planner feedback is truthful, and completion/report speech is not
-     duplicated.
+     duplicated. For KB mutation, the expected path is explicit admission,
+     mutation through the KB transport boundary, and a later query observing the
+     changed fact.
 4. Composite skill execution:
-   - Prompts such as "Move your head in all directions" or "Navigate to the
-     phone in the scene and tell me what else you see."
+   - Prompts such as "Can you move your head in all directions?", "Can you
+     bring every object in view to the person named ALEX?", "Can you go to the
+     kitchen and bring me the cup?", "Go to the person named ALEX and wave at
+     them. Let me know when you've done that", and "Walk to every object and
+     let me know when you get to each one."
    - Include ordered multi-object navigation when at least three grounded
      objects are available: "Now walk to every object, let me know when you are
      there and then walk to the next!"

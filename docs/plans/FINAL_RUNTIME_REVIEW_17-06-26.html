@@ -29,15 +29,15 @@
 <body>
 <main>
   <h1>Final NAO ROS4HRI Runtime Review</h1>
-  <p class="meta">Condensed supervisor-facing report from <code>ISSUES_BEFORE_17-06-26.html</code> and the final rebuilt-stack checks. Generated 17 June 2026, 05:16 CEST.</p>
+  <p class="meta">Condensed supervisor-facing report from <code>ISSUES_BEFORE_17-06-26.html</code> and the final rebuilt-stack checks. Last updated 17 June 2026, 09:10 CEST.</p>
 
   <section class="score">
-    <div class="card"><div class="big">8.7 / 10</div><div>Final practical readiness score for the rebuilt cool-profile stack.</div></div>
-    <div class="card"><div class="big">Pass</div><div>Speech ingress, rqt mirror, report_result lifecycle/action availability, manipulation success paths, and key route holdouts.</div></div>
-    <div class="card"><div class="big">Not 9.0 Yet</div><div>Clean rqt KB mutation, fixture-isolated recovery/fail-once, direct subject recall, and simulator pose/proximity proof remain open.</div></div>
+    <div class="card"><div class="big">8.8 / 10</div><div>Final practical readiness score after the detector-profile check.</div></div>
+    <div class="card"><div class="big">Pass</div><div>Speech ingress, rqt mirror, report_result lifecycle/action availability, stable KB grounding, person delivery, and key route holdouts.</div></div>
+    <div class="card"><div class="big">Not 9.0 Yet</div><div>Detector object evidence was sparse, natural-chat KB mutation still needs a full speech gate, and failure/fail-once recovery remains open.</div></div>
   </section>
 
-  <p class="note">The score is deliberately conservative. The stack is above the requested 8.5 target and much stronger than the earlier 8.4/8.6 baselines, but 9.0 should wait until the remaining gates are proven with clean isolated fixtures and no marathon-context contamination.</p>
+  <p class="note">The score is deliberately conservative. The stack is above the requested 8.5 target and the last detector-profile run proved the report-result person-delivery fix live. 9.0 should wait until natural-chat KB mutation, failure/fail-once recovery, and detector-derived object evidence are proven with clean isolated fixtures.</p>
 
   <h2>Checked Working Seams</h2>
   <table>
@@ -45,16 +45,16 @@
     <tbody>
       <tr><td>Speech ingress and rqt visibility</td><td class="done">Pass</td><td>The questionnaire publishes the real ROS4HRI anonymous-speaker tracked voice with reliable/transient-local QoS and LiveSpeech with reliable/volatile QoS. It also mirrors injected prompts to /rosout and /dialogue_manager/closed_captions for rqt visibility.</td></tr>
       <tr><td>Rebuilt lifecycle/action graph</td><td class="done">Pass</td><td>Current rebuilt stack has /report_result_skill_server active [3], /skill/report_result advertised, and fake skill action servers for navigate_to, find_object, pick_object, place_object, bring_object, look_at, wave_greet, and perform_motion.</td></tr>
-      <tr><td>Chatbot-authored report_result</td><td class="done">Pass</td><td>Simple, composite, manipulation, KB mutation, and maximal delivery reports resolve through chatbot wording. Live logs repeatedly show “Resolved report_result text via chatbot”.</td></tr>
+      <tr><td>Chatbot-authored report_result</td><td class="done">Pass</td><td>Simple, composite, manipulation, KB mutation, and maximal delivery reports resolve through chatbot wording. The final person-delivery run spoke “I found the kitchen cup, picked it up, and brought it to ALEX. I have delivered the cup to ALEX.”</td></tr>
       <tr><td>Dialogue admission holdouts</td><td class="done">Pass</td><td>Favorite-movie, future-action, wave-particle, and reflective dialogue prompts do not incorrectly enter planner execution in the accepted paired contexts.</td></tr>
       <tr><td>Stable KB object grounding</td><td class="done">Pass</td><td>Injected KB facts for cups, apple, book, phone, person ALEX, kitchen, and operator station are visible to planner/dialogue when fixtures are isolated and lifespan is long enough.</td></tr>
       <tr><td>Manipulation skills and KB guards</td><td class="done">Pass</td><td>Direct guard matrix and speech cases validate pick/place/bring/look_at against canonical KB subjects and secondary recipient/destination requirements.</td></tr>
       <tr><td>Multi-object navigation and reporting</td><td class="done">Pass</td><td>The ordered “walk to every object” case produces alternating navigation/report steps and a natural final report over stable KB objects.</td></tr>
-      <tr><td>Person delivery maximal case</td><td class="partial">Pass with wording note</td><td>The rebuilt stack plans and executes kitchen cup delivery to ALEX with canonical scene targets. Remaining wording polish is “placed the cup on Alex” versus “placed/delivered the cup to Alex”.</td></tr>
+      <tr><td>Person delivery maximal case</td><td class="done">Pass</td><td>The rebuilt stack plans and executes kitchen cup delivery to ALEX with canonical scene targets. The final detector-profile run fixed the prior “placed on Alex” wording and reported delivery “to ALEX”.</td></tr>
       <tr><td>KB mutation through planner/orchestrator</td><td class="partial">Service-path pass</td><td>Add, revise, and remove are proven through chatbot service -&gt; planner -&gt; orchestrator -&gt; KnowledgeCore. Full rqt speech proof remains separate.</td></tr>
       <tr><td>Recovery/replan behavior</td><td class="partial">Partial</td><td>Safe behavior improved, but the final absent-target case was not a clean absent-target proof because existing kitchen-cup facts let the system find a cup. Keep failure/fail-once and fixture-isolated recovery gates.</td></tr>
       <tr><td>Spatial/proximity grounding</td><td class="pending">Pending</td><td>Source supports frame-qualified overlays and grounded projection, but no final trusted simulator-pose/proximity proof was run in this pass.</td></tr>
-      <tr><td>Detector-derived object grounding</td><td class="pending">Out of score</td><td>Object detection is disabled in the cool-profile launch, so detector validation should be scored separately from KB-authored object grounding.</td></tr>
+      <tr><td>Detector-derived object grounding</td><td class="partial">Available; no object sample</td><td>The detector-profile launch exposed <code>object_detector_node</code>, <code>/detected_objects</code>, <code>/debug/object_detection</code>, and <code>/scene/summary</code>. No detector object sample arrived during the final snapshot window, so no blueberries were scored as detected.</td></tr>
     </tbody>
   </table>
 
@@ -64,13 +64,13 @@
     <li><strong>Direct subject recall:</strong> “What do you remember about codex_arch_marker?” safely avoided mutation but answered that it had no information even while KnowledgeCore still had marker facts. This is the clearest knowledge-query quality gap.</li>
     <li><strong>Fixture-isolated recovery:</strong> the final absent-cup prompt found an existing kitchen-cup fixture, so it does not prove missing-target fallback. Rerun recovery with no matching cup facts or with a deliberately absent id.</li>
     <li><strong>Failure/fail-once speech paths:</strong> direct fake-skill failures are proven, but chatbot/planner speech turns still need absent object, absent recipient, delivery blocked, unreachable, and fail-once variants.</li>
-    <li><strong>Delivery wording polish:</strong> maximal person delivery succeeds but still says “placed the cup on Alex.” For the SV demo, prefer “to Alex” or “delivered it to Alex.”</li>
+    <li><strong>Delivery wording:</strong> the prior “placed the cup on Alex” wording is fixed in the final live detector-profile run. Keep the table-placement holdout so ordinary “placed it on the table” wording is not overcorrected.</li>
     <li><strong>Spatial/proximity validation:</strong> publish one trusted simulator pose overlay and verify scene summary, KB statements, grounded context, and a proximity answer.</li>
     <li><strong>Long-history stress:</strong> repeat the accepted holdouts after dialogue history exceeds the configured trim threshold. If degradation returns, add a careful conversation-revision seam that excludes grounded-context snapshots.</li>
   </ul>
 
   <h2>Questionnaire Prompts</h2>
-  <p>These are the actual prompt strings currently used or promoted as holdouts. They should be treated as the seed evaluation suite for the next few days.</p>
+  <p>This is the dedicated questionnaire section for supervisor review. These are the actual prompt strings currently used or promoted as holdouts. Treat them as the seed evaluation suite for the next few days.</p>
   <table>
     <thead><tr><th>Group</th><th>Case id</th><th>Exact question / command</th><th>Current status</th></tr></thead>
     <tbody>
@@ -88,7 +88,7 @@
       <tr><td>composite/final</td><td><code>manipulation_multi_bring_report</code></td><td>Bring the apple and the book to Alex, then report what you did.</td><td>Pass live in targeted 8.5 sweep; final run re-injected the same case</td></tr>
       <tr><td>composite/final</td><td><code>replan_absent_then_scan_report</code></td><td>Find the codex missing cup. If you cannot find it, scan the scene and report what you can confirm.</td><td>Partial in final run: routed/executed safely, but fixture contamination let it find the kitchen cup, so not a clean absent-target proof</td></tr>
       <tr><td>composite</td><td><code>replan_kitchen_cup_fallback_report</code></td><td>Bring me the kitchen cup at the operator station. If you cannot bring it, look at the kitchen cup and report the reason.</td><td>Partial: keep as recovery/fallback holdout</td></tr>
-      <tr><td>composite/final</td><td><code>maximal_kitchen_cup_to_person</code></td><td>There is a cup in the kitchen. Bring the kitchen cup to the person named ALEX and report what happened.</td><td>Pass live with minor wording issue: says placed cup on Alex instead of to Alex</td></tr>
+      <tr><td>composite/final</td><td><code>maximal_kitchen_cup_to_person</code></td><td>There is a cup in the kitchen. Bring the kitchen cup to the person named ALEX and report what happened.</td><td>Pass live: final detector-profile run says delivered the cup to ALEX</td></tr>
       <tr><td>composite/final</td><td><code>future_action_admission_holdout</code></td><td>Could we navigate to the probe cup later?</td><td>Pass: dialogue route, no planner request</td></tr>
       <tr><td>smoke/composite/final</td><td><code>reflective_followup</code></td><td>How many directions did you move your head?</td><td>Pass when prior head-motion is in context; final isolated run answered one direction, so keep paired with head-wave case</td></tr>
       <tr><td>admission holdout</td><td><code>wave_particle_question</code></td><td>Wave-particle equation?</td><td>Pass: information question stays dialogue</td></tr>
@@ -104,6 +104,8 @@
     <li><code>/report_result_skill_server</code> is active and <code>/skill/report_result</code> is advertised in the rebuilt stack, so the source-side launch lifecycle fix is live-healthy in this run.</li>
     <li>The final speech run completed six cases. Favorite movie and future-action prompts stayed dialogue-only; maximal cup-to-person completed; reflective follow-up stayed dialogue but answered “one direction” because the final run did not include the head-motion case immediately before it.</li>
     <li>The accepted success-path artifact remains <code>/tmp/nao_rqt_targeted_85_sweep_20260617.json</code>, because it contains the cleaner paired contexts for ordered multi-object report, manipulation, route holdouts, and reflective follow-up.</li>
+    <li><strong>05:20 seam correction:</strong> the execution-report wording prompt now says person/Human destinations should be described as delivery or handoff recipients, not support surfaces. A context-aware safety net rewrites only <code>place_object</code> reports whose destination is grounded as a person, preserving ordinary “on the table” placement wording. <code>chatbot_llm</code> was rebuilt inside <code>nao_ros2</code>, and the focused container gate passed.</li>
+    <li><strong>05:45 detector-profile final check:</strong> with <code>start_object_detection:=true</code>, <code>object_detector_node</code>, <code>/detected_objects</code>, <code>/debug/object_detection</code>, and <code>/scene/summary</code> were present. No detector object sample arrived during the snapshot window, so no blueberries were scored as detected. Stable KB object grounding still passed, and the maximal cup-to-person speech case now reported “I found the kitchen cup, picked it up, and brought it to ALEX. I have delivered the cup to ALEX.”</li>
   </ul>
 
   <h2>Evidence Artifacts</h2>
@@ -114,7 +116,10 @@
       <tr><td><code>/tmp/nao_final_speech_holdouts_20260617.json</code></td><td>Final speech holdouts: favorite movie, multi-bring, recovery prompt, maximal cup-to-person, future-action, reflective follow-up.</td></tr>
       <tr><td><code>/tmp/nao_rqt_targeted_85_sweep_20260617.json</code></td><td>Accepted 8.6 success-path baseline: ordered multi-object report, favorite movie after context, pick/place, multi-bring, maximal person delivery, future-action, reflective follow-up.</td></tr>
       <tr><td><code>/tmp/nao_runtime_snapshot_85_sweep_20260617.json</code></td><td>Runtime graph snapshot for the accepted success-path score.</td></tr>
+      <tr><td><code>/tmp/nao_runtime_snapshot_detector_final_20260617.json</code></td><td>Final detector-profile snapshot with object detection enabled; detector topics were available, but sparse detector object samples timed out.</td></tr>
+      <tr><td><code>/tmp/nao_detector_profile_final_questionnaire_20260617.json</code></td><td>Final speech questionnaire after the report wording fix: KB probe, maximal cup-to-person delivery, and future-action holdout.</td></tr>
       <tr><td><code>/tmp/nao_fake_manipulation_failure_matrix_20260617.json</code></td><td>Direct fake-skill manipulation guard success/failure matrix.</td></tr>
+      <tr><td><code>src/chatbot_llm/test/test_turn_engine.py</code></td><td>Focused report wording acceptance gate: person delivery becomes “delivered ... to Alex” while table placement remains “placed ... on the table”. Passed locally and inside <code>nao_ros2</code>.</td></tr>
       <tr><td><code>docs/plans/ISSUES_BEFORE_17-06-26.html</code></td><td>Source readiness tracker that this final report condenses.</td></tr>
     </tbody>
   </table>
