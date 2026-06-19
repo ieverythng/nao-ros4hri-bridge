@@ -35,6 +35,13 @@ If any item is missing, ask for it or make explicit assumptions.
 ### Step 2: Bounded Mutation Proposal
 
 - Propose one small batch of edits only.
+- Generalize from train-set failures to the smallest stable invariant. Do not
+  hardcode a failing phrase, object name, fixture id, user example, or benchmark
+  case into normative prompt rules unless that literal is part of the public
+  contract.
+- Examples may show concrete shapes, but the rule text should teach the semantic
+  behavior (for example, "resolve user-facing labels to grounded entity ids")
+  rather than naming one scenario from the run.
 - Allowed mutation types:
   - `add`: add one focused rule.
   - `replace`: tighten/clarify one rule.
@@ -74,6 +81,9 @@ This prevents prompt/skill drift and instruction clutter.
 - Do not optimize multiple independent behaviors in one iteration.
 - Do not broaden scope from one skill to whole stack without user approval.
 - Prefer structural clarity over adding many examples.
+- Do not turn a train case into a special-case instruction. Convert concrete
+  runtime evidence into general wording, and use representative examples only
+  when they clarify the contract shape.
 - Keep one-question clarification behavior when uncertainty blocks safe execution.
 
 ## Integration Hook For Other Skills

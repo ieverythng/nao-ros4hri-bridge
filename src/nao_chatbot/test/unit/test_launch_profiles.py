@@ -201,6 +201,18 @@ def test_stack_uses_launch_events_for_chatbot_and_dialogue_lifecycle():
     assert "RegisterEventHandler" in entity_type_names
 
 
+def test_stack_uses_launch_events_for_local_lifecycle_skills():
+    stack_launch = _load_launch_module(
+        "nao_chatbot/stack_launch.py",
+        "nao_chatbot_stack_launch_skill_lifecycle_test",
+    )
+    launch_description = stack_launch.generate_profile_launch_description()
+    entity_type_names = [type(entity).__name__ for entity in launch_description.entities]
+
+    assert entity_type_names.count("EmitEvent") >= 6
+    assert entity_type_names.count("RegisterEventHandler") >= 7
+
+
 def test_lifecycle_shell_helpers_serialize_transitions_per_node():
     stack_launch = _load_launch_module(
         "nao_chatbot/stack_launch.py",

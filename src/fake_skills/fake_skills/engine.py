@@ -23,6 +23,9 @@ SUCCESS_MODE_BY_SKILL = {
     'inspect_area': 'clear',
     'look_at': 'success',
     'walk_to': 'success',
+    'pick_object': 'success',
+    'place_object': 'success',
+    'bring_object': 'success',
 }
 
 FAILURE_MODE_BY_SKILL = {
@@ -33,6 +36,9 @@ FAILURE_MODE_BY_SKILL = {
     'inspect_area': 'backend_unavailable',
     'look_at': 'target_unavailable',
     'walk_to': 'path_blocked',
+    'pick_object': 'object_unavailable',
+    'place_object': 'no_held_object',
+    'bring_object': 'acquisition_failure',
 }
 
 

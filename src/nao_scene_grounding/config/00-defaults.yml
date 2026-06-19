@@ -3,6 +3,7 @@
     detector_backend: emorobcare_cv
     detector_topic: /detected_objects
     summary_topic: ~/summary
+    spatial_overlay_topic: ""
     min_detection_score: 0.35
     allowed_labels: bottle,cup,book,cell phone,backpack,remote,laptop,keyboard,mouse,chair,blueberry,corn,pear,tomato,zucchini
     label_class_overrides: >

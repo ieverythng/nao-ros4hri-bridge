@@ -21,9 +21,14 @@ from nao_orchestrator.intent_rules import is_unresolved_report_template
 from nao_orchestrator.intent_rules import summarize_people_detection
 from nao_orchestrator.intent_rules import validate_execution_plan
 from nao_orchestrator.orchestrator import _ExecutionReportResult
+from nao_orchestrator.orchestrator import _binding_value
+from nao_orchestrator.orchestrator import _dedupe_statements
 from nao_orchestrator.orchestrator import _motion_result_payload
 from nao_orchestrator.orchestrator import _normalize_execution_mode
 from nao_orchestrator.orchestrator import _report_text_from_result_payload
+from nao_orchestrator.orchestrator import _single_entity_statement
+from nao_orchestrator.orchestrator import _statement_from_binding
+from nao_orchestrator.orchestrator import _statement_parts
 from nao_orchestrator.orchestrator import NaoOrchestrator
 
 
@@ -36,6 +41,32 @@ def test_normalize_legacy_intent_maps_posture_to_perform_motion() -> None:
     intent_name, data = normalize_legacy_intent('posture_stand', 'Hello there!')
     assert intent_name == Intent.PERFORM_MOTION
     assert data['object'] == 'stand'
+
+
+def test_kb_statement_helpers_parse_concrete_statements() -> None:
+    assert _statement_parts('codex_marker dbp:color blue') == (
+        'codex_marker',
+        'dbp:color',
+        'blue',
+    )
+    assert _statement_parts('codex_marker') == ('', '', '')
+    assert _single_entity_statement('codex_marker') == 'codex_marker'
+    assert _single_entity_statement('red cup') == ''
+
+
+def test_kb_statement_helpers_build_removal_statements_from_bindings() -> None:
+    row = {'?predicate': 'dbp:color', '?object': 'green'}
+
+    assert _binding_value(row, 'predicate') == 'dbp:color'
+    assert _binding_value(row, 'object') == 'green'
+    assert (
+        _statement_from_binding('codex_marker', _binding_value(row, 'predicate'), row)
+        == 'codex_marker dbp:color green'
+    )
+    assert _dedupe_statements(['a b c', '', 'a b c', 'a b d']) == [
+        'a b c',
+        'a b d',
+    ]
 
 
 def test_normalize_legacy_intent_accepts_json_payload() -> None:
@@ -442,6 +473,30 @@ def test_validate_execution_plan_accepts_wave_greet_fake_skill() -> None:
     assert envelope['steps'][0]['name'] == 'wave'
 
 
+def test_validate_execution_plan_accepts_manipulation_fake_skills() -> None:
+    envelope = validate_execution_plan(
+        Intent.PRESENT_CONTENT,
+        {
+            'plan': [
+                {'type': 'skill', 'name': 'pick', 'args': {'target': 'cup_1'}},
+                {
+                    'type': 'skill',
+                    'name': 'place',
+                    'args': {'target': 'cup_1', 'destination': 'shelf_1'},
+                },
+                {
+                    'type': 'skill',
+                    'name': 'bring',
+                    'args': {'target': 'book_1', 'recipient': 'person_1'},
+                },
+            ]
+        },
+    )
+
+    assert envelope['errors'] == []
+    assert [step['name'] for step in envelope['steps']] == ['pick', 'place', 'bring']
+
+
 def test_scan_step_is_available_without_demo_gate() -> None:
     success, reason, metadata = resolve_scan_result(
         {'target_kind': 'scene'},
@@ -466,7 +521,10 @@ def test_targeted_scan_without_explicit_summary_reports_missing_detection() -> N
     )
 
     assert success
-    assert reason == 'I completed the scan for people, but no confirmed detection result was reported.'
+    assert (
+        reason
+        == 'I completed the scan for people, but no confirmed detection result was reported.'
+    )
     assert metadata['target_kind'] == 'people'
 
 
@@ -625,6 +683,63 @@ def test_report_result_text_uses_chatbot_context_for_step_chain() -> None:
     assert captured['scene_targets'] == ['cup']
     assert captured['dialogue_context'][-1].startswith('assistant:')
     assert [step['name'] for step in captured['steps']] == ['navigate_to', 'scan']
+
+
+def test_execution_report_context_marks_intermediate_report_result() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+
+    context = orchestrator._execution_report_context(
+        {
+            'current_step_index': 1,
+            'plan_steps': [
+                {'id': 'step_1', 'name': 'navigate_to', 'args': {'target': 'apple'}},
+                {'id': 'step_2', 'name': 'report_result', 'args': {}},
+                {'id': 'step_3', 'name': 'navigate_to', 'args': {'target': 'book'}},
+                {'id': 'step_4', 'name': 'report_result', 'args': {}},
+            ],
+            'execution_results': [
+                {
+                    'name': 'navigate_to',
+                    'status': 'succeeded',
+                    'result_summary': 'I navigated to the apple.',
+                }
+            ],
+            'last_result_summary': 'I navigated to the apple.',
+        }
+    )
+
+    assert context['report_role'] == 'intermediate'
+    assert context['latest_result_summary'] == 'I navigated to the apple.'
+    assert [step['name'] for step in context['future_steps']] == [
+        'navigate_to',
+        'report_result',
+    ]
+
+
+def test_execution_report_context_marks_terminal_report_result() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+
+    context = orchestrator._execution_report_context(
+        {
+            'current_step_index': 3,
+            'plan_steps': [
+                {'id': 'step_1', 'name': 'navigate_to', 'args': {'target': 'apple'}},
+                {'id': 'step_2', 'name': 'report_result', 'args': {}},
+                {'id': 'step_3', 'name': 'navigate_to', 'args': {'target': 'book'}},
+                {'id': 'step_4', 'name': 'report_result', 'args': {}},
+            ],
+            'execution_results': [
+                {
+                    'name': 'navigate_to',
+                    'status': 'succeeded',
+                    'result_summary': 'I navigated to the book.',
+                }
+            ],
+        }
+    )
+
+    assert context['report_role'] == 'final'
+    assert context['future_steps'] == []
 
 
 def test_execution_context_retains_admitted_request_for_report_result() -> None:
@@ -863,6 +978,22 @@ def test_scene_scan_payload_preserves_positional_evidence() -> None:
     assert payload['objects'][0]['center_x'] == 0.22
     assert payload['objects'][0]['center_y'] == 0.61
     assert payload['objects'][0]['confidence'] == 0.94
+
+
+def test_scene_scan_payload_reports_people_and_objects_separately() -> None:
+    payload = build_scan_result_payload(
+        {
+            'target_kind': 'scene',
+            'objects': [{'id': 'cup_1', 'label': 'cup', 'source': 'scene_summary'}],
+            'people': [{'id': 'anonymous_person_abc', 'source': 'hri_persons'}],
+        }
+    )
+
+    assert payload['target_found'] is True
+    assert payload['objects'][0]['label'] == 'cup'
+    assert payload['people'][0]['id'] == 'anonymous_person_abc'
+    assert 'detected cup' in payload['summary_text']
+    assert 'one person (id: anonymous_person_abc)' in payload['summary_text']
 
 
 def test_people_scan_target_detection_supports_common_aliases() -> None:

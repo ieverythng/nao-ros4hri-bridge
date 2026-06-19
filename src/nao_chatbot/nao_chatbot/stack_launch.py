@@ -481,6 +481,14 @@ def _activate_lifecycle_node_on_inactive(node, *, condition=None):
     )
 
 
+def _configure_and_activate_lifecycle_node(node, *, condition=None):
+    """Return launch actions that configure a lifecycle node, then activate it."""
+    return (
+        _configure_lifecycle_node(node, condition=condition),
+        _activate_lifecycle_node_on_inactive(node, condition=condition),
+    )
+
+
 def _configure_lifecycle_node_after_active(active_node, target_node, *, condition=None):
     """Configure one lifecycle node only after another reaches active."""
     return RegisterEventHandler(
@@ -938,6 +946,14 @@ def generate_profile_launch_description(
         "scene_grounding_summary_topic",
         default_value="/scene/summary",
         description="JSON summary topic published by nao_scene_grounding.",
+    )
+    scene_grounding_spatial_overlay_topic_arg = DeclareLaunchArgument(
+        "scene_grounding_spatial_overlay_topic",
+        default_value="",
+        description=(
+            "Optional JSON topic providing frame-qualified object positions keyed "
+            "by grounded entity id."
+        ),
     )
     planner_request_topic_arg = DeclareLaunchArgument(
         "planner_request_topic",
@@ -2286,6 +2302,12 @@ def generate_profile_launch_description(
                 )
             },
             {
+                "spatial_overlay_topic": ParameterValue(
+                    LaunchConfiguration("scene_grounding_spatial_overlay_topic"),
+                    value_type=str,
+                )
+            },
+            {
                 "min_detection_score": ParameterValue(
                     LaunchConfiguration("object_detection_threshold"),
                     value_type=float,
@@ -2740,15 +2762,39 @@ def generate_profile_launch_description(
         dialogue_manager_node,
         condition=IfCondition(LaunchConfiguration("start_dialogue_manager")),
     )
+    nao_orchestrator_node = nao_orchestrator_bundle[0]
+    start_nao_orchestrator_condition = IfCondition(
+        LaunchConfiguration("start_nao_orchestrator")
+    )
+    (
+        nao_orchestrator_configure,
+        nao_orchestrator_activate,
+    ) = _configure_and_activate_lifecycle_node(
+        nao_orchestrator_node,
+        condition=start_nao_orchestrator_condition,
+    )
+    scan_skill_node = scan_skill_bundle[0]
+    start_scan_skill_condition = IfCondition(LaunchConfiguration("start_scan_skill"))
+    scan_skill_configure, scan_skill_activate = _configure_and_activate_lifecycle_node(
+        scan_skill_node,
+        condition=start_scan_skill_condition,
+    )
+    report_result_skill_node = report_result_skill_bundle[0]
+    start_report_result_skill_condition = IfCondition(
+        LaunchConfiguration("start_report_result_skill")
+    )
+    (
+        report_result_skill_configure,
+        report_result_skill_activate,
+    ) = _configure_and_activate_lifecycle_node(
+        report_result_skill_node,
+        condition=start_report_result_skill_condition,
+    )
     nao_say_skill_node = nao_say_skill_bundle[0]
     start_nao_say_skill_condition = IfCondition(
         LaunchConfiguration("start_nao_say_skill")
     )
-    nao_say_skill_configure = _configure_lifecycle_node(
-        nao_say_skill_node,
-        condition=start_nao_say_skill_condition,
-    )
-    nao_say_skill_activate = _activate_lifecycle_node_on_inactive(
+    nao_say_skill_configure, nao_say_skill_activate = _configure_and_activate_lifecycle_node(
         nao_say_skill_node,
         condition=start_nao_say_skill_condition,
     )
@@ -2953,6 +2999,7 @@ def generate_profile_launch_description(
             object_detection_image_reliability_arg,
             scene_grounding_detector_topic_arg,
             scene_grounding_summary_topic_arg,
+            scene_grounding_spatial_overlay_topic_arg,
             scene_grounding_allowed_labels_arg,
             scene_grounding_knowledge_lifespan_sec_arg,
             scene_grounding_knowledge_refresh_interval_sec_arg,
@@ -3115,6 +3162,12 @@ def generate_profile_launch_description(
             dialogue_manager_configure_immediate,
             dialogue_manager_configure_after_chatbot,
             dialogue_manager_activate,
+            nao_orchestrator_configure,
+            nao_orchestrator_activate,
+            scan_skill_configure,
+            scan_skill_activate,
+            report_result_skill_configure,
+            report_result_skill_activate,
             nao_say_skill_configure,
             nao_say_skill_activate,
             nao_orchestrator_recovery,

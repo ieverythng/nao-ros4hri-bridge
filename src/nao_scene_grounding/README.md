@@ -20,6 +20,7 @@ robot execution.
 | --- | --- | --- | --- |
 | subscribe | detector topic | backend-specific | Raw detector outputs |
 | publish | `/scene/summary` | `std_msgs/msg/String` | Current grounded object summary |
+| subscribe | optional spatial overlay topic | `std_msgs/msg/String` | Frame-qualified object poses keyed by grounded entity id |
 | service client | `/kb/revise` | `kb_msgs/srv/Revise` | Transient object facts |
 
 Supported detector backends:
@@ -43,7 +44,10 @@ Supported detector backends:
       "source": "emorobcare_cv",
       "center_x": 320.0,
       "center_y": 240.0,
-      "last_seen_sec": 1777040000.0
+      "last_seen_sec": 1777040000.0,
+      "frame_id": "base_link",
+      "position": {"x": 1.0, "y": 0.2, "z": 0.7},
+      "distance_m": 1.237
     }
   ]
 }
@@ -52,6 +56,21 @@ Supported detector backends:
 This differs from `knowledge_snapshot`: `/scene/summary` is a current object
 feed, while `knowledge_snapshot` is chatbot prompt text derived from KB queries.
 
+`center_x` and `center_y` are image-plane evidence, not metric TF coordinates.
+They must not be used to answer proximity questions. The node ownership and
+future frame-qualified position contract are documented in
+[`docs/architecture/kb_refresh_ownership_contract.md`](../../docs/architecture/kb_refresh_ownership_contract.md).
+
+When a simulator or 3D perception source can associate poses with the grounded
+`entity_id`, configure `spatial_overlay_topic` and publish:
+
+```json
+{"objects":[{"entity_id":"detected_cup_320_240","frame_id":"base_link","position":{"x":1.0,"y":0.2,"z":0.7}}]}
+```
+
+The grounding node owns merging that pose, deriving `distance_m`, refreshing
+the corresponding KB predicates, and publishing the enriched scene summary.
+
 ## Important Parameters
 
 Defaults live in `config/00-defaults.yml`.
@@ -59,6 +78,7 @@ Defaults live in `config/00-defaults.yml`.
 - `detector_backend`
 - `detector_topic`
 - `summary_topic`
+- `spatial_overlay_topic`
 - `min_detection_score`
 - `allowed_labels`
 - `label_class_overrides`
