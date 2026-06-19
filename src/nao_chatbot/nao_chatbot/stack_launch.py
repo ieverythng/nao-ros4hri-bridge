@@ -58,6 +58,7 @@ _LAB_VLLM_DEFAULTS = {
     "chatbot_request_timeout_sec": "60.0",
     "chatbot_first_request_timeout_sec": "75.0",
     "chatbot_response_max_tokens": "192",
+    "chatbot_turn_pipeline_mode": "response_first",
     "chatbot_preflight_timeout_sec": "60.0",
     "chatbot_preflight_attempts": "3",
     "chatbot_preflight_realistic_enabled": "true",
@@ -1620,6 +1621,18 @@ def generate_profile_launch_description(
         default_value="",
         description="Optional dedicated model used by chatbot_llm for intent extraction.",
     )
+    chatbot_turn_pipeline_mode_arg = DeclareLaunchArgument(
+        "chatbot_turn_pipeline_mode",
+        default_value=_profile_default(
+            profile_defaults,
+            "chatbot_turn_pipeline_mode",
+            "response_first",
+        ),
+        description=(
+            "Chatbot turn pipeline: response_first for the current path or "
+            "intent_first for route-locked runtime-review ablations."
+        ),
+    )
     ollama_intent_model_arg = DeclareLaunchArgument(
         "ollama_intent_model",
         default_value="",
@@ -1855,6 +1868,12 @@ def generate_profile_launch_description(
                 "planner_mode_enabled": ParameterValue(
                     LaunchConfiguration("chatbot_planner_mode_enabled"),
                     value_type=bool,
+                )
+            },
+            {
+                "turn_pipeline_mode": ParameterValue(
+                    LaunchConfiguration("chatbot_turn_pipeline_mode"),
+                    value_type=str,
                 )
             },
             {
@@ -2851,6 +2870,8 @@ def generate_profile_launch_description(
                         LaunchConfiguration("start_planner_llm"),
                         " planner_mode=",
                         LaunchConfiguration("chatbot_planner_mode_enabled"),
+                        " turn_pipeline=",
+                        LaunchConfiguration("chatbot_turn_pipeline_mode"),
                         " dialogue_manager=/dialogue_manager",
                     ]
                 )
@@ -2950,6 +2971,7 @@ def generate_profile_launch_description(
             chatbot_response_max_tokens_arg,
             chatbot_intent_max_tokens_arg,
             chatbot_intent_model_arg,
+            chatbot_turn_pipeline_mode_arg,
             ollama_intent_model_arg,
             chatbot_server_url_arg,
             chatbot_request_timeout_sec_arg,
