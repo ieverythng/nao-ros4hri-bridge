@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Runtime Friction Architecture Review - 2026-06-17</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --ink: #1f2630;
+      --muted: #5c6675;
+      --line: #cdd5df;
+      --accent: #235b8c;
+      --p0: #9f2d2d;
+      --p1: #9a5b13;
+      --ok: #236b3b;
+      --code: #e8edf3;
+    }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: Arial, sans-serif; line-height: 1.5; }
+    main { max-width: 1180px; margin: auto; padding: 32px 22px 72px; }
+    h1 { margin: 0 0 6px; font-size: 2rem; }
+    h2 { border-top: 1px solid var(--line); margin-top: 30px; padding-top: 20px; }
+    h3 { margin-bottom: 8px; }
+    .meta { color: var(--muted); margin: 0 0 22px; }
+    .note { background: var(--card); border-left: 5px solid var(--accent); padding: 12px 16px; margin: 16px 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(245px, 1fr)); gap: 12px; margin: 18px 0 22px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-left: 5px solid var(--accent); padding: 14px 16px; }
+    .big { font-size: 1.45rem; font-weight: bold; margin-bottom: 4px; }
+    table { width: 100%; border-collapse: collapse; background: var(--card); margin: 10px 0 18px; }
+    th, td { border: 1px solid var(--line); padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #e8edf3; }
+    code { background: var(--code); padding: 1px 4px; border-radius: 3px; }
+    pre { background: #17202b; color: #eef5ff; padding: 14px 16px; overflow: auto; border-radius: 6px; }
+    ul, ol { background: var(--card); border: 1px solid var(--line); padding: 14px 26px; }
+    .p0 { color: var(--p0); font-weight: bold; }
+    .p1 { color: var(--p1); font-weight: bold; }
+    .ok { color: var(--ok); font-weight: bold; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Runtime Friction Architecture Review</h1>
+  <p class="meta">Generated 17 June 2026, CEST. Source-and-architecture review for NAO ROS4HRI runtime friction, with local Aily repository patterns folded into an implementation plan.</p>
+
+  <p class="note">This is not a fresh live container score. It uses the runtime-review skill lenses, the current <code>ISSUES_BEFORE_17-06-26.html</code> tracker, source inspection, and local Aily architecture patterns. Live proof still requires rebuilding and rerunning the robot-runtime questionnaire after source changes.</p>
+
+  <section class="grid">
+    <div class="card"><div class="big">Primary risk</div><div>KB facts can exist but fail to reach chatbot/planner in a subject-focused, relation-preserving shape.</div></div>
+    <div class="card"><div class="big">Speech risk</div><div>Duplicate utterances should be solved as semantic-event deduplication, not only as prompt wording.</div></div>
+    <div class="card"><div class="big">Best Aily import</div><div>Trace-first scenario suites plus bounded SkillOpt prompt mutations with train and holdout gates.</div></div>
+  </section>
+
+  <h2>Executive Summary</h2>
+  <table>
+    <thead><tr><th>Seam</th><th>Symptom</th><th>Likely owner</th><th>Main fix direction</th></tr></thead>
+    <tbody>
+      <tr><td>KB subject recall and relation ingestion</td><td>Similar objects and relation facts are not always recognized cleanly.</td><td><code>chatbot_llm</code>, <code>kb_skills</code>, <code>planner_common</code>, <code>nao_scene_grounding</code></td><td>Build a canonical subject-focused grounded context packet and direct subject lookup path.</td></tr>
+      <tr><td>Exactly-once speech</td><td>Double utterances returned after being absent for a long time.</td><td><code>chatbot_llm</code>, <code>nao_orchestrator</code>, <code>dialogue_manager</code></td><td>Treat speech as a semantic event with deterministic suppression keys.</td></tr>
+      <tr><td>Prompt/session drift</td><td>Long context and detector churn can pollute route and KB behavior.</td><td><code>chatbot_llm</code>, prompt packs, runtime-review scripts</td><td>Promote scenario suites and SkillOpt gates before accepting prompt edits.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Evidence Read</h2>
+  <table>
+    <thead><tr><th>Source</th><th>Observation</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>docs/plans/ISSUES_BEFORE_17-06-26.html</code></td><td>Latest tracker records an 8.6 success-path baseline with caps around KB mutation proof, failure recovery, subject recall, cold-start report_result, and spatial proof.</td><td>This is final-seam hardening, not a broad rewrite.</td></tr>
+      <tr><td><code>src/chatbot_llm/chatbot_llm/turn_engine.py</code></td><td>Response stage can speak and route in the same payload, and route inference can upgrade dialogue to execution if ack implies execution.</td><td>This is powerful but risky for duplicate speech and route mismatch.</td></tr>
+      <tr><td><code>src/chatbot_llm/chatbot_llm/knowledge_snapshot.py</code></td><td>KB rows become deterministic natural-language summaries and compact text blocks.</td><td>Useful, but subject/relation fidelity needs a structured packet.</td></tr>
+      <tr><td><code>src/chatbot_llm/chatbot_llm/planner_handoff.py</code></td><td>Planner handoff builds Hybrid Minimal T0 and separates people from objects.</td><td>Good architecture; chatbot response should consume the same canonical packet.</td></tr>
+      <tr><td><code>/Users/juanbendek/repos/aily-context/README.md</code></td><td>Aily semantic-layer work uses scenario suites, expected outputs, and traceable Langfuse runs.</td><td>NAO needs replayable route/grounding/speech scenarios.</td></tr>
+      <tr><td><code>/Users/juanbendek/repos/aily-mcp/aily-mcp/.claude/skills/langfuse-autoimprove/SKILL.md</code></td><td>Aily closes trace-to-description loops before editing descriptions.</td><td>NAO should close trace-to-prompt/context loops before prompt changes.</td></tr>
+      <tr><td><code>/Users/juanbendek/repos/aily-super-agent/tests/unit/benchmarks/test_evaluation_evidence.py</code></td><td>Aily flattens ordered evidence for tool calls, skills, steps, errors, and fallback sources.</td><td>NAO should emit ordered evidence bundles per robot turn.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Root Cause Model</h2>
+  <h3>KB facts are present but not always reachable</h3>
+  <p>The reported KB failures look like retrieval/projection failures before they look like pure model failures. The chatbot needs a subject-focused context object when the user asks about a known id, name, color, alias, or relation.</p>
+  <pre><code>{
+  "schema_version": "grounded_context_v3",
+  "query_focus": {
+    "kind": "subject_recall",
+    "raw_mention": "probe cup",
+    "canonical_id": "codex_probe_cup",
+    "match_confidence": 0.91,
+    "match_source": "kb_alias_and_scene"
+  },
+  "entities": [
+    {
+      "id": "codex_probe_cup",
+      "kind": "object",
+      "label": "probe cup",
+      "class": "Cup",
+      "visible": true,
+      "freshness": {"last_seen_sec": 1781672100.1, "source": "interaction_sim"}
+    }
+  ],
+  "relations": [
+    {"subject": "codex_probe_cup", "predicate": "rdf:type", "object": "Cup"},
+    {"subject": "codex_probe_cup", "predicate": "dbp:name", "object": "TITAS"},
+    {"subject": "codex_probe_cup", "predicate": "dbp:color", "object": "gold"},
+    {"subject": "codex_probe_cup", "predicate": "oro:isOn", "object": "codex_table"}
+  ]
+}</code></pre>
+
+  <h3>Duplicate speech is a semantic-event problem</h3>
+  <table>
+    <thead><tr><th>Semantic event</th><th>Allowed speaker</th><th>Suppression key</th></tr></thead>
+    <tbody>
+      <tr><td>Execution accepted acknowledgement</td><td><code>dialogue_manager</code> from chatbot ack</td><td><code>ack:{turn_id}:{goal_id}</code></td></tr>
+      <tr><td>Planner clarification/help</td><td>Orchestrator relay to dialogue owner</td><td><code>planner_dialogue:{goal_id}:{act_id}</code></td></tr>
+      <tr><td>Progress report</td><td>Chatbot wording from feedback</td><td><code>progress:{goal_id}:{step_id}</code></td></tr>
+      <tr><td>Terminal report_result</td><td>Chatbot wording from structured results</td><td><code>completion:{goal_id}:{plan_id}:{plan_version}</code></td></tr>
+      <tr><td>Fallback failure</td><td>Planner/orchestrator failure act, chatbot wording if available</td><td><code>failure:{goal_id}:{failure_code}</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Detector churn must not outrank stable KB objects</h3>
+  <table>
+    <thead><tr><th>Identity tier</th><th>Meaning</th><th>LLM priority</th></tr></thead>
+    <tbody>
+      <tr><td><code>explicit_kb</code></td><td>User/system inserted stable KB object with predicates.</td><td>Highest</td></tr>
+      <tr><td><code>interaction_sim</code></td><td>Simulator-authored object or pose source.</td><td>High</td></tr>
+      <tr><td><code>scene_grounding_stable</code></td><td>Detector object with stable matched id across freshness window.</td><td>Medium</td></tr>
+      <tr><td><code>detector_ephemeral</code></td><td>Raw or recently churned detector id.</td><td>Low and uncertain</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Aily Patterns To Import</h2>
+  <table>
+    <thead><tr><th>Aily pattern</th><th>NAO adaptation</th></tr></thead>
+    <tbody>
+      <tr><td>Scenario suites as first-class artifacts</td><td>Add runtime YAML cases for dialogue, KB recall, execution, recovery, duplicate speech, and detector stress.</td></tr>
+      <tr><td>Trace feedback before prompt edits</td><td>Require `/chatbot_llm/turn_trace`, `/planner/request`, `/planner/execution_feedback`, and speech evidence before changing prompt packs.</td></tr>
+      <tr><td>Expected tools/tables</td><td>Use expected route, planner request flag, KB subjects, plan steps, and speech events.</td></tr>
+      <tr><td>Ordered evidence bundles</td><td>Save one JSON bundle per turn with input, context, route, plan, feedback, and speech events.</td></tr>
+      <tr><td>Programmer-pinned scope</td><td>Runtime nodes pin KB provenance, freshness, source, and identity tier instead of the model inventing them.</td></tr>
+      <tr><td>SkillOpt holdouts</td><td>Keep favorite movie, future-action, wave-particle, reflective follow-up, and no-mutation questions stable.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Target Architecture</h2>
+  <pre><code>speech / rqt_chat
+  -> dialogue_manager
+  -> chatbot_llm
+       -> route classifier
+       -> subject/context resolver
+       -> canonical grounded_context packet
+       -> natural response or planner request
+  -> nao_orchestrator planner gate
+       -> duplicate-speech semantic ledger
+       -> planner admission and execution lineage
+  -> planner_llm
+       -> executable plan over canonical ids and relation facts
+  -> nao_orchestrator
+       -> deterministic validation, fake/real skill dispatch, feedback
+  -> chatbot_llm wording service
+       -> completion/failure/progress text from structured evidence only
+  -> dialogue_manager speech</code></pre>
+
+  <h2>SkillOpt Setup For Prompt Changes</h2>
+  <table>
+    <thead><tr><th>Required input</th><th>Proposed value</th></tr></thead>
+    <tbody>
+      <tr><td><code>target_artifact</code></td><td><code>src/chatbot_llm/config/chat_prompt_pack.yaml</code>, <code>src/chatbot_llm/chatbot_llm/prompt_builders.py</code>, and only if needed <code>src/planner_llm/config/planner_prompt_pack.yaml</code>.</td></tr>
+      <tr><td><code>objective</code></td><td>Reduce KB subject-recall misses and duplicate utterances without regressing execution admission or social dialogue.</td></tr>
+      <tr><td><code>train_set</code></td><td>Recent failing KB relation/subject cases, duplicate-utterance traces, similar-object detector churn case, and maximal delivery wording.</td></tr>
+      <tr><td><code>holdout_set</code></td><td>Future-action, wave-particle, favorite movie, reflective follow-up, and non-mutating KB question cases.</td></tr>
+      <tr><td><code>acceptance_gate</code></td><td>Train failures improve; holdouts preserve route, planner handoff flag, and exactly-one speech; prompt diff remains small.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Implementation Tracks</h2>
+  <table>
+    <thead><tr><th>Track</th><th>Goal</th><th>Primary files</th></tr></thead>
+    <tbody>
+      <tr><td class="p0">A. Grounded Context V3 Projection</td><td>Subject-focused relation recall and similar-object disambiguation.</td><td><code>kb_skills</code>, <code>chatbot_llm/knowledge_snapshot.py</code>, <code>planner_common/contracts.py</code>, <code>nao_scene_grounding/scene_grounding_node.py</code></td></tr>
+      <tr><td class="p0">B. Exactly-Once Speech Ledger</td><td>Suppress duplicate semantic speech events structurally.</td><td><code>nao_orchestrator/orchestrator.py</code>, runtime-review scripts, optional chatbot event metadata.</td></tr>
+      <tr><td class="p0">C. Runtime Scenario Suite</td><td>Make validation replayable like Aily semantic-layer suites.</td><td><code>docs/runtime_scenarios/</code> or runtime-review script fixtures.</td></tr>
+      <tr><td class="p1">D. Detector Churn Isolation</td><td>Keep detector-profile noise from contaminating stable KB validation.</td><td><code>nao_scene_grounding</code>, <code>planner_common</code>, <code>chatbot_llm</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Immediate Probe Plan</h2>
+  <ol>
+    <li>Collect a sampled snapshot with `/scene/summary`, `/chatbot_llm/turn_trace`, `/planner/request`, `/planner/execution_feedback`, `/debug/nao_say/speech`, and `/speech`.</li>
+    <li>Run a small active questionnaire with stable KB object setup and duplicate-speech counters.</li>
+    <li>Add targeted architecture cases for subject recall, non-mutating relation questions, simple exactly-once execution, report_result exactly-once speech, and detector stress if detector profile is enabled.</li>
+    <li>Only then run SkillOpt against chatbot prompt/code seams.</li>
+  </ol>
+
+  <h2>Recommended Next Files</h2>
+  <table>
+    <thead><tr><th>Priority</th><th>File</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td class="p0">P0</td><td><code>src/chatbot_llm/chatbot_llm/node_impl.py</code></td><td>Confirm knowledge-query turns can trigger subject-specific KB query patterns from user text.</td></tr>
+      <tr><td class="p0">P0</td><td><code>src/chatbot_llm/chatbot_llm/knowledge_snapshot.py</code></td><td>Add structured relation grouping and subject focus.</td></tr>
+      <tr><td class="p0">P0</td><td><code>src/chatbot_llm/chatbot_llm/turn_engine.py</code></td><td>Separate route decision from speech commitment more explicitly.</td></tr>
+      <tr><td class="p0">P0</td><td><code>src/nao_orchestrator/nao_orchestrator/orchestrator.py</code></td><td>Add duplicate semantic speech suppression.</td></tr>
+      <tr><td class="p0">P0</td><td><code>.codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py</code></td><td>Count and classify speech events per turn.</td></tr>
+      <tr><td class="p1">P1</td><td><code>src/planner_common/planner_common/contracts.py</code></td><td>Preserve relation groups, identity tier, freshness, and source.</td></tr>
+      <tr><td class="p1">P1</td><td><code>src/nao_scene_grounding/nao_scene_grounding/scene_grounding_node.py</code></td><td>Add churn metrics and identity tiering.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Decision</h2>
+  <p class="note">Do not start with another broad prompt rewrite. Start with evidence and structure: runtime scenario/evidence checks, subject-focused grounded context, exactly-once speech suppression, then bounded SkillOpt prompt changes only where deterministic seams still need model guidance.</p>
+</main>
+</body>
+</html>
