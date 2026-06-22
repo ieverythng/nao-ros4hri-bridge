@@ -89,6 +89,7 @@ def collect_runtime_state(container: str) -> dict[str, str]:
 def run_kb_mutation_sweep(container: str, questionnaire) -> dict[str, object]:
     history: list[dict[str, str]] = []
     turns = []
+    evaluations = []
     for sequence, text in (
         (
             1,
@@ -116,18 +117,26 @@ def run_kb_mutation_sweep(container: str, questionnaire) -> dict[str, object]:
             history=history,
         )
         time.sleep(12 if sequence != 3 else 4)
+        query_after = query_subject(container, MARKER_ID)
+        rows_after = query_subject_json(container, MARKER_ID)
+        evaluation = evaluate_kb_mutation_state(sequence, rows_after)
+        evaluations.append(evaluation)
         turns.append(
             {
                 "sequence": sequence,
                 "text": text,
                 "service_output": output,
-                "query_after": query_subject(container, MARKER_ID),
+                "query_after": query_after,
+                "query_rows_after": rows_after,
+                "evaluation": evaluation,
             }
         )
     return {
         "mode": "chatbot_service_to_planner_orchestrator_kb",
         "marker_id": MARKER_ID,
         "turns": turns,
+        "all_postconditions_passed": all(item["passed"] for item in evaluations),
+        "postcondition_summary": evaluations,
     }
 
 
@@ -222,6 +231,53 @@ def query_subject_json(container: str, subject: str) -> list[dict]:
         return json.loads(output[start:end])
     except json.JSONDecodeError:
         return []
+
+
+def evaluate_kb_mutation_state(sequence: int, rows: list[dict]) -> dict[str, object]:
+    facts = {
+        (str(row.get("predicate", "")).strip(), str(row.get("object", "")).strip())
+        for row in rows
+        if row.get("predicate") and row.get("object")
+    }
+    if sequence == 1:
+        required = {
+            ("rdf:type", "Cube"),
+            ("dbp:name", "NOVA"),
+            ("dbp:color", "green"),
+        }
+        return {
+            "name": "kb_add_postcondition",
+            "passed": required.issubset(facts),
+            "expected": sorted("%s %s" % item for item in required),
+            "observed": sorted("%s %s" % item for item in facts),
+        }
+    if sequence == 2:
+        return {
+            "name": "kb_revise_postcondition",
+            "passed": ("dbp:color", "blue") in facts and ("dbp:color", "green") not in facts,
+            "expected": ["dbp:color blue", "not dbp:color green"],
+            "observed": sorted("%s %s" % item for item in facts),
+        }
+    if sequence == 3:
+        return {
+            "name": "kb_query_non_mutating_postcondition",
+            "passed": ("dbp:color", "blue") in facts and ("dbp:name", "NOVA") in facts,
+            "expected": ["dbp:name NOVA", "dbp:color blue"],
+            "observed": sorted("%s %s" % item for item in facts),
+        }
+    if sequence == 4:
+        return {
+            "name": "kb_remove_postcondition",
+            "passed": not facts,
+            "expected": ["no facts for %s" % MARKER_ID],
+            "observed": sorted("%s %s" % item for item in facts),
+        }
+    return {
+        "name": "unknown_kb_mutation_postcondition",
+        "passed": False,
+        "expected": [],
+        "observed": sorted("%s %s" % item for item in facts),
+    }
 
 
 def revise(container: str, method: str, statements) -> str:

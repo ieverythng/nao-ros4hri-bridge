@@ -661,6 +661,94 @@ COMPOSITE_CASES = (
     ),
 )
 
+INTENT_ABLATION_CASES = (
+    ProbeCase(
+        "intent_ablation_dialogue_greeting",
+        "intent_route_ablation_dialogue",
+        "Hey, how are you?",
+        8.0,
+        conversation_group="intent_ablation_dialogue",
+    ),
+    ProbeCase(
+        "intent_ablation_favorite_movie",
+        "intent_route_ablation_dialogue",
+        "What is your favourite movie?",
+        8.0,
+        conversation_group="intent_ablation_dialogue",
+    ),
+    ProbeCase(
+        "intent_ablation_wave_particle",
+        "intent_route_ablation_dialogue",
+        "What is wave-particle duality?",
+        10.0,
+    ),
+    ProbeCase(
+        "intent_ablation_future_navigation",
+        "intent_route_ablation_holdout",
+        "Could we navigate to the probe cup later?",
+        12.0,
+        setup=KbInjection(
+            object_id=KB_PROBE_OBJECT_ID,
+            statements=(
+                f"myself sees {KB_PROBE_OBJECT_ID}",
+                f"{KB_PROBE_OBJECT_ID} rdf:type Cup",
+                f"{KB_PROBE_OBJECT_ID} dbp:name TITAS",
+                f"{KB_PROBE_OBJECT_ID} dbp:color gold",
+                f"{KB_PROBE_OBJECT_ID} oro:isOn codex_probe_table",
+            ),
+            query_patterns=(f"{KB_PROBE_OBJECT_ID} ?predicate ?object",),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "intent_ablation_kb_visible",
+        "intent_route_ablation_kb_query",
+        "What can you see now?",
+        12.0,
+        setup=KbInjection(
+            object_id="codex_ablation_scene",
+            statements=(
+                "myself sees codex_ablation_cup",
+                "codex_ablation_cup rdf:type Cup",
+                "codex_ablation_cup dbp:name TITAS",
+                "codex_ablation_cup dbp:color gold",
+                "myself sees codex_ablation_person",
+                "codex_ablation_person rdf:type Human",
+                "codex_ablation_person dbp:name ALEX",
+            ),
+            query_patterns=(
+                "codex_ablation_cup ?predicate ?object",
+                "codex_ablation_person ?predicate ?object",
+            ),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "intent_ablation_look_report",
+        "intent_route_ablation_execution",
+        "Look at the probe cup and tell me what you did.",
+        100.0,
+        setup=KbInjection(
+            object_id=KB_PROBE_OBJECT_ID,
+            statements=(
+                f"myself sees {KB_PROBE_OBJECT_ID}",
+                f"{KB_PROBE_OBJECT_ID} rdf:type Cup",
+                f"{KB_PROBE_OBJECT_ID} dbp:name TITAS",
+                f"{KB_PROBE_OBJECT_ID} dbp:color gold",
+                f"{KB_PROBE_OBJECT_ID} oro:isOn codex_probe_table",
+            ),
+            query_patterns=(f"{KB_PROBE_OBJECT_ID} ?predicate ?object",),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "intent_ablation_head_wave",
+        "intent_route_ablation_execution",
+        "Move your head up and then wave at me.",
+        95.0,
+    ),
+)
+
 TOPICS_TO_SAMPLE = (
     "/chatbot_llm/turn_trace",
     "/planner/request",
@@ -674,7 +762,11 @@ TOPICS_TO_SAMPLE = (
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--container", default=DEFAULT_CONTAINER)
-    parser.add_argument("--case-set", default="smoke", choices=("smoke", "main", "composite"))
+    parser.add_argument(
+        "--case-set",
+        default="smoke",
+        choices=("smoke", "main", "composite", "intent_ablation"),
+    )
     parser.add_argument(
         "--case-names",
         default="",
@@ -710,12 +802,19 @@ def main() -> int:
         action="store_true",
         help="Do not mirror injected user turns to rqt-visible debug topics.",
     )
+    parser.add_argument(
+        "--expected-turn-pipeline-mode",
+        default="",
+        choices=("", "response_first", "intent_first"),
+        help="Optional assertion label for the active /chatbot_llm turn_pipeline_mode.",
+    )
     args = parser.parse_args()
 
     case_sets = {
         "smoke": SMOKE_CASES,
         "main": MAIN_QUESTIONNAIRE_CASES,
         "composite": COMPOSITE_CASES,
+        "intent_ablation": INTENT_ABLATION_CASES,
     }
     cases = list(case_sets[args.case_set])
     cases = filter_cases(
@@ -726,6 +825,10 @@ def main() -> int:
     results = []
     service_histories: dict[str, list[dict[str, str]]] = {}
     started_at = time.time()
+    runtime_metadata = collect_questionnaire_metadata(
+        args.container,
+        expected_turn_pipeline_mode=args.expected_turn_pipeline_mode,
+    )
     for index, case in enumerate(cases, start=1):
         if time.time() - started_at > max(30, args.global_timeout_sec):
             results.append(
@@ -742,7 +845,14 @@ def main() -> int:
                     "log_excerpt": recent_logs(args.container, args.since_sec),
                 }
             )
-            write_payload(args.out, args.container, args.case_set, started_at, results)
+            write_payload(
+                args.out,
+                args.container,
+                args.case_set,
+                started_at,
+                results,
+                runtime_metadata=runtime_metadata,
+            )
             return 2
 
         case_start = time.time()
@@ -790,9 +900,23 @@ def main() -> int:
                 "log_excerpt": recent_logs(args.container, args.since_sec),
             }
         )
-        write_payload(args.out, args.container, args.case_set, started_at, results)
+        write_payload(
+            args.out,
+            args.container,
+            args.case_set,
+            started_at,
+            results,
+            runtime_metadata=runtime_metadata,
+        )
 
-    write_payload(args.out, args.container, args.case_set, started_at, results)
+    write_payload(
+        args.out,
+        args.container,
+        args.case_set,
+        started_at,
+        results,
+        runtime_metadata=runtime_metadata,
+    )
     print(args.out)
     return 0
 
@@ -820,15 +944,60 @@ def write_payload(
     case_set: str,
     started_at: float,
     results: list[dict],
+    *,
+    runtime_metadata: dict[str, object] | None = None,
 ) -> None:
     payload = {
         "container": container,
         "case_set": case_set,
         "started_at_unix_sec": started_at,
         "finished_at_unix_sec": time.time(),
+        "runtime_metadata": runtime_metadata or {},
         "cases": results,
     }
     Path(out_path).write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def collect_questionnaire_metadata(
+    container: str,
+    *,
+    expected_turn_pipeline_mode: str,
+) -> dict[str, object]:
+    active_mode = get_ros_param(
+        container,
+        "/chatbot_llm",
+        "turn_pipeline_mode",
+    )
+    expected = str(expected_turn_pipeline_mode or "").strip()
+    return {
+        "chatbot_turn_pipeline_mode": active_mode,
+        "expected_turn_pipeline_mode": expected,
+        "turn_pipeline_mode_matches_expected": (
+            True if not expected else active_mode == expected
+        ),
+        "ablation_note": (
+            "intent_ablation is meaningful only when the active launch sets "
+            "chatbot_turn_pipeline_mode:=intent_first or when comparing against "
+            "a response_first control run."
+        ),
+    }
+
+
+def get_ros_param(container: str, node_name: str, param_name: str) -> str:
+    script = f"""
+{ROS_CLI_PREAMBLE}
+timeout 8 ros2 param get {node_name} {param_name} 2>/dev/null || true
+"""
+    output = run(
+        ["docker", "exec", container, "bash", "-lc", script],
+        timeout=12,
+        check=False,
+    )
+    for line in reversed(output.splitlines()):
+        text = line.strip()
+        if text.startswith("String value is:"):
+            return text.split(":", 1)[1].strip()
+    return output.strip()
 
 
 def injection_scope(mode: str) -> str:

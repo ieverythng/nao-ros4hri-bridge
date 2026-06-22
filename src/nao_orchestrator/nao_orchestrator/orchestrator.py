@@ -1631,6 +1631,15 @@ class NaoOrchestrator(Node):
                 }
         elif step_name == 'kb_remove':
             statements = self._expand_kb_remove_statements(statements, models)
+            if not statements:
+                self._stats.dispatch_failures += 1
+                return False, 'KnowledgeCore remove found no matching facts', {
+                    'skill': step_name,
+                    'operation': 'remove',
+                    'statement_count': 0,
+                    'dispatched': False,
+                    'success': False,
+                }
 
         result = self._kb_mutation_client.mutate(
             operation=_KB_MUTATION_OPERATIONS[step_name],
@@ -1647,6 +1656,17 @@ class NaoOrchestrator(Node):
             'success': result.success,
         }
         if result.success:
+            if step_name == 'kb_remove':
+                remaining = self._query_remaining_kb_remove_facts(statements, models)
+                if remaining:
+                    self._stats.dispatch_failures += 1
+                    payload['success'] = False
+                    payload['remaining_statements'] = remaining
+                    return (
+                        False,
+                        'KnowledgeCore remove post-condition failed',
+                        payload,
+                    )
             self._stats.dispatched_kb_mutation += 1
             return True, 'KnowledgeCore mutation completed', payload
         self._stats.dispatch_failures += 1
@@ -1719,6 +1739,32 @@ class NaoOrchestrator(Node):
                 for row in rows
             )
         return _dedupe_statements(expanded)
+
+    def _query_remaining_kb_remove_facts(
+        self,
+        statements: list[str],
+        models: list[str],
+    ) -> list[str]:
+        """Return removed facts that still resolve after a successful retract."""
+        if self._kb_query_client is None:
+            return []
+        remaining: list[str] = []
+        query_models = models if isinstance(models, list) and models else ['default']
+        for statement in statements:
+            subject, predicate, obj = _statement_parts(statement)
+            if not subject or not predicate or not obj:
+                continue
+            rows = self._kb_query_client.query_rows(
+                patterns=['%s %s ?object' % (subject, predicate)],
+                query_vars=['?object'],
+                models=query_models,
+            )
+            remaining.extend(
+                _statement_from_binding(subject, predicate, row)
+                for row in rows
+                if _binding_value(row, 'object') == obj
+            )
+        return _dedupe_statements(remaining)
 
     def _dispatch_planned_look_at(
         self,

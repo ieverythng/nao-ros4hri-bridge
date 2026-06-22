@@ -99,6 +99,24 @@ python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questi
   --out /tmp/nao_main_questionnaire.json
 ```
 
+For the intent-first route-lock ablation, relaunch the stack with
+`chatbot_turn_pipeline_mode:=intent_first`, then run:
+
+```bash
+python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
+  --container nao_ros2 \
+  --case-set intent_ablation \
+  --expected-turn-pipeline-mode intent_first \
+  --sample-topics \
+  --out /tmp/nao_intent_first_ablation.json
+```
+
+For a control run, keep the default `chatbot_turn_pipeline_mode:=response_first`
+and run the same `intent_ablation` case set with
+`--expected-turn-pipeline-mode response_first`. Compare the artifact
+`runtime_metadata.chatbot_turn_pipeline_mode`, route traces, planner requests,
+and speech output before accepting intent-first as an improvement.
+
 For targeted architecture seams before a full speech pass, run:
 
 ```bash
