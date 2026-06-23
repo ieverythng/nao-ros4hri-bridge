@@ -61,6 +61,15 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   object_detection_backend:=emorobcare_cv
 ```
 
+Object grounding with a frame-qualified simulator/3D position overlay:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_object_detection:=true \
+  start_scene_grounding:=true \
+  scene_grounding_spatial_overlay_topic:=/sim_scene/object_positions
+```
+
 Robot camera plus object grounding:
 
 ```bash
@@ -104,6 +113,7 @@ ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
 - `interaction_sim_hri_log_profile`
 - `scene_grounding_knowledge_lifespan_sec`
 - `scene_grounding_fallback_match_distance_px`
+- `scene_grounding_spatial_overlay_topic`
 
 See `../../docs/launch_profiles.md` for the full operator guide.
 
@@ -135,11 +145,11 @@ unrelated packages.
 
 Planner dialogue ownership stays split:
 
-- `chatbot_llm` generates the initial ack and final task-relative wording.
+- `chatbot_llm` generates user-facing wording for planner dialogue acts.
 - `planner_llm` produces abstract plans and completion dialogue-act facts.
 - `nao_orchestrator` executes skills and reports feedback.
-- `dialogue_manager` routes completion facts back through `chatbot_llm` before
-  speaking through TTS.
+- `dialogue_manager` routes planner dialogue-act facts back through
+  `chatbot_llm` before speaking through TTS.
 
 ## Perception And Scene Grounding
 

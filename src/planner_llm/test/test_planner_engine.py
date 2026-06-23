@@ -47,22 +47,165 @@ def test_planner_engine_builds_rule_plan_for_motion_intent() -> None:
     provider = _FakeProvider('{}')
     engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=2)
     request = PlannerRequest.from_payload(
+            {
+                'request_id': 'r1',
+                'goal_id': 'goal_1',
+                'goal_text': 'look left',
+                'normalized_intents': ['head_look_left'],
+            }
+        )
+
+    decision = engine.plan_request(request, goal_id='goal_1', plan_version=1)
+    assert decision.mode == 'rule_fallback'
+    assert decision.payload['plan']['goal_id'] == 'goal_1'
+    assert decision.payload['plan']['plan_version'] == 1
+    assert decision.payload['plan']['steps'][0]['args']['object'] == 'head_look_left'
+    assert decision.payload['plan']['retry_budget'] == 2
+    assert provider.messages
+
+
+def test_planner_engine_does_not_rule_fallback_targeted_motion_request() -> None:
+    provider = _FakeProvider('{}')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=2)
+    request = PlannerRequest.from_payload(
         {
-            'request_id': 'r1',
-            'goal_id': 'goal_1',
-            'user_text': 'look to the left for the cup',
+            'request_id': 'r_targeted_motion',
+            'goal_id': 'goal_targeted_motion',
+            'goal_text': 'look to the left for the cup',
             'normalized_intents': ['head_look_left'],
             'scene_targets': ['cup'],
         }
     )
 
-    decision = engine.plan_request(request, goal_id='goal_1', plan_version=1)
-    assert decision.mode == 'rule'
-    assert decision.payload['plan']['goal_id'] == 'goal_1'
-    assert decision.payload['plan']['plan_version'] == 1
-    assert decision.payload['plan']['steps'][0]['args']['object'] == 'head_look_left'
-    assert decision.payload['plan']['retry_budget'] == 2
-    assert provider.messages == []
+    decision = engine.plan_request(request, goal_id='goal_targeted_motion', plan_version=1)
+
+    assert decision.mode == 'fail'
+    assert decision.payload['plan']['status'] == 'failed'
+
+
+def test_planner_engine_prefers_provider_over_rule_for_simple_motion_intent() -> None:
+    provider = _FakeProvider(
+        '{"steps":[{"type":"skill","name":"perform_motion",'
+        '"args":{"object":"head_look_up"},"requires":[],"on_failure":"replan",'
+        '"retry_budget":0}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=2)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_provider_motion',
+            'goal_id': 'goal_provider_motion',
+            'goal_text': 'move your head up',
+            'normalized_intents': ['head_look_up'],
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_provider_motion', plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['steps'][0]['args']['object'] == 'head_look_up'
+    assert provider.messages[0]['role'] == 'system'
+
+
+def test_planner_engine_does_not_rule_fallback_composite_motion_goal_text() -> None:
+    provider = _FakeProvider('{}')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=2)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_all_direction_hint',
+            'goal_id': 'goal_all_direction_hint',
+            'goal_text': 'move your head in all directions',
+            'normalized_intents': ['head_look_up'],
+        }
+    )
+
+    decision = engine.plan_request(
+        request,
+        goal_id='goal_all_direction_hint',
+        plan_version=1,
+    )
+
+    assert decision.mode == 'fail'
+    assert decision.payload['plan']['status'] == 'failed'
+    assert 'planner output did not contain a valid executable plan' in (
+        decision.payload['plan']['failure_reason']
+    )
+    assert provider.messages
+
+
+def test_planner_engine_uses_provider_for_motion_report_request() -> None:
+    provider = _FakeProvider(
+        '{"steps":['
+        '{"type":"skill","name":"perform_motion","args":{"object":"head_look_right"},'
+        '"requires":[],"on_failure":"replan","retry_budget":0},'
+        '{"type":"skill","name":"scan","args":{},'
+        '"requires":["step_1"],"on_failure":"replan","retry_budget":0},'
+        '{"type":"skill","name":"report_result","args":{},'
+        '"requires":["step_2"],"on_failure":"fail","retry_budget":0}'
+        ']}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=2)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_motion_report',
+            'goal_id': 'goal_motion_report',
+            'goal_text': 'move your head to the right and report what you see',
+            'normalized_intents': ['head_look_right', 'inspect_scene', 'report_result'],
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_motion_report', plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert [step['name'] for step in decision.payload['plan']['steps']] == [
+        'perform_motion',
+        'scan',
+        'report_result',
+    ]
+    assert provider.messages[0]['role'] == 'system'
+    assert 'Keep emit_progress=false for short plans' in provider.messages[0]['content']
+    assert 'Routine internal step transitions' in provider.messages[0]['content']
+
+
+def test_planner_engine_keeps_composite_motion_report_progress_quiet_by_default() -> None:
+    provider = _FakeProvider(
+        '{"communication_policy":{"emit_progress":false,"emit_completion":true},'
+        '"steps":['
+        '{"type":"skill","name":"perform_motion","args":{"object":"head_look_left"},'
+        '"requires":[],"on_failure":"replan","retry_budget":0},'
+        '{"type":"skill","name":"perform_motion","args":{"object":"head_look_right"},'
+        '"requires":["step_1"],"on_failure":"replan","retry_budget":0},'
+        '{"type":"skill","name":"wave_greet","args":{},'
+        '"requires":["step_2"],"on_failure":"replan","retry_budget":0},'
+        '{"type":"skill","name":"report_result","args":{},'
+        '"requires":["step_3"],"on_failure":"fail","retry_budget":0}'
+        ']}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=2)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_motion_wave_report',
+            'goal_id': 'goal_motion_wave_report',
+            'goal_text': 'move your head in all directions and then wave at me',
+            'normalized_intents': ['perform_motion', 'wave_greet', 'report_result'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(
+        request,
+        goal_id='goal_motion_wave_report',
+        plan_version=1,
+    )
+
+    policy = decision.payload['plan']['communication_policy']
+    assert policy['emit_progress'] is False
+    assert policy['emit_completion'] is False
+    assert [step['name'] for step in decision.payload['plan']['steps']] == [
+        'perform_motion',
+        'perform_motion',
+        'wave_greet',
+        'report_result',
+    ]
 
 
 def test_planner_engine_uses_provider_for_non_rule_request() -> None:
@@ -83,8 +226,6 @@ def test_planner_engine_uses_provider_for_non_rule_request() -> None:
 
     decision = engine.plan_request(
         request,
-        world_model_text='Current world model context: cup visible',
-        world_model_snapshot={'scene_targets': ['cup']},
         goal_id='goal_2',
         plan_version=2,
         status='replanning',
@@ -97,6 +238,26 @@ def test_planner_engine_uses_provider_for_non_rule_request() -> None:
     assert '"goal_text": "inspect the visible cup"' in provider.messages[1]['content']
     assert '"user_text"' not in provider.messages[1]['content']
     assert '"invalid_examples": [{"name": "say", "type": "skill"}' in provider.messages[1]['content']
+
+
+def test_planner_engine_canonicalizes_look_at_target_alias_from_model() -> None:
+    provider = _FakeProvider(
+        '{"steps":[{"type":"look_at","name":"look_at","args":{"target":"anonymous person bcbhb"}}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=2)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r2b',
+            'goal_id': 'goal_2b',
+            'goal_text': 'look at that human',
+            'scene_targets': ['anonymous person bcbhb'],
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_2b', plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['steps'][0]['args']['target_frame'] == 'anonymous person bcbhb'
 
 
 def test_planner_engine_reports_invalid_model_output_as_failure() -> None:
@@ -125,7 +286,8 @@ def test_planner_engine_retries_invalid_model_plan_with_validation_feedback() ->
         [
             '{"steps":[{"type":"skill","name":"scan","args":{"target_kind":"scene"}},'
             '{"type":"skill","name":"say","args":{"text":"I looked around."}}]}',
-            '{"steps":[{"type":"skill","name":"scan","args":{"target_kind":"scene"}}]}',
+            '{"steps":[{"type":"skill","name":"scan","args":{"target_kind":"scene"}},'
+            '{"type":"skill","name":"report_result","args":{},"requires":["step_1"],"on_failure":"fail","retry_budget":0}]}',
         ]
     )
     engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
@@ -134,7 +296,7 @@ def test_planner_engine_retries_invalid_model_plan_with_validation_feedback() ->
             'request_id': 'r_retry',
             'goal_id': 'goal_retry',
             'goal_text': 'scan the room and tell me what you see',
-            'normalized_intents': ['inspect_scene'],
+            'normalized_intents': ['inspect_scene', 'report_result'],
         }
     )
 
@@ -145,7 +307,10 @@ def test_planner_engine_retries_invalid_model_plan_with_validation_feedback() ->
     retry_prompt = provider.messages[1][1]['content']
     assert 'validation_retry' in retry_prompt
     assert 'do not mix speech steps into executable plans' in retry_prompt
-    assert [step['type'] for step in decision.payload['plan']['steps']] == ['skill']
+    assert [step['name'] for step in decision.payload['plan']['steps']] == [
+        'scan',
+        'report_result',
+    ]
 
 
 def test_planner_engine_rejects_mixed_say_and_executable_steps() -> None:
@@ -181,7 +346,6 @@ def test_planner_engine_marks_provider_timeout_as_backend_unavailable() -> None:
             'goal_id': 'goal_timeout',
             'goal_text': 'bring me the cup',
             'normalized_intents': ['inspect_scene'],
-            'requested_plan': [],
         }
     )
 
@@ -214,6 +378,186 @@ def test_planner_engine_rejects_partial_model_plans_when_one_step_is_unsupported
     assert decision.payload['plan']['steps'][0]['type'] == 'say'
 
 
+def test_planner_engine_repairs_unsupported_composite_motion_object() -> None:
+    provider = _SequenceProvider(
+        [
+            '{"steps":[{"type":"skill","name":"perform_motion",'
+            '"args":{"object":"head_look_all"},"requires":[],'
+            '"on_failure":"replan","retry_budget":0}]}',
+            '{"steps":['
+            '{"type":"skill","name":"perform_motion","args":{"object":"head_look_left"},'
+            '"requires":[],"on_failure":"replan","retry_budget":0},'
+            '{"type":"skill","name":"perform_motion","args":{"object":"head_look_right"},'
+            '"requires":[],"on_failure":"replan","retry_budget":0},'
+            '{"type":"skill","name":"perform_motion","args":{"object":"head_look_up"},'
+            '"requires":[],"on_failure":"replan","retry_budget":0},'
+            '{"type":"skill","name":"perform_motion","args":{"object":"head_look_down"},'
+            '"requires":[],"on_failure":"replan","retry_budget":0}]}',
+        ]
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_all_directions',
+            'goal_id': 'goal_all_directions',
+            'goal_text': 'move your head in all directions',
+            'normalized_intents': ['perform_motion'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_all_directions', plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert len(provider.messages) == 2
+    retry_prompt = provider.messages[1][1]['content']
+    assert 'unsupported perform_motion args.object \\"head_look_all\\"' in retry_prompt
+    assert [step['args']['object'] for step in decision.payload['plan']['steps']] == [
+        'head_look_left',
+        'head_look_right',
+        'head_look_up',
+        'head_look_down',
+    ]
+
+
+def test_planner_engine_strips_prefilled_report_summary_after_scan() -> None:
+    provider = _FakeProvider(
+        '{"steps":[{"type":"skill","name":"scan","args":{},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"report_result","args":{"summary_text":"I can see a cup."},"requires":["step_1"],"on_failure":"fail","retry_budget":0}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_scan_report',
+            'goal_id': 'goal_scan_report',
+            'goal_text': 'look around and report what is visible',
+            'normalized_intents': ['inspect_scene', 'report_result'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_scan_report', plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['steps'][1]['args'] == {}
+
+
+def test_planner_engine_strips_prefilled_report_summary_after_motion() -> None:
+    provider = _FakeProvider(
+        '{"steps":[{"type":"skill","name":"perform_motion","args":{"object":"head_look_left"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"report_result","args":{"summary_text":"I have moved my head in all directions as requested."},"requires":["step_1"],"on_failure":"fail","retry_budget":0}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_motion_report',
+            'goal_id': 'goal_motion_report',
+            'goal_text': 'move your head in all directions and report when done',
+            'normalized_intents': ['perform_motion', 'report_result'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_motion_report', plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['steps'][1]['args'] == {}
+
+
+def test_planner_engine_strips_prefilled_report_summary_after_navigation() -> None:
+    provider = _FakeProvider(
+        '{"steps":[{"type":"skill","name":"navigate_to","args":{"target":"apple_1"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"report_result","args":{"summary_text":"I navigated to the apple."},"requires":["step_1"],"on_failure":"fail","retry_budget":0}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_nav_report',
+            'goal_id': 'goal_nav_report',
+            'goal_text': 'navigate to the apple and report when done',
+            'normalized_intents': ['navigate_to', 'report_result'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_nav_report', plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['steps'][1]['args'] == {}
+
+
+def test_planner_engine_accepts_report_result_after_scan_without_summary_text() -> None:
+    provider = _FakeProvider(
+        '{"steps":[{"type":"skill","name":"scan","args":{},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"report_result","args":{},"requires":["step_1"],"on_failure":"fail","retry_budget":0}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_scan_report_ok',
+            'goal_id': 'goal_scan_report_ok',
+            'goal_text': 'look around and report what is visible',
+            'normalized_intents': ['inspect_scene', 'report_result'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_scan_report_ok', plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['steps'][1]['args'] == {}
+
+
+def test_planner_engine_retries_when_requested_report_is_missing() -> None:
+    provider = _SequenceProvider(
+        [
+            '{"steps":[{"type":"skill","name":"scan","args":{},'
+            '"requires":[],"on_failure":"replan","retry_budget":0}]}',
+            '{"steps":[{"type":"skill","name":"scan","args":{},'
+            '"requires":[],"on_failure":"replan","retry_budget":0},'
+            '{"type":"skill","name":"report_result","args":{},'
+            '"requires":["step_1"],"on_failure":"fail","retry_budget":0}]}',
+        ]
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_missing_report',
+            'goal_id': 'goal_missing_report',
+            'goal_text': 'look around and tell me what you see',
+            'normalized_intents': ['inspect_scene', 'report_result'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_missing_report', plan_version=1)
+
+    assert len(provider.messages) == 2
+    assert 'request asks for a user-facing report' in provider.messages[1][1]['content']
+    assert [step['name'] for step in decision.payload['plan']['steps']] == [
+        'scan',
+        'report_result',
+    ]
+
+
+def test_planner_engine_does_not_infer_report_requirement_from_goal_text() -> None:
+    provider = _FakeProvider(
+        '{"steps":[{"type":"skill","name":"scan","args":{},'
+        '"requires":[],"on_failure":"replan","retry_budget":0}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_no_report_intent',
+            'goal_id': 'goal_no_report_intent',
+            'goal_text': 'look around and tell me what you see',
+            'normalized_intents': ['inspect_scene'],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_no_report_intent', plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert [step['name'] for step in decision.payload['plan']['steps']] == ['scan']
+
+
 def test_planner_engine_clarifies_when_retry_budget_is_exhausted() -> None:
     engine = _engine_for_response('{}', retry_budget=2)
     request = PlannerRequest.from_payload(
@@ -237,6 +581,30 @@ def test_planner_engine_clarifies_when_retry_budget_is_exhausted() -> None:
     assert decision.payload['plan']['replan_hint'] == 'clarify_user'
 
 
+def test_planner_engine_caps_model_retry_budget_to_remaining_feedback_budget() -> None:
+    provider = _FakeProvider(
+        '{"ack_text":"Retrying.","retry_budget":3,"steps":[{"type":"skill","name":"find_object","args":{"target":"cup"},"requires":[],"on_failure":"replan","retry_budget":3}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=2)
+    request = PlannerRequest.from_payload(
+        {'request_id': 'r3b', 'goal_id': 'goal_3b', 'user_text': 'find the cup'}
+    )
+    feedback = ExecutionFeedback.from_payload(
+        {
+            'goal_id': 'goal_3b',
+            'plan_id': 'plan_1',
+            'plan_version': 1,
+            'status': 'failed',
+            'reason': 'target moved',
+            'retry_budget': 2,
+        }
+    )
+
+    decision = engine.plan_request(request, feedback=feedback, goal_id='goal_3b', plan_version=2)
+    assert decision.mode == 'replan'
+    assert decision.payload['plan']['retry_budget'] == 1
+
+
 def test_planner_engine_uses_provider_for_multi_step_requests_even_with_rule_intent() -> None:
     provider = _FakeProvider(
         '{"ack_text":"Moving my head up, then sitting down.","steps":[{"type":"skill","name":"perform_motion","args":{"object":"head_look_up"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"perform_motion","args":{"object":"sit"},"requires":[],"on_failure":"replan","retry_budget":0}]}'
@@ -258,64 +626,37 @@ def test_planner_engine_uses_provider_for_multi_step_requests_even_with_rule_int
     assert provider.messages[0]['role'] == 'system'
 
 
-def test_planner_engine_falls_back_to_requested_plan_when_model_output_is_invalid() -> None:
+def test_planner_engine_fails_when_model_output_is_invalid() -> None:
     provider = _FakeProvider('{}')
     engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
     request = PlannerRequest.from_payload(
         {
-            'request_id': 'r_hint',
-            'goal_id': 'goal_hint',
+            'request_id': 'r_invalid',
+            'goal_id': 'goal_invalid',
             'user_text': 'look up and then sit down',
-            'normalized_intents': ['head_look_up'],
-            'requested_plan': [
-                {
-                    'type': 'skill',
-                    'name': 'perform_motion',
-                    'args': {'object': 'head_look_up'},
-                },
-                {
-                    'type': 'skill',
-                    'name': 'perform_motion',
-                    'args': {'object': 'sit'},
-                },
-            ],
+            'goal_text': 'look up and then sit down',
+            'normalized_intents': ['inspect_scene'],
+            'planner_mode': 'multi_step',
         }
     )
 
-    decision = engine.plan_request(request, goal_id='goal_hint', plan_version=1)
+    decision = engine.plan_request(request, goal_id='goal_invalid', plan_version=1)
 
-    assert decision.mode == 'hint'
-    assert [step['args']['object'] for step in decision.payload['plan']['steps']] == [
-        'head_look_up',
-        'sit',
-    ]
-    assert provider.messages[1]['content'].find('"requested_plan"') != -1
+    assert decision.mode == 'fail'
 
 
-def test_planner_engine_does_not_use_partial_requested_plan_hints() -> None:
+def test_planner_engine_rejects_invalid_model_output_without_hints() -> None:
     provider = _FakeProvider('{}')
     engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
     request = PlannerRequest.from_payload(
         {
-            'request_id': 'r_hint_partial',
-            'goal_id': 'goal_hint_partial',
+            'request_id': 'r_invalid_partial',
+            'goal_id': 'goal_invalid_partial',
             'goal_text': 'stand up and dance',
-            'requested_plan': [
-                {
-                    'type': 'skill',
-                    'name': 'perform_motion',
-                    'args': {'object': 'stand'},
-                },
-                {
-                    'type': 'skill',
-                    'name': 'dance',
-                    'args': {'style': 'wave'},
-                },
-            ],
         }
     )
 
-    decision = engine.plan_request(request, goal_id='goal_hint_partial', plan_version=1)
+    decision = engine.plan_request(request, goal_id='goal_invalid_partial', plan_version=1)
 
     assert decision.mode == 'fail'
 
@@ -391,7 +732,7 @@ def test_ollama_provider_uses_thinking_when_content_is_empty(monkeypatch) -> Non
 
 def test_planner_engine_accepts_scan_steps_from_provider() -> None:
     provider = _FakeProvider(
-        '{"ack_text":"I will look around and report what I find.","steps":[{"type":"skill","name":"perform_motion","args":{"object":"head_look_left"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"perform_motion","args":{"object":"head_look_right"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"scan","args":{"target":"people","target_kind":"people","max_sweeps":2},"requires":[],"on_failure":"replan","retry_budget":0}]}'
+        '{"ack_text":"I will look around and report what I find.","steps":[{"type":"skill","name":"perform_motion","args":{"object":"head_look_left"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"perform_motion","args":{"object":"head_look_right"},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"scan","args":{"target":"people","target_kind":"people","max_sweeps":2},"requires":[],"on_failure":"replan","retry_budget":0},{"type":"skill","name":"report_result","args":{},"requires":["step_3"],"on_failure":"fail","retry_budget":0}]}'
     )
     engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
     request = PlannerRequest.from_payload(
@@ -399,7 +740,7 @@ def test_planner_engine_accepts_scan_steps_from_provider() -> None:
             'request_id': 'r_scan',
             'goal_id': 'goal_scan',
             'goal_text': 'look around and tell me what you see',
-            'normalized_intents': ['inspect_scene'],
+            'normalized_intents': ['inspect_scene', 'report_result'],
             'scene_targets': ['people'],
             'planner_mode': 'multi_step',
         }
@@ -412,6 +753,7 @@ def test_planner_engine_accepts_scan_steps_from_provider() -> None:
         'perform_motion',
         'perform_motion',
         'scan',
+        'report_result',
     ]
 
 
@@ -422,7 +764,8 @@ def test_planner_engine_retries_scan_result_wording_outside_plan() -> None:
             '"steps":[{"type":"skill","name":"scan","args":{"target":"people"}},'
             '{"type":"say","name":"say","args":{"text":"I found one person."}}]}',
             '{"ack_text":"I will look around and report what I find.",'
-            '"steps":[{"type":"skill","name":"scan","args":{"target":"people","target_kind":"people"}}]}',
+            '"steps":[{"type":"skill","name":"scan","args":{"target":"people","target_kind":"people"}},'
+            '{"type":"skill","name":"report_result","args":{},"requires":["step_1"],"on_failure":"fail","retry_budget":0}]}',
         ]
     )
     engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
@@ -431,7 +774,7 @@ def test_planner_engine_retries_scan_result_wording_outside_plan() -> None:
             'request_id': 'r_scan_result',
             'goal_id': 'goal_scan_result',
             'goal_text': 'look around and tell me what you see',
-            'normalized_intents': ['inspect_scene'],
+            'normalized_intents': ['inspect_scene', 'report_result'],
             'planner_mode': 'multi_step',
         }
     )
@@ -442,4 +785,5 @@ def test_planner_engine_retries_scan_result_wording_outside_plan() -> None:
     assert 'say steps cannot be mixed with executable steps' in provider.messages[1][1]['content']
     assert [step['name'] for step in decision.payload['plan']['steps']] == [
         'scan',
+        'report_result',
     ]

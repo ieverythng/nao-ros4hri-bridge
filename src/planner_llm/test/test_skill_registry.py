@@ -10,6 +10,19 @@ def test_skill_registry_loads_from_source_fallback_when_install_overlay_is_missi
     assert 'look_at' in registry.allowed_skill_names
     assert 'scan' in registry.allowed_skill_names
     assert 'report_result' in registry.allowed_skill_names
+    assert 'ask_user' in registry.allowed_skill_names
+    assert 'ask_clarification' in registry.allowed_skill_names
+    assert 'find_object' in registry.allowed_skill_names
+    assert 'navigate_to' in registry.allowed_skill_names
+    assert 'wave_greet' in registry.allowed_skill_names
+    assert 'wave_at' not in registry.allowed_skill_names
+    assert 'kb_add' in registry.allowed_skill_names
+    assert 'kb_revise' in registry.allowed_skill_names
+    assert 'kb_remove' in registry.allowed_skill_names
+    assert 'walk_to' in registry.allowed_skill_names
+    assert 'pick_object' in registry.allowed_skill_names
+    assert 'place_object' in registry.allowed_skill_names
+    assert 'bring_object' in registry.allowed_skill_names
 
 
 def test_skill_registry_derives_planner_skills_from_package_exports() -> None:
@@ -20,6 +33,9 @@ def test_skill_registry_derives_planner_skills_from_package_exports() -> None:
     look_at = skills_by_name['look_at']
     scan = skills_by_name['scan']
     report_result = skills_by_name['report_result']
+    ask_user = skills_by_name['ask_user']
+    wave_greet = skills_by_name['wave_greet']
+    pick_object = skills_by_name['pick_object']
 
     assert perform_motion.robot_adapter_mapping == 'nao_orchestrator.perform_motion'
     assert perform_motion.required_params == ('object',)
@@ -37,6 +53,11 @@ def test_skill_registry_derives_planner_skills_from_package_exports() -> None:
     assert 'perception' in scan.safety_flags
     assert report_result.robot_adapter_mapping == 'nao_orchestrator.report_result'
     assert report_result.params == ('summary_text',)
+    assert ask_user.robot_adapter_mapping == 'nao_orchestrator.ask_user'
+    assert 'ask_clarification' in ask_user.aliases
+    assert wave_greet.robot_adapter_mapping == 'fake_skills.wave_greet'
+    assert pick_object.robot_adapter_mapping == 'fake_skills.pick_object'
+    assert 'grab' in pick_object.aliases
 
 
 def test_skill_prompt_summary_exposes_planner_contract_fields() -> None:

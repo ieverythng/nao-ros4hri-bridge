@@ -53,7 +53,8 @@ flowchart LR
     dm -->|dialogue turn request| chatbot["chatbot_llm<br/>response + intent routing"]
     chatbot --> route{"Direct or planner route"}
     route -->|direct mode<br/>/intents| orch["nao_orchestrator<br/>deterministic executor"]
-    route -->|planner mode<br/>/planner/request| planner["planner_llm<br/>planner + supervisor"]
+    route -->|planner mode<br/>/nao_orchestrator/planner_request| gate["nao_orchestrator<br/>planner gate"]
+    gate -->|admitted request<br/>/planner/request| planner["planner_llm<br/>planner + supervisor"]
     planner -->|executable plan<br/>/intents| orch
     orch -.->|execution status<br/>/planner/execution_feedback| planner
     planner -.->|clarify/report<br/>/planner/dialogue_act| dm
@@ -79,7 +80,8 @@ Important distinction:
 
 - `knowledge_snapshot` is chatbot-facing prompt context from `/kb/query`.
 - `/scene/summary` is detector-grounded object summary for operators and future consumers.
-- `/world_model/enriched_snapshot` and `/world_model/enriched_text` are planned WME inputs for the planner, but WME is not the Monday priority.
+- `state_t0` is the compact planner-facing world state assembled from current
+  grounded scene facts.
 
 ## Core Contracts
 
@@ -100,10 +102,54 @@ Published by `chatbot_llm` as `hri_actions_msgs/msg/Intent`.
   "scene_targets": ["cup"],
   "requested_plan": [],
   "grounded_context": {
-    "knowledge_snapshot": {"summary_text": "cup is currently visible"},
-    "scene_summary": {},
-    "world_model_snapshot": {},
-    "world_model_text": ""
+    "knowledge_snapshot": {
+      "schema_version": "knowledge_snapshot_v2",
+      "captured_at_sec": 1777040000.0,
+      "references": [
+        {"normalized_name": "cup", "id": "cup_1", "type": "Cup"},
+        {"normalized_name": "person", "id": "person_1", "type": "Person"}
+      ],
+      "counts": {"entities": 2, "people": 1, "objects": 1}
+    },
+    "scene_summary": {
+      "schema_version": "scene_summary_v2",
+      "observer": "myself",
+      "backend": "emorobcare_cv",
+      "captured_at_sec": 1777040000.0,
+      "objects": [
+        {
+          "entity_id": "cup_1",
+          "label": "cup",
+          "kb_class": "Cup",
+          "score": 0.91,
+          "tracker_id": "",
+          "source": "emorobcare_cv",
+          "center_x": 320.0,
+          "center_y": 240.0,
+          "last_seen_sec": 1777040000.0
+        }
+      ],
+      "people": [
+        {
+          "id": "person_1",
+          "label": "person",
+          "type": "Person",
+          "source": "emorobcare_cv",
+          "score": 0.84,
+          "center_x": 188.0,
+          "center_y": 205.0,
+          "last_seen_sec": 1777040000.0
+        }
+      ]
+    },
+    "state_t0": {
+      "schema_version": "state_t0_v2",
+      "observer": "myself",
+      "backend": "emorobcare_cv",
+      "captured_at_sec": 1777040000.0,
+      "entity_counts": {"entities": 2, "people": 1, "objects": 1},
+      "entities": []
+    }
   },
   "planner_mode": "default",
   "interaction_mode": "speech",
@@ -119,6 +165,8 @@ Planner input policy:
   planner work.
 - `user_text` is legacy parser input only. `chatbot_llm` should not send it to
   the planner during normal operation.
+- planner prompt policy treats every `state_t0.entities[*].id` as a valid
+  `look_at.target_frame` candidate, so no dedicated candidate list is required.
 
 ### Planner Output On `/intents`
 
@@ -127,8 +175,11 @@ inside `Intent.data.plan`.
 
 ```json
 {
-  "goal_id": "goal_turn_123",
-  "scene_targets": ["cup"],
+  "grounded_context": {
+    "knowledge_snapshot": {},
+    "scene_summary": {},
+    "state_t0": {}
+  },
   "plan": {
     "goal_id": "goal_turn_123",
     "plan_id": "plan_123",
@@ -154,7 +205,8 @@ inside `Intent.data.plan`.
         "on_failure": "replan",
         "retry_budget": 0
       }
-    ]
+    ],
+    "scene_targets": ["cup"]
   }
 }
 ```
@@ -377,10 +429,10 @@ diagnostic, then only the smallest demo code needed to prove the loop.
   ./scripts/run_tests.sh
   ```
 
-  If `launch` is missing on `PYTHONPATH`, `test_launch_profiles.py` is skipped with
-  a short message. Optional: recreate the venv with
-  `python3 -m venv .venv --system-site-packages` so the venv inherits system ROS
-  Python packages when needed.
+  If `launch` is missing on `PYTHONPATH`, the workspace suite fails because the
+  launch profile contracts are part of the pre-commit gate. Recreate the venv with
+  `python3 -m venv --system-site-packages .venv` when you need the venv to inherit
+  system ROS Python packages directly.
 
 - After adding or renaming launch files, run **`colcon build --packages-select nao_chatbot`**
   (or a full build) before robot runs. `scripts/run_tests.sh` launch smoke checks

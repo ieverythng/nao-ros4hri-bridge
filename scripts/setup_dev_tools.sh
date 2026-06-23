@@ -11,7 +11,7 @@ fi
 
 if [ ! -d ".venv" ]; then
   echo "Creating .venv ..."
-  if ! python3 -m venv .venv; then
+  if ! python3 -m venv --system-site-packages .venv; then
     echo "Failed to create .venv."
     echo "Install required packages, then rerun:"
     echo "  sudo apt-get update && sudo apt-get install -y python3-venv python3-pip"
@@ -29,5 +29,6 @@ python -m pre_commit install --hook-type pre-push
 
 echo "Dev tools ready."
 echo "Use these commands from VS Code terminal:"
+echo "  source /opt/ros/jazzy/setup.bash"
 echo "  source .venv/bin/activate"
-echo "  python -m pre_commit run --all-files"
+echo "  ./scripts/run_precommit.sh"

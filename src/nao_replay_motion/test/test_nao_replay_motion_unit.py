@@ -142,6 +142,49 @@ def test_head_motion_open_loop_dispatch_still_validates_absolute_target():
     assert "Yaw out of range" in result.message
 
 
+def test_head_motion_convergence_timeout_fails_when_not_assuming_success():
+    server = HeadMotionSkillServer.__new__(HeadMotionSkillServer)
+    server.assume_success_on_convergence_timeout = False
+    server._result = HeadMotionSkillServer._result
+    server.get_logger = lambda: type("Logger", (), {"warn": lambda *_args: None})()
+
+    goal_handle = _FakeGoalHandle()
+    result = server._outcome_after_convergence_timeout(
+        goal_handle,
+        start_time=0.0,
+        reason="Head motion timed out before convergence",
+        target_yaw=0.4,
+        target_pitch=0.0,
+    )
+
+    assert goal_handle.aborted is True
+    assert goal_handle.succeeded is False
+    assert result.success is False
+    assert "timed out" in result.message
+
+
+def test_head_motion_convergence_timeout_can_be_debug_open_loop_success():
+    server = HeadMotionSkillServer.__new__(HeadMotionSkillServer)
+    server.assume_success_on_convergence_timeout = True
+    server._result = HeadMotionSkillServer._result
+    server._publish_feedback = HeadMotionSkillServer._publish_feedback
+    server.get_logger = lambda: type("Logger", (), {"warn": lambda *_args: None})()
+
+    goal_handle = _FakeGoalHandle()
+    result = server._outcome_after_convergence_timeout(
+        goal_handle,
+        start_time=0.0,
+        reason="Head motion timed out before convergence",
+        target_yaw=0.4,
+        target_pitch=0.0,
+    )
+
+    assert goal_handle.succeeded is True
+    assert goal_handle.aborted is False
+    assert result.success is True
+    assert "convergence was not observed" in result.message
+
+
 def test_posture_result_helpers_match_bridge_payload():
     payload = _parse_posture_result_message(
         '{"command":"stand","normalized_command":"stand","posture_name":"Stand","success":true,"message":"Executed posture command"}'

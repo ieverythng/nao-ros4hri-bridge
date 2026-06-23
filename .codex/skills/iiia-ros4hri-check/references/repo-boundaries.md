@@ -47,6 +47,9 @@ Prefer seam-focused changes and keep compatibility in mind.
   and planner dialogue acts.
 - `planner_common` owns planner request, plan, feedback, and dialogue-act
   contracts.
+- `nao_orchestrator` owns planner-request gating and planner-dialogue relay in
+  the live seam profile; preserve this bridge instead of direct dialogue-manager
+  wiring to planner topics.
 
 ### Execution side
 

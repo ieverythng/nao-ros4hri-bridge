@@ -7,45 +7,60 @@ repos:
         name: check for merge conflicts
         entry: python3 scripts/precommit_check_merge_conflict.py
         language: system
+        stages: [pre-commit]
         types: [text]
 
       - id: check-yaml
         name: check yaml
         entry: python3 scripts/precommit_check_yaml.py
         language: system
+        stages: [pre-commit]
         files: \.(yaml|yml)$
 
       - id: end-of-file-fixer
         name: fix end of files
         entry: python3 scripts/precommit_fix_eof.py
         language: system
+        stages: [pre-commit]
         types: [text]
 
       - id: trailing-whitespace
         name: trim trailing whitespace
         entry: python3 scripts/precommit_trim_trailing_whitespace.py
         language: system
+        stages: [pre-commit]
         types: [text]
 
       - id: ruff
         name: ruff
         entry: ./.venv/bin/ruff check --select=F,E9
         language: system
+        stages: [pre-commit]
         files: ^src/(nao_chatbot|nao_look_at|nao_orchestrator|nao_replay_motion|nao_say_skill|asr_vosk|simple_audio_capture)/.*\.py$
 
       - id: check-skill-registry-consistency
         name: check-skill-registry-consistency
         entry: python3 scripts/check_skill_registry_consistency.py
         language: system
+        stages: [pre-commit]
         pass_filenames: false
       - id: sync-skill-registry-views
         name: sync-skill-registry-views
         entry: python3 scripts/sync_skill_registry_views.py --check
         language: system
+        stages: [pre-commit]
         pass_filenames: false
 
       - id: workspace-test-suite
         name: workspace-test-suite
         entry: ./scripts/run_tests.sh
         language: system
+        stages: [pre-commit]
+        pass_filenames: false
+
+      - id: check-precommit-cache
+        name: check-precommit-cache
+        entry: python3 scripts/precommit_cache.py check
+        language: system
+        stages: [pre-push]
         pass_filenames: false

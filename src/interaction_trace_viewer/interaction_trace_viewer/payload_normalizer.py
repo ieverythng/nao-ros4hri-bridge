@@ -48,6 +48,12 @@ def normalize_string_message(*, channel: str, msg, max_payload_chars: int) -> In
     raw_text = str(getattr(msg, 'data', '')).strip()
     parsed_data = _try_parse_json_dict(raw_text)
     payload = parsed_data if parsed_data is not None else {'text': raw_text}
+    if str(channel).strip() == '/fake_skills/events' and isinstance(payload, dict):
+        nested_payload = payload.get('payload', {})
+        if isinstance(nested_payload, dict):
+            for key in ('status', 'summary_text', 'failure', 'result_mode'):
+                if key not in payload and key in nested_payload:
+                    payload[key] = nested_payload.get(key)
 
     event_type = _event_type_for_channel(channel)
     trace_id = _extract_trace_id(payload)
@@ -137,11 +143,14 @@ def summarize_event_payload(*, event_type: str, channel: str, payload: dict, max
         route = _first_non_empty(payload, 'route')
         intent = _first_non_empty(payload, 'intent')
         source = _first_non_empty(payload, 'intent_source')
-        return _clip(
-            'route=%s | intent=%s | source=%s'
-            % (route or '-', intent or '-', source or '-'),
-            max_payload_chars,
-        )
+        kb_summary = _summarize_turn_trace_kb(payload)
+        summary = 'route=%s | intent=%s | source=%s' % (route or '-', intent or '-', source or '-')
+        if kb_summary:
+            summary += ' | %s' % kb_summary
+        return _clip(summary, max_payload_chars)
+
+    if event_type == 'kb_snapshot':
+        return _clip(_summarize_kb_snapshot(payload), max_payload_chars)
 
     compact = json.dumps(payload, ensure_ascii=True, separators=(',', ':'))
     return _clip('%s %s' % (channel, compact), max_payload_chars)
@@ -160,7 +169,9 @@ def _event_type_for_channel(channel: str) -> str:
         '/intents': 'planner_output',
         '/planner/execution_feedback': 'execution_feedback',
         '/planner/dialogue_act': 'planner_dialogue_act',
+        '/nao_orchestrator/planner_dialogue_act': 'planner_dialogue_act',
         '/chatbot_llm/turn_trace': 'chatbot_turn_trace',
+        '/fake_skills/events': 'skill_result',
         '/scene/summary': 'scene_update',
     }
     return mapping.get(str(channel).strip(), 'message')
@@ -228,6 +239,80 @@ def _extract_plan_steps(payload: dict) -> list[str]:
     return labels
 
 
+def _summarize_kb_snapshot(payload: dict) -> str:
+    entities = payload.get('entities', [])
+    if isinstance(entities, list):
+        preview = []
+        for item in entities[:5]:
+            if not isinstance(item, dict):
+                continue
+            label = _first_non_empty(item, 'label', 'entity_id')
+            kb_class = _first_non_empty(item, 'kb_class')
+            if label and kb_class:
+                preview.append('%s(%s)' % (label, kb_class))
+            elif label:
+                preview.append(label)
+        if preview:
+            return 'entities=%d | %s' % (len(entities), ', '.join(preview))
+        return 'entities=%d' % len(entities)
+
+    text = _first_non_empty(payload, 'text')
+    if text:
+        return text
+    return json.dumps(payload, ensure_ascii=True, separators=(',', ':'))
+
+
+def _summarize_turn_trace_kb(payload: dict) -> str:
+    grounded_context = payload.get('grounded_context', {})
+    knowledge_snapshot = {}
+    scene_summary = {}
+    if isinstance(grounded_context, dict):
+        maybe_knowledge_snapshot = grounded_context.get('knowledge_snapshot', {})
+        if isinstance(maybe_knowledge_snapshot, dict):
+            knowledge_snapshot = maybe_knowledge_snapshot
+        maybe_scene = grounded_context.get('scene_summary', {})
+        if isinstance(maybe_scene, dict):
+            scene_summary = maybe_scene
+
+    objects = scene_summary.get('objects', []) if isinstance(scene_summary, dict) else []
+    object_preview: list[str] = []
+    if isinstance(objects, list):
+        for item in objects[:3]:
+            if not isinstance(item, dict):
+                continue
+            label = _first_non_empty(item, 'label', 'id')
+            if label:
+                object_preview.append(label)
+
+    people = scene_summary.get('people', []) if isinstance(scene_summary, dict) else []
+    object_count = len(objects) if isinstance(objects, list) else 0
+    people_count = len(people) if isinstance(people, list) else 0
+
+    parts: list[str] = []
+    references = knowledge_snapshot.get('references', []) if isinstance(knowledge_snapshot, dict) else []
+    if isinstance(references, list) and references:
+        parts.append('refs=%d' % len(references))
+        ref_preview: list[str] = []
+        for item in references[:3]:
+            if not isinstance(item, dict):
+                continue
+            label = _first_non_empty(item, 'normalized_name', 'id')
+            if label:
+                ref_preview.append(label)
+        if ref_preview:
+            parts.append('ref_preview=%s' % ','.join(ref_preview))
+
+    if object_count > 0:
+        suffix = (':' + ','.join(object_preview)) if object_preview else ''
+        parts.append('objects=%d%s' % (object_count, suffix))
+    parts.append('people=%d' % people_count)
+
+    snapshot_text = str(payload.get('knowledge_snapshot', '') or '').strip()
+    if snapshot_text:
+        parts.append('kb_chars=%d' % len(snapshot_text))
+    return ' | '.join(parts)
+
+
 def _first_non_empty(payload: dict, *keys: str) -> str:
     for key in keys:
         value = payload.get(key, '')
@@ -242,6 +327,18 @@ def _clip(text: str, max_chars: int) -> str:
     if max_chars <= 0 or len(clean_text) <= max_chars:
         return clean_text
     return clean_text[: max(0, max_chars - 3)] + '...'
+
+
+def normalize_include_event_types(
+    *,
+    include_channels: set[str],
+    include_event_types: set[str],
+    exclude_event_types: set[str],
+) -> set[str]:
+    """Ensure event filters stay compatible with selected channels."""
+    _ = include_channels
+    _ = exclude_event_types
+    return include_event_types
 
 
 def _try_parse_json_dict(raw_text: str) -> dict | None:

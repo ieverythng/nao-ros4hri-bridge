@@ -78,6 +78,14 @@ Authoritative ROS4HRI and SocialMinds entry points:
 
 - Keep `chatbot_llm` and `dialogue_manager` changes minimal and seam-focused.
 - Prefer adding planner-facing hooks over rewriting the dialogue loop.
+- For the live seam profile, validate planner dialogue relay wiring explicitly:
+  `planner_llm:/planner/dialogue_act -> nao_orchestrator:/nao_orchestrator/planner_dialogue_act -> dialogue_manager`.
+- In that same profile, keep planner dialogue/completion wording mode `direct`
+  in `dialogue_manager`; planner dialogue should not auto-route back through
+  chatbot wording.
+- Preserve planner ingress seam as
+  `chatbot_llm -> nao_orchestrator(planner gate) -> planner_llm`; avoid direct
+  chatbot-to-planner bypass in launch or runtime parameter changes.
 
 ### LLM readiness and failure visibility
 
@@ -96,6 +104,22 @@ Authoritative ROS4HRI and SocialMinds entry points:
   underspecified human requests.
 - Do not move speaking ownership into planner or executor packages; planner
   dialogue acts remain hints consumed by `dialogue_manager`.
+
+### LLM prompt continuity
+
+- When adding chatbot or planner LLM sub-tasks, keep the configured base prompt
+  pack as the agent identity and append task-specific instructions to that
+  prompt. Do not replace the chatbot or planner system prompt with one-off
+  hardcoded wording prompts for completion, clarification, planner dialogue, or
+  report generation.
+- If a system-only chatbot turn must omit route/planner-handoff requirements,
+  do that explicitly through the shared prompt builder and keep the configured
+  system prompt, persona, environment, skill catalog, and response addendum
+  intact.
+- Add focused tests for new LLM sub-tasks that assert both the configured base
+  prompt and the task addendum are present in the system message.
+- Tiny LLM connectivity/readiness probes may use minimal prompts, but they must
+  stay outside user-facing planning, dialogue, and execution-report seams.
 
 ### Grounding and perception
 

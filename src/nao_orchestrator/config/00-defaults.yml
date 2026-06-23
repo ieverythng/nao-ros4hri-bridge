@@ -15,6 +15,7 @@
     head_motion_wait_sec: 0.2
     look_at_action: "/skill/look_at"
     look_at_wait_sec: 0.2
+    look_at_execution_mode: "real"
     posture_command_topic: "/chatbot/posture_command"
     posture_command_result_topic: "/chatbot/posture_command_result"
     posture_command_result_timeout_sec: 20.0
@@ -33,12 +34,20 @@
     fake_skill_result_timeout_sec: 20.0
     fake_skill_navigate_to_action: "/skill/fake/navigate_to"
     fake_skill_find_object_action: "/skill/fake/find_object"
+    fake_skill_look_at_action: "/skill/fake/look_at"
     fake_skill_wave_greet_action: "/skill/fake/wave_greet"
     fake_skill_inspect_area_action: "/skill/fake/inspect_area"
     fake_skill_walk_to_action: "/skill/fake/walk_to"
+    fake_skill_pick_object_action: "/skill/fake/pick_object"
+    fake_skill_place_object_action: "/skill/fake/place_object"
+    fake_skill_bring_object_action: "/skill/fake/bring_object"
     report_result_action: "/skill/report_result"
     report_result_action_wait_sec: 0.2
     report_result_action_result_timeout_sec: 8.0
+    execution_report_chatbot_enabled: true
+    execution_report_chatbot_service: "/chatbot_llm/dialogue_interaction"
+    execution_report_chatbot_wait_sec: 0.5
+    execution_report_chatbot_timeout_sec: 12.0
 
 /scan_skill_server:
   ros__parameters:

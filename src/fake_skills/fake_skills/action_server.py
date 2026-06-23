@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import threading
 import time
 
 from nao_skills.action import ScanScene
@@ -20,7 +21,9 @@ except ImportError:  # pragma: no cover - unit-test fallback
 
 from fake_skills.contracts import FakeSkillRequest
 from fake_skills.engine import FakeSkillEngine
+from fake_skills.kb_guard import validate_skill_target
 from fake_skills.scenario_store import ScenarioStore
+from kb_skills.query_client import KnowledgeCoreQueryClient
 
 
 class FakeSkillActionServer(Node):
@@ -32,15 +35,27 @@ class FakeSkillActionServer(Node):
         self.declare_parameter('execute_action_name', '/skill/fake/execute')
         self.declare_parameter('navigate_to_action_name', '/skill/fake/navigate_to')
         self.declare_parameter('find_object_action_name', '/skill/fake/find_object')
+        self.declare_parameter('perform_motion_action_name', '/skill/fake/perform_motion')
         self.declare_parameter('wave_greet_action_name', '/skill/fake/wave_greet')
         self.declare_parameter('inspect_area_action_name', '/skill/fake/inspect_area')
+        self.declare_parameter('look_at_action_name', '/skill/fake/look_at')
         self.declare_parameter('walk_to_action_name', '/skill/fake/walk_to')
+        self.declare_parameter('pick_object_action_name', '/skill/fake/pick_object')
+        self.declare_parameter('place_object_action_name', '/skill/fake/place_object')
+        self.declare_parameter('bring_object_action_name', '/skill/fake/bring_object')
         self.declare_parameter('scenario_file', '')
         self.declare_parameter('default_delay_sec', 0.75)
         self.declare_parameter('deterministic_seed', 42)
         self.declare_parameter('publish_events', True)
         self.declare_parameter('event_topic', '/fake_skills/events')
         self.declare_parameter('active_scenario_id', '')
+        self.declare_parameter('global_mode', 'scenario')
+        self.declare_parameter('random_failure_prob', 0.5)
+        self.declare_parameter('mode_overrides_json', '{}')
+        self.declare_parameter('use_real_kb', True)
+        self.declare_parameter('kb_query_service_name', '/kb/query')
+        self.declare_parameter('kb_query_timeout_sec', 0.75)
+        self.declare_parameter('kb_query_models', '')
 
         scenario_path = str(self.get_parameter('scenario_file').value).strip()
         if not scenario_path and get_package_share_directory is not None:
@@ -56,10 +71,22 @@ class FakeSkillActionServer(Node):
         else:
             self._scenario_store = ScenarioStore({})
 
+        initial_mode_overrides = self._parse_mode_overrides_json(
+            self.get_parameter('mode_overrides_json').value
+        )
+        if initial_mode_overrides is None:
+            self.get_logger().warn(
+                'mode_overrides_json is invalid JSON; starting with empty overrides'
+            )
+            initial_mode_overrides = {}
+
         self._engine = FakeSkillEngine(
             scenario_store=self._scenario_store,
             default_delay_sec=float(self.get_parameter('default_delay_sec').value),
             deterministic_seed=int(self.get_parameter('deterministic_seed').value),
+            global_mode=str(self.get_parameter('global_mode').value).strip(),
+            random_failure_prob=float(self.get_parameter('random_failure_prob').value),
+            mode_overrides=initial_mode_overrides,
         )
         self._active_scenario_id = str(self.get_parameter('active_scenario_id').value).strip()
         self.declare_parameter('available_scenario_ids', list(self._scenario_store.scenario_ids()))
@@ -71,6 +98,30 @@ class FakeSkillActionServer(Node):
         self._event_pub = self.create_publisher(String, event_topic, 10)
 
         callback_group = ReentrantCallbackGroup()
+        self._kb_query_client = KnowledgeCoreQueryClient(
+            node=self,
+            callback_group=callback_group,
+            service_name=str(self.get_parameter('kb_query_service_name').value),
+            timeout_sec=float(self.get_parameter('kb_query_timeout_sec').value),
+        )
+        self._kb_query_timeout_sec = max(
+            0.1,
+            float(self.get_parameter('kb_query_timeout_sec').value),
+        )
+        self._use_real_kb = self._coerce_bool(
+            self.get_parameter('use_real_kb').value,
+            default=True,
+        )
+        kb_query_models_value = self.get_parameter('kb_query_models').value
+        self._kb_query_models = [
+            str(item).strip()
+            for item in kb_query_models_value
+            if str(item).strip()
+        ] if isinstance(kb_query_models_value, list) else [
+            item.strip()
+            for item in str(kb_query_models_value).split(',')
+            if item.strip()
+        ]
         self._servers = []
         self._servers.append(
             ActionServer(
@@ -86,9 +137,14 @@ class FakeSkillActionServer(Node):
         for action_param, skill_name in (
             ('navigate_to_action_name', 'navigate_to'),
             ('find_object_action_name', 'find_object'),
+            ('perform_motion_action_name', 'perform_motion'),
             ('wave_greet_action_name', 'wave_greet'),
             ('inspect_area_action_name', 'inspect_area'),
+            ('look_at_action_name', 'look_at'),
             ('walk_to_action_name', 'walk_to'),
+            ('pick_object_action_name', 'pick_object'),
+            ('place_object_action_name', 'place_object'),
+            ('bring_object_action_name', 'bring_object'),
         ):
             action_name = str(self.get_parameter(action_param).value).strip()
             self._servers.append(
@@ -104,12 +160,13 @@ class FakeSkillActionServer(Node):
             )
 
         self.get_logger().info(
-            'fake_skill_server ready | execute=%s skills=%s active_scenario=%s available_scenarios=%s'
+            'fake_skill_server ready | execute=%s skills=%s active_scenario=%s available_scenarios=%s global_mode=%s'
             % (
                 str(self.get_parameter('execute_action_name').value).strip(),
                 ','.join(self._engine.supported_skills),
                 (self._active_scenario_id or '<none>'),
                 ','.join(self._scenario_store.scenario_ids()) or '<none>',
+                str(self.get_parameter('global_mode').value).strip() or 'scenario',
             )
         )
 
@@ -131,6 +188,28 @@ class FakeSkillActionServer(Node):
         started = time.time()
         self._emit_event('fake_skill_started', request.skill, {'args': request.args, 'scenario_id': request.scenario_id})
         goal_handle.publish_feedback(self._feedback('preparing', 0.1))
+
+        kb_failure_payload = self._validate_real_kb(request)
+        if kb_failure_payload is not None:
+            goal_handle.abort()
+            self._emit_event(
+                'fake_skill_completed',
+                request.skill,
+                {
+                    'status': 'failed',
+                    'result_mode': 'kb_guard',
+                    'mode_source': 'kb_guard',
+                    'global_mode': '',
+                    'summary_text': kb_failure_payload.get('summary_text', ''),
+                    'failure': kb_failure_payload.get('failure', {}),
+                },
+            )
+            return self._result(
+                ok=False,
+                message=kb_failure_payload.get('summary_text', ''),
+                payload=kb_failure_payload,
+                duration=time.time() - started,
+            )
 
         payload, delay_sec = self._engine.execute(
             skill=request.skill,
@@ -168,6 +247,8 @@ class FakeSkillActionServer(Node):
             {
                 'status': status,
                 'result_mode': payload.get('metadata', {}).get('result_mode', ''),
+                'mode_source': payload.get('metadata', {}).get('mode_source', ''),
+                'global_mode': payload.get('metadata', {}).get('global_mode', ''),
                 'summary_text': summary_text,
                 'failure': payload.get('failure', {}),
             },
@@ -233,25 +314,86 @@ class FakeSkillActionServer(Node):
         return ''
 
     def _on_set_parameters(self, parameters) -> SetParametersResult:
+        requested_active_scenario_id = self._active_scenario_id
+        requested_global_mode = str(self.get_parameter('global_mode').value).strip()
+        requested_random_failure_prob = float(self.get_parameter('random_failure_prob').value)
+        requested_mode_overrides = self._parse_mode_overrides_json(
+            self.get_parameter('mode_overrides_json').value
+        )
+        if requested_mode_overrides is None:
+            requested_mode_overrides = {}
+
         for parameter in parameters:
-            if parameter.name != 'active_scenario_id':
+            if parameter.name == 'active_scenario_id':
+                requested = str(parameter.value or '').strip()
+                if requested and not self._scenario_store.has_scenario(requested):
+                    available = ','.join(self._scenario_store.scenario_ids()) or '<none>'
+                    return SetParametersResult(
+                        successful=False,
+                        reason=(
+                            'Unknown active_scenario_id "%s". Available: %s'
+                            % (requested, available)
+                        ),
+                    )
+                requested_active_scenario_id = requested
                 continue
-            requested = str(parameter.value or '').strip()
-            if requested and not self._scenario_store.has_scenario(requested):
-                available = ','.join(self._scenario_store.scenario_ids()) or '<none>'
-                return SetParametersResult(
-                    successful=False,
-                    reason=(
-                        'Unknown active_scenario_id "%s". Available: %s'
-                        % (requested, available)
-                    ),
-                )
-            self._active_scenario_id = requested
-            self.get_logger().info(
-                'active_scenario_id updated to %s'
-                % (self._active_scenario_id or '<none>')
+
+            if parameter.name == 'global_mode':
+                requested_global_mode = str(parameter.value or '').strip()
+                continue
+
+            if parameter.name == 'random_failure_prob':
+                try:
+                    requested_random_failure_prob = float(parameter.value)
+                except (TypeError, ValueError):
+                    return SetParametersResult(
+                        successful=False,
+                        reason='random_failure_prob must be a float value',
+                    )
+                continue
+
+            if parameter.name == 'mode_overrides_json':
+                parsed = self._parse_mode_overrides_json(parameter.value)
+                if parsed is None:
+                    return SetParametersResult(
+                        successful=False,
+                        reason='mode_overrides_json must be a JSON object (skill->mode)',
+                    )
+                requested_mode_overrides = parsed
+
+        self._active_scenario_id = requested_active_scenario_id
+        self._engine.update_policy(
+            global_mode=requested_global_mode,
+            random_failure_prob=requested_random_failure_prob,
+            mode_overrides=requested_mode_overrides,
+        )
+        self.get_logger().info(
+            'fake_skill policy updated | active_scenario=%s global_mode=%s random_failure_prob=%.3f overrides=%d'
+            % (
+                (self._active_scenario_id or '<none>'),
+                str(requested_global_mode or 'scenario'),
+                float(requested_random_failure_prob),
+                len(requested_mode_overrides),
             )
+        )
         return SetParametersResult(successful=True)
+
+    @staticmethod
+    def _parse_mode_overrides_json(raw_value):
+        text = str(raw_value or '').strip()
+        if not text:
+            return {}
+        try:
+            parsed = json.loads(text)
+        except json.JSONDecodeError:
+            return None
+        if not isinstance(parsed, dict):
+            return None
+        return {
+            str(key).strip().lower(): str(value).strip().lower()
+            for key, value in parsed.items()
+            if str(key).strip() and str(value).strip()
+        }
 
     @staticmethod
     def _parse_evidence_policy(value: str) -> dict:
@@ -263,6 +405,91 @@ class FakeSkillActionServer(Node):
         except json.JSONDecodeError:
             return {}
         return parsed if isinstance(parsed, dict) else {}
+
+    def _validate_real_kb(self, request: FakeSkillRequest) -> dict | None:
+        guard_args = self._merged_guard_args(request)
+        outcome = validate_skill_target(
+            skill=request.skill,
+            args=guard_args,
+            query_rows=self._query_kb_rows,
+            default_enabled=self._use_real_kb,
+            models=self._kb_query_models,
+        )
+        if outcome is None or outcome.ok:
+            return None
+        return outcome.payload
+
+    def _merged_guard_args(self, request: FakeSkillRequest) -> dict:
+        scenario_override = (
+            request.scenario_override
+            if isinstance(request.scenario_override, dict)
+            else {}
+        )
+        merged_config = self._scenario_store.resolve_skill_config(
+            skill=request.skill,
+            scenario_id=request.scenario_id,
+            scenario_override=scenario_override,
+        )
+        merged = dict(merged_config)
+        merged.update(dict(request.args or {}))
+        return merged
+
+    def _query_kb_rows(
+        self,
+        *,
+        patterns: list[str],
+        query_vars: list[str],
+        models: list[str],
+    ) -> list[dict]:
+        outcome: dict[str, list[dict] | BaseException | None] = {
+            'rows': [],
+            'error': None,
+        }
+        completed = threading.Event()
+
+        def _worker() -> None:
+            try:
+                outcome['rows'] = self._kb_query_client.query_rows(
+                    patterns=patterns,
+                    query_vars=query_vars,
+                    models=models,
+                    trace_stage='FAKE_SKILL_KB_GUARD',
+                )
+            except BaseException as err:  # pragma: no cover - defensive runtime path
+                outcome['error'] = err
+            finally:
+                completed.set()
+
+        threading.Thread(
+            target=_worker,
+            name='fake-skill-kb-query',
+            daemon=True,
+        ).start()
+
+        if not completed.wait(timeout=self._kb_query_timeout_sec + 0.25):
+            self.get_logger().warn(
+                'fake_skill KB query timed out after %.2fs; failing closed'
+                % (self._kb_query_timeout_sec + 0.25)
+            )
+            return []
+        if outcome['error'] is not None:
+            self.get_logger().warn(
+                'fake_skill KB query failed: %s' % outcome['error']
+            )
+            return []
+        rows = outcome['rows']
+        return list(rows) if isinstance(rows, list) else []
+
+    @staticmethod
+    def _coerce_bool(value, *, default: bool) -> bool:
+        if isinstance(value, bool):
+            return value
+        clean = str(value).strip().lower()
+        if clean in {'1', 'true', 'yes', 'on', 'enabled'}:
+            return True
+        if clean in {'0', 'false', 'no', 'off', 'disabled'}:
+            return False
+        return bool(default)
 
     @staticmethod
     def _feedback(status: str, progress: float) -> ScanScene.Feedback:

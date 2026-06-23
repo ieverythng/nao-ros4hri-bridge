@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Planner Grounding MoE Contract</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2.6cm 2.2cm 2.4cm 2.2cm;
+    }
+    :root {
+      --ink: #111;
+      --muted: #3a3a3a;
+      --line: #1f1f1f;
+      --soft: #f3f3f3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #fff;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 11.5pt;
+      line-height: 1.42;
+    }
+    .doc {
+      max-width: 172mm;
+      margin: 0 auto;
+      padding: 0;
+    }
+    .title-page {
+      min-height: 247mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+    }
+    .title-top {
+      text-align: center;
+      margin-top: 18mm;
+    }
+    .title-top h1 {
+      font-size: 20pt;
+      line-height: 1.28;
+      margin: 20mm 0 8mm;
+      font-weight: 700;
+    }
+    .title-top h2 {
+      font-size: 13pt;
+      margin: 0 0 3mm;
+      font-weight: 600;
+      border-bottom: 0;
+    }
+    .title-top p {
+      margin: 2mm 0;
+      color: var(--muted);
+    }
+    .title-meta {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 auto 20mm;
+      font-size: 11pt;
+    }
+    .title-meta td {
+      padding: 2.5mm 0;
+      vertical-align: top;
+      border: 0;
+    }
+    .title-meta td:first-child {
+      width: 38mm;
+      font-weight: 700;
+    }
+    .small { font-size: 10.3pt; color: #222; }
+    h1, h2, h3 {
+      margin: 0 0 3mm;
+      line-height: 1.28;
+      font-weight: 700;
+    }
+    h1 { font-size: 16.5pt; margin-top: 0; }
+    h2 {
+      font-size: 13pt;
+      margin-top: 9mm;
+      border-bottom: 0.5pt solid var(--line);
+      padding-bottom: 1.5mm;
+    }
+    h3 {
+      font-size: 11.8pt;
+      margin-top: 6mm;
+    }
+    p { margin: 2.2mm 0; }
+    ul, ol { margin: 2.5mm 0 2.5mm 6mm; padding: 0; }
+    li { margin: 1.4mm 0; }
+    pre {
+      margin: 2.5mm 0 4mm;
+      background: var(--soft);
+      border: 0.6pt solid #666;
+      padding: 2.6mm 2.8mm;
+      overflow-x: auto;
+      white-space: pre;
+      font-family: "Liberation Mono", "Courier New", monospace;
+      font-size: 9.2pt;
+      line-height: 1.3;
+    }
+    code {
+      font-family: "Liberation Mono", "Courier New", monospace;
+      background: #efefef;
+      padding: 0.2mm 1mm;
+      border: 0.4pt solid #d7d7d7;
+      border-radius: 2px;
+      font-size: 10.3pt;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      border: 0;
+      font-size: inherit;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 3mm 0 4mm;
+      font-size: 10.8pt;
+    }
+    th, td {
+      border: 0.6pt solid #333;
+      padding: 2.2mm 2.3mm;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+      hyphens: auto;
+    }
+    th {
+      background: #fafafa;
+      text-align: left;
+      font-weight: 700;
+    }
+    .diagram {
+      margin: 4mm 0 5mm;
+      border: 0.6pt solid #777;
+      padding: 2mm;
+      background: #fff;
+    }
+    .diagram pre {
+      margin: 0;
+      border: 0;
+      background: #fcfcfc;
+      font-size: 10.2pt;
+      white-space: pre-wrap;
+    }
+    .diagram svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .diagram-labels {
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 25px;
+      font-weight: 700;
+      fill: #111;
+    }
+    .lifelines {
+      stroke: #999;
+      stroke-dasharray: 4 4;
+    }
+    .messages {
+      stroke: #111;
+      stroke-width: 1.35;
+      fill: none;
+    }
+    .messages text {
+      stroke: none;
+      fill: #111;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 22px;
+    }
+    .caption {
+      margin-top: 2mm;
+      font-size: 10.5pt;
+      color: #222;
+      font-style: italic;
+      text-align: center;
+    }
+    blockquote {
+      border: 0.6pt solid #333;
+      background: #fcfcfc;
+      margin: 3mm 0;
+      padding: 2.6mm 3mm;
+      color: var(--muted);
+    }
+    a { color: #111; }
+  </style>
+</head>
+<body>
+  <main class="doc">
+
+    <section class="title-page">
+      <div class="title-top">
+        <h2>Universitat Autonoma de Barcelona</h2>
+        <p>Master Degree in Modelling for Science and Engineering</p>
+        <p>Institution / Lab: IIIA-CSIC</p>
+        <h1>Planner Grounding MoE Contract</h1>
+        <p>Formal architecture and contract section for technical review.</p>
+      </div>
+      <table class="title-meta">
+        <tr><td>Document type:</td><td>Architecture and contract walkthrough</td></tr>
+        <tr><td>Academic year:</td><td>2025-2026</td></tr>
+        <tr><td>Scope:</td><td>Grounding ownership, compact context projection, and planner/skill evidence seams.</td></tr>
+        <tr><td>Repository:</td><td><span class="small">https://github.com/ieverythng/nao-ros4hri-bridge</span></td></tr>
+      </table>
+    </section>
+
+<h1>Planner Grounding + MoE Ownership Contract (2026-06-01)</h1>
+<p>Updated: 2026-06-03</p>
+<h2>Goal</h2>
+<p>Formalize how grounded context flows through planner seams without blurring ownership across <code>chatbot_llm</code>, <code>planner_llm</code>, <code>nao_orchestrator</code>, and AB=1 skills.</p>
+<p>The active contract is compact by default: the LLM receives a task-relevant scene graph, while raw <code>/scene/summary</code>, KB triples, coordinates, recency, detector metadata, and action result payloads remain available to execution-time skill seams.</p>
+<h2>Contract Decisions</h2>
+<ol>
+<li>Planner ingress (<code>/planner/request</code>) carries compact <code>grounded_context</code>.</li>
+<li><code>grounded_context.entities</code> is the LLM-facing visible world.</li>
+<li>Relations are filtered to prioritized semantic predicates, not all RDF facts.</li>
+<li>Planner egress (<code>/intents</code>) stays plan-centric and carries only lightweight <code>context_ref</code> lineage.</li>
+<li>AB=1 skills own live world-state resolution at execution time through AB=0 seams such as <code>/scene/summary</code>, <code>/kb/query</code>, tracked-person feeds, and skill-local service/action checks.</li>
+<li><code>state_t0</code> remains a disabled-by-default debug/planner detail behind <code>grounded_context_include_state_t0</code>.</li>
+<li>Removed request seams stay removed: no planner request <code>requested_plan</code>, no planner request <code>interaction_mode</code>.</li>
+</ol>
+<h2>Why This Matches ROS4HRI Ownership</h2>
+<ul>
+<li><code>chatbot_llm</code> owns user-facing grounding assembly and planner handoff.</li>
+<li><code>planner_llm</code> owns task decomposition, validation, retry, replanning, and dialogue-act intent.</li>
+<li><code>nao_orchestrator</code> owns deterministic dispatch/feedback, not global world modeling.</li>
+<li>AB=1 skills remain execution experts and can specialize by evidence type: object-centric, people-centric, navigation-centric, report-centric.</li>
+</ul>
+<p>This gives a practical MoE pattern without introducing a separate coordinator node.</p>
+<h2>Compact Grounded Context</h2>
+<pre><code class="language-json">{
+  &quot;grounded_context&quot;: {
+    &quot;entities&quot;: [
+      {
+        &quot;id&quot;: &quot;cup_cbmg&quot;,
+        &quot;label&quot;: &quot;cup&quot;,
+        &quot;kind&quot;: &quot;object&quot;,
+        &quot;class&quot;: &quot;Cup&quot;,
+        &quot;visible&quot;: true,
+        &quot;relations&quot;: [
+          {&quot;predicate&quot;: &quot;dbp:color&quot;, &quot;object&quot;: &quot;blue&quot;},
+          {&quot;predicate&quot;: &quot;oro:isOn&quot;, &quot;object&quot;: &quot;table_1&quot;}
+        ]
+      }
+    ]
+  }
+}</code></pre>
+<p>Entity fields:</p>
+<ul>
+<li><code>id</code>: stable symbolic handle used by planner/skills.</li>
+<li><code>label</code>: readable class/name hint, separate from <code>id</code>.</li>
+<li><code>kind</code>: <code>object</code> or <code>person</code>.</li>
+<li><code>class</code>: compact KB/detector class.</li>
+<li><code>visible</code>: current scene visibility.</li>
+<li><code>relations</code>: bounded semantic relation list for facts not already represented by <code>class</code>.</li>
+</ul>
+<p>Relation policy:</p>
+<ul>
+<li>Use <code>class</code> as the canonical entity type. Do not repeat the same type as <code>{&quot;predicate&quot;:&quot;rdf:type&quot;}</code>.</li>
+<li>Keep an <code>rdf:type</code> relation only when it adds distinct KB type information not already represented by <code>class</code>.</li>
+<li>Include user-meaningful simulator/KB predicates when present: <code>dbp:name</code>, <code>dbp:color</code>, <code>oro:isAt</code>, <code>oro:isOn</code>, <code>oro:contains</code>, <code>foaf:knows</code>.</li>
+<li>Drop non-prompt details such as <code>source</code>, <code>backend</code>, coordinates, confidence scores, raw detector provenance, and <code>last_seen_*</code>.</li>
+<li>Do not emit <code>counts</code>; planners and prompts should reason over the visible <code>entities</code> array directly.</li>
+<li>Preserve exact triples in skill-local/raw execution contexts when needed.</li>
+</ul>
+<h2>Projection Pipeline</h2>
+<div class="diagram"><pre><code class="language-mermaid">flowchart LR
+    A[&quot;/scene/summary&quot;] --&gt; P[&quot;projection helper&quot;]
+    B[&quot;tracked people&quot;] --&gt; P
+    C[&quot;KB query rows / triples&quot;] --&gt; P
+    P --&gt; G[&quot;grounded_context for chatbot/planner prompts&quot;]
+    A --&gt; R[&quot;raw execution evidence&quot;]
+    C --&gt; R
+    R --&gt; S[&quot;AB=1 skill requery&quot;]</code></pre></div>
+<p>Projection rules:</p>
+<ol>
+<li>Prefer structured scene and KB rows.</li>
+<li>Use text-derived hydration only when no structured entities exist.</li>
+<li>Keep anonymous people anonymous; do not invent personal names.</li>
+<li>Keep IDs and labels separate.</li>
+<li>Bound relation count per entity to keep prompt size manageable.</li>
+</ol>
+<h2>Planner Request Shape</h2>
+<pre><code class="language-json">{
+  &quot;request_id&quot;: &quot;turn_123&quot;,
+  &quot;goal_id&quot;: &quot;goal_turn_123&quot;,
+  &quot;parent_goal_id&quot;: &quot;&quot;,
+  &quot;supersedes_goal_id&quot;: &quot;&quot;,
+  &quot;request_kind&quot;: &quot;new_goal&quot;,
+  &quot;goal_text&quot;: &quot;look around and report what is visible&quot;,
+  &quot;normalized_intents&quot;: [&quot;inspect_scene&quot;],
+  &quot;scene_targets&quot;: [],
+  &quot;dialogue_context&quot;: [],
+  &quot;grounded_context&quot;: {
+    &quot;entities&quot;: []
+  },
+  &quot;planner_mode&quot;: &quot;default&quot;,
+  &quot;dialogue_turn_id&quot;: &quot;role:turn&quot;
+}</code></pre>
+<p>The planner request does not carry plan hints. The planner must plan from goal text, normalized intents, scene targets, compact grounded context, execution feedback, and the registered skill manifest.</p>
+<h2>Planner Output Shape</h2>
+<pre><code class="language-json">{
+  &quot;plan&quot;: {
+    &quot;goal_id&quot;: &quot;goal_turn_123&quot;,
+    &quot;plan_id&quot;: &quot;plan_123&quot;,
+    &quot;plan_version&quot;: 1,
+    &quot;status&quot;: &quot;planning&quot;,
+    &quot;validation_status&quot;: &quot;draft&quot;,
+    &quot;retry_budget&quot;: 1,
+    &quot;scene_targets&quot;: [],
+    &quot;context_ref&quot;: {
+      &quot;captured_at_sec&quot;: 0.0,
+      &quot;observer&quot;: &quot;&quot;,
+      &quot;backend&quot;: &quot;&quot;
+    },
+    &quot;communication_policy&quot;: {
+      &quot;emit_acknowledge&quot;: false,
+      &quot;emit_progress&quot;: false,
+      &quot;emit_completion&quot;: true,
+      &quot;emit_failure&quot;: true
+    },
+    &quot;communication_policy_source&quot;: &quot;planner_engine:plan&quot;,
+    &quot;steps&quot;: []
+  }
+}</code></pre>
+<p><code>failure_reason</code> is omitted for successful/draft plans and present only for failed, invalid, or terminal blocked outputs.</p>
+<h2>Scan and Report Result Rule</h2>
+<p>The planner must not fabricate a perceptual report from prompt context.</p>
+<p>Correct:</p>
+<pre><code class="language-json">{
+  &quot;steps&quot;: [
+    {&quot;type&quot;: &quot;skill&quot;, &quot;name&quot;: &quot;scan&quot;, &quot;args&quot;: {}, &quot;requires&quot;: [], &quot;on_failure&quot;: &quot;replan&quot;, &quot;retry_budget&quot;: 0},
+    {&quot;type&quot;: &quot;skill&quot;, &quot;name&quot;: &quot;report_result&quot;, &quot;args&quot;: {}, &quot;requires&quot;: [&quot;step_1&quot;], &quot;on_failure&quot;: &quot;fail&quot;, &quot;retry_budget&quot;: 0}
+  ]
+}</code></pre>
+<p>Incorrect:</p>
+<pre><code class="language-json">{
+  &quot;steps&quot;: [
+    {&quot;type&quot;: &quot;skill&quot;, &quot;name&quot;: &quot;scan&quot;, &quot;args&quot;: {}, &quot;requires&quot;: [], &quot;on_failure&quot;: &quot;replan&quot;, &quot;retry_budget&quot;: 0},
+    {&quot;type&quot;: &quot;skill&quot;, &quot;name&quot;: &quot;report_result&quot;, &quot;args&quot;: {&quot;summary_text&quot;: &quot;I can see one cup.&quot;}, &quot;requires&quot;: [&quot;step_1&quot;], &quot;on_failure&quot;: &quot;fail&quot;, &quot;retry_budget&quot;: 0}
+  ]
+}</code></pre>
+<p>The scan skill owns fresh perception. <code>report_result</code> with empty args lets the orchestrator reuse the latest live skill result.</p>
+<h2>MoE-by-AB Practical Pattern</h2>
+<ol>
+<li>Planner chooses AB=1 skills and passes compact targets (<code>scene_targets</code>, <code>look_at</code>/<code>navigate_to</code> args).</li>
+<li>Each AB=1 skill performs evidence resolution against its own AB=0 sources.</li>
+<li>Execution feedback publishes the evidence summary and structured result payload.</li>
+<li>Replanning uses feedback plus a fresh ingress context, not stale copies from old planner output.</li>
+</ol>
+<p>This keeps seams deterministic and allows each skill to specialize without turning the planner output into a world-model transport channel.</p>
+  </main>
+</body>
+</html>

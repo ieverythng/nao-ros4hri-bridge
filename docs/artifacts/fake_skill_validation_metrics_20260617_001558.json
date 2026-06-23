@@ -1,0 +1,91 @@
+{
+  "traces": [
+    {
+      "trace_id": "__default__:24",
+      "event_count": 1,
+      "duration_sec": 0.0,
+      "planner_output_count": 0,
+      "feedback_count": 0,
+      "dialogue_act_count": 0,
+      "final_status": "",
+      "completed": false
+    },
+    {
+      "trace_id": "__default__:25",
+      "event_count": 1,
+      "duration_sec": 0.0,
+      "planner_output_count": 0,
+      "feedback_count": 0,
+      "dialogue_act_count": 0,
+      "final_status": "",
+      "completed": false
+    },
+    {
+      "trace_id": "goal_probe_01_success_default",
+      "event_count": 12,
+      "duration_sec": 6.376,
+      "planner_output_count": 2,
+      "feedback_count": 8,
+      "dialogue_act_count": 2,
+      "final_status": "failed",
+      "completed": false
+    },
+    {
+      "trace_id": "goal_probe_04_spatial_near_object",
+      "event_count": 1,
+      "duration_sec": 0.0,
+      "planner_output_count": 0,
+      "feedback_count": 0,
+      "dialogue_act_count": 0,
+      "final_status": "",
+      "completed": false
+    },
+    {
+      "trace_id": "goal_probe_06_random_seeded_stress",
+      "event_count": 12,
+      "duration_sec": 6.091,
+      "planner_output_count": 2,
+      "feedback_count": 8,
+      "dialogue_act_count": 2,
+      "final_status": "failed",
+      "completed": false
+    },
+    {
+      "trace_id": "goal_probe_07_all_fail_always",
+      "event_count": 1,
+      "duration_sec": 0.0,
+      "planner_output_count": 0,
+      "feedback_count": 0,
+      "dialogue_act_count": 0,
+      "final_status": "",
+      "completed": false
+    },
+    {
+      "trace_id": "trace_0001",
+      "event_count": 4,
+      "duration_sec": 6.31,
+      "planner_output_count": 0,
+      "feedback_count": 0,
+      "dialogue_act_count": 0,
+      "final_status": "",
+      "completed": false
+    },
+    {
+      "trace_id": "trace_0002",
+      "event_count": 4,
+      "duration_sec": 6.076,
+      "planner_output_count": 0,
+      "feedback_count": 0,
+      "dialogue_act_count": 0,
+      "final_status": "",
+      "completed": false
+    }
+  ],
+  "aggregate": {
+    "trace_count": 2,
+    "uncorrelated_trace_count": 6,
+    "completed_count": 0,
+    "completion_rate": 0.0,
+    "median_duration_sec": 6.2335
+  }
+}

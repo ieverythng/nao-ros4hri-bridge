@@ -2,7 +2,7 @@
 
 `planner_common` is the shared contract package for the planner stack. It owns
 JSON normalization helpers for planner ingress, plan envelopes, execution
-feedback, dialogue acts, scene summaries, and enriched world-model snapshots.
+feedback, dialogue acts, and grounded scene summaries.
 
 ## Owns
 
@@ -10,7 +10,6 @@ feedback, dialogue acts, scene summaries, and enriched world-model snapshots.
 - `ExecutionFeedback`
 - `PlannerDialogueAct`
 - `SceneSummary`
-- `EnrichedSnapshot`
 - plan payload builders and normalizers
 - skill manifest loading helpers
 
@@ -26,7 +25,6 @@ This package is the source of truth for:
 - `/planner/dialogue_act`
 - `grounded_context`
 - `/scene/summary` parsing
-- bounded world-model text formatting
 
 See `../../docs/contracts.md` for copyable runtime examples.
 
@@ -39,14 +37,10 @@ Important normalized fields:
 - `request_kind`
 - `goal_text`
 - `normalized_intents`
-- `ack_text`
-- `ack_mode`
 - `scene_targets`
 - `dialogue_context`
-- `requested_plan`
 - `grounded_context`
 - `planner_mode`
-- `interaction_mode`
 - `dialogue_turn_id`
 
 `goal_text` is the concise planner-facing objective. `user_text` remains parsed

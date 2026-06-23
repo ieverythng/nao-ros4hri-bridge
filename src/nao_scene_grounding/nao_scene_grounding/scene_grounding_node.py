@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+import math
 
 import rclpy
 from rclpy.executors import ExternalShutdownException
@@ -73,6 +74,10 @@ class _TrackedObject:
     center_y: float
     last_seen_sec: float
     last_revised_sec: float = 0.0
+    frame_id: str = ''
+    position_x: float | None = None
+    position_y: float | None = None
+    position_z: float | None = None
 
     @classmethod
     def from_observation(
@@ -107,7 +112,7 @@ class _TrackedObject:
         self.last_seen_sec = now_sec
 
     def summary_dict(self) -> dict:
-        return {
+        payload = {
             'entity_id': self.entity_id,
             'label': self.label,
             'kb_class': self.kb_class,
@@ -118,6 +123,95 @@ class _TrackedObject:
             'center_y': round(float(self.center_y), 1),
             'last_seen_sec': round(float(self.last_seen_sec), 3),
         }
+        if self.has_metric_position:
+            payload['frame_id'] = self.frame_id
+            payload['position'] = {
+                'x': round(float(self.position_x), 3),
+                'y': round(float(self.position_y), 3),
+                'z': round(float(self.position_z), 3),
+            }
+            payload['distance_m'] = round(self.distance_m, 3)
+        return payload
+
+    @property
+    def has_metric_position(self) -> bool:
+        return bool(self.frame_id) and all(
+            value is not None
+            for value in (self.position_x, self.position_y, self.position_z)
+        )
+
+    @property
+    def distance_m(self) -> float:
+        if not self.has_metric_position:
+            return 0.0
+        return math.sqrt(
+            float(self.position_x) ** 2
+            + float(self.position_y) ** 2
+            + float(self.position_z) ** 2
+        )
+
+    def apply_spatial_overlay(self, payload: dict) -> bool:
+        frame_id = str(payload.get('frame_id', '')).strip()
+        position = payload.get('position', {})
+        if not frame_id or not isinstance(position, dict):
+            return False
+        coordinates = tuple(_optional_float(position.get(axis)) for axis in ('x', 'y', 'z'))
+        if any(value is None for value in coordinates):
+            return False
+        next_position = (frame_id, *coordinates)
+        current_position = (
+            self.frame_id,
+            self.position_x,
+            self.position_y,
+            self.position_z,
+        )
+        if next_position == current_position:
+            return False
+        self.frame_id = frame_id
+        self.position_x, self.position_y, self.position_z = coordinates
+        return True
+
+
+def _kb_spatial_statements(observer_name: str, tracked: _TrackedObject) -> list[str]:
+    """Build stable KB statements for one tracked object observation."""
+    observer = str(observer_name or '').strip() or 'myself'
+    source_token = _kb_atom(str(tracked.source or '').strip() or 'detector')
+    statements = [
+        f'{observer} sees {tracked.entity_id}',
+        f'{tracked.entity_id} rdf:type {tracked.kb_class}',
+        f'{tracked.entity_id} hasVisualCenterX {round(float(tracked.center_x), 3)}',
+        f'{tracked.entity_id} hasVisualCenterY {round(float(tracked.center_y), 3)}',
+        f'{tracked.entity_id} hasDetectionScore {round(float(tracked.score), 6)}',
+        f'{tracked.entity_id} lastSeenSec {round(float(tracked.last_seen_sec), 3)}',
+        f'{tracked.entity_id} detectionSource {source_token}',
+    ]
+    if tracked.has_metric_position:
+        statements.extend(
+            [
+                f'{tracked.entity_id} spatialFrame {_kb_atom(tracked.frame_id)}',
+                f'{tracked.entity_id} positionX {round(float(tracked.position_x), 6)}',
+                f'{tracked.entity_id} positionY {round(float(tracked.position_y), 6)}',
+                f'{tracked.entity_id} positionZ {round(float(tracked.position_z), 6)}',
+                f'{tracked.entity_id} distanceFromObserverM {round(tracked.distance_m, 6)}',
+            ]
+        )
+    return statements
+
+
+def _kb_atom(value: str) -> str:
+    """Normalize free-form strings into conservative KB atom tokens."""
+    clean = ''.join(
+        char if (char.isalnum() or char in ('_', '-')) else '_'
+        for char in str(value or '').strip()
+    ).strip('_')
+    return clean or 'unknown'
+
+
+def _optional_float(value) -> float | None:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 class NaoSceneGrounding(Node):
@@ -131,6 +225,7 @@ class NaoSceneGrounding(Node):
         self.declare_parameter('detector_backend', 'emorobcare_cv')
         self.declare_parameter('detector_topic', '/detected_objects')
         self.declare_parameter('summary_topic', '~/summary')
+        self.declare_parameter('spatial_overlay_topic', '')
         self.declare_parameter('min_detection_score', 0.35)
         self.declare_parameter('allowed_labels', ','.join(DEFAULT_ALLOWED_LABELS))
         self.declare_parameter('label_class_overrides', '{}')
@@ -148,6 +243,9 @@ class NaoSceneGrounding(Node):
         self._detector_backend = str(self.get_parameter('detector_backend').value).strip()
         self._detector_topic = str(self.get_parameter('detector_topic').value).strip()
         self._summary_topic = str(self.get_parameter('summary_topic').value).strip() or '~/summary'
+        self._spatial_overlay_topic = str(
+            self.get_parameter('spatial_overlay_topic').value
+        ).strip()
         self._min_detection_score = max(
             0.0,
             float(self.get_parameter('min_detection_score').value),
@@ -213,6 +311,13 @@ class NaoSceneGrounding(Node):
 
         self._adapter = self._make_adapter()
         self._create_detector_subscription()
+        if self._spatial_overlay_topic:
+            self.create_subscription(
+                String,
+                self._spatial_overlay_topic,
+                self._on_spatial_overlay,
+                10,
+            )
         self.create_timer(0.5, self._housekeeping_tick)
 
         self.get_logger().info(
@@ -291,6 +396,31 @@ class NaoSceneGrounding(Node):
         if observations or revised_any:
             self._publish_summary()
 
+    def _on_spatial_overlay(self, msg: String) -> None:
+        """Merge frame-qualified simulator/object poses into tracked entities."""
+        try:
+            payload = json.loads(str(msg.data or '').strip() or '{}')
+        except json.JSONDecodeError:
+            self._log_missing_dependency_once('Ignoring invalid spatial overlay JSON')
+            return
+        entries = payload.get('objects', []) if isinstance(payload, dict) else []
+        if not isinstance(entries, list):
+            return
+        changed = False
+        now_sec = self._clock_now_sec()
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            entity_id = str(entry.get('entity_id', entry.get('id', ''))).strip()
+            tracked = self._tracked_objects.get(entity_id)
+            if tracked is not None:
+                entry_changed = tracked.apply_spatial_overlay(entry)
+                if entry_changed:
+                    self._revise_observation(tracked, now_sec)
+                changed = entry_changed or changed
+        if changed:
+            self._publish_summary()
+
     def _upsert_tracked_object(
         self,
         observation: ObjectObservation,
@@ -311,10 +441,7 @@ class NaoSceneGrounding(Node):
             return False
 
         result = self._mutation_client.revise_facts(
-            [
-                f'{self._observer_name} sees {tracked.entity_id}',
-                f'{tracked.entity_id} rdf:type {tracked.kb_class}',
-            ],
+            _kb_spatial_statements(self._observer_name, tracked),
             models=list(self._knowledge_models),
             lifespan_sec=self._knowledge_lifespan_sec,
             wait_for_result=False,

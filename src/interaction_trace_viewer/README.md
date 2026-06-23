@@ -5,7 +5,7 @@ Simple ROS4HRI interaction trace viewer.
 ## Purpose
 
 This package implements the initial observability deliverable from
-`docs/plans/ros4hri_integration_master_plan_2026-05-18.md` (OBS-1).
+`docs/plans/nao_ros4hri_masterplan.md` (OBS-1).
 
 It records and displays end-to-end interaction events across:
 
@@ -14,7 +14,9 @@ It records and displays end-to-end interaction events across:
 - `/intents`
 - `/planner/execution_feedback`
 - `/planner/dialogue_act`
+- `/nao_orchestrator/planner_dialogue_act`
 - `/chatbot_llm/turn_trace`
+- `/fake_skills/events`
 - `/scene/summary`
 - `/rosout`
 
@@ -37,14 +39,31 @@ Filter only selected channels/event types:
 
 ```bash
 ros2 run interaction_trace_viewer trace_node --ros-args \
-  -p include_channels_csv:="planner/request,intents,planner/execution_feedback,planner/dialogue_act,chatbot_llm/turn_trace" \
-  -p include_event_types_csv:="planner_request,planner_output,execution_feedback,planner_dialogue_act,chatbot_turn_trace"
+  -p include_channels_csv:="planner/request,intents,planner/execution_feedback,planner/dialogue_act,nao_orchestrator/planner_dialogue_act,chatbot_llm/turn_trace,scene/summary" \
+  -p include_event_types_csv:="planner_request,planner_output,execution_feedback,planner_dialogue_act,chatbot_turn_trace,scene_update"
+```
+
+Reusable compact JSON command (manual second window):
+
+```bash
+scripts/run_interaction_trace_viewer_compact_json.sh
 ```
 
 Verbose payload output:
 
 ```bash
 ros2 run interaction_trace_viewer trace_node --ros-args -p compact_mode:=false
+```
+
+SV demo profile (full payload visibility for planner + fake skills):
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_demo.launch.py \
+  start_interaction_trace_viewer:=true \
+  interaction_trace_compact_mode:=false \
+  interaction_trace_include_raw_payloads:=true \
+  interaction_trace_include_channels_csv:="planner/request,intents,planner/execution_feedback,planner/dialogue_act,nao_orchestrator/planner_dialogue_act,chatbot_llm/turn_trace,fake_skills/events,scene/summary" \
+  interaction_trace_include_event_types_csv:="planner_request,planner_output,execution_feedback,planner_dialogue_act,chatbot_turn_trace,skill_result,scene_update"
 ```
 
 Launch file:

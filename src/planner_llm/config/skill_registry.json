@@ -7,6 +7,133 @@
   ],
   "skills": [
     {
+      "name": "ask_user",
+      "category": "communication",
+      "aliases": [
+        "ask_clarification",
+        "ask_for_help"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "question",
+        "slots_needed"
+      ],
+      "required_params": [],
+      "preconditions": [
+        "the task is blocked by missing or ambiguous user-provided information"
+      ],
+      "expected_effects": [
+        "the user is asked for the information required to continue"
+      ],
+      "observable_success": [
+        "planner dialogue act is relayed to the dialogue owner"
+      ],
+      "failure_modes": [
+        "missing_prompt",
+        "dialogue_relay_unavailable"
+      ],
+      "planner_guidance": [
+        "use only when missing information prevents a safe executable plan",
+        "ask one concise question that identifies the required information"
+      ],
+      "robot_adapter_mapping": "nao_orchestrator.ask_user",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "communication",
+        "clarification"
+      ],
+      "supports_failure_injection": false,
+      "is_composite": false,
+      "is_fake": false,
+      "runtime_callable": true,
+      "decomposes_to": [],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "",
+        "notes": ""
+      }
+    },
+    {
+      "name": "bring_object",
+      "category": "manipulation",
+      "aliases": [
+        "bring",
+        "deliver_object"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "object_id",
+        "target",
+        "object",
+        "recipient_id",
+        "recipient",
+        "destination",
+        "source",
+        "result_mode"
+      ],
+      "required_params": [
+        "target",
+        "recipient"
+      ],
+      "preconditions": [
+        "target object and recipient or destination must be grounded or scenario-owned"
+      ],
+      "expected_effects": [
+        "object is delivered to recipient or destination"
+      ],
+      "observable_success": [
+        "status",
+        "evidence.recipient_id",
+        "evidence.chain",
+        "evidence.kb_effects"
+      ],
+      "failure_modes": [
+        "acquisition_failure",
+        "navigation_failure",
+        "delivery_blocked",
+        "recipient_unavailable"
+      ],
+      "planner_guidance": [
+        "use for explicit bring or deliver requests; prefer separate pick/navigate/place steps when partial progress needs independent recovery"
+      ],
+      "robot_adapter_mapping": "fake_skills.bring_object",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text",
+          "evidence"
+        ]
+      },
+      "safety_flags": [
+        "manipulation",
+        "navigation",
+        "object_contact"
+      ],
+      "supports_failure_injection": true,
+      "is_composite": true,
+      "is_fake": true,
+      "runtime_callable": true,
+      "decomposes_to": [
+        "find_object",
+        "pick_object",
+        "navigate_to",
+        "place_object",
+        "verify_evidence_payload"
+      ],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "ab1_composite_skill",
+        "notes": "Fake bring captures acquisition, navigation, and delivery outcomes as one scenario-controllable AB=1 skill."
+      }
+    },
+    {
       "name": "find_object",
       "category": "perception",
       "aliases": [
@@ -57,15 +184,252 @@
       "is_fake": true,
       "runtime_callable": true,
       "decomposes_to": [
-        "/skill/fake/find_object",
+        "resolve_target_reference",
         "read_scene_summary",
         "confirm_target_visibility",
         "verify_evidence_payload"
       ],
       "decomposition": {
         "max_depth": -1,
-        "policy": "full_to_ab0",
-        "notes": "Requires fresh scene evidence and explicit target visibility checks."
+        "policy": "ab1_to_effect_primitives",
+        "notes": "Find-object traces reduce target-reference and visibility uncertainty using scene evidence and payload validation."
+      }
+    },
+    {
+      "name": "inspect_area",
+      "category": "perception",
+      "aliases": [
+        "inspect_zone",
+        "check_area"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "target",
+        "target_area",
+        "result_mode"
+      ],
+      "required_params": [
+        "target"
+      ],
+      "preconditions": [
+        "target area should be named"
+      ],
+      "expected_effects": [
+        "scene evidence for target area is returned"
+      ],
+      "observable_success": [
+        "status",
+        "target_found",
+        "evidence.people",
+        "evidence.objects"
+      ],
+      "failure_modes": [
+        "ambiguous",
+        "area_unknown",
+        "backend_unavailable"
+      ],
+      "planner_guidance": [
+        "use inspect_area to validate area state before reporting"
+      ],
+      "robot_adapter_mapping": "fake_skills.inspect_area",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text"
+        ]
+      },
+      "safety_flags": [
+        "perception"
+      ],
+      "supports_failure_injection": true,
+      "is_composite": true,
+      "is_fake": true,
+      "runtime_callable": true,
+      "decomposes_to": [
+        "resolve_navigation_goal",
+        "navigate_to",
+        "scan",
+        "find_object",
+        "report_result"
+      ],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "ab1_composite_skill",
+        "notes": "Composite fake-skill experiment: area inspection combines navigation, fresh scan, target evidence, and grounded report."
+      }
+    },
+    {
+      "name": "kb_add",
+      "category": "knowledge",
+      "aliases": [
+        "kb_write"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "statements",
+        "models",
+        "lifespan_sec"
+      ],
+      "required_params": [
+        "statements"
+      ],
+      "preconditions": [
+        "the user explicitly requested a knowledge-base change",
+        "statements contain concrete KnowledgeCore predicates"
+      ],
+      "expected_effects": [
+        "the requested predicates are added through KnowledgeCore"
+      ],
+      "observable_success": [
+        "KnowledgeCore revise service reports success"
+      ],
+      "failure_modes": [
+        "missing_statements",
+        "kb_service_unavailable",
+        "kb_mutation_rejected"
+      ],
+      "planner_guidance": [
+        "use only for an explicit user request to add a fact",
+        "never infer predicates or convert an ordinary knowledge question into a mutation"
+      ],
+      "robot_adapter_mapping": "nao_orchestrator.kb_add",
+      "result_schema": {
+        "required": [
+          "skill",
+          "operation",
+          "statement_count",
+          "success"
+        ]
+      },
+      "safety_flags": [
+        "knowledge_mutation",
+        "explicit_user_authorization"
+      ],
+      "supports_failure_injection": false,
+      "is_composite": false,
+      "is_fake": false,
+      "runtime_callable": true,
+      "decomposes_to": [],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "",
+        "notes": ""
+      }
+    },
+    {
+      "name": "kb_remove",
+      "category": "knowledge",
+      "aliases": [
+        "kb_delete"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "statements",
+        "models"
+      ],
+      "required_params": [
+        "statements"
+      ],
+      "preconditions": [
+        "the user explicitly requested a knowledge-base change",
+        "statements contain concrete KnowledgeCore predicates"
+      ],
+      "expected_effects": [
+        "the requested predicates are removed through KnowledgeCore"
+      ],
+      "observable_success": [
+        "KnowledgeCore revise service reports success"
+      ],
+      "failure_modes": [
+        "missing_statements",
+        "kb_service_unavailable",
+        "kb_mutation_rejected"
+      ],
+      "planner_guidance": [
+        "use only for an explicit user request to remove a fact",
+        "never infer predicates or convert an ordinary knowledge question into a mutation"
+      ],
+      "robot_adapter_mapping": "nao_orchestrator.kb_remove",
+      "result_schema": {
+        "required": [
+          "skill",
+          "operation",
+          "statement_count",
+          "success"
+        ]
+      },
+      "safety_flags": [
+        "knowledge_mutation",
+        "explicit_user_authorization"
+      ],
+      "supports_failure_injection": false,
+      "is_composite": false,
+      "is_fake": false,
+      "runtime_callable": true,
+      "decomposes_to": [],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "",
+        "notes": ""
+      }
+    },
+    {
+      "name": "kb_revise",
+      "category": "knowledge",
+      "aliases": [
+        "kb_update"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "statements",
+        "models",
+        "lifespan_sec"
+      ],
+      "required_params": [
+        "statements"
+      ],
+      "preconditions": [
+        "the user explicitly requested a knowledge-base change",
+        "statements contain concrete KnowledgeCore predicates"
+      ],
+      "expected_effects": [
+        "the requested predicates are revised through KnowledgeCore"
+      ],
+      "observable_success": [
+        "KnowledgeCore revise service reports success"
+      ],
+      "failure_modes": [
+        "missing_statements",
+        "kb_service_unavailable",
+        "kb_mutation_rejected"
+      ],
+      "planner_guidance": [
+        "use only for an explicit user request to revise an existing fact",
+        "never infer predicates or convert an ordinary knowledge question into a mutation"
+      ],
+      "robot_adapter_mapping": "nao_orchestrator.kb_revise",
+      "result_schema": {
+        "required": [
+          "skill",
+          "operation",
+          "statement_count",
+          "success"
+        ]
+      },
+      "safety_flags": [
+        "knowledge_mutation",
+        "explicit_user_authorization"
+      ],
+      "supports_failure_injection": false,
+      "is_composite": false,
+      "is_fake": false,
+      "runtime_callable": true,
+      "decomposes_to": [],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "",
+        "notes": ""
       }
     },
     {
@@ -113,14 +477,15 @@
       "is_fake": false,
       "runtime_callable": true,
       "decomposes_to": [
-        "/skill/look_at",
+        "resolve_attention_target",
         "validate_motion_payload",
-        "wait_for_perception"
+        "dispatch_attention_control",
+        "observe_attention_settled"
       ],
       "decomposition": {
         "max_depth": -1,
-        "policy": "full_to_ab0",
-        "notes": "Attention control decomposes to motion validation + dispatch + bounded wait."
+        "policy": "ab1_to_effect_primitives",
+        "notes": "Attention control decomposes into target/frame grounding, motion payload validation, orchestrator-owned look_at dispatch, and gaze-settlement observation."
       }
     },
     {
@@ -172,15 +537,16 @@
       "is_fake": true,
       "runtime_callable": true,
       "decomposes_to": [
-        "/skill/fake/navigate_to",
+        "resolve_navigation_goal",
         "validate_navigation_request",
         "estimate_navigation_path",
+        "dispatch_navigation_control",
         "verify_evidence_payload"
       ],
       "decomposition": {
         "max_depth": -1,
-        "policy": "full_to_ab0",
-        "notes": "AB1 runtime skill with AB0 decomposition; semantically destination-oriented."
+        "policy": "ab1_to_effect_primitives",
+        "notes": "Navigation decomposes into semantic goal grounding, safety validation, path uncertainty, orchestrator-owned dispatch, and result validation."
       }
     },
     {
@@ -231,15 +597,159 @@
       "is_fake": false,
       "runtime_callable": true,
       "decomposes_to": [
-        "/skill/replay_motion",
-        "/skill/do_head_motion",
         "validate_motion_payload",
+        "dispatch_motion_control",
+        "observe_motion_settled",
         "verify_evidence_payload"
       ],
       "decomposition": {
         "max_depth": -1,
-        "policy": "full_to_ab0",
-        "notes": "Motion dispatch decomposes into validation + deterministic action dispatch."
+        "policy": "ab1_to_effect_primitives",
+        "notes": "Motion decomposes into validation, orchestrator-owned dispatch, effect observation, and result payload validation."
+      }
+    },
+    {
+      "name": "pick_object",
+      "category": "manipulation",
+      "aliases": [
+        "pick",
+        "grab",
+        "grab_object"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "object_id",
+        "target",
+        "object",
+        "support",
+        "gripper",
+        "result_mode"
+      ],
+      "required_params": [
+        "target"
+      ],
+      "preconditions": [
+        "target object must be grounded or explicitly scenario-owned",
+        "robot gripper should be free"
+      ],
+      "expected_effects": [
+        "robot holds the object",
+        "previous support relation is removed or replaced"
+      ],
+      "observable_success": [
+        "status",
+        "evidence.held",
+        "evidence.kb_effects"
+      ],
+      "failure_modes": [
+        "object_unavailable",
+        "unreachable",
+        "already_held",
+        "grasp_failed"
+      ],
+      "planner_guidance": [
+        "use for explicit pick or grab requests after resolving a grounded object id"
+      ],
+      "robot_adapter_mapping": "fake_skills.pick_object",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text",
+          "evidence"
+        ]
+      },
+      "safety_flags": [
+        "manipulation",
+        "object_contact"
+      ],
+      "supports_failure_injection": true,
+      "is_composite": false,
+      "is_fake": true,
+      "runtime_callable": true,
+      "decomposes_to": [
+        "resolve_target_reference",
+        "validate_reachability",
+        "dispatch_grasp_control",
+        "verify_evidence_payload"
+      ],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "ab1_to_effect_primitives",
+        "notes": "Fake pick/grab simulates object acquisition and emits KB-effect evidence without mutating KnowledgeCore directly."
+      }
+    },
+    {
+      "name": "place_object",
+      "category": "manipulation",
+      "aliases": [
+        "place",
+        "put_down"
+      ],
+      "abstraction_level": 1,
+      "params": [
+        "object_id",
+        "target",
+        "object",
+        "destination_id",
+        "destination",
+        "support",
+        "relation",
+        "result_mode"
+      ],
+      "required_params": [
+        "target",
+        "destination"
+      ],
+      "preconditions": [
+        "robot should hold the object",
+        "destination support must be grounded or scenario-owned"
+      ],
+      "expected_effects": [
+        "object is no longer held",
+        "destination support relation is added"
+      ],
+      "observable_success": [
+        "status",
+        "evidence.destination_id",
+        "evidence.kb_effects"
+      ],
+      "failure_modes": [
+        "destination_unavailable",
+        "invalid_support",
+        "no_held_object",
+        "placement_failed"
+      ],
+      "planner_guidance": [
+        "use for explicit place or put-down requests with a grounded destination"
+      ],
+      "robot_adapter_mapping": "fake_skills.place_object",
+      "result_schema": {
+        "required": [
+          "skill",
+          "status",
+          "summary_text",
+          "evidence"
+        ]
+      },
+      "safety_flags": [
+        "manipulation",
+        "object_contact"
+      ],
+      "supports_failure_injection": true,
+      "is_composite": false,
+      "is_fake": true,
+      "runtime_callable": true,
+      "decomposes_to": [
+        "verify_object_held",
+        "resolve_destination_reference",
+        "dispatch_place_control",
+        "verify_evidence_payload"
+      ],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "ab1_to_effect_primitives",
+        "notes": "Fake place simulates object release and emits support-relation evidence for reporting and validation."
       }
     },
     {
@@ -288,14 +798,14 @@
       "is_fake": false,
       "runtime_callable": true,
       "decomposes_to": [
-        "/skill/report_result",
         "verify_evidence_payload",
-        "emit_robot_speech"
+        "prepare_grounded_summary",
+        "emit_planner_dialogue_act"
       ],
       "decomposition": {
         "max_depth": -1,
-        "policy": "full_to_ab0",
-        "notes": "Result reporting validates payload then emits speech via deterministic channel."
+        "policy": "ab1_to_effect_primitives",
+        "notes": "Result reporting validates evidence, prepares a grounded summary, and emits a planner dialogue act; final speech remains dialogue_manager/chatbot-owned."
       }
     },
     {
@@ -361,14 +871,16 @@
       "is_fake": false,
       "runtime_callable": true,
       "decomposes_to": [
-        "perform_motion",
-        "/scene/summary",
-        "query_kb"
+        "select_scan_pattern",
+        "dispatch_scan_motion",
+        "wait_for_perception",
+        "read_scene_summary",
+        "verify_evidence_payload"
       ],
       "decomposition": {
         "max_depth": -1,
-        "policy": "full_to_ab0",
-        "notes": "Execute as AB1 skill but decompose to AB0 for analysis and future deterministic routing."
+        "policy": "ab1_to_effect_primitives",
+        "notes": "Scan remains the planner-callable AB1 affordance; AB0 children expose policy, dispatch, observation, and evidence validation terms without duplicating /skill/scan as an AB0 object."
       }
     },
     {
@@ -418,72 +930,15 @@
       "is_fake": true,
       "runtime_callable": true,
       "decomposes_to": [
-        "/skill/fake/walk_to",
         "validate_navigation_request",
+        "dispatch_walk_segment",
         "verify_evidence_payload"
       ],
       "decomposition": {
         "max_depth": -1,
-        "policy": "full_to_ab0",
-        "notes": "AB1 primitive locomotion segment skill used by higher-level navigation flows."
+        "policy": "ab1_to_effect_primitives",
+        "notes": "Short walking is represented as a safety-checked movement segment; real walking remains operator-gated and adapter-owned."
       }
-    },
-    {
-      "name": "inspect_area",
-      "category": "perception",
-      "aliases": [
-        "inspect_zone",
-        "check_area"
-      ],
-      "abstraction_level": 1,
-      "params": [
-        "target",
-        "target_area",
-        "result_mode"
-      ],
-      "required_params": [
-        "target"
-      ],
-      "preconditions": [
-        "target area should be named"
-      ],
-      "expected_effects": [
-        "scene evidence for target area is returned"
-      ],
-      "observable_success": [
-        "status",
-        "target_found",
-        "evidence.people",
-        "evidence.objects"
-      ],
-      "failure_modes": [
-        "ambiguous",
-        "area_unknown",
-        "backend_unavailable"
-      ],
-      "planner_guidance": [
-        "use inspect_area to validate area state before reporting"
-      ],
-      "robot_adapter_mapping": "fake_skills.inspect_area",
-      "result_schema": {
-        "required": [
-          "skill",
-          "status",
-          "summary_text"
-        ]
-      },
-      "safety_flags": [
-        "perception"
-      ],
-      "supports_failure_injection": true,
-      "is_composite": true,
-      "is_fake": true,
-      "runtime_callable": true,
-      "decomposes_to": [
-        "navigate_to",
-        "scan",
-        "report_result"
-      ]
     },
     {
       "name": "wave_greet",
@@ -535,8 +990,16 @@
       "is_fake": true,
       "runtime_callable": true,
       "decomposes_to": [
-        "perform_motion"
-      ]
+        "validate_motion_payload",
+        "dispatch_motion_control",
+        "observe_motion_settled",
+        "verify_evidence_payload"
+      ],
+      "decomposition": {
+        "max_depth": -1,
+        "policy": "ab1_to_effect_primitives",
+        "notes": "Greeting wave is currently fake-callable but semantically grounded as a safety-checked motion effect."
+      }
     }
   ]
 }

@@ -5,13 +5,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 
+from planner_common import DEFAULT_PERFORM_MOTION_OBJECT_LABELS
 from planner_common import ExecutionFeedback
+from planner_common import IntentLabels
 from planner_common import PlannerRequest
 from planner_common import build_plan_payload
 from planner_common import extract_json_object
-from planner_common import IntentLabels
+from planner_common import missing_requested_report_error
 from planner_common import normalize_communication_policy
 from planner_common import normalize_plan_steps
+from planner_common import request_requests_report
+from planner_common import strip_live_result_report_summary_text
 
 from planner_llm.providers import BasePlannerProvider
 from planner_llm.providers import PlannerProviderError
@@ -30,6 +34,36 @@ _RULE_BASED_MOTIONS = {
     'posture_sit': 'sit',
     'posture_kneel': 'kneel',
 }
+
+
+def _looks_like_simple_rule_request(request: PlannerRequest) -> bool:
+    """Allow deterministic fallback only for one obvious primitive motion/posture."""
+    if request_requests_report(request):
+        return False
+    if request.scene_targets:
+        return False
+    goal_text = ' %s ' % ' '.join(str(request.goal_text or '').lower().split())
+    if not goal_text.strip():
+        return True
+    if any(
+        marker in goal_text
+        for marker in (
+            ' all ',
+            ' every ',
+            ' each ',
+            ' and ',
+            ' then ',
+            ' after ',
+            ' before ',
+            ' report ',
+            ' tell me ',
+            ' let me know ',
+        )
+    ):
+        return False
+    return True
+
+
 @dataclass(frozen=True)
 class PlannerDecision:
     intent_name: str
@@ -61,8 +95,7 @@ class PlannerEngine:
         self,
         request: PlannerRequest,
         *,
-        world_model_text: str = '',
-        world_model_snapshot: dict | None = None,
+        state_t0: dict | None = None,
         feedback: ExecutionFeedback | None = None,
         goal_id: str = '',
         plan_version: int = 1,
@@ -86,40 +119,17 @@ class PlannerEngine:
                 communication_policy=resolved_policy,
             )
 
-        rule_based_decision = self._rule_based_decision(
-            request,
-            feedback=feedback,
-            goal_id=resolved_goal_id,
-            plan_version=resolved_plan_version,
-            status=status,
-            communication_policy=resolved_policy,
-        )
-        if rule_based_decision is not None:
-            return rule_based_decision
-
         try:
             raw_model_output = self._provider.generate(
                 self._build_messages(
                     request,
-                    world_model_text=world_model_text,
-                    world_model_snapshot=world_model_snapshot or {},
+                    state_t0=state_t0 or {},
                     feedback=feedback,
                     goal_id=resolved_goal_id,
                     plan_version=resolved_plan_version,
                 )
             )
         except PlannerProviderError as err:
-            requested_plan_decision = self._requested_plan_decision(
-                request,
-                feedback=feedback,
-                goal_id=resolved_goal_id,
-                plan_version=resolved_plan_version,
-                status=status,
-                communication_policy=resolved_policy,
-                raw_model_output='planner backend unavailable: %s' % err,
-            )
-            if requested_plan_decision is not None:
-                return requested_plan_decision
             return self._backend_unavailable_decision(
                 request,
                 feedback=feedback,
@@ -146,8 +156,7 @@ class PlannerEngine:
                 retry_raw_model_output = self._provider.generate(
                     self._build_messages(
                         request,
-                        world_model_text=world_model_text,
-                        world_model_snapshot=world_model_snapshot or {},
+                        state_t0=state_t0 or {},
                         feedback=feedback,
                         goal_id=resolved_goal_id,
                         plan_version=resolved_plan_version,
@@ -175,17 +184,17 @@ class PlannerEngine:
                     retry_raw_model_output,
                 )
 
-        requested_plan_decision = self._requested_plan_decision(
+        rule_fallback_decision = self._rule_based_decision(
             request,
             feedback=feedback,
             goal_id=resolved_goal_id,
             plan_version=resolved_plan_version,
             status=status,
             communication_policy=resolved_policy,
-            raw_model_output=raw_model_output,
+            mode='rule_fallback',
         )
-        if requested_plan_decision is not None:
-            return requested_plan_decision
+        if rule_fallback_decision is not None:
+            return rule_fallback_decision
 
         return self._invalid_model_output_decision(
             request,
@@ -202,8 +211,7 @@ class PlannerEngine:
         self,
         request: PlannerRequest,
         *,
-        world_model_text: str,
-        world_model_snapshot: dict,
+        state_t0: dict,
         feedback: ExecutionFeedback | None,
         goal_id: str,
         plan_version: int,
@@ -214,13 +222,12 @@ class PlannerEngine:
             'request': self._request_payload(request),
             'goal_id': goal_id,
             'plan_version': plan_version,
-            'world_model_text': str(world_model_text or '').strip(),
-            'world_model_snapshot': world_model_snapshot,
+            'state_t0': state_t0 if isinstance(state_t0, dict) else {},
             'execution_feedback': self._feedback_payload(feedback),
             'skill_registry': self._skill_registry.prompt_manifest(),
             'allowed_step_types': list(self._skill_registry.step_types),
             'allowed_skill_names': list(self._skill_registry.allowed_skill_names),
-            'allowed_motion_objects': list(_RULE_BASED_MOTIONS.values()),
+            'allowed_motion_objects': sorted(DEFAULT_PERFORM_MOTION_OBJECT_LABELS),
             'output_contract': dict(self._prompt_pack.output_contract),
         }
         if validation_errors:
@@ -269,6 +276,7 @@ class PlannerEngine:
             decision = self._decision_from_model_output(
                 request,
                 raw_model_output,
+                parsed=parsed,
                 feedback=feedback,
                 goal_id=goal_id,
                 plan_version=plan_version,
@@ -282,13 +290,14 @@ class PlannerEngine:
             return None, validation_errors
         if not steps:
             return None, ['model output did not contain executable steps']
+        missing_report_error = missing_requested_report_error(request, steps)
+        if missing_report_error:
+            return None, [missing_report_error]
 
         return self._build_decision(
             request=request,
             feedback=feedback,
             steps=steps,
-            ack_text=str(parsed.get('ack_text', '')).strip(),
-            ack_mode=str(parsed.get('ack_mode', request.ack_mode)).strip(),
             validation_status=str(parsed.get('validation_status', 'draft')).strip() or 'draft',
             failure_reason=str(parsed.get('failure_reason', '')).strip(),
             user_facing_reason=str(parsed.get('user_facing_reason', '')).strip(),
@@ -309,15 +318,17 @@ class PlannerEngine:
         request: PlannerRequest,
         raw_model_output: str,
         *,
+        parsed: dict | None = None,
         feedback: ExecutionFeedback | None,
         goal_id: str,
         plan_version: int,
         status: str,
         communication_policy: dict,
     ) -> PlannerDecision | None:
-        parsed = extract_json_object(raw_model_output)
-        if not parsed:
-            return None
+        if parsed is None:
+            parsed = extract_json_object(raw_model_output)
+            if not parsed:
+                return None
 
         decision_mode = str(parsed.get('decision', parsed.get('mode', 'plan'))).strip().lower()
         if decision_mode in ('clarify', 'clarification'):
@@ -366,8 +377,6 @@ class PlannerEngine:
             request=request,
             feedback=feedback,
             steps=steps,
-            ack_text=str(parsed.get('ack_text', '')).strip(),
-            ack_mode=str(parsed.get('ack_mode', request.ack_mode)).strip(),
             validation_status=str(parsed.get('validation_status', 'draft')).strip() or 'draft',
             failure_reason=str(parsed.get('failure_reason', '')).strip(),
             user_facing_reason=str(parsed.get('user_facing_reason', '')).strip(),
@@ -407,8 +416,6 @@ class PlannerEngine:
                     args={'text': clean_reason},
                 )
             ],
-            ack_text='',
-            ack_mode='',
             validation_status='draft',
             failure_reason=clean_reason if mode == 'fail' else '',
             user_facing_reason=clean_reason,
@@ -444,8 +451,6 @@ class PlannerEngine:
                     args={'text': reason},
                 )
             ],
-            ack_text='',
-            ack_mode='',
             validation_status='failed',
             failure_reason=reason,
             user_facing_reason=reason,
@@ -482,8 +487,6 @@ class PlannerEngine:
                     args={'text': clean_reason},
                 )
             ],
-            ack_text='',
-            ack_mode='',
             validation_status='invalid',
             failure_reason=clean_reason,
             user_facing_reason=clean_reason,
@@ -507,6 +510,7 @@ class PlannerEngine:
         plan_version: int,
         status: str,
         communication_policy: dict,
+        mode: str = 'rule',
     ) -> PlannerDecision | None:
         if str(request.planner_mode or '').strip().lower() in (
             'multi_step',
@@ -515,9 +519,9 @@ class PlannerEngine:
             'sequenced',
         ):
             return None
-        if len(request.requested_plan) > 1:
-            return None
         if len(request.normalized_intents) > 1:
+            return None
+        if not _looks_like_simple_rule_request(request):
             return None
 
         retry_budget = self._next_retry_budget({}, feedback)[0]
@@ -527,6 +531,8 @@ class PlannerEngine:
         for normalized_intent in request.normalized_intents:
             motion_name = _RULE_BASED_MOTIONS.get(normalized_intent)
             if motion_name and motion_skill_name:
+                if request_requests_report(request):
+                    return None
                 return self._build_decision(
                     request=request,
                     feedback=feedback,
@@ -538,80 +544,17 @@ class PlannerEngine:
                             on_failure='replan',
                         )
                     ],
-                    ack_text='',
-                    ack_mode='',
                     validation_status='draft',
                     retry_budget=retry_budget,
                     scene_targets=scene_targets,
-                    mode='rule',
+                    mode=mode,
                     goal_id=goal_id,
                     plan_version=plan_version,
                     status=status,
                     communication_policy=communication_policy,
                 )
 
-        if any(intent_name in ('greet', IntentLabels.GREET) for intent_name in request.normalized_intents):
-            return self._build_decision(
-                request=request,
-                feedback=feedback,
-                steps=[
-                    self._step(
-                        step_type='say',
-                        name='say',
-                        args={'text': request.ack_text or 'Hello!'},
-                    )
-                ],
-                ack_text='',
-                ack_mode='',
-                validation_status='draft',
-                retry_budget=retry_budget,
-                scene_targets=scene_targets,
-                mode='rule',
-                goal_id=goal_id,
-                plan_version=plan_version,
-                status=status,
-                communication_policy=communication_policy,
-            )
         return None
-
-    def _requested_plan_decision(
-        self,
-        request: PlannerRequest,
-        *,
-        feedback: ExecutionFeedback | None,
-        goal_id: str,
-        plan_version: int,
-        status: str,
-        communication_policy: dict,
-        raw_model_output: str = '',
-    ) -> PlannerDecision | None:
-        if feedback is not None or not request.requested_plan:
-            return None
-
-        steps = self._skill_registry.filter_supported_steps(
-            [dict(step) for step in request.requested_plan]
-        )
-        if len(steps) != len(request.requested_plan):
-            return None
-        if not steps:
-            return None
-
-        return self._build_decision(
-            request=request,
-            feedback=feedback,
-            steps=steps,
-            ack_text=request.ack_text,
-            ack_mode=request.ack_mode,
-            validation_status='draft',
-            retry_budget=self._default_retry_budget,
-            scene_targets=self._scene_targets_for_decision(request, feedback, {}),
-            raw_model_output=raw_model_output,
-            mode='hint',
-            goal_id=goal_id,
-            plan_version=plan_version,
-            status=status,
-            communication_policy=communication_policy,
-        )
 
     @staticmethod
     def _request_payload(request: PlannerRequest) -> dict:
@@ -623,14 +566,10 @@ class PlannerEngine:
             'request_kind': request.request_kind,
             'goal_text': request.goal_text,
             'normalized_intents': list(request.normalized_intents),
-            'ack_text': request.ack_text,
-            'ack_mode': request.ack_mode,
             'scene_targets': list(request.scene_targets),
             'dialogue_context': list(request.dialogue_context),
-            'requested_plan': list(request.requested_plan),
             'grounded_context': request.grounded_context,
             'planner_mode': request.planner_mode,
-            'interaction_mode': request.interaction_mode,
             'dialogue_turn_id': request.dialogue_turn_id,
         }
 
@@ -682,7 +621,35 @@ class PlannerEngine:
         mixed_say_error = self._mixed_say_step_error(supported_steps)
         if mixed_say_error:
             return [], [mixed_say_error]
-        return supported_steps, []
+        argument_errors = self._step_argument_errors(supported_steps)
+        if argument_errors:
+            return [], argument_errors
+        return strip_live_result_report_summary_text(supported_steps), []
+
+    @staticmethod
+    def _step_argument_errors(steps: list[dict]) -> list[str]:
+        errors: list[str] = []
+        for step in steps:
+            if str(step.get('name', '')).strip().lower() != 'perform_motion':
+                continue
+            args = step.get('args', {})
+            motion_object = (
+                str(args.get('object', '')).strip().lower()
+                if isinstance(args, dict)
+                else ''
+            )
+            if motion_object in DEFAULT_PERFORM_MOTION_OBJECT_LABELS:
+                continue
+            errors.append(
+                'unsupported perform_motion args.object "%s"; '
+                'allowed_motion_objects=%s. Decompose composite motions into '
+                'explicit supported perform_motion steps.'
+                % (
+                    motion_object or '<empty>',
+                    ','.join(sorted(DEFAULT_PERFORM_MOTION_OBJECT_LABELS)),
+                )
+            )
+        return errors
 
     def _step_rejection_reason(self, step: dict) -> str:
         step_type = str(step.get('type', '')).strip().lower()
@@ -742,8 +709,6 @@ class PlannerEngine:
         request: PlannerRequest,
         feedback: ExecutionFeedback | None,
         steps: list[dict],
-        ack_text: str,
-        ack_mode: str,
         validation_status: str,
         failure_reason: str = '',
         user_facing_reason: str = '',
@@ -760,8 +725,6 @@ class PlannerEngine:
     ) -> PlannerDecision:
         payload = build_plan_payload(
             request=request,
-            ack_text=ack_text,
-            ack_mode=ack_mode,
             validation_status=validation_status,
             failure_reason=failure_reason,
             user_facing_reason=user_facing_reason,
@@ -774,6 +737,7 @@ class PlannerEngine:
             plan_version=plan_version,
             status=status,
             communication_policy=communication_policy,
+            communication_policy_source='planner_engine:%s' % (mode or 'plan'),
         )
         return PlannerDecision(
             intent_name=self._default_intent_name,
@@ -797,15 +761,22 @@ class PlannerEngine:
         parsed: dict,
         feedback: ExecutionFeedback | None,
     ) -> tuple[int, bool]:
+        if feedback is not None:
+            remaining_from_feedback = max(0, int(feedback.retry_budget) - 1)
+        else:
+            remaining_from_feedback = self._default_retry_budget
         if feedback is not None and feedback.status in ('failed', 'invalid'):
             exhausted = int(feedback.retry_budget) <= 0
         else:
             exhausted = False
         explicit = self._parsed_retry_budget(parsed)
         if explicit is not None:
+            if feedback is not None:
+                # Do not let model output increase/reset remaining retries on replans.
+                return min(explicit, remaining_from_feedback), exhausted
             return explicit, exhausted
         if feedback is not None:
-            return max(0, int(feedback.retry_budget) - 1), exhausted
+            return remaining_from_feedback, exhausted
         return self._default_retry_budget, exhausted
 
     @staticmethod

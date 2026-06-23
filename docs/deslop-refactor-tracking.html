@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Deslop Refactor Tracking</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2.6cm 2.2cm 2.4cm 2.2cm;
+    }
+    :root {
+      --ink: #111;
+      --muted: #3a3a3a;
+      --line: #1f1f1f;
+      --soft: #f3f3f3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #fff;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 11.5pt;
+      line-height: 1.42;
+    }
+    .doc {
+      max-width: 172mm;
+      margin: 0 auto;
+      padding: 0;
+    }
+    .title-page {
+      min-height: 247mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+    }
+    .title-top {
+      text-align: center;
+      margin-top: 18mm;
+    }
+    .title-top h1 {
+      font-size: 20pt;
+      line-height: 1.28;
+      margin: 20mm 0 8mm;
+      font-weight: 700;
+    }
+    .title-top h2 {
+      font-size: 13pt;
+      margin: 0 0 3mm;
+      font-weight: 600;
+      border-bottom: 0;
+    }
+    .title-top p {
+      margin: 2mm 0;
+      color: var(--muted);
+    }
+    .title-meta {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 auto 20mm;
+      font-size: 11pt;
+    }
+    .title-meta td {
+      padding: 2.5mm 0;
+      vertical-align: top;
+      border: 0;
+    }
+    .title-meta td:first-child {
+      width: 38mm;
+      font-weight: 700;
+    }
+    .small { font-size: 10.3pt; color: #222; }
+    h1, h2, h3 {
+      margin: 0 0 3mm;
+      line-height: 1.28;
+      font-weight: 700;
+    }
+    h1 { font-size: 16.5pt; margin-top: 0; }
+    h2 {
+      font-size: 13pt;
+      margin-top: 9mm;
+      border-bottom: 0.5pt solid var(--line);
+      padding-bottom: 1.5mm;
+    }
+    h3 {
+      font-size: 11.8pt;
+      margin-top: 6mm;
+    }
+    p { margin: 2.2mm 0; }
+    ul, ol { margin: 2.5mm 0 2.5mm 6mm; padding: 0; }
+    li { margin: 1.4mm 0; }
+    pre {
+      margin: 2.5mm 0 4mm;
+      background: var(--soft);
+      border: 0.6pt solid #666;
+      padding: 2.6mm 2.8mm;
+      overflow-x: auto;
+      white-space: pre;
+      font-family: "Liberation Mono", "Courier New", monospace;
+      font-size: 9.2pt;
+      line-height: 1.3;
+    }
+    code {
+      font-family: "Liberation Mono", "Courier New", monospace;
+      background: #efefef;
+      padding: 0.2mm 1mm;
+      border: 0.4pt solid #d7d7d7;
+      border-radius: 2px;
+      font-size: 10.3pt;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      border: 0;
+      font-size: inherit;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 3mm 0 4mm;
+      font-size: 10.8pt;
+    }
+    th, td {
+      border: 0.6pt solid #333;
+      padding: 2.2mm 2.3mm;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+      hyphens: auto;
+    }
+    th {
+      background: #fafafa;
+      text-align: left;
+      font-weight: 700;
+    }
+    .diagram {
+      margin: 4mm 0 5mm;
+      border: 0.6pt solid #777;
+      padding: 2mm;
+      background: #fff;
+    }
+    .diagram pre {
+      margin: 0;
+      border: 0;
+      background: #fcfcfc;
+      font-size: 10.2pt;
+      white-space: pre-wrap;
+    }
+    .diagram svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .diagram-labels {
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 25px;
+      font-weight: 700;
+      fill: #111;
+    }
+    .lifelines {
+      stroke: #999;
+      stroke-dasharray: 4 4;
+    }
+    .messages {
+      stroke: #111;
+      stroke-width: 1.35;
+      fill: none;
+    }
+    .messages text {
+      stroke: none;
+      fill: #111;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 22px;
+    }
+    .caption {
+      margin-top: 2mm;
+      font-size: 10.5pt;
+      color: #222;
+      font-style: italic;
+      text-align: center;
+    }
+    blockquote {
+      border: 0.6pt solid #333;
+      background: #fcfcfc;
+      margin: 3mm 0;
+      padding: 2.6mm 3mm;
+      color: var(--muted);
+    }
+    a { color: #111; }
+  </style>
+</head>
+<body>
+  <main class="doc">
+
+<h1>Deslop Refactor Tracking — <code>nao-ros4hri-bridge</code></h1>
+<p><strong>Branch:</strong> <code>refactor/deslop_repo</code></p>
+<p><strong>Date:</strong> 2026-06-03</p>
+<p><strong>Scope:</strong> Last ~5 commits across <code>planner_common</code>, <code>planner_llm</code>, and <code>nao_orchestrator</code></p>
+<hr />
+<h2>Summary</h2>
+<p>This pass targeted code slop introduced during recent development: duplicated helpers, oversized modules, and cross-package dependency violations. All changes are behavior-preserving — no contracts, interfaces, or runtime semantics were altered.</p>
+<p><strong>Net effect:</strong> ~425 lines removed, 3 new public helpers added to <code>planner_common</code>, 1 new module created.</p>
+<hr />
+<h2>Change 1: Extract grounded context projection helpers</h2>
+<p><strong>Principle:</strong> <em>Separation of Concerns</em> — large contract file contained 30+ private helpers for a single sub-domain.</p>
+<h3>What changed</h3>
+<table><thead><tr>
+<th>File</th>
+<th>Before</th>
+<th>After</th>
+</tr></thead><tbody>
+<tr>
+<td><code>planner_common/contracts.py</code></td>
+<td>1276 lines</td>
+<td>~883 lines</td>
+</tr>
+<tr>
+<td><code>planner_common/grounded_context_projection.py</code></td>
+<td>(new)</td>
+<td>526 lines</td>
+</tr>
+</tbody></table>
+<h3>Details</h3>
+<ul>
+<li>Extracted 30+ private helpers (<code>_normalize_grounded_entity</code>, <code>_normalize_relations</code>, etc.) from <code>contracts.py</code> into a dedicated module <code>grounded_context_projection.py</code>.</li>
+<li>The two public entry points (<code>project_llm_grounded_context</code>, <code>grounded_context_to_context_ref</code>) now live as thin lazy re-imports in <code>contracts.py</code> for backward compatibility.</li>
+<li><code>normalize_grounded_context</code> compact-path branch lazily imports from the new module.</li>
+</ul>
+<h3>Risk</h3>
+<p>Low — all helper signatures and call sites are unchanged. Tests pass (128 passed, 1 skipped).</p>
+<hr />
+<h2>Change 2: Deduplicate <code>coerce_optional_float</code></h2>
+<p><strong>Principle:</strong> <em>DRY</em> — same helper defined in three packages.</p>
+<h3>What changed</h3>
+<table><thead><tr>
+<th>File</th>
+<th>Change</th>
+</tr></thead><tbody>
+<tr>
+<td><code>planner_common/contracts.py</code></td>
+<td>Added <code>coerce_optional_float</code> as public helper</td>
+</tr>
+<tr>
+<td><code>nao_orchestrator/intent_rules.py</code></td>
+<td>Removed local definition, imports from <code>planner_common.contracts</code></td>
+</tr>
+<tr>
+<td><code>nao_orchestrator/scan_skill_server.py</code></td>
+<td>Removed local definition, imports from <code>planner_common.contracts</code></td>
+</tr>
+</tbody></table>
+<h3>Details</h3>
+<ul>
+<li>The helper was defined identically in <code>intent_rules.py</code> and <code>scan_skill_server.py</code>. Consolidated into <code>planner_common.contracts</code> as the single source of truth.</li>
+<li>Exported through <code>planner_common/__init__.py</code>.</li>
+</ul>
+<h3>Risk</h3>
+<p>Low — function signatures are identical across all three locations. No behavioral change.</p>
+<hr />
+<h2>Change 3: Move plan validation helpers to <code>planner_common</code></h2>
+<p><strong>Principle:</strong> <em>Separation of Concerns</em> + <em>Repo Boundaries</em> — planner_llm must not depend on nao_orchestrator.</p>
+<h3>What changed</h3>
+<table><thead><tr>
+<th>File</th>
+<th>Change</th>
+</tr></thead><tbody>
+<tr>
+<td><code>planner_common/contracts.py</code></td>
+<td>Added 3 public helpers (renamed from private)</td>
+</tr>
+<tr>
+<td><code>planner_llm/planner_engine.py</code></td>
+<td>Removed local definitions, imports from <code>planner_common.contracts</code></td>
+</tr>
+</tbody></table>
+<h3>Moved helpers</h3>
+<table><thead><tr>
+<th>Old name (in planner_engine)</th>
+<th>New name (in contracts)</th>
+</tr></thead><tbody>
+<tr>
+<td><code>_scan_report_summary_error</code></td>
+<td><code>scan_report_summary_error</code></td>
+</tr>
+<tr>
+<td><code>_missing_requested_report_error</code></td>
+<td><code>missing_requested_report_error</code></td>
+</tr>
+<tr>
+<td><code>_request_requests_report</code></td>
+<td><code>request_requests_report</code></td>
+</tr>
+</tbody></table>
+<h3>Details</h3>
+<ul>
+<li>These helpers validate plan contracts and belong in <code>planner_common</code>, not in the planner runtime node.</li>
+<li>Placed in <code>planner_common</code> (not <code>nao_orchestrator</code>) because <code>planner_llm</code> must not depend on robot-specific packages per repo boundary guardrails.</li>
+<li>Underscore prefix removed since these are now public contract helpers.</li>
+</ul>
+<h3>Risk</h3>
+<p>Low — call sites updated to import from new location. All tests pass.</p>
+<hr />
+<h2>Change 4: Fix <code>__init__.py</code> exports</h2>
+<p><strong>Principle:</strong> <em>Least Surprise</em> — public API surface must reflect available symbols.</p>
+<h3>What changed</h3>
+<table><thead><tr>
+<th>File</th>
+<th>Change</th>
+</tr></thead><tbody>
+<tr>
+<td><code>planner_common/__init__.py</code></td>
+<td>Added 4 new exports to both imports and <code>__all__</code></td>
+</tr>
+</tbody></table>
+<h3>New exports</h3>
+<ul>
+<li><code>coerce_optional_float</code></li>
+<li><code>missing_requested_report_error</code></li>
+<li><code>request_requests_report</code></li>
+<li><code>scan_report_summary_error</code></li>
+</ul>
+<hr />
+<h2>Intentionally Skipped</h2>
+<table><thead><tr>
+<th>Item</th>
+<th>Reason</th>
+</tr></thead><tbody>
+<tr>
+<td><code>_first_non_empty_value</code> deduplication</td>
+<td>Different signatures across <code>orchestrator.py</code> and <code>chatbot_llm/knowledge_snapshot.py</code>; different ownership domains</td>
+</tr>
+<tr>
+<td><code>__all__</code> sort order in <code>__init__.py</code></td>
+<td>Pre-existing issue, outside scope of this pass</td>
+</tr>
+<tr>
+<td>Nested repo changes (<code>chatbot_llm</code>, <code>dialogue_manager</code>)</td>
+<td>Guardrails require seam-focused changes only for fork-tracked packages</td>
+</tr>
+</tbody></table>
+<hr />
+<h2>Validation</h2>
+<ul>
+<li><strong>py_compile:</strong> All 6 touched files compile cleanly</li>
+<li><strong>Tests:</strong> 128 passed, 1 skipped (pre-existing <code>rclpy</code> import error in <code>test_kb_spatial_statements.py</code>)</li>
+<li><strong>ROS4HRI audit:</strong> Changes confined to first-party packages (<code>planner_common</code>, <code>planner_llm</code>, <code>nao_orchestrator</code>); no boundary violations</li>
+<li><strong>Dependency direction:</strong> <code>planner_llm</code> and <code>nao_orchestrator</code> import from <code>planner_common</code> only — no reverse dependencies introduced</li>
+</ul>
+<hr />
+<h2>Commit Sequence</h2>
+<ol>
+<li><code>refactor(planner_common): extract grounded context projection helpers</code> — new module + contracts.py surgery</li>
+<li><code>refactor(planner_common): deduplicate coerce_optional_float</code> — consolidate across packages</li>
+<li><code>refactor(planner_llm): move plan validation helpers to planner_common</code> — fix cross-package dependency</li>
+<li><code>docs: add deslop refactor tracking document</code> — this HTML file</li>
+</ol>
+  </main>
+</body>
+</html>

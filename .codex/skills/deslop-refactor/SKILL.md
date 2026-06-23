@@ -16,6 +16,7 @@ Apply a behavior-preserving cleanup pass that favors simpler control flow, clear
 3. Load `references/deslop-operating-manual.md` for the working rubric.
 4. Load `references/upstream-deslop.md` only when the condensed rubric is not enough or the user explicitly wants the upstream wording.
 5. Make the smallest high-value changes first, then validate with targeted tests or linters.
+6. For repeated wording/rule changes, run a bounded SkillOpt-style loop (`baseline -> mutate -> holdout gate -> accept/reject log`) before finalizing.
 
 ## Workflow
 

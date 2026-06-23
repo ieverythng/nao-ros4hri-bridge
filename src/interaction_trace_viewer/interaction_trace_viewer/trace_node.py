@@ -13,6 +13,7 @@ from rcl_interfaces.msg import Log
 from std_msgs.msg import String
 
 from interaction_trace_viewer.payload_normalizer import classify_speech_topic
+from interaction_trace_viewer.payload_normalizer import normalize_include_event_types
 from interaction_trace_viewer.payload_normalizer import normalize_intent_message
 from interaction_trace_viewer.payload_normalizer import normalize_rosout_message
 from interaction_trace_viewer.payload_normalizer import normalize_string_message
@@ -46,6 +47,7 @@ class InteractionTraceNode(Node):
         self.declare_parameter('include_event_types_csv', '')
         self.declare_parameter('exclude_event_types_csv', '')
         self.declare_parameter('discovery_period_sec', 2.0)
+        self.declare_parameter('kb_snapshot_emit_period_sec', 0.8)
         self.declare_parameter('enable_scene_summary_channel', False)
         self.declare_parameter('scene_summary_emit_on_change_only', True)
         self.declare_parameter('scene_summary_min_interval_sec', 1.0)
@@ -69,7 +71,16 @@ class InteractionTraceNode(Node):
         self._exclude_channels = _parse_csv_set(self.get_parameter('exclude_channels_csv').value)
         self._include_event_types = _parse_csv_set(self.get_parameter('include_event_types_csv').value)
         self._exclude_event_types = _parse_csv_set(self.get_parameter('exclude_event_types_csv').value)
+        self._include_event_types = normalize_include_event_types(
+            include_channels=self._include_channels,
+            include_event_types=self._include_event_types,
+            exclude_event_types=self._exclude_event_types,
+        )
         self.discovery_period_sec = max(0.5, float(self.get_parameter('discovery_period_sec').value))
+        self.kb_snapshot_emit_period_sec = max(
+            0.0,
+            float(self.get_parameter('kb_snapshot_emit_period_sec').value),
+        )
         self.enable_scene_summary_channel = bool(self.get_parameter('enable_scene_summary_channel').value)
         self.scene_summary_emit_on_change_only = bool(
             self.get_parameter('scene_summary_emit_on_change_only').value
@@ -91,6 +102,8 @@ class InteractionTraceNode(Node):
         self._topic_subscriptions: dict[str, object] = {}
         self._trace_recorder = TraceRecorder()
         self._writer = JsonlTraceWriter(self.jsonl_output_dir) if self.write_jsonl else None
+        self._last_kb_snapshot_hash = ''
+        self._last_kb_snapshot_emit_sec = 0.0
         self._last_scene_summary_key = ''
         self._last_scene_summary_ts = 0.0
 
@@ -99,7 +112,9 @@ class InteractionTraceNode(Node):
             '/intents': ('hri_actions_msgs/msg/Intent', self._subscribe_intent),
             '/planner/execution_feedback': ('std_msgs/msg/String', self._subscribe_string),
             '/planner/dialogue_act': ('std_msgs/msg/String', self._subscribe_string),
+            '/nao_orchestrator/planner_dialogue_act': ('std_msgs/msg/String', self._subscribe_string),
             '/chatbot_llm/turn_trace': ('std_msgs/msg/String', self._subscribe_string),
+            '/fake_skills/events': ('std_msgs/msg/String', self._subscribe_string),
             '/rosout': ('rcl_interfaces/msg/Log', self._subscribe_rosout),
         }
         if self.enable_scene_summary_channel:
@@ -184,6 +199,8 @@ class InteractionTraceNode(Node):
         if channel == '/scene/summary' and not self._should_emit_scene_summary(msg.data):
             return
         event = normalize_string_message(channel=channel, msg=msg, max_payload_chars=self.max_payload_chars)
+        if event.event_type == 'kb_snapshot' and not self._should_emit_kb_snapshot_event(event.payload):
+            return
         self._emit_event(event)
 
     def _on_speech(self, channel: str, msg: String) -> None:
@@ -252,6 +269,19 @@ class InteractionTraceNode(Node):
             self._writer.write(traced)
 
         print(format_event_line(traced, verbose=not self.compact_mode), flush=True)
+
+    def _should_emit_kb_snapshot_event(self, payload: dict) -> bool:
+        current_hash = str(hash(json.dumps(payload, sort_keys=True, separators=(',', ':'))))
+        now = time.time()
+        if (
+            current_hash == self._last_kb_snapshot_hash
+            and self.kb_snapshot_emit_period_sec > 0.0
+            and (now - self._last_kb_snapshot_emit_sec) < self.kb_snapshot_emit_period_sec
+        ):
+            return False
+        self._last_kb_snapshot_hash = current_hash
+        self._last_kb_snapshot_emit_sec = now
+        return True
 
     def _event_allowed(self, event) -> bool:
         channel = str(event.channel or '').strip().lower()

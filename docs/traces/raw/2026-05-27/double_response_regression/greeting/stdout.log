@@ -1,0 +1,38 @@
+[INFO] [1779888718.809122269] [interaction_trace_viewer]: trace subscribed: /fake_skills/events
+[INFO] [1779888718.811781529] [interaction_trace_viewer]: trace subscribed: /rosout
+[INFO] [1779888718.812751429] [interaction_trace_viewer]: interaction_trace_viewer started
+[INFO] [1779888720.816730876] [interaction_trace_viewer]: trace subscribed: /planner/request
+[INFO] [1779888720.819785397] [interaction_trace_viewer]: trace subscribed: /intents
+[INFO] [1779888720.822909730] [interaction_trace_viewer]: trace subscribed: /planner/execution_feedback
+[INFO] [1779888720.825332255] [interaction_trace_viewer]: trace subscribed: /planner/dialogue_act
+[INFO] [1779888720.828261191] [interaction_trace_viewer]: trace subscribed: /nao_orchestrator/planner_dialogue_act
+[INFO] [1779888720.831656212] [interaction_trace_viewer]: trace subscribed: /chatbot_llm/turn_trace
+[INFO] [1779888720.835551361] [interaction_trace_viewer]: trace subscribed: /world_model/enriched_snapshot
+[INFO] [1779888720.839819119] [interaction_trace_viewer]: trace subscribed: /world_model/enriched_text
+[INFO] [1779888720.843856765] [interaction_trace_viewer]: trace subscribed (speech): /debug/nao_say/speech
+[INFO] [1779888720.847831774] [interaction_trace_viewer]: trace subscribed (speech): /speech
+[1779888723.809] __default__:1 | chatbot_turn_trace | /chatbot_llm/turn_trace | flow=event_type=chatbot_turn_result,route=dialogue
+  route=dialogue | intent=greet | source=llm_response_route
+[1779888723.826] trace_0001 | robot_speech | /debug/nao_say/speech
+  /debug/nao_say/speech {"text":"Hello! How can I help you today?"}
+[1779888723.830] trace_0002 | robot_speech | /speech
+  /speech {"text":"Hello! How can I help you today?"}
+Traceback (most recent call last):
+  File "/home/ubuntu/ws/install/interaction_trace_viewer/lib/interaction_trace_viewer/trace_node", line 33, in <module>
+    sys.exit(load_entry_point('interaction-trace-viewer', 'console_scripts', 'trace_node')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/ws/build/interaction_trace_viewer/interaction_trace_viewer/trace_node.py", line 339, in main
+    rclpy.spin(node)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+    executor.spin_once()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 845, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 829, in _spin_once_impl
+    handler, entity, node = self.wait_for_ready_callbacks(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 799, in wait_for_ready_callbacks
+    return next(self._cb_iter)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 707, in _wait_for_ready_callbacks
+    raise ExternalShutdownException()
+rclpy.executors.ExternalShutdownException

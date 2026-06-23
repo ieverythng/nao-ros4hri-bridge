@@ -1,6 +1,6 @@
 # Planner Status
 
-Last updated: 2026-05-18
+Last updated: 2026-05-26
 
 ## Current State
 
@@ -40,13 +40,20 @@ Implemented:
   invalid and routed to clarification/fallback.
 - `nao_chatbot` sim/robot/demo launch profiles share launch-native lifecycle
   events for chatbot/dialogue startup.
+- Planner dialogue acts and planner completion/failure wording route through
+  `dialogue_manager` into `chatbot_llm` by default (chatbot-owned user-facing text).
+- Planner-mode route hardening now keeps visibility-only scene checks on
+  `knowledge_query` unless explicit scan/action wording is present.
+- Fake skill runtime control seams are live (`active_scenario_id`,
+  `global_mode`, `random_failure_prob`, `mode_overrides_json`).
+- Interaction trace viewer is operator-controlled (off by default in standard
+  launch profiles, start separately when needed).
 
 Known weak spots:
 
-- Current demo path still has `chatbot_llm` publishing `/planner/request`
-  directly. Supervisor feedback recommends moving this planner-gate ownership
-  into `nao_orchestrator`; that is the next architectural migration, not a
-  mixed-in demo hotfix.
+- Some live containers may still run an older `fake_skill_server` build that
+  lacks runtime policy parameters (`global_mode`, `random_failure_prob`,
+  `mode_overrides_json`). Rebuild/re-source before validating those seams.
 - Dialogue-only intent cleanup is incomplete. `chatbot_llm` should avoid
   publishing greet/identity/wellbeing/help as executable intents, and
   `nao_orchestrator` should only keep a temporary ignore shim.
@@ -56,13 +63,16 @@ Known weak spots:
   paid tier or quota headroom depending on the account.
 - Pre/post condition validation should remain lightweight until the simple loop
   is proven.
+- Edge-case phrasing can still produce occasional `execution` over-routing for
+  scene/knowledge questions; keep tightening prompt + rule guardrails with
+  live traces.
 
 ## Current Architecture Reference
 
 Use:
 
 - `docs/current_workflow.md` for the canonical ownership/runtime map.
-- `docs/plans/ros4hri_integration_master_plan_2026-05-18.md` for active
+- `docs/plans/nao_ros4hri_masterplan.md` for active
   implementation status and next-phase execution order.
 - `docs/artifacts/handoffs/planner_architecture_current.md` for archived
   architecture provenance from earlier sweeps.

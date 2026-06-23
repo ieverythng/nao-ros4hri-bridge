@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from planner_common import ExecutionFeedback
 from planner_common import PlannerDialogueAct
 from planner_common import PlannerRequest
+from planner_common import resolve_effective_communication_policy
 from planner_common import build_dialogue_act_payload
 from planner_llm.planner_engine import PlannerDecision
 from planner_llm.planner_engine import PlannerEngine
@@ -35,7 +36,6 @@ class SupervisorState:
     """Supervisor-owned state for one goal."""
 
     goal_id: str
-    goal_token: str = ''
     parent_goal_id: str = ''
     supersedes_goal_id: str = ''
     current_status: str = 'idle'
@@ -73,9 +73,6 @@ class PlannerSupervisor:
     def handle_request(
         self,
         request: PlannerRequest,
-        *,
-        world_model_text: str = '',
-        world_model_snapshot: dict | None = None,
     ) -> SupervisorOutcome:
         state = self._states.get(request.goal_id)
         if request.request_kind == 'cancel_request':
@@ -87,8 +84,7 @@ class PlannerSupervisor:
         state = self._prepare_state_for_request(request, state)
         decision = self._engine.plan_request(
             request,
-            world_model_text=world_model_text,
-            world_model_snapshot=world_model_snapshot or {},
+            state_t0=dict(request.grounded_context.get('state_t0', {})),
             feedback=state.last_execution_feedback if request.request_kind == 'clarification_answer' else None,
             goal_id=state.goal_id,
             plan_version=state.plan_version + 1,
@@ -104,9 +100,6 @@ class PlannerSupervisor:
     def handle_feedback(
         self,
         feedback: ExecutionFeedback,
-        *,
-        world_model_text: str = '',
-        world_model_snapshot: dict | None = None,
     ) -> SupervisorOutcome:
         state = self._state_for_feedback(feedback)
         if state is None:
@@ -155,31 +148,25 @@ class PlannerSupervisor:
 
         if feedback.event_type == 'plan_completed':
             state.current_status = 'completed'
+            completion_act = ()
+            if self._communication_policy_allows(state, 'emit_completion'):
+                completion_act = (
+                    self._dialogue_act(
+                        state,
+                        act='notify_completion',
+                        reason=feedback.reason or 'plan completed',
+                        text_hint=self._completion_text(state),
+                    ),
+                )
             state.active_plan_id = ''
             state.awaiting_user_response = False
             self._forget_plan(feedback.plan_id)
-            completion_text = state.latest_result_summary or self._completion_text(state)
-            if (
-                (completion_text or state.latest_result_summary or state.active_plan_steps)
-                and self._communication_policy_allows(state, 'emit_completion')
-                and not self._plan_already_spoke_result(state)
-            ):
-                return SupervisorOutcome(
-                    dialogue_acts=(self._dialogue_act(
-                        state,
-                        act='notify_completion',
-                        reason=feedback.reason or 'goal completed',
-                        text_hint=completion_text,
-                    ),)
-                )
-            return SupervisorOutcome()
+            return SupervisorOutcome(dialogue_acts=completion_act)
 
         if feedback.event_type in ('plan_invalid', 'step_failed'):
             return self._handle_failure_feedback(
                 state,
                 feedback=feedback,
-                world_model_text=world_model_text,
-                world_model_snapshot=world_model_snapshot or {},
             )
 
         return SupervisorOutcome()
@@ -194,7 +181,6 @@ class PlannerSupervisor:
 
         state.parent_goal_id = request.parent_goal_id
         state.supersedes_goal_id = request.supersedes_goal_id
-        state.goal_token = str(request.goal_token or request.goal_id).strip()
         state.current_status = 'planning'
         state.awaiting_user_response = False
         state.active_plan_steps = ()
@@ -221,7 +207,10 @@ class PlannerSupervisor:
         state.active_plan_steps = tuple(
             step for step in plan_payload.get('steps', []) if isinstance(step, dict)
         )
-        state.communication_policy = dict(plan_payload.get('communication_policy', {}))
+        state.communication_policy = resolve_effective_communication_policy(
+            plan_payload.get('communication_policy', {}),
+            state.active_plan_steps,
+        )
 
         if decision.mode in ('clarify', 'fail', 'backend_unavailable'):
             awaiting_user = decision.mode == 'clarify'
@@ -250,8 +239,6 @@ class PlannerSupervisor:
         state: SupervisorState,
         *,
         feedback: ExecutionFeedback,
-        world_model_text: str,
-        world_model_snapshot: dict,
     ) -> SupervisorOutcome:
         state.current_status = 'blocked'
         state.retry_budget_remaining = feedback.retry_budget
@@ -285,6 +272,26 @@ class PlannerSupervisor:
                 ),)
             )
 
+        if (
+            self._auto_replan
+            and state.last_request is not None
+            and feedback.retry_budget <= 0
+            and failure_policy not in ('fail', 'ask_user', 'clarify', 'ignore')
+        ):
+            state.current_status = 'waiting_user'
+            state.awaiting_user_response = True
+            self._forget_plan(feedback.plan_id)
+            return SupervisorOutcome(
+                dialogue_acts=(self._dialogue_act(
+                    state,
+                    act='ask_for_help',
+                    reason=feedback.reason or 'retry budget exhausted',
+                    text_hint=feedback.reason or 'I ran out of retries. How would you like me to continue?',
+                    await_user_response=True,
+                    slots_needed=list(feedback.unmet_preconditions or feedback.step_requires),
+                ),)
+            )
+
         should_replan = (
             self._auto_replan
             and state.last_request is not None
@@ -307,8 +314,7 @@ class PlannerSupervisor:
         state.current_status = 'replanning'
         decision = self._engine.plan_request(
             state.last_request,
-            world_model_text=world_model_text,
-            world_model_snapshot=world_model_snapshot,
+            state_t0=dict(state.last_request.grounded_context.get('state_t0', {})),
             feedback=feedback,
             goal_id=state.goal_id,
             plan_version=state.plan_version + 1,
@@ -324,7 +330,6 @@ class PlannerSupervisor:
     ) -> SupervisorOutcome:
         if state is None:
             state = SupervisorState(goal_id=request.goal_id)
-        state.goal_token = str(request.goal_token or state.goal_token or state.goal_id).strip()
 
         state.current_status = 'cancelled'
         state.awaiting_user_response = False
@@ -337,7 +342,7 @@ class PlannerSupervisor:
                 state,
                 act='notify_cancellation',
                 reason='goal cancelled',
-                text_hint=request.ack_text or 'Okay, I will stop working on that.',
+                text_hint='Okay, I will stop working on that.',
             ),)
         )
 
@@ -346,7 +351,6 @@ class PlannerSupervisor:
         if state is None:
             return
         state.current_status = 'superseded'
-        state.goal_token = ''
         state.awaiting_user_response = False
         self._forget_plan(state.active_plan_id)
         state.active_plan_id = ''
@@ -358,8 +362,6 @@ class PlannerSupervisor:
             return None
         state = self._states.get(goal_id)
         if state is None:
-            return None
-        if feedback.goal_token and state.goal_token and feedback.goal_token != state.goal_token:
             return None
         if feedback.plan_version and state.plan_version and feedback.plan_version < state.plan_version:
             return None
@@ -379,7 +381,6 @@ class PlannerSupervisor:
     ) -> PlannerDialogueAct:
         payload = build_dialogue_act_payload(
             goal_id=state.goal_id,
-            goal_token=state.goal_token or state.goal_id,
             plan_id=state.active_plan_id,
             plan_version=state.plan_version,
             act=act,
@@ -403,17 +404,12 @@ class PlannerSupervisor:
 
     @staticmethod
     def _communication_policy_allows(state: SupervisorState, flag: str) -> bool:
-        if flag == 'emit_completion' and (
-            len(state.active_plan_steps) == 1
-            and state.active_plan_steps[0].get('type') == 'say'
-        ):
+        if flag == 'emit_completion' and not state.active_plan_steps:
             return False
         policy = dict(state.communication_policy or {})
         return bool(policy.get(flag, False))
 
     def _acknowledgement_text(self, state: SupervisorState) -> str:
-        if state.last_request is not None and state.last_request.ack_text:
-            return state.last_request.ack_text
         return 'Okay, I am starting now.'
 
     def _progress_text(
@@ -449,19 +445,6 @@ class PlannerSupervisor:
             if step_text:
                 return step_text
         return ''
-
-    @staticmethod
-    def _plan_already_spoke_result(state: SupervisorState) -> bool:
-        if not state.active_plan_steps:
-            return False
-        final_step = state.active_plan_steps[-1]
-        if not isinstance(final_step, dict):
-            return False
-        step_type = str(final_step.get('type', '')).strip().lower()
-        step_name = str(final_step.get('name', '')).strip().lower()
-        if step_type != 'say' and step_name != 'say':
-            return False
-        return bool(str(dict(final_step.get('args', {})).get('text', '')).strip())
 
     @staticmethod
     def _step_for_feedback(state: SupervisorState, feedback: ExecutionFeedback) -> dict:
@@ -522,10 +505,7 @@ class PlannerSupervisor:
     @staticmethod
     def _decision_reason(decision: PlannerDecision) -> str:
         plan_payload = dict(decision.payload.get('plan', {}))
-        user_facing_reason = str(
-            plan_payload.get('user_facing_reason', '')
-            or decision.payload.get('user_facing_reason', '')
-        ).strip()
+        user_facing_reason = str(plan_payload.get('user_facing_reason', '')).strip()
         if user_facing_reason:
             return user_facing_reason
         steps = plan_payload.get('steps', [])
@@ -541,7 +521,6 @@ class PlannerSupervisor:
         return str(
             plan_payload.get('failure_reason', '')
             or plan_payload.get('replan_hint', '')
-            or decision.payload.get('ack_text', '')
             or 'I need more detail before I continue.'
         ).strip()
 

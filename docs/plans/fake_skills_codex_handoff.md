@@ -1,11 +1,28 @@
 # Codex Handoff — Fake Skills Action Server for Base Planner + Neural Workbench Validation
 
-> Archived reference notice: active execution tracking now lives in `docs/plans/ros4hri_integration_master_plan_2026-05-18.html`.
+> Archived reference notice: active execution tracking now lives in `docs/plans/nao_ros4hri_masterplan.html`.
 > Preserved archive copies: `docs/artifacts/plan_archive/fake_skills_codex_handoff.md` and `.html`.
 
 **Target branch:** `feat(R)/Neural-Workbench` for research integration; backport-compatible with `feat/TFM-LLM_planner` where appropriate.  
 **Primary repo:** `ieverythng/nao-ros4hri-bridge`  
 **Purpose:** Implement a fake skill execution substrate that can be used by both the current planner stack and the Neural Workbench validation path.
+
+## 0. Implementation status refresh (2026-05-26)
+
+- Delivered in runtime:
+  - scenario file loading + named `scenario_id` selection
+  - global runtime policy modes (`scenario`, `always_success`, `always_fail`,
+    `every_other`, `random_seeded`)
+  - per-skill runtime policy overrides (`mode_overrides_json`)
+  - live parameter toggling for active scenario/mode without rebuild
+- Delivered in launch seams:
+  - `fake_skill_scenario_file`
+  - `fake_skill_active_scenario_id`
+  - `fake_skill_global_mode`
+  - `fake_skill_random_failure_prob`
+  - `fake_skill_mode_overrides_json`
+- Delivered in operator tooling:
+  - semi-interactive scenario chooser: `scripts/fake_skill_scenario_menu.sh`
 
 ## 1. Executive intent
 

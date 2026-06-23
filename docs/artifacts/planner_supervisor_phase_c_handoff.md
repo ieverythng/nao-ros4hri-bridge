@@ -92,19 +92,19 @@ planner_llm
   "parent_goal_id": "",
   "supersedes_goal_id": "",
   "request_kind": "new_goal",
-  "user_text": "bring me the cup",
+  "goal_text": "bring me the cup",
   "normalized_intents": ["bring_object"],
-  "ack_text": "I will bring the cup.",
-  "ack_mode": "say",
   "scene_targets": ["cup"],
   "dialogue_context": [],
+  "requested_plan": [],
   "grounded_context": {
     "knowledge_snapshot": {
-      "summary_text": "..."
+      "references": [
+        {"normalized_name": "cup", "id": "cup_1", "type": "Object"}
+      ]
     },
     "scene_summary": {},
-    "world_model_snapshot": {},
-    "world_model_text": ""
+    "state_t0": {}
   },
   "planner_mode": "default",
   "interaction_mode": "speech",

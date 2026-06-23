@@ -24,3 +24,18 @@ def test_scenario_store_applies_request_override() -> None:
     )
 
     assert config['result_mode'] == 'ambiguous'
+
+
+def test_scenario_store_exposes_known_scenario_ids() -> None:
+    store = ScenarioStore(
+        {
+            'scenarios': {
+                'zeta_case': {'navigate_to': {'result_mode': 'path_blocked'}},
+                'alpha_case': {'find_object': {'result_mode': 'ambiguous'}},
+            }
+        }
+    )
+
+    assert store.scenario_ids() == ('alpha_case', 'zeta_case')
+    assert store.has_scenario('alpha_case') is True
+    assert store.has_scenario('missing_case') is False

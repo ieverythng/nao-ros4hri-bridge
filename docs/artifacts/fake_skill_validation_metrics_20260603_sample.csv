@@ -1,0 +1,5 @@
+trace_id,event_count,duration_sec,planner_output_count,feedback_count,dialogue_act_count,final_status,completed
+goal_probe_02_deterministic_ambiguous,6,2.504,1,3,2,failed,False
+goal_probe_04_random_seeded_stress,19,13.678,3,16,0,completed,True
+trace_0001,2,0.812,0,0,0,,False
+trace_0002,6,13.385,0,0,0,,False

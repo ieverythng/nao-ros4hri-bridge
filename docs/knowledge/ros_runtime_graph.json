@@ -1,5 +1,10 @@
 {
   "endpoints": {
+    "/*/prepare_dialogue": {
+      "service_clients": [
+        "dialogue_manager"
+      ]
+    },
     "/audio": {
       "publishers": [
         "simple_audio_capture"
@@ -50,15 +55,12 @@
         "chatbot_llm"
       ]
     },
-    "/chatbot_llm/set_default_locale": {
-      "action_servers": [
+    "/chatbot_llm/prepare_dialogue": {
+      "service_servers": [
         "chatbot_llm"
       ]
     },
-    "/chatbot_llm/start_dialogue": {
-      "action_clients": [
-        "dialogue_manager"
-      ],
+    "/chatbot_llm/set_default_locale": {
       "action_servers": [
         "chatbot_llm"
       ]
@@ -118,24 +120,27 @@
         "dialogue_manager"
       ]
     },
+    "/dialogue_manager/debug_state": {
+      "publishers": [
+        "dialogue_manager"
+      ],
+      "subscribers": [
+        "dialogue_manager"
+      ]
+    },
     "/dialogue_manager/robot_speech": {
       "publishers": [
         "dialogue_manager"
       ]
     },
-    "/enriched_snapshot_topic": {
-      "subscribers": [
-        "planner_llm"
-      ]
-    },
-    "/enriched_text_topic": {
-      "subscribers": [
-        "planner_llm"
-      ]
-    },
     "/fake_skills/events": {
       "publishers": [
         "fake_skills"
+      ]
+    },
+    "/humans/interactions/groups": {
+      "subscribers": [
+        "dialogue_manager"
       ]
     },
     "/humans/persons/tracked": {
@@ -285,6 +290,11 @@
       ],
       "contracts": [
         "nao_say_skill"
+      ]
+    },
+    "/nao_orchestrator/planner_dialogue_act": {
+      "publishers": [
+        "nao_orchestrator"
       ]
     },
     "/nao_orchestrator/planner_request": {
@@ -539,7 +549,7 @@
       ]
     }
   },
-  "generatedAt": "2026-05-21T20:33:49.296746+00:00",
+  "generatedAt": "2026-06-10T01:04:10.861132+00:00",
   "packages": [
     {
       "actionClients": [],
@@ -572,8 +582,7 @@
     {
       "actionClients": [],
       "actionServers": [
-        "/chatbot_llm/set_default_locale",
-        "/chatbot_llm/start_dialogue"
+        "/chatbot_llm/set_default_locale"
       ],
       "contracts": [],
       "files": [
@@ -584,12 +593,16 @@
         "src/chatbot_llm/chatbot_llm/intent_rules.py",
         "src/chatbot_llm/chatbot_llm/knowledge_snapshot.py",
         "src/chatbot_llm/chatbot_llm/knowledge_snapshot_client.py",
+        "src/chatbot_llm/chatbot_llm/llm_client.py",
+        "src/chatbot_llm/chatbot_llm/messages.py",
         "src/chatbot_llm/chatbot_llm/node_impl.py",
         "src/chatbot_llm/chatbot_llm/ollama_transport.py",
         "src/chatbot_llm/chatbot_llm/planner_handoff.py",
         "src/chatbot_llm/chatbot_llm/planner_request_adapter.py",
         "src/chatbot_llm/chatbot_llm/prompt_builders.py",
         "src/chatbot_llm/chatbot_llm/prompt_pack.py",
+        "src/chatbot_llm/chatbot_llm/response_parser.py",
+        "src/chatbot_llm/chatbot_llm/role_handlers.py",
         "src/chatbot_llm/chatbot_llm/skill_catalog.py",
         "src/chatbot_llm/chatbot_llm/start_node.py",
         "src/chatbot_llm/chatbot_llm/turn_engine.py",
@@ -607,7 +620,8 @@
       "serviceClients": [],
       "serviceServers": [
         "/chatbot_llm/dialogue_interaction",
-        "/chatbot_llm/get_supported_locales"
+        "/chatbot_llm/get_supported_locales",
+        "/chatbot_llm/prepare_dialogue"
       ],
       "subscribes": []
     },
@@ -629,9 +643,7 @@
       "subscribes": []
     },
     {
-      "actionClients": [
-        "/chatbot_llm/start_dialogue"
-      ],
+      "actionClients": [],
       "actionServers": [
         "/skill/ask",
         "/skill/chat",
@@ -639,16 +651,31 @@
       ],
       "contracts": [],
       "files": [
-        "src/dialogue_manager/dialogue_manager/__init__.py",
-        "src/dialogue_manager/dialogue_manager/chatbot_client.py",
-        "src/dialogue_manager/dialogue_manager/dialogue.py",
-        "src/dialogue_manager/dialogue_manager/manager_node.py",
-        "src/dialogue_manager/dialogue_manager/skill_servers.py",
-        "src/dialogue_manager/dialogue_manager/speech_handler.py",
-        "src/dialogue_manager/dialogue_manager/start_manager.py",
-        "src/dialogue_manager/dialogue_manager/tts_client.py",
-        "src/dialogue_manager/launch/dialogue_manager.launch.py",
-        "src/dialogue_manager/setup.py"
+        "src/dialogue_manager/dialogue_manager/dialogue_manager/__init__.py",
+        "src/dialogue_manager/dialogue_manager/dialogue_manager/chatbot_client.py",
+        "src/dialogue_manager/dialogue_manager/dialogue_manager/conversations_history.py",
+        "src/dialogue_manager/dialogue_manager/dialogue_manager/debug_publisher.py",
+        "src/dialogue_manager/dialogue_manager/dialogue_manager/dialogue.py",
+        "src/dialogue_manager/dialogue_manager/dialogue_manager/dialogue_lifecycle.py",
+        "src/dialogue_manager/dialogue_manager/dialogue_manager/fanout.py",
+        "src/dialogue_manager/dialogue_manager/dialogue_manager/group_handler.py",
+        "src/dialogue_manager/dialogue_manager/dialogue_manager/manager_node.py",
+        "src/dialogue_manager/dialogue_manager/dialogue_manager/markup/__init__.py",
+        "src/dialogue_manager/dialogue_manager/dialogue_manager/markup/action_library.py",
+        "src/dialogue_manager/dialogue_manager/dialogue_manager/markup/ast_nodes.py",
+        "src/dialogue_manager/dialogue_manager/dialogue_manager/markup/executor.py",
+        "src/dialogue_manager/dialogue_manager/dialogue_manager/markup/parser.py",
+        "src/dialogue_manager/dialogue_manager/dialogue_manager/say_client.py",
+        "src/dialogue_manager/dialogue_manager/dialogue_manager/skill_servers.py",
+        "src/dialogue_manager/dialogue_manager/dialogue_manager/speech_handler.py",
+        "src/dialogue_manager/dialogue_manager/dialogue_manager/start_manager.py",
+        "src/dialogue_manager/dialogue_manager/launch/dialogue_manager.launch.py",
+        "src/dialogue_manager/dialogue_manager/setup.py",
+        "src/dialogue_manager/rqt_dialogues/rqt_dialogues/__init__.py",
+        "src/dialogue_manager/rqt_dialogues/rqt_dialogues/dialogue_view.py",
+        "src/dialogue_manager/rqt_dialogues/rqt_dialogues/plugin.py",
+        "src/dialogue_manager/rqt_dialogues/rqt_dialogues/render.py",
+        "src/dialogue_manager/rqt_dialogues/setup.py"
       ],
       "name": "dialogue_manager",
       "nodeNames": [
@@ -658,15 +685,19 @@
         "/diagnostics",
         "/dialogue_manager/closed_captions",
         "/dialogue_manager/currently_waiting_for_chatbot_response",
+        "/dialogue_manager/debug_state",
         "/dialogue_manager/robot_speech",
         "/intents"
       ],
       "root": "src/dialogue_manager",
       "serviceClients": [
+        "/*/prepare_dialogue",
         "/chatbot_llm/dialogue_interaction"
       ],
       "serviceServers": [],
       "subscribes": [
+        "/dialogue_manager/debug_state",
+        "/humans/interactions/groups",
         "/humans/voices/*/speech",
         "/humans/voices/tracked",
         "/planner/dialogue_act"
@@ -946,6 +977,7 @@
         "/chatbot/posture_command",
         "/diagnostics",
         "/joint_angles",
+        "/nao_orchestrator/planner_dialogue_act",
         "/planner/execution_feedback",
         "/planner/request"
       ],
@@ -1099,8 +1131,6 @@
       "serviceClients": [],
       "serviceServers": [],
       "subscribes": [
-        "/enriched_snapshot_topic",
-        "/enriched_text_topic",
         "/planner_feedback_topic",
         "/planner_request_topic"
       ]

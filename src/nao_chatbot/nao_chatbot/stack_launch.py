@@ -1,4 +1,5 @@
-"""Shared launch builder for the kept NAO demo profiles.
+"""
+Shared launch builder for the kept NAO demo profiles.
 
 The public launch files are intentionally small wrappers. This module owns the
 common launch arguments, optional external integrations, and lifecycle startup
@@ -56,6 +57,8 @@ _LAB_VLLM_DEFAULTS = {
     "planner_llm_preflight_required": "true",
     "chatbot_request_timeout_sec": "60.0",
     "chatbot_first_request_timeout_sec": "75.0",
+    "chatbot_response_max_tokens": "192",
+    "chatbot_turn_pipeline_mode": "response_first",
     "chatbot_preflight_timeout_sec": "60.0",
     "chatbot_preflight_attempts": "3",
     "chatbot_preflight_realistic_enabled": "true",
@@ -82,8 +85,10 @@ _SIM_CAMERA_DEFAULTS = {
     "start_interaction_sim_ui": "false",
     "interaction_sim_hri_log_profile": "quiet",
     "start_rqt_console": "true",
+    "start_rqt_chat": "true",
     "sim_use_laptop_tts": "false",
-    "start_interaction_trace_viewer": "true",
+    "start_interaction_trace_viewer": "false",
+    "interaction_trace_compact_mode": "false",
     "interaction_trace_enable_scene_summary_channel": "false",
     "interaction_trace_scene_summary_emit_on_change_only": "true",
     "interaction_trace_scene_summary_min_interval_sec": "1.0",
@@ -93,10 +98,14 @@ _SIM_CAMERA_DEFAULTS = {
         "report_result_skill_server,fake_skill_server,dialogue_manager,nao_say_skill,"
         "head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug"
     ),
-    "start_nao_dashboard": "true",
     "start_fake_skills": "true",
+    "fake_skill_global_mode": "scenario",
+    "fake_skill_random_failure_prob": "0.50",
+    "fake_skill_mode_overrides_json": "{}",
     "head_motion_allow_open_loop_without_joint_state": "true",
-    "head_motion_assume_success_on_convergence_timeout": "true",
+    "head_motion_assume_success_on_convergence_timeout": "false",
+    "perform_motion_execution_mode": "real",
+    "look_at_execution_mode": "fake",
 }
 _ROBOT_CAMERA_DEFAULTS = {
     "nao_ip": "172.26.112.25",
@@ -113,7 +122,9 @@ _ROBOT_CAMERA_DEFAULTS = {
     "posture_bridge_disable_autonomous_life_on_connect": "false",
     "posture_bridge_wake_up_on_connect": "true",
     "head_motion_allow_open_loop_without_joint_state": "true",
-    "head_motion_assume_success_on_convergence_timeout": "true",
+    "head_motion_assume_success_on_convergence_timeout": "false",
+    "perform_motion_execution_mode": "real",
+    "look_at_execution_mode": "real",
     "start_interaction_sim": "false",
     "start_interaction_sim_perception": "false",
     "start_interaction_sim_tools": "true",
@@ -130,15 +141,59 @@ _ROBOT_CAMERA_DEFAULTS = {
         "report_result_skill_server,fake_skill_server,dialogue_manager,nao_say_skill,"
         "head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug"
     ),
-    "start_nao_dashboard": "true",
     "start_fake_skills": "true",
+    "fake_skill_global_mode": "scenario",
+    "fake_skill_random_failure_prob": "0.50",
+    "fake_skill_mode_overrides_json": "{}",
 }
+
+_RQT_CONTAINER_ENV_GUARD = (
+    'export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/runtime-root}"; '
+    'mkdir -p "$XDG_RUNTIME_DIR"; '
+    'chmod 700 "$XDG_RUNTIME_DIR" 2>/dev/null || true; '
+)
+_SCENE_GROUNDING_ALLOWED_LABELS = ",".join(
+    (
+        "bottle",
+        "cup",
+        "book",
+        "cell phone",
+        "backpack",
+        "remote",
+        "laptop",
+        "keyboard",
+        "mouse",
+        "chair",
+        "blueberry",
+        "corn",
+        "pear",
+        "tomato",
+        "zucchini",
+    )
+)
+_DEMO_LOG_NODES = ",".join(
+    (
+        "chatbot_llm",
+        "planner_llm",
+        "nao_orchestrator",
+        "scan_skill_server",
+        "report_result_skill_server",
+        "fake_skill_server",
+        "dialogue_manager",
+        "nao_say_skill",
+        "head_motion_skill_server",
+        "replay_motion_skill_server",
+        "nao_look_at",
+        "robot_speech_debug",
+    )
+)
 _GROUNDING_DEFAULTS = {
-    "object_detection_threshold": "0.40",
-    "scene_grounding_knowledge_lifespan_sec": "3.0",
+    "object_detection_threshold": "0.70",
+    "scene_grounding_knowledge_lifespan_sec": "8.0",
     "scene_grounding_knowledge_refresh_interval_sec": "0.75",
-    "scene_grounding_fallback_match_distance_px": "40.0",
-    "scene_grounding_fallback_match_max_age_sec": "1.2",
+    "scene_grounding_local_stale_after_sec": "10.0",
+    "scene_grounding_fallback_match_distance_px": "72.0",
+    "scene_grounding_fallback_match_max_age_sec": "3.0",
 }
 _DEMO_DEFAULTS = {
     "nao_ip": "172.26.112.25",
@@ -179,6 +234,7 @@ def robot_profile_defaults() -> dict[str, str]:
         _LAB_VLLM_DEFAULTS,
         _PLANNER_GATE_DEFAULTS,
         _ROBOT_CAMERA_DEFAULTS,
+        _GROUNDING_DEFAULTS,
         {
             "start_planner_llm": "true",
             "chatbot_planner_mode_enabled": "true",
@@ -311,9 +367,12 @@ def _lifecycle_bootstrap_script(node_name: str, timeout_sec: int = 120) -> str:
     normalized_name = f"/{str(node_name).lstrip('/')}"
     return f"""
 node_name="{normalized_name}"
+exec 9>"/tmp/nao_chatbot_lifecycle_${{node_name#/}}.lock"
+flock 9
 deadline=$((SECONDS + {max(1, int(timeout_sec))}))
 while true; do
-  state="$(ros2 lifecycle get "$node_name" 2>/dev/null | awk '/^(unconfigured|inactive|active|finalized|errorprocessing)/{{print $1; exit}}')"
+  state="$(ros2 lifecycle get "$node_name" 2>/dev/null | \
+awk '/^(unconfigured|inactive|active|finalized|errorprocessing)/{{print $1; exit}}')"
   case "$state" in
     active)
       exit 0
@@ -343,9 +402,12 @@ def _lifecycle_recovery_script(node_name: str, timeout_sec: int = 240) -> str:
     normalized_name = f"/{str(node_name).lstrip('/')}"
     return f"""
 node_name="{normalized_name}"
+exec 9>"/tmp/nao_chatbot_lifecycle_${{node_name#/}}.lock"
+flock 9
 deadline=$((SECONDS + {max(1, int(timeout_sec))}))
 while true; do
-  state="$(ros2 lifecycle get "$node_name" 2>/dev/null | awk '/^(unconfigured|inactive|active|finalized|errorprocessing)/{{print $1; exit}}')"
+  state="$(ros2 lifecycle get "$node_name" 2>/dev/null | \
+awk '/^(unconfigured|inactive|active|finalized|errorprocessing)/{{print $1; exit}}')"
   case "$state" in
     active)
       exit 0
@@ -417,6 +479,14 @@ def _activate_lifecycle_node_on_inactive(node, *, condition=None):
             handle_once=True,
         ),
         condition=condition,
+    )
+
+
+def _configure_and_activate_lifecycle_node(node, *, condition=None):
+    """Return launch actions that configure a lifecycle node, then activate it."""
+    return (
+        _configure_lifecycle_node(node, condition=condition),
+        _activate_lifecycle_node_on_inactive(node, condition=condition),
     )
 
 
@@ -590,6 +660,34 @@ def _optional_object_detection_launch(context):
                     )
                 )
             ]
+        object_detector_node = Node(
+            package="emorobcare_cv_object_detection",
+            executable="object_detector_node",
+            name="object_detector_node",
+            output="screen",
+            emulate_tty=True,
+            arguments=[
+                "--ros-args",
+                "--log-level",
+                LaunchConfiguration("object_detection_log_level"),
+            ],
+            remappings=[
+                ("/camera/image_raw", LaunchConfiguration("object_detection_input_image_topic")),
+            ],
+        )
+        object_detector_bootstrap = ExecuteProcess(
+            cmd=["bash", "-lc", _lifecycle_bootstrap_script("object_detector_node")],
+            output="screen",
+        )
+        object_detector_recovery = TimerAction(
+            period=24.0,
+            actions=[
+                ExecuteProcess(
+                    cmd=["bash", "-lc", _lifecycle_recovery_script("object_detector_node")],
+                    output="screen",
+                )
+            ],
+        )
         return [
             LogInfo(
                 msg=(
@@ -598,20 +696,9 @@ def _optional_object_detection_launch(context):
                     "use_human_radar=false, and draw_image=true when debug overlays are needed."
                 )
             ),
-            Node(
-                package="emorobcare_cv_object_detection",
-                executable="object_detector_node",
-                output="screen",
-                emulate_tty=True,
-                arguments=[
-                    "--ros-args",
-                    "--log-level",
-                    LaunchConfiguration("object_detection_log_level"),
-                ],
-                remappings=[
-                    ("/camera/image_raw", LaunchConfiguration("object_detection_input_image_topic")),
-                ],
-            ),
+            object_detector_node,
+            object_detector_bootstrap,
+            object_detector_recovery,
         ]
 
     return [
@@ -830,7 +917,11 @@ def generate_profile_launch_description(
     )
     object_detection_threshold_arg = DeclareLaunchArgument(
         "object_detection_threshold",
-        default_value="0.35",
+        default_value=_profile_default(
+            profile_defaults,
+            "object_detection_threshold",
+            "0.70",
+        ),
         description="Detector threshold forwarded to yolo_ros and mirrored into scene grounding defaults.",
     )
     object_detection_input_image_topic_arg = DeclareLaunchArgument(
@@ -856,6 +947,14 @@ def generate_profile_launch_description(
         "scene_grounding_summary_topic",
         default_value="/scene/summary",
         description="JSON summary topic published by nao_scene_grounding.",
+    )
+    scene_grounding_spatial_overlay_topic_arg = DeclareLaunchArgument(
+        "scene_grounding_spatial_overlay_topic",
+        default_value="",
+        description=(
+            "Optional JSON topic providing frame-qualified object positions keyed "
+            "by grounded entity id."
+        ),
     )
     planner_request_topic_arg = DeclareLaunchArgument(
         "planner_request_topic",
@@ -902,6 +1001,13 @@ def generate_profile_launch_description(
         default_value="/planner/dialogue_act",
         description="Planner-owned dialogue act topic published by planner_llm.",
     )
+    planner_dialogue_relay_topic_arg = DeclareLaunchArgument(
+        "planner_dialogue_relay_topic",
+        default_value="/nao_orchestrator/planner_dialogue_act",
+        description=(
+            "Orchestrator-owned planner dialogue relay topic consumed by dialogue_manager."
+        ),
+    )
     planner_skill_registry_path_arg = DeclareLaunchArgument(
         "planner_skill_registry_path",
         default_value="",
@@ -935,18 +1041,34 @@ def generate_profile_launch_description(
     )
     scene_grounding_allowed_labels_arg = DeclareLaunchArgument(
         "scene_grounding_allowed_labels",
-        default_value="bottle,cup,book,cell phone,backpack,remote,laptop,keyboard,mouse,chair,blueberry,corn,pear,tomato,zucchini",
+        default_value=_SCENE_GROUNDING_ALLOWED_LABELS,
         description="Comma-separated detector labels to ground into KnowledgeCore.",
     )
     scene_grounding_knowledge_lifespan_sec_arg = DeclareLaunchArgument(
         "scene_grounding_knowledge_lifespan_sec",
-        default_value="4.0",
+        default_value=_profile_default(
+            profile_defaults,
+            "scene_grounding_knowledge_lifespan_sec",
+            "8.0",
+        ),
         description="KnowledgeCore lifespan used for transient grounded object facts.",
     )
     scene_grounding_knowledge_refresh_interval_sec_arg = DeclareLaunchArgument(
         "scene_grounding_knowledge_refresh_interval_sec",
         default_value="1.0",
         description="Minimum interval between grounding refreshes for the same tracked object.",
+    )
+    scene_grounding_local_stale_after_sec_arg = DeclareLaunchArgument(
+        "scene_grounding_local_stale_after_sec",
+        default_value=_profile_default(
+            profile_defaults,
+            "scene_grounding_local_stale_after_sec",
+            "10.0",
+        ),
+        description=(
+            "How long nao_scene_grounding keeps a locally tracked object in "
+            "scene summaries after the last detector observation."
+        ),
     )
     scene_grounding_fallback_match_distance_px_arg = DeclareLaunchArgument(
         "scene_grounding_fallback_match_distance_px",
@@ -975,7 +1097,10 @@ def generate_profile_launch_description(
     start_knowledge_core_arg = DeclareLaunchArgument(
         "start_knowledge_core",
         default_value=_profile_default(profile_defaults, "start_knowledge_core", "true"),
-        description="Optionally launch KnowledgeCore for chatbot_llm grounding when it is installed in the environment.",
+        description=(
+            "Optionally launch KnowledgeCore for chatbot_llm grounding when it "
+            "is installed in the environment."
+        ),
     )
     start_dialogue_manager_arg = DeclareLaunchArgument(
         "start_dialogue_manager",
@@ -1063,27 +1188,40 @@ def generate_profile_launch_description(
     fake_skill_scenario_file_arg = DeclareLaunchArgument(
         "fake_skill_scenario_file",
         default_value=_profile_default(profile_defaults, "fake_skill_scenario_file", ""),
-        description="Optional YAML scenario file for fake skill outcomes.",
+        description="Optional YAML file with fake skill default and named scenarios.",
     )
-    fake_skill_default_delay_sec_arg = DeclareLaunchArgument(
-        "fake_skill_default_delay_sec",
-        default_value=_profile_default(profile_defaults, "fake_skill_default_delay_sec", "0.75"),
-        description="Default simulated duration for fake skill execution.",
+    fake_skill_active_scenario_id_arg = DeclareLaunchArgument(
+        "fake_skill_active_scenario_id",
+        default_value=_profile_default(profile_defaults, "fake_skill_active_scenario_id", ""),
+        description="Optional named scenario id applied by default to fake skill requests.",
     )
-    fake_skill_publish_events_arg = DeclareLaunchArgument(
-        "fake_skill_publish_events",
-        default_value=_profile_default(profile_defaults, "fake_skill_publish_events", "true"),
-        description="Publish fake skill lifecycle events on the configured event topic.",
+    fake_skill_global_mode_arg = DeclareLaunchArgument(
+        "fake_skill_global_mode",
+        default_value=_profile_default(profile_defaults, "fake_skill_global_mode", "scenario"),
+        description=(
+            "Global fake-skill policy mode: scenario|always_success|always_fail|"
+            "every_other|random_seeded."
+        ),
     )
-    fake_skill_event_topic_arg = DeclareLaunchArgument(
-        "fake_skill_event_topic",
-        default_value=_profile_default(profile_defaults, "fake_skill_event_topic", "/fake_skills/events"),
-        description="Topic where fake skill lifecycle events are published.",
+    fake_skill_random_failure_prob_arg = DeclareLaunchArgument(
+        "fake_skill_random_failure_prob",
+        default_value=_profile_default(profile_defaults, "fake_skill_random_failure_prob", "0.50"),
+        description="Failure probability used by fake_skill_global_mode=random_seeded.",
     )
-    fake_skill_deterministic_seed_arg = DeclareLaunchArgument(
-        "fake_skill_deterministic_seed",
-        default_value=_profile_default(profile_defaults, "fake_skill_deterministic_seed", "42"),
-        description="Deterministic seed used for fail_once and repeatability.",
+    fake_skill_mode_overrides_json_arg = DeclareLaunchArgument(
+        "fake_skill_mode_overrides_json",
+        default_value=_profile_default(profile_defaults, "fake_skill_mode_overrides_json", "{}"),
+        description='JSON map for per-skill mode overrides, e.g. {"find_object":"always_fail"}.',
+    )
+    perform_motion_execution_mode_arg = DeclareLaunchArgument(
+        "perform_motion_execution_mode",
+        default_value=_profile_default(profile_defaults, "perform_motion_execution_mode", "real"),
+        description="perform_motion dispatch mode: real|fake.",
+    )
+    look_at_execution_mode_arg = DeclareLaunchArgument(
+        "look_at_execution_mode",
+        default_value=_profile_default(profile_defaults, "look_at_execution_mode", "real"),
+        description="look_at dispatch mode: real|fake.",
     )
     start_nao_say_skill_arg = DeclareLaunchArgument(
         "start_nao_say_skill",
@@ -1128,8 +1266,11 @@ def generate_profile_launch_description(
     )
     start_rqt_chat_arg = DeclareLaunchArgument(
         "start_rqt_chat",
-        default_value="false",
-        description="Optionally launch a separate rqt_chat window remapped onto the debug TTS action when the simulator perspective is not in use.",
+        default_value=_profile_default(profile_defaults, "start_rqt_chat", "false"),
+        description=(
+            "Launch the dialogue UI helper window. In interaction_sim profiles this "
+            "opens rqt_dialogues; outside sim it opens standalone rqt_chat."
+        ),
     )
     start_robot_speech_debug_arg = DeclareLaunchArgument(
         "start_robot_speech_debug",
@@ -1187,7 +1328,7 @@ def generate_profile_launch_description(
         default_value=_profile_default(
             profile_defaults,
             "interaction_trace_include_raw_payloads",
-            "true",
+            "false",
         ),
         description="Keep raw payload text in interaction trace events.",
     )
@@ -1199,6 +1340,48 @@ def generate_profile_launch_description(
             "4000",
         ),
         description="Maximum summary characters per interaction trace event.",
+    )
+    interaction_trace_include_channels_csv_arg = DeclareLaunchArgument(
+        "interaction_trace_include_channels_csv",
+        default_value=_profile_default(
+            profile_defaults,
+            "interaction_trace_include_channels_csv",
+            "",
+        ),
+        description=(
+            "Optional CSV allowlist of trace channels (without leading slash), "
+            "for example planner/request,planner/execution_feedback."
+        ),
+    )
+    interaction_trace_exclude_channels_csv_arg = DeclareLaunchArgument(
+        "interaction_trace_exclude_channels_csv",
+        default_value=_profile_default(
+            profile_defaults,
+            "interaction_trace_exclude_channels_csv",
+            "",
+        ),
+        description="Optional CSV denylist of trace channels (without leading slash).",
+    )
+    interaction_trace_include_event_types_csv_arg = DeclareLaunchArgument(
+        "interaction_trace_include_event_types_csv",
+        default_value=_profile_default(
+            profile_defaults,
+            "interaction_trace_include_event_types_csv",
+            "",
+        ),
+        description=(
+            "Optional CSV allowlist of trace event types, for example "
+            "planner_request,execution_feedback,chatbot_turn_trace."
+        ),
+    )
+    interaction_trace_exclude_event_types_csv_arg = DeclareLaunchArgument(
+        "interaction_trace_exclude_event_types_csv",
+        default_value=_profile_default(
+            profile_defaults,
+            "interaction_trace_exclude_event_types_csv",
+            "",
+        ),
+        description="Optional CSV denylist of trace event types.",
     )
     interaction_trace_enable_scene_summary_channel_arg = DeclareLaunchArgument(
         "interaction_trace_enable_scene_summary_channel",
@@ -1249,31 +1432,6 @@ def generate_profile_launch_description(
         ),
         description="Minimum rosout severity for interaction trace viewer (debug|info|warn|error|fatal).",
     )
-    start_nao_dashboard_arg = DeclareLaunchArgument(
-        "start_nao_dashboard",
-        default_value=_profile_default(profile_defaults, "start_nao_dashboard", "false"),
-        description="Launch the NAO web observability dashboard backend + UI.",
-    )
-    nao_dashboard_http_host_arg = DeclareLaunchArgument(
-        "nao_dashboard_http_host",
-        default_value=_profile_default(profile_defaults, "nao_dashboard_http_host", "127.0.0.1"),
-        description="Host interface for the NAO dashboard HTTP server.",
-    )
-    nao_dashboard_http_port_arg = DeclareLaunchArgument(
-        "nao_dashboard_http_port",
-        default_value=_profile_default(profile_defaults, "nao_dashboard_http_port", "8765"),
-        description="Port for the NAO dashboard HTTP server.",
-    )
-    nao_dashboard_max_events_arg = DeclareLaunchArgument(
-        "nao_dashboard_max_events",
-        default_value=_profile_default(profile_defaults, "nao_dashboard_max_events", "400"),
-        description="Maximum number of timeline events retained by nao_dashboard.",
-    )
-    nao_dashboard_max_payload_chars_arg = DeclareLaunchArgument(
-        "nao_dashboard_max_payload_chars",
-        default_value=_profile_default(profile_defaults, "nao_dashboard_max_payload_chars", "4000"),
-        description="Maximum payload summary characters for dashboard timeline events.",
-    )
     start_demo_log_window_arg = DeclareLaunchArgument(
         "start_demo_log_window",
         default_value=_profile_default(profile_defaults, "start_demo_log_window", "false"),
@@ -1307,7 +1465,7 @@ def generate_profile_launch_description(
         default_value=_profile_default(
             profile_defaults,
             "demo_log_nodes",
-            "chatbot_llm,planner_llm,nao_orchestrator,scan_skill_server,report_result_skill_server,fake_skill_server,dialogue_manager,nao_say_skill,head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug",
+            _DEMO_LOG_NODES,
         ),
         description="Comma-separated node allowlist for the filtered demo log window.",
     )
@@ -1395,6 +1553,11 @@ def generate_profile_launch_description(
         default_value="",
         description="Optional JSON configuration passed to the default dialogue session.",
     )
+    dialogue_manager_say_action_arg = DeclareLaunchArgument(
+        "dialogue_manager_say_action",
+        default_value="/nao/say",
+        description="Say action endpoint used by dialogue_manager for speech delivery.",
+    )
     chat_input_tracked_topic_arg = DeclareLaunchArgument(
         "chat_input_tracked_topic",
         default_value=_profile_default(
@@ -1445,7 +1608,7 @@ def generate_profile_launch_description(
     )
     chatbot_response_max_tokens_arg = DeclareLaunchArgument(
         "chatbot_response_max_tokens",
-        default_value=_profile_default(profile_defaults, "chatbot_response_max_tokens", "64"),
+        default_value=_profile_default(profile_defaults, "chatbot_response_max_tokens", "192"),
         description="Maximum response tokens requested from chatbot_llm Ollama calls.",
     )
     chatbot_intent_max_tokens_arg = DeclareLaunchArgument(
@@ -1457,6 +1620,18 @@ def generate_profile_launch_description(
         "chatbot_intent_model",
         default_value="",
         description="Optional dedicated model used by chatbot_llm for intent extraction.",
+    )
+    chatbot_turn_pipeline_mode_arg = DeclareLaunchArgument(
+        "chatbot_turn_pipeline_mode",
+        default_value=_profile_default(
+            profile_defaults,
+            "chatbot_turn_pipeline_mode",
+            "response_first",
+        ),
+        description=(
+            "Chatbot turn pipeline: response_first for the current path or "
+            "intent_first for route-locked runtime-review ablations."
+        ),
     )
     ollama_intent_model_arg = DeclareLaunchArgument(
         "ollama_intent_model",
@@ -1514,7 +1689,10 @@ def generate_profile_launch_description(
     chatbot_planner_mode_enabled_arg = DeclareLaunchArgument(
         "chatbot_planner_mode_enabled",
         default_value=_profile_default(profile_defaults, "chatbot_planner_mode_enabled", "false"),
-        description="Enable planner-mode handoff in chatbot_llm so execution-oriented turns publish to /planner/request.",
+        description=(
+            "Enable planner-mode handoff in chatbot_llm so execution-oriented "
+            "turns publish to /planner/request."
+        ),
     )
     planner_llm_provider_arg = DeclareLaunchArgument(
         "planner_llm_provider",
@@ -1693,6 +1871,12 @@ def generate_profile_launch_description(
                 )
             },
             {
+                "turn_pipeline_mode": ParameterValue(
+                    LaunchConfiguration("chatbot_turn_pipeline_mode"),
+                    value_type=str,
+                )
+            },
+            {
                 "preflight_required": ParameterValue(
                     LaunchConfiguration("chatbot_preflight_required"),
                     value_type=bool,
@@ -1768,8 +1952,14 @@ def generate_profile_launch_description(
                 )
             },
             {
+                "say_action": ParameterValue(
+                    LaunchConfiguration("dialogue_manager_say_action"),
+                    value_type=str,
+                )
+            },
+            {
                 "planner_dialogue_act_topic": ParameterValue(
-                    LaunchConfiguration("planner_dialogue_act_topic"),
+                    LaunchConfiguration("planner_dialogue_relay_topic"),
                     value_type=str,
                 )
             },
@@ -1812,6 +2002,18 @@ def generate_profile_launch_description(
                 )
             },
             {
+                "perform_motion_execution_mode": ParameterValue(
+                    LaunchConfiguration("perform_motion_execution_mode"),
+                    value_type=str,
+                )
+            },
+            {
+                "look_at_execution_mode": ParameterValue(
+                    LaunchConfiguration("look_at_execution_mode"),
+                    value_type=str,
+                )
+            },
+            {
                 "enable_planner_gate": ParameterValue(
                     LaunchConfiguration("enable_orchestrator_planner_gate"),
                     value_type=bool,
@@ -1832,6 +2034,12 @@ def generate_profile_launch_description(
             {
                 "planner_dialogue_act_topic": ParameterValue(
                     LaunchConfiguration("planner_dialogue_act_topic"),
+                    value_type=str,
+                )
+            },
+            {
+                "planner_dialogue_relay_topic": ParameterValue(
+                    LaunchConfiguration("planner_dialogue_relay_topic"),
                     value_type=str,
                 )
             },
@@ -2113,6 +2321,12 @@ def generate_profile_launch_description(
                 )
             },
             {
+                "spatial_overlay_topic": ParameterValue(
+                    LaunchConfiguration("scene_grounding_spatial_overlay_topic"),
+                    value_type=str,
+                )
+            },
+            {
                 "min_detection_score": ParameterValue(
                     LaunchConfiguration("object_detection_threshold"),
                     value_type=float,
@@ -2156,7 +2370,7 @@ def generate_profile_launch_description(
             },
             {
                 "local_stale_after_sec": ParameterValue(
-                    LaunchConfiguration("scene_grounding_knowledge_lifespan_sec"),
+                    LaunchConfiguration("scene_grounding_local_stale_after_sec"),
                     value_type=float,
                 )
             },
@@ -2295,6 +2509,7 @@ def generate_profile_launch_description(
             "bash",
             "-lc",
             [
+                _RQT_CONTAINER_ENV_GUARD,
                 "if ! command -v rqt >/dev/null 2>&1; then "
                 "echo 'rqt is not installed in this environment'; "
                 "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
@@ -2330,6 +2545,7 @@ def generate_profile_launch_description(
             "bash",
             "-lc",
             [
+                _RQT_CONTAINER_ENV_GUARD,
                 "if ! command -v rqt >/dev/null 2>&1; then "
                 "echo 'rqt is not installed in this environment'; "
                 "elif ! ros2 pkg prefix interaction_sim >/dev/null 2>&1; then "
@@ -2339,9 +2555,11 @@ def generate_profile_launch_description(
                 "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
                 "echo 'rqt launch skipped: DISPLAY/WAYLAND_DISPLAY is not set'; "
                 "else "
-                "perspective=\"$(ros2 pkg prefix nao_chatbot)/share/nao_chatbot/config/interaction_sim_debug.perspective\"; "
+                "nao_prefix=\"$(ros2 pkg prefix nao_chatbot)\"; "
+                "perspective=\"$nao_prefix/share/nao_chatbot/config/interaction_sim_debug.perspective\"; "
                 "if [ ! -f \"$perspective\" ]; then "
-                "perspective=\"$(ros2 pkg prefix interaction_sim)/share/interaction_sim/config/simulator.perspective\"; "
+                "sim_prefix=\"$(ros2 pkg prefix interaction_sim)\"; "
+                "perspective=\"$sim_prefix/share/interaction_sim/config/simulator.perspective\"; "
                 "fi; "
                 "exec rqt --clear-config --perspective-file \"$perspective\" --ros-args -r /tts_engine/tts:=",
                 LaunchConfiguration("debug_tts_action_name"),
@@ -2357,7 +2575,7 @@ def generate_profile_launch_description(
         ],
         output="screen",
     )
-    interaction_sim_rqt_chat_note = LogInfo(
+    interaction_sim_rqt_dialogues = ExecuteProcess(
         condition=IfCondition(
             PythonExpression(
                 [
@@ -2369,11 +2587,25 @@ def generate_profile_launch_description(
                 ]
             )
         ),
-        msg=(
-            "start_rqt_chat was requested together with start_interaction_sim. "
-            "Skipping the separate rqt_chat window because the interaction_sim "
-            "perspective already loads rqt_chat on the debug TTS action."
-        ),
+        cmd=[
+            "bash",
+            "-lc",
+            [
+                _RQT_CONTAINER_ENV_GUARD,
+                "if ! command -v rqt >/dev/null 2>&1; then "
+                "echo 'rqt is not installed in this environment'; "
+                "elif ! python3 -c 'import importlib.util,sys; "
+                "sys.exit(0 if importlib.util.find_spec(\"rqt_dialogues\") else 1)' "
+                ">/dev/null 2>&1; then "
+                "echo 'rqt_dialogues is not installed in this environment'; "
+                "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
+                "echo 'rqt_dialogues launch skipped: DISPLAY/WAYLAND_DISPLAY is not set'; "
+                "else "
+                "exec rqt --clear-config --standalone rqt_dialogues.plugin.DialoguesPlugin; "
+                "fi",
+            ],
+        ],
+        output="screen",
     )
     rqt_chat = ExecuteProcess(
         condition=IfCondition(
@@ -2391,14 +2623,15 @@ def generate_profile_launch_description(
             "bash",
             "-lc",
             [
-            "if ! command -v rqt >/dev/null 2>&1; then "
-            "echo 'rqt is not installed in this environment'; "
-            "elif ! python3 -c 'import importlib.util,sys; "
-            "sys.exit(0 if importlib.util.find_spec(\"rqt_chat\") else 1)' >/dev/null 2>&1; then "
-            "echo 'rqt_chat is not installed in this environment'; "
-            "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
-            "echo 'rqt_chat launch skipped: DISPLAY/WAYLAND_DISPLAY is not set'; "
-            "else "
+                _RQT_CONTAINER_ENV_GUARD,
+                "if ! command -v rqt >/dev/null 2>&1; then "
+                "echo 'rqt is not installed in this environment'; "
+                "elif ! python3 -c 'import importlib.util,sys; "
+                "sys.exit(0 if importlib.util.find_spec(\"rqt_chat\") else 1)' >/dev/null 2>&1; then "
+                "echo 'rqt_chat is not installed in this environment'; "
+                "elif [ -z \"${DISPLAY:-}\" ] && [ -z \"${WAYLAND_DISPLAY:-}\" ]; then "
+                "echo 'rqt_chat launch skipped: DISPLAY/WAYLAND_DISPLAY is not set'; "
+                "else "
                 "exec rqt --clear-config --standalone rqt_chat.chat.ChatPlugin --ros-args "
                 "-r /tts_engine/tts:=",
                 LaunchConfiguration("debug_tts_action_name"),
@@ -2438,6 +2671,10 @@ def generate_profile_launch_description(
                 "html_output_dir": LaunchConfiguration("interaction_trace_html_output_dir"),
                 "include_raw_payloads": LaunchConfiguration("interaction_trace_include_raw_payloads"),
                 "max_payload_chars": LaunchConfiguration("interaction_trace_max_payload_chars"),
+                "include_channels_csv": LaunchConfiguration("interaction_trace_include_channels_csv"),
+                "exclude_channels_csv": LaunchConfiguration("interaction_trace_exclude_channels_csv"),
+                "include_event_types_csv": LaunchConfiguration("interaction_trace_include_event_types_csv"),
+                "exclude_event_types_csv": LaunchConfiguration("interaction_trace_exclude_event_types_csv"),
                 "enable_scene_summary_channel": LaunchConfiguration(
                     "interaction_trace_enable_scene_summary_channel"
                 ),
@@ -2544,15 +2781,39 @@ def generate_profile_launch_description(
         dialogue_manager_node,
         condition=IfCondition(LaunchConfiguration("start_dialogue_manager")),
     )
+    nao_orchestrator_node = nao_orchestrator_bundle[0]
+    start_nao_orchestrator_condition = IfCondition(
+        LaunchConfiguration("start_nao_orchestrator")
+    )
+    (
+        nao_orchestrator_configure,
+        nao_orchestrator_activate,
+    ) = _configure_and_activate_lifecycle_node(
+        nao_orchestrator_node,
+        condition=start_nao_orchestrator_condition,
+    )
+    scan_skill_node = scan_skill_bundle[0]
+    start_scan_skill_condition = IfCondition(LaunchConfiguration("start_scan_skill"))
+    scan_skill_configure, scan_skill_activate = _configure_and_activate_lifecycle_node(
+        scan_skill_node,
+        condition=start_scan_skill_condition,
+    )
+    report_result_skill_node = report_result_skill_bundle[0]
+    start_report_result_skill_condition = IfCondition(
+        LaunchConfiguration("start_report_result_skill")
+    )
+    (
+        report_result_skill_configure,
+        report_result_skill_activate,
+    ) = _configure_and_activate_lifecycle_node(
+        report_result_skill_node,
+        condition=start_report_result_skill_condition,
+    )
     nao_say_skill_node = nao_say_skill_bundle[0]
     start_nao_say_skill_condition = IfCondition(
         LaunchConfiguration("start_nao_say_skill")
     )
-    nao_say_skill_configure = _configure_lifecycle_node(
-        nao_say_skill_node,
-        condition=start_nao_say_skill_condition,
-    )
-    nao_say_skill_activate = _activate_lifecycle_node_on_inactive(
+    nao_say_skill_configure, nao_say_skill_activate = _configure_and_activate_lifecycle_node(
         nao_say_skill_node,
         condition=start_nao_say_skill_condition,
     )
@@ -2609,6 +2870,8 @@ def generate_profile_launch_description(
                         LaunchConfiguration("start_planner_llm"),
                         " planner_mode=",
                         LaunchConfiguration("chatbot_planner_mode_enabled"),
+                        " turn_pipeline=",
+                        LaunchConfiguration("chatbot_turn_pipeline_mode"),
                         " dialogue_manager=/dialogue_manager",
                     ]
                 )
@@ -2643,10 +2906,12 @@ def generate_profile_launch_description(
             start_report_result_skill_arg,
             start_fake_skills_arg,
             fake_skill_scenario_file_arg,
-            fake_skill_default_delay_sec_arg,
-            fake_skill_publish_events_arg,
-            fake_skill_event_topic_arg,
-            fake_skill_deterministic_seed_arg,
+            fake_skill_active_scenario_id_arg,
+            fake_skill_global_mode_arg,
+            fake_skill_random_failure_prob_arg,
+            fake_skill_mode_overrides_json_arg,
+            perform_motion_execution_mode_arg,
+            look_at_execution_mode_arg,
             start_nao_say_skill_arg,
             start_nao_replay_motion_arg,
             head_motion_allow_open_loop_without_joint_state_arg,
@@ -2663,16 +2928,16 @@ def generate_profile_launch_description(
             interaction_trace_html_output_dir_arg,
             interaction_trace_include_raw_payloads_arg,
             interaction_trace_max_payload_chars_arg,
+            interaction_trace_include_channels_csv_arg,
+            interaction_trace_exclude_channels_csv_arg,
+            interaction_trace_include_event_types_csv_arg,
+            interaction_trace_exclude_event_types_csv_arg,
             interaction_trace_enable_scene_summary_channel_arg,
             interaction_trace_scene_summary_emit_on_change_only_arg,
             interaction_trace_scene_summary_min_interval_sec_arg,
+            scene_grounding_local_stale_after_sec_arg,
             interaction_trace_rosout_node_allowlist_csv_arg,
             interaction_trace_rosout_min_level_arg,
-            start_nao_dashboard_arg,
-            nao_dashboard_http_host_arg,
-            nao_dashboard_http_port_arg,
-            nao_dashboard_max_events_arg,
-            nao_dashboard_max_payload_chars_arg,
             start_demo_log_window_arg,
             start_managed_ollama_arg,
             managed_chatbot_ollama_host_arg,
@@ -2696,6 +2961,7 @@ def generate_profile_launch_description(
             dialogue_manager_enable_default_chat_arg,
             dialogue_manager_default_chat_role_arg,
             dialogue_manager_default_chat_configuration_arg,
+            dialogue_manager_say_action_arg,
             chat_input_tracked_topic_arg,
             chat_input_speech_topic_arg,
             chat_input_is_speaking_topic_arg,
@@ -2705,6 +2971,7 @@ def generate_profile_launch_description(
             chatbot_response_max_tokens_arg,
             chatbot_intent_max_tokens_arg,
             chatbot_intent_model_arg,
+            chatbot_turn_pipeline_mode_arg,
             ollama_intent_model_arg,
             chatbot_server_url_arg,
             chatbot_request_timeout_sec_arg,
@@ -2721,6 +2988,7 @@ def generate_profile_launch_description(
             orchestrator_planner_gate_topic_arg,
             planner_request_intent_arg,
             planner_dialogue_act_topic_arg,
+            planner_dialogue_relay_topic_arg,
             planner_skill_registry_path_arg,
             scan_result_mode_arg,
             scan_summary_arg,
@@ -2753,6 +3021,7 @@ def generate_profile_launch_description(
             object_detection_image_reliability_arg,
             scene_grounding_detector_topic_arg,
             scene_grounding_summary_topic_arg,
+            scene_grounding_spatial_overlay_topic_arg,
             scene_grounding_allowed_labels_arg,
             scene_grounding_knowledge_lifespan_sec_arg,
             scene_grounding_knowledge_refresh_interval_sec_arg,
@@ -2797,8 +3066,6 @@ def generate_profile_launch_description(
                     LaunchConfiguration("start_object_detection"),
                     " trace_viewer=",
                     LaunchConfiguration("start_interaction_trace_viewer"),
-                    " dashboard=",
-                    LaunchConfiguration("start_nao_dashboard"),
                 ]
             ),
             LogInfo(
@@ -2829,46 +3096,13 @@ def generate_profile_launch_description(
             object_detection_camera_note,
             rqt_console,
             interaction_sim_rqt,
-            interaction_sim_rqt_chat_note,
+            interaction_sim_rqt_dialogues,
             rqt_chat,
             robot_speech_debug,
             interaction_trace_viewer_node,
             demo_log_window,
             managed_chatbot_ollama,
             managed_planner_ollama,
-            OpaqueFunction(
-                function=_optional_launch_description,
-                kwargs={
-                    "package_name": "fake_skills",
-                    "launch_file_name": "fake_skills.launch.py",
-                    "launch_arg_name": "start_fake_skills",
-                    "display_name": "fake_skills",
-                    "launch_arguments": {
-                        "fake_skill_scenario_file": LaunchConfiguration("fake_skill_scenario_file"),
-                        "fake_skill_default_delay_sec": LaunchConfiguration("fake_skill_default_delay_sec"),
-                        "fake_skill_publish_events": LaunchConfiguration("fake_skill_publish_events"),
-                        "fake_skill_event_topic": LaunchConfiguration("fake_skill_event_topic"),
-                        "fake_skill_deterministic_seed": LaunchConfiguration("fake_skill_deterministic_seed"),
-                    },
-                    "required_packages": ["fake_skills"],
-                },
-            ),
-            OpaqueFunction(
-                function=_optional_launch_description,
-                kwargs={
-                    "package_name": "nao_dashboard",
-                    "launch_file_name": "nao_dashboard.launch.py",
-                    "launch_arg_name": "start_nao_dashboard",
-                    "display_name": "nao_dashboard",
-                    "launch_arguments": {
-                        "http_host": LaunchConfiguration("nao_dashboard_http_host"),
-                        "http_port": LaunchConfiguration("nao_dashboard_http_port"),
-                        "max_events": LaunchConfiguration("nao_dashboard_max_events"),
-                        "max_payload_chars": LaunchConfiguration("nao_dashboard_max_payload_chars"),
-                    },
-                    "required_packages": ["nao_dashboard"],
-                },
-            ),
             OpaqueFunction(
                 function=_optional_launch_description,
                 kwargs={
@@ -2929,6 +3163,18 @@ def generate_profile_launch_description(
                     "launch_arg_name": "start_fake_skills",
                     "display_name": "fake_skills",
                     "required_packages": ["fake_skills"],
+                    "launch_arguments": {
+                        "fake_skill_scenario_file": LaunchConfiguration("fake_skill_scenario_file"),
+                        "fake_skill_active_scenario_id": LaunchConfiguration("fake_skill_active_scenario_id"),
+                        "fake_skill_global_mode": LaunchConfiguration("fake_skill_global_mode"),
+                        "fake_skill_random_failure_prob": LaunchConfiguration(
+                            "fake_skill_random_failure_prob"
+                        ),
+                        "fake_skill_mode_overrides_json": LaunchConfiguration(
+                            "fake_skill_mode_overrides_json"
+                        ),
+                        "fake_skill_perform_motion_action": "/skill/fake/perform_motion",
+                    },
                 },
             ),
             chatbot_llm_bundle[0],
@@ -2938,6 +3184,12 @@ def generate_profile_launch_description(
             dialogue_manager_configure_immediate,
             dialogue_manager_configure_after_chatbot,
             dialogue_manager_activate,
+            nao_orchestrator_configure,
+            nao_orchestrator_activate,
+            scan_skill_configure,
+            scan_skill_activate,
+            report_result_skill_configure,
+            report_result_skill_activate,
             nao_say_skill_configure,
             nao_say_skill_activate,
             nao_orchestrator_recovery,

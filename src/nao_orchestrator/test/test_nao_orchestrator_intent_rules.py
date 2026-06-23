@@ -15,9 +15,21 @@ from nao_orchestrator.intent_rules import posture_topic_fallback_for_motion
 from nao_orchestrator.intent_rules import resolve_ack_text
 from nao_orchestrator.intent_rules import resolve_say_text
 from nao_orchestrator.intent_rules import resolve_scan_result
+from nao_orchestrator.intent_rules import scan_step_should_auto_report
 from nao_orchestrator.intent_rules import is_people_scan_target
+from nao_orchestrator.intent_rules import is_unresolved_report_template
 from nao_orchestrator.intent_rules import summarize_people_detection
 from nao_orchestrator.intent_rules import validate_execution_plan
+from nao_orchestrator.orchestrator import _ExecutionReportResult
+from nao_orchestrator.orchestrator import _binding_value
+from nao_orchestrator.orchestrator import _dedupe_statements
+from nao_orchestrator.orchestrator import _motion_result_payload
+from nao_orchestrator.orchestrator import _normalize_execution_mode
+from nao_orchestrator.orchestrator import _report_text_from_result_payload
+from nao_orchestrator.orchestrator import _single_entity_statement
+from nao_orchestrator.orchestrator import _statement_from_binding
+from nao_orchestrator.orchestrator import _statement_parts
+from nao_orchestrator.orchestrator import NaoOrchestrator
 
 
 def test_parse_intent_data_returns_dict_for_valid_json() -> None:
@@ -29,6 +41,32 @@ def test_normalize_legacy_intent_maps_posture_to_perform_motion() -> None:
     intent_name, data = normalize_legacy_intent('posture_stand', 'Hello there!')
     assert intent_name == Intent.PERFORM_MOTION
     assert data['object'] == 'stand'
+
+
+def test_kb_statement_helpers_parse_concrete_statements() -> None:
+    assert _statement_parts('codex_marker dbp:color blue') == (
+        'codex_marker',
+        'dbp:color',
+        'blue',
+    )
+    assert _statement_parts('codex_marker') == ('', '', '')
+    assert _single_entity_statement('codex_marker') == 'codex_marker'
+    assert _single_entity_statement('red cup') == ''
+
+
+def test_kb_statement_helpers_build_removal_statements_from_bindings() -> None:
+    row = {'?predicate': 'dbp:color', '?object': 'green'}
+
+    assert _binding_value(row, 'predicate') == 'dbp:color'
+    assert _binding_value(row, 'object') == 'green'
+    assert (
+        _statement_from_binding('codex_marker', _binding_value(row, 'predicate'), row)
+        == 'codex_marker dbp:color green'
+    )
+    assert _dedupe_statements(['a b c', '', 'a b c', 'a b d']) == [
+        'a b c',
+        'a b d',
+    ]
 
 
 def test_normalize_legacy_intent_accepts_json_payload() -> None:
@@ -90,6 +128,12 @@ def test_classify_motion_target_maps_head_motion() -> None:
     assert payload['yaw'] == 0.45
 
 
+def test_normalize_execution_mode_defaults_to_real() -> None:
+    assert _normalize_execution_mode('fake') == 'fake'
+    assert _normalize_execution_mode('real') == 'real'
+    assert _normalize_execution_mode('unexpected') == 'real'
+
+
 def test_classify_motion_target_maps_look_at_reset_alias() -> None:
     route, payload = classify_motion_target(
         Intent.PERFORM_MOTION,
@@ -135,11 +179,12 @@ def test_parse_plan_envelope_accepts_dict_style_plan_metadata() -> None:
         {
             'plan': {
                 'goal_id': 'goal-7',
-                'goal_token': 'goal-7:turn-5',
                 'plan_id': 'plan-42',
                 'plan_version': 3,
+                'context_ref': {'observer': 'myself'},
                 'status': 'executing',
                 'validation_status': 'draft',
+                'scene_targets': ['person'],
                 'communication_policy': {'emit_acknowledge': False},
                 'steps': [
                     {'type': 'say', 'args': {'text': 'hello'}},
@@ -149,14 +194,24 @@ def test_parse_plan_envelope_accepts_dict_style_plan_metadata() -> None:
         }
     )
     assert envelope['goal_id'] == 'goal-7'
-    assert envelope['goal_token'] == 'goal-7:turn-5'
     assert envelope['plan_id'] == 'plan-42'
     assert envelope['plan_version'] == 3
+    assert envelope['context_ref'] == {'observer': 'myself'}
     assert envelope['status'] == 'executing'
     assert envelope['validation_status'] == 'draft'
-    assert envelope['scene_targets'] == ['cup']
+    assert envelope['scene_targets'] == ['person']
     assert envelope['communication_policy']['emit_acknowledge'] is False
     assert envelope['steps'][0]['id'] == 'step_1'
+
+
+def test_scan_auto_report_only_when_no_later_speech_step() -> None:
+    plan = [
+        {'type': 'skill', 'name': 'scan', 'args': {}},
+        {'type': 'skill', 'name': 'report_result', 'args': {'summary_text': 'done'}},
+    ]
+
+    assert scan_step_should_auto_report(plan=plan, step_index=0) is False
+    assert scan_step_should_auto_report(plan=plan, step_index=1) is True
 
 
 def test_validate_execution_plan_marks_explicit_empty_plan_invalid() -> None:
@@ -179,8 +234,47 @@ def test_validate_execution_plan_rejects_invalid_look_at_step() -> None:
     )
     assert envelope['steps'] == []
     assert envelope['errors'] == [
-        'step_1: look_at step is missing target_frame or reset policy'
+        'step_1: look_at step is missing target_frame or supported policy'
     ]
+
+
+def test_validate_execution_plan_accepts_targetless_look_at_policy() -> None:
+    envelope = validate_execution_plan(
+        Intent.PRESENT_CONTENT,
+        {
+            'plan': [
+                {'type': 'look_at', 'args': {'policy': 'social'}},
+            ]
+        },
+    )
+    assert envelope['errors'] == []
+    assert envelope['steps'][0]['args'] == {'policy': 'social'}
+
+
+def test_validate_execution_plan_accepts_look_at_target_alias() -> None:
+    envelope = validate_execution_plan(
+        Intent.PRESENT_CONTENT,
+        {
+            'plan': [
+                {'type': 'look_at', 'args': {'target': 'anonymous person bcbhb'}},
+            ]
+        },
+    )
+    assert envelope['errors'] == []
+    assert envelope['steps'][0]['args']['target_frame'] == 'anonymous person bcbhb'
+
+
+def test_validate_execution_plan_maps_look_at_head_center_to_reset() -> None:
+    envelope = validate_execution_plan(
+        Intent.PRESENT_CONTENT,
+        {
+            'plan': [
+                {'type': 'look_at', 'args': {'target': 'head_center'}},
+            ]
+        },
+    )
+    assert envelope['errors'] == []
+    assert envelope['steps'][0]['args']['policy'] == 'reset'
 
 
 def test_validate_execution_plan_accepts_clarify_failure_policy() -> None:
@@ -217,6 +311,24 @@ def test_validate_execution_plan_accepts_continue_failure_policy() -> None:
     )
     assert envelope['errors'] == []
     assert envelope['steps'][0]['on_failure'] == 'continue'
+
+
+def test_validate_execution_plan_rejects_retry_failure_policy_alias() -> None:
+    envelope = validate_execution_plan(
+        Intent.PERFORM_MOTION,
+        {
+            'plan': [
+                {
+                    'type': 'skill',
+                    'name': 'perform_motion',
+                    'args': {'object': 'stand'},
+                    'on_failure': 'retry',
+                }
+            ]
+        },
+    )
+    assert envelope['errors'] == []
+    assert envelope['steps'][0]['on_failure'] == 'fail'
 
 
 def test_validate_execution_plan_accepts_scan_skill() -> None:
@@ -273,6 +385,76 @@ def test_validate_execution_plan_accepts_report_result_skill() -> None:
     assert envelope['steps'][0]['name'] == 'report_result'
 
 
+def test_validate_execution_plan_accepts_report_result_reusing_prior_context() -> None:
+    envelope = validate_execution_plan(
+        Intent.PRESENT_CONTENT,
+        {
+            'plan': [
+                {
+                    'type': 'skill',
+                    'name': 'scan',
+                    'args': {},
+                },
+                {
+                    'type': 'skill',
+                    'name': 'report_result',
+                    'args': {},
+                    'requires': ['step_1'],
+                },
+            ]
+        },
+    )
+
+    assert envelope['errors'] == []
+    assert envelope['steps'][1]['name'] == 'report_result'
+    assert envelope['steps'][1]['args'] == {}
+
+
+def test_unresolved_report_template_detects_evidence_placeholders() -> None:
+    assert is_unresolved_report_template(
+        'I found the following: [evidence.objects], [evidence.people].'
+    )
+    assert is_unresolved_report_template('Report {result.summary_text}.')
+    assert not is_unresolved_report_template('I found one person near the table.')
+
+
+def test_validate_execution_plan_accepts_ask_user_skill_and_defaults_failure_policy() -> None:
+    envelope = validate_execution_plan(
+        Intent.SAY,
+        {
+            'plan': [
+                {
+                    'type': 'skill',
+                    'name': 'ask_user',
+                    'args': {'question': 'Should I scan again now?'},
+                }
+            ]
+        },
+    )
+    assert envelope['errors'] == []
+    assert envelope['steps'][0]['name'] == 'ask_user'
+    assert envelope['steps'][0]['on_failure'] == 'ask_user'
+
+
+def test_validate_execution_plan_rejects_ask_user_without_prompt_or_slots() -> None:
+    envelope = validate_execution_plan(
+        Intent.SAY,
+        {
+            'plan': [
+                {
+                    'type': 'skill',
+                    'name': 'ask_user',
+                    'args': {},
+                }
+            ]
+        },
+    )
+    assert envelope['steps'] == []
+    assert envelope['errors'] == [
+        'step_1: ask_user step is missing prompt text or slots_needed'
+    ]
+
+
 def test_validate_execution_plan_accepts_wave_greet_fake_skill() -> None:
     envelope = validate_execution_plan(
         Intent.PERFORM_MOTION,
@@ -289,6 +471,30 @@ def test_validate_execution_plan_accepts_wave_greet_fake_skill() -> None:
     )
     assert envelope['errors'] == []
     assert envelope['steps'][0]['name'] == 'wave'
+
+
+def test_validate_execution_plan_accepts_manipulation_fake_skills() -> None:
+    envelope = validate_execution_plan(
+        Intent.PRESENT_CONTENT,
+        {
+            'plan': [
+                {'type': 'skill', 'name': 'pick', 'args': {'target': 'cup_1'}},
+                {
+                    'type': 'skill',
+                    'name': 'place',
+                    'args': {'target': 'cup_1', 'destination': 'shelf_1'},
+                },
+                {
+                    'type': 'skill',
+                    'name': 'bring',
+                    'args': {'target': 'book_1', 'recipient': 'person_1'},
+                },
+            ]
+        },
+    )
+
+    assert envelope['errors'] == []
+    assert [step['name'] for step in envelope['steps']] == ['pick', 'place', 'bring']
 
 
 def test_scan_step_is_available_without_demo_gate() -> None:
@@ -315,7 +521,10 @@ def test_targeted_scan_without_explicit_summary_reports_missing_detection() -> N
     )
 
     assert success
-    assert reason == 'I completed the scan for people, but no confirmed detection result was reported.'
+    assert (
+        reason
+        == 'I completed the scan for people, but no confirmed detection result was reported.'
+    )
     assert metadata['target_kind'] == 'people'
 
 
@@ -377,6 +586,414 @@ def test_scene_scan_payload_summarizes_objects() -> None:
 
     assert payload['target_found'] is True
     assert payload['summary_text'].startswith('I completed the scene scan')
+
+
+def test_report_text_from_summaryless_scan_payload_summarizes_objects() -> None:
+    report_text = _report_text_from_result_payload(
+        {
+            'skill': 'scan',
+            'target_kind': 'scene',
+            'summary_text': '',
+            'objects': [
+                {'id': 'blueberry_1', 'label': 'blueberry', 'source': 'scene_summary'},
+                {'id': 'blueberry_2', 'label': 'blueberry', 'source': 'scene_summary'},
+            ],
+        }
+    )
+
+    assert report_text.startswith('I completed the scene scan')
+    assert 'blueberry' in report_text
+
+
+def test_report_text_from_completed_target_payload_uses_conservative_completion() -> None:
+    report_text = _report_text_from_result_payload(
+        {
+            'skill': 'navigate_to',
+            'status': 'succeeded',
+            'target': 'cup',
+            'summary_text': '',
+        }
+    )
+
+    assert report_text == 'I completed the task for cup.'
+
+
+def test_report_result_text_uses_chatbot_context_for_step_chain() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    captured = {}
+
+    def request_report(context):
+        captured.update(context)
+        return _ExecutionReportResult(
+            text='I navigated to the cup and found two blueberries.',
+            source='chatbot',
+        )
+
+    orchestrator._request_execution_report_text = request_report
+    orchestrator.get_logger = lambda: type(
+        'Logger',
+        (),
+        {'info': lambda *_args, **_kwargs: None},
+    )()
+
+    report_text = orchestrator._resolve_report_result_text(
+        {},
+        {
+            'goal_text': 'navigate to the cup and report other objects',
+            'normalized_intents': ['navigate_to', 'inspect_scene', 'report_result'],
+            'dialogue_context': [
+                'user:Navigate to the cup and tell me what else you see.',
+                'assistant:Sure, I will navigate to the cup and look around.',
+            ],
+            'plan_context': {
+                'plan_id': 'plan_1',
+                'plan_version': 2,
+                'scene_targets': ['cup'],
+            },
+            'execution_results': [
+                {
+                    'id': 'step_1',
+                    'name': 'navigate_to',
+                    'type': 'skill',
+                    'status': 'succeeded',
+                    'result_summary': 'I navigated to the cup.',
+                    'result_payload': {
+                        'skill': 'navigate_to',
+                        'status': 'succeeded',
+                        'target': 'cup',
+                    },
+                },
+                {
+                    'id': 'step_2',
+                    'name': 'scan',
+                    'type': 'skill',
+                    'status': 'succeeded',
+                    'result_summary': 'I found two blueberries.',
+                    'result_payload': {
+                        'skill': 'scan',
+                        'objects': [{'label': 'blueberry'}, {'label': 'blueberry'}],
+                    },
+                },
+            ],
+        },
+    )
+
+    assert report_text == 'I navigated to the cup and found two blueberries.'
+    assert captured['goal_text'] == 'navigate to the cup and report other objects'
+    assert captured['scene_targets'] == ['cup']
+    assert captured['dialogue_context'][-1].startswith('assistant:')
+    assert [step['name'] for step in captured['steps']] == ['navigate_to', 'scan']
+
+
+def test_execution_report_context_marks_intermediate_report_result() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+
+    context = orchestrator._execution_report_context(
+        {
+            'current_step_index': 1,
+            'plan_steps': [
+                {'id': 'step_1', 'name': 'navigate_to', 'args': {'target': 'apple'}},
+                {'id': 'step_2', 'name': 'report_result', 'args': {}},
+                {'id': 'step_3', 'name': 'navigate_to', 'args': {'target': 'book'}},
+                {'id': 'step_4', 'name': 'report_result', 'args': {}},
+            ],
+            'execution_results': [
+                {
+                    'name': 'navigate_to',
+                    'status': 'succeeded',
+                    'result_summary': 'I navigated to the apple.',
+                }
+            ],
+            'last_result_summary': 'I navigated to the apple.',
+        }
+    )
+
+    assert context['report_role'] == 'intermediate'
+    assert context['latest_result_summary'] == 'I navigated to the apple.'
+    assert [step['name'] for step in context['future_steps']] == [
+        'navigate_to',
+        'report_result',
+    ]
+
+
+def test_execution_report_context_marks_terminal_report_result() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+
+    context = orchestrator._execution_report_context(
+        {
+            'current_step_index': 3,
+            'plan_steps': [
+                {'id': 'step_1', 'name': 'navigate_to', 'args': {'target': 'apple'}},
+                {'id': 'step_2', 'name': 'report_result', 'args': {}},
+                {'id': 'step_3', 'name': 'navigate_to', 'args': {'target': 'book'}},
+                {'id': 'step_4', 'name': 'report_result', 'args': {}},
+            ],
+            'execution_results': [
+                {
+                    'name': 'navigate_to',
+                    'status': 'succeeded',
+                    'result_summary': 'I navigated to the book.',
+                }
+            ],
+        }
+    )
+
+    assert context['report_role'] == 'final'
+    assert context['future_steps'] == []
+
+
+def test_execution_context_retains_admitted_request_for_report_result() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    orchestrator._planner_request_context_by_goal = {}
+    orchestrator._planner_request_context_order = []
+    orchestrator._remember_planner_request_context(
+        'goal_1',
+        {
+            'goal_id': 'goal_1',
+            'goal_text': 'move your head in all directions and wave',
+            'dialogue_context': ['user:move your head in all directions and wave'],
+            'grounded_context': {'entities': [{'id': 'person_1'}]},
+        },
+    )
+
+    context = orchestrator._execution_context_for_goal(
+        'goal_1',
+        {'plan': {'goal_id': 'goal_1', 'steps': []}},
+    )
+
+    assert context['goal_text'] == 'move your head in all directions and wave'
+    assert context['dialogue_context'][0].startswith('user:')
+    assert context['grounded_context']['entities'][0]['id'] == 'person_1'
+    assert context['plan']['goal_id'] == 'goal_1'
+
+
+def test_report_result_text_falls_back_to_successful_step_chain() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    orchestrator._request_execution_report_text = (
+        lambda _context: _ExecutionReportResult(source='unavailable')
+    )
+
+    report_text = orchestrator._resolve_report_result_text(
+        {},
+        {
+            'execution_results': [
+                {
+                    'name': 'navigate_to',
+                    'status': 'succeeded',
+                    'result_summary': 'I navigated to the cup.',
+                },
+                {
+                    'name': 'scan',
+                    'status': 'succeeded',
+                    'result_summary': 'I found two blueberries.',
+                },
+            ],
+        },
+    )
+
+    assert report_text == 'I navigated to the cup. I found two blueberries.'
+
+
+def test_motion_result_payload_supplies_reportable_internal_summary() -> None:
+    payload = _motion_result_payload(
+        'head_motion',
+        {'motion': 'head_look_right'},
+        {'motion_name': 'head_look_right'},
+    )
+
+    assert payload['skill'] == 'perform_motion'
+    assert payload['status'] == 'succeeded'
+    assert payload['summary_text'] == 'I moved my head right.'
+    assert payload['metadata']['speech_produced'] is False
+
+
+def test_report_result_text_can_reuse_motion_chain_summaries() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    orchestrator._request_execution_report_text = (
+        lambda _context: _ExecutionReportResult(source='unavailable')
+    )
+
+    report_text = orchestrator._resolve_report_result_text(
+        {},
+        {
+            'execution_results': [
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I moved my head left.',
+                },
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I moved my head right.',
+                },
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I centered my head.',
+                },
+            ],
+        },
+    )
+
+    assert report_text == (
+        'I moved my head left. I moved my head right. I centered my head.'
+    )
+
+
+def test_report_result_routes_explicit_summary_through_chatbot_first() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    captured = {}
+
+    def _chatbot_report(context):
+        captured.update(context)
+        return _ExecutionReportResult(
+            text='I completed the requested motion and waved at you.',
+            source='chatbot',
+        )
+
+    orchestrator._request_execution_report_text = _chatbot_report
+    orchestrator.get_logger = lambda: type(
+        'Logger',
+        (),
+        {'info': lambda *_args, **_kwargs: None},
+    )()
+
+    report_text = orchestrator._resolve_report_result_text(
+        {'summary_text': 'I moved left. I moved right. I waved.'},
+        {
+            'goal_text': 'move your head in all directions and wave',
+            'grounded_context': {'entities': [{'id': 'person_1', 'label': 'person'}]},
+        },
+    )
+
+    assert report_text == 'I completed the requested motion and waved at you.'
+    assert captured['requested_summary'] == 'I moved left. I moved right. I waved.'
+    assert captured['grounded_context']['entities'][0]['id'] == 'person_1'
+
+
+def test_report_result_text_preserves_motion_chain_before_terminal_result() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    orchestrator._request_execution_report_text = (
+        lambda _context: _ExecutionReportResult(source='unavailable')
+    )
+
+    report_text = orchestrator._resolve_report_result_text(
+        {},
+        {
+            'execution_results': [
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I centered my head.',
+                },
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I moved my head left.',
+                },
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I moved my head right.',
+                },
+                {
+                    'name': 'wave_greet',
+                    'status': 'succeeded',
+                    'result_summary': 'I performed a friendly wave.',
+                },
+            ],
+        },
+    )
+
+    assert report_text == (
+        'I centered my head. I moved my head left. I moved my head right. '
+        'I performed a friendly wave.'
+    )
+
+
+def test_report_result_text_preserves_bounded_motion_chain_fallback() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    orchestrator._request_execution_report_text = (
+        lambda _context: _ExecutionReportResult(source='unavailable')
+    )
+
+    report_text = orchestrator._resolve_report_result_text(
+        {},
+        {
+            'execution_results': [
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I moved my head left.',
+                },
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I moved my head right.',
+                },
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I moved my head up.',
+                },
+                {
+                    'name': 'perform_motion',
+                    'status': 'succeeded',
+                    'result_summary': 'I moved my head down.',
+                },
+                {
+                    'name': 'wave_greet',
+                    'status': 'succeeded',
+                    'result_summary': 'I performed a friendly wave.',
+                },
+            ],
+        },
+    )
+
+    assert report_text == (
+        'I moved my head left. I moved my head right. I moved my head up. '
+        'I moved my head down. I performed a friendly wave.'
+    )
+
+
+def test_scene_scan_payload_preserves_positional_evidence() -> None:
+    payload = build_scan_result_payload(
+        {
+            'target_kind': 'scene',
+            'objects': [
+                {
+                    'id': 'cup_1',
+                    'label': 'cup',
+                    'source': 'scene_summary',
+                    'center_x': 0.22,
+                    'center_y': 0.61,
+                    'confidence': 0.94,
+                }
+            ],
+        }
+    )
+
+    assert payload['objects'][0]['id'] == 'cup_1'
+    assert payload['objects'][0]['center_x'] == 0.22
+    assert payload['objects'][0]['center_y'] == 0.61
+    assert payload['objects'][0]['confidence'] == 0.94
+
+
+def test_scene_scan_payload_reports_people_and_objects_separately() -> None:
+    payload = build_scan_result_payload(
+        {
+            'target_kind': 'scene',
+            'objects': [{'id': 'cup_1', 'label': 'cup', 'source': 'scene_summary'}],
+            'people': [{'id': 'anonymous_person_abc', 'source': 'hri_persons'}],
+        }
+    )
+
+    assert payload['target_found'] is True
+    assert payload['objects'][0]['label'] == 'cup'
+    assert payload['people'][0]['id'] == 'anonymous_person_abc'
+    assert 'detected cup' in payload['summary_text']
+    assert 'one person (id: anonymous_person_abc)' in payload['summary_text']
 
 
 def test_people_scan_target_detection_supports_common_aliases() -> None:
@@ -441,3 +1058,72 @@ def test_make_intent_signature_ignores_ack_text_only_differences() -> None:
         {'object': 'stand', 'ack_text': 'Okay.'},
     )
     assert left == right
+
+
+def test_orchestrator_fake_perform_motion_mode_routes_to_fake_skill() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    orchestrator.perform_motion_execution_mode = 'fake'
+    calls = []
+
+    def fake_execute(skill_name, step_args, *, on_started=None):
+        calls.append((skill_name, step_args))
+        return True, '', {'skill': skill_name, 'status': 'succeeded'}
+
+    orchestrator._execute_fake_skill_step = fake_execute
+
+    success, reason, payload = NaoOrchestrator._execute_motion_plan_step(
+        orchestrator,
+        {'object': 'head_look_left'},
+    )
+
+    assert success is True
+    assert reason == ''
+    assert payload == {'skill': 'perform_motion', 'status': 'succeeded'}
+    assert calls == [('perform_motion', {'object': 'head_look_left'})]
+
+
+def test_orchestrator_fake_look_at_mode_routes_to_fake_skill() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    orchestrator.look_at_execution_mode = 'fake'
+    orchestrator._stats = type('Stats', (), {'dispatched_look_at': 0})()
+    calls = []
+
+    def fake_execute(skill_name, step_args, *, on_started=None):
+        calls.append((skill_name, step_args))
+        return True, '', {'skill': skill_name, 'status': 'succeeded'}
+
+    orchestrator._execute_fake_skill_step = fake_execute
+
+    success, reason = NaoOrchestrator._dispatch_planned_look_at(
+        orchestrator,
+        'look_at',
+        {'target_frame': 'person_1'},
+    )
+
+    assert success is True
+    assert reason == ''
+    assert orchestrator._stats.dispatched_look_at == 1
+    assert calls == [('look_at', {'target_frame': 'person_1'})]
+
+
+def test_orchestrator_real_perform_motion_mode_keeps_head_action_route() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    orchestrator.perform_motion_execution_mode = 'real'
+    orchestrator._stats = type('Stats', (), {'dispatched_head_motion': 0})()
+    calls = []
+
+    def fake_head(payload, *, on_started=None):
+        calls.append(payload)
+        return False, 'head motion dispatch failed'
+
+    orchestrator._execute_head_motion_step = fake_head
+
+    success, reason, payload = NaoOrchestrator._execute_motion_plan_step(
+        orchestrator,
+        {'object': 'head_look_left'},
+    )
+
+    assert success is False
+    assert reason == 'head motion dispatch failed'
+    assert payload == {}
+    assert calls and calls[0]['yaw'] == 0.45

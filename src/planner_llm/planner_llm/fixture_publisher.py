@@ -37,18 +37,14 @@ _SAMPLE_REQUEST = {
     'request_kind': 'new_goal',
     'goal_text': 'look at the cup',
     'normalized_intents': ['inspect_scene'],
-    'ack_text': 'I will inspect the scene.',
-    'ack_mode': 'auto',
     'scene_targets': ['cup'],
     'dialogue_context': ['User asked me to inspect the cup.'],
     'grounded_context': {
         'knowledge_snapshot': {'target': 'cup'},
         'scene_summary': {'objects': ['cup']},
-        'world_model_snapshot': {},
-        'world_model_text': '',
+        'state_t0': {},
     },
     'planner_mode': 'default',
-    'interaction_mode': 'default',
 }
 
 _SAMPLE_FEEDBACK = {

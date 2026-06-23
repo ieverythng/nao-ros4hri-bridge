@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
 from interaction_trace_viewer.payload_normalizer import classify_speech_topic
+from interaction_trace_viewer.payload_normalizer import normalize_include_event_types
 from interaction_trace_viewer.payload_normalizer import normalize_intent_message
 from interaction_trace_viewer.payload_normalizer import normalize_rosout_message
 from interaction_trace_viewer.payload_normalizer import normalize_string_message
@@ -90,3 +91,50 @@ def test_normalize_turn_trace_string_message() -> None:
 
     assert event.event_type == 'chatbot_turn_trace'
     assert 'route=dialogue' in event.summary
+
+
+def test_normalize_turn_trace_summary_includes_kb_context_details() -> None:
+    msg = SimpleNamespace(
+        data=(
+            '{"event_type":"chatbot_turn_result","route":"dialogue","intent":"ask_scene","intent_source":"llm_response_route",'
+            '"grounded_context":{"knowledge_snapshot":{"references":[{"normalized_name":"cup"},{"normalized_name":"apple"}]},'
+            '"scene_summary":{"objects":[{"label":"cup"},{"label":"apple"}],"people":[]}}}'
+        )
+    )
+    event = normalize_string_message(
+        channel='/chatbot_llm/turn_trace',
+        msg=msg,
+        max_payload_chars=4000,
+    )
+
+    assert event.event_type == 'chatbot_turn_trace'
+    assert 'refs=2' in event.summary
+    assert 'ref_preview=cup,apple' in event.summary
+    assert 'objects=2:cup,apple' in event.summary
+    assert 'people=0' in event.summary
+
+
+def test_normalize_fake_skill_event_maps_to_skill_result() -> None:
+    msg = SimpleNamespace(
+        data='{"event_type":"fake_skill_completed","skill":"navigate_to","payload":{"status":"failed","summary_text":"path blocked","failure":{"code":"path_blocked"}}}'
+    )
+    event = normalize_string_message(
+        channel='/fake_skills/events',
+        msg=msg,
+        max_payload_chars=4000,
+    )
+
+    assert event.event_type == 'skill_result'
+    assert event.payload['skill'] == 'navigate_to'
+    assert event.payload['status'] == 'failed'
+    assert event.payload['failure']['code'] == 'path_blocked'
+
+
+def test_normalize_include_event_types_keeps_selection_stable() -> None:
+    include_event_types = normalize_include_event_types(
+        include_channels={'planner/request', 'scene/summary'},
+        include_event_types={'planner_request', 'execution_feedback'},
+        exclude_event_types=set(),
+    )
+
+    assert include_event_types == {'planner_request', 'execution_feedback'}

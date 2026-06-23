@@ -13,38 +13,53 @@ import json
 import threading
 import time
 
+from chatbot_msgs.msg import DialogueRole, Utterance
+from chatbot_msgs.srv import DialogueInteraction
 from communication_skills.action import Say
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from geometry_msgs.msg import PointStamped
 from hri_actions_msgs.msg import Intent
-from interaction_skills.action import LookAt
 from kb_skills.intent_labels import KB_QUERY_INTENTS
-from nao_skills.action import DoHeadMotion, ReplayMotion
+from kb_skills.mutation_client import KnowledgeCoreMutationClient
+from kb_skills.query_client import KnowledgeCoreQueryClient
 from planner_common import build_execution_feedback_payload
 from planner_common import make_plan_id
 from planner_common import load_shared_skill_manifest
 from planner_common import merge_fake_skill_aliases
 from planner_common import merge_scan_skill_names
+from planner_common import parse_json_object
 from rclpy.action import ActionClient
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.lifecycle import Node, State, TransitionCallbackReturn
 from std_msgs.msg import String
+from unique_identifier_msgs.msg import UUID as UUIDMsg
 
 from nao_orchestrator.intent_rules import (
+    build_scan_result_payload,
     classify_motion_target,
+    is_unresolved_report_template,
     make_intent_signature,
     normalize_incoming_intent,
     normalize_legacy_intent,
     parse_intent_data,
     posture_topic_fallback_for_motion,
     resolve_say_text,
+    scan_step_should_auto_report,
     validate_execution_plan,
 )
 from nao_orchestrator.planner_gate import PlannerGate
 
 try:  # pragma: no cover - available once nao_skills interfaces are rebuilt
-    from nao_skills.action import ScanScene
+    from nao_skills.action import DoHeadMotion, ReplayMotion, ScanScene
 except ImportError:  # pragma: no cover - forward-compat for stale interface install
+    DoHeadMotion = None
+    ReplayMotion = None
     ScanScene = None
+
+try:  # pragma: no cover - runtime interface dependency
+    from interaction_skills.action import LookAt
+except ImportError:  # pragma: no cover - local tests may not have generated actions
+    LookAt = None
 
 try:  # pragma: no cover - runtime dependency
     from naoqi_bridge_msgs.msg import JointAnglesWithSpeed
@@ -62,9 +77,22 @@ _DEFAULT_SCAN_SKILL_ALIASES = (
 _DEFAULT_FAKE_SKILL_ALIASES = {
     'navigate_to': {'navigate_to', 'go_to', 'move_to_location'},
     'find_object': {'find_object', 'find', 'locate_object', 'find_person'},
+    'perform_motion': {'perform_motion', 'motion', 'posture', 'head_motion'},
     'wave_greet': {'wave_greet', 'wave', 'greet_wave', 'wave_hello'},
     'inspect_area': {'inspect_area', 'inspect', 'check_area'},
     'walk_to': {'walk_to', 'walk_forward', 'step_to'},
+    'pick_object': {'pick_object', 'pick', 'grab', 'grab_object'},
+    'place_object': {'place_object', 'place', 'put_down'},
+    'bring_object': {'bring_object', 'bring', 'deliver_object'},
+}
+_ASK_USER_STEP_NAMES = frozenset({'ask_user', 'ask_clarification', 'ask_for_help'})
+_MAX_RELAYED_PLANNER_ACTS = 256
+_MAX_PLANNER_REQUEST_CONTEXTS = 64
+_MAX_EXECUTION_REPORT_STEPS = 8
+_KB_MUTATION_OPERATIONS = {
+    'kb_add': 'add',
+    'kb_remove': 'remove',
+    'kb_revise': 'update',
 }
 
 
@@ -82,6 +110,233 @@ def _first_non_empty_value(data: dict, *keys: str) -> str:
     return _first_non_empty_text(*(data.get(key, '') for key in keys))
 
 
+def _statement_parts(statement: str) -> tuple[str, str, str]:
+    tokens = str(statement or '').strip().split()
+    if len(tokens) < 3:
+        return '', '', ''
+    return tokens[0], tokens[1], ' '.join(tokens[2:])
+
+
+def _single_entity_statement(statement: str) -> str:
+    tokens = str(statement or '').strip().split()
+    if len(tokens) != 1:
+        return ''
+    token = tokens[0]
+    if any(char in token for char in ('"', "'", '{', '}', '[', ']')):
+        return ''
+    return token
+
+
+def _kb_remove_subject_alias(statement: str) -> str:
+    tokens = str(statement or '').strip().split()
+    if not tokens:
+        return ''
+    if len(tokens) == 1:
+        return _single_entity_statement(statement)
+    subject, predicate, obj = _statement_parts(statement)
+    if (
+        subject
+        and predicate == 'rdf:type'
+        and obj in {'owl:Thing', 'Thing', 'oro:Entity'}
+    ):
+        return subject
+    if (
+        len(tokens) == 5
+        and tokens[1:5] == ['is', 'in', 'knowledge', 'base']
+        and _single_entity_statement(tokens[0])
+    ):
+        return tokens[0]
+    return ''
+
+
+def _binding_value(row: dict, key: str) -> str:
+    if not isinstance(row, dict):
+        return ''
+    return str(row.get(key, row.get('?%s' % key, ''))).strip()
+
+
+def _statement_from_binding(subject: str, predicate: str, row: dict) -> str:
+    clean_subject = str(subject or '').strip()
+    clean_predicate = str(predicate or '').strip()
+    clean_object = _binding_value(row, 'object')
+    if not clean_subject or not clean_predicate or not clean_object:
+        return ''
+    return '%s %s %s' % (clean_subject, clean_predicate, clean_object)
+
+
+def _dedupe_statements(statements: list[str]) -> list[str]:
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for statement in statements:
+        clean = str(statement or '').strip()
+        if not clean or clean in seen:
+            continue
+        seen.add(clean)
+        deduped.append(clean)
+    return deduped
+
+
+def _normalize_execution_mode(value) -> str:
+    clean = str(value or '').strip().lower()
+    return clean if clean in {'real', 'fake'} else 'real'
+
+
+def _looks_like_machine_payload(text: str) -> bool:
+    clean_text = str(text or '').strip()
+    return clean_text.startswith(('{', '[', '```', '"{'))
+
+
+def _report_text_from_result_payload(result_payload: dict) -> str:
+    """Resolve conservative report text from a prior live skill result payload."""
+    if not isinstance(result_payload, dict):
+        return ''
+
+    report_text = _first_non_empty_value(
+        result_payload,
+        'summary_text',
+        'result_summary',
+        'message',
+    )
+    if report_text and not is_unresolved_report_template(report_text):
+        return report_text
+
+    skill_name = str(result_payload.get('skill', '')).strip().lower()
+    if skill_name == 'scan' or any(key in result_payload for key in ('objects', 'people')):
+        scan_payload = build_scan_result_payload(result_payload)
+        report_text = str(scan_payload.get('summary_text', '')).strip()
+        if report_text and not is_unresolved_report_template(report_text):
+            return report_text
+
+    target = _first_non_empty_value(result_payload, 'target', 'object', 'location')
+    status = str(result_payload.get('status', '')).strip().lower()
+    if target and status in ('succeeded', 'success', 'completed'):
+        return 'I completed the task for %s.' % target
+    return ''
+
+
+def _execution_step_record(
+    step: dict,
+    *,
+    status: str,
+    reason: str = '',
+    result_summary: str = '',
+    result_payload: dict | None = None,
+) -> dict:
+    """Build compact execution evidence for chatbot-authored reports."""
+    return {
+        'id': str(step.get('id', '')).strip(),
+        'type': str(step.get('type', '')).strip().lower(),
+        'name': str(step.get('name', '')).strip().lower(),
+        'args': dict(step.get('args', {}))
+        if isinstance(step.get('args', {}), dict)
+        else {},
+        'status': str(status or '').strip().lower(),
+        'reason': str(reason or '').strip(),
+        'result_summary': str(result_summary or '').strip(),
+        'result_payload': dict(result_payload or {}),
+    }
+
+
+def _report_text_from_execution_results(execution_results: list) -> str:
+    if not isinstance(execution_results, list):
+        return ''
+    summaries = []
+    for step in execution_results[-_MAX_EXECUTION_REPORT_STEPS:]:
+        if not isinstance(step, dict):
+            continue
+        if str(step.get('status', '')).strip().lower() != 'succeeded':
+            continue
+        summary = str(step.get('result_summary', '')).strip()
+        if summary and not is_unresolved_report_template(summary) and summary not in summaries:
+            summaries.append(summary)
+    return ' '.join(summaries)
+
+
+def _motion_result_payload(route: str, step_args: dict, resolved_payload: dict) -> dict:
+    """Build non-spoken execution evidence for successful motion steps."""
+    motion_label = _first_non_empty_value(
+        resolved_payload,
+        'motion_name',
+        'motion',
+        'name',
+        'target',
+        'policy',
+    )
+    if not motion_label:
+        motion_label = _first_non_empty_value(
+            step_args,
+            'motion',
+            'name',
+            'target',
+            'object',
+            'policy',
+        )
+    clean_label = str(motion_label or route or 'motion').strip()
+    summary_text = _motion_summary_text(route, clean_label)
+    return {
+        'skill': 'perform_motion',
+        'route': str(route or '').strip(),
+        'motion': clean_label,
+        'status': 'succeeded',
+        'summary_text': summary_text,
+        'metadata': {
+            'speech_produced': False,
+        },
+    }
+
+
+def _motion_summary_text(route: str, motion_label: str) -> str:
+    clean_label = str(motion_label or '').strip().lower().replace('_', ' ')
+    if clean_label.startswith('head look '):
+        direction = clean_label.removeprefix('head look ').strip()
+        return 'I moved my head %s.' % direction
+    if clean_label == 'head center':
+        return 'I centered my head.'
+    if str(route or '').strip().lower() == 'look_at_reset':
+        return 'I reset my gaze.'
+    if clean_label:
+        return 'I performed %s.' % clean_label
+    return 'I performed the requested motion.'
+
+
+def _planner_dialogue_act_signature(payload: str) -> str:
+    """Canonicalize one semantic planner event for relay deduplication."""
+    try:
+        parsed = json.loads(str(payload or '').strip())
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return str(payload or '').strip()
+    if not isinstance(parsed, dict):
+        return str(payload or '').strip()
+    try:
+        plan_version = max(0, int(parsed.get('plan_version', 0) or 0))
+    except (TypeError, ValueError):
+        plan_version = 0
+    signature = {
+        'goal_id': str(parsed.get('goal_id', '')).strip(),
+        'plan_id': str(parsed.get('plan_id', '')).strip(),
+        'plan_version': plan_version,
+        'act': str(parsed.get('act', '')).strip().lower(),
+    }
+    if signature['act'] == 'progress_update':
+        signature.update(
+            {
+                'reason': str(parsed.get('reason', '')).strip(),
+                'text_hint': str(parsed.get('text_hint', '')).strip(),
+                'context': parsed.get('context', {})
+                if isinstance(parsed.get('context', {}), dict)
+                else {},
+            }
+        )
+    elif signature['act'] == 'ask_clarification':
+        slots_needed = parsed.get('slots_needed', [])
+        signature['slots_needed'] = sorted(
+            str(slot).strip()
+            for slot in slots_needed
+            if str(slot).strip()
+        ) if isinstance(slots_needed, list) else []
+    return json.dumps(signature, sort_keys=True, separators=(',', ':'), ensure_ascii=True)
+
+
 @dataclass(slots=True)
 class _RuntimeStats:
     intents_received: int = 0
@@ -94,6 +349,7 @@ class _RuntimeStats:
     dispatched_head_motion: int = 0
     dispatched_look_at: int = 0
     dispatched_fake_skill: int = 0
+    dispatched_kb_mutation: int = 0
     dispatch_failures: int = 0
     last_intent: str = ''
     last_route: str = ''
@@ -107,6 +363,19 @@ class _ActionExecutionResult:
     success: bool
     reason: str = ''
     raw_result: object | None = None
+
+
+@dataclass(slots=True, frozen=True)
+class _ExecutionReportResult:
+    text: str = ''
+    source: str = ''
+
+
+@dataclass(slots=True, frozen=True)
+class _ExecutionJoinDecision:
+    start_index: int
+    join_strategy: str
+    mapped_step_id: str = ''
 
 
 class NaoOrchestrator(Node):
@@ -145,6 +414,10 @@ class NaoOrchestrator(Node):
         self.declare_parameter('fallback_to_joint_angles_topic', True)
         self.declare_parameter('planner_feedback_topic', '/planner/execution_feedback')
         self.declare_parameter('planner_dialogue_act_topic', '/planner/dialogue_act')
+        self.declare_parameter(
+            'planner_dialogue_relay_topic',
+            '/nao_orchestrator/planner_dialogue_act',
+        )
         self.declare_parameter('enable_planner_gate', False)
         self.declare_parameter('planner_gate_request_topic', '/nao_orchestrator/planner_request')
         self.declare_parameter('planner_request_topic', '/planner/request')
@@ -157,14 +430,32 @@ class NaoOrchestrator(Node):
         self.declare_parameter('scan_report_after_success', True)
         self.declare_parameter('fake_skill_wait_sec', 0.2)
         self.declare_parameter('fake_skill_result_timeout_sec', 20.0)
+        self.declare_parameter('perform_motion_execution_mode', 'real')
+        self.declare_parameter('look_at_execution_mode', 'real')
         self.declare_parameter('fake_skill_navigate_to_action', '/skill/fake/navigate_to')
         self.declare_parameter('fake_skill_find_object_action', '/skill/fake/find_object')
+        self.declare_parameter('fake_skill_perform_motion_action', '/skill/fake/perform_motion')
+        self.declare_parameter('fake_skill_look_at_action', '/skill/fake/look_at')
         self.declare_parameter('fake_skill_wave_greet_action', '/skill/fake/wave_greet')
         self.declare_parameter('fake_skill_inspect_area_action', '/skill/fake/inspect_area')
         self.declare_parameter('fake_skill_walk_to_action', '/skill/fake/walk_to')
+        self.declare_parameter('fake_skill_pick_object_action', '/skill/fake/pick_object')
+        self.declare_parameter('fake_skill_place_object_action', '/skill/fake/place_object')
+        self.declare_parameter('fake_skill_bring_object_action', '/skill/fake/bring_object')
         self.declare_parameter('report_result_action', '/skill/report_result')
         self.declare_parameter('report_result_action_wait_sec', 0.2)
         self.declare_parameter('report_result_action_result_timeout_sec', 8.0)
+        self.declare_parameter('execution_report_chatbot_enabled', True)
+        self.declare_parameter(
+            'execution_report_chatbot_service',
+            '/chatbot_llm/dialogue_interaction',
+        )
+        self.declare_parameter('execution_report_chatbot_wait_sec', 0.2)
+        self.declare_parameter('execution_report_chatbot_timeout_sec', 12.0)
+        self.declare_parameter('kb_revise_service_name', '/kb/revise')
+        self.declare_parameter('kb_mutation_timeout_sec', 1.0)
+        self.declare_parameter('kb_query_service_name', '/kb/query')
+        self.declare_parameter('kb_query_timeout_sec', 1.0)
 
         self.intent_topic = str(self.get_parameter('intent_topic').value)
         self.enable_legacy_intent_bridge = bool(
@@ -241,6 +532,9 @@ class NaoOrchestrator(Node):
         self.planner_dialogue_act_topic = str(
             self.get_parameter('planner_dialogue_act_topic').value
         )
+        self.planner_dialogue_relay_topic = str(
+            self.get_parameter('planner_dialogue_relay_topic').value
+        )
         self.enable_planner_gate = bool(self.get_parameter('enable_planner_gate').value)
         self.planner_gate_request_topic = str(
             self.get_parameter('planner_gate_request_topic').value
@@ -274,12 +568,23 @@ class NaoOrchestrator(Node):
             0.1,
             float(self.get_parameter('fake_skill_result_timeout_sec').value),
         )
+        self.perform_motion_execution_mode = _normalize_execution_mode(
+            self.get_parameter('perform_motion_execution_mode').value
+        )
+        self.look_at_execution_mode = _normalize_execution_mode(
+            self.get_parameter('look_at_execution_mode').value
+        )
         self._fake_skill_action_names = {
             'navigate_to': str(self.get_parameter('fake_skill_navigate_to_action').value).strip(),
             'find_object': str(self.get_parameter('fake_skill_find_object_action').value).strip(),
+            'perform_motion': str(self.get_parameter('fake_skill_perform_motion_action').value).strip(),
+            'look_at': str(self.get_parameter('fake_skill_look_at_action').value).strip(),
             'wave_greet': str(self.get_parameter('fake_skill_wave_greet_action').value).strip(),
             'inspect_area': str(self.get_parameter('fake_skill_inspect_area_action').value).strip(),
             'walk_to': str(self.get_parameter('fake_skill_walk_to_action').value).strip(),
+            'pick_object': str(self.get_parameter('fake_skill_pick_object_action').value).strip(),
+            'place_object': str(self.get_parameter('fake_skill_place_object_action').value).strip(),
+            'bring_object': str(self.get_parameter('fake_skill_bring_object_action').value).strip(),
         }
         self.report_result_action = str(
             self.get_parameter('report_result_action').value
@@ -292,6 +597,34 @@ class NaoOrchestrator(Node):
             0.1,
             float(self.get_parameter('report_result_action_result_timeout_sec').value),
         )
+        self.execution_report_chatbot_enabled = bool(
+            self.get_parameter('execution_report_chatbot_enabled').value
+        )
+        self.execution_report_chatbot_service = str(
+            self.get_parameter('execution_report_chatbot_service').value
+        ).strip()
+        self.execution_report_chatbot_wait_sec = max(
+            0.0,
+            float(self.get_parameter('execution_report_chatbot_wait_sec').value),
+        )
+        self.execution_report_chatbot_timeout_sec = max(
+            0.1,
+            float(self.get_parameter('execution_report_chatbot_timeout_sec').value),
+        )
+        self.kb_revise_service_name = str(
+            self.get_parameter('kb_revise_service_name').value
+        ).strip()
+        self.kb_mutation_timeout_sec = max(
+            0.05,
+            float(self.get_parameter('kb_mutation_timeout_sec').value),
+        )
+        self.kb_query_service_name = str(
+            self.get_parameter('kb_query_service_name').value
+        ).strip()
+        self.kb_query_timeout_sec = max(
+            0.05,
+            float(self.get_parameter('kb_query_timeout_sec').value),
+        )
 
         self._intent_sub = None
         self._legacy_intent_sub = None
@@ -303,11 +636,14 @@ class NaoOrchestrator(Node):
         self._planner_feedback_pub = None
         self._planner_gate_sub = None
         self._planner_dialogue_act_sub = None
+        self._planner_dialogue_act_pub = None
         self._planner_request_pub = None
         self._is_active = False
         self._stats = _RuntimeStats()
         self._last_intent_signature = ''
         self._last_intent_ts = 0.0
+        self._relayed_planner_act_signatures: list[str] = []
+        self._relayed_planner_act_signature_set: set[str] = set()
 
         self._say_client = None
         self._replay_motion_client = None
@@ -316,14 +652,22 @@ class NaoOrchestrator(Node):
         self._scan_client = None
         self._fake_skill_clients: dict[str, ActionClient] = {}
         self._report_result_client = None
+        self._execution_report_chatbot_client = None
+        self._execution_report_callback_group = ReentrantCallbackGroup()
+        self._kb_mutation_client = None
+        self._kb_query_client = None
         self._posture_result_lock = threading.Lock()
         self._posture_result_event = threading.Event()
         self._latest_posture_result: dict | None = None
         self._planner_gate = PlannerGate()
+        self._planner_request_context_by_goal: dict[str, dict] = {}
+        self._planner_request_context_order: list[str] = []
         self._scan_skill_names = self._load_scan_skill_names()
         self._fake_skill_aliases = self._load_fake_skill_aliases()
-        self._active_execution_token = ''
+        self._active_execution_goal_id = ''
+        self._active_execution_plan_id = ''
         self._active_execution_plan_version = 0
+        self._active_execution_step_id = ''
         self._execution_lock = threading.Lock()
 
     # -------------------------------------------------------------------------
@@ -333,21 +677,46 @@ class NaoOrchestrator(Node):
     def on_configure(self, _state: State) -> TransitionCallbackReturn:
         """Create action clients, diagnostics, and topic fallbacks."""
         self._destroy_runtime_interfaces()
+        self._relayed_planner_act_signatures.clear()
+        self._relayed_planner_act_signature_set.clear()
         self._say_client = ActionClient(self, Say, self.nao_say_action)
-        self._replay_motion_client = ActionClient(
-            self,
-            ReplayMotion,
-            self.replay_motion_action,
-        )
-        self._head_motion_client = ActionClient(
-            self,
-            DoHeadMotion,
-            self.head_motion_action,
-        )
-        self._look_at_client = ActionClient(self, LookAt, self.look_at_action)
+        if ReplayMotion is not None:
+            self._replay_motion_client = ActionClient(
+                self,
+                ReplayMotion,
+                self.replay_motion_action,
+            )
+        else:
+            self._replay_motion_client = None
+            self.get_logger().warn(
+                'nao_skills ReplayMotion action is unavailable; replay_motion dispatch disabled'
+            )
+        if DoHeadMotion is not None:
+            self._head_motion_client = ActionClient(
+                self,
+                DoHeadMotion,
+                self.head_motion_action,
+            )
+        else:
+            self._head_motion_client = None
+            self.get_logger().warn(
+                'nao_skills DoHeadMotion action is unavailable; head_motion dispatch disabled'
+            )
+        if LookAt is not None:
+            self._look_at_client = ActionClient(self, LookAt, self.look_at_action)
+        else:
+            self._look_at_client = None
+            self.get_logger().warn(
+                'interaction_skills LookAt action is unavailable; real look_at dispatch disabled'
+            )
         if ScanScene is not None:
             self._scan_client = ActionClient(self, ScanScene, self.scan_action)
-            for skill_name in sorted(set(self._fake_skill_aliases.values())):
+            fake_skill_names = set(self._fake_skill_aliases.values())
+            if self.perform_motion_execution_mode == 'fake':
+                fake_skill_names.add('perform_motion')
+            if self.look_at_execution_mode == 'fake':
+                fake_skill_names.add('look_at')
+            for skill_name in sorted(fake_skill_names):
                 action_name = self._fake_skill_action_names.get(
                     skill_name,
                     '/skill/fake/%s' % skill_name,
@@ -368,6 +737,23 @@ class NaoOrchestrator(Node):
             Say,
             self.report_result_action,
         )
+        if self.execution_report_chatbot_enabled and self.execution_report_chatbot_service:
+            self._execution_report_chatbot_client = self.create_client(
+                DialogueInteraction,
+                self.execution_report_chatbot_service,
+                callback_group=self._execution_report_callback_group,
+            )
+        self._kb_mutation_client = KnowledgeCoreMutationClient(
+            node=self,
+            service_name=self.kb_revise_service_name,
+            timeout_sec=self.kb_mutation_timeout_sec,
+        )
+        self._kb_query_client = KnowledgeCoreQueryClient(
+            node=self,
+            callback_group=self._execution_report_callback_group,
+            service_name=self.kb_query_service_name,
+            timeout_sec=self.kb_query_timeout_sec,
+        )
         self._diag_pub = self.create_publisher(DiagnosticArray, '/diagnostics', 1)
         self._diag_timer = self.create_timer(1.0, self._publish_diagnostics)
         self._posture_command_pub = self.create_publisher(
@@ -384,6 +770,11 @@ class NaoOrchestrator(Node):
         self._planner_feedback_pub = self.create_publisher(
             String,
             self.planner_feedback_topic,
+            10,
+        )
+        self._planner_dialogue_act_pub = self.create_publisher(
+            String,
+            self.planner_dialogue_relay_topic,
             10,
         )
         if self.enable_planner_gate:
@@ -403,7 +794,7 @@ class NaoOrchestrator(Node):
                 'JointAnglesWithSpeed unavailable; joint-topic fallback is disabled'
             )
         self.get_logger().info(
-            'nao_orchestrator configured | intents:%s legacy:%s say:%s replay:%s head:%s look:%s scan:%s report:%s fake:%s planner_gate:%s->%s'
+            'nao_orchestrator configured | intents:%s legacy:%s say:%s replay:%s head:%s look:%s scan:%s report:%s fake:%s planner_gate:%s->%s planner_dialogue:%s->%s'
             % (
                 self.intent_topic,
                 self.legacy_intent_topic,
@@ -416,6 +807,8 @@ class NaoOrchestrator(Node):
                 ','.join(sorted(self._fake_skill_clients.keys())) or 'none',
                 self.planner_gate_request_topic if self.enable_planner_gate else 'disabled',
                 self.planner_request_topic,
+                self.planner_dialogue_act_topic,
+                self.planner_dialogue_relay_topic,
             )
         )
         return TransitionCallbackReturn.SUCCESS
@@ -514,9 +907,15 @@ class NaoOrchestrator(Node):
         if self._planner_feedback_pub is not None:
             self.destroy_publisher(self._planner_feedback_pub)
             self._planner_feedback_pub = None
+        if self._planner_dialogue_act_pub is not None:
+            self.destroy_publisher(self._planner_dialogue_act_pub)
+            self._planner_dialogue_act_pub = None
         if self._planner_request_pub is not None:
             self.destroy_publisher(self._planner_request_pub)
             self._planner_request_pub = None
+        if self._execution_report_chatbot_client is not None:
+            self.destroy_client(self._execution_report_chatbot_client)
+            self._execution_report_chatbot_client = None
         for client in (
             self._say_client,
             self._replay_motion_client,
@@ -537,6 +936,12 @@ class NaoOrchestrator(Node):
         self._scan_client = None
         self._fake_skill_clients = {}
         self._report_result_client = None
+        if self._kb_mutation_client is not None:
+            self._kb_mutation_client.close()
+            self._kb_mutation_client = None
+        if self._kb_query_client is not None:
+            self._kb_query_client.close()
+            self._kb_query_client = None
 
     # -------------------------------------------------------------------------
     # Intent ingestion
@@ -576,6 +981,7 @@ class NaoOrchestrator(Node):
         decision = self._planner_gate.decide(msg.data)
         if not decision.accepted:
             self._stats.last_route = 'planner_gate:rejected'
+            self._publish_planner_gate_feedback(decision=decision, status='rejected')
             self.get_logger().warn(
                 'Planner gate rejected request | goal_id=%s kind=%s reason=%s'
                 % (
@@ -586,28 +992,111 @@ class NaoOrchestrator(Node):
             )
             return
 
-        self._planner_request_pub.publish(msg)
+        forward_msg = msg
+        if isinstance(decision.forward_payload, dict):
+            forward_msg = Intent()
+            forward_msg.intent = msg.intent
+            forward_msg.source = msg.source
+            forward_msg.modality = msg.modality
+            forward_msg.confidence = msg.confidence
+            forward_msg.priority = msg.priority
+            forward_msg.person_id = msg.person_id
+            forward_msg.intent_type = msg.intent_type
+            forward_msg.data = json.dumps(
+                decision.forward_payload,
+                separators=(',', ':'),
+                ensure_ascii=True,
+            )
+
+        self._planner_request_pub.publish(forward_msg)
+        self._remember_planner_request_context(
+            decision.request.goal_id,
+            decision.forward_payload if isinstance(decision.forward_payload, dict) else msg.data,
+        )
         self._stats.last_route = 'planner_gate:forwarded'
+        if decision.reason:
+            self._publish_planner_gate_feedback(decision=decision, status='accepted')
         self.get_logger().info(
-            'Planner gate forwarded request | goal_id=%s kind=%s active_goal=%s active_token=%s topic=%s'
+            'Planner gate forwarded request | goal_id=%s kind=%s reason=%s active_goal=%s active_plan=%s topic=%s'
             % (
                 decision.request.goal_id,
                 decision.request.request_kind,
+                decision.reason or '-',
                 self._planner_gate.active_goal_id or '-',
-                self._planner_gate.active_goal_token or '-',
+                self._planner_gate.active_plan_id or '-',
                 self.planner_request_topic,
             )
         )
 
+    def _publish_planner_gate_feedback(self, *, decision, status: str) -> None:
+        if self._planner_feedback_pub is None:
+            return
+        request = decision.request
+        payload = {
+            'goal_id': request.goal_id,
+            'plan_id': 'planner_gate',
+            'plan_version': 0,
+            'event_type': 'planner_gate_%s' % str(status).strip().lower(),
+            'status': str(status).strip().lower(),
+            'intent': 'planner_request',
+            'source': 'nao_orchestrator',
+            'reason': str(decision.reason or '').strip(),
+            'request_kind': request.request_kind,
+            'supersedes_goal_id': request.supersedes_goal_id,
+            'goal_text': request.goal_text,
+            'timestamp_sec': round(time.time(), 3),
+        }
+        msg = String()
+        msg.data = json.dumps(payload, sort_keys=True, separators=(',', ':'))
+        self._planner_feedback_pub.publish(msg)
+
     def _on_planner_dialogue_act(self, msg: String) -> None:
-        """Observe non-speaking planner acts so gate state clears on planner failure."""
-        before = self._planner_gate.active_goal_id
-        self._planner_gate.observe_dialogue_act(msg.data)
-        after = self._planner_gate.active_goal_id
-        if before and not after:
+        """Observe and relay planner acts through orchestrator-owned topic seam."""
+        payload = parse_json_object(msg.data)
+        act = str(payload.get('act', '')).strip().lower()
+        if act == 'acknowledge':
+            self._stats.duplicates_ignored += 1
             self.get_logger().info(
-                'Planner gate cleared by planner dialogue act | goal_id=%s' % before
+                'Suppressed contract-violating planner acknowledge; '
+                'chatbot owns immediate acknowledgement'
             )
+            return
+
+        signature = _planner_dialogue_act_signature(msg.data)
+        if signature in self._relayed_planner_act_signature_set:
+            self._stats.duplicates_ignored += 1
+            self.get_logger().warn('Ignored duplicate planner dialogue act')
+            return
+        self._remember_relayed_planner_act(signature)
+
+        active_goal_before = self._planner_gate.active_goal_id
+        self._planner_gate.observe_dialogue_act(msg.data)
+        active_goal_after = self._planner_gate.active_goal_id
+        if active_goal_before and not active_goal_after:
+            self.get_logger().info(
+                'Planner gate cleared by planner dialogue act | goal_id=%s'
+                % active_goal_before
+            )
+        self._relay_planner_dialogue_act(msg.data)
+
+    def _relay_planner_dialogue_act(self, payload: str) -> None:
+        """Publish planner dialogue acts on the orchestrator-owned relay topic."""
+        if self._planner_dialogue_act_pub is None:
+            return
+        relay_msg = String()
+        relay_msg.data = payload
+        self._planner_dialogue_act_pub.publish(relay_msg)
+
+    def _remember_relayed_planner_act(self, signature: str) -> None:
+        """Bound the exact planner-act relay ledger while preserving recent history."""
+        if not signature:
+            return
+        self._relayed_planner_act_signatures.append(signature)
+        self._relayed_planner_act_signature_set.add(signature)
+        if len(self._relayed_planner_act_signatures) <= _MAX_RELAYED_PLANNER_ACTS:
+            return
+        expired = self._relayed_planner_act_signatures.pop(0)
+        self._relayed_planner_act_signature_set.discard(expired)
 
     def _handle_intent(self, intent_name: str, data: dict, source: str) -> None:
         """Route one normalized intent through planned or legacy dispatch paths."""
@@ -696,9 +1185,23 @@ class NaoOrchestrator(Node):
         source: str,
     ) -> bool:
         plan_id = self._resolve_plan_id(plan_context)
-        plan_token = self._resolve_plan_token(plan_context)
+        goal_id = str(plan_context.get('goal_id', '')).strip()
         plan_version = self._plan_version_from_context(plan_context)
-        self._claim_execution_plan(plan_token, plan_version)
+        if self._is_exact_execution_plan_active(goal_id, plan_id, plan_version):
+            self._stats.duplicates_ignored += 1
+            self._stats.last_route = 'ignored:duplicate_plan'
+            self.get_logger().warn(
+                'Ignored duplicate planned intent | intent=%s source=%s plan_id=%s version=%s'
+                % (intent_name, source, plan_id, plan_version)
+            )
+            return True
+        join_decision = self._claim_execution_plan(
+            goal_id=goal_id,
+            plan_id=plan_id,
+            plan_version=plan_version,
+            plan=plan,
+        )
+        execution_plan = list(plan[join_decision.start_index :])
         self._stats.plans_started += 1
         self._stats.last_plan_id = plan_id
 
@@ -722,7 +1225,11 @@ class NaoOrchestrator(Node):
                 'Planned intent validation failed | intent=%s source=%s plan_id=%s errors=%s'
                 % (intent_name, source, plan_id, plan_context['errors'])
             )
-            self._finalize_execution_plan(plan_token, plan_version)
+            self._finalize_execution_plan(
+                goal_id=goal_id,
+                plan_id=plan_id,
+                plan_version=plan_version,
+            )
             return False
 
         self._publish_plan_feedback(
@@ -744,17 +1251,40 @@ class NaoOrchestrator(Node):
             target=self._execute_planned_intent,
             kwargs={
                 'intent_name': intent_name,
-                'data': dict(data),
-                'plan': list(plan),
+                'data': self._execution_context_for_goal(goal_id, data),
+                'plan': execution_plan,
                 'plan_context': dict(plan_context),
                 'source': source,
-                'plan_token': plan_token,
+                'goal_id': goal_id,
+                'plan_id': plan_id,
                 'plan_version': plan_version,
+                'join_strategy': join_decision.join_strategy,
+                'mapped_step_id': join_decision.mapped_step_id,
             },
             daemon=True,
         )
         worker.start()
         return True
+
+    def _remember_planner_request_context(self, goal_id: str, payload) -> None:
+        """Retain admitted request evidence for execution reports and replans."""
+        clean_goal_id = str(goal_id or '').strip()
+        request_context = parse_json_object(payload)
+        if not clean_goal_id or not request_context:
+            return
+        if clean_goal_id in self._planner_request_context_by_goal:
+            self._planner_request_context_order.remove(clean_goal_id)
+        self._planner_request_context_by_goal[clean_goal_id] = request_context
+        self._planner_request_context_order.append(clean_goal_id)
+        while len(self._planner_request_context_order) > _MAX_PLANNER_REQUEST_CONTEXTS:
+            expired_goal_id = self._planner_request_context_order.pop(0)
+            self._planner_request_context_by_goal.pop(expired_goal_id, None)
+
+    def _execution_context_for_goal(self, goal_id: str, plan_data: dict) -> dict:
+        """Merge the admitted request context with the validated planner output."""
+        context = dict(self._planner_request_context_by_goal.get(str(goal_id).strip(), {}))
+        context.update(dict(plan_data or {}))
+        return context
 
     def _maybe_dispatch_acknowledgement(
         self,
@@ -777,17 +1307,32 @@ class NaoOrchestrator(Node):
         plan: list[dict],
         plan_context: dict,
         source: str,
-        plan_token: str,
+        goal_id: str,
+        plan_id: str,
         plan_version: int,
+        join_strategy: str,
+        mapped_step_id: str,
     ) -> None:
         """Execute a validated plan in a background worker so action results can be awaited."""
-        plan_id = self._resolve_plan_id(plan_context)
         executed_any = False
         latest_result_summary = ''
         latest_result_payload: dict = {}
+        execution_results: list[dict] = []
+        self.get_logger().info(
+            'Executing plan worker | goal_id=%s plan_id=%s version=%s join=%s mapped_step=%s steps=%d'
+            % (
+                goal_id or '-',
+                plan_id or '-',
+                plan_version,
+                join_strategy,
+                mapped_step_id or '-',
+                len(plan),
+            )
+        )
 
-        for step in plan:
-            if not self._is_execution_plan_active(plan_token, plan_version):
+        for step_index, step in enumerate(plan):
+            self._set_active_execution_step(step)
+            if not self._is_execution_plan_active(goal_id, plan_id, plan_version):
                 self._publish_plan_feedback(
                     intent_name=intent_name,
                     source=source,
@@ -796,10 +1341,14 @@ class NaoOrchestrator(Node):
                     event_type='plan_cancelled',
                     reason='superseded by a newer planner goal',
                 )
-                self._finalize_execution_plan(plan_token, plan_version)
+                self._finalize_execution_plan(
+                    goal_id=goal_id,
+                    plan_id=plan_id,
+                    plan_version=plan_version,
+                )
                 self.get_logger().info(
-                    'Stopped stale plan worker | plan_id=%s token=%s version=%s'
-                    % (plan_id, plan_token or '-', plan_version)
+                    'Stopped stale plan worker | plan_id=%s version=%s'
+                    % (plan_id, plan_version)
                 )
                 return
             step_started = False
@@ -819,20 +1368,41 @@ class NaoOrchestrator(Node):
                 )
 
             dispatch_fallback_data = dict(data)
+            dispatch_fallback_data['plan_context'] = dict(plan_context)
+            dispatch_fallback_data['current_step_index'] = step_index
+            dispatch_fallback_data['plan_steps'] = list(plan)
             if latest_result_summary:
                 dispatch_fallback_data['last_result_summary'] = latest_result_summary
             if latest_result_payload:
                 dispatch_fallback_data['last_result_payload'] = dict(latest_result_payload)
+            if execution_results:
+                dispatch_fallback_data['execution_results'] = list(execution_results)
 
             step_ok, reason, result_payload = self._dispatch_plan_step(
                 step,
                 fallback_data=dispatch_fallback_data,
+                plan=plan,
+                step_index=step_index,
                 on_started=_mark_step_started,
             )
             if step_ok:
                 executed_any = True
-                latest_result_summary = str(reason or '').strip()
                 latest_result_payload = dict(result_payload or {})
+                latest_result_summary = _first_non_empty_value(
+                    latest_result_payload,
+                    'summary_text',
+                    'result_summary',
+                    'message',
+                ) or str(reason or '').strip()
+                execution_results.append(
+                    _execution_step_record(
+                        step,
+                        status='succeeded',
+                        reason=reason,
+                        result_summary=latest_result_summary,
+                        result_payload=latest_result_payload,
+                    )
+                )
                 if not step_started:
                     _mark_step_started()
                 self._publish_plan_feedback(
@@ -848,6 +1418,27 @@ class NaoOrchestrator(Node):
                 continue
 
             failure_policy = str(step.get('on_failure', 'fail')).strip().lower()
+            step_name = str(step.get('name', '')).strip().lower()
+            failure_result_payload = dict(result_payload or {})
+            execution_results.append(
+                _execution_step_record(
+                    step,
+                    status='failed',
+                    reason=reason,
+                    result_summary=_first_non_empty_value(
+                        failure_result_payload,
+                        'summary_text',
+                        'result_summary',
+                        'message',
+                    ) or str(reason or '').strip(),
+                    result_payload=failure_result_payload,
+                )
+            )
+            if step_name in _ASK_USER_STEP_NAMES and failure_policy not in (
+                'ask_user',
+                'clarify',
+            ):
+                failure_policy = 'ask_user'
             if failure_policy == 'continue':
                 self._publish_plan_feedback(
                     intent_name=intent_name,
@@ -858,7 +1449,7 @@ class NaoOrchestrator(Node):
                     reason=reason,
                     step=step,
                     blocking=False,
-                    unmet_preconditions=list(step.get('requires', [])),
+                    unmet_preconditions=[],
                     needs_user_input=False,
                 )
                 self.get_logger().warn(
@@ -885,17 +1476,24 @@ class NaoOrchestrator(Node):
                 reason=reason,
                 step=step,
                 blocking=True,
-                unmet_preconditions=list(step.get('requires', [])),
-                needs_user_input=str(step.get('on_failure', '')).strip().lower() in (
-                    'ask_user',
-                    'clarify',
+                # `requires` enumerates declared dependencies, not unmet runtime
+                # preconditions. Publishing it here makes supervisor treat any
+                # retryable step failure as blocked/clarification.
+                unmet_preconditions=[],
+                needs_user_input=(
+                    failure_policy in ('ask_user', 'clarify')
+                    or step_name in _ASK_USER_STEP_NAMES
                 ),
             )
             self.get_logger().warn(
                 'Planned intent step failed | intent=%s source=%s plan_id=%s step=%s reason=%s'
                 % (intent_name, source, plan_id, step, reason)
             )
-            self._finalize_execution_plan(plan_token, plan_version)
+            self._finalize_execution_plan(
+                goal_id=goal_id,
+                plan_id=plan_id,
+                plan_version=plan_version,
+            )
             return
 
         if executed_any:
@@ -911,7 +1509,11 @@ class NaoOrchestrator(Node):
                 result_summary=latest_result_summary,
                 result_payload=latest_result_payload,
             )
-            self._finalize_execution_plan(plan_token, plan_version)
+            self._finalize_execution_plan(
+                goal_id=goal_id,
+                plan_id=plan_id,
+                plan_version=plan_version,
+            )
             return
 
         self._stats.plans_failed += 1
@@ -925,13 +1527,19 @@ class NaoOrchestrator(Node):
             reason='plan contained no executable steps',
             blocking=True,
         )
-        self._finalize_execution_plan(plan_token, plan_version)
+        self._finalize_execution_plan(
+            goal_id=goal_id,
+            plan_id=plan_id,
+            plan_version=plan_version,
+        )
 
     def _dispatch_plan_step(
         self,
         step: dict,
         fallback_data: dict,
         *,
+        plan: list[dict] | None = None,
+        step_index: int = 0,
         on_started=None,
     ) -> tuple[bool, str, dict]:
         """Execute one step from the optional structured `Intent.data.plan`."""
@@ -962,11 +1570,11 @@ class NaoOrchestrator(Node):
 
         if step_type == 'skill':
             if step_name in ('perform_motion', 'motion', ''):
-                success, reason = self._execute_motion_plan_step(
+                success, reason, payload = self._execute_motion_plan_step(
                     step_args,
                     on_started=on_started,
                 )
-                return success, reason, {}
+                return success, reason, payload
             if step_name == 'look_at':
                 success, reason = self._dispatch_planned_look_at(
                     step_name,
@@ -974,8 +1582,20 @@ class NaoOrchestrator(Node):
                     on_started=on_started,
                 )
                 return success, reason, {}
+            if step_name in _KB_MUTATION_OPERATIONS:
+                return self._execute_kb_mutation_step(
+                    step_name,
+                    step_args,
+                    on_started=on_started,
+                )
             if step_name == 'report_result':
                 return self._execute_report_result_step(
+                    step_args,
+                    fallback_data,
+                    on_started=on_started,
+                )
+            if step_name in _ASK_USER_STEP_NAMES:
+                return self._execute_ask_user_step(
                     step_args,
                     fallback_data,
                     on_started=on_started,
@@ -983,6 +1603,10 @@ class NaoOrchestrator(Node):
             if step_name in self._scan_skill_names:
                 return self._execute_scan_step(
                     step_args,
+                    should_auto_report=scan_step_should_auto_report(
+                        plan=plan,
+                        step_index=step_index,
+                    ),
                     on_started=on_started,
                 )
             fake_skill_name = self._resolve_fake_skill_name(step_name)
@@ -997,6 +1621,173 @@ class NaoOrchestrator(Node):
         self.get_logger().warn('Unsupported planned step: %s' % step)
         return False, 'unsupported planned step', {}
 
+    def _execute_kb_mutation_step(
+        self,
+        step_name: str,
+        step_args: dict,
+        *,
+        on_started=None,
+    ) -> tuple[bool, str, dict]:
+        """Delegate one explicit planner mutation to the KnowledgeCore seam."""
+        statements = step_args.get('statements', step_args.get('statement', []))
+        statements = KnowledgeCoreMutationClient.coerce_statements(statements)
+        models = step_args.get('models', [])
+        if isinstance(models, str):
+            models = [models]
+        if on_started is not None:
+            on_started()
+        if self._kb_mutation_client is None:
+            self._stats.dispatch_failures += 1
+            return False, 'KnowledgeCore mutation client is unavailable', {}
+
+        if step_name == 'kb_revise':
+            removed, reason = self._remove_previous_kb_values(statements, models)
+            if reason:
+                self._stats.dispatch_failures += 1
+                return False, reason, {
+                    'skill': step_name,
+                    'operation': 'remove_previous_values',
+                    'statement_count': len(removed),
+                    'dispatched': bool(removed),
+                    'success': False,
+                }
+        elif step_name == 'kb_remove':
+            statements = self._expand_kb_remove_statements(statements, models)
+            if not statements:
+                self._stats.dispatch_failures += 1
+                return False, 'KnowledgeCore remove found no matching facts', {
+                    'skill': step_name,
+                    'operation': 'remove',
+                    'statement_count': 0,
+                    'dispatched': False,
+                    'success': False,
+                }
+
+        result = self._kb_mutation_client.mutate(
+            operation=_KB_MUTATION_OPERATIONS[step_name],
+            statements=statements,
+            models=models if isinstance(models, list) else [],
+            lifespan_sec=step_args.get('lifespan_sec', 0.0),
+            wait_for_result=True,
+        )
+        payload = {
+            'skill': step_name,
+            'operation': result.operation,
+            'statement_count': result.statement_count,
+            'dispatched': result.dispatched,
+            'success': result.success,
+        }
+        if result.success:
+            if step_name == 'kb_remove':
+                remaining = self._query_remaining_kb_remove_facts(statements, models)
+                if remaining:
+                    self._stats.dispatch_failures += 1
+                    payload['success'] = False
+                    payload['remaining_statements'] = remaining
+                    return (
+                        False,
+                        'KnowledgeCore remove post-condition failed',
+                        payload,
+                    )
+            self._stats.dispatched_kb_mutation += 1
+            return True, 'KnowledgeCore mutation completed', payload
+        self._stats.dispatch_failures += 1
+        payload['error_msg'] = result.error_msg
+        return False, result.error_msg or 'KnowledgeCore mutation failed', payload
+
+    def _remove_previous_kb_values(
+        self,
+        statements: list[str],
+        models: list[str],
+    ) -> tuple[list[str], str]:
+        """Retract existing subject/predicate values before a KB revise update."""
+        if self._kb_query_client is None or self._kb_mutation_client is None:
+            return [], ''
+        removals: list[str] = []
+        query_models = models if isinstance(models, list) and models else ['default']
+        for statement in statements:
+            subject, predicate, new_object = _statement_parts(statement)
+            if not subject or not predicate or not new_object:
+                continue
+            rows = self._kb_query_client.query_rows(
+                patterns=['%s %s ?object' % (subject, predicate)],
+                query_vars=['?object'],
+                models=query_models,
+            )
+            removals.extend(
+                _statement_from_binding(subject, predicate, row)
+                for row in rows
+                if _binding_value(row, 'object') != new_object
+            )
+        removals = _dedupe_statements(removals)
+        if not removals:
+            return [], ''
+        result = self._kb_mutation_client.mutate(
+            operation='remove',
+            statements=removals,
+            models=models if isinstance(models, list) else [],
+            wait_for_result=True,
+        )
+        if result.success:
+            return removals, ''
+        return removals, result.error_msg or 'KnowledgeCore previous-value removal failed'
+
+    def _expand_kb_remove_statements(
+        self,
+        statements: list[str],
+        models: list[str],
+    ) -> list[str]:
+        """Expand entity-only remove requests into current concrete KB facts."""
+        if self._kb_query_client is None:
+            return statements
+        expanded: list[str] = []
+        query_models = models if isinstance(models, list) and models else ['default']
+        for statement in statements:
+            subject = _kb_remove_subject_alias(statement)
+            if not subject:
+                subject, predicate, obj = _statement_parts(statement)
+                if subject and predicate and obj:
+                    expanded.append(statement)
+                    continue
+                expanded.append(statement)
+                continue
+            rows = self._kb_query_client.query_rows(
+                patterns=['%s ?predicate ?object' % subject],
+                query_vars=['?predicate', '?object'],
+                models=query_models,
+            )
+            expanded.extend(
+                _statement_from_binding(subject, _binding_value(row, 'predicate'), row)
+                for row in rows
+            )
+        return _dedupe_statements(expanded)
+
+    def _query_remaining_kb_remove_facts(
+        self,
+        statements: list[str],
+        models: list[str],
+    ) -> list[str]:
+        """Return removed facts that still resolve after a successful retract."""
+        if self._kb_query_client is None:
+            return []
+        remaining: list[str] = []
+        query_models = models if isinstance(models, list) and models else ['default']
+        for statement in statements:
+            subject, predicate, obj = _statement_parts(statement)
+            if not subject or not predicate or not obj:
+                continue
+            rows = self._kb_query_client.query_rows(
+                patterns=['%s %s ?object' % (subject, predicate)],
+                query_vars=['?object'],
+                models=query_models,
+            )
+            remaining.extend(
+                _statement_from_binding(subject, predicate, row)
+                for row in rows
+                if _binding_value(row, 'object') == obj
+            )
+        return _dedupe_statements(remaining)
+
     def _dispatch_planned_look_at(
         self,
         step_name: str,
@@ -1005,6 +1796,17 @@ class NaoOrchestrator(Node):
         on_started=None,
     ) -> tuple[bool, str]:
         """Map a planned look-at step onto reset or target-frame dispatch."""
+        if self.look_at_execution_mode == 'fake':
+            success, reason, _payload = self._execute_fake_skill_step(
+                'look_at',
+                dict(step_args or {}),
+                on_started=on_started,
+            )
+            if success:
+                self._stats.dispatched_look_at += 1
+                return True, ''
+            return False, reason or 'fake look_at dispatch failed'
+
         policy = str(
             step_args.get('policy', step_args.get('object', step_name))
         ).strip().lower()
@@ -1014,16 +1816,34 @@ class NaoOrchestrator(Node):
                 self._stats.dispatched_look_at += 1
                 return True, ''
             return False, reason or 'look_at reset dispatch failed'
+        if policy in ('random', 'social', 'auto'):
+            success, reason = self._execute_look_at_policy_step(
+                policy=policy,
+                on_started=on_started,
+            )
+            if success:
+                self._stats.dispatched_look_at += 1
+                return True, ''
+            return False, reason or 'look_at policy dispatch failed'
         target_frame = str(
-            step_args.get('target_frame', step_args.get('frame_id', ''))
+            step_args.get(
+                'target_frame',
+                step_args.get(
+                    'frame_id',
+                    step_args.get(
+                        'target',
+                        step_args.get('entity_id', ''),
+                    ),
+                ),
+            )
         ).strip()
         if not target_frame:
             self._stats.dispatch_failures += 1
             self.get_logger().warn(
-                'Planned look_at step is missing a target frame or reset policy: %s'
+                'Planned look_at step is missing a target frame or supported policy: %s'
                 % step_args
             )
-            return False, 'look_at step missing target frame or reset policy'
+            return False, 'look_at step missing target frame or supported policy'
 
         success, reason = self._execute_look_at_target_step(
             frame_id=target_frame,
@@ -1112,34 +1932,7 @@ class NaoOrchestrator(Node):
         *,
         on_started=None,
     ) -> tuple[bool, str, dict]:
-        report_text = _first_non_empty_value(
-            step_args,
-            'summary_text',
-            'result_summary',
-            'text',
-            'message',
-            'utterance',
-            'content',
-            'suggested_response',
-            'text_hint',
-            'object',
-        )
-        if not report_text:
-            report_text = _first_non_empty_value(
-                fallback_data,
-                'last_result_summary',
-                'result_summary',
-                'summary_text',
-            )
-        if not report_text:
-            last_result_payload = fallback_data.get('last_result_payload', {})
-            if isinstance(last_result_payload, dict):
-                report_text = _first_non_empty_value(
-                    last_result_payload,
-                    'summary_text',
-                    'result_summary',
-                    'message',
-                )
+        report_text = self._resolve_report_result_text(step_args, fallback_data)
         if not report_text:
             self._stats.dispatch_failures += 1
             return False, 'report_result step missing summary text', {
@@ -1174,12 +1967,228 @@ class NaoOrchestrator(Node):
             return True, report_text, payload
         return False, reason or 'report_result action failed', payload
 
+    def _resolve_report_result_text(self, step_args: dict, fallback_data: dict) -> str:
+        explicit_text = _first_non_empty_value(
+            step_args,
+            'summary_text',
+            'result_summary',
+            'text',
+            'message',
+            'utterance',
+            'content',
+            'suggested_response',
+            'text_hint',
+            'object',
+        )
+        report_context = self._execution_report_context(fallback_data)
+        if explicit_text and not is_unresolved_report_template(explicit_text):
+            report_context['requested_summary'] = explicit_text
+        chatbot_result = self._request_execution_report_text(report_context)
+        if chatbot_result.text:
+            self.get_logger().info(
+                'Resolved report_result text via %s' % chatbot_result.source
+            )
+            return chatbot_result.text
+
+        if explicit_text and not is_unresolved_report_template(explicit_text):
+            return explicit_text
+
+        chain_text = _report_text_from_execution_results(report_context.get('steps', []))
+        if chain_text:
+            return chain_text
+
+        fallback_text = _first_non_empty_value(
+            fallback_data,
+            'last_result_summary',
+            'result_summary',
+            'summary_text',
+        )
+        if fallback_text and not is_unresolved_report_template(fallback_text):
+            return fallback_text
+        return _report_text_from_result_payload(fallback_data.get('last_result_payload', {}))
+
+    def _execution_report_context(self, fallback_data: dict) -> dict:
+        plan_context = fallback_data.get('plan_context', {})
+        if not isinstance(plan_context, dict):
+            plan_context = {}
+        execution_results = fallback_data.get('execution_results', [])
+        if not isinstance(execution_results, list):
+            execution_results = []
+        plan_steps = fallback_data.get('plan_steps', [])
+        if not isinstance(plan_steps, list):
+            plan_steps = []
+        current_step_index = int(fallback_data.get('current_step_index', -1) or -1)
+        bounded_steps = [
+            dict(step) for step in execution_results[-_MAX_EXECUTION_REPORT_STEPS:]
+            if isinstance(step, dict)
+        ]
+        future_steps = [
+            dict(step)
+            for step in plan_steps[current_step_index + 1:]
+            if isinstance(step, dict)
+        ] if current_step_index >= 0 else []
+        future_action_steps = [
+            step for step in future_steps
+            if str(step.get('name', '')).strip().lower() != 'report_result'
+        ]
+        report_role = 'intermediate' if future_action_steps else 'final'
+        return {
+            'goal_text': _first_non_empty_value(
+                fallback_data,
+                'goal_text',
+                'goal',
+                'task',
+                'raw_input',
+                'text',
+            ),
+            'requested_intents': [
+                str(item).strip()
+                for item in fallback_data.get('normalized_intents', [])
+                if str(item).strip()
+            ] if isinstance(fallback_data.get('normalized_intents', []), list) else [],
+            'dialogue_context': [
+                str(item).strip()
+                for item in fallback_data.get('dialogue_context', [])
+                if str(item).strip()
+            ][-_MAX_EXECUTION_REPORT_STEPS:]
+            if isinstance(fallback_data.get('dialogue_context', []), list)
+            else [],
+            'scene_targets': list(plan_context.get('scene_targets', []))
+            if isinstance(plan_context.get('scene_targets', []), list)
+            else [],
+            'grounded_context': dict(
+                fallback_data.get('grounded_context', {})
+                if isinstance(fallback_data.get('grounded_context', {}), dict)
+                else {}
+            ),
+            'plan_id': str(plan_context.get('plan_id', '')).strip(),
+            'plan_version': int(plan_context.get('plan_version', 0) or 0),
+            'report_role': report_role,
+            'future_steps': future_steps[-_MAX_EXECUTION_REPORT_STEPS:],
+            'steps': bounded_steps,
+            'latest_result_summary': str(fallback_data.get('last_result_summary', '')).strip(),
+            'latest_result_payload': dict(
+                fallback_data.get('last_result_payload', {})
+                if isinstance(fallback_data.get('last_result_payload', {}), dict)
+                else {}
+            ),
+        }
+
+    def _request_execution_report_text(self, report_context: dict) -> _ExecutionReportResult:
+        if not self.execution_report_chatbot_enabled:
+            return _ExecutionReportResult(source='disabled')
+        if self._execution_report_chatbot_client is None:
+            return _ExecutionReportResult(source='unavailable')
+        if not self._execution_report_chatbot_client.wait_for_service(
+            timeout_sec=self.execution_report_chatbot_wait_sec
+        ):
+            return _ExecutionReportResult(source='unavailable')
+
+        request = DialogueInteraction.Request()
+        request.dialogue_id = UUIDMsg(uuid=[0] * 16)
+        request.role = DialogueRole(name='__default__')
+        request.summary = ''
+        request.history = [
+            Utterance(
+                speaker=Utterance.SYSTEM,
+                text=json.dumps(
+                    {'execution_report': report_context},
+                    sort_keys=True,
+                    separators=(',', ':'),
+                ),
+                timestamp=round(time.time(), 3),
+            )
+        ]
+
+        done_event = threading.Event()
+        result = {'response': None, 'error': ''}
+
+        def _on_done(future) -> None:
+            try:
+                result['response'] = future.result()
+            except Exception as err:  # pragma: no cover - ROS transport failure
+                result['error'] = str(err)
+            finally:
+                done_event.set()
+
+        future = self._execution_report_chatbot_client.call_async(request)
+        future.add_done_callback(_on_done)
+        if not done_event.wait(timeout=self.execution_report_chatbot_timeout_sec):
+            return _ExecutionReportResult(source='timeout')
+        response = result.get('response')
+        if response is None:
+            if result.get('error'):
+                self.get_logger().warn(
+                    'Execution report chatbot request failed: %s' % result['error']
+                )
+            return _ExecutionReportResult(source='failed')
+        error_msg = str(getattr(response, 'error_msg', '') or '').strip()
+        if error_msg:
+            self.get_logger().warn('Execution report chatbot returned error: %s' % error_msg)
+            return _ExecutionReportResult(source='failed')
+        text = str(getattr(response, 'response', '') or '').strip()
+        if _looks_like_machine_payload(text):
+            return _ExecutionReportResult(source='unsafe')
+        return _ExecutionReportResult(text=text, source='chatbot')
+
+    def _execute_ask_user_step(
+        self,
+        step_args: dict,
+        fallback_data: dict,
+        *,
+        on_started=None,
+    ) -> tuple[bool, str, dict]:
+        _ = fallback_data
+        if on_started is not None:
+            on_started()
+        prompt_text = _first_non_empty_value(
+            step_args,
+            'question',
+            'text',
+            'summary_text',
+            'text_hint',
+            'message',
+            'utterance',
+            'object',
+            'reason',
+        )
+        slots_needed = [
+            str(item).strip()
+            for item in list(step_args.get('slots_needed', []))
+            if str(item).strip()
+        ]
+        if not prompt_text and slots_needed:
+            prompt_text = 'I need a bit more detail about %s before I continue.' % ', '.join(
+                slots_needed
+            )
+        if not prompt_text:
+            prompt_text = 'I need a bit more detail before I continue.'
+
+        payload = {
+            'skill': 'ask_user',
+            'status': 'awaiting_user',
+            'await_user_response': True,
+            'prompt_text': prompt_text,
+            'slots_needed': slots_needed,
+        }
+        return False, prompt_text, payload
+
     def _execute_motion_plan_step(
         self,
         step_args: dict,
         *,
         on_started=None,
-    ) -> tuple[bool, str]:
+    ) -> tuple[bool, str, dict]:
+        if self.perform_motion_execution_mode == 'fake':
+            success, reason, payload = self._execute_fake_skill_step(
+                'perform_motion',
+                dict(step_args or {}),
+                on_started=on_started,
+            )
+            if success:
+                return True, reason, payload
+            return False, reason or 'fake perform_motion dispatch failed', payload
+
         route, resolved_payload = classify_motion_target(Intent.PERFORM_MOTION, step_args)
         if route == 'replay_motion':
             motion_name = resolved_payload['motion_name']
@@ -1189,8 +2198,9 @@ class NaoOrchestrator(Node):
             )
             if success:
                 self._stats.dispatched_replay_motion += 1
-                return True, ''
-            return False, reason or 'motion dispatch failed'
+                payload = _motion_result_payload(route, step_args, resolved_payload)
+                return True, payload['summary_text'], payload
+            return False, reason or 'motion dispatch failed', {}
 
         if route == 'head_motion':
             success, reason = self._execute_head_motion_step(
@@ -1199,8 +2209,9 @@ class NaoOrchestrator(Node):
             )
             if success:
                 self._stats.dispatched_head_motion += 1
-                return True, ''
-            return False, reason or 'motion dispatch failed'
+                payload = _motion_result_payload(route, step_args, resolved_payload)
+                return True, payload['summary_text'], payload
+            return False, reason or 'motion dispatch failed', {}
 
         if route == 'look_at_reset':
             success, reason = self._execute_look_at_reset_step(
@@ -1208,17 +2219,19 @@ class NaoOrchestrator(Node):
             )
             if success:
                 self._stats.dispatched_look_at += 1
-                return True, ''
-            return False, reason or 'look_at reset dispatch failed'
+                payload = _motion_result_payload(route, step_args, resolved_payload)
+                return True, payload['summary_text'], payload
+            return False, reason or 'look_at reset dispatch failed', {}
 
         self._stats.dispatch_failures += 1
         self.get_logger().warn('Unsupported motion payload: %s' % step_args)
-        return False, 'unsupported motion payload'
+        return False, 'unsupported motion payload', {}
 
     def _execute_scan_step(
         self,
         step_args: dict,
         *,
+        should_auto_report: bool = True,
         on_started=None,
     ) -> tuple[bool, str, dict]:
         if on_started is not None:
@@ -1227,9 +2240,17 @@ class NaoOrchestrator(Node):
         if self._scan_client is None or ScanScene is None:
             self._stats.dispatch_failures += 1
             return False, 'scan action client unavailable', {}
-        return self._execute_scan_action_step(step_args)
+        return self._execute_scan_action_step(
+            step_args,
+            should_auto_report=should_auto_report,
+        )
 
-    def _execute_scan_action_step(self, step_args: dict) -> tuple[bool, str, dict]:
+    def _execute_scan_action_step(
+        self,
+        step_args: dict,
+        *,
+        should_auto_report: bool = True,
+    ) -> tuple[bool, str, dict]:
         scan_args = self._scan_args_from_step(step_args)
         goal = ScanScene.Goal()
         goal.target = str(scan_args.get('target', '')).strip()
@@ -1251,7 +2272,7 @@ class NaoOrchestrator(Node):
         if not result.success:
             return False, result.reason or summary_text or 'scan action failed', payload
 
-        if self.scan_report_after_success and summary_text:
+        if self.scan_report_after_success and should_auto_report and summary_text:
             speech_ok, speech_reason = self._execute_say_plan_step({'text': summary_text}, {})
             if not speech_ok:
                 return False, speech_reason, payload
@@ -1424,6 +2445,8 @@ class NaoOrchestrator(Node):
         if not clean_motion:
             self._stats.dispatch_failures += 1
             return False, 'replay motion dispatch failed: empty motion name'
+        if ReplayMotion is None:
+            return False, 'replay motion dispatch failed: nao_skills ReplayMotion action unavailable'
         goal = ReplayMotion.Goal()
         goal.motion_name = clean_motion
         goal.speed = float(self.replay_motion_speed)
@@ -1462,6 +2485,8 @@ class NaoOrchestrator(Node):
         yaw = float(payload.get('yaw', 0.0))
         pitch = float(payload.get('pitch', 0.0))
         relative = bool(payload.get('relative', False))
+        if DoHeadMotion is None:
+            return False, 'head motion dispatch failed: nao_skills DoHeadMotion action unavailable'
         goal = DoHeadMotion.Goal()
         goal.yaw = yaw
         goal.pitch = pitch
@@ -1504,6 +2529,8 @@ class NaoOrchestrator(Node):
         return False, result.reason or 'head motion dispatch failed'
 
     def _execute_look_at_reset_step(self, *, on_started=None) -> tuple[bool, str]:
+        if LookAt is None:
+            return False, 'look_at dispatch failed: interaction_skills LookAt action unavailable'
         goal = LookAt.Goal()
         goal.policy = LookAt.Goal.RESET
         result = self._execute_action_step(
@@ -1545,6 +2572,8 @@ class NaoOrchestrator(Node):
             self._stats.dispatch_failures += 1
             self.get_logger().warn('No target frame resolved for look_at dispatch')
             return False, 'look_at target dispatch failed: missing target frame'
+        if LookAt is None:
+            return False, 'look_at dispatch failed: interaction_skills LookAt action unavailable'
 
         goal = LookAt.Goal()
         goal.policy = str(policy).strip().lower()
@@ -1575,6 +2604,31 @@ class NaoOrchestrator(Node):
             )
             return True, ''
         return False, result.reason or 'look_at target dispatch failed'
+
+    def _execute_look_at_policy_step(
+        self,
+        *,
+        policy: str,
+        on_started=None,
+    ) -> tuple[bool, str]:
+        if LookAt is None:
+            return False, 'look_at dispatch failed: interaction_skills LookAt action unavailable'
+        goal = LookAt.Goal()
+        goal.policy = str(policy).strip().lower()
+        result = self._execute_action_step(
+            client=self._look_at_client,
+            goal=goal,
+            wait_sec=self.look_at_wait_sec,
+            result_timeout_sec=self.look_at_result_timeout_sec,
+            description='look_at_policy',
+            on_started=on_started,
+        )
+        if result.success:
+            self.get_logger().info(
+                'ORCH LOOK_AT_DISPATCH | policy=%s' % (goal.policy or 'auto')
+            )
+            return True, ''
+        return False, result.reason or 'look_at policy dispatch failed'
 
     def _execute_action_step(
         self,
@@ -1775,39 +2829,111 @@ class NaoOrchestrator(Node):
         except (TypeError, ValueError):
             return 0
 
-    def _resolve_plan_token(self, plan_context: dict) -> str:
-        explicit_token = str(plan_context.get('goal_token', '')).strip()
-        if explicit_token:
-            return explicit_token
-        goal_id = str(plan_context.get('goal_id', '')).strip()
-        plan_version = self._plan_version_from_context(plan_context)
-        if goal_id and plan_version > 0:
-            return f'{goal_id}:v{plan_version}'
-        return goal_id
+    @staticmethod
+    def _find_plan_step_index(plan: list[dict], step_id: str) -> int:
+        clean_step_id = str(step_id or '').strip()
+        if not clean_step_id:
+            return -1
+        for index, step in enumerate(plan):
+            if not isinstance(step, dict):
+                continue
+            if str(step.get('id', '')).strip() == clean_step_id:
+                return index
+        return -1
 
-    def _claim_execution_plan(self, plan_token: str, plan_version: int) -> None:
-        with self._execution_lock:
-            self._active_execution_token = str(plan_token or '').strip()
-            self._active_execution_plan_version = max(0, int(plan_version or 0))
+    def _claim_execution_plan(
+        self,
+        *,
+        goal_id: str,
+        plan_id: str,
+        plan_version: int,
+        plan: list[dict],
+    ) -> _ExecutionJoinDecision:
+        clean_goal_id = str(goal_id or '').strip()
+        clean_plan_id = str(plan_id or '').strip()
+        resolved_version = max(0, int(plan_version or 0))
 
-    def _is_execution_plan_active(self, plan_token: str, plan_version: int) -> bool:
         with self._execution_lock:
-            active_token = self._active_execution_token
+            previous_goal_id = self._active_execution_goal_id
+            previous_plan_version = self._active_execution_plan_version
+            previous_step_id = self._active_execution_step_id
+
+            start_index = 0
+            join_strategy = 'front_join'
+            mapped_step_id = ''
+            if (
+                clean_goal_id
+                and clean_goal_id == previous_goal_id
+                and resolved_version > previous_plan_version
+                and previous_step_id
+            ):
+                mapped_index = self._find_plan_step_index(plan, previous_step_id)
+                if mapped_index >= 0:
+                    start_index = mapped_index
+                    join_strategy = 'mid_join'
+                    mapped_step_id = previous_step_id
+
+            self._active_execution_goal_id = clean_goal_id
+            self._active_execution_plan_id = clean_plan_id
+            self._active_execution_plan_version = resolved_version
+            if 0 <= start_index < len(plan) and isinstance(plan[start_index], dict):
+                self._active_execution_step_id = str(plan[start_index].get('id', '')).strip()
+            else:
+                self._active_execution_step_id = ''
+
+        return _ExecutionJoinDecision(
+            start_index=start_index,
+            join_strategy=join_strategy,
+            mapped_step_id=mapped_step_id,
+        )
+
+    def _set_active_execution_step(self, step: dict) -> None:
+        if not isinstance(step, dict):
+            return
+        step_id = str(step.get('id', '')).strip()
+        with self._execution_lock:
+            self._active_execution_step_id = step_id
+
+    def _is_execution_plan_active(self, goal_id: str, plan_id: str, plan_version: int) -> bool:
+        with self._execution_lock:
+            active_goal_id = self._active_execution_goal_id
+            active_plan_id = self._active_execution_plan_id
             active_version = self._active_execution_plan_version
-        if not active_token:
+        if not active_goal_id:
             return False
-        if str(plan_token or '').strip() != active_token:
+        if str(goal_id or '').strip() != active_goal_id:
+            return False
+        clean_plan_id = str(plan_id or '').strip()
+        if active_plan_id and clean_plan_id != active_plan_id:
             return False
         return max(0, int(plan_version or 0)) >= active_version
 
-    def _finalize_execution_plan(self, plan_token: str, plan_version: int) -> None:
+    def _is_exact_execution_plan_active(self, goal_id: str, plan_id: str, plan_version: int) -> bool:
         with self._execution_lock:
-            if str(plan_token or '').strip() != self._active_execution_token:
+            active_goal_id = self._active_execution_goal_id
+            active_plan_id = self._active_execution_plan_id
+            active_version = self._active_execution_plan_version
+        if not active_goal_id:
+            return False
+        return (
+            str(goal_id or '').strip() == active_goal_id
+            and str(plan_id or '').strip() == active_plan_id
+            and max(0, int(plan_version or 0)) == active_version
+        )
+
+    def _finalize_execution_plan(self, *, goal_id: str, plan_id: str, plan_version: int) -> None:
+        with self._execution_lock:
+            if str(goal_id or '').strip() != self._active_execution_goal_id:
+                return
+            clean_plan_id = str(plan_id or '').strip()
+            if clean_plan_id and self._active_execution_plan_id and clean_plan_id != self._active_execution_plan_id:
                 return
             if max(0, int(plan_version or 0)) < self._active_execution_plan_version:
                 return
-            self._active_execution_token = ''
+            self._active_execution_goal_id = ''
+            self._active_execution_plan_id = ''
             self._active_execution_plan_version = 0
+            self._active_execution_step_id = ''
 
     def _publish_plan_feedback(
         self,
@@ -1830,7 +2956,6 @@ class NaoOrchestrator(Node):
             return
         normalized_plan_context = dict(plan_context)
         normalized_plan_context['plan_id'] = self._resolve_plan_id(plan_context)
-        normalized_plan_context['goal_token'] = self._resolve_plan_token(normalized_plan_context)
         payload = build_execution_feedback_payload(
             intent=str(intent_name).strip(),
             source=str(source).strip(),
@@ -2032,8 +3157,14 @@ class NaoOrchestrator(Node):
                 ),
                 KeyValue(key='planner_gate_enabled', value=str(self.enable_planner_gate)),
                 KeyValue(key='planner_gate_active_goal', value=self._planner_gate.active_goal_id),
-                KeyValue(key='planner_gate_active_token', value=self._planner_gate.active_goal_token),
-                KeyValue(key='active_execution_token', value=self._active_execution_token),
+                KeyValue(key='planner_gate_active_plan', value=self._planner_gate.active_plan_id),
+                KeyValue(key='active_execution_goal', value=self._active_execution_goal_id),
+                KeyValue(key='active_execution_plan', value=self._active_execution_plan_id),
+                KeyValue(
+                    key='active_execution_plan_version',
+                    value=str(self._active_execution_plan_version),
+                ),
+                KeyValue(key='active_execution_step', value=self._active_execution_step_id),
                 KeyValue(
                     key='intents_received',
                     value=str(self._stats.intents_received),
@@ -2045,6 +3176,10 @@ class NaoOrchestrator(Node):
                 KeyValue(
                     key='dispatch_failures',
                     value=str(self._stats.dispatch_failures),
+                ),
+                KeyValue(
+                    key='dispatched_kb_mutation',
+                    value=str(self._stats.dispatched_kb_mutation),
                 ),
                 KeyValue(key='plans_started', value=str(self._stats.plans_started)),
                 KeyValue(

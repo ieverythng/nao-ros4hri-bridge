@@ -231,15 +231,12 @@ For the JSON slide, show `/planner/request` from `chatbot_llm`:
   "request_kind": "new_goal",
   "goal_text": "look left",
   "normalized_intents": ["head_look_left"],
-  "ack_text": "Okay, I will look left.",
-  "ack_mode": "say",
   "scene_targets": [],
   "requested_plan": [],
   "grounded_context": {
-    "knowledge_snapshot": {"summary_text": "..."},
+    "knowledge_snapshot": {"references": []},
     "scene_summary": {},
-    "world_model_snapshot": {},
-    "world_model_text": ""
+    "state_t0": {}
   },
   "planner_mode": "default",
   "interaction_mode": "speech"

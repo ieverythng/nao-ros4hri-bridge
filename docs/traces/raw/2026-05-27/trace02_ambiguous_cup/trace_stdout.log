@@ -1,0 +1,473 @@
+[INFO] [1779846280.473552287] [trace02_ambiguous_cup_viewer]: trace subscribed: /rosout
+[INFO] [1779846280.477747163] [trace02_ambiguous_cup_viewer]: interaction_trace_viewer started
+[INFO] [1779846282.453560883] [trace02_ambiguous_cup_viewer]: trace subscribed: /planner/request
+[INFO] [1779846282.461452633] [trace02_ambiguous_cup_viewer]: trace subscribed: /intents
+[INFO] [1779846282.473655477] [trace02_ambiguous_cup_viewer]: trace subscribed: /planner/execution_feedback
+[INFO] [1779846282.484319118] [trace02_ambiguous_cup_viewer]: trace subscribed: /planner/dialogue_act
+[INFO] [1779846282.500580783] [trace02_ambiguous_cup_viewer]: trace subscribed: /nao_orchestrator/planner_dialogue_act
+[INFO] [1779846282.520991819] [trace02_ambiguous_cup_viewer]: trace subscribed: /chatbot_llm/turn_trace
+[INFO] [1779846282.527705964] [trace02_ambiguous_cup_viewer]: trace subscribed: /fake_skills/events
+[INFO] [1779846282.532166017] [trace02_ambiguous_cup_viewer]: trace subscribed: /world_model/enriched_snapshot
+[INFO] [1779846282.539205180] [trace02_ambiguous_cup_viewer]: trace subscribed: /world_model/enriched_text
+[INFO] [1779846282.545429707] [trace02_ambiguous_cup_viewer]: trace subscribed (speech): /debug/nao_say/speech
+[INFO] [1779846282.552475583] [trace02_ambiguous_cup_viewer]: trace subscribed (speech): /speech
+[1779846283.501] trace02_turn | planner_request | /planner/request
+  summary: goal=
+  payload:
+    {
+      "confidence": 1.0,
+      "data": {
+        "goal_id": "trace02_goal",
+        "goal_text": "find the cup and tell me where it is",
+        "kind": "new_goal",
+        "normalized_intents": [
+          "inspect_scene"
+        ],
+        "request_kind": "new_goal",
+        "scene_targets": [
+          "cup"
+        ],
+        "source": "trace_probe",
+        "turn_id": "trace02_turn"
+      },
+      "data_raw": "{\"goal_id\":\"trace02_goal\",\"turn_id\":\"trace02_turn\",\"goal_text\":\"find the cup and tell me where it is\",\"kind\":\"new_goal\",\"request_kind\":\"new_goal\",\"source\":\"trace_probe\",\"normalized_intents\":[\"inspect_scene\"],\"scene_targets\":[\"cup\"]}",
+      "intent": "planner_request",
+      "intent_type": "",
+      "person_id": "",
+      "priority": 180
+    }
+[1779846285.190] trace02_goal | planner_output | /intents
+  summary: planner output
+  payload:
+    {
+      "confidence": 0.0,
+      "data": {
+        "ack_mode": "",
+        "ack_text": "",
+        "goal_id": "trace02_goal",
+        "goal_token": "trace02_goal",
+        "grounded_context": {
+          "knowledge_snapshot": {},
+          "scene_summary": {},
+          "world_model_snapshot": {},
+          "world_model_text": ""
+        },
+        "plan": {
+          "communication_policy": {
+            "emit_acknowledge": false,
+            "emit_completion": true,
+            "emit_failure": true,
+            "emit_progress": false
+          },
+          "communication_policy_source": "planner_engine:plan",
+          "failure_reason": "",
+          "goal_id": "trace02_goal",
+          "goal_token": "trace02_goal",
+          "plan_id": "plan_1779846285186",
+          "plan_version": 1,
+          "replan_hint": "",
+          "retry_budget": 2,
+          "scene_targets": [
+            "cup"
+          ],
+          "status": "planning",
+          "steps": [
+            {
+              "args": {
+                "target_kind": "cup"
+              },
+              "id": "step_1",
+              "name": "scan",
+              "on_failure": "ask_user",
+              "requires": [],
+              "retry_budget": 2,
+              "type": "skill"
+            },
+            {
+              "args": {
+                "target": "cup"
+              },
+              "id": "step_2",
+              "name": "find_object",
+              "on_failure": "ask_user",
+              "requires": [
+                "scan"
+              ],
+              "retry_budget": 2,
+              "type": "skill"
+            },
+            {
+              "args": {
+                "summary_text": "The cup was found in the scene."
+              },
+              "id": "step_3",
+              "name": "report_result",
+              "on_failure": "ask_user",
+              "requires": [
+                "find_object"
+              ],
+              "retry_budget": 1,
+              "type": "skill"
+            }
+          ],
+          "user_facing_reason": "",
+          "validation_status": "valid"
+        },
+        "scene_targets": [
+          "cup"
+        ]
+      },
+      "data_raw": "{\"ack_mode\":\"\",\"ack_text\":\"\",\"goal_id\":\"trace02_goal\",\"goal_token\":\"trace02_goal\",\"grounded_context\":{\"knowledge_snapshot\":{},\"scene_summary\":{},\"world_model_snapshot\":{},\"world_model_text\":\"\"},\"plan\":{\"communication_policy\":{\"emit_acknowledge\":false,\"emit_completion\":true,\"emit_failure\":true,\"emit_progress\":false},\"communication_policy_source\":\"planner_engine:plan\",\"failure_reason\":\"\",\"goal_id\":\"trace02_goal\",\"goal_token\":\"trace02_goal\",\"plan_id\":\"plan_1779846285186\",\"plan_version\":1,\"replan_hint\":\"\",\"retry_budget\":2,\"scene_targets\":[\"cup\"],\"status\":\"planning\",\"steps\":[{\"args\":{\"target_kind\":\"cup\"},\"id\":\"step_1\",\"name\":\"scan\",\"on_failure\":\"ask_user\",\"requires\":[],\"retry_budget\":2,\"type\":\"skill\"},{\"args\":{\"target\":\"cup\"},\"id\":\"step_2\",\"name\":\"find_object\",\"on_failure\":\"ask_user\",\"requires\":[\"scan\"],\"retry_budget\":2,\"type\":\"skill\"},{\"args\":{\"summary_text\":\"The cup was found in the scene.\"},\"id\":\"step_3\",\"name\":\"report_result\",\"on_failure\":\"ask_user\",\"requires\":[\"find_object\"],\"retry_budget\":1,\"type\":\"skill\"}],\"user_facing_reason\":\"\",\"validation_status\":\"valid\"},\"scene_targets\":[\"cup\"]}",
+      "intent": "raw_user_input",
+      "intent_type": "",
+      "person_id": "",
+      "priority": 0
+    }
+[1779846285.204] trace02_goal | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=trace02_goal,plan_id=plan_1779846285186,event_type=plan_accepted
+  summary: accepted
+  payload:
+    {
+      "blocking": false,
+      "event_type": "plan_accepted",
+      "goal_id": "trace02_goal",
+      "goal_token": "trace02_goal",
+      "intent": "raw_user_input",
+      "needs_user_input": false,
+      "plan_id": "plan_1779846285186",
+      "plan_version": 1,
+      "reason": "",
+      "replan_hint": "",
+      "result_payload": {},
+      "result_summary": "",
+      "retry_budget": 2,
+      "scene_targets": [
+        "cup"
+      ],
+      "source": "planner_llm",
+      "status": "accepted",
+      "timestamp_sec": 1779846285.2,
+      "unmet_preconditions": [],
+      "validation_errors": [],
+      "validation_status": "valid"
+    }
+[1779846285.213] trace02_goal | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=trace02_goal,plan_id=plan_1779846285186,event_type=step_started,step=scan
+  summary: running
+  payload:
+    {
+      "blocking": false,
+      "event_type": "step_started",
+      "goal_id": "trace02_goal",
+      "goal_token": "trace02_goal",
+      "intent": "raw_user_input",
+      "needs_user_input": false,
+      "plan_id": "plan_1779846285186",
+      "plan_version": 1,
+      "reason": "",
+      "replan_hint": "",
+      "result_payload": {},
+      "result_summary": "",
+      "retry_budget": 2,
+      "scene_targets": [
+        "cup"
+      ],
+      "source": "planner_llm",
+      "status": "running",
+      "step": {
+        "id": "step_1",
+        "name": "scan",
+        "on_failure": "ask_user",
+        "requires": [],
+        "retry_budget": 2,
+        "type": "skill"
+      },
+      "timestamp_sec": 1779846285.211,
+      "unmet_preconditions": [],
+      "validation_errors": [],
+      "validation_status": "valid"
+    }
+[1779846289.074] trace02_goal | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=trace02_goal,plan_id=plan_1779846285186,event_type=step_succeeded,step=scan
+  summary: succeeded | {"backend":"emorobcare_cv","objects":[{"center_x":272.4,"center_y":345.8,"entity_id":"detected_blueberry_272_345","kb_class":"Blueberry","label":"blueberry","last_seen_sec":1779846282.993,"score":0.517,"source":"emorobcare_cv","tracker_id":""}],"observer":"myself"}
+  payload:
+    {
+      "blocking": false,
+      "event_type": "step_succeeded",
+      "goal_id": "trace02_goal",
+      "goal_token": "trace02_goal",
+      "intent": "raw_user_input",
+      "needs_user_input": false,
+      "plan_id": "plan_1779846285186",
+      "plan_version": 1,
+      "reason": "",
+      "replan_hint": "",
+      "result_payload": {
+        "confidence_policy": "grounded_current_observation",
+        "objects": [
+          {
+            "id": "detected_blueberry_272_345",
+            "kb_class": "Blueberry",
+            "label": "blueberry",
+            "source": "emorobcare_cv"
+          }
+        ],
+        "people": [],
+        "result_mode": "success",
+        "skill": "scan",
+        "skill_server": "scan_skill_server",
+        "summary_text": "{\"backend\":\"emorobcare_cv\",\"objects\":[{\"center_x\":272.4,\"center_y\":345.8,\"entity_id\":\"detected_blueberry_272_345\",\"kb_class\":\"Blueberry\",\"label\":\"blueberry\",\"last_seen_sec\":1779846282.993,\"score\":0.517,\"source\":\"emorobcare_cv\",\"tracker_id\":\"\"}],\"observer\":\"myself\"}",
+        "target": "",
+        "target_found": true,
+        "target_kind": "cup"
+      },
+      "result_summary": "{\"backend\":\"emorobcare_cv\",\"objects\":[{\"center_x\":272.4,\"center_y\":345.8,\"entity_id\":\"detected_blueberry_272_345\",\"kb_class\":\"Blueberry\",\"label\":\"blueberry\",\"last_seen_sec\":1779846282.993,\"score\":0.517,\"source\":\"emorobcare_cv\",\"tracker_id\":\"\"}],\"observer\":\"myself\"}",
+      "retry_budget": 2,
+      "scene_targets": [
+        "cup"
+      ],
+      "source": "planner_llm",
+      "status": "succeeded",
+      "step": {
+        "id": "step_1",
+        "name": "scan",
+        "on_failure": "ask_user",
+        "requires": [],
+        "retry_budget": 2,
+        "type": "skill"
+      },
+      "timestamp_sec": 1779846289.073,
+      "unmet_preconditions": [],
+      "validation_errors": [],
+      "validation_status": "valid"
+    }
+[1779846289.075] trace02_goal | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=trace02_goal,plan_id=plan_1779846285186,event_type=step_started,step=find_object
+  summary: running
+  payload:
+    {
+      "blocking": false,
+      "event_type": "step_started",
+      "goal_id": "trace02_goal",
+      "goal_token": "trace02_goal",
+      "intent": "raw_user_input",
+      "needs_user_input": false,
+      "plan_id": "plan_1779846285186",
+      "plan_version": 1,
+      "reason": "",
+      "replan_hint": "",
+      "result_payload": {},
+      "result_summary": "",
+      "retry_budget": 2,
+      "scene_targets": [
+        "cup"
+      ],
+      "source": "planner_llm",
+      "status": "running",
+      "step": {
+        "id": "step_2",
+        "name": "find_object",
+        "on_failure": "ask_user",
+        "requires": [
+          "scan"
+        ],
+        "retry_budget": 2,
+        "type": "skill"
+      },
+      "timestamp_sec": 1779846289.074,
+      "unmet_preconditions": [],
+      "validation_errors": [],
+      "validation_status": "valid"
+    }
+[1779846289.115] trace_0001 | skill_result | /fake_skills/events | flow=event_type=fake_skill_started
+  summary: find_object | fake_skill_started
+  payload:
+    {
+      "event_type": "fake_skill_started",
+      "payload": {
+        "args": {
+          "max_sweeps": 0,
+          "target": "cup",
+          "target_kind": ""
+        },
+        "scenario_id": "ambiguous_cup"
+      },
+      "skill": "find_object"
+    }
+[1779846289.925] trace_0001 | skill_result | /fake_skills/events | flow=event_type=fake_skill_completed
+  summary: find_object | failed | I found multiple candidates for cup.
+  payload:
+    {
+      "event_type": "fake_skill_completed",
+      "failure": {
+        "code": "ambiguous",
+        "message": "Multiple candidates matched the target.",
+        "recoverable": true,
+        "suggested_recovery": "ask_user_to_disambiguate"
+      },
+      "payload": {
+        "failure": {
+          "code": "ambiguous",
+          "message": "Multiple candidates matched the target.",
+          "recoverable": true,
+          "suggested_recovery": "ask_user_to_disambiguate"
+        },
+        "global_mode": "scenario",
+        "mode_source": "scenario_default",
+        "result_mode": "ambiguous",
+        "status": "failed",
+        "summary_text": "I found multiple candidates for cup."
+      },
+      "result_mode": "ambiguous",
+      "skill": "find_object",
+      "status": "failed",
+      "summary_text": "I found multiple candidates for cup."
+    }
+[1779846289.932] trace02_goal | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=trace02_goal,plan_id=plan_1779846285186,event_type=step_failed,step=find_object
+  summary: failed | I found multiple candidates for cup.
+  payload:
+    {
+      "blocking": true,
+      "event_type": "step_failed",
+      "goal_id": "trace02_goal",
+      "goal_token": "trace02_goal",
+      "intent": "raw_user_input",
+      "needs_user_input": true,
+      "plan_id": "plan_1779846285186",
+      "plan_version": 1,
+      "reason": "I found multiple candidates for cup.",
+      "replan_hint": "",
+      "result_payload": {},
+      "result_summary": "",
+      "retry_budget": 2,
+      "scene_targets": [
+        "cup"
+      ],
+      "source": "planner_llm",
+      "status": "failed",
+      "step": {
+        "id": "step_2",
+        "name": "find_object",
+        "on_failure": "ask_user",
+        "requires": [
+          "scan"
+        ],
+        "retry_budget": 2,
+        "type": "skill"
+      },
+      "timestamp_sec": 1779846289.931,
+      "unmet_preconditions": [
+        "scan"
+      ],
+      "validation_errors": [],
+      "validation_status": "valid"
+    }
+[1779846289.936] trace02_goal | planner_dialogue_act | /planner/dialogue_act | flow=goal_id=trace02_goal,plan_id=plan_1779846285186
+  summary: /planner/dialogue_act {"act":"ask_clarification","await_user_response":true,"context":{"goal_text":"find the cup and tell me where it is","plan_step_count":3,"requested_intents":["inspect_scene"],"result_payload":{"confidence_policy":"grounded_current_observation","objects":[{"id":"detected_blueberry_272_345","kb_class":"Blueberry","label":"blueberry","source":"emorobcare_cv"}],"people":[],"result_mode":"success","skill":"scan","skill_server":"scan_skill_server","summary_text":"{\"backend\":\"emorobcare_cv\",\"objects\":[{\"center_x\":272.4,\"center_y\":345.8,\"entity_id\":\"detected_blueberry_272_345\",\"kb_class\":\"Blueberry\",\"label\":\"blueberry\",\"last_seen_sec\":1779846282.993,\"score\":0.517,\"source\":\"emorobcare_cv\",\"tracker_id\":\"\"}],\"observer\":\"myself\"}","target":"","target_found":true,"target_kind":"cup"},"result_summary":"{\"backend\":\"emorobcare_cv\",\"objects\":[{\"center_x\":272.4,\"center_y\":345.8,\"entity_id\":\"detected_blueberry_272_345\",\"kb_class\":\"Blueberry\",\"label\":\"blueberry\",\"last_seen_sec\":1779846282.993,\"score\":0.517,\"source\":\"emorobcare_cv\",\"tracker_id\":\"\"}],\"observer\":\"myself\"}","scene_targets":["cup"],"status":"waiting_user"},"goal_id":"trace02_goal","plan_id":"plan_1779846285186","plan_version":1,"priority":"normal","reason":"I found multiple candidates for cup.","slots_needed":["scan"],"text_hint":"I found multiple candidates for cup."}
+  payload:
+    {
+      "act": "ask_clarification",
+      "await_user_response": true,
+      "context": {
+        "goal_text": "find the cup and tell me where it is",
+        "plan_step_count": 3,
+        "requested_intents": [
+          "inspect_scene"
+        ],
+        "result_payload": {
+          "confidence_policy": "grounded_current_observation",
+          "objects": [
+            {
+              "id": "detected_blueberry_272_345",
+              "kb_class": "Blueberry",
+              "label": "blueberry",
+              "source": "emorobcare_cv"
+            }
+          ],
+          "people": [],
+          "result_mode": "success",
+          "skill": "scan",
+          "skill_server": "scan_skill_server",
+          "summary_text": "{\"backend\":\"emorobcare_cv\",\"objects\":[{\"center_x\":272.4,\"center_y\":345.8,\"entity_id\":\"detected_blueberry_272_345\",\"kb_class\":\"Blueberry\",\"label\":\"blueberry\",\"last_seen_sec\":1779846282.993,\"score\":0.517,\"source\":\"emorobcare_cv\",\"tracker_id\":\"\"}],\"observer\":\"myself\"}",
+          "target": "",
+          "target_found": true,
+          "target_kind": "cup"
+        },
+        "result_summary": "{\"backend\":\"emorobcare_cv\",\"objects\":[{\"center_x\":272.4,\"center_y\":345.8,\"entity_id\":\"detected_blueberry_272_345\",\"kb_class\":\"Blueberry\",\"label\":\"blueberry\",\"last_seen_sec\":1779846282.993,\"score\":0.517,\"source\":\"emorobcare_cv\",\"tracker_id\":\"\"}],\"observer\":\"myself\"}",
+        "scene_targets": [
+          "cup"
+        ],
+        "status": "waiting_user"
+      },
+      "goal_id": "trace02_goal",
+      "plan_id": "plan_1779846285186",
+      "plan_version": 1,
+      "priority": "normal",
+      "reason": "I found multiple candidates for cup.",
+      "slots_needed": [
+        "scan"
+      ],
+      "text_hint": "I found multiple candidates for cup."
+    }
+[1779846289.939] trace02_goal | planner_dialogue_act | /nao_orchestrator/planner_dialogue_act | flow=goal_id=trace02_goal,plan_id=plan_1779846285186
+  summary: /nao_orchestrator/planner_dialogue_act {"act":"ask_clarification","await_user_response":true,"context":{"goal_text":"find the cup and tell me where it is","plan_step_count":3,"requested_intents":["inspect_scene"],"result_payload":{"confidence_policy":"grounded_current_observation","objects":[{"id":"detected_blueberry_272_345","kb_class":"Blueberry","label":"blueberry","source":"emorobcare_cv"}],"people":[],"result_mode":"success","skill":"scan","skill_server":"scan_skill_server","summary_text":"{\"backend\":\"emorobcare_cv\",\"objects\":[{\"center_x\":272.4,\"center_y\":345.8,\"entity_id\":\"detected_blueberry_272_345\",\"kb_class\":\"Blueberry\",\"label\":\"blueberry\",\"last_seen_sec\":1779846282.993,\"score\":0.517,\"source\":\"emorobcare_cv\",\"tracker_id\":\"\"}],\"observer\":\"myself\"}","target":"","target_found":true,"target_kind":"cup"},"result_summary":"{\"backend\":\"emorobcare_cv\",\"objects\":[{\"center_x\":272.4,\"center_y\":345.8,\"entity_id\":\"detected_blueberry_272_345\",\"kb_class\":\"Blueberry\",\"label\":\"blueberry\",\"last_seen_sec\":1779846282.993,\"score\":0.517,\"source\":\"emorobcare_cv\",\"tracker_id\":\"\"}],\"observer\":\"myself\"}","scene_targets":["cup"],"status":"waiting_user"},"goal_id":"trace02_goal","plan_id":"plan_1779846285186","plan_version":1,"priority":"normal","reason":"I found multiple candidates for cup.","slots_needed":["scan"],"text_hint":"I found multiple candidates for cup."}
+  payload:
+    {
+      "act": "ask_clarification",
+      "await_user_response": true,
+      "context": {
+        "goal_text": "find the cup and tell me where it is",
+        "plan_step_count": 3,
+        "requested_intents": [
+          "inspect_scene"
+        ],
+        "result_payload": {
+          "confidence_policy": "grounded_current_observation",
+          "objects": [
+            {
+              "id": "detected_blueberry_272_345",
+              "kb_class": "Blueberry",
+              "label": "blueberry",
+              "source": "emorobcare_cv"
+            }
+          ],
+          "people": [],
+          "result_mode": "success",
+          "skill": "scan",
+          "skill_server": "scan_skill_server",
+          "summary_text": "{\"backend\":\"emorobcare_cv\",\"objects\":[{\"center_x\":272.4,\"center_y\":345.8,\"entity_id\":\"detected_blueberry_272_345\",\"kb_class\":\"Blueberry\",\"label\":\"blueberry\",\"last_seen_sec\":1779846282.993,\"score\":0.517,\"source\":\"emorobcare_cv\",\"tracker_id\":\"\"}],\"observer\":\"myself\"}",
+          "target": "",
+          "target_found": true,
+          "target_kind": "cup"
+        },
+        "result_summary": "{\"backend\":\"emorobcare_cv\",\"objects\":[{\"center_x\":272.4,\"center_y\":345.8,\"entity_id\":\"detected_blueberry_272_345\",\"kb_class\":\"Blueberry\",\"label\":\"blueberry\",\"last_seen_sec\":1779846282.993,\"score\":0.517,\"source\":\"emorobcare_cv\",\"tracker_id\":\"\"}],\"observer\":\"myself\"}",
+        "scene_targets": [
+          "cup"
+        ],
+        "status": "waiting_user"
+      },
+      "goal_id": "trace02_goal",
+      "plan_id": "plan_1779846285186",
+      "plan_version": 1,
+      "priority": "normal",
+      "reason": "I found multiple candidates for cup.",
+      "slots_needed": [
+        "scan"
+      ],
+      "text_hint": "I found multiple candidates for cup."
+    }
+Traceback (most recent call last):
+  File "/home/ubuntu/ws/install/interaction_trace_viewer/lib/interaction_trace_viewer/trace_node", line 33, in <module>
+    sys.exit(load_entry_point('interaction-trace-viewer', 'console_scripts', 'trace_node')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/ws/build/interaction_trace_viewer/interaction_trace_viewer/trace_node.py", line 339, in main
+    rclpy.spin(node)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+    executor.spin_once()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 845, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 829, in _spin_once_impl
+    handler, entity, node = self.wait_for_ready_callbacks(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 799, in wait_for_ready_callbacks
+    return next(self._cb_iter)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 707, in _wait_for_ready_callbacks
+    raise ExternalShutdownException()
+rclpy.executors.ExternalShutdownException

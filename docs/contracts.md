@@ -1,6 +1,6 @@
 # Runtime Contracts
 
-Last updated: 2026-04-27
+Last updated: 2026-05-26
 
 This document is the richer reference for the JSON payloads that move task,
 scene, and execution state between nodes. The root README contains compact
@@ -21,13 +21,10 @@ examples; this file is the contract-focused view.
     "type": "head_look_left",
     "goal": "look left",
     "goal_text": "look left",
-    "ack_text": "Okay, I will look left.",
-    "ack_mode": "say",
     "scene_targets": [],
     "request_kind": "new_goal",
     "interaction_mode": "speech"
   }
-}
 ```
 
 **Allowed route values**
@@ -42,6 +39,7 @@ dialogue | knowledge_query | execution
 chatbot_llm declares the user-facing intent and routes execution turns.
 planner_llm owns executable planning and supervision.
 nao_orchestrator owns deterministic execution.
+visibility-only scene checks default to knowledge_query unless explicit scan/action wording is present.
 ```
 
 ---
@@ -50,19 +48,21 @@ nao_orchestrator owns deterministic execution.
 
 Topic:
 
-- `/planner/request`
+- `/nao_orchestrator/planner_request` (chatbot -> orchestrator gate ingress)
+- `/planner/request` (orchestrator-admitted request -> planner ingress)
 - type: `hri_actions_msgs/msg/Intent`
-- publisher: `chatbot_llm`
+- publisher (ingress): `chatbot_llm`
+- publisher (`/planner/request`): `nao_orchestrator`
 - consumer: `planner_llm`
 
 ROS envelope policy:
 
 - `Intent.priority` and `Intent.confidence` are part of
-  `hri_actions_msgs/msg/Intent`, so they will always appear in
-  `ros2 topic echo /planner/request`.
-- `chatbot_llm` now publishes planner requests with a deterministic priority
-  (`128`) and a bounded route confidence. Execution-routed turns with no model
-  confidence use a conservative floor rather than `0.0`.
+  `hri_actions_msgs/msg/Intent`, so they will appear in both
+  planner-ingress topics.
+- `chatbot_llm` sets deterministic planner priority/confidence on ingress
+  requests, and `nao_orchestrator` planner-gate forwards admitted requests to
+  `/planner/request`.
 - Planner semantics live in `Intent.data`; do not duplicate priority or
   confidence inside the JSON payload unless a planner policy genuinely needs it.
 
@@ -77,16 +77,75 @@ Preferred payload:
   "request_kind": "new_goal",
   "goal_text": "navigate to the kitchen and report completion",
   "normalized_intents": ["navigate_to"],
-  "ack_text": "I will work on that.",
-  "ack_mode": "say",
   "scene_targets": ["kitchen"],
   "dialogue_context": [],
   "requested_plan": [],
   "grounded_context": {
-    "knowledge_snapshot": {},
-    "scene_summary": {},
-    "world_model_snapshot": {},
-    "world_model_text": ""
+    "knowledge_snapshot": {
+      "schema_version": "knowledge_snapshot_v2",
+      "captured_at_sec": 1777040000.0,
+      "references": [
+        {"normalized_name": "kitchen", "id": "kitchen_1", "type": "Location"},
+        {"normalized_name": "person", "id": "person_1", "type": "Person"}
+      ],
+      "counts": {"entities": 2, "people": 1, "objects": 1}
+    },
+    "scene_summary": {
+      "schema_version": "scene_summary_v2",
+      "observer": "myself",
+      "backend": "emorobcare_cv",
+      "captured_at_sec": 1777040000.0,
+      "objects": [
+        {
+          "entity_id": "kitchen_1",
+          "label": "kitchen",
+          "kb_class": "Location",
+          "score": 1.0,
+          "tracker_id": "",
+          "source": "emorobcare_cv",
+          "center_x": 0.0,
+          "center_y": 0.0,
+          "last_seen_sec": 1777040000.0
+        }
+      ],
+      "people": [
+        {
+          "id": "person_1",
+          "label": "person",
+          "type": "Person",
+          "source": "emorobcare_cv",
+          "score": 0.9,
+          "center_x": 183.0,
+          "center_y": 219.0,
+          "last_seen_sec": 1777040000.0
+        }
+      ]
+    },
+    "state_t0": {
+      "schema_version": "state_t0_v2",
+      "observer": "myself",
+      "backend": "emorobcare_cv",
+      "captured_at_sec": 1777040000.0,
+      "entity_counts": {"entities": 2, "people": 1, "objects": 1},
+      "entities": [
+        {
+          "normalized_name": "kitchen",
+          "id": "kitchen_1",
+          "type": "Location",
+          "kind": "object",
+          "source": "emorobcare_cv",
+          "last_seen_sec": 1777040000.0
+        },
+        {
+          "normalized_name": "person",
+          "id": "person_1",
+          "type": "Person",
+          "kind": "person",
+          "source": "emorobcare_cv",
+          "last_seen_sec": 1777040000.0
+        }
+      ]
+    }
   },
   "planner_mode": "default",
   "interaction_mode": "speech",
@@ -120,15 +179,10 @@ Payload:
 
 ```json
 {
-  "goal_id": "goal_turn_123",
-  "ack_text": "",
-  "ack_mode": "",
-  "scene_targets": ["kitchen"],
   "grounded_context": {
     "knowledge_snapshot": {},
     "scene_summary": {},
-    "world_model_snapshot": {},
-    "world_model_text": ""
+    "state_t0": {}
   },
   "plan": {
     "goal_id": "goal_turn_123",
@@ -158,6 +212,28 @@ Payload:
         "retry_budget": 0
       }
     ]
+  }
+}
+```
+
+Ownership note:
+
+- `grounded_context` in planner output is currently a transitional echo for
+  traceability.
+- AB=1 skill execution must continue to resolve live world state from AB=0
+  seams (`/scene/summary`, `/kb/query`, tracked-person topics/services), not
+  from planner output payload copies.
+- When the context-ref seam is promoted, planner output should carry only
+  lightweight lineage such as:
+
+```json
+{
+  "plan": {
+    "context_ref": {
+      "captured_at_sec": 1777040000.0,
+      "observer": "myself",
+      "backend": "emorobcare_cv"
+    }
   }
 }
 ```
@@ -258,6 +334,8 @@ Topic:
 - type: `std_msgs/msg/String`
 - publisher: `planner_llm`
 - consumer: `dialogue_manager`
+- dialogue policy: direct-mode planner acts; completion wording may be relayed
+  through `chatbot_llm` when available
 
 ```json
 {
@@ -315,7 +393,13 @@ myself sees ?entity && ?entity rdf:type ?type
 
 ```json
 {
-  "summary_text": "Entities currently seen by the robot: cup_1 (Cup)"
+  "schema_version": "knowledge_snapshot_v2",
+  "captured_at_sec": 1777040000.0,
+  "references": [
+    {"normalized_name": "cup", "id": "cup_1", "type": "Cup"},
+    {"normalized_name": "person", "id": "person_1", "type": "Person"}
+  ],
+  "counts": {"entities": 2, "people": 1, "objects": 1}
 }
 ```
 
@@ -351,8 +435,10 @@ Example payload:
 
 ```json
 {
+  "schema_version": "scene_summary_v2",
   "observer": "myself",
   "backend": "emorobcare_cv",
+  "captured_at_sec": 1777040000.0,
   "objects": [
     {
       "entity_id": "detected_cup_320_240",
@@ -365,20 +451,63 @@ Example payload:
       "center_y": 240.0,
       "last_seen_sec": 1777040000.0
     }
+  ],
+  "people": [
+    {
+      "id": "person_1",
+      "label": "person",
+      "type": "Person",
+      "source": "emorobcare_cv",
+      "score": 0.88,
+      "center_x": 210.0,
+      "center_y": 180.0,
+      "last_seen_sec": 1777040000.0
+    }
   ]
 }
 ```
 
 `/scene/summary` is not the same as `knowledge_snapshot`: it is a current object
 summary, while `knowledge_snapshot` is prompt-ready text from KB queries.
+Within `grounded_context.scene_summary`, people-like detections are promoted to
+`people`, and `objects` remains object-only.
 
-## World Model Context
+## State T0 Context
 
-Planned/enriched context fields:
+`grounded_context.state_t0` carries deterministic planner-facing context for
+pre/postcondition reasoning without free-text world-model seams.
 
-- `/world_model/enriched_snapshot`
-- `/world_model/enriched_text`
+Planner guidance policy:
 
-These feed `grounded_context.world_model_snapshot` and
-`grounded_context.world_model_text`. The WME layer is future work relative to
-the Monday planner-loop priority.
+- treat every `state_t0.entities[*].id` as a valid `look_at.target_frame`
+  candidate; do not require a dedicated `look_at_candidates` payload field.
+
+Example:
+
+```json
+{
+  "schema_version": "state_t0_v2",
+  "observer": "myself",
+  "backend": "emorobcare_cv",
+  "captured_at_sec": 1777040000.0,
+  "entity_counts": {"entities": 2, "people": 1, "objects": 1},
+  "entities": [
+    {
+      "normalized_name": "cup",
+      "id": "cup_1",
+      "type": "Cup",
+      "kind": "object",
+      "source": "emorobcare_cv",
+      "last_seen_sec": 1777040000.0
+    },
+    {
+      "normalized_name": "person",
+      "id": "person_1",
+      "type": "Person",
+      "kind": "person",
+      "source": "emorobcare_cv",
+      "last_seen_sec": 1777040000.0
+    }
+  ]
+}
+```

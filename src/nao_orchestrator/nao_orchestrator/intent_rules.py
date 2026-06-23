@@ -4,10 +4,12 @@
 from __future__ import annotations
 
 import json
+import re
 
 from planner_common.contracts import PLAN_FAILURE_POLICIES
 from planner_common.contracts import PLAN_STEP_TYPES
 from planner_common.contracts import IntentLabels as Intent
+from planner_common.contracts import optional_float_fields
 from planner_common.skill_registry_bridge import merge_fake_skill_aliases
 from planner_common.skill_registry_bridge import merge_scan_skill_names
 from planner_common.skill_registry_bridge import load_shared_skill_manifest
@@ -30,6 +32,7 @@ _STANDARD_INTENTS = {
     Intent.SUSPEND,
     Intent.WAKEUP,
 }
+
 
 _LEGACY_INTENT_MAP = {
     'greet': (Intent.GREET, {}),
@@ -89,6 +92,17 @@ _LOOK_AT_RESET_ALIASES = {
     'reset_gaze',
     'reset_look_at',
 }
+_LOOK_AT_RESET_TARGET_ALIASES = {
+    'head_center',
+    'center',
+    'forward',
+    'straight',
+}
+_LOOK_AT_TARGETLESS_POLICIES = {
+    'auto',
+    'random',
+    'social',
+}
 
 _REPLAY_MOTION_MAP = {
     'stand': 'stand',
@@ -140,6 +154,21 @@ _DEFAULT_FAKE_SKILL_PLAN_NAMES = {
     'walk_to',
     'walk_forward',
     'step_to',
+    'pick_object',
+    'pick',
+    'grab',
+    'grab_object',
+    'place_object',
+    'place',
+    'put_down',
+    'bring_object',
+    'bring',
+    'deliver_object',
+}
+_KB_MUTATION_SKILL_PLAN_NAMES = {
+    'kb_add',
+    'kb_remove',
+    'kb_revise',
 }
 _DEFAULT_SUPPORTED_SKILL_PLAN_NAMES = {
     '',
@@ -148,8 +177,17 @@ _DEFAULT_SUPPORTED_SKILL_PLAN_NAMES = {
     'look_at',
     'scan',
     'report_result',
+    'ask_user',
+    'ask_clarification',
+    'ask_for_help',
     *_DEFAULT_SCAN_SKILL_PLAN_NAMES,
     *_DEFAULT_FAKE_SKILL_PLAN_NAMES,
+    *_KB_MUTATION_SKILL_PLAN_NAMES,
+}
+_ASK_USER_STEP_NAMES = {
+    'ask_user',
+    'ask_clarification',
+    'ask_for_help',
 }
 
 _PEOPLE_SCAN_TARGET_KINDS = {
@@ -158,6 +196,11 @@ _PEOPLE_SCAN_TARGET_KINDS = {
     'human',
     'humans',
 }
+_UNRESOLVED_REPORT_TEMPLATE_RE = re.compile(
+    r'(\[[^\]]*(?:evidence|result|object|people|person)[^\]]*\])'
+    r'|(\{[^\}]*(?:evidence|result|object|people|person)[^\}]*\})',
+    re.IGNORECASE,
+)
 
 
 def _load_supported_skill_names() -> tuple[set[str], set[str], set[str]]:
@@ -322,6 +365,14 @@ def resolve_ack_text(
     return resolve_say_text(intent_name, payload, default_greeting)
 
 
+def is_unresolved_report_template(text: str) -> bool:
+    """Return true when report_result text still contains model template slots."""
+    clean_text = str(text or '').strip()
+    if not clean_text:
+        return False
+    return bool(_UNRESOLVED_REPORT_TEMPLATE_RE.search(clean_text))
+
+
 def resolve_scan_result(
     step_args: dict,
     *,
@@ -409,12 +460,8 @@ def build_scan_result_payload(
             'I completed the scan for %s, but no confirmed detection result was reported.'
             % target_label
         )
-    elif objects:
-        summary_text = _summarize_scene_objects(objects)
-    elif people:
-        summary_text = summarize_people_detection(
-            [str(item.get('id', '')).strip() for item in people]
-        )
+    elif objects or people:
+        summary_text = _summarize_scene_entities(objects, people)
     else:
         summary_text = default_summary_text or 'scan completed'
 
@@ -446,11 +493,7 @@ def _normalize_scan_people(step_args: dict) -> list[dict]:
                 'id': person_id,
                 'source': str(candidate.get('source', 'unknown')).strip() or 'unknown',
             }
-            age_value = candidate.get('last_seen_age_sec', '')
-            try:
-                entry['last_seen_age_sec'] = float(age_value)
-            except (TypeError, ValueError):
-                pass
+            entry.update(optional_float_fields(candidate, ('last_seen_age_sec',)))
             normalized.append(entry)
         else:
             person_id = str(candidate).strip()
@@ -470,14 +513,19 @@ def _normalize_scan_objects(raw_objects) -> list[dict]:
         entity_id = str(item.get('entity_id', item.get('id', ''))).strip()
         if not label and not entity_id:
             continue
-        normalized.append(
-            {
-                'id': entity_id,
-                'label': label,
-                'kb_class': str(item.get('kb_class', '')).strip(),
-                'source': str(item.get('source', 'scene_summary')).strip() or 'scene_summary',
-            }
+        entry = {
+            'id': entity_id,
+            'label': label,
+            'kb_class': str(item.get('kb_class', '')).strip(),
+            'source': str(item.get('source', 'scene_summary')).strip() or 'scene_summary',
+        }
+        entry.update(
+            optional_float_fields(
+                item,
+                ('center_x', 'center_y', 'confidence', 'last_seen_sec', 'distance_m'),
+            )
         )
+        normalized.append(entry)
     return normalized
 
 
@@ -517,6 +565,17 @@ def _summarize_scene_objects(objects: list[dict]) -> str:
     )
 
 
+def _summarize_scene_entities(objects: list[dict], people: list[dict]) -> str:
+    """Summarize all current scene entities without treating people as objects."""
+    object_summary = _summarize_scene_objects(objects) if objects else ''
+    people_summary = summarize_people_detection(
+        [str(item.get('id', '')).strip() for item in people]
+    )
+    if object_summary and people_summary:
+        return '%s %s' % (object_summary, people_summary)
+    return object_summary or people_summary
+
+
 # -----------------------------------------------------------------------------
 # Structured execution-plan helpers
 # -----------------------------------------------------------------------------
@@ -547,19 +606,15 @@ def parse_plan_envelope(data: dict) -> dict:
             _plan_metadata_value(data, parsed_plan_dict, 'goal_id', 'goalId'),
             '',
         ),
-        'goal_token': _first_non_empty(
-            _plan_metadata_value(data, parsed_plan_dict, 'goal_token', 'goalToken'),
-            _first_non_empty(
-                _plan_metadata_value(data, parsed_plan_dict, 'goal_id', 'goalId'),
-                '',
-            ),
-        ),
         'plan_id': _first_non_empty(
             _plan_metadata_value(data, parsed_plan_dict, 'plan_id', 'id', 'planId'),
             '',
         ),
         'plan_version': _coerce_nonnegative_int(
             _plan_metadata_value(data, parsed_plan_dict, 'plan_version', 'version')
+        ),
+        'context_ref': _coerce_dict(
+            _plan_metadata_value(data, parsed_plan_dict, 'context_ref')
         ),
         'status': str(
             _plan_metadata_value(data, parsed_plan_dict, 'status')
@@ -629,6 +684,20 @@ def validate_execution_plan(intent_name: str, data: dict) -> dict:
     return envelope
 
 
+def scan_step_should_auto_report(*, plan: list[dict] | None, step_index: int) -> bool:
+    """Return whether a scan step may speak its own summary."""
+    if not isinstance(plan, list) or step_index >= len(plan) - 1:
+        return True
+    for later_step in plan[step_index + 1:]:
+        if not isinstance(later_step, dict):
+            continue
+        step_type = str(later_step.get('type', '')).strip().lower()
+        step_name = str(later_step.get('name', '')).strip().lower()
+        if step_type == 'say' or step_name in ('say', 'report_result'):
+            return False
+    return step_index >= len(plan) - 1
+
+
 def classify_motion_target(intent_name: str, data: dict) -> tuple[str, dict]:
     """Map canonical motion intents to the concrete NAO execution path."""
     clean_intent = str(intent_name).strip()
@@ -694,17 +763,20 @@ def _coerce_nonnegative_int(value) -> int:
 
 
 def _plan_look_at_error(step_args: dict) -> str:
+    normalized_args = _normalize_look_at_step_args(step_args)
     policy = str(
-        step_args.get('policy', step_args.get('object', ''))
+        normalized_args.get('policy', normalized_args.get('object', ''))
     ).strip().lower()
-    if policy in ('reset', 'look_at_reset'):
+    if policy in ('reset', 'look_at_reset') or policy in _LOOK_AT_TARGETLESS_POLICIES:
         return ''
     if _first_non_empty(
-        step_args.get('target_frame', ''),
-        step_args.get('frame_id', ''),
+        normalized_args.get('target_frame', ''),
+        normalized_args.get('frame_id', ''),
+        normalized_args.get('target', ''),
+        normalized_args.get('entity_id', ''),
     ):
         return ''
-    return 'look_at step is missing target_frame or reset policy'
+    return 'look_at step is missing target_frame or supported policy'
 
 
 def _first_non_empty(*values: str) -> str:
@@ -718,9 +790,9 @@ def _first_non_empty(*values: str) -> str:
 def _empty_plan_envelope() -> dict:
     return {
         'goal_id': '',
-        'goal_token': '',
         'plan_id': '',
         'plan_version': 0,
+        'context_ref': {},
         'status': '',
         'validation_status': '',
         'failure_reason': '',
@@ -755,18 +827,34 @@ def _plan_steps(data: dict) -> list[dict]:
 
 
 def _plan_metadata_value(data: dict, plan_data: dict, *keys: str):
+    _ = data
     for key in keys:
         if key in plan_data:
             return plan_data.get(key)
-        if key in data:
-            return data.get(key)
     return None
+
+
+def _coerce_dict(value) -> dict:
+    return dict(value) if isinstance(value, dict) else {}
 
 
 def _normalize_plan_step(step: dict, *, index: int) -> dict | None:
     step_type = str(step.get('type', '')).strip().lower()
     if step_type not in _PLAN_STEP_TYPES_SET:
         return None
+
+    step_name = str(step.get('name', '')).strip().lower()
+    raw_failure_policy = _first_non_empty(
+        step.get('on_failure', ''),
+        step.get('failure_policy', ''),
+    )
+    normalized_failure_policy = _coerce_failure_policy(raw_failure_policy)
+    if step_type == 'skill' and step_name in _ASK_USER_STEP_NAMES and not raw_failure_policy:
+        normalized_failure_policy = 'ask_user'
+
+    step_args = _clean_payload(step.get('args', {}))
+    if step_type == 'look_at' or step_name == 'look_at':
+        step_args = _normalize_look_at_step_args(step_args)
 
     return {
         'id': _first_non_empty(
@@ -775,18 +863,57 @@ def _normalize_plan_step(step: dict, *, index: int) -> dict | None:
             f'step_{index}',
         ),
         'type': step_type,
-        'name': str(step.get('name', '')).strip().lower(),
-        'args': _clean_payload(step.get('args', {})),
+        'name': step_name,
+        'args': step_args,
         'requires': _coerce_str_list(
             step.get('requires', step.get('preconditions', []))
         ),
-        'on_failure': _coerce_failure_policy(
-            step.get('on_failure', step.get('failure_policy', 'fail'))
-        ),
+        'on_failure': normalized_failure_policy,
         'retry_budget': _coerce_nonnegative_int(
             step.get('retry_budget', step.get('retries', 0))
         ),
     }
+
+
+def _normalize_look_at_step_args(step_args: dict) -> dict:
+    if not isinstance(step_args, dict):
+        return {}
+
+    normalized = _clean_payload(step_args)
+    policy = str(
+        normalized.get('policy', normalized.get('object', ''))
+    ).strip().lower()
+    if policy in _LOOK_AT_RESET_ALIASES:
+        normalized['policy'] = 'reset'
+        normalized.pop('target_frame', None)
+        normalized.pop('frame_id', None)
+        normalized.pop('target', None)
+        normalized.pop('entity_id', None)
+        return normalized
+
+    target_frame = _first_non_empty(
+        normalized.get('target_frame', ''),
+        normalized.get('frame_id', ''),
+        normalized.get('target', ''),
+        normalized.get('entity_id', ''),
+    )
+    if not target_frame:
+        return normalized
+
+    clean_target = str(target_frame).strip()
+    if clean_target.lower() in _LOOK_AT_RESET_TARGET_ALIASES:
+        normalized['policy'] = 'reset'
+        normalized.pop('target_frame', None)
+        normalized.pop('frame_id', None)
+        normalized.pop('target', None)
+        normalized.pop('entity_id', None)
+        return normalized
+
+    normalized['target_frame'] = clean_target
+    normalized.pop('frame_id', None)
+    normalized.pop('target', None)
+    normalized.pop('entity_id', None)
+    return normalized
 
 
 def _coerce_failure_policy(value) -> str:
@@ -832,8 +959,12 @@ def _plan_step_validation_error(intent_name: str, step: dict) -> str:
         return f'unsupported skill step "{step_name}"'
     if step_name == 'look_at':
         return _plan_look_at_error(step_args)
+    if step_name in _ASK_USER_STEP_NAMES:
+        return _plan_ask_user_error(step_args)
     if step_name in _SCAN_SKILL_PLAN_NAMES:
         return ''
+    if step_name in _KB_MUTATION_SKILL_PLAN_NAMES:
+        return _plan_kb_mutation_error(step_args)
 
     if step_name in _FAKE_SKILL_PLAN_NAMES:
         return ''
@@ -851,3 +982,33 @@ def _plan_step_validation_error(intent_name: str, step: dict) -> str:
             sort_keys=True,
         )
     return ''
+
+
+def _plan_kb_mutation_error(step_args: dict) -> str:
+    statements = step_args.get('statements', step_args.get('statement', []))
+    if isinstance(statements, str):
+        statements = [statements]
+    if not isinstance(statements, list):
+        return 'KB mutation step statements must be a string or list'
+    if any(str(statement).strip() for statement in statements):
+        return ''
+    return 'KB mutation step is missing concrete statements'
+
+
+def _plan_ask_user_error(step_args: dict) -> str:
+    prompt_text = _first_non_empty(
+        step_args.get('question', ''),
+        step_args.get('text', ''),
+        step_args.get('summary_text', ''),
+        step_args.get('text_hint', ''),
+        step_args.get('message', ''),
+        step_args.get('utterance', ''),
+        step_args.get('object', ''),
+        step_args.get('reason', ''),
+    )
+    if prompt_text:
+        return ''
+    slots_needed = _coerce_str_list(step_args.get('slots_needed', []))
+    if slots_needed:
+        return ''
+    return 'ask_user step is missing prompt text or slots_needed'

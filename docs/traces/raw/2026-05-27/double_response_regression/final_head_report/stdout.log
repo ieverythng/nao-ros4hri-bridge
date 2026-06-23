@@ -1,0 +1,58 @@
+[INFO] [1779889355.218919761] [interaction_trace_viewer]: trace subscribed: /rosout
+[INFO] [1779889355.219784473] [interaction_trace_viewer]: interaction_trace_viewer started
+[INFO] [1779889357.823854854] [interaction_trace_viewer]: trace subscribed: /intents
+[INFO] [1779889357.828139874] [interaction_trace_viewer]: trace subscribed: /planner/dialogue_act
+[INFO] [1779889357.831054924] [interaction_trace_viewer]: trace subscribed: /nao_orchestrator/planner_dialogue_act
+[INFO] [1779889357.833877941] [interaction_trace_viewer]: trace subscribed: /chatbot_llm/turn_trace
+[INFO] [1779889357.836237880] [interaction_trace_viewer]: trace subscribed (speech): /debug/nao_say/speech
+[INFO] [1779889357.838789988] [interaction_trace_viewer]: trace subscribed (speech): /speech
+[INFO] [1779889359.197030908] [interaction_trace_viewer]: trace subscribed: /planner/request
+[INFO] [1779889359.201303836] [interaction_trace_viewer]: trace subscribed: /planner/execution_feedback
+[INFO] [1779889359.204638052] [interaction_trace_viewer]: trace subscribed: /fake_skills/events
+[INFO] [1779889359.207432997] [interaction_trace_viewer]: trace subscribed: /world_model/enriched_snapshot
+[INFO] [1779889359.210740012] [interaction_trace_viewer]: trace subscribed: /world_model/enriched_text
+[1779889361.852] __default__:1 | chatbot_turn_trace | /chatbot_llm/turn_trace | flow=event_type=chatbot_turn_result,route=execution
+  route=execution | intent=head_look_right | source=llm_response_route
+[1779889361.855] __default__:1 | planner_request | /planner/request
+  goal=
+[1779889361.858] goal_default___1 | planner_output | /intents
+  planner output
+[1779889361.867] goal_default___1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1,plan_id=plan_1779889361856,event_type=plan_accepted
+  accepted
+[1779889361.878] goal_default___1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1,plan_id=plan_1779889361856,event_type=step_started,step=perform_motion
+  running
+[1779889361.893] trace_0001 | robot_speech | /debug/nao_say/speech
+  /debug/nao_say/speech {"text":"Sure, I will move my head to the right and report what I see."}
+[1779889361.897] trace_0002 | robot_speech | /speech
+  /speech {"text":"Sure, I will move my head to the right and report what I see."}
+[1779889363.005] goal_default___1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1,plan_id=plan_1779889361856,event_type=step_succeeded,step=perform_motion
+  succeeded
+[1779889363.006] goal_default___1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1,plan_id=plan_1779889361856,event_type=plan_completed
+  completed
+[1779889363.008] goal_default___1 | planner_dialogue_act | /planner/dialogue_act | flow=goal_id=goal_default___1
+  /planner/dialogue_act {"act":"notify_completion","await_user_response":false,"context":{"goal_text":"move head to the right and report visible objects","plan_step_count":1,"requested_intents":["head_look_right"],"result_payload":{},"status":"completed"},"goal_id":"goal_default___1","plan_id":"","plan_version":1,"priority":"normal","reason":"goal completed","slots_needed":[],"text_hint":"I am looking to the right now."}
+[1779889363.009] goal_default___1 | planner_dialogue_act | /nao_orchestrator/planner_dialogue_act | flow=goal_id=goal_default___1
+  /nao_orchestrator/planner_dialogue_act {"act":"notify_completion","await_user_response":false,"context":{"goal_text":"move head to the right and report visible objects","plan_step_count":1,"requested_intents":["head_look_right"],"result_payload":{},"status":"completed"},"goal_id":"goal_default___1","plan_id":"","plan_version":1,"priority":"normal","reason":"goal completed","slots_needed":[],"text_hint":"I am looking to the right now."}
+[1779889363.019] trace_0003 | robot_speech | /debug/nao_say/speech
+  /debug/nao_say/speech {"text":"I am looking to the right now."}
+[1779889363.021] trace_0004 | robot_speech | /speech
+  /speech {"text":"I am looking to the right now."}
+Traceback (most recent call last):
+  File "/home/ubuntu/ws/install/interaction_trace_viewer/lib/interaction_trace_viewer/trace_node", line 33, in <module>
+    sys.exit(load_entry_point('interaction-trace-viewer', 'console_scripts', 'trace_node')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/ws/build/interaction_trace_viewer/interaction_trace_viewer/trace_node.py", line 339, in main
+    rclpy.spin(node)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+    executor.spin_once()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 845, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 829, in _spin_once_impl
+    handler, entity, node = self.wait_for_ready_callbacks(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 799, in wait_for_ready_callbacks
+    return next(self._cb_iter)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 707, in _wait_for_ready_callbacks
+    raise ExternalShutdownException()
+rclpy.executors.ExternalShutdownException

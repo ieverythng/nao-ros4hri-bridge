@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOCATE-ANYTHING-3B Integration Report — NAO / ROS2 / HRI Bridge</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-2: #1c2128;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --cyan: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+  }
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+  }
+  h1, h2, h3, h4 { line-height: 1.25; }
+  h1 {
+    margin: 0 0 8px;
+    font-size: 2.2rem;
+    color: #fff;
+    letter-spacing: -0.03em;
+  }
+  h2 {
+    margin: 36px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    color: var(--accent);
+    font-size: 1.45rem;
+  }
+  h3 {
+    margin: 24px 0 10px;
+    color: var(--purple);
+    font-size: 1.12rem;
+  }
+  h4 {
+    margin: 18px 0 8px;
+    color: var(--cyan);
+    font-size: 1rem;
+  }
+  p, li { color: var(--text); }
+  .meta, .small { color: var(--muted); }
+  .hero {
+    background: linear-gradient(180deg, rgba(88,166,255,0.12), rgba(88,166,255,0.04));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-right: 8px;
+    margin-bottom: 8px;
+  }
+  .ok { background: rgba(63,185,80,0.12); color: var(--green); border: 1px solid rgba(63,185,80,0.45); }
+  .warn { background: rgba(210,153,34,0.12); color: var(--yellow); border: 1px solid rgba(210,153,34,0.45); }
+  .risk { background: rgba(248,81,73,0.12); color: var(--red); border: 1px solid rgba(248,81,73,0.45); }
+  .accent { background: rgba(88,166,255,0.12); color: var(--accent); border: 1px solid rgba(88,166,255,0.45); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0 20px;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  th, td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    text-align: left;
+  }
+  th {
+    background: var(--surface-2);
+    color: var(--accent);
+    font-weight: 700;
+  }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+  code {
+    background: var(--surface-2);
+    padding: 0.18em 0.42em;
+    border-radius: 6px;
+    font-size: 0.92em;
+  }
+  pre {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.35;
+    margin: 14px 0 20px;
+  }
+  pre code { background: transparent; padding: 0; }
+  ul { padding-left: 22px; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc li { margin: 4px 0; }
+  .svgbox {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+    overflow-x: auto;
+  }
+  .footer {
+    margin-top: 40px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <h1>LOCATE-ANYTHING-3B Integration Report</h1>
+    <p><strong>Target:</strong> NAO robot + ROS2 Humble + HRI bridge</p>
+    <p><strong>Generated:</strong> 2026-06-20T02:31:41Z &middot; <strong>Workspace:</strong> <code>/home/juanbeck/Watson</code> &middot; <strong>Operating style:</strong> concise, auditable, staged-first</p>
+    <div style="margin-top:12px;">
+      <span class="badge accent">Architecture</span>
+      <span class="badge ok">Actionable</span>
+      <span class="badge warn">Staged rollout</span>
+      <span class="badge risk">Resource-sensitive</span>
+    </div>
+    <p class="small">This report is grounded in local repo inspection of <code>/home/juanbeck/locate-anything.cpp</code>, WatsonOW identity/style files, existing NAO integration notes, and representative iTrack Python conventions.</p>
+  </section>
+
+  <section class="card">
+    <h3>Executive Summary</h3>
+    <p><strong>LOCATE-ANYTHING-3B</strong> is a 3B-parameter visual grounding model: it takes <em>image + text query</em> and returns bounding boxes for matching objects. For the NAO / ROS2 / HRI bridge, the cleanest integration path is to treat it as a <strong>query-driven perception backend</strong>, not as planner logic.</p>
+    <p><strong>Recommended deployment:</strong> start with <strong>remote inference</strong> on Juan's RTX 5070 Ti using <code>locate-anything.cpp</code> in CLI/shared-library mode, then expose a ROS2 service to the robot. Keep NAO-side execution thin: camera capture, request packaging, result publishing, and HRI feedback. Local-on-NAO deployment is useful only as a constrained fallback or proof-of-concept.</p>
+  </section>
+
+  <section class="card toc">
+    <h3>Contents</h3>
+    <ol>
+      <li><a href="#system-scope">System Scope</a></li>
+      <li><a href="#architecture">Architecture Overview</a></li>
+      <li><a href="#deployment">Deployment Options: Local vs Remote</a></li>
+      <li><a href="#phases">Implementation Phases</a></li>
+      <li><a href="#files">Proposed File Structure</a></li>
+      <li><a href="#patterns">Key Code Patterns</a></li>
+      <li><a href="#testing">Testing Strategy</a></li>
+      <li><a href="#risks">Risk Assessment</a></li>
+      <li><a href="#sources">Inspected Sources</a></li>
+    </ol>
+  </section>
+
+  <h2 id="system-scope">1. System Scope</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>What the model does</h3>
+      <ul>
+        <li>Open-vocabulary object localization / visual grounding.</li>
+        <li>Input: single image + free-text query.</li>
+        <li>Output: labeled bounding boxes.</li>
+        <li>Good fit for commands like: <code>find the red mug</code>, <code>locate the person near the table</code>.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>What the bridge must do</h3>
+      <ul>
+        <li>Camera capture from NAO or bridge-side topic.</li>
+        <li>Send frame + query for inference.</li>
+        <li>Normalize detections into ROS2-friendly messages.</li>
+        <li>Publish results to perception/planner topics.</li>
+        <li>Drive HRI feedback: speech, gaze, gestures, clarification.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Known implementation substrate</h3>
+      <ul>
+        <li><code>locate-anything.cpp</code> is present locally at <code>/home/juanbeck/locate-anything.cpp</code>.</li>
+        <li>Official model origin is Hugging Face / Transformers: <code>nvidia/LocateAnything-3B</code>.</li>
+        <li>Local inference stack supports CLI, static/shared library, and C ABI.</li>
+      </ul>
+    </div>
+  </div>
+
+  <table>
+    <tr><th>Fact</th><th>Integration consequence</th></tr>
+    <tr><td>3B VLM, visual grounding rather than generic chat</td><td>Use as a specialized perception service, not a dialogue component.</td></tr>
+    <tr><td>Single-image detection path is validated in <code>locate-anything.cpp</code></td><td>Build request-response semantics around a single captured frame.</td></tr>
+    <tr><td>CLI returns JSON detections and optional annotated image</td><td>Fastest Phase-1 bridge is subprocess-based with JSON parsing.</td></tr>
+    <tr><td>C API exposes <code>la_capi_load</code>, <code>la_capi_locate_path</code>, detection accessors</td><td>Best Phase-2/3 path is a persistent service or native ROS2 node without per-request process spawn.</td></tr>
+    <tr><td>GPU-capable via ggml backends; q8_0 is recommended</td><td>Remote GPU inference is the practical production choice.</td></tr>
+  </table>
+
+  <h2 id="architecture">2. Architecture Overview</h2>
+  <p>The integration should preserve the current NAO / ROS2 / HRI separation of concerns:</p>
+  <ul>
+    <li><strong>Perception</strong> handles image capture and model inference.</li>
+    <li><strong>Bridge/orchestration</strong> converts raw detections into contracts the rest of the system can consume.</li>
+    <li><strong>HRI</strong> turns results into robot behavior: speech, gaze, and clarification loops.</li>
+  </ul>
+
+  <div class="svgbox">
+    <svg width="1080" height="360" viewBox="0 0 1080 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Integration architecture diagram">
+      <defs>
+        <style>
+          .b{fill:#161b22;stroke:#30363d;stroke-width:1.5}.t{fill:#c9d1d9;font:14px sans-serif}.h{fill:#58a6ff;font:700 14px sans-serif}.a{stroke:#58a6ff;stroke-width:2;marker-end:url(#m)}
+        </style>
+        <marker id="m" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <path d="M0,0 L10,3 L0,6 Z" fill="#58a6ff"/>
+        </marker>
+      </defs>
+      <rect class="b" x="20" y="60" width="160" height="78" rx="12"/>
+      <text class="h" x="40" y="88">1. Camera Source</text>
+      <text class="t" x="40" y="110">NAO camera / ROS2</text>
+      <text class="t" x="40" y="130">sensor_msgs/Image</text>
+
+      <rect class="b" x="220" y="60" width="180" height="78" rx="12"/>
+      <text class="h" x="240" y="88">2. Capture Adapter</text>
+      <text class="t" x="240" y="110">frame cache</text>
+      <text class="t" x="240" y="130">query correlation</text>
+
+      <rect class="b" x="440" y="40" width="210" height="118" rx="12"/>
+      <text class="h" x="460" y="68">3. Inference Service</text>
+      <text class="t" x="460" y="92">local CLI or shared lib</text>
+      <text class="t" x="460" y="114">or remote GPU server</text>
+      <text class="t" x="460" y="136">returns JSON bboxes</text>
+
+      <rect class="b" x="700" y="60" width="180" height="78" rx="12"/>
+      <text class="h" x="720" y="88">4. ROS2 Publisher</text>
+      <text class="t" x="720" y="110">service + topic output</text>
+      <text class="t" x="720" y="130">normalized payloads</text>
+
+      <rect class="b" x="920" y="60" width="140" height="78" rx="12"/>
+      <text class="h" x="940" y="88">5. HRI Layer</text>
+      <text class="t" x="940" y="110">speech / gaze /</text>
+      <text class="t" x="940" y="130">gesture / clarify</text>
+
+      <rect class="b" x="700" y="210" width="180" height="78" rx="12"/>
+      <text class="h" x="720" y="238">Planner Context</text>
+      <text class="t" x="720" y="260">scene summary</text>
+      <text class="t" x="720" y="280">execution feedback</text>
+
+      <rect class="b" x="920" y="210" width="140" height="78" rx="12"/>
+      <text class="h" x="940" y="238">Action Skills</text>
+      <text class="t" x="940" y="260">look_at</text>
+      <text class="t" x="940" y="280">find/report</text>
+
+      <line class="a" x1="180" y1="99" x2="220" y2="99"/>
+      <line class="a" x1="400" y1="99" x2="440" y2="99"/>
+      <line class="a" x1="650" y1="99" x2="700" y2="99"/>
+      <line class="a" x1="880" y1="99" x2="920" y2="99"/>
+      <line class="a" x1="790" y1="138" x2="790" y2="210"/>
+      <line class="a" x1="880" y1="249" x2="920" y2="249"/>
+    </svg>
+  </div>
+
+  <h3>Recommended runtime flow</h3>
+  <pre><code>User request / planner intent
+  → capture current image frame
+  → create grounding request {query_text, image, camera_info, request_id}
+  → LOCATE-ANYTHING-3B inference
+  → parse bounding boxes
+  → publish /perception/ground_text result and /scene/grounding_result
+  → optionally update /scene/summary and world-model snapshot
+  → HRI response: “I found the mug on your left” + look_at / gesture</code></pre>
+
+  <h3>Core ROS2/HRI components</h3>
+  <table>
+    <tr><th>Component</th><th>Responsibility</th><th>Notes</th></tr>
+    <tr><td>Camera interface</td><td>Acquire latest robot image and camera metadata</td><td>Should maintain a small frame cache for request-time grounding.</td></tr>
+    <tr><td>Model loader / inference service</td><td>Own model lifecycle and execute grounding queries</td><td>CLI in Phase 1; shared-lib or C++ service in later phases.</td></tr>
+    <tr><td>Inference pipeline</td><td>Convert image + text into normalized detections</td><td>Include query provenance, timestamps, frame id, decode mode.</td></tr>
+    <tr><td>Topic publisher</td><td>Publish result JSON and/or typed message</td><td>Support planner, scene grounding, and debugging consumers.</td></tr>
+    <tr><td>HRI module</td><td>Speech, gaze, gestures, clarifications</td><td>Use result confidence/ambiguity to choose feedback style.</td></tr>
+    <tr><td>Planner bridge</td><td>Expose grounding as request-local or world-model context</td><td>Avoid coupling heavy inference into planner loop itself.</td></tr>
+  </table>
+
+  <h2 id="deployment">3. Deployment Options: Local vs Remote</h2>
+  <p>Two deployment modes are viable. They should share the same ROS2-facing contract so the rest of the bridge does not care where inference runs.</p>
+
+  <h3>Option A — Local inference on NAO / robot-side host</h3>
+  <table>
+    <tr><th>Dimension</th><th>Assessment</th></tr>
+    <tr><td>Pros</td><td>No network dependency, simpler privacy boundary, single-box operation.</td></tr>
+    <tr><td>Cons</td><td>NAO-class hardware is resource-constrained for a 3B VLM; CPU-only latency will be high and interactive HRI will degrade.</td></tr>
+    <tr><td>Best use</td><td>Fallback mode, lab proof-of-concept, low-rate scans, offline testing.</td></tr>
+    <tr><td>Implementation mode</td><td>Prefer CLI wrapper first; if sustained local use is required, move to shared library to eliminate process overhead.</td></tr>
+    <tr><td>Risk</td><td>Thermal, memory, and latency pressure; possible ROS callback starvation if not isolated.</td></tr>
+  </table>
+
+  <h3>Option B — Remote inference server on Juan's RTX 5070 Ti</h3>
+  <table>
+    <tr><th>Dimension</th><th>Assessment</th></tr>
+    <tr><td>Pros</td><td>Strongest performance envelope, likely sub-second q8_0 inference, clean separation between robot control and GPU workload.</td></tr>
+    <tr><td>Cons</td><td>Network dependency, serialization overhead, operational complexity, need for health checks and retries.</td></tr>
+    <tr><td>Best use</td><td>Primary production path for interactive object-finding and HRI.</td></tr>
+    <tr><td>Implementation mode</td><td>Persistent inference daemon or service wrapping <code>liblocate_anything</code> / C ABI.</td></tr>
+    <tr><td>Risk</td><td>Dropped connectivity, stale frames, robot waits on remote result if timeouts are not well bounded.</td></tr>
+  </table>
+
+  <h3>Recommended decision</h3>
+  <div class="card">
+    <p><strong>Primary:</strong> remote GPU inference on the RTX 5070 Ti.</p>
+    <p><strong>Fallback:</strong> local CLI mode for degraded operation and diagnostics.</p>
+    <p><strong>Why:</strong> HRI interaction quality depends on predictable latency. The robot should spend its compute budget on control, speech, and bridge logic rather than large-model inference.</p>
+  </div>
+
+  <h3>Deployment contract to keep stable</h3>
+  <pre><code>ROS2 request
+  request_id: string
+  query_text: string
+  image: sensor_msgs/Image or encoded buffer
+  camera_info: sensor_msgs/CameraInfo
+  decode_mode: hybrid|slow|fast
+
+ROS2 response / topic payload
+  success: bool
+  backend: locateanything-3b
+  model_name: LocateAnything-3B-q8_0
+  image_frame: string
+  timestamp: builtin_interfaces/Time
+  detections: [{label, score, bbox, center_px, attributes?, pose_hint?}]</code></pre>
+
+  <h2 id="phases">4. Implementation Phases</h2>
+  <table>
+    <tr><th>Phase</th><th>Goal</th><th>Deliverables</th><th>Exit criteria</th></tr>
+    <tr><td>0. Discovery</td><td>Validate model path, hardware path, and current ROS2 bridge seams</td><td>Repo inspection, model path config, service schema, deployment choice</td><td>Known interfaces and target architecture signed off</td></tr>
+    <tr><td>1. CLI proof-of-concept</td><td>Make grounding requests work end-to-end</td><td><code>nao_locate_anything</code> package, subprocess wrapper, JSON parser, service endpoint</td><td>Robot or simulator can ask for an object and receive a bounding box</td></tr>
+    <tr><td>2. ROS2 integration</td><td>Publish structured outputs into perception/planner stack</td><td><code>/perception/ground_text</code>, <code>/scene/grounding_result</code>, launch file, config parameters</td><td>Results are consumable by planner/HRI modules</td></tr>
+    <tr><td>3. HRI binding</td><td>Make detections socially actionable</td><td>Speech templates, look-at behavior, ambiguity handling, no-result feedback</td><td>Robot can explain what it found or failed to find</td></tr>
+    <tr><td>4. Performance hardening</td><td>Reduce latency and improve reliability</td><td>Persistent process or shared-lib backend, caching, timeout policy, health checks</td><td>Median latency and failure handling are acceptable for live use</td></tr>
+    <tr><td>5. Geometric actionability</td><td>Turn 2D boxes into downstream action targets</td><td>Optional 2D→3D projection, frame transforms, pose hints</td><td>Planner can chain from find → look_at / navigate / manipulate safely</td></tr>
+  </table>
+
+  <h3>Detailed phased plan</h3>
+  <h4>Phase 1 — Minimal viable bridge</h4>
+  <ul>
+    <li>Create a Python ROS2 node that subscribes to camera frames and exposes a grounding service.</li>
+    <li>Invoke <code>locate-anything-cli detect --model ... --input ... --prompt ...</code>.</li>
+    <li>Parse JSON detections and publish result payloads.</li>
+    <li>Keep current continuous detector path untouched to reduce blast radius.</li>
+  </ul>
+
+  <h4>Phase 2 — Planner/HRI integration</h4>
+  <ul>
+    <li>Add query-specific topic <code>/scene/grounding_result</code>.</li>
+    <li>Teach the orchestration layer to call grounding on demand for <code>find_object</code>-style intents.</li>
+    <li>Add HRI responses based on <code>0</code>, <code>1</code>, or <code>many</code> matches.</li>
+  </ul>
+
+  <h4>Phase 3 — Production backend</h4>
+  <ul>
+    <li>Replace subprocess spawn with persistent backend using <code>liblocate_anything</code> or <code>la_capi.h</code>.</li>
+    <li>Support local and remote runtime behind the same adapter interface.</li>
+    <li>Add metrics, health checks, watchdog restart, and circuit-breaker behavior.</li>
+  </ul>
+
+  <h4>Phase 4 — Actionable grounding</h4>
+  <ul>
+    <li>Add camera calibration and optional depth/TF support.</li>
+    <li>Emit <code>pose_hint</code> when geometry is available.</li>
+    <li>Allow planner to chain grounded perception into <code>look_at</code> or navigation safely.</li>
+  </ul>
+
+  <h2 id="files">5. Proposed File Structure</h2>
+  <p>The file layout below is designed to match ROS2 package conventions while staying consistent with the lean, explicit style used in WatsonOW and iTrack:</p>
+
+  <pre><code>nao-ros4hri-bridge/
+└── src/
+    ├── nao_locate_anything/
+    │   ├── package.xml
+    │   ├── setup.py
+    │   ├── resource/
+    │   │   └── nao_locate_anything
+    │   ├── launch/
+    │   │   └── locate_anything.launch.py
+    │   ├── config/
+    │   │   ├── locate_anything.local.yaml
+    │   │   └── locate_anything.remote.yaml
+    │   ├── srv/
+    │   │   └── GroundText.srv
+    │   ├── msg/
+    │   │   └── GroundingResult.msg          # optional if typed msg is preferred over JSON-only
+    │   ├── nao_locate_anything/
+    │   │   ├── __init__.py
+    │   │   ├── config.py                    # settings / env-backed parameter helpers
+    │   │   ├── node.py                      # ROS2 node entrypoint
+    │   │   ├── camera_buffer.py             # latest-frame cache
+    │   │   ├── models.py                    # pydantic/dataclass payloads
+    │   │   ├── adapters/
+    │   │   │   ├── __init__.py
+    │   │   │   ├── base.py                  # GroundingBackend protocol
+    │   │   │   ├── cli_backend.py           # Phase-1 subprocess implementation
+    │   │   │   ├── remote_backend.py        # HTTP/gRPC/TCP inference client
+    │   │   │   └── capi_backend.py          # Phase-3 native binding
+    │   │   ├── publishers.py                # topic + result serialization
+    │   │   ├── hri_feedback.py              # speech/gesture decision helpers
+    │   │   └── utils.py
+    │   └── tests/
+    │       ├── test_cli_backend.py
+    │       ├── test_result_normalization.py
+    │       ├── test_service_contract.py
+    │       └── fixtures/
+    │           ├── sample_detections.json
+    │           └── sample_frame.jpg
+    ├── nao_scene_grounding/                 # existing package, lightly extended
+    ├── nao_orchestrator/                    # existing package, consumes results
+    └── planner_llm/                         # existing package, receives grounded context</code></pre>
+
+  <h3>Config split</h3>
+  <table>
+    <tr><th>File</th><th>Purpose</th></tr>
+    <tr><td><code>locate_anything.local.yaml</code></td><td>Model path, local CLI path, threads, timeout, temp image directory.</td></tr>
+    <tr><td><code>locate_anything.remote.yaml</code></td><td>Remote URL/host, request timeout, retries, health endpoint, transport settings.</td></tr>
+    <tr><td><code>config.py</code></td><td>Environment variable and ROS parameter normalization; mirror explicit config style from iTrack's <code>Settings</code> pattern.</td></tr>
+  </table>
+
+  <h2 id="patterns">6. Key Code Patterns</h2>
+  <p>The local codebase inspection strongly suggests a staged adapter pattern: start simple, keep interfaces stable, then swap runtime implementations without touching planner/HRI contracts.</p>
+
+  <h3>Pattern A — Backend interface with multiple implementations</h3>
+  <pre><code>from dataclasses import dataclass
+from typing import Protocol
+
+@dataclass(slots=True)
+class GroundingRequest:
+    request_id: str
+    query_text: str
+    image_path: str | None
+    image_bytes: bytes | None
+    decode_mode: str = "hybrid"
+
+@dataclass(slots=True)
+class Detection:
+    label: str
+    score: float
+    bbox: tuple[float, float, float, float]
+
+@dataclass(slots=True)
+class GroundingResult:
+    success: bool
+    backend: str
+    model_name: str
+    detections: list[Detection]
+    message: str = ""
+
+class GroundingBackend(Protocol):
+    def locate(self, request: GroundingRequest) -&gt; GroundingResult: ...</code></pre>
+  <p class="small">Why: this keeps <code>node.py</code> independent from whether inference happens via CLI, C API, or remote server.</p>
+
+  <h3>Pattern B — Phase-1 CLI wrapper</h3>
+  <pre><code>cmd = [
+    cli_path,
+    "detect",
+    "--model", model_path,
+    "--input", image_path,
+    "--prompt", request.query_text,
+    "--mode", request.decode_mode,
+]
+completed = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_sec, check=False)
+if completed.returncode != 0:
+    raise GroundingError(completed.stderr.strip() or "locate-anything-cli failed")
+payload = json.loads(completed.stdout)</code></pre>
+  <p class="small">Grounding basis: local repo README and <code>src/cli.cpp</code> confirm <code>detect</code>, <code>--model</code>, <code>--input</code>, <code>--prompt</code>, <code>--mode</code>, and JSON output semantics.</p>
+
+  <h3>Pattern C — Persistent native backend</h3>
+  <pre><code>// Grounded in /home/juanbeck/locate-anything.cpp/include/la_capi.h
+la_ctx* ctx = la_capi_load(model_path, n_threads);
+char* json = la_capi_locate_path(ctx, image_path, prompt, 0 /* hybrid */);
+if (!json) {
+    const char* err = la_capi_last_error(ctx);
+    // surface structured backend failure
+}
+// parse JSON, publish result, then free string
+la_capi_free_string(json);</code></pre>
+  <p class="small">This removes per-request process spawn and aligns with production use.</p>
+
+  <h3>Pattern D — ROS2 node shape</h3>
+  <pre><code>class LocateAnythingNode(Node):
+    def __init__(self) -&gt; None:
+        super().__init__("locate_anything")
+        self._frame_buffer = FrameBuffer(max_age_sec=1.0)
+        self._backend = build_backend(self)
+        self._result_pub = self.create_publisher(String, "/scene/grounding_result", 10)
+        self._service = self.create_service(GroundText, "/perception/ground_text", self._handle_ground_text)
+        self._image_sub = self.create_subscription(Image, "/camera/image", self._on_image, 10)
+
+    def _handle_ground_text(self, request, response):
+        result = self._backend.locate(to_grounding_request(request, self._frame_buffer.latest()))
+        publish_grounding_result(self._result_pub, result)
+        return fill_response(response, result)</code></pre>
+  <p class="small">This matches the explicit composition style seen in iTrack's application factory/config organization: thin entrypoints, settings object, delegated services.</p>
+
+  <h3>Pattern E — Result normalization contract</h3>
+  <pre><code>{
+  "request_id": "ground_123",
+  "query_text": "coffee mug",
+  "backend": "locateanything-3b",
+  "model": "LocateAnything-3B-q8_0",
+  "image_frame": "camera_color_optical_frame",
+  "timestamp_sec": 1712345678.25,
+  "detections": [
+    {
+      "detection_id": "la_det_1",
+      "label": "mug",
+      "canonical_label": "cup",
+      "score": 0.86,
+      "bbox": {"x1": 412, "y1": 201, "x2": 566, "y2": 411},
+      "center_px": {"x": 489.0, "y": 306.0},
+      "attributes": {"color": "red"},
+      "pose_hint": {"valid": false}
+    }
+  ]
+}</code></pre>
+  <p class="small">This schema is compatible with the existing scene-grounding notes already present in Watson research material and is richer than center-only summaries.</p>
+
+  <h3>Pattern F — HRI policy by result cardinality</h3>
+  <table>
+    <tr><th>Condition</th><th>Robot behavior</th></tr>
+    <tr><td>No detections</td><td>Speak failure, optionally ask for clarification or request a new view.</td></tr>
+    <tr><td>Single strong detection</td><td>Speak confirmation and optionally execute <code>look_at</code>.</td></tr>
+    <tr><td>Multiple detections</td><td>Describe ambiguity: left/right, nearest/farthest, color, or request user disambiguation.</td></tr>
+    <tr><td>Backend timeout</td><td>Apologize briefly, log the failure, and fall back to local detector or retry policy.</td></tr>
+  </table>
+
+  <h3>Pattern G — Local/remote selection by configuration</h3>
+  <pre><code>def build_backend(node: Node) -&gt; GroundingBackend:
+    mode = node.get_parameter("backend_mode").get_parameter_value().string_value
+    if mode == "remote":
+        return RemoteBackend(...)
+    if mode == "capi":
+        return CAPIBackend(...)
+    return CLIBackend(...)</code></pre>
+
+  <h2 id="testing">7. Testing Strategy</h2>
+  <p>Testing should cover both the model backend seam and the robot-behavior seam. The inspected <code>locate-anything.cpp</code> repo already includes strong backend verification signals: <code>ctest</code>-backed frozen references and <code>scripts/diff_upstream.py</code> for live parity against the official implementation. Reuse that confidence rather than re-solving model correctness from scratch.</p>
+
+  <table>
+    <tr><th>Layer</th><th>What to test</th><th>Method</th></tr>
+    <tr><td>Backend wrapper</td><td>CLI invocation, timeout handling, stderr parsing, JSON decoding</td><td>Unit tests with mocked subprocess and golden JSON fixtures</td></tr>
+    <tr><td>Normalization</td><td>bbox conversion, score handling, center calculation, schema stability</td><td>Pure Python unit tests</td></tr>
+    <tr><td>ROS2 service contract</td><td>Request/response correctness</td><td>ROS2 integration tests in simulated workspace</td></tr>
+    <tr><td>Topic publishing</td><td>Grounding result topic shape and timing</td><td>Launch tests + subscriber assertions</td></tr>
+    <tr><td>HRI behavior</td><td>Speech/gaze behavior on zero/one/many detections</td><td>State-machine tests and demo scripts</td></tr>
+    <tr><td>Deployment path</td><td>Remote reconnects, health checks, local fallback</td><td>Failure-injection tests and network interruption drills</td></tr>
+    <tr><td>Performance</td><td>Latency budgets and throughput</td><td>Benchmark on representative camera frames</td></tr>
+  </table>
+
+  <h3>Recommended test ladder</h3>
+  <ol>
+    <li><strong>Golden backend tests:</strong> use saved CLI outputs and fixed images.</li>
+    <li><strong>ROS2 contract tests:</strong> send a grounding request and assert normalized result contents.</li>
+    <li><strong>Scenario tests:</strong> "find the mug", "find the person", "no object found", "two mugs present".</li>
+    <li><strong>Operational tests:</strong> kill remote backend, verify timeout + apology + retry/fallback.</li>
+    <li><strong>Human-loop tests:</strong> confirm robot phrasing and gesture timing feel natural.</li>
+  </ol>
+
+  <h3>Acceptance metrics</h3>
+  <table>
+    <tr><th>Metric</th><th>Target</th></tr>
+    <tr><td>Correct end-to-end grounding</td><td>Known query returns expected object box on test fixtures</td></tr>
+    <tr><td>Planner/HRI contract stability</td><td>No schema drift across local/remote backends</td></tr>
+    <tr><td>Remote median latency</td><td>Fast enough for conversational turn-taking; ideally sub-second to low-single-digit seconds</td></tr>
+    <tr><td>Failure handling</td><td>Every timeout or backend fault becomes explicit ROS/HRI feedback, not silent hangs</td></tr>
+    <tr><td>Fallback behavior</td><td>Robot remains responsive when remote inference is unavailable</td></tr>
+  </table>
+
+  <h2 id="risks">8. Risk Assessment</h2>
+  <table>
+    <tr><th>Risk</th><th>Severity</th><th>Why it matters</th><th>Mitigation</th></tr>
+    <tr><td>NAO-side compute limitations</td><td>High</td><td>Local 3B inference can destroy interaction quality.</td><td>Prefer remote GPU deployment; isolate local mode as fallback only.</td></tr>
+    <tr><td>Network dependency for remote inference</td><td>High</td><td>Robot may block on unreachable backend.</td><td>Bounded timeouts, health checks, circuit breaker, graceful fallback speech.</td></tr>
+    <tr><td>Per-request subprocess overhead</td><td>Medium</td><td>CLI spawning increases latency and error surface.</td><td>Use CLI only for Phase 1; migrate to shared-lib/C API.</td></tr>
+    <tr><td>2D boxes are not yet action targets</td><td>High</td><td>Planner may over-assume the robot can act on image-only detections.</td><td>Expose capability flags; require separate 2D→3D stage before navigation/manipulation.</td></tr>
+    <tr><td>Ambiguous grounding</td><td>Medium</td><td>Open-vocabulary prompts can match multiple items.</td><td>Add HRI clarification policy and richer disambiguation metadata.</td></tr>
+    <tr><td>Camera/frame staleness</td><td>Medium</td><td>Robot may act on an old frame if request timing is loose.</td><td>Use request IDs, frame timestamps, and max-age checks.</td></tr>
+    <tr><td>ROS2 distro or package seam mismatch</td><td>Medium</td><td>Reviewed notes may reflect adjacent bridge variants; target runtime is Humble.</td><td>Keep integration at message/service boundary, validate in actual Humble workspace early.</td></tr>
+    <tr><td>Schema fragmentation</td><td>Medium</td><td>Different consumers may expect center-only or bbox-rich results.</td><td>Version the payload and preserve a normalized canonical schema.</td></tr>
+  </table>
+
+  <h3>Top implementation guidance</h3>
+  <div class="grid">
+    <div class="card">
+      <h3>Do first</h3>
+      <ul>
+        <li>Define one stable grounding service contract.</li>
+        <li>Implement CLI adapter quickly.</li>
+        <li>Use remote GPU as the default path.</li>
+        <li>Add explicit timeout and error messaging.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Do next</h3>
+      <ul>
+        <li>Promote backend to persistent shared-lib service.</li>
+        <li>Publish richer scene evidence for planner use.</li>
+        <li>Add HRI disambiguation patterns.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Do not do early</h3>
+      <ul>
+        <li>Do not embed heavy inference inside the planner loop.</li>
+        <li>Do not assume 2D bbox == navigation target.</li>
+        <li>Do not make local-NAO inference the only production mode.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 id="sources">9. Inspected Sources</h2>
+  <table>
+    <tr><th>Path</th><th>What it contributed</th></tr>
+    <tr><td><code>/home/juanbeck/Watson/IDENTITY.md</code></td><td>WatsonOW tone: concise, auditable, staged-first.</td></tr>
+    <tr><td><code>/home/juanbeck/Watson/reports/research/nao-ros4hri-seam-map.html</code></td><td>Dark-theme reporting convention and current bridge seam context.</td></tr>
+    <tr><td><code>/home/juanbeck/Watson/reports/research/locateanything-nao-integration.md</code></td><td>Prior architecture, service schema, phases, and risk framing.</td></tr>
+    <tr><td><code>/home/juanbeck/Watson/locateanything_nao_ros2_integration_plan.md</code></td><td>Detailed insertion points and phased implementation guidance.</td></tr>
+    <tr><td><code>/home/juanbeck/locate-anything.cpp/README.md</code></td><td>CLI syntax, model facts, quantization, performance, C API, verification strategy.</td></tr>
+    <tr><td><code>/home/juanbeck/locate-anything.cpp/include/la_capi.h</code></td><td>Native integration entry points.</td></tr>
+    <tr><td><code>/home/juanbeck/locate-anything.cpp/src/engine.hpp</code></td><td>Persistent engine load/locate pattern.</td></tr>
+    <tr><td><code>/home/juanbeck/locate-anything.cpp/src/cli.cpp</code></td><td>Concrete command flags and CLI behavior.</td></tr>
+    <tr><td><code>/home/juanbeck/locate-anything.cpp/CMakeLists.txt</code></td><td>Shared library options and build topology.</td></tr>
+    <tr><td><code>/home/juanbeck/iTrack-Supply-Chain/apps/api/app/main.py</code> and <code>core/config.py</code></td><td>Representative Juan Python conventions: thin app factory, explicit config object, delegated services.</td></tr>
+  </table>
+
+  <section class="footer">
+    <p>Report file: <code>/home/juanbeck/Watson/reports/research/locate-anything-3b-impl-report.html</code></p>
+    <p>Recommended next execution step: implement <code>nao_locate_anything</code> Phase-1 CLI service with remote-backend config parity from day one.</p>
+  </section>
+</div>
+</body>
+</html>

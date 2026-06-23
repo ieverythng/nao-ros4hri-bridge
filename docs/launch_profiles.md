@@ -1,6 +1,6 @@
 # Launch Profiles
 
-Last updated: 2026-05-08
+Last updated: 2026-05-26
 
 This file is the active launch guide. Historical launch notes are under
 `docs/artifacts/`.
@@ -9,7 +9,7 @@ This file is the active launch guide. Historical launch notes are under
 
 | Launch file | Default purpose | Notes |
 | --- | --- | --- |
-| `nao_chatbot_sim.launch.py` | Simulator stack and operator tools | Planner and planner gate on by default; laptop camera on `/camera/image_raw`; `rqt` console on; interaction trace viewer on |
+| `nao_chatbot_sim.launch.py` | Simulator stack and operator tools | Planner and planner gate on by default; laptop camera on `/camera/image_raw`; full interaction-sim `rqt` perspective and standalone dialogue rqt plugin on; interaction trace viewer off by default (start manually when needed) |
 | `nao_chatbot_robot.launch.py` | Real robot camera/RViz/HRI overlays | Planner mode on; robot TF and RViz in profile defaults |
 | `nao_chatbot_demo.launch.py` | Sim-only demo with mock scan and demo-oriented defaults | Extends sim profile with demo skills and grounding |
 | `nao_chatbot_asr_only.launch.py` | Isolated ASR | No dialogue/planner/executor |
@@ -114,10 +114,13 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
 - `planner_request_topic`: defaults to `/planner/request`.
 - `planner_request_intent`: defaults to `planner_request`.
 - `planner_dialogue_act_topic`: defaults to `/planner/dialogue_act`.
-- `dialogue_manager_planner_dialogue_wording_mode`: defaults to `chatbot` so
-  planner dialogue acts are rendered by `chatbot_llm`.
-- `dialogue_manager_planner_completion_wording_mode`: compatibility override
-  for completion wording (`chatbot` or `direct`).
+- `dialogue_manager_say_action`: defaults to `/nao/say` in this stack so
+  Dialogue Manager talks through `nao_say_skill`.
+- `dialogue_manager_planner_dialogue_wording_mode`: defaults to `direct` in
+  live/sim stack profiles so planner dialogue acts are spoken from planner text.
+- `dialogue_manager_planner_completion_wording_mode`: defaults to `direct` in
+  live/sim stack profiles; set to `chatbot` only when you explicitly want
+  chatbot rewording for planner completion acts.
 - `planner_skill_registry_path`: optional planner skill registry overlay.
 - `planner_llm_provider`: `ollama` by default.
 - `planner_llm_model`: planner model name.
@@ -131,10 +134,16 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
 - `start_fake_skills`: launches `fake_skills/fake_skill_server`.
 - `fake_skill_scenario_file`: optional fake-skill scenario YAML (default uses
   `fake_skills/config/fake_skill_scenarios.yaml` from package share).
-- `fake_skill_active_scenario_id`: optional named scenario applied globally by
-  `fake_skill_server` unless a per-request `scenario_id` override is provided.
+- `fake_skill_active_scenario_id`: optional named scenario id applied by
+  `fake_skill_server` by default unless a per-request `scenario_id` override is provided.
+- `fake_skill_global_mode`: fake-skill policy mode
+  (`scenario|always_success|always_fail|every_other|random_seeded`).
+- `fake_skill_random_failure_prob`: failure probability for
+  `fake_skill_global_mode=random_seeded`.
+- `fake_skill_mode_overrides_json`: per-skill override map, e.g.
+  `{"find_object":"always_fail"}`.
 - `start_interaction_trace_viewer`: launches `interaction_trace_viewer/trace_node`.
-- `interaction_trace_compact_mode`: compact terminal output (`true`) or verbose payload view (`false`).
+- `interaction_trace_compact_mode`: compact terminal output (`true`) or verbose payload view (`false`, default in sim profile so full JSON payloads are visible).
 - `interaction_trace_write_jsonl`: writes JSONL traces under `interaction_trace_jsonl_output_dir`.
 - `interaction_trace_write_html_on_shutdown`: writes static HTML report on shutdown under `interaction_trace_html_output_dir`.
 - `interaction_trace_include_raw_payloads`: keeps raw payload strings in trace events.
@@ -151,7 +160,8 @@ Launch with an initial named scenario:
 ```bash
 ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   start_fake_skills:=true \
-  fake_skill_active_scenario_id:=path_blocked
+  fake_skill_active_scenario_id:=path_blocked \
+  fake_skill_global_mode:=scenario
 ```
 
 Inspect available and active scenario ids:
@@ -173,10 +183,123 @@ Reset to defaults (no named scenario):
 ros2 param set /fake_skill_server active_scenario_id ""
 ```
 
+Force all fake skills to fail for stress testing:
+
+```bash
+ros2 param set /fake_skill_server global_mode always_fail
+```
+
+Use deterministic random policy:
+
+```bash
+ros2 param set /fake_skill_server global_mode random_seeded
+ros2 param set /fake_skill_server random_failure_prob 0.35
+```
+
+Override one skill mode without changing others:
+
+```bash
+ros2 param set /fake_skill_server mode_overrides_json '{"find_object":"always_fail"}'
+```
+
 Semi-interactive selector (same container, same running stack):
 
 ```bash
 ./scripts/fake_skill_scenario_menu.sh /fake_skill_server
+```
+
+Demo alternation mode (one run shows both success/failure paths):
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_demo.launch.py \
+  fake_skill_global_mode:=every_other \
+  fake_skill_mode_overrides_json:='{}'
+```
+
+Switch global policy live:
+
+```bash
+ros2 param set /fake_skill_server global_mode always_success
+ros2 param set /fake_skill_server global_mode always_fail
+ros2 param set /fake_skill_server global_mode random_seeded
+ros2 param set /fake_skill_server random_failure_prob 0.35
+```
+
+Override one skill live:
+
+```bash
+ros2 param set /fake_skill_server mode_overrides_json '{"find_object":"always_fail"}'
+```
+
+If `global_mode` or `mode_overrides_json` is reported as "Parameter not set",
+the running container is using an older fake-skills build; rebuild/re-source
+before validating runtime policy seams.
+
+If launch fails with `Got dict for "mode_overrides_json"`, the runtime is using
+an outdated `fake_skills.launch.py` that does not force string typing for the
+JSON override parameter. Rebuild `fake_skills` with the latest launch fix.
+
+Standalone interaction trace viewer (separate window, full JSON payload view):
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source /home/ubuntu/ws/install/setup.bash
+pkill -f interaction_trace_viewer.trace_node || true
+ros2 run interaction_trace_viewer trace_node --ros-args \
+  -p compact_mode:=false \
+  -p include_raw_payloads:=true \
+  -p enable_scene_summary_channel:=false \
+  -p rosout_min_level:=warn \
+  -p rosout_node_allowlist_csv:="chatbot_llm,planner_llm,nao_orchestrator,scan_skill_server,report_result_skill_server,fake_skill_server,dialogue_manager,nao_say_skill,head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug" \
+  -p include_channels_csv:="planner/request,intents,planner/execution_feedback,planner/dialogue_act,chatbot_llm/turn_trace,fake_skills/events" \
+  -p include_event_types_csv:="planner_request,planner_output,execution_feedback,planner_dialogue_act,chatbot_turn_trace,skill_result"
+```
+
+## Launch TUI (SocialMinds operator GUI)
+
+`launch_tui` is a terminal GUI around ROS 2 launch that visualizes the launch
+graph, node lifecycle, and log stream while a profile is running. It is shipped
+as the SocialMinds apt package `socialminds-ros-jazzy-launch-tui` and exposed
+as a ros2cli extension:
+
+```bash
+ros2 launch_tui <package_name> <launch_file> [launch_arguments...]
+```
+
+Common sim profile:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source /home/ubuntu/ws/install/setup.bash
+ros2 launch_tui nao_chatbot nao_chatbot_sim.launch.py
+```
+
+Helper wrapper (repo script):
+
+```bash
+./scripts/run_launch_tui.sh nao_chatbot nao_chatbot_sim.launch.py
+./scripts/run_launch_tui.sh nao_chatbot nao_chatbot_robot.launch.py start_asr:=false
+```
+
+Notes:
+
+- Use `ros2 launch_tui`, not `ros2 launch launch_tui ...`.
+- The overlay Dockerfiles refresh `socialminds-ros-jazzy-launch-tui` on rebuild
+  so the container tracks the latest SocialMinds apt release.
+- `textual>=0.50` is pinned in Docker because Ubuntu 24.04's default Textual is
+  too old for the current `launch_tui` API.
+- Run inside a TTY (`docker exec -it nao_ros2 bash`) so the Textual UI renders
+  correctly.
+
+Trace-viewer-first one-copy demo command:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_demo.launch.py \
+  start_interaction_trace_viewer:=true \
+  interaction_trace_compact_mode:=false \
+  interaction_trace_include_raw_payloads:=true \
+  interaction_trace_include_channels_csv:="planner/request,intents,planner/execution_feedback,planner/dialogue_act,chatbot_llm/turn_trace,fake_skills/events" \
+  interaction_trace_include_event_types_csv:="planner_request,planner_output,execution_feedback,planner_dialogue_act,chatbot_turn_trace,skill_result"
 ```
 
 ## ASR And Perception Startup

@@ -6,6 +6,9 @@ default:
     result_mode: found
     target_found: true
     delay_sec: 0.8
+  perform_motion:
+    result_mode: success
+    delay_sec: 0.6
   wave_greet:
     result_mode: success
     dry_run: true
@@ -13,10 +16,22 @@ default:
   inspect_area:
     result_mode: clear
     delay_sec: 0.9
+  look_at:
+    result_mode: success
+    delay_sec: 0.5
   walk_to:
     result_mode: dry_run
     dry_run: true
     delay_sec: 0.7
+  pick_object:
+    result_mode: success
+    delay_sec: 0.7
+  place_object:
+    result_mode: success
+    delay_sec: 0.7
+  bring_object:
+    result_mode: success
+    delay_sec: 1.2
 
 scenarios:
   path_blocked:
@@ -28,6 +43,58 @@ scenarios:
   social_wave_unavailable:
     wave_greet:
       result_mode: motion_unavailable
+  motion_unavailable:
+    perform_motion:
+      result_mode: motion_unavailable
+  motion_convergence_timeout:
+    perform_motion:
+      result_mode: convergence_timeout
   area_person_found:
     inspect_area:
       result_mode: person_found
+  look_at_unavailable:
+    look_at:
+      result_mode: target_unavailable
+  object_near_robot:
+    find_object:
+      result_mode: found
+      frame_id: base_link
+      position: {x: 0.7, y: 0.1, z: 0.6}
+      distance_m: 0.93
+  object_far_from_robot:
+    find_object:
+      result_mode: found
+      frame_id: base_link
+      position: {x: 3.8, y: 0.4, z: 0.6}
+      distance_m: 3.87
+  pick_object_unavailable:
+    pick_object:
+      result_mode: object_unavailable
+  pick_unreachable:
+    pick_object:
+      result_mode: unreachable
+  pick_already_held:
+    pick_object:
+      result_mode: already_held
+  place_destination_unavailable:
+    place_object:
+      result_mode: destination_unavailable
+  place_invalid_support:
+    place_object:
+      result_mode: invalid_support
+  place_no_held_object:
+    place_object:
+      result_mode: no_held_object
+  bring_acquisition_failure:
+    bring_object:
+      result_mode: acquisition_failure
+  bring_navigation_failure:
+    bring_object:
+      result_mode: navigation_failure
+  bring_delivery_blocked:
+    bring_object:
+      result_mode: delivery_blocked
+  bring_recipient_unavailable:
+    bring_object:
+      result_mode: recipient_unavailable
+  head_motion_strict: {}

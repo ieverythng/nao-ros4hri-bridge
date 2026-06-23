@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fake Skills Scenarios Playbook</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --fg: #1a1a1a;
+      --muted: #5a5a5a;
+      --bg: #f8f8f8;
+      --card: #ffffff;
+      --border: #d8d8d8;
+      --accent: #0b5fff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fg: #e8e8e8;
+        --muted: #9e9e9e;
+        --bg: #111111;
+        --card: #1d1d1d;
+        --border: #333333;
+        --accent: #7fb4ff;
+      }
+    }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
+      max-width: 58rem;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 3rem;
+      line-height: 1.58;
+      color: var(--fg);
+      background: var(--bg);
+    }
+    h1, h2, h3 { line-height: 1.25; }
+    h2 { border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+    pre {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.8rem;
+      overflow-x: auto;
+    }
+    code {
+      font-family: ui-monospace, "Cascadia Code", monospace;
+      font-size: 0.9em;
+      background: rgba(0, 0, 0, 0.06);
+      padding: 0.12em 0.3em;
+      border-radius: 4px;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      border: 1px solid var(--border);
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.45rem 0.55rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: rgba(0,0,0,0.04); }
+    blockquote {
+      border-left: 4px solid var(--accent);
+      margin: 0.7rem 0;
+      padding: 0.1rem 0.9rem;
+      color: var(--muted);
+    }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+<h1>Fake Skills Scenarios Playbook</h1>
+<h2>Purpose</h2>
+<p>Operator/developer playbook for running fake-skill scenarios with deterministic controls and copy-paste CLI commands.</p>
+<h2>Fastest Path (CLI Only)</h2>
+<p>If you only want launch params + live <code>ros2 param set</code> controls, use this section.</p>
+<h3>Launch-Time Parameter Set</h3>
+<pre><code class="language-bash">ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  start_fake_skills:=true \
+  fake_skill_global_mode:=scenario \
+  fake_skill_active_scenario_id:= \
+  fake_skill_random_failure_prob:=0.50 \
+  fake_skill_mode_overrides_json:=&#x27;{}&#x27; \
+  head_motion_allow_open_loop_without_joint_state:=true \
+  head_motion_assume_success_on_convergence_timeout:=true</code></pre>
+<h3>Live Runtime Parameter Set (No Relaunch)</h3>
+<pre><code class="language-bash"># fake_skill_server
+ros2 param set /fake_skill_server global_mode scenario
+ros2 param set /fake_skill_server active_scenario_id &quot;&quot;
+ros2 param set /fake_skill_server random_failure_prob 0.50
+ros2 param set /fake_skill_server mode_overrides_json &#x27;{}&#x27;
+
+# head_motion_skill_server (open-loop enabled for no-robot testing)
+ros2 param set /head_motion_skill_server allow_open_loop_without_joint_state true
+ros2 param set /head_motion_skill_server assume_success_on_convergence_timeout true</code></pre>
+<h2>Available Choices (Copy/Paste)</h2>
+<h3><code>/fake_skill_server</code> Global Mode</h3>
+<pre><code class="language-bash">ros2 param set /fake_skill_server global_mode scenario
+ros2 param set /fake_skill_server global_mode always_success
+ros2 param set /fake_skill_server global_mode always_fail
+ros2 param set /fake_skill_server global_mode every_other
+ros2 param set /fake_skill_server global_mode random_seeded</code></pre>
+<h3><code>/fake_skill_server</code> Scenarios (Current Stack)</h3>
+<p>Read current list:</p>
+<pre><code class="language-bash">ros2 param get /fake_skill_server available_scenario_ids</code></pre>
+<p>Current IDs:</p>
+<ul>
+<li><code>ambiguous_cup</code></li>
+<li><code>area_person_found</code></li>
+<li><code>head_motion_strict</code></li>
+<li><code>path_blocked</code></li>
+<li><code>social_wave_unavailable</code></li>
+</ul>
+<p>Set/reset:</p>
+<pre><code class="language-bash">ros2 param set /fake_skill_server active_scenario_id ambiguous_cup
+ros2 param set /fake_skill_server active_scenario_id area_person_found
+ros2 param set /fake_skill_server active_scenario_id head_motion_strict
+ros2 param set /fake_skill_server active_scenario_id path_blocked
+ros2 param set /fake_skill_server active_scenario_id social_wave_unavailable
+ros2 param set /fake_skill_server active_scenario_id &quot;&quot;</code></pre>
+<h3><code>/fake_skill_server</code> Skill-Level Override Map</h3>
+<pre><code class="language-bash"># fail only find_object regardless of scenario/global mode
+ros2 param set /fake_skill_server mode_overrides_json &#x27;{&quot;find_object&quot;:&quot;always_fail&quot;}&#x27;
+
+# mix policies by skill
+ros2 param set /fake_skill_server mode_overrides_json &#x27;{&quot;find_object&quot;:&quot;always_fail&quot;,&quot;navigate_to&quot;:&quot;always_success&quot;,&quot;wave_greet&quot;:&quot;always_fail&quot;}&#x27;</code></pre>
+<h3><code>/head_motion_skill_server</code> Open-Loop Controls</h3>
+<p>Default (good for no-robot testing):</p>
+<pre><code class="language-bash">ros2 param set /head_motion_skill_server allow_open_loop_without_joint_state true
+ros2 param set /head_motion_skill_server assume_success_on_convergence_timeout true</code></pre>
+<p>Strict (disable open-loop fallback):</p>
+<pre><code class="language-bash">ros2 param set /head_motion_skill_server allow_open_loop_without_joint_state false
+ros2 param set /head_motion_skill_server assume_success_on_convergence_timeout false</code></pre>
+<h3>Quick Interactive Menu</h3>
+<pre><code class="language-bash">./scripts/fake_skill_scenario_menu.sh /fake_skill_server /head_motion_skill_server</code></pre>
+<h2>Scenario Effect Matrix</h2>
+<table><thead><tr>
+<th>Scenario ID</th>
+<th>Main Effect</th>
+</tr></thead><tbody>
+<tr>
+<td><code>ambiguous_cup</code></td>
+<td><code>find_object</code> returns ambiguous</td>
+</tr>
+<tr>
+<td><code>area_person_found</code></td>
+<td><code>inspect_area</code> returns person found</td>
+</tr>
+<tr>
+<td><code>head_motion_strict</code></td>
+<td>no fake-skill override; use with head-motion strict flags (open-loop off)</td>
+</tr>
+<tr>
+<td><code>path_blocked</code></td>
+<td><code>navigate_to</code> returns path blocked</td>
+</tr>
+<tr>
+<td><code>social_wave_unavailable</code></td>
+<td><code>wave_greet</code> returns motion unavailable</td>
+</tr>
+</tbody></table>
+<h2>Planner/Dialogue Seam Checks</h2>
+<p>Verify the critical seam contract:</p>
+<pre><code class="language-bash">ros2 param get /dialogue_manager planner_dialogue_act_topic
+ros2 param get /nao_orchestrator planner_dialogue_act_topic
+ros2 param get /nao_orchestrator planner_dialogue_relay_topic</code></pre>
+<p>Expected:</p>
+<ul>
+<li><code>dialogue_manager.planner_dialogue_act_topic = /nao_orchestrator/planner_dialogue_act</code></li>
+<li><code>nao_orchestrator.planner_dialogue_act_topic = /planner/dialogue_act</code></li>
+<li><code>nao_orchestrator.planner_dialogue_relay_topic = /nao_orchestrator/planner_dialogue_act</code></li>
+</ul>
+<h2>Investigation Note: Why &quot;Hey Pop!&quot; Triggered Planner + Wave</h2>
+<p>From live logs in the rebuilt container:</p>
+<ul>
+<li><code>chatbot_llm</code> classified first turn as execution:</li>
+<li><code>ROUTE_RESOLVED | route=execution intent=greet</code></li>
+<li>request was forwarded through orchestrator gate:</li>
+<li><code>Planner gate forwarded request | goal_id=goal_default___1</code></li>
+<li><code>planner_llm</code> received <code>intents=[&#x27;greeting&#x27;,&#x27;greet&#x27;]</code> and planned:</li>
+<li><code>step=skill/wave_greet</code></li>
+<li>then <code>step=skill/report_result</code></li>
+<li><code>dialogue_manager</code> spoke both:</li>
+<li>initial chatbot response (<code>&quot;Hello! How can I help you today?&quot;</code>)</li>
+<li>planner completion (<code>&quot;I have greeted you with a wave...&quot;</code>)</li>
+</ul>
+<p>That specific first turn was not random: planner wave came from greeting being routed as execution.</p>
+<h2>Trace Pairing</h2>
+<pre><code class="language-bash">source /opt/ros/jazzy/setup.bash
+source /home/ubuntu/ws/install/setup.bash
+scripts/run_interaction_trace_viewer_compact_json.sh</code></pre>
+<h2>Related Contracts</h2>
+<ul>
+<li><code>docs/architecture/skill_registry_contract.md</code></li>
+<li><code>docs/architecture/demo_stack_seam_contract_2026-05-26.md</code></li>
+<li><code>docs/plans/nao_ros4hri_masterplan.html</code></li>
+</ul>
+</body>
+</html>

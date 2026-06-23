@@ -12,6 +12,7 @@ import threading
 import time
 
 from nao_skills.action import DoHeadMotion, ScanScene
+from planner_common.contracts import coerce_optional_float
 from rclpy.action import ActionClient, ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.lifecycle import Node, State, TransitionCallbackReturn
@@ -460,15 +461,29 @@ class ScanSkillServer(Node):
                 continue
             entity_id = str(item.get('entity_id', item.get('id', ''))).strip()
             label = str(item.get('label', item.get('kb_class', entity_id))).strip()
-            objects.append(
-                {
-                    'id': entity_id,
-                    'entity_id': entity_id,
-                    'label': label,
-                    'kb_class': str(item.get('kb_class', '')).strip(),
-                    'source': str(item.get('source', 'scene_summary')).strip() or 'scene_summary',
-                }
-            )
+            normalized = {
+                'id': entity_id,
+                'entity_id': entity_id,
+                'label': label,
+                'kb_class': str(item.get('kb_class', '')).strip(),
+                'source': str(item.get('source', 'scene_summary')).strip() or 'scene_summary',
+            }
+            center_x = coerce_optional_float(item.get('center_x'))
+            center_y = coerce_optional_float(item.get('center_y'))
+            confidence = coerce_optional_float(item.get('confidence'))
+            last_seen_sec = coerce_optional_float(item.get('last_seen_sec'))
+            distance_m = coerce_optional_float(item.get('distance_m'))
+            if center_x is not None:
+                normalized['center_x'] = center_x
+            if center_y is not None:
+                normalized['center_y'] = center_y
+            if confidence is not None:
+                normalized['confidence'] = confidence
+            if last_seen_sec is not None:
+                normalized['last_seen_sec'] = last_seen_sec
+            if distance_m is not None:
+                normalized['distance_m'] = distance_m
+            objects.append(normalized)
         return objects
 
     @staticmethod

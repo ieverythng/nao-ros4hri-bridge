@@ -7,6 +7,10 @@ architecture. It is intentionally a handoff only: do not implement the world
 model enricher (`WME`) from this document until the Phase A-C supervisor stack
 has been validated on the live system.
 
+> Contract note (2026-05-31): planner seams have moved to a Hybrid Minimal T0
+> context. Do not reintroduce `world_model_snapshot`, `world_model_text`,
+> planner `ack_mode`, or `goal_token`.
+
 The baseline for this handoff is:
 
 - `planner_common` already exposes supervisor-ready contracts
@@ -58,7 +62,7 @@ flowchart LR
     kb[knowledge_core] -->|/kb/query via kb_skills| wme
     orch[nao_orchestrator] -->|/planner/execution_feedback| wme
 
-    wme -->|world_model_snapshot + world_model_text| planner
+    wme -->|grounded_context state_t0 + KB refs| planner
     planner -->|structured plan| orch
     orch -->|execution feedback| planner
 ```
@@ -84,22 +88,21 @@ Optional later inputs, but not in the first WME pass:
 
 ### WME outputs
 
-Phase D should standardize two outputs:
+Phase D should standardize one compact planner-facing context update:
 
-- `/world_model/enriched_snapshot`
-  - machine-facing JSON snapshot
-- `/world_model/enriched_text`
-  - bounded planner-facing text summary
+- `/planner/context_t0`
+  - deterministic machine-facing JSON snapshot
 
-Those outputs must map directly into the existing `grounded_context` envelope:
+That output should map directly into the current `grounded_context` envelope:
 
 ```json
 {
   "grounded_context": {
-    "knowledge_snapshot": {},
+    "knowledge_snapshot": {
+      "references": []
+    },
     "scene_summary": {},
-    "world_model_snapshot": {},
-    "world_model_text": ""
+    "state_t0": {}
   }
 }
 ```
@@ -131,9 +134,9 @@ in the first pass.
 
 Before adding runtime code:
 
-- keep `grounded_context.world_model_snapshot` and
-  `grounded_context.world_model_text` as the only new planner-facing contract
-  fields
+- keep `grounded_context.state_t0` and compact
+  `grounded_context.knowledge_snapshot.references` as the only new
+  planner-facing contract fields
 - keep transport lightweight using existing JSON-over-ROS messages
 - keep planner dialogue and execution contracts unchanged
 
@@ -147,8 +150,7 @@ It should:
 - subscribe to `/planner/execution_feedback`
 - perform KB reads through `kb_skills`
 - maintain local short-horizon state
-- publish `/world_model/enriched_snapshot`
-- publish `/world_model/enriched_text`
+  - publish `/planner/context_t0`
 
 It should not write to KB by default.
 
@@ -156,8 +158,8 @@ It should not write to KB by default.
 
 Update `planner_llm` only enough to:
 
-- subscribe to the two WME topics
-- inject them into the existing grounded context envelope
+- subscribe to the WME context topic
+- inject it into the existing grounded context envelope
 - use WME context as additional planning evidence, not as a hard dependency
 
 The planner must still function when WME is absent.
@@ -238,9 +240,9 @@ planner_llm stays the goal supervisor, nao_orchestrator stays the deterministic
 executor, kb_skills stays the KnowledgeCore boundary, and nao_scene_grounding
 stays the detector-to-KB grounding bridge. Implement Phase D by adding a thin,
 read-mostly world model enricher that consumes /scene/summary,
-/planner/execution_feedback, and KB reads through kb_skills, then publishes
-world_model_snapshot and world_model_text into the standardized grounded_context
-envelope for planner_llm.
+/planner/execution_feedback, and KB reads through kb_skills, then publishes a
+deterministic state_t0 context plus compact KB references into the standardized
+grounded_context envelope for planner_llm.
 ```
 
 ## 11. Read These First

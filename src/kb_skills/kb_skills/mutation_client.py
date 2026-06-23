@@ -67,6 +67,12 @@ class KnowledgeCoreMutationClient:
     def service_name(self) -> str:
         return self._service_name
 
+    def close(self) -> None:
+        """Release the ROS service client owned by this wrapper."""
+        if self._node is not None and self._client is not None:
+            self._node.destroy_client(self._client)
+        self._client = None
+
     def add_fact(
         self,
         statement: str,
@@ -374,7 +380,7 @@ class KnowledgeCoreMutationClient:
         if Revise is None:  # pragma: no cover - guarded by caller
             raise RuntimeError("kb_msgs.srv.Revise is unavailable")
         request = Revise.Request()
-        request.method = str(operation).strip().lower() or "update"
+        request.method = _revise_method_for_operation(operation)
         request.statements = list(statements)
         request.models = list(models)
         lifespan = max(0.0, float(lifespan_sec))
@@ -405,3 +411,10 @@ class KnowledgeCoreMutationClient:
     def _trace(trace, turn_id: str, stage: str, message: str, level: str = "info") -> None:
         if callable(trace):
             trace(turn_id, stage, message, level=level)
+
+
+def _revise_method_for_operation(operation: str) -> str:
+    clean = str(operation or '').strip().lower()
+    if clean == 'remove':
+        return 'retract'
+    return clean or 'update'

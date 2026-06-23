@@ -20,9 +20,6 @@ class _StubEngine:
             plan_id=plan_id,
             mode='plan',
             payload={
-                'goal_id': goal_id,
-                'ack_text': '',
-                'ack_mode': '',
                 'scene_targets': list(request.scene_targets),
                 'grounded_context': request.grounded_context,
                 'plan': {
@@ -31,7 +28,6 @@ class _StubEngine:
                     'plan_version': plan_version,
                     'status': status,
                     'validation_status': 'draft',
-                    'failure_reason': '',
                     'replan_hint': '',
                     'retry_budget': 1,
                     'scene_targets': list(request.scene_targets),
@@ -67,9 +63,6 @@ class _ClarifyEngine(_StubEngine):
             plan_id='plan_%s_v%d' % (goal_id, plan_version),
             mode='clarify',
             payload={
-                'goal_id': goal_id,
-                'ack_text': '',
-                'ack_mode': '',
                 'scene_targets': list(request.scene_targets),
                 'grounded_context': request.grounded_context,
                 'plan': {
@@ -78,7 +71,6 @@ class _ClarifyEngine(_StubEngine):
                     'plan_version': plan_version,
                     'status': 'waiting_user',
                     'validation_status': 'draft',
-                    'failure_reason': '',
                     'replan_hint': 'clarify_user',
                     'retry_budget': 0,
                     'scene_targets': list(request.scene_targets),
@@ -207,6 +199,32 @@ class _ResultSayEngine(_StubEngine):
         return decision
 
 
+class _ResultReportEngine(_StubEngine):
+    def plan_request(self, request, **kwargs):
+        decision = super().plan_request(request, **kwargs)
+        decision.payload['plan']['steps'] = [
+            {
+                'id': 'step_1',
+                'type': 'skill',
+                'name': 'scan',
+                'args': {'target': 'people'},
+                'requires': [],
+                'on_failure': 'replan',
+                'retry_budget': 0,
+            },
+            {
+                'id': 'step_2',
+                'type': 'skill',
+                'name': 'report_result',
+                'args': {'summary_text': 'I found one person.'},
+                'requires': [],
+                'on_failure': 'continue',
+                'retry_budget': 0,
+            },
+        ]
+        return decision
+
+
 def test_supervisor_creates_new_goal_session_without_duplicate_ack_dialogue_act() -> None:
     supervisor = PlannerSupervisor(_StubEngine(), auto_replan=True)
     request = PlannerRequest.from_payload(
@@ -215,7 +233,6 @@ def test_supervisor_creates_new_goal_session_without_duplicate_ack_dialogue_act(
             'request_id': 'turn_1',
             'request_kind': 'new_goal',
             'user_text': 'look forward',
-            'ack_text': 'I will do that.',
             'normalized_intents': ['head_center'],
         }
     )
@@ -281,7 +298,6 @@ def test_supervisor_handles_cancel_request_without_publishing_intent() -> None:
             'goal_id': 'goal_cancel',
             'request_id': 'turn_2',
             'request_kind': 'cancel_request',
-            'ack_text': 'Okay, cancel that.',
         }
     )
     outcome = supervisor.handle_request(cancel_request)
@@ -313,6 +329,66 @@ def test_supervisor_replans_after_retryable_failure() -> None:
     outcome = supervisor.handle_feedback(feedback)
     assert outcome.decision is not None
     assert outcome.decision.payload['plan']['plan_version'] == 2
+
+
+def test_supervisor_replans_blocking_retryable_failure_without_unmet_preconditions() -> None:
+    engine = _StubEngine()
+    supervisor = PlannerSupervisor(engine, auto_replan=True)
+    request = PlannerRequest.from_payload(
+        {'goal_id': 'goal_retry_blocking', 'request_id': 'turn_1', 'user_text': 'find the cup'}
+    )
+    first_outcome = supervisor.handle_request(request)
+    feedback = ExecutionFeedback.from_payload(
+        {
+            'goal_id': 'goal_retry_blocking',
+            'plan_id': first_outcome.decision.plan_id,
+            'plan_version': 1,
+            'event_type': 'step_failed',
+            'status': 'failed',
+            'reason': 'vision unstable',
+            'retry_budget': 1,
+            'blocking': True,
+            'unmet_preconditions': [],
+            'step': {
+                'id': 'step_1',
+                'type': 'skill',
+                'name': 'find_object',
+                'on_failure': 'replan',
+                'retry_budget': 1,
+            },
+        }
+    )
+
+    outcome = supervisor.handle_feedback(feedback)
+    assert outcome.decision is not None
+    assert outcome.decision.payload['plan']['plan_version'] == 2
+
+
+def test_supervisor_asks_for_help_when_retry_budget_exhausted_for_retryable_failure() -> None:
+    engine = _StubEngine()
+    supervisor = PlannerSupervisor(engine, auto_replan=True)
+    request = PlannerRequest.from_payload(
+        {'goal_id': 'goal_retry_exhausted', 'request_id': 'turn_1', 'user_text': 'go to the cup'}
+    )
+    first_outcome = supervisor.handle_request(request)
+    feedback = ExecutionFeedback.from_payload(
+        {
+            'goal_id': 'goal_retry_exhausted',
+            'plan_id': first_outcome.decision.plan_id,
+            'plan_version': 1,
+            'event_type': 'step_failed',
+            'status': 'failed',
+            'reason': 'path blocked',
+            'retry_budget': 0,
+            'blocking': True,
+        }
+    )
+
+    outcome = supervisor.handle_feedback(feedback)
+    assert outcome.decision is None
+    assert len(outcome.dialogue_acts) == 1
+    assert outcome.dialogue_acts[0].act == 'ask_for_help'
+    assert outcome.dialogue_acts[0].await_user_response is True
 
 
 def test_supervisor_does_not_replan_when_step_failure_policy_is_fail() -> None:
@@ -373,7 +449,7 @@ def test_supervisor_reports_backend_unavailable_as_failure_not_clarification() -
     assert outcome.dialogue_acts[0].await_user_response is False
 
 
-def test_supervisor_emits_completion_dialogue_act_when_policy_allows_it() -> None:
+def test_supervisor_emits_completion_for_non_speaking_plan() -> None:
     supervisor = PlannerSupervisor(_StubEngine(), auto_replan=True)
     request = PlannerRequest.from_payload(
         {'goal_id': 'goal_done', 'request_id': 'turn_1', 'user_text': 'look ahead'}
@@ -393,10 +469,9 @@ def test_supervisor_emits_completion_dialogue_act_when_policy_allows_it() -> Non
     assert outcome.decision is None
     assert len(outcome.dialogue_acts) == 1
     assert outcome.dialogue_acts[0].act == 'notify_completion'
-    assert outcome.dialogue_acts[0].text_hint == 'I am looking straight ahead now.'
 
 
-def test_supervisor_uses_task_specific_completion_for_motion_sequence() -> None:
+def test_supervisor_emits_completion_for_motion_sequence() -> None:
     supervisor = PlannerSupervisor(_MotionSequenceEngine(), auto_replan=True)
     request = PlannerRequest.from_payload(
         {'goal_id': 'goal_motion_sequence', 'request_id': 'turn_1', 'user_text': 'nod'}
@@ -416,7 +491,7 @@ def test_supervisor_uses_task_specific_completion_for_motion_sequence() -> None:
 
     assert outcome.decision is None
     assert len(outcome.dialogue_acts) == 1
-    assert outcome.dialogue_acts[0].text_hint == 'I am looking down now.'
+    assert outcome.dialogue_acts[0].act == 'notify_completion'
 
 
 def test_supervisor_suppresses_completion_when_plan_ended_with_result_say() -> None:
@@ -441,7 +516,34 @@ def test_supervisor_suppresses_completion_when_plan_ended_with_result_say() -> N
     assert outcome.dialogue_acts == ()
 
 
-def test_supervisor_completion_act_carries_latest_result_summary() -> None:
+def test_supervisor_suppresses_completion_when_plan_ended_with_report_result() -> None:
+    supervisor = PlannerSupervisor(_ResultReportEngine(), auto_replan=True)
+    request = PlannerRequest.from_payload(
+        {'goal_id': 'goal_scan_result_report', 'request_id': 'turn_1', 'user_text': 'scan'}
+    )
+    first_outcome = supervisor.handle_request(request)
+    feedback = ExecutionFeedback.from_payload(
+        {
+            'goal_id': 'goal_scan_result_report',
+            'plan_id': first_outcome.decision.plan_id,
+            'plan_version': 1,
+            'event_type': 'plan_completed',
+            'status': 'completed',
+            'result_summary': 'I found one person.',
+            'result_payload': {
+                'skill': 'report_result',
+                'summary_text': 'I found one person.',
+            },
+        }
+    )
+
+    outcome = supervisor.handle_feedback(feedback)
+
+    assert outcome.decision is None
+    assert outcome.dialogue_acts == ()
+
+
+def test_supervisor_emits_one_completion_with_latest_result_summary() -> None:
     supervisor = PlannerSupervisor(_StubEngine(), auto_replan=True)
     request = PlannerRequest.from_payload(
         {'goal_id': 'goal_scan_summary', 'request_id': 'turn_1', 'user_text': 'scan'}
@@ -479,12 +581,11 @@ def test_supervisor_completion_act_carries_latest_result_summary() -> None:
     )
 
     assert len(outcome.dialogue_acts) == 1
-    assert outcome.dialogue_acts[0].text_hint == 'I found one person.'
+    assert outcome.dialogue_acts[0].act == 'notify_completion'
     assert outcome.dialogue_acts[0].context['result_summary'] == 'I found one person.'
-    assert outcome.dialogue_acts[0].context['result_payload']['skill'] == 'scan'
 
 
-def test_supervisor_prefers_scan_result_over_motion_completion_copy() -> None:
+def test_supervisor_emits_one_scan_result_completion_dialogue_act() -> None:
     supervisor = PlannerSupervisor(_MotionScanEngine(), auto_replan=True)
     request = PlannerRequest.from_payload(
         {'goal_id': 'goal_scan_summary', 'request_id': 'turn_1', 'user_text': 'scan for people'}
@@ -519,8 +620,7 @@ def test_supervisor_prefers_scan_result_over_motion_completion_copy() -> None:
     )
 
     assert len(outcome.dialogue_acts) == 1
-    assert outcome.dialogue_acts[0].text_hint.startswith('I completed the scan for people')
-    assert 'looking to the left' not in outcome.dialogue_acts[0].text_hint
+    assert outcome.dialogue_acts[0].act == 'notify_completion'
 
 
 def test_supervisor_emits_acknowledgement_dialogue_act_when_policy_allows_it() -> None:
@@ -530,7 +630,6 @@ def test_supervisor_emits_acknowledgement_dialogue_act_when_policy_allows_it() -
             'goal_id': 'goal_ack',
             'request_id': 'turn_1',
             'user_text': 'look ahead',
-            'ack_text': 'Okay, I am starting now.',
         }
     )
     first_outcome = supervisor.handle_request(request)

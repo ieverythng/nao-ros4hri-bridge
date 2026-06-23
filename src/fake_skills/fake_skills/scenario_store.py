@@ -18,6 +18,17 @@ class ScenarioStore:
         self._default = data.get('default', {}) if isinstance(data.get('default', {}), dict) else {}
         self._scenarios = data.get('scenarios', {}) if isinstance(data.get('scenarios', {}), dict) else {}
 
+    def scenario_ids(self) -> tuple[str, ...]:
+        """Return known named scenario ids in stable sorted order."""
+        return tuple(sorted(str(name) for name in self._scenarios.keys()))
+
+    def has_scenario(self, scenario_id: str) -> bool:
+        """Check whether a named scenario exists."""
+        clean = str(scenario_id or '').strip()
+        if not clean:
+            return False
+        return clean in self._scenarios
+
     @classmethod
     def load_file(cls, path: str | Path) -> 'ScenarioStore':
         scenario_path = Path(path)

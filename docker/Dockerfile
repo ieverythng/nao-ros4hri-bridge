@@ -91,9 +91,18 @@ RUN bash -lc 'set -euo pipefail; \
         python3 -m pip install --no-cache-dir --break-system-packages --no-deps \
           ultralytics ultralytics-thop \
       ); \
-    # launch_tui requires a newer Textual API than Ubuntu 24.04 ships.
-    python3 -m pip install --no-cache-dir --break-system-packages --ignore-installed \
-      "textual>=0.50,<1"'
+    # launch_tui requires Textual >=0.50,<1. Reinstall only when needed so
+    # overlay builds still work in offline/restricted environments.
+    if ! python3 -c "import importlib.metadata, importlib.util, sys; \
+spec = importlib.util.find_spec(\"textual\"); \
+parts = importlib.metadata.version(\"textual\").split(\".\") if spec else []; \
+major = int(parts[0]) if parts and parts[0].isdigit() else -1; \
+minor = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else -1; \
+sys.exit(0 if spec and major == 0 and minor >= 50 else 1)"; \
+    then \
+      python3 -m pip install --no-cache-dir --break-system-packages --ignore-installed \
+        "textual>=0.50,<1"; \
+    fi'
 
 # Demo profiles can launch split chatbot/planner Ollama servers from ROS launch.
 # Keep this before copying sources so normal overlay rebuilds reuse the binary.
@@ -115,7 +124,9 @@ RUN bash -lc 'source /opt/ros/jazzy/setup.bash && \
     cd /home/ubuntu/ws && \
     rebuild_packages=( \
       kb_skills \
+      chatbot_msgs \
       dialogue_manager \
+      rqt_dialogues \
       asr_vosk \
       chatbot_llm \
       planner_common \
@@ -139,6 +150,25 @@ RUN bash -lc 'source /opt/ros/jazzy/setup.bash && \
       rm -rf "/home/ubuntu/ws/build/${pkg}" "/home/ubuntu/ws/install/${pkg}"; \
     done; \
     colcon build --symlink-install --packages-up-to "${rebuild_packages[@]}"'
+
+# launch_tui is required by some operator flows; refresh it only when missing so
+# overlay builds keep working when apt mirrors are temporarily unreachable.
+RUN bash -lc 'set -euo pipefail; \
+    if ! dpkg -s socialminds-ros-jazzy-launch-tui >/dev/null 2>&1; then \
+      apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update && \
+      apt-get install -y --no-install-recommends socialminds-ros-jazzy-launch-tui && \
+      rm -rf /var/lib/apt/lists/*; \
+    fi; \
+    if ! python3 -c "import importlib.metadata, importlib.util, sys; \
+spec = importlib.util.find_spec(\"textual\"); \
+parts = importlib.metadata.version(\"textual\").split(\".\") if spec else []; \
+major = int(parts[0]) if parts and parts[0].isdigit() else -1; \
+minor = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else -1; \
+sys.exit(0 if spec and major == 0 and minor >= 50 else 1)"; \
+    then \
+      python3 -m pip install --no-cache-dir --break-system-packages --ignore-installed \
+        "textual>=0.50,<1"; \
+    fi'
 
 # Keep entrypoint from this repo for deterministic sourcing behavior.
 COPY docker/ros_entrypoint.sh /
