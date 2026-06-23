@@ -176,6 +176,41 @@ def _dedupe_statements(statements: list[str]) -> list[str]:
     return deduped
 
 
+def _kb_effects_from_result_payload(result_payload: dict) -> list[dict]:
+    """Return structured KB effects reported by a successful skill payload."""
+    if not isinstance(result_payload, dict):
+        return []
+    evidence = result_payload.get('evidence', {})
+    if not isinstance(evidence, dict):
+        return []
+    effects = evidence.get('kb_effects', [])
+    if not isinstance(effects, list):
+        return []
+    return [item for item in effects if isinstance(item, dict)]
+
+
+def _group_kb_effect_statements(effects: list[dict]) -> dict[str, list[str]]:
+    grouped: dict[str, list[str]] = {}
+    for effect in effects:
+        operation = str(
+            effect.get('operation', effect.get('action', ''))
+        ).strip().lower()
+        if operation == 'revise':
+            operation = 'update'
+        if operation not in {'add', 'remove', 'update'}:
+            continue
+        statements = KnowledgeCoreMutationClient.coerce_statements(
+            effect.get('statements', effect.get('statement', []))
+        )
+        if statements:
+            grouped.setdefault(operation, []).extend(statements)
+    return {
+        operation: _dedupe_statements(statements)
+        for operation, statements in grouped.items()
+        if statements
+    }
+
+
 def _normalize_execution_mode(value) -> str:
     clean = str(value or '').strip().lower()
     return clean if clean in {'real', 'fake'} else 'real'
@@ -456,6 +491,7 @@ class NaoOrchestrator(Node):
         self.declare_parameter('kb_mutation_timeout_sec', 1.0)
         self.declare_parameter('kb_query_service_name', '/kb/query')
         self.declare_parameter('kb_query_timeout_sec', 1.0)
+        self.declare_parameter('apply_success_kb_effects', True)
 
         self.intent_topic = str(self.get_parameter('intent_topic').value)
         self.enable_legacy_intent_bridge = bool(
@@ -624,6 +660,9 @@ class NaoOrchestrator(Node):
         self.kb_query_timeout_sec = max(
             0.05,
             float(self.get_parameter('kb_query_timeout_sec').value),
+        )
+        self.apply_success_kb_effects = bool(
+            self.get_parameter('apply_success_kb_effects').value
         )
 
         self._intent_sub = None
@@ -2338,8 +2377,60 @@ class NaoOrchestrator(Node):
         if not result.success:
             return False, result.reason or summary_text or ('%s action failed' % skill_name), payload
 
+        effect_summary = self._apply_success_kb_effects(payload)
+        if effect_summary:
+            payload['kb_effect_application'] = effect_summary
         self._stats.dispatched_fake_skill += 1
         return True, summary_text, payload
+
+    def _apply_success_kb_effects(self, result_payload: dict) -> dict:
+        """Apply successful skill-reported KB effects through the KB boundary."""
+        if not self.apply_success_kb_effects:
+            return {}
+        if self._kb_mutation_client is None:
+            return {}
+        effects = _kb_effects_from_result_payload(result_payload)
+        if not effects:
+            return {}
+
+        calls: list[dict] = []
+        for operation, statements in _group_kb_effect_statements(effects).items():
+            if not statements:
+                continue
+            result = self._kb_mutation_client.mutate(
+                operation=operation,
+                statements=statements,
+                models=['default'],
+                wait_for_result=True,
+            )
+            calls.append(
+                {
+                    'operation': operation,
+                    'statement_count': result.statement_count,
+                    'success': result.success,
+                    'dispatched': result.dispatched,
+                    'error_msg': result.error_msg,
+                }
+            )
+            if result.success:
+                self._stats.dispatched_kb_mutation += 1
+            else:
+                self._stats.dispatch_failures += 1
+        if not calls:
+            return {}
+        all_success = all(call.get('success') for call in calls)
+        if all_success:
+            self.get_logger().info(
+                'Applied successful skill KB effects | calls=%d' % len(calls)
+            )
+        else:
+            self.get_logger().warn(
+                'Some successful skill KB effects failed | calls=%s' % calls
+            )
+        return {
+            'applied': all_success,
+            'calls': calls,
+        }
 
     def _scan_args_from_step(self, step_args: dict) -> dict:
         scan_args = dict(step_args or {})

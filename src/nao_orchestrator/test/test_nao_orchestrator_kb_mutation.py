@@ -2,6 +2,8 @@ from kb_skills.mutation_client import MutationResult
 
 from nao_orchestrator.orchestrator import NaoOrchestrator
 from nao_orchestrator.orchestrator import _RuntimeStats
+from nao_orchestrator.orchestrator import _group_kb_effect_statements
+from nao_orchestrator.orchestrator import _kb_effects_from_result_payload
 
 
 class FakeKnowledgeQuery:
@@ -77,6 +79,14 @@ class FakeKnowledgeMutation:
         )
 
 
+class FakeLogger:
+    def info(self, *_args, **_kwargs) -> None:
+        pass
+
+    def warn(self, *_args, **_kwargs) -> None:
+        pass
+
+
 def _orchestrator_with_kb(
     facts: list[str],
     *,
@@ -88,6 +98,8 @@ def _orchestrator_with_kb(
     node._kb_query_client = query
     node._kb_mutation_client = mutation
     node._stats = _RuntimeStats()
+    node.apply_success_kb_effects = True
+    node._logger = FakeLogger()
     return node, query, mutation
 
 
@@ -116,6 +128,80 @@ def test_kb_remove_expands_subject_only_request_and_verifies_empty_postcondition
     assert query.facts == ['other_marker dbp:color red']
     assert node._stats.dispatched_kb_mutation == 1
     assert node._stats.dispatch_failures == 0
+
+
+def test_success_kb_effect_helpers_group_valid_statements():
+    payload = {
+        'evidence': {
+            'kb_effects': [
+                {'action': 'remove', 'statement': 'cup_1 oro:isOn table_1'},
+                {'action': 'add', 'statement': 'robot oro:holds cup_1'},
+                {'action': 'revise', 'statements': ['cup_1 dbp:color blue']},
+                {'action': 'ignored', 'statement': 'cup_1 noise value'},
+                {'action': 'add', 'statement': 'robot oro:holds cup_1'},
+            ]
+        }
+    }
+
+    effects = _kb_effects_from_result_payload(payload)
+
+    assert _group_kb_effect_statements(effects) == {
+        'remove': ['cup_1 oro:isOn table_1'],
+        'add': ['robot oro:holds cup_1'],
+        'update': ['cup_1 dbp:color blue'],
+    }
+
+
+def test_successful_skill_kb_effects_are_applied_through_kb_boundary():
+    node, _query, mutation = _orchestrator_with_kb(['cup_1 oro:isOn table_1'])
+
+    summary = node._apply_success_kb_effects(
+        {
+            'skill': 'pick_object',
+            'status': 'succeeded',
+            'evidence': {
+                'kb_effects': [
+                    {'action': 'remove', 'statement': 'cup_1 oro:isOn table_1'},
+                    {'action': 'add', 'statement': 'robot oro:holds cup_1'},
+                ]
+            },
+        }
+    )
+
+    assert summary['applied'] is True
+    assert mutation.calls == [
+        {
+            'operation': 'remove',
+            'statements': ['cup_1 oro:isOn table_1'],
+            'models': ['default'],
+            'lifespan_sec': 0.0,
+            'wait_for_result': True,
+        },
+        {
+            'operation': 'add',
+            'statements': ['robot oro:holds cup_1'],
+            'models': ['default'],
+            'lifespan_sec': 0.0,
+            'wait_for_result': True,
+        },
+    ]
+    assert node._stats.dispatched_kb_mutation == 2
+
+
+def test_successful_skill_kb_effects_can_be_disabled():
+    node, _query, mutation = _orchestrator_with_kb(['cup_1 oro:isOn table_1'])
+    node.apply_success_kb_effects = False
+
+    summary = node._apply_success_kb_effects(
+        {
+            'evidence': {
+                'kb_effects': [{'action': 'remove', 'statement': 'cup_1 oro:isOn table_1'}]
+            }
+        }
+    )
+
+    assert summary == {}
+    assert mutation.calls == []
 
 
 def test_kb_remove_expands_generic_type_statement_as_subject_remove():
