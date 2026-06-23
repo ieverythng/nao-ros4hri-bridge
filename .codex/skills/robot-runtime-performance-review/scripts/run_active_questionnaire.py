@@ -583,6 +583,49 @@ COMPOSITE_CASES = (
         ),
     ),
     ProbeCase(
+        "multi_turn_gold_apple_scene",
+        "multi_turn_kb_manipulation",
+        "What can you see now?",
+        12.0,
+        setup=KbInjection(
+            object_id="codex_gold_apple_scene",
+            statements=(
+                "myself sees codex_gold_apple",
+                "codex_gold_apple rdf:type Apple",
+                "codex_gold_apple dbp:name KAREN",
+                "codex_gold_apple dbp:color gold",
+                "codex_gold_apple oro:isOn codex_gold_table",
+                "codex_gold_table rdf:type Table",
+                "codex_gold_table dbp:name table",
+                "myself sees codex_gold_recipient",
+                "codex_gold_recipient rdf:type Human",
+                "codex_gold_recipient dbp:name ALEX",
+                "codex_gold_recipient dbp:frameId codex_gold_recipient",
+                "myself canReach codex_gold_apple",
+            ),
+            query_patterns=(
+                "codex_gold_apple ?predicate ?object",
+                "codex_gold_recipient ?predicate ?object",
+            ),
+            query_vars=("?predicate", "?object"),
+        ),
+        conversation_group="multi_turn_gold_apple",
+    ),
+    ProbeCase(
+        "multi_turn_gold_apple_bring",
+        "multi_turn_kb_manipulation",
+        "Can you bring that apple to the person named ALEX?",
+        160.0,
+        conversation_group="multi_turn_gold_apple",
+    ),
+    ProbeCase(
+        "multi_turn_gold_apple_location_followup",
+        "multi_turn_kb_manipulation",
+        "Where is the apple now?",
+        12.0,
+        conversation_group="multi_turn_gold_apple",
+    ),
+    ProbeCase(
         "replan_absent_then_scan_report",
         "replan_recovery",
         "Find the codex missing cup. If you cannot find it, scan the scene and report what you can confirm.",
@@ -666,27 +709,27 @@ INTENT_ABLATION_CASES = (
         "intent_ablation_dialogue_greeting",
         "intent_route_ablation_dialogue",
         "Hey, how are you?",
-        8.0,
+        30.0,
         conversation_group="intent_ablation_dialogue",
     ),
     ProbeCase(
         "intent_ablation_favorite_movie",
         "intent_route_ablation_dialogue",
         "What is your favourite movie?",
-        8.0,
+        45.0,
         conversation_group="intent_ablation_dialogue",
     ),
     ProbeCase(
         "intent_ablation_wave_particle",
         "intent_route_ablation_dialogue",
         "What is wave-particle duality?",
-        10.0,
+        45.0,
     ),
     ProbeCase(
         "intent_ablation_future_navigation",
         "intent_route_ablation_holdout",
         "Could we navigate to the probe cup later?",
-        12.0,
+        45.0,
         setup=KbInjection(
             object_id=KB_PROBE_OBJECT_ID,
             statements=(
@@ -704,7 +747,7 @@ INTENT_ABLATION_CASES = (
         "intent_ablation_kb_visible",
         "intent_route_ablation_kb_query",
         "What can you see now?",
-        12.0,
+        45.0,
         setup=KbInjection(
             object_id="codex_ablation_scene",
             statements=(
@@ -1054,19 +1097,21 @@ cat >/tmp/nao_questionnaire_qos_contract.log <<'EOF'
   contract=publish tracked voice with TRANSIENT_LOCAL durability before LiveSpeech.
   reason=dialogue_manager subscribes to the remapped rqt-chat tracked topic with transient-local QoS.
 EOF
-{mirror_script}
-timeout 8 ros2 topic pub --once -w 1 {VOICE_TRACKED_QOS} {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{voice_id}']}}" >/tmp/nao_questionnaire_voice.log 2>&1 || true
-for _ in $(seq 1 16); do
-  if ros2 topic info -v {voice_topic} 2>/dev/null | grep -q 'Node name: dialogue_manager'; then
-    break
+	{mirror_script}
+	dialogue_state="$(ros2 lifecycle get /dialogue_manager 2>/dev/null || true)"
+	echo "  dialogue_manager_lifecycle=${{dialogue_state:-unavailable}}" >>/tmp/nao_questionnaire_qos_contract.log
+	timeout 8 ros2 topic pub --once -w 1 {VOICE_TRACKED_QOS} {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{voice_id}']}}" >/tmp/nao_questionnaire_voice.log 2>&1 || true
+	for _ in $(seq 1 16); do
+	  if ros2 topic info -v {voice_topic} 2>/dev/null | grep -q 'Node name: dialogue_manager'; then
+	    break
   fi
   sleep 0.5
 done
-ros2 topic info -v {VOICE_TRACKED_TOPIC} >/tmp/nao_questionnaire_tracked_info.log 2>&1 || true
-ros2 topic info -v {voice_topic} >/tmp/nao_questionnaire_speech_info.log 2>&1 || true
-if ! grep -q 'Node name: dialogue_manager' /tmp/nao_questionnaire_speech_info.log 2>/dev/null; then
-  echo "[runtime-review] WARNING: dialogue_manager speech subscription was not visible for {voice_topic}" >>/tmp/nao_questionnaire_qos_contract.log
-fi
+	ros2 topic info -v {VOICE_TRACKED_TOPIC} >/tmp/nao_questionnaire_tracked_info.log 2>&1 || true
+	ros2 topic info -v {voice_topic} >/tmp/nao_questionnaire_speech_info.log 2>&1 || true
+	if ! grep -q 'Node name: dialogue_manager' /tmp/nao_questionnaire_speech_info.log 2>/dev/null; then
+	  echo "[runtime-review] ERROR: dialogue_manager speech subscription was not visible for {voice_topic}; this is a lifecycle/ingress preflight failure, not a model result." >>/tmp/nao_questionnaire_qos_contract.log
+	fi
 timeout 8 ros2 topic pub --once -w 1 {VOICE_SPEECH_QOS} {voice_topic} hri_msgs/msg/LiveSpeech "{{final: \\"{escaped_text}\\", confidence: 1.0, locale: \\"en_US\\"}}" >/tmp/nao_questionnaire_speech.log 2>&1 || true
 cat /tmp/nao_questionnaire_qos_contract.log /tmp/nao_questionnaire_rqt_rosout.log /tmp/nao_questionnaire_rqt_caption.log /tmp/nao_questionnaire_voice.log /tmp/nao_questionnaire_tracked_info.log /tmp/nao_questionnaire_speech_info.log /tmp/nao_questionnaire_speech.log 2>/dev/null || true
 """

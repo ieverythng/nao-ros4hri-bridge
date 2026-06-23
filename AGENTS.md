@@ -91,6 +91,26 @@ user-facing utterance authority per turn.
   skills, and AB>=2 entries are non-runtime proposals unless explicitly
   promoted.
 
+## Prompt And LLM Contract Changes
+
+- Treat prompt text as runtime-critical code. Do not add prompt wording,
+  examples, or policy rules as a quick patch before checking whether the same
+  contract already exists in the canonical prompt pack, system-turn addendum,
+  planner prompt, or structured runtime payload.
+- Canonical chatbot response and intent policy belongs in
+  `src/chatbot_llm/config/chat_prompt_pack.yaml`. Canonical planner policy
+  belongs in `src/planner_llm/config/planner_prompt_pack.yaml`. Python prompt
+  builders and system-turn addenda should provide structural framing only unless
+  a bounded SkillOpt iteration proves a local runtime wording contract is needed.
+- Every prompt or LLM-facing addendum change must have a SkillOpt ledger entry:
+  baseline, mutation batch, train result, holdout result, and accept/reject
+  decision. Use the active tracker or a dated artifact; do not leave prompt
+  behavior changes as unlogged source edits.
+- Prompt edits must preserve known-good seams. Before accepting a wording
+  mutation, run focused holdouts for dialogue route safety, KB-query behavior,
+  execution admission, report-result wording, and duplicate-speech prevention
+  when the edited prompt can affect those seams.
+
 ## Package Sensitivity
 
 Prefer local first-party integration packages for stack-specific behavior:

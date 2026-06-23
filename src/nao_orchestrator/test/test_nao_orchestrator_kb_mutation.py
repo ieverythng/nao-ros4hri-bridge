@@ -118,6 +118,59 @@ def test_kb_remove_expands_subject_only_request_and_verifies_empty_postcondition
     assert node._stats.dispatch_failures == 0
 
 
+def test_kb_remove_expands_generic_type_statement_as_subject_remove():
+    node, _query, mutation = _orchestrator_with_kb(
+        [
+            'codex_marker rdf:type Cube',
+            'codex_marker rdf:type owl:Thing',
+            'codex_marker dbp:name NOVA',
+            'codex_marker dbp:color blue',
+            'other_marker dbp:color red',
+        ]
+    )
+
+    success, reason, payload = node._execute_kb_mutation_step(
+        'kb_remove',
+        {'statements': ['codex_marker rdf:type owl:Thing']},
+    )
+
+    assert success is True
+    assert reason == 'KnowledgeCore mutation completed'
+    assert mutation.calls[0]['statements'] == [
+        'codex_marker rdf:type Cube',
+        'codex_marker rdf:type owl:Thing',
+        'codex_marker dbp:name NOVA',
+        'codex_marker dbp:color blue',
+    ]
+    assert payload['statement_count'] == 4
+    assert _query.facts == ['other_marker dbp:color red']
+
+
+def test_kb_remove_expands_natural_language_subject_alias():
+    node, _query, mutation = _orchestrator_with_kb(
+        [
+            'codex_marker rdf:type Cube',
+            'codex_marker dbp:name NOVA',
+            'codex_marker dbp:color blue',
+        ]
+    )
+
+    success, reason, payload = node._execute_kb_mutation_step(
+        'kb_remove',
+        {'statements': ['codex_marker is in knowledge base']},
+    )
+
+    assert success is True
+    assert reason == 'KnowledgeCore mutation completed'
+    assert mutation.calls[0]['statements'] == [
+        'codex_marker rdf:type Cube',
+        'codex_marker dbp:name NOVA',
+        'codex_marker dbp:color blue',
+    ]
+    assert payload['statement_count'] == 3
+    assert _query.facts == []
+
+
 def test_kb_remove_rejects_subject_only_request_when_no_facts_match():
     node, _query, mutation = _orchestrator_with_kb(['other_marker dbp:color red'])
 

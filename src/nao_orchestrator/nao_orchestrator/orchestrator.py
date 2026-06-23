@@ -127,6 +127,28 @@ def _single_entity_statement(statement: str) -> str:
     return token
 
 
+def _kb_remove_subject_alias(statement: str) -> str:
+    tokens = str(statement or '').strip().split()
+    if not tokens:
+        return ''
+    if len(tokens) == 1:
+        return _single_entity_statement(statement)
+    subject, predicate, obj = _statement_parts(statement)
+    if (
+        subject
+        and predicate == 'rdf:type'
+        and obj in {'owl:Thing', 'Thing', 'oro:Entity'}
+    ):
+        return subject
+    if (
+        len(tokens) == 5
+        and tokens[1:5] == ['is', 'in', 'knowledge', 'base']
+        and _single_entity_statement(tokens[0])
+    ):
+        return tokens[0]
+    return ''
+
+
 def _binding_value(row: dict, key: str) -> str:
     if not isinstance(row, dict):
         return ''
@@ -228,6 +250,53 @@ def _report_text_from_execution_results(execution_results: list) -> str:
         if summary and not is_unresolved_report_template(summary) and summary not in summaries:
             summaries.append(summary)
     return ' '.join(summaries)
+
+
+def _step_id_set(step: dict) -> set[str]:
+    if not isinstance(step, dict):
+        return set()
+    step_ids = {
+        str(step.get('id', '')).strip(),
+        str(step.get('step_id', '')).strip(),
+    }
+    return {item for item in step_ids if item}
+
+
+def _current_plan_step(plan_steps: list, current_step_index: int) -> dict:
+    if not isinstance(plan_steps, list) or current_step_index < 0:
+        return {}
+    if current_step_index >= len(plan_steps):
+        return {}
+    step = plan_steps[current_step_index]
+    return dict(step) if isinstance(step, dict) else {}
+
+
+def _required_step_ids(step: dict) -> set[str]:
+    requires = step.get('requires', []) if isinstance(step, dict) else []
+    if not isinstance(requires, list):
+        return set()
+    return {str(item).strip() for item in requires if str(item).strip()}
+
+
+def _scoped_report_steps(
+    execution_results: list,
+    *,
+    current_step: dict,
+) -> tuple[list[dict], str]:
+    """Prefer direct report dependencies over the whole execution chain."""
+    if not isinstance(execution_results, list):
+        return [], 'history'
+    compact_results = [dict(step) for step in execution_results if isinstance(step, dict)]
+    required_ids = _required_step_ids(current_step)
+    if required_ids:
+        scoped = [
+            step
+            for step in compact_results
+            if _step_id_set(step) & required_ids
+        ]
+        if scoped:
+            return scoped[-_MAX_EXECUTION_REPORT_STEPS:], 'direct_dependencies'
+    return compact_results[-_MAX_EXECUTION_REPORT_STEPS:], 'history'
 
 
 def _motion_result_payload(route: str, step_args: dict, resolved_payload: dict) -> dict:
@@ -1721,12 +1790,12 @@ class NaoOrchestrator(Node):
         expanded: list[str] = []
         query_models = models if isinstance(models, list) and models else ['default']
         for statement in statements:
-            subject, predicate, obj = _statement_parts(statement)
-            if subject and predicate and obj:
-                expanded.append(statement)
-                continue
-            subject = _single_entity_statement(statement)
+            subject = _kb_remove_subject_alias(statement)
             if not subject:
+                subject, predicate, obj = _statement_parts(statement)
+                if subject and predicate and obj:
+                    expanded.append(statement)
+                    continue
                 expanded.append(statement)
                 continue
             rows = self._kb_query_client.query_rows(
@@ -1971,9 +2040,7 @@ class NaoOrchestrator(Node):
         if explicit_text and not is_unresolved_report_template(explicit_text):
             return explicit_text
 
-        chain_text = _report_text_from_execution_results(
-            fallback_data.get('execution_results', [])
-        )
+        chain_text = _report_text_from_execution_results(report_context.get('steps', []))
         if chain_text:
             return chain_text
 
@@ -1994,15 +2061,15 @@ class NaoOrchestrator(Node):
         execution_results = fallback_data.get('execution_results', [])
         if not isinstance(execution_results, list):
             execution_results = []
-        bounded_steps = [
-            dict(step)
-            for step in execution_results[-_MAX_EXECUTION_REPORT_STEPS:]
-            if isinstance(step, dict)
-        ]
         plan_steps = fallback_data.get('plan_steps', [])
         if not isinstance(plan_steps, list):
             plan_steps = []
         current_step_index = int(fallback_data.get('current_step_index', -1) or -1)
+        current_step = _current_plan_step(plan_steps, current_step_index)
+        bounded_steps, report_scope = _scoped_report_steps(
+            execution_results,
+            current_step=current_step,
+        )
         future_steps = [
             dict(step)
             for step in plan_steps[current_step_index + 1:]
@@ -2045,6 +2112,8 @@ class NaoOrchestrator(Node):
             'plan_id': str(plan_context.get('plan_id', '')).strip(),
             'plan_version': int(plan_context.get('plan_version', 0) or 0),
             'report_role': report_role,
+            'report_scope': report_scope,
+            'current_report_step': current_step,
             'future_steps': future_steps[-_MAX_EXECUTION_REPORT_STEPS:],
             'steps': bounded_steps,
             'latest_result_summary': str(fallback_data.get('last_result_summary', '')).strip(),

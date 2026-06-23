@@ -57,6 +57,7 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   network_interface:=wlp1s0 \
   start_planner_llm:=true \
   chatbot_planner_mode_enabled:=true \
+  chatbot_turn_pipeline_mode:=response_first \
   chatbot_server_url:=http://10.7.138.215:8004/v1/chat/completions \
   planner_llm_provider:=openai_compatible \
   planner_llm_base_url:=http://10.7.138.215:8004 \
@@ -99,8 +100,9 @@ python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questi
   --out /tmp/nao_main_questionnaire.json
 ```
 
-For the intent-first route-lock ablation, relaunch the stack with
-`chatbot_turn_pipeline_mode:=intent_first`, then run:
+For the intent-first route-lock ablation, use the same launch profile but replace
+the turn pipeline argument with `chatbot_turn_pipeline_mode:=intent_first`, then
+run:
 
 ```bash
 python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
@@ -147,6 +149,9 @@ Live probing requirement:
 - If the container is running, actively probe it. Do not rely on historical logs
   alone for a full review.
 - Confirm node visibility with `docker exec <container> ... ros2 node list`.
+- Confirm lifecycle nodes are active before scoring speech or action behavior.
+  A process-only graph is not enough: `dialogue_manager` must report
+  `active [3]` before it will subscribe to tracked voices and speech.
 - Confirm critical live parameters with `ros2 param dump` or `ros2 param get`,
   especially chatbot token budget, KB query budget, scene-grounding freshness,
   orchestrator execution mode, and fake-skill mode.
