@@ -252,53 +252,6 @@ def _report_text_from_execution_results(execution_results: list) -> str:
     return ' '.join(summaries)
 
 
-def _step_id_set(step: dict) -> set[str]:
-    if not isinstance(step, dict):
-        return set()
-    step_ids = {
-        str(step.get('id', '')).strip(),
-        str(step.get('step_id', '')).strip(),
-    }
-    return {item for item in step_ids if item}
-
-
-def _current_plan_step(plan_steps: list, current_step_index: int) -> dict:
-    if not isinstance(plan_steps, list) or current_step_index < 0:
-        return {}
-    if current_step_index >= len(plan_steps):
-        return {}
-    step = plan_steps[current_step_index]
-    return dict(step) if isinstance(step, dict) else {}
-
-
-def _required_step_ids(step: dict) -> set[str]:
-    requires = step.get('requires', []) if isinstance(step, dict) else []
-    if not isinstance(requires, list):
-        return set()
-    return {str(item).strip() for item in requires if str(item).strip()}
-
-
-def _scoped_report_steps(
-    execution_results: list,
-    *,
-    current_step: dict,
-) -> tuple[list[dict], str]:
-    """Prefer direct report dependencies over the whole execution chain."""
-    if not isinstance(execution_results, list):
-        return [], 'history'
-    compact_results = [dict(step) for step in execution_results if isinstance(step, dict)]
-    required_ids = _required_step_ids(current_step)
-    if required_ids:
-        scoped = [
-            step
-            for step in compact_results
-            if _step_id_set(step) & required_ids
-        ]
-        if scoped:
-            return scoped[-_MAX_EXECUTION_REPORT_STEPS:], 'direct_dependencies'
-    return compact_results[-_MAX_EXECUTION_REPORT_STEPS:], 'history'
-
-
 def _motion_result_payload(route: str, step_args: dict, resolved_payload: dict) -> dict:
     """Build non-spoken execution evidence for successful motion steps."""
     motion_label = _first_non_empty_value(
@@ -2065,11 +2018,10 @@ class NaoOrchestrator(Node):
         if not isinstance(plan_steps, list):
             plan_steps = []
         current_step_index = int(fallback_data.get('current_step_index', -1) or -1)
-        current_step = _current_plan_step(plan_steps, current_step_index)
-        bounded_steps, report_scope = _scoped_report_steps(
-            execution_results,
-            current_step=current_step,
-        )
+        bounded_steps = [
+            dict(step) for step in execution_results[-_MAX_EXECUTION_REPORT_STEPS:]
+            if isinstance(step, dict)
+        ]
         future_steps = [
             dict(step)
             for step in plan_steps[current_step_index + 1:]
@@ -2112,8 +2064,6 @@ class NaoOrchestrator(Node):
             'plan_id': str(plan_context.get('plan_id', '')).strip(),
             'plan_version': int(plan_context.get('plan_version', 0) or 0),
             'report_role': report_role,
-            'report_scope': report_scope,
-            'current_report_step': current_step,
             'future_steps': future_steps[-_MAX_EXECUTION_REPORT_STEPS:],
             'steps': bounded_steps,
             'latest_result_summary': str(fallback_data.get('last_result_summary', '')).strip(),

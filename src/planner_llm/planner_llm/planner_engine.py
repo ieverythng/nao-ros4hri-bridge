@@ -36,6 +36,34 @@ _RULE_BASED_MOTIONS = {
 }
 
 
+def _looks_like_simple_rule_request(request: PlannerRequest) -> bool:
+    """Allow deterministic fallback only for one obvious primitive motion/posture."""
+    if request_requests_report(request):
+        return False
+    if request.scene_targets:
+        return False
+    goal_text = ' %s ' % ' '.join(str(request.goal_text or '').lower().split())
+    if not goal_text.strip():
+        return True
+    if any(
+        marker in goal_text
+        for marker in (
+            ' all ',
+            ' every ',
+            ' each ',
+            ' and ',
+            ' then ',
+            ' after ',
+            ' before ',
+            ' report ',
+            ' tell me ',
+            ' let me know ',
+        )
+    ):
+        return False
+    return True
+
+
 @dataclass(frozen=True)
 class PlannerDecision:
     intent_name: str
@@ -90,17 +118,6 @@ class PlannerEngine:
                 status='waiting_user',
                 communication_policy=resolved_policy,
             )
-
-        rule_based_decision = self._rule_based_decision(
-            request,
-            feedback=feedback,
-            goal_id=resolved_goal_id,
-            plan_version=resolved_plan_version,
-            status=status,
-            communication_policy=resolved_policy,
-        )
-        if rule_based_decision is not None:
-            return rule_based_decision
 
         try:
             raw_model_output = self._provider.generate(
@@ -166,6 +183,18 @@ class PlannerEngine:
                     raw_model_output,
                     retry_raw_model_output,
                 )
+
+        rule_fallback_decision = self._rule_based_decision(
+            request,
+            feedback=feedback,
+            goal_id=resolved_goal_id,
+            plan_version=resolved_plan_version,
+            status=status,
+            communication_policy=resolved_policy,
+            mode='rule_fallback',
+        )
+        if rule_fallback_decision is not None:
+            return rule_fallback_decision
 
         return self._invalid_model_output_decision(
             request,
@@ -481,6 +510,7 @@ class PlannerEngine:
         plan_version: int,
         status: str,
         communication_policy: dict,
+        mode: str = 'rule',
     ) -> PlannerDecision | None:
         if str(request.planner_mode or '').strip().lower() in (
             'multi_step',
@@ -490,6 +520,8 @@ class PlannerEngine:
         ):
             return None
         if len(request.normalized_intents) > 1:
+            return None
+        if not _looks_like_simple_rule_request(request):
             return None
 
         retry_budget = self._next_retry_budget({}, feedback)[0]
@@ -515,7 +547,7 @@ class PlannerEngine:
                     validation_status='draft',
                     retry_budget=retry_budget,
                     scene_targets=scene_targets,
-                    mode='rule',
+                    mode=mode,
                     goal_id=goal_id,
                     plan_version=plan_version,
                     status=status,

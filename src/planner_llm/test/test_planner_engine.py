@@ -47,22 +47,89 @@ def test_planner_engine_builds_rule_plan_for_motion_intent() -> None:
     provider = _FakeProvider('{}')
     engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=2)
     request = PlannerRequest.from_payload(
+            {
+                'request_id': 'r1',
+                'goal_id': 'goal_1',
+                'goal_text': 'look left',
+                'normalized_intents': ['head_look_left'],
+            }
+        )
+
+    decision = engine.plan_request(request, goal_id='goal_1', plan_version=1)
+    assert decision.mode == 'rule_fallback'
+    assert decision.payload['plan']['goal_id'] == 'goal_1'
+    assert decision.payload['plan']['plan_version'] == 1
+    assert decision.payload['plan']['steps'][0]['args']['object'] == 'head_look_left'
+    assert decision.payload['plan']['retry_budget'] == 2
+    assert provider.messages
+
+
+def test_planner_engine_does_not_rule_fallback_targeted_motion_request() -> None:
+    provider = _FakeProvider('{}')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=2)
+    request = PlannerRequest.from_payload(
         {
-            'request_id': 'r1',
-            'goal_id': 'goal_1',
-            'user_text': 'look to the left for the cup',
+            'request_id': 'r_targeted_motion',
+            'goal_id': 'goal_targeted_motion',
+            'goal_text': 'look to the left for the cup',
             'normalized_intents': ['head_look_left'],
             'scene_targets': ['cup'],
         }
     )
 
-    decision = engine.plan_request(request, goal_id='goal_1', plan_version=1)
-    assert decision.mode == 'rule'
-    assert decision.payload['plan']['goal_id'] == 'goal_1'
-    assert decision.payload['plan']['plan_version'] == 1
-    assert decision.payload['plan']['steps'][0]['args']['object'] == 'head_look_left'
-    assert decision.payload['plan']['retry_budget'] == 2
-    assert provider.messages == []
+    decision = engine.plan_request(request, goal_id='goal_targeted_motion', plan_version=1)
+
+    assert decision.mode == 'fail'
+    assert decision.payload['plan']['status'] == 'failed'
+
+
+def test_planner_engine_prefers_provider_over_rule_for_simple_motion_intent() -> None:
+    provider = _FakeProvider(
+        '{"steps":[{"type":"skill","name":"perform_motion",'
+        '"args":{"object":"head_look_up"},"requires":[],"on_failure":"replan",'
+        '"retry_budget":0}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=2)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_provider_motion',
+            'goal_id': 'goal_provider_motion',
+            'goal_text': 'move your head up',
+            'normalized_intents': ['head_look_up'],
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_provider_motion', plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['steps'][0]['args']['object'] == 'head_look_up'
+    assert provider.messages[0]['role'] == 'system'
+
+
+def test_planner_engine_does_not_rule_fallback_composite_motion_goal_text() -> None:
+    provider = _FakeProvider('{}')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=2)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_all_direction_hint',
+            'goal_id': 'goal_all_direction_hint',
+            'goal_text': 'move your head in all directions',
+            'normalized_intents': ['head_look_up'],
+        }
+    )
+
+    decision = engine.plan_request(
+        request,
+        goal_id='goal_all_direction_hint',
+        plan_version=1,
+    )
+
+    assert decision.mode == 'fail'
+    assert decision.payload['plan']['status'] == 'failed'
+    assert 'planner output did not contain a valid executable plan' in (
+        decision.payload['plan']['failure_reason']
+    )
+    assert provider.messages
 
 
 def test_planner_engine_uses_provider_for_motion_report_request() -> None:

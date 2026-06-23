@@ -742,42 +742,6 @@ def test_execution_report_context_marks_terminal_report_result() -> None:
     assert context['future_steps'] == []
 
 
-def test_execution_report_context_scopes_direct_report_dependencies() -> None:
-    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
-
-    context = orchestrator._execution_report_context(
-        {
-            'current_step_index': 5,
-            'plan_steps': [
-                {'id': 'step_1', 'name': 'navigate_to', 'args': {'target': 'apple'}},
-                {'id': 'step_2', 'name': 'report_result', 'requires': ['step_1']},
-                {'id': 'step_3', 'name': 'navigate_to', 'args': {'target': 'book'}},
-                {'id': 'step_4', 'name': 'report_result', 'requires': ['step_3']},
-                {'id': 'step_5', 'name': 'navigate_to', 'args': {'target': 'phone'}},
-                {'id': 'step_6', 'name': 'report_result', 'requires': ['step_5']},
-            ],
-            'execution_results': [
-                {'id': 'step_1', 'name': 'navigate_to', 'status': 'succeeded'},
-                {'id': 'step_2', 'name': 'report_result', 'status': 'succeeded'},
-                {'id': 'step_3', 'name': 'navigate_to', 'status': 'succeeded'},
-                {'id': 'step_4', 'name': 'report_result', 'status': 'succeeded'},
-                {
-                    'id': 'step_5',
-                    'name': 'navigate_to',
-                    'status': 'succeeded',
-                    'result_summary': 'I navigated to the phone.',
-                },
-            ],
-            'last_result_summary': 'I navigated to the phone.',
-        }
-    )
-
-    assert context['report_role'] == 'final'
-    assert context['report_scope'] == 'direct_dependencies'
-    assert [step['id'] for step in context['steps']] == ['step_5']
-    assert context['latest_result_summary'] == 'I navigated to the phone.'
-
-
 def test_execution_context_retains_admitted_request_for_report_result() -> None:
     orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
     orchestrator._planner_request_context_by_goal = {}
