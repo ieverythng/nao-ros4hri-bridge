@@ -106,6 +106,9 @@ user-facing utterance authority per turn.
   baseline, mutation batch, train result, holdout result, and accept/reject
   decision. Use the active tracker or a dated artifact; do not leave prompt
   behavior changes as unlogged source edits.
+- Do not patch prompt text first and create the ledger afterwards. If a prompt
+  wording change is made without the bounded SkillOpt baseline and holdout gate,
+  revert it unless the user explicitly accepts the process violation.
 - Prompt edits must preserve known-good seams. Before accepting a wording
   mutation, run focused holdouts for dialogue route safety, KB-query behavior,
   execution admission, report-result wording, and duplicate-speech prevention
