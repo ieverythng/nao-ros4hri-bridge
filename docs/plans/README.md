@@ -1,29 +1,33 @@
 # Plans and Execution Tracks
 
-This folder is intentionally minimal.
+This folder contains only active planning and supervisor-facing review surfaces.
+Historical handoffs and superseded plans live under `docs/artifacts/plan_archive/`.
 
-## Active plans
+## Active Plans
 
-- `nao_ros4hri_masterplan.md` (+ `.html`)  
-  Canonical integration tracker (planner/orchestrator, AB registry integration, observability/dashboard stream, upstream reconciliation).
-- `fake_skills_codex_handoff.md` (+ `.html`)  
-  Separate active stream for fake-skills runtime policy/scenario operations and Workbench validation support.
-- `planner_grounding_moe_contract_2026-06-01.md` (+ `.html`)  
-  Grounding ownership contract and MoE-by-AB planner seam policy.
-- `planner_replan_lineage_adr.md` (+ `.html`)  
-  Accepted ADR for canonical `plan` lineage fields, Hybrid Minimal T0, and replan join policy.
-- `sv_e2e_planner_flow_walkthrough_2026-06-01.md` (+ `.html`)  
-  Supervisor walkthrough deck for end-to-end user -> planner -> orchestrator -> dialogue flow.
+- `nao_ros4hri_masterplan.md` (+ `.html`)
+  Canonical integration tracker for planner, chatbot, orchestrator, grounding,
+  fake-skill validation, registry alignment, and remaining thesis seams.
+- `ISSUES_BEFORE_17-06-26.html`
+  Detailed readiness tracker and provenance log for runtime validation.
+- `FINAL_RUNTIME_REVIEW_17-06-26.html`
+  Condensed supervisor-facing runtime review.
+- `IRR_Implementation.html`
+  Intent-route-response ablation design and implementation tracker.
+- `locate-anything-3b-impl-report.html` and
+  `locateanything-nao-integration (1).md`
+  LocateAnything migration references.
+- `semi_symbolic_requirements_handoff_2026-06-11.md` (+ `.html`)
+  Semi-symbolic KB and grounding requirements handoff.
+- `wsl2-native-setup-plan.md` (+ `.html`)
+  Native WSL2 setup plan.
 
-## Archival rule
+## Recent Archive Sweep
 
-When a plan becomes fully implemented or is superseded, move it to
-`docs/artifacts/plan_archive/` and fold the status into the master plan.
+The 2026-06-23 cleanup moved superseded handoffs and dated sub-plans into:
 
-## Authoring rule
+- `docs/artifacts/plan_archive/2026-06-23/`
 
-For any active plan intended for review:
-
-1. Keep Markdown as source of truth.
-2. Keep an HTML companion in the same folder.
-3. Update both in the same commit.
+No files were deleted. Keep durable status in the active docs above and move
+new one-off investigations to `docs/artifacts/` after their conclusions are
+folded into the masterplan.

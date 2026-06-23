@@ -20,10 +20,13 @@ This top-level docs surface is intentionally small and operational.
 ## Plans
 
 - `plans/nao_ros4hri_masterplan.md` (+ HTML) — canonical integration tracker.
-- `plans/fake_skills_codex_handoff.md` (+ HTML) — separate fake-skills stream.
-- `plans/planner_grounding_moe_contract_2026-06-01.md` (+ HTML) — planner grounding ownership and MoE-by-AB seam contract.
-- `plans/planner_replan_lineage_adr.md` (+ HTML) — accepted ADR for replan lineage and Hybrid Minimal T0.
-- `plans/sv_e2e_planner_flow_walkthrough_2026-06-01.md` (+ HTML) — supervisor presentation pack for full E2E planner flow.
+- `plans/ISSUES_BEFORE_17-06-26.html` — detailed runtime-readiness tracker.
+- `plans/FINAL_RUNTIME_REVIEW_17-06-26.html` — supervisor-facing runtime review.
+- `plans/IRR_Implementation.html` — intent-route-response ablation tracker.
+- `plans/locate-anything-3b-impl-report.html` and
+  `plans/locateanything-nao-integration (1).md` — LocateAnything migration references.
+- `plans/semi_symbolic_requirements_handoff_2026-06-11.md` (+ HTML) — semi-symbolic KB requirements.
+- `plans/wsl2-native-setup-plan.md` (+ HTML) — native WSL2 setup plan.
 
 ## Reference/Generated Material
 

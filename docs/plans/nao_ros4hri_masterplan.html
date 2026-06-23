@@ -194,9 +194,11 @@
   <main class="doc">
 
 <h1>NAO ROS4HRI Masterplan (Consolidated, Active)</h1>
-<p><strong>Date:</strong> 2026-05-31 (status refresh)</p>
+<p><strong>Date:</strong> 2026-06-23 (runtime recovery refresh)</p>
 <p><strong>Branch context:</strong> <code>feat/TFM-LLM_planner</code> (+ nested repos and Neural-Wokbench integration seam)</p>
-<p><strong>Scope:</strong> Single active execution plan for planner/chatbot/orchestrator seams, canonical registry alignment, fake-skill operational hardening, and observability/dashboard rollout.</p>
+<p><strong>Scope:</strong> Single active execution plan for planner/chatbot/orchestrator seams,</p>
+<p>grounded-context reliability, canonical registry alignment, fake-skill</p>
+<p>operational hardening, LocateAnything migration, and validation reporting.</p>
 <h2>1. Consolidation Policy (What This File Replaces)</h2>
 <p>This file is now the canonical integration plan and absorbs execution tracking from:</p>
 <ul>
@@ -210,10 +212,9 @@
 <p>masterplan surface.</p>
 <p>The remaining source plans are preserved in <code>docs/artifacts/plan_archive/</code> for</p>
 <p>provenance.</p>
-<p>The fake skills stream remains separate by design:</p>
-<ul>
-<li><code>fake_skills_codex_handoff.md</code> (+ HTML)</li>
-</ul>
+<p>The fake-skills handoff stream has now been archived. Durable fake-skill</p>
+<p>requirements live in this masterplan, the fake-skills scenario playbook, and the</p>
+<p>runtime review tracker.</p>
 <h2>2. Repo-Doc Structure Contract</h2>
 <p>To avoid docs churn, active docs are constrained to:</p>
 <ul>
@@ -225,7 +226,7 @@
 <li><code>docs/architecture/ros4hri_neural_workbench_interactive_architecture.html</code></li>
 <li><code>docs/architecture/demo_stack_seam_contract_2026-05-26.md</code> (+ <code>.html</code>)</li>
 <li><code>docs/architecture/fake_skills_scenarios_playbook.md</code> (+ <code>.html</code>)</li>
-<li><code>docs/plans/</code> (this master plan + fake skills handoff)</li>
+<li><code>docs/plans/</code> (this master plan + active runtime/showing plans)</li>
 </ul>
 <p>Everything else should be archived under <code>docs/artifacts/</code> unless it is actively used in runtime operations.</p>
 <h2>3. Current Execution Status</h2>
@@ -240,10 +241,14 @@
 <li><strong>Done</strong>: route-hardening now defaults visibility-only scene checks to <code>knowledge_query</code> unless explicit scan/action wording is requested.</li>
 <li><strong>Done</strong>: planner dialogue acts run in direct mode by default, while completion wording stays chatbot-relay-owned when a chatbot client is available.</li>
 <li><strong>Done</strong>: planner grounding contracts now use Hybrid Minimal T0 (<code>knowledge_snapshot</code>, <code>scene_summary</code>, <code>state_t0</code>) with world-model seams removed.</li>
-<li><strong>In progress (2026-06-03)</strong>: seam contract hardening pass removes prompt-facing <code>counts</code>, removes same-class duplicate <code>rdf:type</code> relations, centralizes small contract helpers, and adds targetless <code>look_at</code> policy dispatch (<code>docs/plans/seam_contract_hardening_2026-06-03.md</code>).</li>
+<li><strong>Done (2026-06-23)</strong>: seam contract hardening conclusions are folded into the active source and this masterplan. The dated seam contract plan is archived under <code>docs/artifacts/plan_archive/2026-06-23/</code>.</li>
+<li><strong>Done (2026-06-23 source gate)</strong>: compact grounded context now derives a <code>locations</code> view from <code>oro:isIn</code>, <code>oro:isAt</code>, <code>oro:isOn</code>, and <code>oro:contains</code>, while preserving the existing <code>entities</code> contract.</li>
+<li><strong>Done (2026-06-23 source gate)</strong>: planner has a late, bounded fallback for grounded “bring every object from location X to recipient Y” requests when model output remains invalid after one repair attempt.</li>
+<li><strong>Done (2026-06-23 source gate)</strong>: successful skill result payloads can apply structured <code>evidence.kb_effects</code> through the orchestrator’s existing <code>/kb/revise</code> boundary. This starts with fake manipulation skills and is reusable by real skills that emit the same payload shape.</li>
 <li><strong>Done</strong>: structured <code>chatbot_turn_trace</code> visibility is available for dialogue vs planner-handoff attribution.</li>
 <li><strong>Done (2026-05-26)</strong>: planner-mode routing now guards visibility-only scene questions toward <code>knowledge_query</code> unless the user explicitly requests a new scan/action.</li>
 <li><strong>In progress</strong>: proactive wording + speech arbitration pass to avoid duplicate user-facing utterances when execution acknowledgements and planner dialogue completions occur in the same interaction.</li>
+<li><strong>In progress</strong>: live rebuild proof for the new location-group and KB-effect seams. Source tests pass, but runtime score should not be raised until a fresh response-first run proves the updated container behavior.</li>
 </ul>
 <h3>B. Registry Consistency and Canonicalization</h3>
 <ul>
@@ -262,7 +267,48 @@
 <li><strong>Done (2026-05-26)</strong>: fixed fake-skills launch coercion seam where <code>fake_skill_mode_overrides_json</code> could be treated as dict and abort startup (<code>ParameterValue(..., value_type=str)</code>).</li>
 <li><strong>In progress (2026-05-26 live probe)</strong>: planner request-admission behavior after entering <code>waiting_user</code> needs hardening; later <code>/planner/request</code> fixtures were trace-visible but not admitted by <code>planner_llm</code> in the same run.</li>
 </ul>
-<h3>D. Upstream/Nested Repo Reconciliation</h3>
+<h3>D. Grounding, LocateAnything, And Skill-Aware KB Effects</h3>
+<ul>
+<li><strong>Done</strong>: response-first runtime evidence shows simple dialogue, simple KB</li>
+</ul>
+<p>query, explicit KB mutation, fake-skill KB guards, and maximal</p>
+<p>kitchen-cup-to-person service-path success.</p>
+<ul>
+<li><strong>Done (source)</strong>: compact grounded context now exposes location groups without</li>
+</ul>
+<p>replacing <code>entities</code>, so existing consumers remain compatible.</p>
+<ul>
+<li><strong>In progress</strong>: location-aware execution validation for prompts such as</li>
+</ul>
+<p>“bring every object from the kitchen to ALEX”.</p>
+<ul>
+<li><strong>In progress</strong>: skill-aware KB post-effects. Fake skills already report</li>
+</ul>
+<p><code>evidence.kb_effects</code>; orchestrator now applies successful effects through</p>
+<p>KnowledgeCore. Real skills should adopt the same payload contract before</p>
+<p>direct KB mutation is enabled for them.</p>
+<ul>
+<li><strong>Pending</strong>: LocateAnything migration into the grounding stack. Keep it as a</li>
+</ul>
+<p>perception/grounding provider, not as a planner or dialogue policy owner.</p>
+<ul>
+<li><strong>Pending</strong>: location lifecycle semantics for movement/manipulation, including</li>
+</ul>
+<p>removal of stale support/location facts after pick, place, and bring.</p>
+<p><strong>Exit criteria</strong></p>
+<ul>
+<li>A response-first runtime review proves grouped-location KB queries, location</li>
+</ul>
+<p>scoped delivery, and post-skill KB changes on the next turn.</p>
+<ul>
+<li>Fake and real skill payloads use the same <code>kb_effects</code> shape for successful</li>
+</ul>
+<p>state changes.</p>
+<ul>
+<li>LocateAnything facts enter the same grounded-context projection as other</li>
+</ul>
+<p>perception or simulator facts.</p>
+<h3>E. Upstream/Nested Repo Reconciliation</h3>
 <ul>
 <li><strong>Done</strong>: upstream inventory exists (<code>docs/artifacts/upstream_sync_inventory_2026-05-14.md</code>).</li>
 <li><strong>Pending</strong>: staged merge application order:</li>
@@ -418,8 +464,10 @@
 <h2>6. Backlog (Prioritized, Cross-Track)</h2>
 <ol>
 <li><strong>P0</strong> Complete speech-ownership arbitration so each turn has one user-facing utterance authority (no duplicate execution-ack + planner-dialogue speech).</li>
+<li><strong>P0</strong> Live-prove grouped-location delivery and post-skill KB effects in the rebuilt response-first stack.</li>
 <li><strong>P0</strong> Resolve planner request-admission/backpressure seam after <code>waiting_user</code> transitions; ensure subsequent <code>new_goal</code> requests are deterministically handled (accepted/superseded/rejected with explicit reason).</li>
 <li><strong>P1</strong> Continue AB decomposition schema expansion and tests (AB=2+ lineage coverage).</li>
+<li><strong>P1</strong> Begin LocateAnything migration through the grounding adapter layer.</li>
 <li><strong>P1</strong> Begin dashboard backend skeleton (<code>nao_dashboard</code>).</li>
 <li><strong>P2</strong> Stage upstream nested-repo merges per inventory artifact.</li>
 </ol>
@@ -459,16 +507,36 @@
 <li>New tactical notes go to <code>docs/artifacts/</code> unless they are active operator docs.</li>
 <li>Plans in <code>docs/plans/</code> must be either:</li>
 <li>this master plan, or</li>
-<li>a clearly separate active stream (currently fake skills).</li>
+<li>a clearly separate active runtime/showing stream.</li>
 <li>All plan files must keep <code>.md</code> + <code>.html</code> pairs.</li>
 <li>When a sub-plan is implemented, fold its status into this master plan and archive the sub-plan.</li>
 </ul>
+<p><strong>2026-06-23 archive sweep</strong></p>
+<p>Superseded fake-skill, grounding, replan-lineage, seam-hardening, runtime-friction,</p>
+<p>and TFM fake-skill validation sub-plans were moved to</p>
+<p><code>docs/artifacts/plan_archive/2026-06-23/</code>. No files were deleted.</p>
 <h2>9. Immediate Next Session Checklist</h2>
 <ol>
-<li>Re-run focused tests for touched planner/chatbot/orchestrator/fake-skill seams.</li>
-<li>Verify live stack endpoints remain healthy (<code>scan</code>, <code>report_result</code>, <code>say</code>, strict <code>head_motion</code>, fake-skill endpoints including fake <code>perform_motion</code>).</li>
-<li>Validate no duplicate user-facing speech in KB visibility and execution-failure flows.</li>
-<li>Port validated seam changes into demo branch and reconcile launch defaults there.</li>
+<li>Rebuild the response-first container and run the runtime-review main</li>
+</ol>
+<p>questionnaire plus the architecture sweep.</p>
+<ol>
+<li>Add location-group probes: “what is in the kitchen?”, “bring every object</li>
+</ol>
+<p>from the kitchen to ALEX”, and “bring every object from the table to ALEX”.</p>
+<ol>
+<li>Verify post-skill KB effects: query before and after pick/place/bring and</li>
+</ol>
+<p>confirm old support facts are removed and new hold/location facts appear.</p>
+<ol>
+<li>Verify live stack endpoints remain healthy (<code>scan</code>, <code>report_result</code>, <code>say</code>,</li>
+</ol>
+<p>strict <code>head_motion</code>, fake-skill endpoints including fake <code>perform_motion</code>).</p>
+<ol>
+<li>Validate no duplicate user-facing speech in KB visibility and</li>
+</ol>
+<p>execution-failure flows.</p>
+<ol>
 <li>Continue AB-F2 decomposition metadata pass with tests.</li>
 </ol>
   </main>
