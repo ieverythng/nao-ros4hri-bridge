@@ -88,6 +88,7 @@ For an active E2E questionnaire pass, run:
 python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
   --container nao_ros2 \
   --case-set smoke \
+  --speech-voice-scope group \
   --out /tmp/nao_active_questionnaire.json
 ```
 
@@ -97,8 +98,37 @@ For the thesis-facing main questionnaire, use:
 python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
   --container nao_ros2 \
   --case-set main \
+  --speech-voice-scope group \
   --out /tmp/nao_main_questionnaire.json
 ```
+
+For deterministic preloaded-scene validation, use named KnowledgeCore fixtures
+before or during the questionnaire. These fixtures mirror the ROS4HRI
+interaction simulator semantics (`rdf:type`, `myself sees`, `isIn`, `isOn`,
+`contains`) without requiring manual rqt clicks:
+
+```bash
+python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
+  --container nao_ros2 \
+  --list-environments
+
+python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
+  --container nao_ros2 \
+  --case-set environment \
+  --speech-voice-scope group \
+  --out /tmp/nao_environment_questionnaire.json
+```
+
+To preload a fixture for any existing case set, add:
+
+```bash
+  --preload-environment kitchen_delivery
+```
+
+Current fixtures live in
+`.codex/skills/robot-runtime-performance-review/references/preloaded_environments.json`.
+The SVG environment remains a visual operator aid. The scoreable semantic state
+is the KnowledgeCore fact set injected through `/kb/revise`.
 
 For the intent-first route-lock ablation, use the same launch profile but replace
 the turn pipeline argument with `chatbot_turn_pipeline_mode:=intent_first`, then
@@ -131,6 +161,9 @@ python3 .codex/skills/robot-runtime-performance-review/scripts/run_architecture_
 Use this sweep to batch-check chatbot-service KB mutation, fake-skill guard
 availability, maximal grounded-subject handoff, and replan behavior. Mark it as
 service/direct-action evidence, not full ROS4HRI speech evidence.
+With `--include-maximal`, the sweep also injects the `kitchen_delivery`
+preloaded environment and asks a grouped-location delivery prompt through the
+chatbot service path.
 
 The questionnaire must include an interaction_sim/KnowledgeCore-style object
 insertion probe when the KB seam is under review. The preferred probe is:
@@ -167,6 +200,9 @@ Active questionnaire requirement:
 - For a full runtime pass, inject at least one turn from each applicable
   questionnaire category through the ROS4HRI speech ingress instead of only
   reading historical logs.
+- Use `--speech-voice-scope group` for scored questionnaire passes so unrelated
+  cases do not share an anonymous-speaker dialogue history. Use the default
+  `shared` scope only when deliberately stress-testing long-context carry-over.
 - Prefer the rqt_chat/dialogue_manager input seam used by the active launch:
   `/nao_chatbot/humans/voices/anonymous_speaker/speech`
   (`hri_msgs/msg/LiveSpeech`) plus
@@ -256,6 +292,10 @@ Interaction_sim object rule:
   `apple_*`, or `phone_*` are still present in the rendered context.
 - Do not classify a simulator object-add miss as perception noise unless the
   object never enters KnowledgeCore or `/scene/summary`.
+- For preloaded environment runs, score the named fixture separately from
+  manual interaction_sim manipulation. A fixture pass requires `/kb/revise`
+  success, `/kb/query` confirmation, grounded_context projection, and a
+  user-visible answer or plan using the canonical fixture ids.
 
 ### 2. HRI Person Stability
 
@@ -355,6 +395,10 @@ skills when the target is deterministic execution, replanning, or failure policy
    - Expected: planner produces multiple ordered steps, orchestrator preserves
      step evidence, `report_result` receives a filled or derivable summary, and
      final speech reflects the whole chain rather than only the last step.
+   - Preloaded environment holdout: run `--case-set environment` and require
+     "Bring every object from the kitchen to ALEX and report what happened" to
+     use the `kitchen_delivery` fixture, canonical objects, and the named human
+     recipient instead of generic noun phrases.
 5. Simple fake-skill scenario execution:
    - Run one-skill cases under all-success, all-failure, fail-once, alternating,
      and random fake modes.

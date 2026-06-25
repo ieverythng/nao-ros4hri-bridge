@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" role="img" aria-labelledby="title desc">
+  <title id="title">Semantic kitchen delivery validation scene</title>
+  <desc id="desc">Visual companion for the kitchen_delivery KnowledgeCore fixture used by the robot runtime performance review harness.</desc>
+  <style>
+    .room { fill:#f7f8fb; stroke:#6b7280; stroke-width:3; }
+    .zone { fill:#e8f3ee; stroke:#2f6b4f; stroke-width:2; }
+    .station { fill:#edf1fb; stroke:#315a9b; stroke-width:2; }
+    .table { fill:#d9c7a3; stroke:#8a6a36; stroke-width:2; }
+    .cup { fill:#ffffff; stroke:#3f3f46; stroke-width:2; }
+    .book { fill:#63a16f; stroke:#22543d; stroke-width:2; }
+    .person { fill:#f2b56b; stroke:#8a4b17; stroke-width:2; }
+    .robot { fill:#c8d3ff; stroke:#3d4d91; stroke-width:2; }
+    .label { font-family:Arial,sans-serif; font-size:20px; fill:#20242b; }
+    .small { font-size:15px; fill:#3f4652; }
+    .fact { font-size:14px; fill:#1f4b35; }
+    .arrow { stroke:#374151; stroke-width:2; marker-end:url(#arrow); fill:none; }
+  </style>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#374151" />
+    </marker>
+  </defs>
+  <rect x="28" y="28" width="844" height="504" rx="10" class="room" />
+  <rect x="60" y="72" width="360" height="330" rx="12" class="zone" />
+  <text x="80" y="110" class="label">codex_kitchen</text>
+  <text x="80" y="136" class="small">Room named kitchen</text>
+  <rect x="120" y="180" width="210" height="92" rx="8" class="table" />
+  <text x="145" y="234" class="small">kitchen surface</text>
+  <rect x="165" y="145" width="50" height="60" rx="12" class="cup" />
+  <text x="140" y="128" class="fact">codex_kitchen_cup</text>
+  <text x="145" y="290" class="fact">oro:isIn codex_kitchen</text>
+  <rect x="250" y="145" width="64" height="46" rx="4" class="book" />
+  <text x="238" y="128" class="fact">codex_kitchen_book</text>
+  <text x="232" y="314" class="fact">oro:isIn codex_kitchen</text>
+  <rect x="520" y="350" width="270" height="130" rx="12" class="station" />
+  <text x="545" y="390" class="label">codex_operator_station</text>
+  <text x="545" y="416" class="small">Place named operator_station</text>
+  <circle cx="665" cy="215" r="52" class="person" />
+  <text x="600" y="145" class="label">codex_recipient_person</text>
+  <text x="625" y="300" class="small">Human named ALEX</text>
+  <rect x="585" y="390" width="64" height="74" rx="10" class="robot" />
+  <text x="560" y="494" class="small">myself / nao_robot</text>
+  <path class="arrow" d="M420 242 C500 240, 565 230, 615 215" />
+  <text x="448" y="220" class="fact">bring objects to ALEX</text>
+  <path class="arrow" d="M616 390 C520 340, 455 300, 330 246" />
+  <text x="430" y="352" class="fact">navigate/query kitchen group</text>
+</svg>
