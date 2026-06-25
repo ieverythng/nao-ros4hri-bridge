@@ -1790,15 +1790,7 @@ class NaoOrchestrator(Node):
                     continue
                 expanded.append(statement)
                 continue
-            rows = self._kb_query_client.query_rows(
-                patterns=['%s ?predicate ?object' % subject],
-                query_vars=['?predicate', '?object'],
-                models=query_models,
-            )
-            expanded.extend(
-                _statement_from_binding(subject, _binding_value(row, 'predicate'), row)
-                for row in rows
-            )
+            expanded.extend(self._concrete_kb_facts_for_subject(subject, query_models))
         return _dedupe_statements(expanded)
 
     def _query_remaining_kb_remove_facts(
@@ -1826,6 +1818,21 @@ class NaoOrchestrator(Node):
                 if _binding_value(row, 'object') == obj
             )
         return _dedupe_statements(remaining)
+
+    def _concrete_kb_facts_for_subject(
+        self,
+        subject: str,
+        query_models: list[str],
+    ) -> list[str]:
+        rows = self._kb_query_client.query_rows(
+            patterns=['%s ?predicate ?object' % subject],
+            query_vars=['?predicate', '?object'],
+            models=query_models,
+        )
+        return [
+            _statement_from_binding(subject, _binding_value(row, 'predicate'), row)
+            for row in rows
+        ]
 
     def _dispatch_planned_look_at(
         self,
