@@ -266,6 +266,21 @@ def test_project_llm_grounded_context_filters_backend_noise_and_relations() -> N
     assert cup['kind'] == 'object'
     assert {'predicate': 'oro:isOn', 'object': 'table_1'} in cup['relations']
     assert {'predicate': 'seenBy', 'object': 'myself'} not in cup['relations']
+    assert projected['locations'] == [
+        {
+            'id': 'table_1',
+            'label': 'table_1',
+            'contains': [
+                {
+                    'id': 'cup_jrjic',
+                    'label': 'cup',
+                    'kind': 'object',
+                    'class': 'Tableware',
+                    'relation': 'oro:isOn',
+                }
+            ],
+        }
+    ]
     assert person['label'] is None
     forbidden = {'schema_version', 'source', 'backend', 'center_x', 'center_y', 'score', 'last_seen_sec'}
     assert forbidden.isdisjoint(cup.keys())
@@ -371,6 +386,55 @@ def test_normalize_grounded_context_accepts_compact_shape() -> None:
     }
 
 
+def test_project_llm_grounded_context_derives_location_groups_from_kb_predicates() -> None:
+    projected = project_llm_grounded_context(
+        {'scene_summary': {}},
+        knowledge_rows=[
+            {'entity': 'codex_kitchen', 'predicate': 'rdf:type', 'object': 'Room'},
+            {'entity': 'codex_kitchen', 'predicate': 'dbp:name', 'object': 'kitchen'},
+            {'entity': 'codex_kitchen_cup', 'predicate': 'rdf:type', 'object': 'Cup'},
+            {'entity': 'codex_kitchen_cup', 'predicate': 'dbp:name', 'object': 'TITAS'},
+            {'entity': 'codex_kitchen_cup', 'predicate': 'oro:isIn', 'object': 'codex_kitchen'},
+            {'entity': 'codex_table', 'predicate': 'rdf:type', 'object': 'Table'},
+            {'entity': 'codex_table', 'predicate': 'oro:contains', 'object': 'codex_phone'},
+            {'entity': 'codex_phone', 'predicate': 'rdf:type', 'object': 'Phone'},
+        ],
+    )
+
+    cup = next(item for item in projected['entities'] if item['id'] == 'codex_kitchen_cup')
+    assert {'predicate': 'oro:isIn', 'object': 'codex_kitchen'} in cup['relations']
+    assert projected['locations'] == [
+        {
+            'id': 'codex_kitchen',
+            'label': 'kitchen',
+            'class': 'Room',
+            'contains': [
+                {
+                    'id': 'codex_kitchen_cup',
+                    'label': 'TITAS',
+                    'kind': 'object',
+                    'class': 'Cup',
+                    'relation': 'oro:isIn',
+                }
+            ],
+        },
+        {
+            'id': 'codex_table',
+            'label': 'codex_table',
+            'class': 'Table',
+            'contains': [
+                {
+                    'id': 'codex_phone',
+                    'label': 'codex_phone',
+                    'kind': 'object',
+                    'class': 'Phone',
+                    'relation': 'oro:contains',
+                }
+            ],
+        },
+    ]
+
+
 def test_build_plan_payload_omits_context_ref_from_new_envelopes() -> None:
     request = PlannerRequest.from_payload(
         {
@@ -404,6 +468,7 @@ def test_project_llm_grounded_context_prioritizes_and_bounds_relations() -> None
             {'entity': 'cup_1', 'predicate': 'dbp:color', 'object': 'blue'},
             {'entity': 'cup_1', 'predicate': 'oro:isAt', 'object': 'table_1'},
             {'entity': 'cup_1', 'predicate': 'oro:isOn', 'object': 'coaster_1'},
+            {'entity': 'cup_1', 'predicate': 'oro:isIn', 'object': 'kitchen_1'},
             {'entity': 'cup_1', 'predicate': 'oro:contains', 'object': 'water'},
             {'entity': 'cup_1', 'predicate': 'foaf:knows', 'object': 'person_1'},
             {'entity': 'cup_1', 'predicate': 'irrelevantPredicate', 'object': 'noise'},
@@ -417,8 +482,28 @@ def test_project_llm_grounded_context_prioritizes_and_bounds_relations() -> None
         {'predicate': 'dbp:color', 'object': 'blue'},
         {'predicate': 'oro:isAt', 'object': 'table_1'},
         {'predicate': 'oro:isOn', 'object': 'coaster_1'},
-        {'predicate': 'oro:contains', 'object': 'water'},
+        {'predicate': 'oro:isIn', 'object': 'kitchen_1'},
     ]
+
+
+def test_project_llm_grounded_context_bounds_location_relations_after_membership() -> None:
+    projected = project_llm_grounded_context(
+        {'scene_summary': {}},
+        knowledge_rows=[
+            {'entity': 'cup_1', 'predicate': 'rdf:type', 'object': 'dbr:Cup'},
+            {'entity': 'cup_1', 'predicate': 'rdf:type', 'object': 'Tableware'},
+            {'entity': 'cup_1', 'predicate': 'dbp:name', 'object': 'blue mug'},
+            {'entity': 'cup_1', 'predicate': 'dbp:color', 'object': 'blue'},
+            {'entity': 'cup_1', 'predicate': 'oro:isAt', 'object': 'table_1'},
+            {'entity': 'cup_1', 'predicate': 'oro:isOn', 'object': 'coaster_1'},
+            {'entity': 'cup_1', 'predicate': 'oro:isIn', 'object': 'kitchen_1'},
+            {'entity': 'cup_1', 'predicate': 'oro:contains', 'object': 'water'},
+        ],
+    )
+
+    relations = projected['entities'][0]['relations']
+    assert {'predicate': 'oro:isIn', 'object': 'kitchen_1'} in relations
+    assert {'predicate': 'oro:contains', 'object': 'water'} not in relations
 
 
 def test_project_llm_grounded_context_can_include_raw_relations_for_skill_payloads() -> None:

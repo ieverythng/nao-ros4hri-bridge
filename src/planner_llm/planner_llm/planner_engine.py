@@ -64,6 +64,153 @@ def _looks_like_simple_rule_request(request: PlannerRequest) -> bool:
     return True
 
 
+def _looks_like_location_group_delivery(goal_text: str) -> bool:
+    clean = _normalized_text(goal_text)
+    if not clean:
+        return False
+    if not any(marker in clean for marker in (' all object', ' every object', ' each object')):
+        return False
+    if not any(marker in clean for marker in (' bring ', ' deliver ', ' take ', ' carry ')):
+        return False
+    return any(marker in clean for marker in (' from ', ' in ', ' on '))
+
+
+def _looks_like_grounded_look_at(goal_text: str) -> bool:
+    clean = _normalized_text(goal_text)
+    return any(marker in clean for marker in (' look at ', ' gaze at ', ' face '))
+
+
+def _goal_text_requests_report(goal_text: str) -> bool:
+    clean = _normalized_text(goal_text)
+    return any(
+        marker in clean
+        for marker in (
+            ' report ',
+            ' tell me ',
+            ' let me know ',
+            ' what you did ',
+            ' what happened ',
+        )
+    )
+
+
+def _matched_location_group(grounded_context: dict, goal_text: str) -> dict:
+    groups = grounded_context.get('locations', []) if isinstance(grounded_context, dict) else []
+    if not isinstance(groups, list):
+        return {}
+    matches = [
+        group for group in groups
+        if isinstance(group, dict) and _entity_mentioned(group, goal_text)
+    ]
+    if len(matches) == 1:
+        return matches[0]
+    if not matches and len(groups) == 1 and _mentions_location_collection(goal_text):
+        group = groups[0]
+        return group if isinstance(group, dict) else {}
+    return {}
+
+
+def _matched_recipient_entity(
+    grounded_context: dict,
+    goal_text: str,
+    *,
+    exclude_id: str = '',
+) -> str:
+    if not isinstance(grounded_context, dict):
+        return ''
+    if ' to ' not in _normalized_text(goal_text):
+        return ''
+    excluded = str(exclude_id or '').strip()
+    for entity in grounded_context.get('entities', []):
+        if not isinstance(entity, dict):
+            continue
+        if str(entity.get('id', '')).strip() == excluded:
+            continue
+        kind = str(entity.get('kind', '')).strip().lower()
+        entity_class = str(entity.get('class', '')).strip().lower()
+        if kind != 'person' and 'human' not in entity_class and 'person' not in entity_class:
+            continue
+        if _entity_mentioned(entity, goal_text):
+            return str(entity.get('id', '')).strip()
+    for group in grounded_context.get('locations', []):
+        if (
+            isinstance(group, dict)
+            and str(group.get('id', '')).strip() != excluded
+            and _entity_mentioned(group, goal_text)
+        ):
+            return str(group.get('id', '')).strip()
+    return ''
+
+
+def _matched_action_target_entity(grounded_context: dict, goal_text: str) -> str:
+    """Return one grounded entity that is clearly referenced by the goal text."""
+    if not isinstance(grounded_context, dict):
+        return ''
+    matches: list[tuple[int, str]] = []
+    for entity in grounded_context.get('entities', []):
+        if not isinstance(entity, dict):
+            continue
+        entity_id = str(entity.get('id', '')).strip()
+        if not entity_id:
+            continue
+        score = _entity_goal_match_score(entity, goal_text)
+        if score > 0:
+            matches.append((score, entity_id))
+    if not matches:
+        return ''
+    best_score = max(score for score, _entity_id in matches)
+    best_matches = sorted(entity_id for score, entity_id in matches if score == best_score)
+    if len(best_matches) == 1:
+        return best_matches[0]
+    return ''
+
+
+def _entity_mentioned(entity: dict, goal_text: str) -> bool:
+    return _entity_goal_match_score(entity, goal_text) > 0
+
+
+def _entity_goal_match_score(entity: dict, goal_text: str) -> int:
+    clean_goal = _normalized_text(goal_text)
+    candidates = [
+        str(entity.get('id', '')).strip(),
+        str(entity.get('label', '') or '').strip(),
+        str(entity.get('class', '') or '').strip(),
+    ]
+    for relation in entity.get('relations', []):
+        if not isinstance(relation, dict):
+            continue
+        if str(relation.get('predicate', '')).strip() == 'dbp:name':
+            candidates.append(str(relation.get('object', '')).strip())
+    best_score = 0
+    for candidate in candidates:
+        clean_candidate = _normalized_text(candidate)
+        if not clean_candidate:
+            continue
+        if clean_candidate in clean_goal:
+            best_score = max(best_score, 3)
+            continue
+        candidate_tokens = [
+            token for token in clean_candidate.split()
+            if token and token not in {'codex', 'probe', 'arch'}
+        ]
+        if len(candidate_tokens) >= 2:
+            suffix = ' %s ' % ' '.join(candidate_tokens[-2:])
+            if suffix in clean_goal:
+                best_score = max(best_score, 2)
+        elif candidate_tokens and (' %s ' % candidate_tokens[0]) in clean_goal:
+            best_score = max(best_score, 1)
+    return best_score
+
+
+def _mentions_location_collection(goal_text: str) -> bool:
+    clean = _normalized_text(goal_text)
+    return any(marker in clean for marker in (' from ', ' in ', ' on '))
+
+
+def _normalized_text(value: str) -> str:
+    return ' %s ' % ' '.join(str(value or '').strip().lower().replace('_', ' ').split())
+
+
 @dataclass(frozen=True)
 class PlannerDecision:
     intent_name: str
@@ -195,6 +342,30 @@ class PlannerEngine:
         )
         if rule_fallback_decision is not None:
             return rule_fallback_decision
+
+        location_group_decision = self._location_group_delivery_decision(
+            request,
+            feedback=feedback,
+            raw_model_output=raw_model_output,
+            goal_id=resolved_goal_id,
+            plan_version=resolved_plan_version,
+            status=status,
+            communication_policy=resolved_policy,
+        )
+        if location_group_decision is not None:
+            return location_group_decision
+
+        grounded_look_decision = self._grounded_look_decision(
+            request,
+            feedback=feedback,
+            raw_model_output=raw_model_output,
+            goal_id=resolved_goal_id,
+            plan_version=resolved_plan_version,
+            status=status,
+            communication_policy=resolved_policy,
+        )
+        if grounded_look_decision is not None:
+            return grounded_look_decision
 
         return self._invalid_model_output_decision(
             request,
@@ -556,6 +727,192 @@ class PlannerEngine:
 
         return None
 
+    def _location_group_delivery_decision(
+        self,
+        request: PlannerRequest,
+        *,
+        feedback: ExecutionFeedback | None,
+        raw_model_output: str,
+        goal_id: str,
+        plan_version: int,
+        status: str,
+        communication_policy: dict,
+    ) -> PlannerDecision | None:
+        """Fallback for grounded "bring every object from X to Y" requests."""
+        goal_text = str(request.goal_text or '').strip()
+        if not _looks_like_location_group_delivery(goal_text):
+            return None
+        bring_skill_name = self._first_supported_skill_name('bring_object', 'deliver_object')
+        if not bring_skill_name:
+            return None
+        location_group = _matched_location_group(
+            request.grounded_context,
+            goal_text,
+        )
+        if not location_group:
+            return self._clarification_decision(
+                request,
+                feedback=feedback,
+                reason='Which location should I collect the objects from?',
+                raw_model_output=raw_model_output,
+                mode='clarify',
+                goal_id=goal_id,
+                plan_version=plan_version,
+                status='waiting_user',
+                communication_policy=communication_policy,
+            )
+        recipient = _matched_recipient_entity(
+            request.grounded_context,
+            goal_text,
+            exclude_id=str(location_group.get('id', '')).strip(),
+        )
+        if not recipient:
+            return self._clarification_decision(
+                request,
+                feedback=feedback,
+                reason='Who or where should I bring those objects to?',
+                raw_model_output=raw_model_output,
+                mode='clarify',
+                goal_id=goal_id,
+                plan_version=plan_version,
+                status='waiting_user',
+                communication_policy=communication_policy,
+            )
+        members = [
+            item for item in location_group.get('contains', [])
+            if isinstance(item, dict) and str(item.get('id', '')).strip()
+        ]
+        if not members:
+            return self._clarification_decision(
+                request,
+                feedback=feedback,
+                reason='I do not have any current objects grounded in that location.',
+                raw_model_output=raw_model_output,
+                mode='clarify',
+                goal_id=goal_id,
+                plan_version=plan_version,
+                status='waiting_user',
+                communication_policy=communication_policy,
+            )
+
+        steps = []
+        for member in members:
+            args = {
+                'target': str(member.get('id', '')).strip(),
+                'recipient': recipient,
+                'source': str(location_group.get('id', '')).strip(),
+            }
+            steps.append(
+                self._step(
+                    step_type='skill',
+                    name=bring_skill_name,
+                    args=args,
+                    on_failure='replan',
+                )
+            )
+        if request_requests_report(request):
+            steps.append(
+                self._step(
+                    step_type='skill',
+                    name='report_result',
+                    args={},
+                    on_failure='fail',
+                )
+            )
+        steps = normalize_plan_steps(steps)
+        supported_steps, rejected_steps = (
+            self._skill_registry.filter_supported_steps_with_rejections(steps)
+        )
+        if rejected_steps:
+            return None
+        return self._build_decision(
+            request=request,
+            feedback=feedback,
+            steps=supported_steps,
+            validation_status='draft',
+            retry_budget=self._next_retry_budget({}, feedback)[0],
+            scene_targets=[str(location_group.get('id', '')).strip(), recipient],
+            raw_model_output=raw_model_output,
+            mode='grounded_location_group_fallback',
+            goal_id=goal_id,
+            plan_version=plan_version,
+            status=status,
+            communication_policy=communication_policy,
+        )
+
+    def _grounded_look_decision(
+        self,
+        request: PlannerRequest,
+        *,
+        feedback: ExecutionFeedback | None,
+        raw_model_output: str,
+        goal_id: str,
+        plan_version: int,
+        status: str,
+        communication_policy: dict,
+    ) -> PlannerDecision | None:
+        """Fallback for grounded look-at requests after invalid model output."""
+        goal_text = str(request.goal_text or '').strip()
+        if not _looks_like_grounded_look_at(goal_text):
+            return None
+        look_skill_name = self._first_supported_skill_name('look_at')
+        if not look_skill_name:
+            return None
+        target = self._first_scene_target(request) or _matched_action_target_entity(
+            request.grounded_context,
+            goal_text,
+        )
+        if not target:
+            return self._clarification_decision(
+                request,
+                feedback=feedback,
+                reason='Which object or person should I look at?',
+                raw_model_output=raw_model_output,
+                mode='clarify',
+                goal_id=goal_id,
+                plan_version=plan_version,
+                status='waiting_user',
+                communication_policy=communication_policy,
+            )
+
+        steps = [
+            self._step(
+                step_type='skill',
+                name=look_skill_name,
+                args={'target_frame': target},
+                on_failure='replan',
+            )
+        ]
+        if request_requests_report(request) or _goal_text_requests_report(goal_text):
+            steps.append(
+                self._step(
+                    step_type='skill',
+                    name='report_result',
+                    args={},
+                    on_failure='fail',
+                )
+            )
+        steps = normalize_plan_steps(steps)
+        supported_steps, rejected_steps = (
+            self._skill_registry.filter_supported_steps_with_rejections(steps)
+        )
+        if rejected_steps:
+            return None
+        return self._build_decision(
+            request=request,
+            feedback=feedback,
+            steps=supported_steps,
+            validation_status='draft',
+            retry_budget=self._next_retry_budget({}, feedback)[0],
+            scene_targets=[target],
+            raw_model_output=raw_model_output,
+            mode='grounded_look_fallback',
+            goal_id=goal_id,
+            plan_version=plan_version,
+            status=status,
+            communication_policy=communication_policy,
+        )
+
     @staticmethod
     def _request_payload(request: PlannerRequest) -> dict:
         return {
@@ -804,6 +1161,23 @@ class PlannerEngine:
         if feedback is not None and feedback.scene_targets:
             return list(feedback.scene_targets)
         return list(request.scene_targets)
+
+    @staticmethod
+    def _first_scene_target(request: PlannerRequest) -> str:
+        for target in request.scene_targets:
+            clean = str(target or '').strip()
+            if not clean:
+                continue
+            try:
+                parsed = json.loads(clean.replace("'", '"'))
+            except json.JSONDecodeError:
+                parsed = {}
+            if isinstance(parsed, dict):
+                candidate = str(parsed.get('id', parsed.get('target', ''))).strip()
+                if candidate:
+                    return candidate
+            return clean
+        return ''
 
     def _first_supported_skill_name(self, *names: str) -> str:
         for name in names:

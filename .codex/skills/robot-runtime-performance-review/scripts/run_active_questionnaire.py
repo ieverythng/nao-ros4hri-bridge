@@ -17,7 +17,9 @@ from pathlib import Path
 DEFAULT_CONTAINER = "nao_ros2"
 VOICE_ID = "anonymous_speaker"
 VOICE_TRACKED_TOPIC = "/nao_chatbot/humans/voices/tracked"
-VOICE_SPEECH_TOPIC = "/nao_chatbot/humans/voices/anonymous_speaker/speech"
+# dialogue_manager remaps its tracked-voice input topic, then subscribes to the
+# raw per-voice speech topic it constructs internally.
+VOICE_SPEECH_TOPIC = "/humans/voices/anonymous_speaker/speech"
 VOICE_TRACKED_QOS = "--qos-reliability reliable --qos-durability transient_local"
 VOICE_SPEECH_QOS = "--qos-reliability reliable --qos-durability volatile"
 RQT_DISPLAY_ROSOUT_TOPIC = "/rosout"
@@ -1296,28 +1298,35 @@ cat >/tmp/nao_questionnaire_qos_contract.log <<'EOF'
   speech_qos={VOICE_SPEECH_QOS}
   rqt_display_mirror={str(mirror_rqt_display).lower()}
   rqt_display_topics={RQT_DISPLAY_ROSOUT_TOPIC},{RQT_DISPLAY_CAPTIONS_TOPIC}
-  contract=publish tracked voice with TRANSIENT_LOCAL durability before LiveSpeech.
-  reason=dialogue_manager subscribes to the remapped rqt-chat tracked topic with transient-local QoS.
+  contract=publish tracked voice with TRANSIENT_LOCAL durability and keep the publisher alive until the per-voice LiveSpeech subscription appears.
+  reason=dialogue_manager creates the remapped per-voice rqt-chat subscription only after seeing the tracked voice id.
 EOF
 	{mirror_script}
 	dialogue_state="$(ros2 lifecycle get /dialogue_manager 2>/dev/null || true)"
 	echo "  dialogue_manager_lifecycle=${{dialogue_state:-unavailable}}" >>/tmp/nao_questionnaire_qos_contract.log
-	timeout 8 ros2 topic pub --once -w 1 {VOICE_TRACKED_QOS} {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{voice_id}']}}" >/tmp/nao_questionnaire_voice.log 2>&1 || true
-	for _ in $(seq 1 16); do
-	  if ros2 topic info -v {voice_topic} 2>/dev/null | grep -q 'Node name: dialogue_manager'; then
+	timeout 18 ros2 topic pub -r 2 {VOICE_TRACKED_QOS} {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{voice_id}']}}" >/tmp/nao_questionnaire_voice.log 2>&1 &
+	tracked_pub_pid=$!
+	subscription_visible=false
+	for _ in $(seq 1 30); do
+	  if timeout 2 ros2 topic info -v {voice_topic} 2>/dev/null | grep -q 'Node name: dialogue_manager'; then
+	    subscription_visible=true
 	    break
   fi
   sleep 0.5
 done
-	ros2 topic info -v {VOICE_TRACKED_TOPIC} >/tmp/nao_questionnaire_tracked_info.log 2>&1 || true
-	ros2 topic info -v {voice_topic} >/tmp/nao_questionnaire_speech_info.log 2>&1 || true
+	timeout 3 ros2 topic info -v {VOICE_TRACKED_TOPIC} >/tmp/nao_questionnaire_tracked_info.log 2>&1 || true
+	timeout 3 ros2 topic info -v {voice_topic} >/tmp/nao_questionnaire_speech_info.log 2>&1 || true
 	if ! grep -q 'Node name: dialogue_manager' /tmp/nao_questionnaire_speech_info.log 2>/dev/null; then
 	  echo "[runtime-review] ERROR: dialogue_manager speech subscription was not visible for {voice_topic}; this is a lifecycle/ingress preflight failure, not a model result." >>/tmp/nao_questionnaire_qos_contract.log
+	else
+	  echo "[runtime-review] OK: dialogue_manager speech subscription visible before LiveSpeech publish for {voice_topic}." >>/tmp/nao_questionnaire_qos_contract.log
 	fi
 timeout 8 ros2 topic pub --once -w 1 {VOICE_SPEECH_QOS} {voice_topic} hri_msgs/msg/LiveSpeech "{{final: \\"{escaped_text}\\", confidence: 1.0, locale: \\"en_US\\"}}" >/tmp/nao_questionnaire_speech.log 2>&1 || true
+	kill "$tracked_pub_pid" >/dev/null 2>&1 || true
+	wait "$tracked_pub_pid" >/dev/null 2>&1 || true
 cat /tmp/nao_questionnaire_qos_contract.log /tmp/nao_questionnaire_rqt_rosout.log /tmp/nao_questionnaire_rqt_caption.log /tmp/nao_questionnaire_voice.log /tmp/nao_questionnaire_tracked_info.log /tmp/nao_questionnaire_speech_info.log /tmp/nao_questionnaire_speech.log 2>/dev/null || true
 """
-    return run(["docker", "exec", container, "bash", "-lc", script], timeout=20, check=False)
+    return run(["docker", "exec", container, "bash", "-lc", script], timeout=45, check=False)
 
 
 def inject_kb_probe(container: str, injection: KbInjection, *, lifespan_sec: int) -> dict[str, str]:
@@ -1583,7 +1592,7 @@ def _voice_id_for_case(
 def _voice_speech_topic(voice_id: str) -> str:
     if voice_id == VOICE_ID:
         return VOICE_SPEECH_TOPIC
-    return f"/nao_chatbot/humans/voices/{voice_id}/speech"
+    return f"/humans/voices/{voice_id}/speech"
 
 
 if __name__ == "__main__":

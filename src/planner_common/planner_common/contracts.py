@@ -72,13 +72,14 @@ _DEFAULT_GROUNDED_CONTEXT = {
     'scene_summary': {},
     'state_t0': {},
 }
-_COMPACT_GROUNDED_CONTEXT_KEYS = ('entities',)
+_COMPACT_GROUNDED_CONTEXT_KEYS = ('entities', 'locations', 'location_groups')
 _LLM_RELATION_PREDICATE_PRIORITY = (
     'rdf:type',
     'dbp:name',
     'dbp:color',
     'oro:isAt',
     'oro:isOn',
+    'oro:isIn',
     'oro:contains',
     'foaf:knows',
 )
@@ -93,10 +94,15 @@ _LLM_RELATION_PREDICATE_ALIASES = {
     'ison': 'oro:isOn',
     'is_on': 'oro:isOn',
     'is on': 'oro:isOn',
+    'isin': 'oro:isIn',
+    'is_in': 'oro:isIn',
+    'is in': 'oro:isIn',
     'contains': 'oro:contains',
     'knows': 'foaf:knows',
 }
 _MAX_LLM_RELATIONS_PER_ENTITY = 6
+_LOCATION_MEMBERSHIP_PREDICATES = frozenset(('oro:isAt', 'oro:isOn', 'oro:isIn'))
+_LOCATION_CONTAINER_PREDICATE = 'oro:contains'
 _DEFAULT_COMMUNICATION_POLICY = {
     'emit_acknowledge': False,
     'emit_progress': False,
@@ -465,13 +471,22 @@ def normalize_grounded_context(value) -> dict:
         entities = raw_payload.get('entities', [])
         if not isinstance(entities, list):
             entities = []
+        normalized_entities = [
+            _normalize_grounded_entity(item)
+            for item in entities
+            if isinstance(item, dict)
+        ]
         normalized = {
-            'entities': [
-                _normalize_grounded_entity(item)
-                for item in entities
-                if isinstance(item, dict)
-            ],
+            'entities': normalized_entities,
         }
+        locations = _normalize_location_groups(
+            raw_payload.get('locations', raw_payload.get('location_groups', [])),
+            entities=normalized_entities,
+        )
+        if not locations:
+            locations = _derive_location_groups(normalized_entities)
+        if locations:
+            normalized['locations'] = locations
         state_t0 = raw_payload.get('state_t0', {})
         if isinstance(state_t0, dict) and state_t0:
             normalized['state_t0'] = dict(state_t0)
@@ -495,16 +510,25 @@ def project_llm_grounded_context(
     """Project raw grounding seams into the compact LLM-facing world view."""
     normalized = normalize_grounded_context(grounded_context)
     if 'entities' in normalized:
+        entities = [
+            _normalize_grounded_entity(
+                item,
+                include_raw_relations=include_raw_relations,
+            )
+            for item in normalized.get('entities', [])
+            if isinstance(item, dict)
+        ]
         compact = {
-            'entities': [
-                _normalize_grounded_entity(
-                    item,
-                    include_raw_relations=include_raw_relations,
-                )
-                for item in normalized.get('entities', [])
-                if isinstance(item, dict)
-            ],
+            'entities': entities,
         }
+        locations = _normalize_location_groups(
+            normalized.get('locations', []),
+            entities=entities,
+        )
+        if not locations:
+            locations = _derive_location_groups(entities)
+        if locations:
+            compact['locations'] = locations
         if include_state_t0 and isinstance(normalized.get('state_t0'), dict):
             compact['state_t0'] = dict(normalized.get('state_t0', {}))
         return compact
@@ -608,6 +632,9 @@ def project_llm_grounded_context(
         key=_llm_entity_sort_key,
     )
     compact = {'entities': entities}
+    locations = _derive_location_groups(entities)
+    if locations:
+        compact['locations'] = locations
     if include_state_t0 and isinstance(state_t0, dict) and state_t0:
         compact['state_t0'] = dict(state_t0)
     return compact
@@ -715,6 +742,246 @@ def _normalize_relations(
         )
     )
     return relations[:max(0, int(max_relations))]
+
+
+def _normalize_location_groups(value, *, entities: list[dict]) -> list[dict]:
+    """Normalize the optional compact location grouping view."""
+    entity_index = _entity_index(entities)
+    groups_by_id: dict[str, dict] = {}
+    if isinstance(value, list):
+        for item in value:
+            if not isinstance(item, dict):
+                continue
+            group_id = _compact_term(item.get('id', item.get('entity_id', '')))
+            if not group_id:
+                continue
+            group = _ensure_location_group(
+                groups_by_id,
+                group_id,
+                label=_first_non_empty(
+                    item.get('label', ''),
+                    _entity_label(entity_index.get(group_id, {}), group_id),
+                ),
+                entity_class=_first_non_empty(
+                    item.get('class', ''),
+                    item.get('type', ''),
+                    entity_index.get(group_id, {}).get('class', ''),
+                ),
+            )
+            members = item.get('contains', item.get('members', []))
+            if not isinstance(members, list):
+                continue
+            for member in members:
+                member_id = ''
+                relation = ''
+                if isinstance(member, dict):
+                    member_id = _compact_term(member.get('id', member.get('entity_id', '')))
+                    relation = _normalize_relation_predicate(member.get('relation', ''))
+                else:
+                    member_id = _compact_term(member)
+                if member_id:
+                    _add_location_member(
+                        group,
+                        entity_index,
+                        member_id,
+                        relation=relation,
+                    )
+    derived = _derive_location_groups(entities)
+    for group in derived:
+        merged = _ensure_location_group(
+            groups_by_id,
+            group.get('id', ''),
+            label=group.get('label', ''),
+            entity_class=group.get('class', ''),
+        )
+        for member in group.get('contains', []):
+            if isinstance(member, dict):
+                _add_location_member(
+                    merged,
+                    entity_index,
+                    member.get('id', ''),
+                    relation=member.get('relation', ''),
+                )
+    return _finalize_location_groups(groups_by_id)
+
+
+def _derive_location_groups(entities: list[dict]) -> list[dict]:
+    """Derive a location/member view from entity relations."""
+    if not isinstance(entities, list) or not entities:
+        return []
+    entity_index = _entity_index(entities)
+    groups_by_id: dict[str, dict] = {}
+    for entity in entities:
+        if not isinstance(entity, dict):
+            continue
+        entity_id = _compact_term(entity.get('id', ''))
+        if not entity_id:
+            continue
+        for relation in entity.get('relations', []):
+            if not isinstance(relation, dict):
+                continue
+            predicate = _normalize_relation_predicate(
+                relation.get('predicate', relation.get('p', ''))
+            )
+            obj = _compact_term(relation.get('object', relation.get('o', '')))
+            if not predicate or not obj:
+                continue
+            if predicate in _LOCATION_MEMBERSHIP_PREDICATES:
+                group = _ensure_location_group_for_entity(
+                    groups_by_id,
+                    entity_index,
+                    obj,
+                )
+                _add_location_member(
+                    group,
+                    entity_index,
+                    entity_id,
+                    relation=predicate,
+                )
+            elif predicate == _LOCATION_CONTAINER_PREDICATE:
+                group = _ensure_location_group_for_entity(
+                    groups_by_id,
+                    entity_index,
+                    entity_id,
+                )
+                _add_location_member(
+                    group,
+                    entity_index,
+                    obj,
+                    relation=predicate,
+                )
+    return _finalize_location_groups(groups_by_id)
+
+
+def _entity_index(entities: list[dict]) -> dict[str, dict]:
+    indexed: dict[str, dict] = {}
+    for entity in entities:
+        if not isinstance(entity, dict):
+            continue
+        entity_id = _compact_term(entity.get('id', ''))
+        if entity_id and entity_id not in indexed:
+            indexed[entity_id] = entity
+    return indexed
+
+
+def _ensure_location_group_for_entity(
+    groups_by_id: dict[str, dict],
+    entity_index: dict[str, dict],
+    group_id: str,
+) -> dict:
+    entity = entity_index.get(_compact_term(group_id), {})
+    return _ensure_location_group(
+        groups_by_id,
+        group_id,
+        label=_entity_label(entity, group_id),
+        entity_class=entity.get('class', ''),
+    )
+
+
+def _ensure_location_group(
+    groups_by_id: dict[str, dict],
+    group_id: str,
+    *,
+    label: str,
+    entity_class,
+) -> dict:
+    clean_id = _compact_term(group_id)
+    group = groups_by_id.setdefault(
+        clean_id,
+        {
+            'id': clean_id,
+            'label': str(label or '').strip() or None,
+            'class': str(entity_class or '').strip(),
+            'contains': [],
+        },
+    )
+    if not group.get('label') and str(label or '').strip():
+        group['label'] = str(label or '').strip()
+    if not group.get('class') and str(entity_class or '').strip():
+        group['class'] = str(entity_class or '').strip()
+    return group
+
+
+def _add_location_member(
+    group: dict,
+    entity_index: dict[str, dict],
+    member_id,
+    *,
+    relation: str,
+) -> None:
+    clean_member_id = _compact_term(member_id)
+    clean_group_id = _compact_term(group.get('id', ''))
+    if not clean_member_id or clean_member_id == clean_group_id:
+        return
+    clean_relation = _normalize_relation_predicate(relation)
+    entity = entity_index.get(clean_member_id, {})
+    member = {
+        'id': clean_member_id,
+        'label': _entity_label(entity, clean_member_id),
+        'kind': str(entity.get('kind', 'object')).strip() or 'object',
+        'class': str(entity.get('class', '')).strip(),
+        'relation': clean_relation,
+    }
+    member = {
+        key: value
+        for key, value in member.items()
+        if value not in ('', None)
+    }
+    contains = group.setdefault('contains', [])
+    if not any(item.get('id') == clean_member_id for item in contains if isinstance(item, dict)):
+        contains.append(member)
+
+
+def _finalize_location_groups(groups_by_id: dict[str, dict]) -> list[dict]:
+    groups = []
+    for group in groups_by_id.values():
+        contains = [
+            item for item in group.get('contains', []) if isinstance(item, dict)
+        ]
+        contains.sort(key=lambda item: (item.get('kind', ''), item.get('label', ''), item.get('id', '')))
+        if not contains:
+            continue
+        finalized = {
+            'id': str(group.get('id', '')).strip(),
+            'label': group.get('label') if group.get('label') else None,
+            'class': str(group.get('class', '')).strip(),
+            'contains': contains,
+        }
+        groups.append(
+            {
+                key: value
+                for key, value in finalized.items()
+                if key == 'label' or value not in ('', [], {})
+            }
+        )
+    groups.sort(key=lambda item: item.get('id', ''))
+    return groups
+
+
+def _entity_label(entity: dict, fallback_id: str) -> str:
+    if isinstance(entity, dict):
+        relation_name = _relation_value(entity, 'dbp:name')
+        if relation_name:
+            return relation_name
+        label = str(entity.get('label', '') or '').strip()
+        if label and label.lower() not in {'codex', 'detected', 'anonymous'}:
+            return label
+    return str(fallback_id or '').strip()
+
+
+def _relation_value(entity: dict, predicate: str) -> str:
+    if not isinstance(entity, dict):
+        return ''
+    wanted = str(predicate or '').strip()
+    for relation in entity.get('relations', []):
+        if not isinstance(relation, dict):
+            continue
+        if str(relation.get('predicate', '')).strip() != wanted:
+            continue
+        value = str(relation.get('object', '')).strip()
+        if value:
+            return value
+    return ''
 
 
 def _normalize_raw_relations(value) -> list[dict]:
