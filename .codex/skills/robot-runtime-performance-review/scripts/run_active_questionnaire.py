@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
+from datetime import timezone
 import json
 import re
 import subprocess
@@ -15,7 +17,9 @@ from pathlib import Path
 DEFAULT_CONTAINER = "nao_ros2"
 VOICE_ID = "anonymous_speaker"
 VOICE_TRACKED_TOPIC = "/nao_chatbot/humans/voices/tracked"
-VOICE_SPEECH_TOPIC = "/nao_chatbot/humans/voices/anonymous_speaker/speech"
+# dialogue_manager remaps its tracked-voice input topic, then subscribes to the
+# raw per-voice speech topic it constructs internally.
+VOICE_SPEECH_TOPIC = "/humans/voices/anonymous_speaker/speech"
 VOICE_TRACKED_QOS = "--qos-reliability reliable --qos-durability transient_local"
 VOICE_SPEECH_QOS = "--qos-reliability reliable --qos-durability volatile"
 RQT_DISPLAY_ROSOUT_TOPIC = "/rosout"
@@ -25,6 +29,9 @@ TOPIC_SAMPLE_TIMEOUT_SEC = 1.5
 TOPIC_SAMPLE_KILL_AFTER_SEC = 1.0
 DEFAULT_GLOBAL_TIMEOUT_SEC = 420
 DEFAULT_KB_LIFESPAN_SEC = 300
+DEFAULT_ENVIRONMENT_FIXTURE_PATH = (
+    Path(__file__).resolve().parent.parent / "references" / "preloaded_environments.json"
+)
 KB_PROBE_OBJECT_ID = "codex_probe_cup"
 KB_MAXIMAL_CUP_ID = "codex_kitchen_cup"
 KB_MAXIMAL_LOCATION_ID = "codex_kitchen"
@@ -54,6 +61,7 @@ class ProbeCase:
     mode: str = "speech"
     setup: KbInjection | None = None
     conversation_group: str | None = None
+    environment_ids: tuple[str, ...] = ()
 
 
 SMOKE_CASES = (
@@ -792,6 +800,55 @@ INTENT_ABLATION_CASES = (
     ),
 )
 
+ENVIRONMENT_CASES = (
+    ProbeCase(
+        "environment_lab_table_inventory",
+        "preloaded_environment_kb_query",
+        "What objects are on the table?",
+        12.0,
+        environment_ids=("lab_table",),
+        conversation_group="preloaded_lab_table",
+    ),
+    ProbeCase(
+        "environment_kitchen_inventory",
+        "preloaded_environment_kb_query",
+        "What is in the kitchen?",
+        12.0,
+        environment_ids=("kitchen_delivery",),
+        conversation_group="preloaded_kitchen_delivery",
+    ),
+    ProbeCase(
+        "environment_grouped_location_delivery",
+        "preloaded_environment_composite_execution",
+        "Bring every object from the kitchen to ALEX and report what happened.",
+        180.0,
+        environment_ids=("kitchen_delivery",),
+        conversation_group="preloaded_kitchen_delivery",
+    ),
+    ProbeCase(
+        "environment_grouped_location_followup",
+        "preloaded_environment_kb_query",
+        "Where is the kitchen cup now?",
+        14.0,
+        conversation_group="preloaded_kitchen_delivery",
+    ),
+    ProbeCase(
+        "environment_gold_apple_handoff",
+        "preloaded_environment_multi_turn",
+        "Can you bring that gold apple to the person named ALEX?",
+        160.0,
+        environment_ids=("gold_apple_handoff",),
+        conversation_group="preloaded_gold_apple",
+    ),
+    ProbeCase(
+        "environment_gold_apple_followup",
+        "preloaded_environment_kb_query",
+        "Where is the gold apple now?",
+        14.0,
+        conversation_group="preloaded_gold_apple",
+    ),
+)
+
 TOPICS_TO_SAMPLE = (
     "/chatbot_llm/turn_trace",
     "/planner/request",
@@ -808,7 +865,7 @@ def main() -> int:
     parser.add_argument(
         "--case-set",
         default="smoke",
-        choices=("smoke", "main", "composite", "intent_ablation"),
+        choices=("smoke", "main", "composite", "intent_ablation", "environment"),
     )
     parser.add_argument(
         "--case-names",
@@ -841,6 +898,15 @@ def main() -> int:
         help="Turn injection seam. Speech is full ROS4HRI E2E; service is chatbot-only.",
     )
     parser.add_argument(
+        "--speech-voice-scope",
+        default="shared",
+        choices=("shared", "group", "case"),
+        help=(
+            "Voice id policy for speech-mode runs. Use shared for long-context "
+            "stress, group/case for isolated scored evidence."
+        ),
+    )
+    parser.add_argument(
         "--no-rqt-display-mirror",
         action="store_true",
         help="Do not mirror injected user turns to rqt-visible debug topics.",
@@ -851,13 +917,41 @@ def main() -> int:
         choices=("", "response_first", "intent_first"),
         help="Optional assertion label for the active /chatbot_llm turn_pipeline_mode.",
     )
+    parser.add_argument(
+        "--environment-fixtures",
+        default=str(DEFAULT_ENVIRONMENT_FIXTURE_PATH),
+        help="JSON file containing named KnowledgeCore environment fixtures.",
+    )
+    parser.add_argument(
+        "--preload-environment",
+        default="",
+        help=(
+            "Comma-separated environment fixture ids to inject once before the "
+            "case set. Use --case-set environment for the built-in environment "
+            "validation ladder."
+        ),
+    )
+    parser.add_argument(
+        "--list-environments",
+        action="store_true",
+        help="List available environment fixture ids and exit.",
+    )
     args = parser.parse_args()
+
+    environment_fixtures = load_environment_fixtures(Path(args.environment_fixtures))
+    if args.list_environments:
+        for fixture_id in sorted(environment_fixtures.keys()):
+            description = str(environment_fixtures[fixture_id].get("description", "")).strip()
+            suffix = " - %s" % description if description else ""
+            print("%s%s" % (fixture_id, suffix))
+        return 0
 
     case_sets = {
         "smoke": SMOKE_CASES,
         "main": MAIN_QUESTIONNAIRE_CASES,
         "composite": COMPOSITE_CASES,
         "intent_ablation": INTENT_ABLATION_CASES,
+        "environment": ENVIRONMENT_CASES,
     }
     cases = list(case_sets[args.case_set])
     cases = filter_cases(
@@ -872,6 +966,17 @@ def main() -> int:
         args.container,
         expected_turn_pipeline_mode=args.expected_turn_pipeline_mode,
     )
+    runtime_metadata["environment_fixture_source"] = str(Path(args.environment_fixtures))
+    runtime_metadata["available_environment_fixtures"] = sorted(environment_fixtures.keys())
+    preloaded_environment_ids = parse_csv_list(args.preload_environment)
+    preloaded_environments = inject_environment_fixtures(
+        args.container,
+        preloaded_environment_ids,
+        environment_fixtures=environment_fixtures,
+        lifespan_sec=args.kb_lifespan_sec,
+    )
+    if preloaded_environments:
+        runtime_metadata["preloaded_environments"] = preloaded_environments
     for index, case in enumerate(cases, start=1):
         if time.time() - started_at > max(30, args.global_timeout_sec):
             results.append(
@@ -899,13 +1004,30 @@ def main() -> int:
             return 2
 
         case_start = time.time()
-        setup_result = None
+        setup_result = {}
+        if case.environment_ids:
+            setup_result["environment"] = inject_environment_fixtures(
+                args.container,
+                list(case.environment_ids),
+                environment_fixtures=environment_fixtures,
+                lifespan_sec=args.kb_lifespan_sec,
+            )
         if case.setup is not None:
-            setup_result = inject_kb_probe(args.container, case.setup, lifespan_sec=args.kb_lifespan_sec)
+            setup_result["case"] = inject_kb_probe(
+                args.container,
+                case.setup,
+                lifespan_sec=args.kb_lifespan_sec,
+            )
 
         mode = args.mode or case.mode
         conversation_group = case.conversation_group or case.name or f"case_{index}"
-        voice_id = VOICE_ID if mode == "speech" else _voice_id_for_group(conversation_group, index)
+        voice_id = _voice_id_for_case(
+            mode,
+            group=conversation_group,
+            case_name=case.name,
+            index=index,
+            speech_voice_scope=args.speech_voice_scope,
+        )
         if mode == "speech":
             turn_result = publish_voice_turn(
                 args.container,
@@ -934,13 +1056,13 @@ def main() -> int:
                 "text": case.text,
                 "voice_id": voice_id,
                 "mode": mode,
-                "setup_result": setup_result,
+                "setup_result": setup_result or None,
                 "turn_result": turn_result,
                 "started_at_unix_sec": case_start,
                 "wait_sec": case.wait_sec,
                 "injection_scope": injection_scope(mode),
                 "topic_samples": sample_topics(args.container) if args.sample_topics else {},
-                "log_excerpt": recent_logs(args.container, args.since_sec),
+                "log_excerpt": recent_logs_since(args.container, case_start),
             }
         )
         write_payload(
@@ -968,6 +1090,10 @@ def parse_csv(value: str) -> set[str]:
     return {item.strip() for item in str(value or "").split(",") if item.strip()}
 
 
+def parse_csv_list(value: str) -> list[str]:
+    return [item.strip() for item in str(value or "").split(",") if item.strip()]
+
+
 def filter_cases(
     cases: list[ProbeCase],
     *,
@@ -979,6 +1105,84 @@ def filter_cases(
     if categories:
         cases = [case for case in cases if case.category in categories]
     return cases
+
+
+def load_environment_fixtures(path: Path) -> dict[str, dict]:
+    fixture_path = Path(path)
+    if not fixture_path.exists():
+        return {}
+    payload = json.loads(fixture_path.read_text(encoding="utf-8"))
+    environments = payload.get("environments", {}) if isinstance(payload, dict) else {}
+    if not isinstance(environments, dict):
+        return {}
+    return {
+        str(fixture_id).strip(): fixture
+        for fixture_id, fixture in environments.items()
+        if str(fixture_id).strip() and isinstance(fixture, dict)
+    }
+
+
+def inject_environment_fixtures(
+    container: str,
+    fixture_ids: list[str],
+    *,
+    environment_fixtures: dict[str, dict],
+    lifespan_sec: int,
+) -> dict[str, dict]:
+    results: dict[str, dict] = {}
+    for fixture_id in fixture_ids:
+        clean_id = str(fixture_id or "").strip()
+        if not clean_id:
+            continue
+        fixture = environment_fixtures.get(clean_id)
+        if not isinstance(fixture, dict):
+            results[clean_id] = {
+                "error": "unknown_environment_fixture",
+                "available": sorted(environment_fixtures.keys()),
+            }
+            continue
+        injection = environment_fixture_to_injection(clean_id, fixture)
+        results[clean_id] = {
+            "description": str(fixture.get("description", "")).strip(),
+            "visual_svg_source": str(fixture.get("visual_svg_source", "")).strip(),
+            "injection": inject_kb_probe(container, injection, lifespan_sec=lifespan_sec),
+        }
+    return results
+
+
+def environment_fixture_to_injection(fixture_id: str, fixture: dict) -> KbInjection:
+    statements = tuple(
+        str(item).strip()
+        for item in fixture.get("statements", [])
+        if str(item).strip()
+    )
+    query_patterns = tuple(
+        str(item).strip()
+        for item in fixture.get("query_patterns", [])
+        if str(item).strip()
+    )
+    if not query_patterns:
+        query_patterns = tuple(_query_patterns_for_fixture(statements))
+    query_vars = tuple(
+        str(item).strip()
+        for item in fixture.get("query_vars", ("?predicate", "?object"))
+        if str(item).strip()
+    )
+    return KbInjection(
+        object_id=fixture_id,
+        statements=statements,
+        query_patterns=query_patterns,
+        query_vars=query_vars or ("?predicate", "?object"),
+    )
+
+
+def _query_patterns_for_fixture(statements: tuple[str, ...]) -> list[str]:
+    subjects: list[str] = []
+    for statement in statements:
+        subject = statement.split(maxsplit=1)[0] if statement.split() else ""
+        if subject and subject not in subjects:
+            subjects.append(subject)
+    return ["%s ?predicate ?object" % subject for subject in subjects]
 
 
 def write_payload(
@@ -1094,28 +1298,35 @@ cat >/tmp/nao_questionnaire_qos_contract.log <<'EOF'
   speech_qos={VOICE_SPEECH_QOS}
   rqt_display_mirror={str(mirror_rqt_display).lower()}
   rqt_display_topics={RQT_DISPLAY_ROSOUT_TOPIC},{RQT_DISPLAY_CAPTIONS_TOPIC}
-  contract=publish tracked voice with TRANSIENT_LOCAL durability before LiveSpeech.
-  reason=dialogue_manager subscribes to the remapped rqt-chat tracked topic with transient-local QoS.
+  contract=publish tracked voice with TRANSIENT_LOCAL durability and keep the publisher alive until the per-voice LiveSpeech subscription appears.
+  reason=dialogue_manager creates the remapped per-voice rqt-chat subscription only after seeing the tracked voice id.
 EOF
 	{mirror_script}
 	dialogue_state="$(ros2 lifecycle get /dialogue_manager 2>/dev/null || true)"
 	echo "  dialogue_manager_lifecycle=${{dialogue_state:-unavailable}}" >>/tmp/nao_questionnaire_qos_contract.log
-	timeout 8 ros2 topic pub --once -w 1 {VOICE_TRACKED_QOS} {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{voice_id}']}}" >/tmp/nao_questionnaire_voice.log 2>&1 || true
-	for _ in $(seq 1 16); do
-	  if ros2 topic info -v {voice_topic} 2>/dev/null | grep -q 'Node name: dialogue_manager'; then
+	timeout 18 ros2 topic pub -r 2 {VOICE_TRACKED_QOS} {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{voice_id}']}}" >/tmp/nao_questionnaire_voice.log 2>&1 &
+	tracked_pub_pid=$!
+	subscription_visible=false
+	for _ in $(seq 1 30); do
+	  if timeout 2 ros2 topic info -v {voice_topic} 2>/dev/null | grep -q 'Node name: dialogue_manager'; then
+	    subscription_visible=true
 	    break
   fi
   sleep 0.5
 done
-	ros2 topic info -v {VOICE_TRACKED_TOPIC} >/tmp/nao_questionnaire_tracked_info.log 2>&1 || true
-	ros2 topic info -v {voice_topic} >/tmp/nao_questionnaire_speech_info.log 2>&1 || true
+	timeout 3 ros2 topic info -v {VOICE_TRACKED_TOPIC} >/tmp/nao_questionnaire_tracked_info.log 2>&1 || true
+	timeout 3 ros2 topic info -v {voice_topic} >/tmp/nao_questionnaire_speech_info.log 2>&1 || true
 	if ! grep -q 'Node name: dialogue_manager' /tmp/nao_questionnaire_speech_info.log 2>/dev/null; then
 	  echo "[runtime-review] ERROR: dialogue_manager speech subscription was not visible for {voice_topic}; this is a lifecycle/ingress preflight failure, not a model result." >>/tmp/nao_questionnaire_qos_contract.log
+	else
+	  echo "[runtime-review] OK: dialogue_manager speech subscription visible before LiveSpeech publish for {voice_topic}." >>/tmp/nao_questionnaire_qos_contract.log
 	fi
 timeout 8 ros2 topic pub --once -w 1 {VOICE_SPEECH_QOS} {voice_topic} hri_msgs/msg/LiveSpeech "{{final: \\"{escaped_text}\\", confidence: 1.0, locale: \\"en_US\\"}}" >/tmp/nao_questionnaire_speech.log 2>&1 || true
+	kill "$tracked_pub_pid" >/dev/null 2>&1 || true
+	wait "$tracked_pub_pid" >/dev/null 2>&1 || true
 cat /tmp/nao_questionnaire_qos_contract.log /tmp/nao_questionnaire_rqt_rosout.log /tmp/nao_questionnaire_rqt_caption.log /tmp/nao_questionnaire_voice.log /tmp/nao_questionnaire_tracked_info.log /tmp/nao_questionnaire_speech_info.log /tmp/nao_questionnaire_speech.log 2>/dev/null || true
 """
-    return run(["docker", "exec", container, "bash", "-lc", script], timeout=20, check=False)
+    return run(["docker", "exec", container, "bash", "-lc", script], timeout=45, check=False)
 
 
 def inject_kb_probe(container: str, injection: KbInjection, *, lifespan_sec: int) -> dict[str, str]:
@@ -1294,6 +1505,37 @@ def recent_logs(container: str, since_sec: int) -> str:
     return "\n".join(interesting[-260:])
 
 
+def recent_logs_since(container: str, since_unix_sec: float) -> str:
+    timestamp = datetime.fromtimestamp(
+        max(0.0, float(since_unix_sec) - 1.0),
+        tz=timezone.utc,
+    ).isoformat().replace("+00:00", "Z")
+    output = run(
+        ["docker", "logs", "--since", timestamp, container],
+        timeout=15,
+        check=False,
+    ) or ""
+    interesting = []
+    markers = (
+        "SPEECH INPUT",
+        "CHATBOT",
+        "ROUTE_RESOLVED",
+        "PLANNER_REQUEST",
+        "planner_llm",
+        "execution_feedback",
+        "report_result",
+        "DEBUG_SPEECH",
+        "ROBOT OUTPUT",
+        "GROUNDED_CONTEXT",
+        "ERROR",
+        "WARN",
+    )
+    for line in output.splitlines():
+        if any(marker in line for marker in markers):
+            interesting.append(line)
+    return "\n".join(interesting[-260:])
+
+
 def run(
     cmd: list[str],
     *,
@@ -1330,10 +1572,27 @@ def _voice_id_for_group(group: str, index: int) -> str:
     return f"codex_{text}"
 
 
+def _voice_id_for_case(
+    mode: str,
+    *,
+    group: str,
+    case_name: str,
+    index: int,
+    speech_voice_scope: str,
+) -> str:
+    if mode != "speech":
+        return _voice_id_for_group(group, index)
+    if speech_voice_scope == "case":
+        return _voice_id_for_group(case_name, index)
+    if speech_voice_scope == "group":
+        return _voice_id_for_group(group, index)
+    return VOICE_ID
+
+
 def _voice_speech_topic(voice_id: str) -> str:
     if voice_id == VOICE_ID:
         return VOICE_SPEECH_TOPIC
-    return f"/nao_chatbot/humans/voices/{voice_id}/speech"
+    return f"/humans/voices/{voice_id}/speech"
 
 
 if __name__ == "__main__":

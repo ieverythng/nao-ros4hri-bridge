@@ -48,6 +48,11 @@ def main() -> int:
             questionnaire,
             lifespan_sec=max(1, int(args.kb_lifespan_sec)),
         )
+        results["preloaded_environment_delivery"] = run_preloaded_environment_delivery(
+            args.container,
+            questionnaire,
+            lifespan_sec=max(1, int(args.kb_lifespan_sec)),
+        )
 
     results["finished_at_unix_sec"] = time.time()
     Path(args.out).write_text(json.dumps(results, indent=2, sort_keys=True), encoding="utf-8")
@@ -191,6 +196,52 @@ def run_maximal_person_delivery(container: str, questionnaire, *, lifespan_sec: 
         timeout=15,
     )
     return {"setup": setup, "service_output": output, "recent_launch_log": feedback}
+
+
+def run_preloaded_environment_delivery(
+    container: str,
+    questionnaire,
+    *,
+    lifespan_sec: int,
+) -> dict[str, object]:
+    fixtures = questionnaire.load_environment_fixtures(
+        questionnaire.DEFAULT_ENVIRONMENT_FIXTURE_PATH
+    )
+    setup = questionnaire.inject_environment_fixtures(
+        container,
+        ["kitchen_delivery"],
+        environment_fixtures=fixtures,
+        lifespan_sec=lifespan_sec,
+    )
+    history: list[dict[str, str]] = []
+    inventory = questionnaire.call_chatbot_turn(
+        container,
+        "What is in the kitchen?",
+        6,
+        voice_id="codex_architecture_environment",
+        history=history,
+    )
+    time.sleep(8)
+    history.append({"speaker": "codex_architecture_environment", "text": "What is in the kitchen?"})
+    inventory_response = questionnaire.extract_service_response(inventory)
+    if inventory_response:
+        history.append({"speaker": "__assistant__", "text": inventory_response})
+    delivery = questionnaire.call_chatbot_turn(
+        container,
+        "Bring every object from the kitchen to ALEX and report what happened.",
+        7,
+        voice_id="codex_architecture_environment",
+        history=history,
+    )
+    time.sleep(45)
+    return {
+        "setup": setup,
+        "inventory_service_output": inventory,
+        "delivery_service_output": delivery,
+        "cup_after": query_subject_json(container, "codex_kitchen_cup"),
+        "book_after": query_subject_json(container, "codex_kitchen_book"),
+        "recipient_after": query_subject_json(container, "codex_recipient_person"),
+    }
 
 
 def cleanup_marker(container: str, subject: str) -> None:

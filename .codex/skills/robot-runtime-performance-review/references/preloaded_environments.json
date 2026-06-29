@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "description": "Deterministic KnowledgeCore scene fixtures for runtime-review questionnaires. These mirror interaction_sim-style facts without requiring manual rqt_human_radar scene setup.",
+  "source_notes": [
+    "ROS4HRI tutorial: interaction_sim can load a visual SVG scene, and rqt_human_radar publishes facts such as rdf:type, myself sees, person sees, isIn, and isOn to KnowledgeCore.",
+    "The SVG is visual only for this validation harness. The semantic source of truth is the KnowledgeCore fact set injected through /kb/revise."
+  ],
+  "environments": {
+    "lab_table": {
+      "description": "A table scene with an apple, book, phone, and probe cup. Use for visible-object counting, table support relations, and ordered walk/report.",
+      "visual_svg_source": "interaction_sim SVG template: download from simulator Settings > Download environment SVG template",
+      "statements": [
+        "codex_lab_table rdf:type Table",
+        "codex_lab_table dbp:name table",
+        "myself sees codex_lab_table",
+        "codex_lab_apple rdf:type Apple",
+        "codex_lab_apple dbp:name ATLAS",
+        "codex_lab_apple dbp:color red",
+        "codex_lab_apple oro:isOn codex_lab_table",
+        "myself sees codex_lab_apple",
+        "myself canReach codex_lab_apple",
+        "codex_lab_book rdf:type Book",
+        "codex_lab_book dbp:name MIDAS",
+        "codex_lab_book dbp:color blue",
+        "codex_lab_book oro:isOn codex_lab_table",
+        "myself sees codex_lab_book",
+        "myself canReach codex_lab_book",
+        "codex_lab_phone rdf:type CellularTelephone",
+        "codex_lab_phone dbp:name VEGA",
+        "codex_lab_phone dbp:color silver",
+        "codex_lab_phone oro:isOn codex_lab_table",
+        "myself sees codex_lab_phone",
+        "myself canReach codex_lab_phone",
+        "codex_probe_cup rdf:type Cup",
+        "codex_probe_cup dbp:name TITAS",
+        "codex_probe_cup dbp:color gold",
+        "codex_probe_cup oro:isOn codex_lab_table",
+        "myself sees codex_probe_cup",
+        "myself canReach codex_probe_cup"
+      ],
+      "query_patterns": [
+        "codex_lab_table ?predicate ?object",
+        "codex_lab_apple ?predicate ?object",
+        "codex_lab_book ?predicate ?object",
+        "codex_lab_phone ?predicate ?object",
+        "codex_probe_cup ?predicate ?object"
+      ],
+      "query_vars": ["?predicate", "?object"]
+    },
+    "kitchen_delivery": {
+      "description": "Kitchen-to-person delivery scene with two kitchen objects, an operator station, and a named human recipient.",
+      "visual_svg_source": "docs/artifacts/preloaded_environments/semantic_kitchen_delivery.svg; interaction_sim template can also be downloaded from simulator Settings > Download environment SVG template",
+      "statements": [
+        "codex_operator_station rdf:type Place",
+        "codex_operator_station dbp:name operator_station",
+        "codex_operator_station dbp:frameId map",
+        "codex_operator_station dbp:poseSource semantic_fixture",
+        "codex_operator_station dbp:poseX 0.00",
+        "codex_operator_station dbp:poseY 0.00",
+        "codex_kitchen rdf:type Room",
+        "codex_kitchen dbp:name kitchen",
+        "codex_kitchen dbp:frameId map",
+        "codex_kitchen dbp:poseSource semantic_fixture",
+        "codex_kitchen dbp:poseX 1.20",
+        "codex_kitchen dbp:poseY 0.40",
+        "codex_kitchen oro:contains codex_kitchen_cup",
+        "codex_kitchen oro:contains codex_kitchen_book",
+        "codex_kitchen_cup rdf:type Cup",
+        "codex_kitchen_cup dbp:name KITCHEN_PROBE_CUP",
+        "codex_kitchen_cup dbp:color white",
+        "codex_kitchen_cup oro:isIn codex_kitchen",
+        "myself sees codex_kitchen_cup",
+        "myself canReach codex_kitchen_cup",
+        "codex_kitchen_book rdf:type Book",
+        "codex_kitchen_book dbp:name RECIPE_BOOK",
+        "codex_kitchen_book dbp:color green",
+        "codex_kitchen_book oro:isIn codex_kitchen",
+        "myself sees codex_kitchen_book",
+        "myself canReach codex_kitchen_book",
+        "codex_recipient_person rdf:type Human",
+        "codex_recipient_person dbp:name ALEX",
+        "codex_recipient_person dbp:frameId codex_recipient_person",
+        "codex_recipient_person dbp:poseSource semantic_fixture",
+        "codex_recipient_person dbp:poseX 0.30",
+        "codex_recipient_person dbp:poseY -0.20",
+        "myself sees codex_recipient_person",
+        "myself oro:isAt codex_operator_station",
+        "nao_robot oro:isAt codex_operator_station",
+        "myself canReceiveAt codex_operator_station"
+      ],
+      "query_patterns": [
+        "codex_operator_station ?predicate ?object",
+        "codex_kitchen ?predicate ?object",
+        "codex_kitchen_cup ?predicate ?object",
+        "codex_kitchen_book ?predicate ?object",
+        "codex_recipient_person ?predicate ?object"
+      ],
+      "query_vars": ["?predicate", "?object"]
+    },
+    "gold_apple_handoff": {
+      "description": "Multi-turn handoff fixture: a gold apple on a table and a human recipient named ALEX.",
+      "visual_svg_source": "interaction_sim SVG template: table with gold apple plus one human/person marker",
+      "statements": [
+        "codex_gold_table rdf:type Table",
+        "codex_gold_table dbp:name table",
+        "myself sees codex_gold_table",
+        "codex_gold_apple rdf:type Apple",
+        "codex_gold_apple dbp:name KAREN",
+        "codex_gold_apple dbp:color gold",
+        "codex_gold_apple oro:isOn codex_gold_table",
+        "myself sees codex_gold_apple",
+        "myself canReach codex_gold_apple",
+        "codex_gold_recipient rdf:type Human",
+        "codex_gold_recipient dbp:name ALEX",
+        "codex_gold_recipient dbp:frameId codex_gold_recipient",
+        "codex_gold_recipient dbp:poseSource semantic_fixture",
+        "myself sees codex_gold_recipient"
+      ],
+      "query_patterns": [
+        "codex_gold_table ?predicate ?object",
+        "codex_gold_apple ?predicate ?object",
+        "codex_gold_recipient ?predicate ?object"
+      ],
+      "query_vars": ["?predicate", "?object"]
+    }
+  }
+}

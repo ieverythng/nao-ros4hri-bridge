@@ -282,6 +282,13 @@
 </ul>
 <p>“bring every object from the kitchen to ALEX”.</p>
 <ul>
+<li><strong>Done (harness source)</strong>: runtime-review now supports named preloaded</li>
+</ul>
+<p>KnowledgeCore environment fixtures through <code>--preload-environment</code> and the</p>
+<p>dedicated <code>environment</code> case set. The first fixture pack includes</p>
+<p><code>lab_table</code>, <code>kitchen_delivery</code>, and <code>gold_apple_handoff</code>, plus a visual SVG</p>
+<p>companion for the kitchen-delivery scene.</p>
+<ul>
 <li><strong>In progress</strong>: skill-aware KB post-effects. Fake skills already report</li>
 </ul>
 <p><code>evidence.kb_effects</code>; orchestrator now applies successful effects through</p>
@@ -300,6 +307,10 @@
 <li>A response-first runtime review proves grouped-location KB queries, location</li>
 </ul>
 <p>scoped delivery, and post-skill KB changes on the next turn.</p>
+<ul>
+<li><code>robot-runtime-performance-review --case-set environment</code> proves the same</li>
+</ul>
+<p>scene can be preloaded deterministically before speech or service turns.</p>
 <ul>
 <li>Fake and real skill payloads use the same <code>kb_effects</code> shape for successful</li>
 </ul>
@@ -464,7 +475,7 @@
 <h2>6. Backlog (Prioritized, Cross-Track)</h2>
 <ol>
 <li><strong>P0</strong> Complete speech-ownership arbitration so each turn has one user-facing utterance authority (no duplicate execution-ack + planner-dialogue speech).</li>
-<li><strong>P0</strong> Live-prove grouped-location delivery and post-skill KB effects in the rebuilt response-first stack.</li>
+<li><strong>P0</strong> Live-prove preloaded environment fixtures, grouped-location delivery, and post-skill KB effects in the rebuilt response-first stack.</li>
 <li><strong>P0</strong> Resolve planner request-admission/backpressure seam after <code>waiting_user</code> transitions; ensure subsequent <code>new_goal</code> requests are deterministically handled (accepted/superseded/rejected with explicit reason).</li>
 <li><strong>P1</strong> Continue AB decomposition schema expansion and tests (AB=2+ lineage coverage).</li>
 <li><strong>P1</strong> Begin LocateAnything migration through the grounding adapter layer.</li>
@@ -520,6 +531,10 @@
 <li>Rebuild the response-first container and run the runtime-review main</li>
 </ol>
 <p>questionnaire plus the architecture sweep.</p>
+<ol>
+<li>Run <code>run_active_questionnaire.py --case-set environment</code> and archive the</li>
+</ol>
+<p>JSON artifact with the runtime review notes.</p>
 <ol>
 <li>Add location-group probes: “what is in the kitchen?”, “bring every object</li>
 </ol>

@@ -378,6 +378,181 @@ def test_planner_engine_rejects_partial_model_plans_when_one_step_is_unsupported
     assert decision.payload['plan']['steps'][0]['type'] == 'say'
 
 
+def test_planner_engine_falls_back_to_grounded_location_group_delivery() -> None:
+    provider = _FakeProvider('{}')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_kitchen_delivery',
+            'goal_id': 'goal_kitchen_delivery',
+            'goal_text': 'bring every object from the kitchen to ALEX and report what happened',
+            'normalized_intents': ['bring_object', 'report_result'],
+            'planner_mode': 'multi_step',
+            'grounded_context': {
+                'entities': [
+                    {
+                        'id': 'codex_kitchen',
+                        'label': 'kitchen',
+                        'kind': 'object',
+                        'class': 'Room',
+                    },
+                    {
+                        'id': 'cup_1',
+                        'label': 'cup',
+                        'kind': 'object',
+                        'class': 'Cup',
+                        'relations': [{'predicate': 'oro:isIn', 'object': 'codex_kitchen'}],
+                    },
+                    {
+                        'id': 'book_1',
+                        'label': 'book',
+                        'kind': 'object',
+                        'class': 'Book',
+                        'relations': [{'predicate': 'oro:isIn', 'object': 'codex_kitchen'}],
+                    },
+                    {
+                        'id': 'person_1',
+                        'label': 'ALEX',
+                        'kind': 'person',
+                        'class': 'Human',
+                        'relations': [{'predicate': 'dbp:name', 'object': 'ALEX'}],
+                    },
+                ],
+                'locations': [
+                    {
+                        'id': 'codex_kitchen',
+                        'label': 'kitchen',
+                        'class': 'Room',
+                        'contains': [
+                            {'id': 'cup_1', 'label': 'cup', 'kind': 'object', 'class': 'Cup'},
+                            {'id': 'book_1', 'label': 'book', 'kind': 'object', 'class': 'Book'},
+                        ],
+                    }
+                ],
+            },
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_kitchen_delivery', plan_version=1)
+
+    steps = decision.payload['plan']['steps']
+    assert decision.mode == 'grounded_location_group_fallback'
+    assert [step['name'] for step in steps] == [
+        'bring_object',
+        'bring_object',
+        'report_result',
+    ]
+    assert steps[0]['args'] == {
+        'target': 'book_1',
+        'recipient': 'person_1',
+        'source': 'codex_kitchen',
+    }
+    assert steps[1]['args'] == {
+        'target': 'cup_1',
+        'recipient': 'person_1',
+        'source': 'codex_kitchen',
+    }
+
+
+def test_planner_engine_clarifies_location_group_delivery_without_recipient() -> None:
+    engine = _engine_for_response('{}', retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_kitchen_delivery_missing_recipient',
+            'goal_id': 'goal_kitchen_delivery_missing_recipient',
+            'goal_text': 'bring every object from the kitchen',
+            'normalized_intents': ['bring_object'],
+            'planner_mode': 'multi_step',
+            'grounded_context': {
+                'locations': [
+                    {
+                        'id': 'codex_kitchen',
+                        'label': 'kitchen',
+                        'contains': [{'id': 'cup_1', 'label': 'cup'}],
+                    }
+                ],
+                'entities': [{'id': 'cup_1', 'label': 'cup', 'kind': 'object'}],
+            },
+        }
+    )
+
+    decision = engine.plan_request(
+        request,
+        goal_id='goal_kitchen_delivery_missing_recipient',
+        plan_version=1,
+    )
+
+    assert decision.mode == 'clarify'
+    assert decision.payload['plan']['steps'][0]['args']['text'] == (
+        'Who or where should I bring those objects to?'
+    )
+
+
+def test_planner_engine_falls_back_to_grounded_look_report_after_invalid_output() -> None:
+    engine = _engine_for_response('{}', retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_look_report',
+            'goal_id': 'goal_look_report',
+            'goal_text': 'Look at the probe cup and tell me what you did.',
+            'normalized_intents': [],
+            'planner_mode': 'single_step',
+            'grounded_context': {
+                'entities': [
+                    {
+                        'id': 'codex_probe_cup',
+                        'label': 'cup',
+                        'kind': 'object',
+                        'class': 'Cup',
+                        'relations': [
+                            {'predicate': 'dbp:name', 'object': 'TITAS'},
+                            {'predicate': 'dbp:color', 'object': 'gold'},
+                        ],
+                    }
+                ],
+            },
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_look_report', plan_version=1)
+
+    assert decision.mode == 'grounded_look_fallback'
+    steps = decision.payload['plan']['steps']
+    assert [step['name'] for step in steps] == ['look_at', 'report_result']
+    assert steps[0]['args'] == {'target_frame': 'codex_probe_cup'}
+    assert decision.payload['plan']['scene_targets'] == ['codex_probe_cup']
+
+
+def test_planner_engine_clarifies_grounded_look_when_target_is_ambiguous() -> None:
+    engine = _engine_for_response('{}', retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_look_report_ambiguous',
+            'goal_id': 'goal_look_report_ambiguous',
+            'goal_text': 'Look at the cup and tell me what you did.',
+            'normalized_intents': [],
+            'planner_mode': 'single_step',
+            'grounded_context': {
+                'entities': [
+                    {'id': 'cup_1', 'label': 'cup', 'kind': 'object', 'class': 'Cup'},
+                    {'id': 'cup_2', 'label': 'cup', 'kind': 'object', 'class': 'Cup'},
+                ],
+            },
+        }
+    )
+
+    decision = engine.plan_request(
+        request,
+        goal_id='goal_look_report_ambiguous',
+        plan_version=1,
+    )
+
+    assert decision.mode == 'clarify'
+    assert decision.payload['plan']['steps'][0]['args']['text'] == (
+        'Which object or person should I look at?'
+    )
+
+
 def test_planner_engine_repairs_unsupported_composite_motion_object() -> None:
     provider = _SequenceProvider(
         [

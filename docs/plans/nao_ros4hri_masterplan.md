@@ -90,6 +90,11 @@ Everything else should be archived under `docs/artifacts/` unless it is actively
   replacing `entities`, so existing consumers remain compatible.
 - **In progress**: location-aware execution validation for prompts such as
   “bring every object from the kitchen to ALEX”.
+- **Done (harness source)**: runtime-review now supports named preloaded
+  KnowledgeCore environment fixtures through `--preload-environment` and the
+  dedicated `environment` case set. The first fixture pack includes
+  `lab_table`, `kitchen_delivery`, and `gold_apple_handoff`, plus a visual SVG
+  companion for the kitchen-delivery scene.
 - **In progress**: skill-aware KB post-effects. Fake skills already report
   `evidence.kb_effects`; orchestrator now applies successful effects through
   KnowledgeCore. Real skills should adopt the same payload contract before
@@ -103,6 +108,8 @@ Everything else should be archived under `docs/artifacts/` unless it is actively
 
 - A response-first runtime review proves grouped-location KB queries, location
   scoped delivery, and post-skill KB changes on the next turn.
+- `robot-runtime-performance-review --case-set environment` proves the same
+  scene can be preloaded deterministically before speech or service turns.
 - Fake and real skill payloads use the same `kb_effects` shape for successful
   state changes.
 - LocateAnything facts enter the same grounded-context projection as other
@@ -245,7 +252,7 @@ This track merges prior simple-viewer and full-dashboard plans.
 ## 6. Backlog (Prioritized, Cross-Track)
 
 1. **P0** Complete speech-ownership arbitration so each turn has one user-facing utterance authority (no duplicate execution-ack + planner-dialogue speech).
-2. **P0** Live-prove grouped-location delivery and post-skill KB effects in the rebuilt response-first stack.
+2. **P0** Live-prove preloaded environment fixtures, grouped-location delivery, and post-skill KB effects in the rebuilt response-first stack.
 3. **P0** Resolve planner request-admission/backpressure seam after `waiting_user` transitions; ensure subsequent `new_goal` requests are deterministically handled (accepted/superseded/rejected with explicit reason).
 4. **P1** Continue AB decomposition schema expansion and tests (AB=2+ lineage coverage).
 5. **P1** Begin LocateAnything migration through the grounding adapter layer.
@@ -296,12 +303,14 @@ and TFM fake-skill validation sub-plans were moved to
 
 1. Rebuild the response-first container and run the runtime-review main
    questionnaire plus the architecture sweep.
-2. Add location-group probes: “what is in the kitchen?”, “bring every object
+2. Run `run_active_questionnaire.py --case-set environment` and archive the
+   JSON artifact with the runtime review notes.
+3. Add location-group probes: “what is in the kitchen?”, “bring every object
    from the kitchen to ALEX”, and “bring every object from the table to ALEX”.
-3. Verify post-skill KB effects: query before and after pick/place/bring and
+4. Verify post-skill KB effects: query before and after pick/place/bring and
    confirm old support facts are removed and new hold/location facts appear.
-4. Verify live stack endpoints remain healthy (`scan`, `report_result`, `say`,
+5. Verify live stack endpoints remain healthy (`scan`, `report_result`, `say`,
    strict `head_motion`, fake-skill endpoints including fake `perform_motion`).
-5. Validate no duplicate user-facing speech in KB visibility and
+6. Validate no duplicate user-facing speech in KB visibility and
    execution-failure flows.
-6. Continue AB-F2 decomposition metadata pass with tests.
+7. Continue AB-F2 decomposition metadata pass with tests.
