@@ -1315,6 +1315,9 @@ def apply_fake_policy_profile(container: str, profile: str) -> dict[str, str]:
 
 
 def set_ros_param(container: str, node_name: str, param_name: str, value: str) -> str:
+    parameter_value = str(value)
+    if isinstance(value, str):
+        parameter_value = json.dumps(value)
     script = """
 %s
 timeout 10 ros2 param set %s %s %s 2>&1 || true
@@ -1322,7 +1325,7 @@ timeout 10 ros2 param set %s %s %s 2>&1 || true
         ROS_CLI_PREAMBLE,
         shlex.quote(node_name),
         shlex.quote(param_name),
-        shlex.quote(str(value)),
+        shlex.quote(parameter_value),
     )
     return run(
         ["docker", "exec", container, "bash", "-lc", script],

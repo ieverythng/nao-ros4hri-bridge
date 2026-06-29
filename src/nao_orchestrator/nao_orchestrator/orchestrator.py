@@ -1039,8 +1039,10 @@ class NaoOrchestrator(Node):
             forward_msg.modality = msg.modality
             forward_msg.confidence = msg.confidence
             forward_msg.priority = msg.priority
-            forward_msg.person_id = msg.person_id
-            forward_msg.intent_type = msg.intent_type
+            if hasattr(forward_msg, 'person_id') and hasattr(msg, 'person_id'):
+                forward_msg.person_id = msg.person_id
+            if hasattr(forward_msg, 'intent_type') and hasattr(msg, 'intent_type'):
+                forward_msg.intent_type = msg.intent_type
             forward_msg.data = json.dumps(
                 decision.forward_payload,
                 separators=(',', ':'),

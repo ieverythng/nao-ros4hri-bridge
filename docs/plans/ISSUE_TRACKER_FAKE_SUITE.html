@@ -94,8 +94,8 @@
   <table>
     <thead><tr><th>Profile</th><th>Expected behavior</th><th>Score condition</th><th>Status</th></tr></thead>
     <tbody>
-      <tr><td><code>all_success</code></td><td>All fake skills succeed; planner should complete the full chain.</td><td>No duplicate speech, no raw JSON, canonical ids in plan args, post-skill KB effects visible.</td><td class="partial">Source ready; live suite pending.</td></tr>
-      <tr><td><code>fail_once_navigation</code></td><td>First navigation attempt fails, later retry can succeed.</td><td>Evidence shows retry, replan, or truthful blocked/failure dialogue. False success is critical.</td><td class="p0">P0 pending.</td></tr>
+      <tr><td><code>all_success</code></td><td>All fake skills succeed; planner should complete the full chain.</td><td>No duplicate speech, no raw JSON, canonical ids in plan args, post-skill KB effects visible.</td><td class="partial">29 Jun partial: inventory passed and ordered walk/report reached execution; final completion was not captured before harness interruption.</td></tr>
+      <tr><td><code>fail_once_navigation</code></td><td>First navigation attempt fails, later retry can succeed.</td><td>Evidence shows retry, replan, or truthful blocked/failure dialogue. False success is critical.</td><td class="partial">Harness setter fixed; speech recovery still pending.</td></tr>
       <tr><td><code>fail_once_pick</code></td><td>First object acquisition fails, then recovery should retry or ask for help.</td><td>Successful steps are not repeated unnecessarily; failed step evidence is preserved.</td><td class="p0">P0 pending.</td></tr>
       <tr><td><code>delivery_blocked</code></td><td>Bring/delivery action fails at destination.</td><td>Robot asks for an alternative delivery location or reports truthful terminal failure.</td><td class="p0">P0 pending.</td></tr>
       <tr><td><code>recipient_missing</code></td><td>Recipient is unavailable.</td><td>Planner/chatbot clarifies recipient instead of inventing a person or reporting completion.</td><td class="p0">P0 pending.</td></tr>
@@ -131,6 +131,16 @@
       <tr><td>6</td><td><code>--case-set fake_deep --fake-policy-profile delivery_blocked</code></td><td>Blocked delivery proof.</td><td>Robot asks for alternative or reports blocked delivery truthfully.</td></tr>
       <tr><td>7</td><td><code>--case-set fake_deep --fake-policy-profile recipient_missing</code></td><td>Missing human target proof.</td><td>Robot clarifies or fails safely without inventing the recipient.</td></tr>
       <tr><td>8</td><td><code>--case-set fake_deep --speech-voice-scope shared</code></td><td>Long-context stress.</td><td>Routing, KB use, and report wording do not regress under accumulated dialogue.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="latest-29-jun">29 Jun Cool-Profile Evidence</h2>
+  <table>
+    <thead><tr><th>Artifact</th><th>Result</th><th>Implication</th></tr></thead>
+    <tbody>
+      <tr><td><code>/tmp/nao_fake_deep_success_20260629_final.json</code></td><td><code>fake_deep_baseline_inventory</code> answered from the preloaded table fixture; <code>fake_deep_ordered_walk_report</code> resolved <code>route=execution</code> with <code>navigate_to</code> intent and a planner request.</td><td>Preloaded fake-deep fixture and execution admission work. The interrupted run did not capture final per-object reports, so it is not a full all-success pass.</td></tr>
+      <tr><td>Harness patch</td><td><code>mode_overrides_json</code> is now passed as a quoted string parameter. Direct live probes confirmed <code>global_mode=scenario</code> and <code>mode_overrides_json={"navigate_to":"fail_once"}</code>.</td><td>The previous ROS CLI assertion on unquoted <code>{}</code> was a review-harness bug, not a fake-skill runtime failure. The next fail-once run can focus on recovery behavior.</td></tr>
+      <tr><td>Open recovery proof</td><td>No flushed artifact was produced for the interrupted <code>fail_once_navigation</code> run.</td><td>Keep fail-once navigation, fail-once pick, blocked delivery, and missing recipient as required proof before raising the fake/replan score.</td></tr>
     </tbody>
   </table>
 
