@@ -8,6 +8,7 @@ from datetime import datetime
 from datetime import timezone
 import json
 import re
+import shlex
 import subprocess
 import time
 from dataclasses import dataclass
@@ -30,12 +31,19 @@ TOPIC_SAMPLE_KILL_AFTER_SEC = 1.0
 DEFAULT_GLOBAL_TIMEOUT_SEC = 420
 DEFAULT_KB_LIFESPAN_SEC = 300
 DEFAULT_ENVIRONMENT_FIXTURE_PATH = (
+    Path(__file__).resolve().parents[4]
+    / "src"
+    / "nao_chatbot"
+    / "config"
+    / "preloaded_environments.json"
+)
+FALLBACK_ENVIRONMENT_FIXTURE_PATH = (
     Path(__file__).resolve().parent.parent / "references" / "preloaded_environments.json"
 )
 KB_PROBE_OBJECT_ID = "codex_probe_cup"
 KB_MAXIMAL_CUP_ID = "codex_kitchen_cup"
 KB_MAXIMAL_LOCATION_ID = "codex_kitchen"
-KB_MAXIMAL_ORIGIN_ID = "codex_operator_station"
+KB_MAXIMAL_ORIGIN_ID = "codex_robot_station"
 KB_MAXIMAL_PERSON_ID = "codex_recipient_person"
 ROS_CLI_PREAMBLE = """
 source /opt/ros/jazzy/setup.bash
@@ -494,13 +502,13 @@ COMPOSITE_CASES = (
     ProbeCase(
         "maximal_kitchen_cup_bring",
         "maximal_semantic_execution",
-        "I am at the operator station. There is a cup in the kitchen. Go to the kitchen, pick up the cup, bring it back to me at the operator station, and report what happened.",
+        "I am at the robot station. There is a cup in the kitchen. Go to the kitchen, pick up the cup, bring it back to me at the robot station, and report what happened.",
         160.0,
         setup=KbInjection(
             object_id=KB_MAXIMAL_CUP_ID,
             statements=(
                 f"{KB_MAXIMAL_ORIGIN_ID} rdf:type Place",
-                f"{KB_MAXIMAL_ORIGIN_ID} dbp:name operator_station",
+                f"{KB_MAXIMAL_ORIGIN_ID} dbp:name robot_station",
                 f"{KB_MAXIMAL_ORIGIN_ID} dbp:frameId map",
                 f"{KB_MAXIMAL_ORIGIN_ID} dbp:poseSource semantic_fixture",
                 f"{KB_MAXIMAL_ORIGIN_ID} dbp:poseX 0.00",
@@ -642,13 +650,13 @@ COMPOSITE_CASES = (
     ProbeCase(
         "replan_kitchen_cup_fallback_report",
         "replan_recovery",
-        "Bring me the kitchen cup at the operator station. If you cannot bring it, look at the kitchen cup and report the reason.",
+        "Bring me the kitchen cup at the robot station. If you cannot bring it, look at the kitchen cup and report the reason.",
         150.0,
         setup=KbInjection(
             object_id=KB_MAXIMAL_CUP_ID,
             statements=(
                 f"{KB_MAXIMAL_ORIGIN_ID} rdf:type Place",
-                f"{KB_MAXIMAL_ORIGIN_ID} dbp:name operator_station",
+                f"{KB_MAXIMAL_ORIGIN_ID} dbp:name robot_station",
                 f"{KB_MAXIMAL_LOCATION_ID} rdf:type Room",
                 f"{KB_MAXIMAL_LOCATION_ID} dbp:name kitchen",
                 f"{KB_MAXIMAL_CUP_ID} rdf:type Cup",
@@ -802,12 +810,36 @@ INTENT_ABLATION_CASES = (
 
 ENVIRONMENT_CASES = (
     ProbeCase(
+        "environment_baseline_table_inventory",
+        "preloaded_environment_kb_query",
+        "What objects are on the table?",
+        12.0,
+        environment_ids=("baseline_table",),
+        conversation_group="preloaded_baseline_table",
+    ),
+    ProbeCase(
         "environment_lab_table_inventory",
         "preloaded_environment_kb_query",
         "What objects are on the table?",
         12.0,
         environment_ids=("lab_table",),
         conversation_group="preloaded_lab_table",
+    ),
+    ProbeCase(
+        "environment_lab_sections_inventory",
+        "preloaded_environment_kb_query",
+        "What can you see in the lab?",
+        14.0,
+        environment_ids=("lab_sections",),
+        conversation_group="preloaded_lab_sections",
+    ),
+    ProbeCase(
+        "environment_lab_sections_delivery",
+        "preloaded_environment_composite_execution",
+        "Bring every object from the work table to ALEX and report what happened.",
+        180.0,
+        environment_ids=("lab_sections",),
+        conversation_group="preloaded_lab_sections",
     ),
     ProbeCase(
         "environment_kitchen_inventory",
@@ -830,7 +862,24 @@ ENVIRONMENT_CASES = (
         "preloaded_environment_kb_query",
         "Where is the kitchen cup now?",
         14.0,
+        environment_ids=("kitchen_delivery",),
         conversation_group="preloaded_kitchen_delivery",
+    ),
+    ProbeCase(
+        "environment_iiia_floor_inventory",
+        "preloaded_environment_kb_query",
+        "What rooms and objects are in the IIIA floor scene?",
+        16.0,
+        environment_ids=("iiia_floor",),
+        conversation_group="preloaded_iiia_floor",
+    ),
+    ProbeCase(
+        "environment_iiia_kitchen_delivery",
+        "preloaded_environment_composite_execution",
+        "Bring every object from the kitchen to ALEX and report what happened.",
+        180.0,
+        environment_ids=("iiia_floor",),
+        conversation_group="preloaded_iiia_floor",
     ),
     ProbeCase(
         "environment_gold_apple_handoff",
@@ -845,7 +894,75 @@ ENVIRONMENT_CASES = (
         "preloaded_environment_kb_query",
         "Where is the gold apple now?",
         14.0,
+        environment_ids=("gold_apple_handoff",),
         conversation_group="preloaded_gold_apple",
+    ),
+)
+
+FAKE_DEEP_CASES = (
+    ProbeCase(
+        "fake_deep_baseline_inventory",
+        "fake_deep_preflight",
+        "What objects are on the table?",
+        12.0,
+        environment_ids=("baseline_table",),
+        conversation_group="fake_deep_baseline",
+    ),
+    ProbeCase(
+        "fake_deep_ordered_walk_report",
+        "fake_deep_composite_success",
+        "Walk to every object on the table and let me know when you get to each one.",
+        180.0,
+        environment_ids=("lab_table",),
+        conversation_group="fake_deep_lab_table",
+    ),
+    ProbeCase(
+        "fake_deep_grouped_work_table_delivery",
+        "fake_deep_location_delivery",
+        "Bring every object from the work table to ALEX and report what happened.",
+        180.0,
+        environment_ids=("lab_sections",),
+        conversation_group="fake_deep_lab_sections",
+    ),
+    ProbeCase(
+        "fake_deep_missing_object_recovery",
+        "fake_deep_absent_target_replan",
+        "Find the codex missing cup. If you cannot find it, scan the scene and report what you can confirm.",
+        180.0,
+        environment_ids=("baseline_table",),
+        conversation_group="fake_deep_absent_target",
+    ),
+    ProbeCase(
+        "fake_deep_missing_recipient_clarification",
+        "fake_deep_missing_secondary_target",
+        "Bring every object from the work table to the person named BLAKE and report what happened.",
+        150.0,
+        environment_ids=("lab_sections",),
+        conversation_group="fake_deep_missing_recipient",
+    ),
+    ProbeCase(
+        "fake_deep_iiia_kitchen_delivery",
+        "fake_deep_maximal_location_delivery",
+        "Bring every object from the kitchen to ALEX and report what happened.",
+        220.0,
+        environment_ids=("iiia_floor",),
+        conversation_group="fake_deep_iiia_floor",
+    ),
+    ProbeCase(
+        "fake_deep_gold_apple_multiturn",
+        "fake_deep_multiturn_pronoun_handoff",
+        "Can you bring that gold apple to the person named ALEX?",
+        180.0,
+        environment_ids=("gold_apple_handoff",),
+        conversation_group="fake_deep_gold_apple",
+    ),
+    ProbeCase(
+        "fake_deep_gold_apple_followup",
+        "fake_deep_post_effect_query",
+        "Where is the gold apple now?",
+        16.0,
+        environment_ids=("gold_apple_handoff",),
+        conversation_group="fake_deep_gold_apple",
     ),
 )
 
@@ -858,6 +975,33 @@ TOPICS_TO_SAMPLE = (
     "/speech",
 )
 
+FAKE_POLICY_PROFILES = {
+    "none": {},
+    "all_success": {"global_mode": "always_success", "mode_overrides_json": "{}"},
+    "every_other": {"global_mode": "every_other", "mode_overrides_json": "{}"},
+    "random_seeded": {
+        "global_mode": "random_seeded",
+        "random_failure_prob": "0.50",
+        "mode_overrides_json": "{}",
+    },
+    "fail_once_navigation": {
+        "global_mode": "scenario",
+        "mode_overrides_json": '{"navigate_to":"fail_once"}',
+    },
+    "fail_once_pick": {
+        "global_mode": "scenario",
+        "mode_overrides_json": '{"pick_object":"fail_once"}',
+    },
+    "delivery_blocked": {
+        "global_mode": "scenario",
+        "mode_overrides_json": '{"bring_object":"delivery_blocked"}',
+    },
+    "recipient_missing": {
+        "global_mode": "scenario",
+        "mode_overrides_json": '{"bring_object":"recipient_unavailable"}',
+    },
+}
+
 
 def main() -> int:
     parser = argparse.ArgumentParser()
@@ -865,7 +1009,14 @@ def main() -> int:
     parser.add_argument(
         "--case-set",
         default="smoke",
-        choices=("smoke", "main", "composite", "intent_ablation", "environment"),
+        choices=(
+            "smoke",
+            "main",
+            "composite",
+            "intent_ablation",
+            "environment",
+            "fake_deep",
+        ),
     )
     parser.add_argument(
         "--case-names",
@@ -936,9 +1087,19 @@ def main() -> int:
         action="store_true",
         help="List available environment fixture ids and exit.",
     )
+    parser.add_argument(
+        "--fake-policy-profile",
+        default="none",
+        choices=tuple(sorted(FAKE_POLICY_PROFILES.keys())),
+        help=(
+            "Optional fake_skill_server policy profile applied before the run. "
+            "Use this for deterministic success/failure/replan validation."
+        ),
+    )
     args = parser.parse_args()
 
-    environment_fixtures = load_environment_fixtures(Path(args.environment_fixtures))
+    environment_fixture_path = resolve_environment_fixture_path(Path(args.environment_fixtures))
+    environment_fixtures = load_environment_fixtures(environment_fixture_path)
     if args.list_environments:
         for fixture_id in sorted(environment_fixtures.keys()):
             description = str(environment_fixtures[fixture_id].get("description", "")).strip()
@@ -952,6 +1113,7 @@ def main() -> int:
         "composite": COMPOSITE_CASES,
         "intent_ablation": INTENT_ABLATION_CASES,
         "environment": ENVIRONMENT_CASES,
+        "fake_deep": FAKE_DEEP_CASES,
     }
     cases = list(case_sets[args.case_set])
     cases = filter_cases(
@@ -966,8 +1128,13 @@ def main() -> int:
         args.container,
         expected_turn_pipeline_mode=args.expected_turn_pipeline_mode,
     )
-    runtime_metadata["environment_fixture_source"] = str(Path(args.environment_fixtures))
+    runtime_metadata["environment_fixture_source"] = str(environment_fixture_path)
     runtime_metadata["available_environment_fixtures"] = sorted(environment_fixtures.keys())
+    runtime_metadata["fake_policy_profile"] = args.fake_policy_profile
+    runtime_metadata["fake_policy_application"] = apply_fake_policy_profile(
+        args.container,
+        args.fake_policy_profile,
+    )
     preloaded_environment_ids = parse_csv_list(args.preload_environment)
     preloaded_environments = inject_environment_fixtures(
         args.container,
@@ -1120,6 +1287,48 @@ def load_environment_fixtures(path: Path) -> dict[str, dict]:
         for fixture_id, fixture in environments.items()
         if str(fixture_id).strip() and isinstance(fixture, dict)
     }
+
+
+def resolve_environment_fixture_path(path: Path) -> Path:
+    if path.exists():
+        return path
+    if FALLBACK_ENVIRONMENT_FIXTURE_PATH.exists():
+        return FALLBACK_ENVIRONMENT_FIXTURE_PATH
+    return path
+
+
+def apply_fake_policy_profile(container: str, profile: str) -> dict[str, str]:
+    clean_profile = str(profile or "none").strip()
+    settings = FAKE_POLICY_PROFILES.get(clean_profile, {})
+    if not settings:
+        return {"profile": clean_profile, "applied": "false", "reason": "no policy changes requested"}
+
+    outputs = {"profile": clean_profile, "applied": "true"}
+    for param_name, value in settings.items():
+        outputs[param_name] = set_ros_param(
+            container,
+            "/fake_skill_server",
+            param_name,
+            value,
+        )
+    return outputs
+
+
+def set_ros_param(container: str, node_name: str, param_name: str, value: str) -> str:
+    script = """
+%s
+timeout 10 ros2 param set %s %s %s 2>&1 || true
+""" % (
+        ROS_CLI_PREAMBLE,
+        shlex.quote(node_name),
+        shlex.quote(param_name),
+        shlex.quote(str(value)),
+    )
+    return run(
+        ["docker", "exec", container, "bash", "-lc", script],
+        timeout=15,
+        check=False,
+    )
 
 
 def inject_environment_fixtures(

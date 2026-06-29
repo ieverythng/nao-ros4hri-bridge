@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520" role="img" aria-labelledby="title desc">
+  <title id="title">Baseline table preloaded environment</title>
+  <desc id="desc">A minimal semantic fixture with one robot station, one table, one red cup, and one blue book.</desc>
+  <style>
+    .room{fill:#f6f7f9;stroke:#5c6b7a;stroke-width:3}
+    .zone{fill:#e8f1f8;stroke:#2d5b7c;stroke-width:2}
+    .table{fill:#d9c7a4;stroke:#6f5b32;stroke-width:3}
+    .robot{fill:#7cc5d8;stroke:#1b6170;stroke-width:3}
+    .cup{fill:#d44b44;stroke:#7d1f1a;stroke-width:3}
+    .book{fill:#4b76d4;stroke:#1d3d83;stroke-width:3}
+    text{font-family:Arial,sans-serif;font-size:22px;fill:#20242b}
+    .small{font-size:18px;fill:#47515c}
+  </style>
+  <rect class="room" x="30" y="30" width="840" height="460" rx="12"/>
+  <rect class="zone" x="80" y="190" width="220" height="160" rx="8"/>
+  <text x="108" y="225">robot_station</text>
+  <circle class="robot" cx="190" cy="285" r="34"/>
+  <text class="small" x="145" y="340">myself / NAO</text>
+  <rect class="table" x="485" y="175" width="260" height="170" rx="10"/>
+  <text x="565" y="210">table</text>
+  <circle class="cup" cx="565" cy="275" r="30"/>
+  <text class="small" x="515" y="330">BASE_CUP red</text>
+  <rect class="book" x="640" y="250" width="58" height="42" rx="4"/>
+  <text class="small" x="610" y="365">BASE_BOOK blue</text>
+  <line x1="300" y1="285" x2="485" y2="260" stroke="#7b8794" stroke-width="3" stroke-dasharray="8 8"/>
+  <text class="small" x="345" y="255">visible and reachable</text>
+</svg>

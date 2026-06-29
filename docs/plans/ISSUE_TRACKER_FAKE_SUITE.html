@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fake Skill And Replan Validation Suite</title>
+  <style>
+    :root { --bg:#f6f7f9; --ink:#20242b; --muted:#626b78; --line:#cfd5dd; --accent:#235b8c; --soft:#eef4f9; --done:#236b3b; --partial:#9a5b13; --pending:#8a463d; --p0:#9f2d2d; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:Arial,sans-serif; line-height:1.5; }
+    main { max-width:1180px; margin:auto; padding:32px 22px 72px; }
+    h1 { margin:0 0 6px; font-size:2rem; }
+    h2 { border-top:1px solid var(--line); padding-top:20px; margin-top:30px; }
+    h3 { margin-bottom:8px; }
+    .meta { color:var(--muted); margin-bottom:22px; }
+    .note { border-left:4px solid var(--accent); padding:10px 14px; background:white; }
+    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; margin:18px 0 24px; }
+    .card { background:white; border:1px solid var(--line); border-left:5px solid var(--accent); padding:14px 16px; }
+    .card strong { display:block; font-size:1.25rem; margin-bottom:4px; }
+    table { width:100%; border-collapse:collapse; background:white; margin:12px 0 20px; }
+    th,td { border:1px solid var(--line); padding:9px 10px; text-align:left; vertical-align:top; }
+    th { background:#e9edf2; }
+    code { background:#e7ebef; padding:1px 4px; }
+    .done { color:var(--done); font-weight:bold; }
+    .partial { color:var(--partial); font-weight:bold; }
+    .pending { color:var(--pending); font-weight:bold; }
+    .p0 { color:var(--p0); font-weight:bold; }
+    .tag { display:inline-block; border:1px solid var(--line); background:var(--soft); padding:2px 7px; margin:2px 4px 2px 0; font-size:.9rem; }
+    .toc { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 22px; }
+    .toc a { color:var(--accent); background:white; border:1px solid var(--line); padding:6px 9px; text-decoration:none; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Fake Skill And Replan Validation Suite</h1>
+  <p class="meta">Canonical deep tracker for deterministic fake-skill execution, preloaded KnowledgeCore environments, multi-turn manipulation, and failure-induced replanning. Created 29 June 2026.</p>
+
+  <p class="note">Use <code>ISSUE_TRACKER_FULL_SUITE.html</code> for the full-stack health score. Use this page for the harder fake-skill and replan score once the base dialogue, KB, and simple execution seams are healthy. The scoreable state is the RDF fixture injected through <code>/kb/revise</code>, then verified through <code>/kb/query</code>, <code>grounded_context</code>, planner requests, fake-skill feedback, post-skill KB effects, and user-facing speech.</p>
+
+  <nav class="toc">
+    <a href="#current-state">Current state</a>
+    <a href="#method">Method</a>
+    <a href="#review-history">Review history</a>
+    <a href="#fixtures">Fixtures</a>
+    <a href="#policies">Fake policies</a>
+    <a href="#prompts">Prompts</a>
+    <a href="#cases">Case ladder</a>
+    <a href="#artifacts">Artifacts</a>
+  </nav>
+
+  <section id="current-state" class="cards">
+    <div class="card"><strong>Source ready</strong>Launch-time preload, questionnaire preload, and <code>fake_deep</code> case routing are implemented. Live proof is still pending after rebuild.</div>
+    <div class="card"><strong>Primary goal</strong>Demonstrate truthful recovery: retry, replan, clarification, help request, or terminal failure. False success is a critical failure.</div>
+    <div class="card"><strong>Scenario space</strong>Fixtures scale from one table to lab sections, kitchen delivery, gold-apple handoff, and an IIIA-style floor.</div>
+    <div class="card"><strong>Operator view</strong>After rebuild, run <code>preloaded_environment_viewer --open</code> inside the container, or open <code>/home/ubuntu/ws/install/share/nao_chatbot/config/preloaded_environment_viewer.html</code>, to select the SVG scene while rqt is running.</div>
+  </section>
+
+  <p><span class="tag">P0: speech-mode fail-once replan</span><span class="tag">P0: location-scoped delivery</span><span class="tag">P0: post-skill KB effects</span><span class="tag">P1: spatial/proximity fixture proof</span></p>
+
+  <h2 id="method">Validation Method</h2>
+  <table>
+    <thead><tr><th>Principle</th><th>How it is applied here</th><th>Why it matters</th></tr></thead>
+    <tbody>
+      <tr><td>Scenario model</td><td>Each run declares an environment fixture, task prompt, fake policy profile, expected post-condition, and trace artifacts.</td><td>Scenario-based robot validation literature emphasizes explicit operating context, task, variation conditions, and acceptance criteria so failures are reproducible rather than anecdotal.</td></tr>
+      <tr><td>Configurable launch surface</td><td><code>preloaded_environment_ids:=...</code> initializes the sim stack with a stable semantic scene. The questionnaire can override this per run with <code>--preload-environment</code> or per case through <code>environment_ids</code>.</td><td>ROS 2 launch arguments and parameters are the right seam for repeatable runtime variation. They avoid hidden code edits and make supervisor demos repeatable.</td></tr>
+      <tr><td>Evidence chain</td><td>Every pass must show <code>/kb/revise</code>, <code>/kb/query</code>, grounded context, planner request, fake feedback, execution feedback, and speech outcome when applicable.</td><td>This separates “fact never existed” from “fact existed but the model ignored it” and from “execution failed but was reported incorrectly.”</td></tr>
+      <tr><td>Difficulty ladder</td><td>Start with inventory, then single action, composite action, grouped location delivery, multi-turn pronoun handoff, and finally forced failure/replan.</td><td>The tests become harder in controlled steps, similar to puzzle-room validation: each scenario isolates one new semantic demand before combining several.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="review-history">Fake-Suite Review History</h2>
+  <table>
+    <thead><tr><th>Date / run</th><th>Scope</th><th>Fixture / policy</th><th>Result</th><th>Score impact</th></tr></thead>
+    <tbody>
+      <tr><td>17 Jun direct manipulation matrix</td><td>Direct fake action goals</td><td>Canonical and absent targets across pick, place, bring, and look_at.</td><td class="done">Pass</td><td>Proves fake guards can reject noun phrases, missing targets, missing destinations, and blocked delivery. Does not prove speech-mode replan.</td></tr>
+      <tr><td>28 Jun architecture sweep</td><td>Service/direct-action architecture proof</td><td><code>kitchen_delivery</code> style facts plus fake guard success/failure.</td><td class="partial">Partial pass</td><td>Raises confidence in KB guards and KB mutation postconditions, but speech-mode forced recovery is still missing.</td></tr>
+      <tr><td>29 Jun source setup</td><td>Launch and questionnaire source</td><td><code>baseline_table</code>, <code>lab_sections</code>, <code>kitchen_delivery</code>, <code>gold_apple_handoff</code>, <code>iiia_floor</code>; policies <code>all_success</code>, <code>fail_once_navigation</code>, <code>fail_once_pick</code>, <code>delivery_blocked</code>, <code>recipient_missing</code>.</td><td class="partial">Source ready; live proof pending</td><td>Creates the repeatable ladder needed for the next 8.5+ proof.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="fixtures">Preloaded Environments</h2>
+  <table>
+    <thead><tr><th>Fixture id</th><th>Difficulty</th><th>Purpose</th><th>Visual aid</th><th>Acceptance condition</th></tr></thead>
+    <tbody>
+      <tr><td><code>baseline_table</code></td><td>1</td><td>Fast smoke baseline with one table, a red cup, and a blue book.</td><td><code>baseline_table.svg</code></td><td>Chatbot answers table inventory; planner can select a grounded object on the table.</td></tr>
+      <tr><td><code>lab_table</code></td><td>2</td><td>Ordered-object table scene for count, walk/report, and table support checks.</td><td>Interaction simulator template</td><td>Objects remain distinct by id, name, color, and support relation.</td></tr>
+      <tr><td><code>lab_sections</code></td><td>3</td><td>Lab with robot station, desk, work table, computer, cup, book, phone, and ALEX in a named handoff area.</td><td><code>lab_sections.svg</code></td><td>“What can you see in the lab?” reports grouped areas, and “bring every object from the work table to ALEX” uses canonical object, recipient, and handoff-area ids.</td></tr>
+      <tr><td><code>kitchen_delivery</code></td><td>3</td><td>Kitchen-to-person delivery with two kitchen objects, robot station, recipient ALEX, and a named handoff area.</td><td><code>semantic_kitchen_delivery.svg</code></td><td>Inventory, grouped delivery, and post-delivery follow-up pass without implying that ALEX is inside or on an object.</td></tr>
+      <tr><td><code>gold_apple_handoff</code></td><td>4</td><td>Multi-turn handoff scene for pronoun and relation continuity, with ALEX in a named handoff area.</td><td>Interaction simulator template</td><td>“that gold apple” resolves to the apple id and the follow-up reports its new location.</td></tr>
+      <tr><td><code>iiia_floor</code></td><td>5</td><td>Larger IIIA-style floor with lab, kitchen, corridor, robot station, handoff area, distributed objects, and ALEX.</td><td><code>iiia_floor.svg</code></td><td>Maximal location-scoped delivery and failure/replan tests run over a stable multi-location scene.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="policies">Fake Policy Profiles</h2>
+  <table>
+    <thead><tr><th>Profile</th><th>Expected behavior</th><th>Score condition</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td><code>all_success</code></td><td>All fake skills succeed; planner should complete the full chain.</td><td>No duplicate speech, no raw JSON, canonical ids in plan args, post-skill KB effects visible.</td><td class="partial">Source ready; live suite pending.</td></tr>
+      <tr><td><code>fail_once_navigation</code></td><td>First navigation attempt fails, later retry can succeed.</td><td>Evidence shows retry, replan, or truthful blocked/failure dialogue. False success is critical.</td><td class="p0">P0 pending.</td></tr>
+      <tr><td><code>fail_once_pick</code></td><td>First object acquisition fails, then recovery should retry or ask for help.</td><td>Successful steps are not repeated unnecessarily; failed step evidence is preserved.</td><td class="p0">P0 pending.</td></tr>
+      <tr><td><code>delivery_blocked</code></td><td>Bring/delivery action fails at destination.</td><td>Robot asks for an alternative delivery location or reports truthful terminal failure.</td><td class="p0">P0 pending.</td></tr>
+      <tr><td><code>recipient_missing</code></td><td>Recipient is unavailable.</td><td>Planner/chatbot clarifies recipient instead of inventing a person or reporting completion.</td><td class="p0">P0 pending.</td></tr>
+      <tr><td><code>random_seeded</code></td><td>Deterministic pseudo-random failures stress mixed success/failure chains.</td><td>Artifact records profile, failed step, recovery action, and final spoken result.</td><td class="pending">Use after deterministic profiles pass.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="prompts">Deep Fake-Suite Prompts</h2>
+  <p class="note">These are the actual prompts exercised by <code>run_active_questionnaire.py --case-set fake_deep</code>. They deliberately mix inventory, ordered navigation, grouped delivery, absent-target recovery, missing-recipient clarification, maximal location delivery, and multi-turn pronoun handoff.</p>
+  <table>
+    <thead><tr><th>Case id</th><th>Fixture</th><th>Exact prompt</th><th>Expected evidence</th></tr></thead>
+    <tbody>
+      <tr><td><code>fake_deep_baseline_inventory</code></td><td><code>baseline_table</code></td><td>What objects are on the table?</td><td>KB query and grounded context expose the red cup and blue book on the table.</td></tr>
+      <tr><td><code>fake_deep_ordered_walk_report</code></td><td><code>lab_table</code></td><td>Walk to every object on the table and let me know when you get to each one.</td><td>Alternating <code>navigate_to</code> and <code>report_result</code> steps over canonical table objects; one speech event per report stage.</td></tr>
+      <tr><td><code>fake_deep_grouped_work_table_delivery</code></td><td><code>lab_sections</code></td><td>Bring every object from the work table to ALEX and report what happened.</td><td>Planner expands a location group into concrete object ids and uses ALEX as a recipient located in <code>handoff_area</code>.</td></tr>
+      <tr><td><code>fake_deep_missing_object_recovery</code></td><td><code>baseline_table</code></td><td>Find the codex missing cup. If you cannot find it, scan the scene and report what you can confirm.</td><td>Absent target does not become success; stack replans to scan/report or emits a truthful failure.</td></tr>
+      <tr><td><code>fake_deep_missing_recipient_clarification</code></td><td><code>lab_sections</code></td><td>Bring every object from the work table to the person named BLAKE and report what happened.</td><td>Missing recipient triggers clarification, help, or terminal failure without inventing BLAKE.</td></tr>
+      <tr><td><code>fake_deep_iiia_kitchen_delivery</code></td><td><code>iiia_floor</code></td><td>Bring every object from the kitchen to ALEX and report what happened.</td><td>Maximal multi-location fixture expands kitchen objects, preserves recipient, and records fake-skill KB effects.</td></tr>
+      <tr><td><code>fake_deep_gold_apple_multiturn</code></td><td><code>gold_apple_handoff</code></td><td>Can you bring that gold apple to the person named ALEX?</td><td>Pronoun/color relation resolves to the gold apple id and executes delivery to ALEX.</td></tr>
+      <tr><td><code>fake_deep_gold_apple_followup</code></td><td><code>gold_apple_handoff</code></td><td>Where is the gold apple now?</td><td>Follow-up answers from post-skill KB state, not from stale pre-action location.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="cases">Case Ladder</h2>
+  <table>
+    <thead><tr><th>Order</th><th>Case set / command</th><th>Purpose</th><th>Gate</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><code>ros2 launch ... preloaded_environment_ids:=baseline_table</code></td><td>Launch-time semantic scene proof.</td><td>KB query confirms table, cup, and book before first user turn.</td></tr>
+      <tr><td>2</td><td><code>--case-set environment --fake-policy-profile all_success</code></td><td>Basic environment ladder.</td><td>Inventory, grouped delivery, and follow-up pass.</td></tr>
+      <tr><td>3</td><td><code>--case-set fake_deep --fake-policy-profile all_success</code></td><td>Full fake-deep success ladder.</td><td>Ordered walk/report, grouped work-table delivery, maximal IIIA kitchen delivery, and gold-apple follow-up pass.</td></tr>
+      <tr><td>4</td><td><code>--case-set fake_deep --fake-policy-profile fail_once_navigation</code></td><td>Navigation recovery proof.</td><td>Trace shows retry/replan or truthful blocked report. No false success.</td></tr>
+      <tr><td>5</td><td><code>--case-set fake_deep --fake-policy-profile fail_once_pick</code></td><td>Manipulation recovery proof.</td><td>Failed pick does not become a completed bring/place report.</td></tr>
+      <tr><td>6</td><td><code>--case-set fake_deep --fake-policy-profile delivery_blocked</code></td><td>Blocked delivery proof.</td><td>Robot asks for alternative or reports blocked delivery truthfully.</td></tr>
+      <tr><td>7</td><td><code>--case-set fake_deep --fake-policy-profile recipient_missing</code></td><td>Missing human target proof.</td><td>Robot clarifies or fails safely without inventing the recipient.</td></tr>
+      <tr><td>8</td><td><code>--case-set fake_deep --speech-voice-scope shared</code></td><td>Long-context stress.</td><td>Routing, KB use, and report wording do not regress under accumulated dialogue.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="artifacts">Artifact Contract</h2>
+  <table>
+    <thead><tr><th>Artifact</th><th>Required fields</th><th>Pass condition</th></tr></thead>
+    <tbody>
+      <tr><td>Questionnaire JSON</td><td><code>runtime_metadata.fake_policy_profile</code>, <code>environment_fixture_source</code>, case <code>setup_result.environment</code>, per-case logs, and speech/trace samples when enabled.</td><td>The artifact proves which scenario and fake policy were active for every case.</td></tr>
+      <tr><td>KB evidence</td><td><code>/kb/revise</code> result, <code>/kb/query</code> confirmation, and post-action query for effects.</td><td>Post-conditions match the expected object, holder, location, or absence state.</td></tr>
+      <tr><td>Planning evidence</td><td><code>/planner/request</code>, executable plan JSON, <code>/planner/execution_feedback</code>, and replan/failure dialogue act.</td><td>Planner uses canonical ids and either recovers or fails truthfully.</td></tr>
+      <tr><td>Speech evidence</td><td><code>/debug/nao_say/speech</code> or dialogue-manager speech output plus exactly-once trace.</td><td>One semantic event produces one user-facing utterance. No raw planner text or false completion.</td></tr>
+      <tr><td>Operator SVG</td><td>Scene diagram opened from <code>preloaded_environment_viewer.html</code> or <code>preloaded_environment_viewer --open</code>.</td><td>Human reviewer can visually identify the fixture being tested during rqt operation.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Method References</h2>
+  <table>
+    <thead><tr><th>Reference</th><th>What is used here</th></tr></thead>
+    <tbody>
+      <tr><td><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11327003/">Composable and executable scenarios for simulation-based testing of service robots</a></td><td>Scenario descriptions should carry task, operating context, variation conditions, and acceptance criteria that can be executed and audited.</td></tr>
+      <tr><td><a href="https://arxiv.org/html/2605.29973">Replicable Simulation-Based Robot Validation through Provenance</a></td><td>Validation artifacts should preserve the scenario, system-under-test configuration, run evidence, and outcome provenance.</td></tr>
+      <tr><td><a href="https://docs.ros.org/en/foxy/Tutorials/Intermediate/Launch/Creating-Launch-Files.html">ROS 2 launch files</a></td><td>Launch arguments are the correct operator-facing seam for repeatable runtime configuration such as preloaded fixtures.</td></tr>
+    </tbody>
+  </table>
+</main>
+</body>
+</html>
