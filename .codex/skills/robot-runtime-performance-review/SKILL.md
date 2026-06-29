@@ -119,16 +119,46 @@ python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questi
   --out /tmp/nao_environment_questionnaire.json
 ```
 
+For the full-stack runtime score, prefer `--case-set main` plus targeted
+`composite` cases. For the deeper fake-skill/replan score, switch explicitly to
+`--case-set fake_deep`; do not mix it into the basic score unless the base
+dialogue, KB, and simple execution seams already passed in the same runtime
+window.
+
+```bash
+python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
+  --container nao_ros2 \
+  --case-set fake_deep \
+  --speech-voice-scope group \
+  --fake-policy-profile all_success \
+  --out /tmp/nao_fake_deep_success.json
+
+python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
+  --container nao_ros2 \
+  --case-set fake_deep \
+  --speech-voice-scope group \
+  --fake-policy-profile fail_once_navigation \
+  --out /tmp/nao_fake_deep_fail_once_navigation.json
+```
+
 To preload a fixture for any existing case set, add:
 
 ```bash
   --preload-environment kitchen_delivery
 ```
 
-Current fixtures live in
-`.codex/skills/robot-runtime-performance-review/references/preloaded_environments.json`.
-The SVG environment remains a visual operator aid. The scoreable semantic state
-is the KnowledgeCore fact set injected through `/kb/revise`.
+Current fixtures live in `src/nao_chatbot/config/preloaded_environments.json`
+and are mirrored under
+`.codex/skills/robot-runtime-performance-review/references/preloaded_environments.json`
+for skill portability. The SVG environments are visual operator aids. The
+scoreable semantic state is the KnowledgeCore fact set injected through
+`/kb/revise`.
+After rebuilding `nao_chatbot`, the operator-facing SVG selector is installed at
+`/home/ubuntu/ws/install/share/nao_chatbot/config/preloaded_environment_viewer.html`
+inside the container. Open it as a file URL when rqt is already running and the
+operator needs to choose the semantic scene being validated. The helper command
+`preloaded_environment_viewer` prints the file URL, and
+`preloaded_environment_viewer --open` asks the container desktop to open it.
 
 For the intent-first route-lock ablation, use the same launch profile but replace
 the turn pipeline argument with `chatbot_turn_pipeline_mode:=intent_first`, then
@@ -350,6 +380,9 @@ Compare live behavior with the TFM validation plan:
 
 Use fake-skill validation when perception noise is not the target of the test.
 Use full user-turn validation when chatbot routing or grounding is the target.
+Use `--case-set fake_deep` when the target is failure-induced replanning,
+multi-turn fake manipulation, location-scoped delivery, or post-skill KB
+effects over named preloaded fixtures.
 
 ### 6. E2E Operational Questionnaire
 
@@ -410,6 +443,14 @@ skills when the target is deterministic execution, replanning, or failure policy
    - Expected: successful steps are not repeated unnecessarily, failed steps are
      reported with structured feedback, user clarification is routed through
      chatbot wording, and exactly one semantic speech event is emitted per stage.
+7. Deep fake-skill and replan suite:
+   - Run `--case-set fake_deep` over `baseline_table`, `lab_sections`,
+     `kitchen_delivery`, `gold_apple_handoff`, and `iiia_floor`.
+   - Run at least `all_success`, `fail_once_navigation`,
+     `fail_once_pick`, `delivery_blocked`, and `recipient_missing`.
+   - Expected: preloaded RDF facts are confirmed before the first turn,
+     failed steps either replan, clarify, or fail truthfully, and successful fake
+     post-effects are visible through `/kb/query` and later chatbot answers.
 
 Questionnaire scoring:
 

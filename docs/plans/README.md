@@ -8,9 +8,11 @@ Historical handoffs and superseded plans live under `docs/artifacts/plan_archive
 - `nao_ros4hri_masterplan.md` (+ `.html`)
   Canonical integration tracker for planner, chatbot, orchestrator, grounding,
   fake-skill validation, registry alignment, and remaining thesis seams.
-- `ISSUES_BEFORE_17-06-26.html`
+- `ISSUE_TRACKER_FULL_SUITE.html`
   Detailed readiness tracker and provenance log for runtime validation.
-- `FINAL_RUNTIME_REVIEW_17-06-26.html`
+- `ISSUE_TRACKER_FAKE_SUITE.html`
+  Deep fake-skill, preloaded-environment, and replan validation tracker.
+- `FINAL_RUNTIME_REVIEW.html`
   Condensed supervisor-facing runtime review.
 - `IRR_Implementation.html`
   Intent-route-response ablation design and implementation tracker.

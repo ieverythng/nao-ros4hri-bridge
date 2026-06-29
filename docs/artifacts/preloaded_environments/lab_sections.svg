@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="680" viewBox="0 0 1100 680" role="img" aria-labelledby="title desc">
+  <title id="title">Lab sections preloaded environment</title>
+  <desc id="desc">A semantic lab fixture with robot station, desk area, work table, objects, and the person ALEX.</desc>
+  <style>
+    .shell{fill:#f7f8fb;stroke:#4d5c68;stroke-width:3}
+    .zone{fill:#e7eff7;stroke:#255d83;stroke-width:2}
+    .handoff{fill:#fff4df;stroke:#9a6b22;stroke-width:2}
+    .desk{fill:#c9b18a;stroke:#6c5630;stroke-width:3}
+    .table{fill:#d8c69f;stroke:#6c5630;stroke-width:3}
+    .robot{fill:#7cc5d8;stroke:#1b6170;stroke-width:3}
+    .person{fill:#efb35b;stroke:#8a5410;stroke-width:3}
+    .item{stroke:#23313f;stroke-width:3}
+    .computer{fill:#333b45}
+    .keyboard{fill:#f2f2f2}
+    .cup{fill:#cf4a43}
+    .book{fill:#4e9a55}
+    .phone{fill:#9aa4ad}
+    text{font-family:Arial,sans-serif;font-size:22px;fill:#20242b}
+    .small{font-size:17px;fill:#47515c}
+  </style>
+  <rect class="shell" x="30" y="30" width="1040" height="620" rx="14"/>
+  <text x="70" y="75">codex_lab_room (lab)</text>
+  <rect class="zone" x="70" y="105" width="250" height="190" rx="10"/>
+  <text x="105" y="145">robot_station</text>
+  <circle class="robot" cx="195" cy="220" r="34"/>
+  <text class="small" x="152" y="275">myself / NAO</text>
+  <rect class="zone" x="395" y="105" width="285" height="220" rx="10"/>
+  <text x="470" y="145">desk area</text>
+  <rect class="desk" x="445" y="175" width="185" height="90" rx="8"/>
+  <rect class="item computer" x="475" y="190" width="62" height="46" rx="4"/>
+  <rect class="item keyboard" x="550" y="215" width="58" height="24" rx="3"/>
+  <text class="small" x="445" y="300">LAB_COMPUTER, LAB_KEYBOARD</text>
+  <rect class="zone" x="735" y="105" width="285" height="260" rx="10"/>
+  <text x="805" y="145">work_table</text>
+  <rect class="table" x="785" y="185" width="185" height="115" rx="8"/>
+  <circle class="item cup" cx="828" cy="238" r="25"/>
+  <rect class="item book" x="875" y="217" width="50" height="38" rx="4"/>
+  <rect class="item phone" x="838" y="268" width="66" height="22" rx="5"/>
+  <text class="small" x="755" y="335">LAB_CUP, LAB_MANUAL, LAB_PHONE</text>
+  <rect class="handoff" x="150" y="405" width="230" height="150" rx="10"/>
+  <text x="196" y="438">handoff_area</text>
+  <circle class="person" cx="265" cy="485" r="38"/>
+  <text x="232" y="548">ALEX</text>
+  <text class="small" x="178" y="590">ALEX oro:isIn handoff_area</text>
+  <line x1="320" y1="220" x2="395" y2="215" stroke="#7b8794" stroke-width="3" stroke-dasharray="8 8"/>
+  <line x1="680" y1="230" x2="735" y2="235" stroke="#7b8794" stroke-width="3" stroke-dasharray="8 8"/>
+  <text class="small" x="445" y="590">Fixture purpose: relation-heavy KB query, grouped table delivery, person handoff.</text>
+</svg>
