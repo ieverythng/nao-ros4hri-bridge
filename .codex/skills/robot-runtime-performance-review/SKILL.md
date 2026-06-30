@@ -39,6 +39,44 @@ Borrow the SQL review skill's posture:
 - Suggest fixes with exact file/param/topic references.
 - Do not pad findings. If the evidence is inconclusive, say what probe is missing.
 
+## Clean Rebuild And Relaunch
+
+When source changed before a scored review, rebuild an overlay image from the
+current `iiia:nao` base, stop the old stack, and start one fresh container named
+`nao_ros2`. Do not build an overlay with the same tag as `BASE_IMAGE`; the
+repository script refuses that recursive layering shape.
+
+```bash
+BASE_IMAGE=iiia:nao ./scripts/build_docker.sh overlay iiia:nao-critic
+
+docker rm -f nao_ros2 2>/dev/null || true
+xhost +local:root
+docker run --rm -it \
+  --name nao_ros2 \
+  --network host \
+  --ipc host \
+  --device /dev/video0 \
+  -e DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  iiia:nao-critic
+```
+
+Inside the container, use the Fast Start launch command below. After launch,
+verify the fresh runtime before scoring:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source /home/ubuntu/ws/install/setup.bash
+ros2 node list | grep -E 'chatbot_llm|dialogue_manager|planner_llm|nao_orchestrator'
+ros2 lifecycle get /dialogue_manager
+ros2 param get /chatbot_llm turn_pipeline_mode
+ros2 param get /interaction_trace_viewer mirror_trace_lines_to_rosout
+```
+
+If `/dev/video0` is unavailable or object detection is intentionally disabled,
+omit the device flag. Treat a failed lifecycle transition or duplicate launch
+process as a preflight failure, not as runtime questionnaire evidence.
+
 ## Fast Start
 
 For a scored cool-profile runtime review, use the operator launch profile below
@@ -157,8 +195,9 @@ After rebuilding `nao_chatbot`, the operator-facing SVG selector is installed at
 `/home/ubuntu/ws/install/share/nao_chatbot/config/preloaded_environment_viewer.html`
 inside the container. Open it as a file URL when rqt is already running and the
 operator needs to choose the semantic scene being validated. The helper command
-`preloaded_environment_viewer` prints the file URL, and
-`preloaded_environment_viewer --open` asks the container desktop to open it.
+`ros2 run nao_chatbot preloaded_environment_viewer` prints the file URL, and
+`ros2 run nao_chatbot preloaded_environment_viewer --open` asks the container
+desktop to open it.
 
 For the intent-first route-lock ablation, use the same launch profile but replace
 the turn pipeline argument with `chatbot_turn_pipeline_mode:=intent_first`, then
@@ -247,6 +286,42 @@ Active questionnaire requirement:
   debug surfaces such as `/rosout` with a `runtime_review_rqt_input` logger and
   `/dialogue_manager/closed_captions`. Treat these mirrors as display aids only;
   the scored ingress remains the `LiveSpeech` publication into `dialogue_manager`.
+- If the interaction trace viewer is not visible, check it from inside the
+  container before assuming the package is missing. The expected executable is
+  `interaction_trace_viewer trace_node` after sourcing the installed workspace:
+
+```bash
+docker exec -it nao_ros2 bash -lc '
+source /opt/ros/jazzy/setup.bash
+source /home/ubuntu/ws/install/setup.bash
+ros2 pkg executables interaction_trace_viewer
+ros2 node list | grep interaction_trace_viewer || true
+ros2 param get /interaction_trace_viewer mirror_trace_lines_to_rosout || true
+'
+```
+
+  To run an additional debug trace node without colliding with the launched
+  node, use a distinct node name and keep the `TRACE_EVENT` rosout mirror on:
+
+```bash
+docker exec -it nao_ros2 bash -lc '
+source /opt/ros/jazzy/setup.bash
+source /home/ubuntu/ws/install/setup.bash
+ros2 run interaction_trace_viewer trace_node --ros-args \
+  -r __node:=interaction_trace_viewer_debug \
+  -p compact_mode:=false \
+  -p include_raw_payloads:=false \
+  -p enable_scene_summary_channel:=false \
+  -p mirror_trace_lines_to_rosout:=true \
+  -p rosout_min_level:=warn \
+  -p rosout_node_allowlist_csv:="chatbot_llm,planner_llm,nao_orchestrator,scan_skill_server,report_result_skill_server,fake_skill_server,dialogue_manager,nao_say_skill,head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug" \
+  -p include_event_types_csv:="planner_request,planner_output,execution_feedback,planner_dialogue_act,chatbot_turn_trace"
+'
+```
+
+  In rqt Console, filter for `TRACE_EVENT`. Do not run this command on the host
+  without `docker exec`; a host shell may not know the container workspace
+  package even when the live stack is healthy.
 - Use direct `/planner/request` publication only for planner-isolated probes.
   Mark those probes as planner-only, because they bypass chatbot routing.
 - Use service/direct-action architecture sweeps when speech ingress or

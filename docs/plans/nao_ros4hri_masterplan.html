@@ -194,8 +194,9 @@
   <main class="doc">
 
 <h1>NAO ROS4HRI Masterplan (Consolidated, Active)</h1>
-<p><strong>Date:</strong> 2026-06-23 (runtime recovery refresh)</p>
-<p><strong>Branch context:</strong> <code>feat/TFM-LLM_planner</code> (+ nested repos and Neural-Wokbench integration seam)</p>
+<p><strong>Date:</strong> 2026-06-30 (CRITIC runtime hardening refresh)</p>
+<p><strong>Branch context:</strong> <code>refactor/deslop_repo</code> with nested <code>chatbot_llm</code></p>
+<p><code>feat/planner_llm_hooks</code> and Neural-Wokbench integration seams</p>
 <p><strong>Scope:</strong> Single active execution plan for planner/chatbot/orchestrator seams,</p>
 <p>grounded-context reliability, canonical registry alignment, fake-skill</p>
 <p>operational hardening, LocateAnything migration, and validation reporting.</p>
@@ -221,13 +222,19 @@
 <li><code>docs/contracts.md</code></li>
 <li><code>docs/current_workflow.md</code></li>
 <li><code>docs/launch_profiles.md</code></li>
-<li><code>docs/planner_status.md</code></li>
 <li><code>docs/architecture/ab_registry_input.json</code></li>
 <li><code>docs/architecture/ros4hri_neural_workbench_interactive_architecture.html</code></li>
 <li><code>docs/architecture/demo_stack_seam_contract_2026-05-26.md</code> (+ <code>.html</code>)</li>
 <li><code>docs/architecture/fake_skills_scenarios_playbook.md</code> (+ <code>.html</code>)</li>
 <li><code>docs/plans/</code> (this master plan + active runtime/showing plans)</li>
+<li><code>docs/plans/CRITIC_RUNTIME_HARDENING_2026-06-30.md</code> (+ <code>.html</code>) for the</li>
 </ul>
+<p>current fake-deep/replan hardening pass</p>
+<ul>
+<li><code>docs/plans/CHATBOT_LLM_REFACTOR_REPORT.md</code> (+ <code>.html</code>) for the separate</li>
+</ul>
+<p>chatbot modularity/refactor track. This is a sibling track, not a replacement</p>
+<p>for the CRITIC runtime validation plan.</p>
 <p>Everything else should be archived under <code>docs/artifacts/</code> unless it is actively used in runtime operations.</p>
 <h2>3. Current Execution Status</h2>
 <h3>A. Planner-Orchestrator Runtime Path</h3>
@@ -242,9 +249,33 @@
 <li><strong>Done</strong>: planner dialogue acts run in direct mode by default, while completion wording stays chatbot-relay-owned when a chatbot client is available.</li>
 <li><strong>Done</strong>: planner grounding contracts now use Hybrid Minimal T0 (<code>knowledge_snapshot</code>, <code>scene_summary</code>, <code>state_t0</code>) with world-model seams removed.</li>
 <li><strong>Done (2026-06-23)</strong>: seam contract hardening conclusions are folded into the active source and this masterplan. The dated seam contract plan is archived under <code>docs/artifacts/plan_archive/2026-06-23/</code>.</li>
-<li><strong>Done (2026-06-23 source gate)</strong>: compact grounded context now derives a <code>locations</code> view from <code>oro:isIn</code>, <code>oro:isAt</code>, <code>oro:isOn</code>, and <code>oro:contains</code>, while preserving the existing <code>entities</code> contract.</li>
+<li><strong>Done (2026-06-30 source gate)</strong>: compact grounded context uses the</li>
+</ul>
+<p><code>grounded_context_v3</code> shape described in <code>docs/contracts.md</code>: <code>entities</code></p>
+<p>remains the subject inventory, while <code>locations</code> is a derived grouping view</p>
+<p>with role separation for support groups, navigation/place targets, and</p>
+<p>recipients.</p>
+<ul>
+<li><strong>Done (2026-06-30 source gate)</strong>: user-facing object lists now filter</li>
+</ul>
+<p>ontology/meta classes, rooms, places, support surfaces, tables, and people</p>
+<p>from deliverable object members unless the user explicitly asks about those</p>
+<p>categories.</p>
+<ul>
+<li><strong>Done (2026-06-30 source gate)</strong>: chatbot admission now blocks execution</li>
+</ul>
+<p>handoff when a request names a human recipient or target that is absent from</p>
+<p>current grounded context. The expected behavior is clarification, not a</p>
+<p>planner request against the wrong person.</p>
+<ul>
 <li><strong>Done (2026-06-23 source gate)</strong>: planner has a late, bounded fallback for grounded “bring every object from location X to recipient Y” requests when model output remains invalid after one repair attempt.</li>
 <li><strong>Done (2026-06-23 source gate)</strong>: successful skill result payloads can apply structured <code>evidence.kb_effects</code> through the orchestrator’s existing <code>/kb/revise</code> boundary. This starts with fake manipulation skills and is reusable by real skills that emit the same payload shape.</li>
+<li><strong>Done (2026-06-30 source gate)</strong>: execution feedback now includes</li>
+</ul>
+<p><code>plan_outcome_summary</code> so report-result wording, failure review, and replan</p>
+<p>analysis can distinguish completed, failed, and pending targets without</p>
+<p>parsing free text.</p>
+<ul>
 <li><strong>Done</strong>: structured <code>chatbot_turn_trace</code> visibility is available for dialogue vs planner-handoff attribution.</li>
 <li><strong>Done (2026-05-26)</strong>: planner-mode routing now guards visibility-only scene questions toward <code>knowledge_query</code> unless the user explicitly requests a new scan/action.</li>
 <li><strong>In progress</strong>: proactive wording + speech arbitration pass to avoid duplicate user-facing utterances when execution acknowledgements and planner dialogue completions occur in the same interaction.</li>
@@ -276,7 +307,19 @@
 <ul>
 <li><strong>Done (source)</strong>: compact grounded context now exposes location groups without</li>
 </ul>
-<p>replacing <code>entities</code>, so existing consumers remain compatible.</p>
+<p>replacing <code>entities</code>, so existing consumers remain compatible. The front-facing</p>
+<p>contract is <code>grounded_context_v3</code> in <code>docs/contracts.md</code>.</p>
+<ul>
+<li><strong>Done (source)</strong>: location membership now keeps deliverable objects separate</li>
+</ul>
+<p>from supports and places. This directly addresses fake-deep regressions where</p>
+<p>“spatial thing localized” or a table could leak into the user-facing object</p>
+<p>set.</p>
+<ul>
+<li><strong>Done (source)</strong>: named-recipient admission checks are now covered in</li>
+</ul>
+<p><code>chatbot_llm</code> tests. If the user asks for BLAKE while only ALEX is grounded,</p>
+<p>the stack must clarify before planner handoff.</p>
 <ul>
 <li><strong>In progress</strong>: location-aware execution validation for prompts such as</li>
 </ul>
@@ -311,6 +354,11 @@
 <li><code>robot-runtime-performance-review --case-set environment</code> proves the same</li>
 </ul>
 <p>scene can be preloaded deterministically before speech or service turns.</p>
+<ul>
+<li><code>robot-runtime-performance-review --case-set fake_deep</code> proves all-success,</li>
+</ul>
+<p>fail-once navigation, delivery-blocked, and recipient-missing profiles after a</p>
+<p>clean rebuild.</p>
 <ul>
 <li>Fake and real skill payloads use the same <code>kb_effects</code> shape for successful</li>
 </ul>
@@ -405,7 +453,10 @@
 </tbody></table>
 <p><strong>Prompt-hardening references used</strong></p>
 <ul>
-<li><code>docs/planner_status.md</code> (known weak spot: occasional execution over-routing)</li>
+<li>this masterplan and <code>docs/plans/ISSUE_TRACKER_FULL_SUITE.html</code></li>
+</ul>
+<p>(known weak spot: occasional execution over-routing)</p>
+<ul>
 <li><code>docs/architecture/demo_stack_seam_contract_2026-05-26.md</code> (ownership + duplicate-speech guardrails)</li>
 <li><code>docs/launch_profiles.md</code> (planner/dialogue wording mode and planner ingress args)</li>
 <li><code>src/chatbot_llm/test/test_turn_engine.py</code> (greeting/KB/execution route expectations)</li>
@@ -475,8 +526,17 @@
 <h2>6. Backlog (Prioritized, Cross-Track)</h2>
 <ol>
 <li><strong>P0</strong> Complete speech-ownership arbitration so each turn has one user-facing utterance authority (no duplicate execution-ack + planner-dialogue speech).</li>
-<li><strong>P0</strong> Live-prove preloaded environment fixtures, grouped-location delivery, and post-skill KB effects in the rebuilt response-first stack.</li>
-<li><strong>P0</strong> Resolve planner request-admission/backpressure seam after <code>waiting_user</code> transitions; ensure subsequent <code>new_goal</code> requests are deterministically handled (accepted/superseded/rejected with explicit reason).</li>
+<li><strong>P0</strong> Live-prove preloaded environment fixtures, grouped-location delivery,</li>
+</ol>
+<p>post-skill KB effects, and recipient-missing clarification in the rebuilt</p>
+<p>response-first stack.</p>
+<ol>
+<li><strong>P0</strong> Resolve planner request-admission/backpressure seam after terminal</li>
+</ol>
+<p>dialogue acts and <code>waiting_user</code> transitions; ensure subsequent <code>new_goal</code></p>
+<p>requests are deterministically handled with accepted, superseded, or rejected</p>
+<p>status plus explicit reason.</p>
+<ol>
 <li><strong>P1</strong> Continue AB decomposition schema expansion and tests (AB=2+ lineage coverage).</li>
 <li><strong>P1</strong> Begin LocateAnything migration through the grounding adapter layer.</li>
 <li><strong>P1</strong> Begin dashboard backend skeleton (<code>nao_dashboard</code>).</li>
@@ -543,6 +603,12 @@
 <li>Verify post-skill KB effects: query before and after pick/place/bring and</li>
 </ol>
 <p>confirm old support facts are removed and new hold/location facts appear.</p>
+<ol>
+<li>Run <code>run_active_questionnaire.py --case-set fake_deep</code> with</li>
+</ol>
+<p><code>all_success</code>, <code>fail_once_navigation</code>, <code>delivery_blocked</code>, and</p>
+<p><code>recipient_missing</code> policies. Compare against</p>
+<p><code>docs/plans/CRITIC_RUNTIME_HARDENING_2026-06-30.md</code>.</p>
 <ol>
 <li>Verify live stack endpoints remain healthy (<code>scan</code>, <code>report_result</code>, <code>say</code>,</li>
 </ol>

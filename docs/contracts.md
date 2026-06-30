@@ -1,6 +1,6 @@
 # Runtime Contracts
 
-Last updated: 2026-05-26
+Last updated: 2026-06-30
 
 This document is the richer reference for the JSON payloads that move task,
 scene, and execution state between nodes. The root README contains compact
@@ -44,6 +44,124 @@ visibility-only scene checks default to knowledge_query unless explicit scan/act
 
 ---
 
+## Grounded Context
+
+Owner:
+
+- `chatbot_llm` builds the compact planner-facing projection.
+- `planner_common` validates and normalizes the contract shape.
+- `nao_scene_grounding` and `kb_skills` remain the owners of detector and
+  KnowledgeCore facts.
+
+Purpose:
+
+- provide a bounded symbolic view for chatbot routing, planner prompts, and
+  deterministic validation.
+- preserve people, deliverable objects, support surfaces, rooms, and navigation
+  targets as different roles.
+- keep raw RDF and detector details available at their owning seams instead of
+  exposing ontology helper classes as user-facing objects.
+
+Current compact shape:
+
+```json
+{
+  "schema_version": "grounded_context_v3",
+  "captured_at_sec": 1782840000.0,
+  "observer": "myself",
+  "entities": [
+    {
+      "id": "codex_kitchen_cup",
+      "label": "red cup",
+      "kind": "object",
+      "class": "Cup",
+      "visible": true,
+      "relations": [
+        {"predicate": "dbp:name", "object": "TITAS"},
+        {"predicate": "dbp:color", "object": "red"},
+        {"predicate": "oro:isIn", "object": "codex_kitchen"}
+      ]
+    },
+    {
+      "id": "codex_recipient_person",
+      "label": "ALEX",
+      "kind": "person",
+      "class": "Human",
+      "visible": true,
+      "relations": [
+        {"predicate": "dbp:name", "object": "ALEX"},
+        {"predicate": "oro:isIn", "object": "handoff_area"}
+      ]
+    }
+  ],
+  "locations": [
+    {
+      "id": "codex_kitchen",
+      "label": "kitchen",
+      "kind": "location_group",
+      "role": "navigation_target",
+      "member_count": 2,
+      "object_count": 2,
+      "person_count": 0,
+      "contains": [
+        {
+          "id": "codex_kitchen_cup",
+          "label": "red cup",
+          "kind": "object",
+          "class": "Cup",
+          "relation": "oro:isIn"
+        },
+        {
+          "id": "codex_kitchen_book",
+          "label": "blue book",
+          "kind": "object",
+          "class": "Book",
+          "relation": "oro:isIn"
+        }
+      ]
+    }
+  ],
+  "counts": {"entities": 2, "people": 1, "objects": 1, "locations": 1}
+}
+```
+
+Role policy:
+
+- `entities` is the stable subject inventory. Each entity keeps its type,
+  label, visibility flag, and bounded relations.
+- `locations` is a derived compact view. It groups members by support or place
+  relation, but it does not replace `entities`.
+- Support surfaces such as tables, desks, counters, and shelves may form
+  `support_group` entries. Rooms, kitchens, corridors, labs, and robot stations
+  may form `navigation_target` or `location_group` entries.
+- People remain `person` entities and recipients. A person is not treated as a
+  location, even if a pose or room relation is available.
+- User-facing object lists filter ontology and support/meta entries. Do not
+  expose `owl:Thing`, `cyc:SpatialThing*`, `Location`, `Place`, support
+  surfaces, rooms, or tables as deliverable objects unless the user explicitly
+  asks about those categories.
+- Relation aliases such as `isContainedIn`, `placeOf`, and `isAt` are normalized
+  into the compact predicates used by the planner view.
+
+Admission policy:
+
+- Execution requests that name a human recipient or target must be checked
+  against the current grounded context before planner handoff.
+- If the request names a person that is not present in `entities`, chatbot
+  routing must ask for clarification instead of handing an executable request to
+  the planner.
+- Stale or absent facts should produce a truthful clarification, help request,
+  replan, or failure. They must not be hidden behind generic object names.
+
+Implementation references:
+
+- source projection and filtering: `src/planner_common/planner_common/contracts.py`
+- chatbot digest projection: `src/chatbot_llm/chatbot_llm/knowledge_snapshot.py`
+- planner admission and fallback behavior:
+  `src/planner_llm/planner_llm/planner_engine.py`
+- runtime evidence plan:
+  `docs/plans/CRITIC_RUNTIME_HARDENING_2026-06-30.md`
+
 ## Planner Request
 
 Topic:
@@ -81,71 +199,40 @@ Preferred payload:
   "dialogue_context": [],
   "requested_plan": [],
   "grounded_context": {
-    "knowledge_snapshot": {
-      "schema_version": "knowledge_snapshot_v2",
-      "captured_at_sec": 1777040000.0,
-      "references": [
-        {"normalized_name": "kitchen", "id": "kitchen_1", "type": "Location"},
-        {"normalized_name": "person", "id": "person_1", "type": "Person"}
-      ],
-      "counts": {"entities": 2, "people": 1, "objects": 1}
-    },
-    "scene_summary": {
-      "schema_version": "scene_summary_v2",
-      "observer": "myself",
-      "backend": "emorobcare_cv",
-      "captured_at_sec": 1777040000.0,
-      "objects": [
-        {
-          "entity_id": "kitchen_1",
-          "label": "kitchen",
-          "kb_class": "Location",
-          "score": 1.0,
-          "tracker_id": "",
-          "source": "emorobcare_cv",
-          "center_x": 0.0,
-          "center_y": 0.0,
-          "last_seen_sec": 1777040000.0
-        }
-      ],
-      "people": [
-        {
-          "id": "person_1",
-          "label": "person",
-          "type": "Person",
-          "source": "emorobcare_cv",
-          "score": 0.9,
-          "center_x": 183.0,
-          "center_y": 219.0,
-          "last_seen_sec": 1777040000.0
-        }
-      ]
-    },
-    "state_t0": {
-      "schema_version": "state_t0_v2",
-      "observer": "myself",
-      "backend": "emorobcare_cv",
-      "captured_at_sec": 1777040000.0,
-      "entity_counts": {"entities": 2, "people": 1, "objects": 1},
-      "entities": [
-        {
-          "normalized_name": "kitchen",
-          "id": "kitchen_1",
-          "type": "Location",
-          "kind": "object",
-          "source": "emorobcare_cv",
-          "last_seen_sec": 1777040000.0
-        },
-        {
-          "normalized_name": "person",
-          "id": "person_1",
-          "type": "Person",
-          "kind": "person",
-          "source": "emorobcare_cv",
-          "last_seen_sec": 1777040000.0
-        }
-      ]
-    }
+    "schema_version": "grounded_context_v3",
+    "entities": [
+      {
+        "id": "codex_kitchen",
+        "label": "kitchen",
+        "kind": "location",
+        "class": "Room",
+        "visible": true
+      },
+      {
+        "id": "codex_recipient_person",
+        "label": "ALEX",
+        "kind": "person",
+        "class": "Human",
+        "visible": true,
+        "relations": [{"predicate": "dbp:name", "object": "ALEX"}]
+      }
+    ],
+    "locations": [
+      {
+        "id": "codex_kitchen",
+        "label": "kitchen",
+        "role": "navigation_target",
+        "contains": [
+          {
+            "id": "codex_kitchen_cup",
+            "label": "red cup",
+            "kind": "object",
+            "class": "Cup",
+            "relation": "oro:isIn"
+          }
+        ]
+      }
+    ]
   },
   "planner_mode": "default",
   "interaction_mode": "speech",
@@ -303,6 +390,15 @@ Topic:
     "summary_text": "I found one person (id: anonymous_person_daeba).",
     "confidence_policy": "grounded_current_observation"
   },
+  "plan_outcome_summary": {
+    "completed_targets": ["anonymous_person_daeba"],
+    "failed_targets": [],
+    "pending_targets": [],
+    "last_successful_step_id": "step_1",
+    "terminal_step_id": "step_1",
+    "terminal_reason": "completed",
+    "all_required_steps_succeeded": true
+  },
   "step": {
     "id": "step_1",
     "type": "skill",
@@ -316,6 +412,10 @@ Topic:
 
 `result_summary` remains the backward-compatible short text mirror.
 `result_payload` carries the typed skill result (for scan/person evidence).
+`plan_outcome_summary` is structured executor evidence, not user-facing prose.
+It lets planner supervision and report-result wording distinguish completed,
+failed, and pending targets without asking any node to infer that state from a
+free-text summary.
 
 Important event types:
 

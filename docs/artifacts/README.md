@@ -14,9 +14,10 @@ sources of truth.
 - `../contracts.md`
 - `../current_workflow.md`
 - `../launch_profiles.md`
-- `../planner_status.md`
 - `../plans/nao_ros4hri_masterplan.md`
-- `../plans/fake_skills_codex_handoff.md`
+- `../plans/ISSUE_TRACKER_FULL_SUITE.html`
+- `../plans/ISSUE_TRACKER_FAKE_SUITE.html`
+- `../plans/FINAL_RUNTIME_REVIEW.html`
 
 When a historical artifact still contains required current behavior, copy the
 relevant part into an active doc and keep the artifact as provenance.

@@ -16,6 +16,10 @@ Historical handoffs and superseded plans live under `docs/artifacts/plan_archive
   Condensed supervisor-facing runtime review.
 - `IRR_Implementation.html`
   Intent-route-response ablation design and implementation tracker.
+- `CRITIC_RUNTIME_HARDENING_2026-06-30.md` (+ `.html`)
+  Source hardening handoff for active-goal lifecycle, deep fake/replan
+  validation, stale-world guards, user-facing grounding filters, and runtime
+  questionnaire evidence.
 - `locate-anything-3b-impl-report.html` and
   `locateanything-nao-integration (1).md`
   LocateAnything migration references.

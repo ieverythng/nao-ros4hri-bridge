@@ -7,7 +7,8 @@ This top-level docs surface is intentionally small and operational.
 - `contracts.md` — runtime payload contracts.
 - `current_workflow.md` — canonical ownership and runtime flow.
 - `launch_profiles.md` — launch matrix, arguments, operator runbooks.
-- `planner_status.md` — planner execution status, known gaps, next checks.
+- `plans/nao_ros4hri_masterplan.md` — planner execution status, known gaps,
+  and next checks.
 
 ## Architecture
 
@@ -20,9 +21,16 @@ This top-level docs surface is intentionally small and operational.
 ## Plans
 
 - `plans/nao_ros4hri_masterplan.md` (+ HTML) — canonical integration tracker.
-- `plans/ISSUES_BEFORE_17-06-26.html` — detailed runtime-readiness tracker.
-- `plans/FINAL_RUNTIME_REVIEW_17-06-26.html` — supervisor-facing runtime review.
+- `plans/ISSUE_TRACKER_FULL_SUITE.html` — detailed runtime-readiness tracker.
+- `plans/ISSUE_TRACKER_FAKE_SUITE.html` — deep fake-skill, preloaded
+  environment, and replan validation tracker.
+- `plans/FINAL_RUNTIME_REVIEW.html` — supervisor-facing runtime review.
 - `plans/IRR_Implementation.html` — intent-route-response ablation tracker.
+- `plans/CRITIC_RUNTIME_HARDENING_2026-06-30.md` (+ HTML) — current
+  source-hardening and live-proof handoff for the CRITIC pass.
+- `plans/CHATBOT_LLM_REFACTOR_REPORT.md` (+ HTML) — separate chatbot
+  modularity/refactor plan. Treat it as a sibling plan until its changes are
+  validated and folded into the masterplan.
 - `plans/locate-anything-3b-impl-report.html` and
   `plans/locateanything-nao-integration (1).md` — LocateAnything migration references.
 - `plans/semi_symbolic_requirements_handoff_2026-06-11.md` (+ HTML) — semi-symbolic KB requirements.

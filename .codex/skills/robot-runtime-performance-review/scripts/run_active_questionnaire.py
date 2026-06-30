@@ -61,6 +61,15 @@ class KbInjection:
 
 
 @dataclass(frozen=True)
+class KbAbsenceGuard:
+    """Preflight query that must return no rows for a case to be isolated."""
+
+    name: str
+    query_patterns: tuple[str, ...]
+    query_vars: tuple[str, ...] = ("?predicate", "?object")
+
+
+@dataclass(frozen=True)
 class ProbeCase:
     name: str
     category: str
@@ -70,6 +79,7 @@ class ProbeCase:
     setup: KbInjection | None = None
     conversation_group: str | None = None
     environment_ids: tuple[str, ...] = ()
+    absence_guards: tuple[KbAbsenceGuard, ...] = ()
 
 
 SMOKE_CASES = (
@@ -931,6 +941,12 @@ FAKE_DEEP_CASES = (
         180.0,
         environment_ids=("baseline_table",),
         conversation_group="fake_deep_absent_target",
+        absence_guards=(
+            KbAbsenceGuard(
+                "missing_cup_subject_absent",
+                ("codex_missing_cup ?predicate ?object",),
+            ),
+        ),
     ),
     ProbeCase(
         "fake_deep_missing_recipient_clarification",
@@ -939,6 +955,17 @@ FAKE_DEEP_CASES = (
         150.0,
         environment_ids=("lab_sections",),
         conversation_group="fake_deep_missing_recipient",
+        absence_guards=(
+            KbAbsenceGuard(
+                "blake_subject_absent",
+                ("codex_lab_blake ?predicate ?object",),
+            ),
+            KbAbsenceGuard(
+                "blake_named_person_absent",
+                ("?subject dbp:name BLAKE",),
+                ("?subject",),
+            ),
+        ),
     ),
     ProbeCase(
         "fake_deep_iiia_kitchen_delivery",
@@ -1031,6 +1058,16 @@ def main() -> int:
     parser.add_argument("--out", default="/tmp/nao_active_questionnaire.json")
     parser.add_argument("--since-sec", type=int, default=90)
     parser.add_argument("--global-timeout-sec", type=int, default=DEFAULT_GLOBAL_TIMEOUT_SEC)
+    parser.add_argument(
+        "--max-case-wait-sec",
+        type=float,
+        default=0.0,
+        help=(
+            "Optional cap for per-case post-turn waits. Leave at 0 for the "
+            "formal questionnaire waits; set during interactive deep-fake "
+            "debugging to avoid waiting several minutes after evidence already arrived."
+        ),
+    )
     parser.add_argument(
         "--kb-lifespan-sec",
         type=int,
@@ -1185,6 +1222,48 @@ def main() -> int:
                 case.setup,
                 lifespan_sec=args.kb_lifespan_sec,
             )
+        stale_world_guard = run_absence_guards(args.container, case.absence_guards)
+        if stale_world_guard.get("contaminated"):
+            result_entry = {
+                "name": case.name,
+                "category": case.category,
+                "text": case.text,
+                "voice_id": "",
+                "mode": args.mode or case.mode,
+                "setup_result": setup_result or None,
+                "stale_world_guard": stale_world_guard,
+                "turn_result": (
+                    "skipped: stale KnowledgeCore facts matched an absent-target "
+                    "preflight guard; relaunch or clear the fixture namespace"
+                ),
+                "started_at_unix_sec": case_start,
+                "wait_sec": 0.0,
+                "configured_wait_sec": case.wait_sec,
+                "injection_scope": injection_scope(args.mode or case.mode),
+                "topic_samples": {},
+                "log_excerpt": "",
+                "phase_observations": {
+                    "turn_injected": False,
+                    "route_observed": False,
+                    "planner_request_observed": False,
+                    "execution_feedback_observed": False,
+                    "speech_observed": False,
+                    "observability_note": (
+                        "case skipped before turn injection because fixture "
+                        "isolation was contaminated"
+                    ),
+                },
+            }
+            results.append(result_entry)
+            write_payload(
+                args.out,
+                args.container,
+                args.case_set,
+                started_at,
+                results,
+                runtime_metadata=runtime_metadata,
+            )
+            continue
 
         mode = args.mode or case.mode
         conversation_group = case.conversation_group or case.name or f"case_{index}"
@@ -1215,22 +1294,51 @@ def main() -> int:
             response_text = extract_service_response(turn_result)
             if response_text:
                 history.append({"speaker": "__assistant__", "text": response_text})
-        time.sleep(max(0.0, case.wait_sec))
-        results.append(
-            {
-                "name": case.name,
-                "category": case.category,
-                "text": case.text,
-                "voice_id": voice_id,
-                "mode": mode,
-                "setup_result": setup_result or None,
-                "turn_result": turn_result,
-                "started_at_unix_sec": case_start,
-                "wait_sec": case.wait_sec,
-                "injection_scope": injection_scope(mode),
-                "topic_samples": sample_topics(args.container) if args.sample_topics else {},
-                "log_excerpt": recent_logs_since(args.container, case_start),
-            }
+        result_entry = {
+            "name": case.name,
+            "category": case.category,
+            "text": case.text,
+            "voice_id": voice_id,
+            "mode": mode,
+            "setup_result": setup_result or None,
+            "turn_result": turn_result,
+            "stale_world_guard": stale_world_guard or None,
+            "started_at_unix_sec": case_start,
+            "wait_sec": 0.0,
+            "configured_wait_sec": case.wait_sec,
+            "injection_scope": injection_scope(mode),
+            "topic_samples": {},
+            "log_excerpt": "",
+            "phase_observations": phase_observations(
+                mode=mode,
+                turn_result=turn_result,
+                log_excerpt="",
+                topic_samples={},
+            ),
+        }
+        results.append(result_entry)
+        write_payload(
+            args.out,
+            args.container,
+            args.case_set,
+            started_at,
+            results,
+            runtime_metadata=runtime_metadata,
+        )
+        wait_sec = max(0.0, case.wait_sec)
+        if args.max_case_wait_sec > 0:
+            wait_sec = min(wait_sec, max(0.0, args.max_case_wait_sec))
+        time.sleep(wait_sec)
+        topic_samples = sample_topics(args.container) if args.sample_topics else {}
+        log_excerpt = recent_logs_since(args.container, case_start)
+        result_entry["wait_sec"] = wait_sec
+        result_entry["topic_samples"] = topic_samples
+        result_entry["log_excerpt"] = log_excerpt
+        result_entry["phase_observations"] = phase_observations(
+            mode=mode,
+            turn_result=turn_result,
+            log_excerpt=log_excerpt,
+            topic_samples=topic_samples,
         )
         write_payload(
             args.out,
@@ -1397,6 +1505,113 @@ def _query_patterns_for_fixture(statements: tuple[str, ...]) -> list[str]:
     return ["%s ?predicate ?object" % subject for subject in subjects]
 
 
+def run_absence_guards(container: str, guards: tuple[KbAbsenceGuard, ...]) -> dict[str, object]:
+    """Return stale-world evidence for guards that require absent KB facts."""
+    if not guards:
+        return {}
+    results: list[dict[str, object]] = []
+    contaminated = False
+    for guard in guards:
+        query_output = query_kb_rows(
+            container,
+            patterns=guard.query_patterns,
+            query_vars=guard.query_vars,
+            timeout_sec=20,
+        )
+        row_count = len(query_output.get("rows", []))
+        guard_result = {
+            "name": guard.name,
+            "query_patterns": list(guard.query_patterns),
+            "query_vars": list(guard.query_vars),
+            "row_count": row_count,
+            "clean": row_count == 0,
+            "query_output": query_output.get("raw_output", ""),
+            "rows": query_output.get("rows", []),
+        }
+        if row_count:
+            contaminated = True
+        results.append(guard_result)
+    return {
+        "contaminated": contaminated,
+        "guard_results": results,
+        "contract": (
+            "absent-target and recovery cases must prove the target is absent "
+            "before injecting the turn"
+        ),
+    }
+
+
+def query_kb_rows(
+    container: str,
+    *,
+    patterns: tuple[str, ...],
+    query_vars: tuple[str, ...],
+    timeout_sec: int,
+) -> dict[str, object]:
+    patterns_yaml = "\n".join("  - '%s'" % item for item in patterns)
+    vars_yaml = "\n".join("  - '%s'" % item for item in query_vars)
+    query_request = f"""
+patterns:
+{patterns_yaml}
+vars:
+{vars_yaml}
+models:
+  - default
+"""
+    raw_output = call_ros_service(
+        container,
+        "/kb/query",
+        "kb_msgs/srv/Query",
+        query_request,
+        timeout_sec=timeout_sec,
+    )
+    return {
+        "raw_output": raw_output,
+        "rows": parse_kb_query_rows(raw_output),
+    }
+
+
+def parse_kb_query_rows(service_output: str) -> list[dict]:
+    """Extract KnowledgeCore JSON bindings from ros2 service-call text."""
+    text = str(service_output or "")
+    for match in re.finditer(
+        r"json=(?P<quote>['\"])(?P<payload>.*?)(?P=quote)(?:[,)\n])",
+        text,
+        flags=re.DOTALL,
+    ):
+        rows = _parse_kb_json_payload(match.group("payload"))
+        if rows:
+            return rows
+    for marker in ("json:", "json="):
+        index = text.find(marker)
+        if index < 0:
+            continue
+        rows = _parse_kb_json_payload(text[index + len(marker):].strip())
+        if rows:
+            return rows
+    return []
+
+
+def _parse_kb_json_payload(payload: str) -> list[dict]:
+    clean_payload = str(payload or "").strip()
+    if not clean_payload:
+        return []
+    if (clean_payload.startswith("'") and clean_payload.endswith("'")) or (
+        clean_payload.startswith('"') and clean_payload.endswith('"')
+    ):
+        clean_payload = clean_payload[1:-1]
+    clean_payload = clean_payload.encode("utf-8").decode("unicode_escape")
+    try:
+        parsed = json.loads(clean_payload)
+    except json.JSONDecodeError:
+        return []
+    if isinstance(parsed, dict):
+        parsed = [parsed]
+    if not isinstance(parsed, list):
+        return []
+    return [row for row in parsed if isinstance(row, dict)]
+
+
 def write_payload(
     out_path: str,
     container: str,
@@ -1415,6 +1630,50 @@ def write_payload(
         "cases": results,
     }
     Path(out_path).write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def phase_observations(
+    *,
+    mode: str,
+    turn_result: str,
+    log_excerpt: str,
+    topic_samples: dict[str, str],
+) -> dict[str, object]:
+    """Summarize runtime-review phase evidence without scoring the case."""
+    combined = "\n".join(
+        [
+            str(turn_result or ""),
+            str(log_excerpt or ""),
+            "\n".join(str(value or "") for value in topic_samples.values()),
+        ]
+    )
+    injected = bool(str(turn_result or "").strip())
+    if mode == "speech":
+        injected = injected and "ERROR: dialogue_manager speech subscription" not in combined
+    return {
+        "turn_injected": injected,
+        "route_observed": _contains_any(combined, ("ROUTE_RESOLVED", "chatbot_turn_trace")),
+        "planner_request_observed": _contains_any(
+            combined,
+            ("PLANNER_REQUEST", "/planner/request", "planner_request"),
+        ),
+        "execution_feedback_observed": _contains_any(
+            combined,
+            ("execution_feedback", "/planner/execution_feedback", "step_succeeded", "step_failed", "plan_completed"),
+        ),
+        "speech_observed": _contains_any(
+            combined,
+            ("ROBOT OUTPUT", "DEBUG_SPEECH", "/debug/nao_say/speech", "Robot saying"),
+        ),
+        "observability_note": (
+            "phase booleans are trace breadcrumbs, not pass/fail scoring"
+        ),
+    }
+
+
+def _contains_any(value: str, markers: tuple[str, ...]) -> bool:
+    text = str(value or "")
+    return any(marker in text for marker in markers)
 
 
 def collect_questionnaire_metadata(
@@ -1718,12 +1977,32 @@ def recent_logs(container: str, since_sec: int) -> str:
 
 
 def recent_logs_since(container: str, since_unix_sec: float) -> str:
-    timestamp = datetime.fromtimestamp(
-        max(0.0, float(since_unix_sec) - 1.0),
-        tz=timezone.utc,
-    ).isoformat().replace("+00:00", "Z")
+    since_value = max(0.0, float(since_unix_sec) - 1.0)
+    script = (
+        "python3 - <<'PY'\n"
+        "from pathlib import Path\n"
+        f"since={since_value!r}\n"
+        "paths=[Path('/root/.ros/log/latest/launch.log')]\n"
+        "paths.extend(sorted(Path('/root/.ros/log').glob('python3_*.log')))\n"
+        "for path in paths:\n"
+        "    if not path.exists() or not path.is_file():\n"
+        "        continue\n"
+        "    try:\n"
+        "        lines=path.read_text(errors='replace').splitlines()\n"
+        "    except Exception:\n"
+        "        continue\n"
+        "    for line in lines:\n"
+        "        token=line.split(' ',1)[0].strip()\n"
+        "        try:\n"
+        "            if float(token) < since:\n"
+        "                continue\n"
+        "        except Exception:\n"
+        "            pass\n"
+        "        print(line)\n"
+        "PY"
+    )
     output = run(
-        ["docker", "logs", "--since", timestamp, container],
+        ["docker", "exec", container, "bash", "-lc", script],
         timeout=15,
         check=False,
     ) or ""

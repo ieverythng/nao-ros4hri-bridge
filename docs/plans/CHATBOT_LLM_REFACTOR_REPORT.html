@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>chatbot_llm Refactor Report — Tighten &amp; Re-own</title>
+  <style>
+    :root { --bg:#f7f8fb; --ink:#20242b; --muted:#5d6675; --line:#cfd6e0; --card:#fff; --done:#236b3b; --partial:#9a5b13; --pending:#8a463d; --accent:#235b8c; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:Arial, sans-serif; line-height:1.48; }
+    main { max-width:1160px; margin:auto; padding:32px 22px 72px; }
+    h1 { margin:0 0 6px; font-size:2rem; }
+    h2 { border-top:1px solid var(--line); margin-top:30px; padding-top:20px; }
+    h3 { margin:18px 0 6px; }
+    .meta { color:var(--muted); margin:0 0 22px; }
+    .note { background:var(--card); border-left:5px solid var(--accent); padding:12px 16px; margin:14px 0 20px; }
+    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; margin:18px 0; }
+    .card { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--accent); padding:14px 16px; }
+    .card strong { display:block; margin-bottom:6px; }
+    table { width:100%; border-collapse:collapse; background:var(--card); margin:10px 0 18px; }
+    th,td { border:1px solid var(--line); padding:9px 10px; text-align:left; vertical-align:top; }
+    th { background:#e9edf3; }
+    code { background:#e8ecf1; padding:1px 4px; }
+    pre { background:#1f2430; color:#f3f5f8; padding:14px 16px; overflow:auto; }
+    ul,ol { background:var(--card); border:1px solid var(--line); padding:14px 28px; }
+    .done { color:var(--done); font-weight:bold; }
+    .partial { color:var(--partial); font-weight:bold; }
+    .pending { color:var(--pending); font-weight:bold; }
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    @media (max-width:820px){ .grid2 { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>chatbot_llm Refactor Report — Tighten &amp; Re-own</h1>
+  <p class="meta">30 June 2026. Two-phase deslop of the <code>chatbot_llm</code> turn engine: a behaviour-preserving structural split (Phase 1) plus a diagnose-first, SkillOpt-gated reduction of deterministic over-reach (Phase 2).</p>
+
+  <section class="cards">
+    <div class="card"><strong>Primary objective</strong>Make the self-authored turn logic small, honestly-owned, and reactive — the LLM leads each turn and deterministic fallbacks only <em>nudge</em> instead of silently overriding the model.</div>
+    <div class="card"><strong>Phase 1</strong><span class="done">Done — behaviour-preserving.</span> 2772-line <code>turn_engine.py</code> split into four focused modules; dead code removed; <strong>137 focused tests pass</strong> as an equivalence oracle.</div>
+    <div class="card"><strong>Phase 2</strong><span class="done">Live-validated.</span> Open-domain wording mutation <strong>rejected</strong> (live answers already warm); only the duplicated-label deslop <strong>applied</strong> under a passed unit + live gate; safety guards <strong>kept</strong> (overrides are beneficial nudges, 16.7% rate).</div>
+    <div class="card"><strong>Score posture</strong>Demo baseline <code>response_first</code> <strong>8.2 qualified / 8.7 success-path</strong> held; live smoke + <code>intent_ablation</code> pass all scored seams with exactly-once speech.</div>
+  </section>
+
+  <p class="note">This pass avoids deterministic shortcuts that hide runtime limits. It separates the "nudge" vocabulary from orchestration, keeps anti-fabrication and anti-duplicate-speech wording in one place, and exposes a per-turn <code>ROUTE_DECISION</code> trace so the override rate between the model's own route and the resolved route can finally be measured.</p>
+
+  <h2>Why this was safe to do here (ownership map)</h2>
+  <p><code>chatbot_llm</code> is a nested repo with an upstream (IIIA SocialMinds) remote, so "narrow, compatibility-conscious changes" is the default. The files in scope are <strong>purely self-authored</strong> (no upstream lineage), which licenses a full deslop.</p>
+  <table>
+    <thead><tr><th>Tier</th><th>Files</th><th>Treatment</th></tr></thead>
+    <tbody>
+      <tr><td>Self-authored (deslop freely)</td><td><code>turn_engine.py</code>, <code>knowledge_snapshot.py</code>, <code>planner_request_adapter.py</code>, plus new <code>route_heuristics.py</code> / <code>response_fallbacks.py</code> / <code>system_turn.py</code></td><td>split, dedupe, delete dead code</td></tr>
+      <tr><td>Upstream-tracked but ours (seam-narrow only)</td><td><code>node_impl.py</code></td><td>imports kept byte-stable; untouched</td></tr>
+      <tr><td>Upstream-owned (do NOT deslop)</td><td><code>llm_client.py</code>, <code>messages.py</code>, <code>response_parser.py</code>, <code>role_handlers.py</code>, <code>start_node.py</code>, <code>__init__.py</code></td><td>untouched</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The problem: a deterministic override cascade fighting the model</h2>
+  <p><code>turn_engine.py</code> had grown to <strong>2772 lines</strong> holding, in one module: ~20 text classifiers, a ~210-line <code>_resolve_planner_mode_turn</code> override cascade that re-decided the route after the LLM, the intent-first <code>_lock_intent_first_route</code> mirror, and ~12 acknowledgement/report fallback builders. Deterministic guards could re-classify turns the model may already have routed correctly, so turns could <strong>fail or converge onto canned fallbacks</strong> rather than the LLM's own answer. Fallbacks that <em>replace</em> the model instead of <em>nudging</em> it are reward-hacking: they make the harness look healthy while masking what the LLM would do.</p>
+
+  <div class="grid2">
+    <div>
+      <h3>Before — one 2772-line file</h3>
+      <pre><code>user_text
+  -> _query_intent / _query_response (LLM)
+  -> _resolve_intent
+  -> _resolve_planner_mode_turn  (~10 stacked
+        keyword/regex overrides rewriting
+        route + user_intent)
+  -> _lock_intent_first_route    (more overrides)
+  -> _sanitize_* / _fallback_* /
+        _postprocess_* ack rewriters
+  -> TurnExecutionResult</code></pre>
+    </div>
+    <div>
+      <h3>After — four focused modules</h3>
+      <pre><code>turn_engine.py       (1601)  orchestration +
+       named route policy + ROUTE_DECISION trace
+route_heuristics.py   (458)  pure classifiers
+       (_is_*, _looks_like_*, route constants)
+response_fallbacks.py (694)  parse model output +
+       bounded route-safe spoken text
+system_turn.py        (369)  __system__ extractors
+       + prompt-addendum framing
+
+DAG: route_heuristics &lt;- response_fallbacks
+     &lt;- system_turn &lt;- turn_engine</code></pre>
+    </div>
+  </div>
+  <p>The largest single file dropped <strong>~42%</strong> (2772 &rarr; 1601, net of relocated helpers plus the added Phase-0 trace and route-policy docstrings); the three new modules are each under 700 lines with one responsibility, and the dependency direction is a clean one-way DAG.</p>
+
+  <h2>Seams built — what, why, how</h2>
+  <table>
+    <thead><tr><th>Seam</th><th>What it owns</th><th>Why it exists</th><th>How it stays safe</th></tr></thead>
+    <tbody>
+      <tr><td><code>route_heuristics</code></td><td>pure functions classifying <code>user_text</code>/<code>verbal_ack</code> into a route or intent nudge</td><td>isolate the "nudge" vocabulary from orchestration; testable, obviously side-effect-free</td><td>no transport/state/speech; imports only <code>intent_rules</code> + <code>kb_skills</code></td></tr>
+      <tr><td><code>response_fallbacks</code></td><td>parse model JSON into an ack; produce bounded route-safe text only when output is empty/unsafe</td><td>keep anti-fabrication / anti-duplicate-speech wording in one place</td><td>never invents perception or success; only words what payloads assert</td></tr>
+      <tr><td><code>system_turn</code></td><td>normalise internal <code>__system__</code> payloads; structural prompt-addendum framing</td><td>keep internal wording turns from re-running user-facing route policy</td><td>framing only; canonical wording stays in the prompt pack</td></tr>
+      <tr><td>named route policy</td><td><code>_resolve_planner_mode_turn</code> now documents its fixed ordered phases</td><td>make the override order explicit and reviewable</td><td>byte-identical; provably-identical pure dialogue guards collapsed into one</td></tr>
+    </tbody>
+  </table>
+
+  <h2>How it was implemented</h2>
+  <table>
+    <thead><tr><th>Phase</th><th>Action</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Phase 0 — instrument</td><td>Added a <code>ROUTE_DECISION</code> trace (<code>llm_route</code> vs <code>final_route</code> vs <code>overridden</code> vs <code>reason</code>) on both route paths. <strong>Live:</strong> 24 decisions, 4 overrides (16.7%), all <code>knowledge_query&rarr;dialogue</code> on conversational/reflective turns.</td><td class="done">Done (live captured)</td></tr>
+      <tr><td>Phase 1 — structural deslop</td><td>Relocated classifiers/fallbacks/system-turn helpers into three modules; re-imported the 5 externally-referenced names so <code>node_impl</code> + tests resolve unchanged; removed 2 dead helpers; made the route policy a named ordered sequence and collapsed the 3 provably-identical dialogue guards.</td><td class="done">Done (oracle green)</td></tr>
+      <tr><td>Phase 2 — gated reduction</td><td>Classified every override keep/sharpen/delete ("LLM leads, fallbacks nudge"); ran the live <code>intent_ablation</code> + smoke gate. <strong>Applied</strong> the duplicated-label deslop; <strong>rejected</strong> the open-domain wording mutation; <strong>kept</strong> the safety guards.</td><td class="done">Live-validated</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Evidence and validation</h2>
+  <table>
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td><code>py_compile</code> of all touched + new modules</td><td class="done">Pass</td></tr>
+      <tr><td>Focused chatbot_llm suite (intent_adapter, knowledge_snapshot, skill_catalog, turn_engine, planner_request_adapter, planner_handoff)</td><td class="done">137 passed</td></tr>
+      <tr><td>External import surface (<code>node_impl</code> + tests resolve all names)</td><td class="done">Pass</td></tr>
+      <tr><td><code>flake8</code> (project settings) on touched files</td><td class="done">No new E/F/W (only pre-existing tolerated <code>Q000</code>/<code>D1xx</code>)</td></tr>
+      <tr><td><code>scripts/ros4hri_change_audit.py --mode working</code></td><td class="done">Pass</td></tr>
+      <tr><td>Live preflight (seams byte-identical host&harr;container; <code>dialogue_manager active [3]</code>; Phase-0 trace present)</td><td class="done">Pass</td></tr>
+      <tr><td>Live <code>intent_ablation</code> (response_first) — 7 named holdouts</td><td class="done">All pass (favorite_movie warm; wave_particle no <code>wave_greet</code>; future_navigation defers; kb_visible projects <code>oro:isOn</code>; look_report truthful; head_wave whole-chain)</td></tr>
+      <tr><td>Live smoke — dialogue / KB-grounding P0 / simple+composite execution</td><td class="done">Pass (gold-cup <code>rdf:type</code>+<code>dbp:name</code>+<code>dbp:color</code> grounded &amp; answered)</td></tr>
+      <tr><td>Live exactly-once speech</td><td class="done">Pass (8 distinct utterances, each once)</td></tr>
+      <tr><td>Live Phase-2 regression (clean stack, dedup'd prompt)</td><td class="done">Pass — answers equivalent to pre-fix, no duplicate speech</td></tr>
+    </tbody>
+  </table>
+  <p>The split is behaviour-preserving by construction: no orchestration-path method body was rewritten, only relocated; the oracle confirms identical decisions.</p>
+
+  <h2>Prompt / LLM contract discipline</h2>
+  <p class="note">Exactly one LLM-facing change was made, and it went through the gate first (the SkillOpt ledger entry pre-existed the edit, honouring the root <code>AGENTS.md</code> rule "do not patch prompt text first and create the ledger afterwards"). Only after a live baseline existed was the duplicated grounded-context label collapsed to a single <code>Grounded context for this turn:</code> header, with the three locking <code>test_turn_engine.py</code> assertions updated in the same change. The over-restrictive open-domain wording mutation was <strong>rejected</strong> because the live holdout proved the current wording is already warm. Decisions and evidence: <code>docs/artifacts/chatbot_llm_phase2_skillopt_2026-06-30.md</code> (Live holdout result).</p>
+
+  <h2>Seams that could still be improved</h2>
+  <ol>
+    <li><strong>Push KB-vs-dialogue disambiguation into the prompt, shrink the guard.</strong> The single recurring override is <code>knowledge_query&rarr;dialogue</code> (16.7% of turns) on reflective/preference/future questions. The healthy fix is to teach the prompt pack when a question is conversational vs a live world-state query so the model stops over-emitting <code>knowledge_query</code> and the guard becomes a rare safety net. Gate with the same live <code>intent_ablation</code> holdout.</li>
+    <li><strong>Sharpen the Phase-0 trace.</strong> <code>ROUTE_DECISION.reason</code> reports the <code>intent_source</code>, not the <em>name of the guard</em> that caused the downgrade; emitting the firing rule id turns the override rate into a per-rule rate for the next reduction pass.</li>
+    <li><strong>Prefer <code>dbp:name</code> over the entity id in grounded answers.</strong> The cup is answered as <code>codex_probe_cup</code> (entity id) instead of <code>TITAS</code> (<code>dbp:name</code>). A <code>grounded_context</code> projection nuance, not a routing bug; predates this refactor.</li>
+    <li><strong><code>turn_engine.py</code> is still the largest module (1601 lines).</strong> The remaining structural target is the behaviour-changing merge of <code>_resolve_planner_mode_turn</code> and <code>_lock_intent_first_route</code> that Phase 1 deliberately left apart; needs its own gated pass.</li>
+    <li><strong>#6/#7 <code>not explicit_route</code> gating — deferred, not rejected.</strong> Live showed 0 wrongly-overridden execution turns (8/8 clean), so there was no harm to fix; revisit only if a future run shows an explicit execution route downgraded.</li>
+    <li><strong>Operational: KB service resilience across restarts.</strong> Aggressive process kills left stale FastRTPS shared-memory locks and duplicate <code>knowledge_core</code> nodes, making <code>/kb/revise</code> time out (one transient "I cannot confirm" cup answer). Prefer <code>docker restart nao_ros2</code> over <code>kill -9</code> loops. Not a chatbot defect.</li>
+    <li><strong>Bake the dedup into the image.</strong> The applied label change is live in <code>nao_ros2</code> and in the host working tree; run <code>build_docker.sh</code> so the next <code>iiia:nao</code> image carries it permanently.</li>
+    <li><strong>Intent-first stays unpromoted.</strong> The <code>_lock_intent_first_route</code> mirror is an unscored ablation; do not make it the default.</li>
+    <li>Update <code>ISSUE_TRACKER_FULL_SUITE.html</code> with the live Phase-2 results captured here.</li>
+  </ol>
+</main>
+</body>
+</html>
