@@ -23,8 +23,10 @@ from nao_orchestrator.intent_rules import validate_execution_plan
 from nao_orchestrator.orchestrator import _ExecutionReportResult
 from nao_orchestrator.orchestrator import _binding_value
 from nao_orchestrator.orchestrator import _dedupe_statements
+from nao_orchestrator.orchestrator import _execution_report_dialogue_context
 from nao_orchestrator.orchestrator import _motion_result_payload
 from nao_orchestrator.orchestrator import _normalize_execution_mode
+from nao_orchestrator.orchestrator import _plan_outcome_summary
 from nao_orchestrator.orchestrator import _report_text_from_result_payload
 from nao_orchestrator.orchestrator import _single_entity_statement
 from nao_orchestrator.orchestrator import _statement_from_binding
@@ -681,7 +683,9 @@ def test_report_result_text_uses_chatbot_context_for_step_chain() -> None:
     assert report_text == 'I navigated to the cup and found two blueberries.'
     assert captured['goal_text'] == 'navigate to the cup and report other objects'
     assert captured['scene_targets'] == ['cup']
-    assert captured['dialogue_context'][-1].startswith('assistant:')
+    assert captured['dialogue_context'] == [
+        'user:Navigate to the cup and tell me what else you see.'
+    ]
     assert [step['name'] for step in captured['steps']] == ['navigate_to', 'scan']
 
 
@@ -740,6 +744,81 @@ def test_execution_report_context_marks_terminal_report_result() -> None:
 
     assert context['report_role'] == 'final'
     assert context['future_steps'] == []
+
+
+def test_execution_report_context_includes_plan_outcome_summary() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+
+    context = orchestrator._execution_report_context(
+        {
+            'plan_outcome_summary': {
+                'completed_targets': ['cup', 'book'],
+                'pending_targets': ['phone'],
+                'all_required_steps_succeeded': False,
+            },
+        }
+    )
+
+    assert context['plan_outcome_summary'] == {
+        'completed_targets': ['cup', 'book'],
+        'pending_targets': ['phone'],
+        'all_required_steps_succeeded': False,
+    }
+
+
+def test_execution_report_context_keeps_only_user_dialogue_lines() -> None:
+    context = _execution_report_dialogue_context(
+        [
+            'user:Move your head in all directions again.',
+            'assistant:I will move my head in all directions. I am ready for your next request!',
+            'user:Which directions?',
+            'assistant:I moved my head left and right.',
+        ]
+    )
+
+    assert context == [
+        'user:Move your head in all directions again.',
+        'user:Which directions?',
+    ]
+
+
+def test_plan_outcome_summary_tracks_completed_failed_and_pending_targets() -> None:
+    summary = _plan_outcome_summary(
+        [
+            {'id': 'step_1', 'type': 'skill', 'name': 'bring_object', 'args': {'target': 'cup'}},
+            {'id': 'step_2', 'type': 'skill', 'name': 'bring_object', 'args': {'target': 'book'}},
+            {'id': 'step_3', 'type': 'skill', 'name': 'bring_object', 'args': {'target': 'phone'}},
+            {'id': 'step_4', 'type': 'skill', 'name': 'report_result', 'args': {}},
+        ],
+        [
+            {
+                'id': 'step_1',
+                'name': 'bring_object',
+                'status': 'succeeded',
+                'args': {'target': 'cup'},
+                'result_payload': {'target': 'cup'},
+            },
+            {
+                'id': 'step_2',
+                'name': 'bring_object',
+                'status': 'failed',
+                'args': {'target': 'book'},
+                'result_payload': {'target': 'book'},
+            },
+        ],
+        terminal_reason='blocked',
+        terminal_step={'id': 'step_2'},
+    )
+
+    assert summary == {
+        'completed_targets': ['cup'],
+        'failed_targets': ['book'],
+        'pending_targets': ['phone'],
+        'last_successful_step_id': 'step_1',
+        'terminal_step_id': 'step_2',
+        'terminal_reason': 'blocked',
+        'all_required_steps_succeeded': False,
+    }
 
 
 def test_execution_context_retains_admitted_request_for_report_result() -> None:

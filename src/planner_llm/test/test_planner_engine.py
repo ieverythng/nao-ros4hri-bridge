@@ -488,6 +488,64 @@ def test_planner_engine_clarifies_location_group_delivery_without_recipient() ->
     )
 
 
+def test_planner_engine_clarifies_location_group_delivery_when_named_person_is_absent() -> None:
+    engine = _engine_for_response('{}', retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_table_delivery_missing_named_person',
+            'goal_id': 'goal_table_delivery_missing_named_person',
+            'goal_text': 'Bring every object from the work table to the person named BLAKE and report what happened.',
+            'normalized_intents': ['bring_object', 'report_result'],
+            'planner_mode': 'multi_step',
+            'grounded_context': {
+                'locations': [
+                    {
+                        'id': 'codex_lab_table_section',
+                        'label': 'work_table',
+                        'class': 'Table',
+                        'contains': [
+                            {
+                                'id': 'codex_lab_book',
+                                'label': 'book',
+                                'kind': 'object',
+                                'class': 'Book',
+                            },
+                            {
+                                'id': 'codex_lab_cup',
+                                'label': 'cup',
+                                'kind': 'object',
+                                'class': 'Cup',
+                            },
+                        ],
+                    }
+                ],
+                'entities': [
+                    {'id': 'codex_lab_book', 'label': 'book', 'kind': 'object'},
+                    {'id': 'codex_lab_cup', 'label': 'cup', 'kind': 'object'},
+                    {
+                        'id': 'codex_lab_alex',
+                        'label': 'ALEX',
+                        'kind': 'person',
+                        'class': 'Human',
+                        'relations': [{'predicate': 'dbp:name', 'object': 'ALEX'}],
+                    },
+                ],
+            },
+        }
+    )
+
+    decision = engine.plan_request(
+        request,
+        goal_id='goal_table_delivery_missing_named_person',
+        plan_version=1,
+    )
+
+    assert decision.mode == 'clarify'
+    assert decision.payload['plan']['steps'][0]['args']['text'] == (
+        'Who or where should I bring those objects to?'
+    )
+
+
 def test_planner_engine_falls_back_to_grounded_look_report_after_invalid_output() -> None:
     engine = _engine_for_response('{}', retry_budget=1)
     request = PlannerRequest.from_payload(

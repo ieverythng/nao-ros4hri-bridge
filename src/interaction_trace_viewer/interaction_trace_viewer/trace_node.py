@@ -46,6 +46,8 @@ class InteractionTraceNode(Node):
         self.declare_parameter('exclude_channels_csv', '')
         self.declare_parameter('include_event_types_csv', '')
         self.declare_parameter('exclude_event_types_csv', '')
+        self.declare_parameter('mirror_trace_lines_to_rosout', True)
+        self.declare_parameter('rosout_trace_line_max_chars', 1200)
         self.declare_parameter('discovery_period_sec', 2.0)
         self.declare_parameter('kb_snapshot_emit_period_sec', 0.8)
         self.declare_parameter('enable_scene_summary_channel', False)
@@ -75,6 +77,13 @@ class InteractionTraceNode(Node):
             include_channels=self._include_channels,
             include_event_types=self._include_event_types,
             exclude_event_types=self._exclude_event_types,
+        )
+        self.mirror_trace_lines_to_rosout = bool(
+            self.get_parameter('mirror_trace_lines_to_rosout').value
+        )
+        self.rosout_trace_line_max_chars = max(
+            0,
+            int(self.get_parameter('rosout_trace_line_max_chars').value),
         )
         self.discovery_period_sec = max(0.5, float(self.get_parameter('discovery_period_sec').value))
         self.kb_snapshot_emit_period_sec = max(
@@ -268,7 +277,12 @@ class InteractionTraceNode(Node):
         if self._writer is not None:
             self._writer.write(traced)
 
-        print(format_event_line(traced, verbose=not self.compact_mode), flush=True)
+        line = format_event_line(traced, verbose=not self.compact_mode)
+        print(line, flush=True)
+        if self.mirror_trace_lines_to_rosout:
+            self.get_logger().info(
+                'TRACE_EVENT ' + _clip_trace_line(line, self.rosout_trace_line_max_chars)
+            )
 
     def _should_emit_kb_snapshot_event(self, payload: dict) -> bool:
         current_hash = str(hash(json.dumps(payload, sort_keys=True, separators=(',', ':'))))
@@ -364,3 +378,12 @@ def _coerce_rosout_level(raw_level) -> int:
         return int(clean_level)
     except (TypeError, ValueError):
         return 30
+
+
+def _clip_trace_line(line: str, max_chars: int) -> str:
+    clean_line = str(line or '').strip()
+    if max_chars <= 0 or len(clean_line) <= max_chars:
+        return clean_line
+    if max_chars <= 3:
+        return clean_line[:max_chars]
+    return clean_line[: max_chars - 3] + '...'

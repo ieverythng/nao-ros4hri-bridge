@@ -3168,7 +3168,7 @@ def generate_profile_launch_description(
                             "preloaded_environment_viewer.html",
                         ]
                     ),
-                    " or run: preloaded_environment_viewer --open",
+                    " or run: ros2 run nao_chatbot preloaded_environment_viewer --open",
                 ]
             ),
             naoqi_driver_launch,

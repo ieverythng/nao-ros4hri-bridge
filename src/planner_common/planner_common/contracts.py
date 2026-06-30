@@ -91,6 +91,9 @@ _LLM_RELATION_PREDICATE_ALIASES = {
     'isat': 'oro:isAt',
     'is_at': 'oro:isAt',
     'is at': 'oro:isAt',
+    'iscontainedin': 'oro:isIn',
+    'is_contained_in': 'oro:isIn',
+    'is contained in': 'oro:isIn',
     'ison': 'oro:isOn',
     'is_on': 'oro:isOn',
     'is on': 'oro:isOn',
@@ -98,11 +101,32 @@ _LLM_RELATION_PREDICATE_ALIASES = {
     'is_in': 'oro:isIn',
     'is in': 'oro:isIn',
     'contains': 'oro:contains',
+    'placeof': 'oro:contains',
+    'place_of': 'oro:contains',
+    'place of': 'oro:contains',
     'knows': 'foaf:knows',
 }
 _MAX_LLM_RELATIONS_PER_ENTITY = 6
 _LOCATION_MEMBERSHIP_PREDICATES = frozenset(('oro:isAt', 'oro:isOn', 'oro:isIn'))
 _LOCATION_CONTAINER_PREDICATE = 'oro:contains'
+_LOCATION_SUPPORT_CLASSES = frozenset(('counter', 'desk', 'shelf', 'surface', 'table'))
+_LOCATION_PLACE_CLASSES = frozenset(
+    ('corridor', 'kitchen', 'lab', 'location', 'place', 'robot_station', 'room', 'station')
+)
+_NON_USER_OBJECT_CLASSES = frozenset(
+    (
+        'cyc:spatialthing',
+        'cyc:spatialthing-localized',
+        'location',
+        'owl:thing',
+        'place',
+        'room',
+        'spatialthing',
+        'spatialthing-localized',
+        'support_surface',
+        'table',
+    )
+)
 _DEFAULT_COMMUNICATION_POLICY = {
     'emit_acknowledge': False,
     'emit_progress': False,
@@ -129,6 +153,20 @@ _LOOK_AT_RESET_TARGET_ALIASES = frozenset(
     )
 )
 _LOOK_AT_TARGETLESS_POLICIES = frozenset(('auto', 'random', 'social'))
+
+_LIVE_RESULT_REPORT_SKILLS = {
+    'bring_object',
+    'find_object',
+    'inspect_area',
+    'look_at',
+    'navigate_to',
+    'pick_object',
+    'place_object',
+    'perform_motion',
+    'scan',
+    'walk_to',
+    'wave_greet',
+}
 
 _FROZEN_DATACLASS_KWARGS = {'frozen': True}
 if sys.version_info >= (3, 10):  # pragma: no branch - local macOS uses Python 3.9
@@ -259,21 +297,6 @@ def request_requests_report(request) -> bool:
         str(intent_name or '').strip().lower() == 'report_result'
         for intent_name in getattr(request, 'normalized_intents', ())
     )
-
-
-_LIVE_RESULT_REPORT_SKILLS = {
-    'bring_object',
-    'find_object',
-    'inspect_area',
-    'look_at',
-    'navigate_to',
-    'pick_object',
-    'place_object',
-    'perform_motion',
-    'scan',
-    'walk_to',
-    'wave_greet',
-}
 
 
 def live_result_report_summary_error(steps: list[dict]) -> str:
@@ -755,17 +778,20 @@ def _normalize_location_groups(value, *, entities: list[dict]) -> list[dict]:
             group_id = _compact_term(item.get('id', item.get('entity_id', '')))
             if not group_id:
                 continue
+            group_entity = entity_index.get(group_id, {})
+            if group_entity and _is_recipient_entity(group_entity):
+                continue
             group = _ensure_location_group(
                 groups_by_id,
                 group_id,
                 label=_first_non_empty(
                     item.get('label', ''),
-                    _entity_label(entity_index.get(group_id, {}), group_id),
+                    _entity_label(group_entity, group_id),
                 ),
                 entity_class=_first_non_empty(
                     item.get('class', ''),
                     item.get('type', ''),
-                    entity_index.get(group_id, {}).get('class', ''),
+                    group_entity.get('class', ''),
                 ),
             )
             members = item.get('contains', item.get('members', []))
@@ -827,11 +853,15 @@ def _derive_location_groups(entities: list[dict]) -> list[dict]:
             if not predicate or not obj:
                 continue
             if predicate in _LOCATION_MEMBERSHIP_PREDICATES:
+                if not _is_user_facing_location_member(entity, entity_id):
+                    continue
                 group = _ensure_location_group_for_entity(
                     groups_by_id,
                     entity_index,
                     obj,
                 )
+                if not group:
+                    continue
                 _add_location_member(
                     group,
                     entity_index,
@@ -844,6 +874,8 @@ def _derive_location_groups(entities: list[dict]) -> list[dict]:
                     entity_index,
                     entity_id,
                 )
+                if not group:
+                    continue
                 _add_location_member(
                     group,
                     entity_index,
@@ -870,6 +902,8 @@ def _ensure_location_group_for_entity(
     group_id: str,
 ) -> dict:
     entity = entity_index.get(_compact_term(group_id), {})
+    if entity and _is_recipient_entity(entity):
+        return {}
     return _ensure_location_group(
         groups_by_id,
         group_id,
@@ -886,12 +920,14 @@ def _ensure_location_group(
     entity_class,
 ) -> dict:
     clean_id = _compact_term(group_id)
+    role = _location_group_role(entity_class, clean_id)
     group = groups_by_id.setdefault(
         clean_id,
         {
             'id': clean_id,
             'label': str(label or '').strip() or None,
             'class': str(entity_class or '').strip(),
+            'role': role,
             'contains': [],
         },
     )
@@ -899,6 +935,8 @@ def _ensure_location_group(
         group['label'] = str(label or '').strip()
     if not group.get('class') and str(entity_class or '').strip():
         group['class'] = str(entity_class or '').strip()
+    if not group.get('role'):
+        group['role'] = role
     return group
 
 
@@ -915,6 +953,8 @@ def _add_location_member(
         return
     clean_relation = _normalize_relation_predicate(relation)
     entity = entity_index.get(clean_member_id, {})
+    if not _is_user_facing_location_member(entity, clean_member_id):
+        return
     member = {
         'id': clean_member_id,
         'label': _entity_label(entity, clean_member_id),
@@ -941,10 +981,22 @@ def _finalize_location_groups(groups_by_id: dict[str, dict]) -> list[dict]:
         contains.sort(key=lambda item: (item.get('kind', ''), item.get('label', ''), item.get('id', '')))
         if not contains:
             continue
+        object_count = sum(
+            1 for item in contains
+            if str(item.get('kind', '')).strip().lower() == 'object'
+        )
+        person_count = sum(
+            1 for item in contains
+            if str(item.get('kind', '')).strip().lower() == 'person'
+        )
         finalized = {
             'id': str(group.get('id', '')).strip(),
             'label': group.get('label') if group.get('label') else None,
             'class': str(group.get('class', '')).strip(),
+            'role': str(group.get('role', '')).strip(),
+            'member_count': len(contains),
+            'object_count': object_count,
+            'person_count': person_count,
             'contains': contains,
         }
         groups.append(
@@ -956,6 +1008,62 @@ def _finalize_location_groups(groups_by_id: dict[str, dict]) -> list[dict]:
         )
     groups.sort(key=lambda item: item.get('id', ''))
     return groups
+
+
+def _is_user_facing_location_member(entity: dict, entity_id: str) -> bool:
+    """Filter ontology/meta/support entities from compact object inventories."""
+    if not isinstance(entity, dict) or not entity:
+        return bool(_compact_term(entity_id))
+    if _is_recipient_entity(entity):
+        return False
+    kind = str(entity.get('kind', '')).strip().lower()
+    if kind and kind != 'object':
+        return False
+    entity_class = _class_token(entity.get('class', ''))
+    if entity_class in _NON_USER_OBJECT_CLASSES:
+        return False
+    if entity_class.startswith('cyc:spatialthing'):
+        return False
+    if entity_class in _LOCATION_SUPPORT_CLASSES or entity_class in _LOCATION_PLACE_CLASSES:
+        return False
+    for relation in entity.get('relations', []):
+        if not isinstance(relation, dict):
+            continue
+        if str(relation.get('predicate', '')).strip() != 'rdf:type':
+            continue
+        relation_class = _class_token(relation.get('object', ''))
+        if relation_class in _NON_USER_OBJECT_CLASSES:
+            return False
+        if relation_class.startswith('cyc:spatialthing'):
+            return False
+    return True
+
+
+def _is_recipient_entity(entity: dict) -> bool:
+    kind = str(entity.get('kind', '')).strip().lower()
+    entity_class = _class_token(entity.get('class', ''))
+    return kind == 'person' or entity_class in {'human', 'person'}
+
+
+def _location_group_role(entity_class, group_id: str) -> str:
+    class_token = _class_token(entity_class)
+    if class_token in _LOCATION_SUPPORT_CLASSES:
+        return 'support_group'
+    if class_token in _LOCATION_PLACE_CLASSES:
+        return 'navigation_target'
+    clean_id = str(group_id or '').strip().lower()
+    if any(marker in clean_id for marker in ('counter', 'desk', 'shelf', 'surface', 'table')):
+        return 'support_group'
+    if any(marker in clean_id for marker in ('corridor', 'kitchen', 'lab', 'room', 'station')):
+        return 'navigation_target'
+    return 'location_group'
+
+
+def _class_token(value) -> str:
+    clean = _compact_term(value).strip().lower()
+    if ':' in clean and not clean.startswith(('cyc:', 'owl:')):
+        clean = clean.rsplit(':', 1)[-1]
+    return clean
 
 
 def _entity_label(entity: dict, fallback_id: str) -> str:
@@ -1416,6 +1524,7 @@ def build_execution_feedback_payload(
     timestamp_sec: float = 0.0,
     result_summary: str = '',
     result_payload: dict | None = None,
+    plan_outcome_summary: dict | None = None,
 ) -> dict:
     """Build one normalized planner feedback payload."""
     resolved_step = step if isinstance(step, dict) else None
@@ -1450,6 +1559,7 @@ def build_execution_feedback_payload(
         'timestamp_sec': _coerce_float(timestamp_sec, time.time()),
         'result_summary': normalized_result_summary,
         'result_payload': normalized_result_payload,
+        'plan_outcome_summary': _normalize_result_payload(plan_outcome_summary or {}),
     }
     if resolved_step is not None:
         payload['step'] = {
@@ -1621,6 +1731,7 @@ class ExecutionFeedback:
     timestamp_sec: float
     result_summary: str
     result_payload: dict
+    plan_outcome_summary: dict
 
     @classmethod
     def from_payload(cls, payload) -> 'ExecutionFeedback':
@@ -1632,6 +1743,9 @@ class ExecutionFeedback:
         clean_step_failure_policy = str(step_failure_policy or '').strip().lower()
         status = str(data.get('status', '')).strip().lower()
         result_payload = _normalize_result_payload(data.get('result_payload', {}))
+        plan_outcome_summary = _normalize_result_payload(
+            data.get('plan_outcome_summary', {})
+        )
         result_summary = str(data.get('result_summary', '')).strip()
         if not result_summary:
             result_summary = str(result_payload.get('summary_text', '')).strip()
@@ -1673,6 +1787,7 @@ class ExecutionFeedback:
             timestamp_sec=_coerce_float(data.get('timestamp_sec', 0.0)),
             result_summary=result_summary,
             result_payload=result_payload,
+            plan_outcome_summary=plan_outcome_summary,
         )
 
 

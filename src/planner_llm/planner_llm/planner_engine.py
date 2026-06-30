@@ -780,7 +780,11 @@ class PlannerEngine:
             )
         members = [
             item for item in location_group.get('contains', [])
-            if isinstance(item, dict) and str(item.get('id', '')).strip()
+            if (
+                isinstance(item, dict)
+                and str(item.get('id', '')).strip()
+                and str(item.get('kind', 'object')).strip().lower() == 'object'
+            )
         ]
         if not members:
             return self._clarification_decision(

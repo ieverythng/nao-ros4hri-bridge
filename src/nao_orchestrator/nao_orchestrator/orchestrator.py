@@ -272,6 +272,122 @@ def _execution_step_record(
     }
 
 
+def _plan_outcome_summary(
+    plan: list[dict],
+    execution_results: list[dict],
+    *,
+    terminal_reason: str = '',
+    terminal_step: dict | None = None,
+) -> dict:
+    """Build structured execution outcome data without user-facing wording."""
+    action_steps = [
+        step for step in plan
+        if isinstance(step, dict) and _is_required_action_step(step)
+    ]
+    completed_targets: list[str] = []
+    failed_targets: list[str] = []
+    completed_step_ids: set[str] = set()
+    failed_step_ids: set[str] = set()
+    last_successful_step_id = ''
+    terminal_step_id = ''
+    for result in execution_results:
+        if not isinstance(result, dict):
+            continue
+        step_id = str(result.get('id', '')).strip()
+        target = _target_from_step_record(result)
+        status = str(result.get('status', '')).strip().lower()
+        if status == 'succeeded':
+            if step_id:
+                completed_step_ids.add(step_id)
+                last_successful_step_id = step_id
+            if target and target not in completed_targets:
+                completed_targets.append(target)
+        elif status == 'failed':
+            if step_id:
+                failed_step_ids.add(step_id)
+                terminal_step_id = step_id
+            if target and target not in failed_targets:
+                failed_targets.append(target)
+
+    required_targets = [
+        _target_from_plan_step(step) for step in action_steps
+    ]
+    pending_targets = [
+        target for step, target in zip(action_steps, required_targets)
+        if target
+        and str(step.get('id', '')).strip() not in completed_step_ids
+        and str(step.get('id', '')).strip() not in failed_step_ids
+    ]
+    if terminal_step is not None and isinstance(terminal_step, dict):
+        terminal_step_id = str(terminal_step.get('id', '')).strip() or terminal_step_id
+    all_required_steps_succeeded = bool(action_steps) and all(
+        str(step.get('id', '')).strip() in completed_step_ids
+        for step in action_steps
+    )
+    return {
+        'completed_targets': completed_targets,
+        'failed_targets': failed_targets,
+        'pending_targets': pending_targets,
+        'last_successful_step_id': last_successful_step_id,
+        'terminal_step_id': terminal_step_id,
+        'terminal_reason': str(terminal_reason or '').strip(),
+        'all_required_steps_succeeded': all_required_steps_succeeded,
+    }
+
+
+def _is_required_action_step(step: dict) -> bool:
+    step_name = str(step.get('name', '')).strip().lower()
+    step_type = str(step.get('type', '')).strip().lower()
+    return step_type in ('skill', 'look_at') and step_name not in (
+        'report_result',
+        'say',
+        *_ASK_USER_STEP_NAMES,
+    )
+
+
+def _target_from_step_record(result: dict) -> str:
+    payload = result.get('result_payload', {})
+    if not isinstance(payload, dict):
+        payload = {}
+    return _first_non_empty_value(
+        payload,
+        'target',
+        'object',
+        'object_id',
+        'target_frame',
+        'location',
+    ) or _target_from_plan_step(result)
+
+
+def _target_from_plan_step(step: dict) -> str:
+    args = step.get('args', {})
+    if not isinstance(args, dict):
+        args = {}
+    return _first_non_empty_value(
+        args,
+        'target',
+        'object',
+        'object_id',
+        'target_frame',
+        'location',
+    )
+
+
+def _execution_report_dialogue_context(dialogue_context: object) -> list[str]:
+    """Keep user request context without re-feeding assistant wording."""
+    if not isinstance(dialogue_context, list):
+        return []
+    bounded: list[str] = []
+    for item in dialogue_context:
+        text = str(item).strip()
+        if not text:
+            continue
+        if text.lower().startswith('assistant:'):
+            continue
+        bounded.append(text)
+    return bounded[-_MAX_EXECUTION_REPORT_STEPS:]
+
+
 def _report_text_from_execution_results(execution_results: list) -> str:
     if not isinstance(execution_results, list):
         return ''
@@ -1418,6 +1534,10 @@ class NaoOrchestrator(Node):
                 dispatch_fallback_data['last_result_payload'] = dict(latest_result_payload)
             if execution_results:
                 dispatch_fallback_data['execution_results'] = list(execution_results)
+            dispatch_fallback_data['plan_outcome_summary'] = _plan_outcome_summary(
+                plan,
+                execution_results,
+            )
 
             step_ok, reason, result_payload = self._dispatch_plan_step(
                 step,
@@ -1455,6 +1575,7 @@ class NaoOrchestrator(Node):
                     step=step,
                     result_summary=latest_result_summary,
                     result_payload=latest_result_payload,
+                    plan_outcome_summary=_plan_outcome_summary(plan, execution_results),
                 )
                 continue
 
@@ -1492,6 +1613,12 @@ class NaoOrchestrator(Node):
                     blocking=False,
                     unmet_preconditions=[],
                     needs_user_input=False,
+                    plan_outcome_summary=_plan_outcome_summary(
+                        plan,
+                        execution_results,
+                        terminal_reason=reason,
+                        terminal_step=step,
+                    ),
                 )
                 self.get_logger().warn(
                     'Planned intent step failed; continuing plan | intent=%s source=%s plan_id=%s step=%s reason=%s'
@@ -1525,6 +1652,12 @@ class NaoOrchestrator(Node):
                     failure_policy in ('ask_user', 'clarify')
                     or step_name in _ASK_USER_STEP_NAMES
                 ),
+                plan_outcome_summary=_plan_outcome_summary(
+                    plan,
+                    execution_results,
+                    terminal_reason=reason,
+                    terminal_step=step,
+                ),
             )
             self.get_logger().warn(
                 'Planned intent step failed | intent=%s source=%s plan_id=%s step=%s reason=%s'
@@ -1549,6 +1682,11 @@ class NaoOrchestrator(Node):
                 event_type='plan_completed',
                 result_summary=latest_result_summary,
                 result_payload=latest_result_payload,
+                plan_outcome_summary=_plan_outcome_summary(
+                    plan,
+                    execution_results,
+                    terminal_reason='completed',
+                ),
             )
             self._finalize_execution_plan(
                 goal_id=goal_id,
@@ -1567,6 +1705,11 @@ class NaoOrchestrator(Node):
             event_type='plan_invalid',
             reason='plan contained no executable steps',
             blocking=True,
+            plan_outcome_summary=_plan_outcome_summary(
+                plan,
+                execution_results,
+                terminal_reason='plan contained no executable steps',
+            ),
         )
         self._finalize_execution_plan(
             goal_id=goal_id,
@@ -2080,6 +2223,9 @@ class NaoOrchestrator(Node):
             if str(step.get('name', '')).strip().lower() != 'report_result'
         ]
         report_role = 'intermediate' if future_action_steps else 'final'
+        plan_outcome_summary = fallback_data.get('plan_outcome_summary', {})
+        if not isinstance(plan_outcome_summary, dict):
+            plan_outcome_summary = {}
         return {
             'goal_text': _first_non_empty_value(
                 fallback_data,
@@ -2094,13 +2240,9 @@ class NaoOrchestrator(Node):
                 for item in fallback_data.get('normalized_intents', [])
                 if str(item).strip()
             ] if isinstance(fallback_data.get('normalized_intents', []), list) else [],
-            'dialogue_context': [
-                str(item).strip()
-                for item in fallback_data.get('dialogue_context', [])
-                if str(item).strip()
-            ][-_MAX_EXECUTION_REPORT_STEPS:]
-            if isinstance(fallback_data.get('dialogue_context', []), list)
-            else [],
+            'dialogue_context': _execution_report_dialogue_context(
+                fallback_data.get('dialogue_context', [])
+            ),
             'scene_targets': list(plan_context.get('scene_targets', []))
             if isinstance(plan_context.get('scene_targets', []), list)
             else [],
@@ -2120,6 +2262,7 @@ class NaoOrchestrator(Node):
                 if isinstance(fallback_data.get('last_result_payload', {}), dict)
                 else {}
             ),
+            'plan_outcome_summary': dict(plan_outcome_summary),
         }
 
     def _request_execution_report_text(self, report_context: dict) -> _ExecutionReportResult:
@@ -3051,6 +3194,7 @@ class NaoOrchestrator(Node):
         validation_errors: list[str] | None = None,
         result_summary: str = '',
         result_payload: dict | None = None,
+        plan_outcome_summary: dict | None = None,
     ) -> None:
         if self._planner_feedback_pub is None:
             return
@@ -3071,6 +3215,7 @@ class NaoOrchestrator(Node):
             timestamp_sec=round(time.time(), 3),
             result_summary=str(result_summary or '').strip(),
             result_payload=dict(result_payload or {}),
+            plan_outcome_summary=dict(plan_outcome_summary or {}),
         )
         msg = String()
         msg.data = json.dumps(payload, sort_keys=True, separators=(',', ':'))

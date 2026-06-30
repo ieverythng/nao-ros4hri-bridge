@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="8m" height="6m" viewBox="-4 -3 8 6">
+  <title>baseline_table</title>
+  <desc>rqt_human_radar-compatible baseline fixture with one table, one cup, and one book.</desc>
+  <g id="walls">
+    <rect id="baseline_room" x="-3.6" y="-2.6" width="7.2" height="5.2" fill="#f7f8fb" stroke="#4b5563" stroke-width="0.05"/>
+    <rect id="baseline_table_surface" x="0.7" y="-0.8" width="1.9" height="1.2" fill="#d8c69f" stroke="#6c5630" stroke-width="0.04"/>
+    <rect id="robot_station_zone" x="-2.9" y="-1.1" width="1.6" height="1.8" fill="#edf1fb" stroke="#315a9b" stroke-width="0.04"/>
+  </g>
+  <g id="static_objects">
+    <circle id="baseline_table_cup" class="Cup" cx="1.2" cy="-0.2" r="0.18" fill="#d44b44" stroke="#7d1f1a" stroke-width="0.03"/>
+    <rect id="baseline_table_book" class="Book" x="1.7" y="-0.35" width="0.45" height="0.3" fill="#4b76d4" stroke="#1d3d83" stroke-width="0.03"/>
+    <rect id="baseline_robot_station" class="Location" x="-2.4" y="-0.55" width="0.45" height="0.55" fill="#c8d3ff" stroke="#3d4d91" stroke-width="0.03"/>
+  </g>
+</svg>
