@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deep Fake/Replan Stabilization Pass - 2026-07-01</title>
+  <style>
+    :root { --bg:#f7f8fb; --ink:#20242b; --muted:#5d6675; --line:#cfd6e0; --card:#fff; --accent:#235b8c; --done:#236b3b; --partial:#9a5b13; --pending:#8a463d; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:Arial,sans-serif; line-height:1.5; }
+    main { max-width:1120px; margin:auto; padding:32px 22px 72px; }
+    h1 { margin:0 0 6px; font-size:2rem; }
+    h2 { border-top:1px solid var(--line); padding-top:20px; margin-top:30px; }
+    .meta { color:var(--muted); margin-bottom:20px; }
+    .note { background:var(--card); border-left:5px solid var(--accent); padding:12px 16px; }
+    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin:18px 0 24px; }
+    .card { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--accent); padding:14px 16px; }
+    .card strong { display:block; margin-bottom:4px; font-size:1.15rem; }
+    table { width:100%; border-collapse:collapse; background:var(--card); margin:10px 0 18px; }
+    th, td { border:1px solid var(--line); padding:9px 10px; text-align:left; vertical-align:top; }
+    th { background:#e9edf3; }
+    code { background:#e8ecf1; padding:1px 4px; }
+    pre { background:#20242b; color:#f7f8fb; padding:14px 16px; overflow:auto; }
+    .done { color:var(--done); font-weight:bold; }
+    .partial { color:var(--partial); font-weight:bold; }
+    .pending { color:var(--pending); font-weight:bold; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Deep Fake/Replan Stabilization Pass</h1>
+  <p class="meta">1 July 2026. Focused handoff for the response-first deep fake/replan baseline, SVG operator maps, planner goal-lineage source fix, and rebuilt overlay review.</p>
+
+  <p class="note">The first live container was healthy enough for baseline review, but it imported the old built <code>chatbot_llm</code>. A fresh <code>iiia:nao-critic</code> overlay was then rebuilt from <code>iiia:nao</code> and launched in <code>response_first</code>. The duplicate active-goal rejection did not recur after rebuild.</p>
+
+  <section class="cards">
+    <div class="card"><strong>Runtime mode</strong><code>response_first</code> matched the expected review profile.</div>
+    <div class="card"><strong>Local gate</strong><span class="done">Focused chatbot, contract, gate, harness, and compile checks passed</span>.</div>
+    <div class="card"><strong>Current blocker</strong><span class="partial">Live rebuild proof for alias, ordered fallback, digest, and KB post-effects</span>, not duplicate active-goal rejection.</div>
+    <div class="card"><strong>SVG state</strong><span class="partial">Source-patched</span> with positive canvases and no overlapping labels.</div>
+  </section>
+
+  <h2>Runtime Baseline</h2>
+  <table>
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Container</td><td>Initial negative control on <code>iiia:nao</code>; rebuilt scored probe on <code>iiia:nao-critic</code>.</td></tr>
+      <tr><td>Graph</td><td><code>/chatbot_llm</code>, <code>/dialogue_manager</code>, <code>/planner_llm</code>, <code>/nao_orchestrator</code>, <code>/fake_skill_server</code>, <code>/report_result_skill_server</code>, <code>/kb/knowledge_core</code>, and <code>/nao_scene_grounding</code> were visible.</td></tr>
+      <tr><td>Mode</td><td><code>turn_pipeline_mode=response_first</code></td></tr>
+      <tr><td>Import source</td><td>The rebuilt container contains <code>def dialogue_turn_id</code> in <code>/home/ubuntu/ws/build/chatbot_llm/chatbot_llm/planner_request_adapter.py</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Evidence Artifacts</h2>
+  <table>
+    <thead><tr><th>Artifact</th><th>Use</th></tr></thead>
+    <tbody>
+      <tr><td><code>/tmp/nao_baseline_smoke_20260701.json</code></td><td>Response-first smoke baseline. Simple dialogue and KB query evidence remain usable.</td></tr>
+      <tr><td><code>/tmp/nao_environment_baseline_20260701.json</code></td><td>Semantic environment fixtures are injected through <code>/kb/revise</code>; grouped delivery and person binding remain the next proof target.</td></tr>
+      <tr><td><code>/tmp/nao_fake_deep_success_20260701.json</code></td><td>Pre-rebuild negative control for duplicate active planner-goal rejection under <code>fake_policy_profile=all_success</code>.</td></tr>
+      <tr><td><code>/tmp/nao_smoke_after_rebuild_20260701.json</code></td><td>Fresh rebuilt smoke run. Five cases completed with no duplicate active-goal rejection.</td></tr>
+      <tr><td><code>/tmp/nao_environment_after_rebuild_20260701.json</code></td><td>Fresh rebuilt environment run. Baseline, lab table, and lab-sections inventory passed; lab-sections delivery still clarified on the collection location.</td></tr>
+      <tr><td><code>/tmp/nao_fake_deep_success_after_rebuild_20260701.json</code></td><td>Fresh rebuilt fake-deep all-success probe. Inventory passed; ordered walk/report failed because planner output did not contain a JSON object.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Source Fixes</h2>
+  <table>
+    <thead><tr><th>Fix</th><th>Purpose</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Dialogue-scoped turn ids</td><td><code>chatbot_llm</code> now derives turn ids from role, dialogue id, and request count. This prevents independent questionnaire turns from sharing <code>__default__:1</code>.</td><td class="done">Pass after rebuild</td></tr>
+      <tr><td>Canonical location test</td><td>The planner-handoff grounded-context test now expects the current <code>locations</code> shape with role and counts.</td><td class="done">Local tests pass</td></tr>
+      <tr><td>SVG canvas normalization</td><td>Preloaded environment SVGs now use positive centimeter canvases and no text labels.</td><td class="partial">Source-patched; rqt visual proof pending</td></tr>
+      <tr><td>Incremental harness evidence</td><td><code>run_active_questionnaire.py</code> now refreshes each case during long waits with updated phase observations and log excerpts.</td><td class="done">Source-patched</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Validation</h2>
+  <pre>python3 -m py_compile src/chatbot_llm/chatbot_llm/node_impl.py \
+  src/chatbot_llm/chatbot_llm/planner_request_adapter.py
+
+PYTHONPATH=src/chatbot_llm:src/planner_common:src/kb_skills \
+python3 -m pytest \
+  src/chatbot_llm/test/test_turn_engine.py \
+  src/chatbot_llm/test/test_planner_handoff_grounded_context.py \
+  src/chatbot_llm/test/test_planner_request_adapter.py -q
+
+110 passed</pre>
+
+  <h2>Remaining Gaps</h2>
+  <table>
+    <thead><tr><th>Gap</th><th>Current state</th><th>Next gate</th></tr></thead>
+    <tbody>
+      <tr><td>Location alias resolution</td><td>“work table” still triggered clarification despite <code>dbp:name work_table</code> in the last rebuilt artifact.</td><td>Source now preserves non-label location aliases and planner matching reads them before clarification. Rerun the exact work-table delivery prompt after rebuild.</td></tr>
+      <tr><td>Ordered multi-object planner JSON</td><td>“Walk to every object on the table...” reached planner admission, then failed because the model output did not contain a JSON object.</td><td>Source now has a bounded grounded ordered-walk fallback after invalid planner JSON. It uses the LLM first and only falls back to grounded object ids after parser failure.</td></tr>
+      <tr><td>Forced failure recovery</td><td>Prior fail-once navigation replan exists; current rebuilt run did not reach fail-once profiles.</td><td>Rerun <code>fail_once_navigation</code>, <code>fail_once_pick</code>, and <code>delivery_blocked</code> after the two current blockers are patched.</td></tr>
+      <tr><td>Grounded-context digest counts</td><td>One run showed <code>Objects (0)</code> while JSON contained visible domain objects.</td><td>Source now keeps domain objects that also carry spatial materialization RDF types. Rerun a screenshot-quality digest after rebuild.</td></tr>
+      <tr><td>Skill-bound KB post-effects</td><td>Delivered objects gained the human relation but could retain stale source locations.</td><td>Fake <code>bring_object</code> now removes known-source <code>oro:isOn</code>, <code>oro:isAt</code>, and <code>oro:isIn</code> relations before adding the recipient relation.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Next Runtime Gate</h2>
+  <pre>python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
+  --container nao_ros2 \
+  --case-set fake_deep \
+  --speech-voice-scope group \
+  --fake-policy-profile all_success \
+  --expected-turn-pipeline-mode response_first \
+  --global-timeout-sec 420 \
+  --max-case-wait-sec 20 \
+  --out /tmp/nao_fake_deep_success_post_rebuild_20260701.json</pre>
+
+  <p class="note">After the all-success ladder, rerun <code>fail_once_navigation</code>, <code>fail_once_pick</code>, <code>delivery_blocked</code>, and <code>recipient_missing</code>. Do not raise the deep fake/replan score above the current partial baseline until location aliasing, ordered-plan fallback, digest counts, and post-effect KB cleanup pass in the rebuilt runtime.</p>
+</main>
+</body>
+</html>

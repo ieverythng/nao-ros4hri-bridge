@@ -102,6 +102,8 @@ _SIM_CAMERA_DEFAULTS = {
     "fake_skill_global_mode": "scenario",
     "fake_skill_random_failure_prob": "0.50",
     "fake_skill_mode_overrides_json": "{}",
+    "preloaded_environment_ids": "",
+    "preloaded_environment_lifespan_sec": "1800.0",
     "head_motion_allow_open_loop_without_joint_state": "true",
     "head_motion_assume_success_on_convergence_timeout": "false",
     "perform_motion_execution_mode": "real",
@@ -1184,6 +1186,37 @@ def generate_profile_launch_description(
         "start_fake_skills",
         default_value=_profile_default(profile_defaults, "start_fake_skills", "true"),
         description="Launch deterministic fake skill action servers (/skill/fake/*).",
+    )
+    preloaded_environment_ids_arg = DeclareLaunchArgument(
+        "preloaded_environment_ids",
+        default_value=_profile_default(profile_defaults, "preloaded_environment_ids", ""),
+        description=(
+            "Comma-separated KnowledgeCore environment fixtures to preload at "
+            "startup, for example baseline_table,kitchen_delivery. Empty disables "
+            "the launch-time preload."
+        ),
+    )
+    preloaded_environment_fixtures_path_arg = DeclareLaunchArgument(
+        "preloaded_environment_fixtures_path",
+        default_value=_profile_default(profile_defaults, "preloaded_environment_fixtures_path", ""),
+        description=(
+            "Optional absolute fixture JSON path. Empty uses the packaged "
+            "nao_chatbot/config/preloaded_environments.json."
+        ),
+    )
+    preloaded_environment_lifespan_sec_arg = DeclareLaunchArgument(
+        "preloaded_environment_lifespan_sec",
+        default_value=_profile_default(
+            profile_defaults,
+            "preloaded_environment_lifespan_sec",
+            "1800.0",
+        ),
+        description="KnowledgeCore lifespan for launch-preloaded environment facts.",
+    )
+    preloaded_environment_kb_models_arg = DeclareLaunchArgument(
+        "preloaded_environment_kb_models",
+        default_value=_profile_default(profile_defaults, "preloaded_environment_kb_models", ""),
+        description="Optional CSV KnowledgeCore model list for launch-preloaded fixtures.",
     )
     fake_skill_scenario_file_arg = DeclareLaunchArgument(
         "fake_skill_scenario_file",
@@ -2285,6 +2318,39 @@ def generate_profile_launch_description(
             "started by start_interaction_sim_perception:=true, not by start_naoqi_driver."
         ),
     )
+    preloaded_environment = TimerAction(
+        period=8.0,
+        actions=[
+            ExecuteProcess(
+                cmd=[
+                    "bash",
+                    "-lc",
+                    [
+                        _service_wait_script("/kb/revise", timeout_sec=45),
+                        " && exec preload_environment --environment-ids '",
+                        LaunchConfiguration("preloaded_environment_ids"),
+                        "' --fixture-path '",
+                        LaunchConfiguration("preloaded_environment_fixtures_path"),
+                        "' --kb-lifespan-sec '",
+                        LaunchConfiguration("preloaded_environment_lifespan_sec"),
+                        "' --kb-models '",
+                        LaunchConfiguration("preloaded_environment_kb_models"),
+                        "'",
+                    ],
+                ],
+                output="screen",
+                condition=IfCondition(
+                    PythonExpression(
+                        [
+                            '"',
+                            LaunchConfiguration("preloaded_environment_ids"),
+                            '" != ""',
+                        ]
+                    )
+                ),
+            )
+        ],
+    )
 
     nao_look_at_bundle = _make_lifecycle_bundle(
         package_name="nao_look_at",
@@ -2905,6 +2971,10 @@ def generate_profile_launch_description(
             start_scan_skill_arg,
             start_report_result_skill_arg,
             start_fake_skills_arg,
+            preloaded_environment_ids_arg,
+            preloaded_environment_fixtures_path_arg,
+            preloaded_environment_lifespan_sec_arg,
+            preloaded_environment_kb_models_arg,
             fake_skill_scenario_file_arg,
             fake_skill_active_scenario_id_arg,
             fake_skill_global_mode_arg,
@@ -3062,6 +3132,8 @@ def generate_profile_launch_description(
                     LaunchConfiguration("start_fake_skills"),
                     " scene_grounding=",
                     LaunchConfiguration("start_scene_grounding"),
+                    " preloaded_environment=",
+                    LaunchConfiguration("preloaded_environment_ids"),
                     " object_detection=",
                     LaunchConfiguration("start_object_detection"),
                     " trace_viewer=",
@@ -3086,6 +3158,19 @@ def generate_profile_launch_description(
                     "dialogue_manager; planner_llm and executor seams start independently"
                 )
             ),
+            LogInfo(
+                msg=[
+                    "[STACK] preloaded environment viewer | file://",
+                    PathJoinSubstitution(
+                        [
+                            FindPackageShare("nao_chatbot"),
+                            "config",
+                            "preloaded_environment_viewer.html",
+                        ]
+                    ),
+                    " or run: ros2 run nao_chatbot preloaded_environment_viewer --open",
+                ]
+            ),
             naoqi_driver_launch,
             nao_robot_note,
             robot_perception_note,
@@ -3094,6 +3179,7 @@ def generate_profile_launch_description(
             laptop_tts_robot_note,
             posture_wakeup_note,
             object_detection_camera_note,
+            preloaded_environment,
             rqt_console,
             interaction_sim_rqt,
             interaction_sim_rqt_dialogues,

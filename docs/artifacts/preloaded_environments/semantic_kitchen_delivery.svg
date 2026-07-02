@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900cm" height="600cm" viewBox="0 0 900 600">
+  <title>semantic_kitchen_delivery</title>
+  <desc>Operator visualization for the kitchen_delivery KnowledgeCore fixture.</desc>
+  <rect id="delivery_floor" x="35" y="35" width="830" height="530" rx="18" fill="#f7f8fb" stroke="#6b7280" stroke-width="8"/>
+  <rect id="codex_kitchen" x="70" y="90" width="330" height="305" rx="18" fill="#e8f3ee" stroke="#2f6b4f" stroke-width="7"/>
+  <rect id="codex_kitchen_surface" x="140" y="205" width="200" height="92" rx="10" fill="#d9c7a3" stroke="#8a6a36" stroke-width="6"/>
+  <rect id="codex_handoff_area" x="560" y="95" width="245" height="165" rx="18" fill="#fff4df" stroke="#9a6b22" stroke-width="7"/>
+  <rect id="codex_robot_station" x="560" y="390" width="245" height="125" rx="18" fill="#edf1fb" stroke="#315a9b" stroke-width="7"/>
+  <circle id="codex_kitchen_cup" class="Cup" cx="190" cy="190" r="26" fill="#ffffff" stroke="#3f3f46" stroke-width="5"/>
+  <rect id="codex_kitchen_book" class="Book" x="260" y="175" width="56" height="42" rx="5" fill="#63a16f" stroke="#22543d" stroke-width="5"/>
+  <circle id="codex_recipient_person" class="Human" cx="685" cy="175" r="38" fill="#f2b56b" stroke="#8a4b17" stroke-width="6"/>
+  <rect id="nao_robot_pose" class="Robot" x="672" y="430" width="50" height="56" rx="10" fill="#c8d3ff" stroke="#3d4d91" stroke-width="5"/>
+</svg>

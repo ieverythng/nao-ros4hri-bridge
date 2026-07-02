@@ -4,8 +4,11 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
+from datetime import timezone
 import json
 import re
+import shlex
 import subprocess
 import time
 from dataclasses import dataclass
@@ -15,7 +18,9 @@ from pathlib import Path
 DEFAULT_CONTAINER = "nao_ros2"
 VOICE_ID = "anonymous_speaker"
 VOICE_TRACKED_TOPIC = "/nao_chatbot/humans/voices/tracked"
-VOICE_SPEECH_TOPIC = "/nao_chatbot/humans/voices/anonymous_speaker/speech"
+# dialogue_manager remaps its tracked-voice input topic, then subscribes to the
+# raw per-voice speech topic it constructs internally.
+VOICE_SPEECH_TOPIC = "/humans/voices/anonymous_speaker/speech"
 VOICE_TRACKED_QOS = "--qos-reliability reliable --qos-durability transient_local"
 VOICE_SPEECH_QOS = "--qos-reliability reliable --qos-durability volatile"
 RQT_DISPLAY_ROSOUT_TOPIC = "/rosout"
@@ -25,10 +30,20 @@ TOPIC_SAMPLE_TIMEOUT_SEC = 1.5
 TOPIC_SAMPLE_KILL_AFTER_SEC = 1.0
 DEFAULT_GLOBAL_TIMEOUT_SEC = 420
 DEFAULT_KB_LIFESPAN_SEC = 300
+DEFAULT_ENVIRONMENT_FIXTURE_PATH = (
+    Path(__file__).resolve().parents[4]
+    / "src"
+    / "nao_chatbot"
+    / "config"
+    / "preloaded_environments.json"
+)
+FALLBACK_ENVIRONMENT_FIXTURE_PATH = (
+    Path(__file__).resolve().parent.parent / "references" / "preloaded_environments.json"
+)
 KB_PROBE_OBJECT_ID = "codex_probe_cup"
 KB_MAXIMAL_CUP_ID = "codex_kitchen_cup"
 KB_MAXIMAL_LOCATION_ID = "codex_kitchen"
-KB_MAXIMAL_ORIGIN_ID = "codex_operator_station"
+KB_MAXIMAL_ORIGIN_ID = "codex_robot_station"
 KB_MAXIMAL_PERSON_ID = "codex_recipient_person"
 ROS_CLI_PREAMBLE = """
 source /opt/ros/jazzy/setup.bash
@@ -46,6 +61,15 @@ class KbInjection:
 
 
 @dataclass(frozen=True)
+class KbAbsenceGuard:
+    """Preflight query that must return no rows for a case to be isolated."""
+
+    name: str
+    query_patterns: tuple[str, ...]
+    query_vars: tuple[str, ...] = ("?predicate", "?object")
+
+
+@dataclass(frozen=True)
 class ProbeCase:
     name: str
     category: str
@@ -54,6 +78,8 @@ class ProbeCase:
     mode: str = "speech"
     setup: KbInjection | None = None
     conversation_group: str | None = None
+    environment_ids: tuple[str, ...] = ()
+    absence_guards: tuple[KbAbsenceGuard, ...] = ()
 
 
 SMOKE_CASES = (
@@ -486,13 +512,13 @@ COMPOSITE_CASES = (
     ProbeCase(
         "maximal_kitchen_cup_bring",
         "maximal_semantic_execution",
-        "I am at the operator station. There is a cup in the kitchen. Go to the kitchen, pick up the cup, bring it back to me at the operator station, and report what happened.",
+        "I am at the robot station. There is a cup in the kitchen. Go to the kitchen, pick up the cup, bring it back to me at the robot station, and report what happened.",
         160.0,
         setup=KbInjection(
             object_id=KB_MAXIMAL_CUP_ID,
             statements=(
                 f"{KB_MAXIMAL_ORIGIN_ID} rdf:type Place",
-                f"{KB_MAXIMAL_ORIGIN_ID} dbp:name operator_station",
+                f"{KB_MAXIMAL_ORIGIN_ID} dbp:name robot_station",
                 f"{KB_MAXIMAL_ORIGIN_ID} dbp:frameId map",
                 f"{KB_MAXIMAL_ORIGIN_ID} dbp:poseSource semantic_fixture",
                 f"{KB_MAXIMAL_ORIGIN_ID} dbp:poseX 0.00",
@@ -583,6 +609,49 @@ COMPOSITE_CASES = (
         ),
     ),
     ProbeCase(
+        "multi_turn_gold_apple_scene",
+        "multi_turn_kb_manipulation",
+        "What can you see now?",
+        12.0,
+        setup=KbInjection(
+            object_id="codex_gold_apple_scene",
+            statements=(
+                "myself sees codex_gold_apple",
+                "codex_gold_apple rdf:type Apple",
+                "codex_gold_apple dbp:name KAREN",
+                "codex_gold_apple dbp:color gold",
+                "codex_gold_apple oro:isOn codex_gold_table",
+                "codex_gold_table rdf:type Table",
+                "codex_gold_table dbp:name table",
+                "myself sees codex_gold_recipient",
+                "codex_gold_recipient rdf:type Human",
+                "codex_gold_recipient dbp:name ALEX",
+                "codex_gold_recipient dbp:frameId codex_gold_recipient",
+                "myself canReach codex_gold_apple",
+            ),
+            query_patterns=(
+                "codex_gold_apple ?predicate ?object",
+                "codex_gold_recipient ?predicate ?object",
+            ),
+            query_vars=("?predicate", "?object"),
+        ),
+        conversation_group="multi_turn_gold_apple",
+    ),
+    ProbeCase(
+        "multi_turn_gold_apple_bring",
+        "multi_turn_kb_manipulation",
+        "Can you bring that apple to the person named ALEX?",
+        160.0,
+        conversation_group="multi_turn_gold_apple",
+    ),
+    ProbeCase(
+        "multi_turn_gold_apple_location_followup",
+        "multi_turn_kb_manipulation",
+        "Where is the apple now?",
+        12.0,
+        conversation_group="multi_turn_gold_apple",
+    ),
+    ProbeCase(
         "replan_absent_then_scan_report",
         "replan_recovery",
         "Find the codex missing cup. If you cannot find it, scan the scene and report what you can confirm.",
@@ -591,13 +660,13 @@ COMPOSITE_CASES = (
     ProbeCase(
         "replan_kitchen_cup_fallback_report",
         "replan_recovery",
-        "Bring me the kitchen cup at the operator station. If you cannot bring it, look at the kitchen cup and report the reason.",
+        "Bring me the kitchen cup at the robot station. If you cannot bring it, look at the kitchen cup and report the reason.",
         150.0,
         setup=KbInjection(
             object_id=KB_MAXIMAL_CUP_ID,
             statements=(
                 f"{KB_MAXIMAL_ORIGIN_ID} rdf:type Place",
-                f"{KB_MAXIMAL_ORIGIN_ID} dbp:name operator_station",
+                f"{KB_MAXIMAL_ORIGIN_ID} dbp:name robot_station",
                 f"{KB_MAXIMAL_LOCATION_ID} rdf:type Room",
                 f"{KB_MAXIMAL_LOCATION_ID} dbp:name kitchen",
                 f"{KB_MAXIMAL_CUP_ID} rdf:type Cup",
@@ -661,6 +730,269 @@ COMPOSITE_CASES = (
     ),
 )
 
+INTENT_ABLATION_CASES = (
+    ProbeCase(
+        "intent_ablation_dialogue_greeting",
+        "intent_route_ablation_dialogue",
+        "Hey, how are you?",
+        30.0,
+        conversation_group="intent_ablation_dialogue",
+    ),
+    ProbeCase(
+        "intent_ablation_favorite_movie",
+        "intent_route_ablation_dialogue",
+        "What is your favourite movie?",
+        45.0,
+        conversation_group="intent_ablation_dialogue",
+    ),
+    ProbeCase(
+        "intent_ablation_wave_particle",
+        "intent_route_ablation_dialogue",
+        "What is wave-particle duality?",
+        45.0,
+    ),
+    ProbeCase(
+        "intent_ablation_future_navigation",
+        "intent_route_ablation_holdout",
+        "Could we navigate to the probe cup later?",
+        45.0,
+        setup=KbInjection(
+            object_id=KB_PROBE_OBJECT_ID,
+            statements=(
+                f"myself sees {KB_PROBE_OBJECT_ID}",
+                f"{KB_PROBE_OBJECT_ID} rdf:type Cup",
+                f"{KB_PROBE_OBJECT_ID} dbp:name TITAS",
+                f"{KB_PROBE_OBJECT_ID} dbp:color gold",
+                f"{KB_PROBE_OBJECT_ID} oro:isOn codex_probe_table",
+            ),
+            query_patterns=(f"{KB_PROBE_OBJECT_ID} ?predicate ?object",),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "intent_ablation_kb_visible",
+        "intent_route_ablation_kb_query",
+        "What can you see now?",
+        45.0,
+        setup=KbInjection(
+            object_id="codex_ablation_scene",
+            statements=(
+                "myself sees codex_ablation_cup",
+                "codex_ablation_cup rdf:type Cup",
+                "codex_ablation_cup dbp:name TITAS",
+                "codex_ablation_cup dbp:color gold",
+                "myself sees codex_ablation_person",
+                "codex_ablation_person rdf:type Human",
+                "codex_ablation_person dbp:name ALEX",
+            ),
+            query_patterns=(
+                "codex_ablation_cup ?predicate ?object",
+                "codex_ablation_person ?predicate ?object",
+            ),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "intent_ablation_look_report",
+        "intent_route_ablation_execution",
+        "Look at the probe cup and tell me what you did.",
+        100.0,
+        setup=KbInjection(
+            object_id=KB_PROBE_OBJECT_ID,
+            statements=(
+                f"myself sees {KB_PROBE_OBJECT_ID}",
+                f"{KB_PROBE_OBJECT_ID} rdf:type Cup",
+                f"{KB_PROBE_OBJECT_ID} dbp:name TITAS",
+                f"{KB_PROBE_OBJECT_ID} dbp:color gold",
+                f"{KB_PROBE_OBJECT_ID} oro:isOn codex_probe_table",
+            ),
+            query_patterns=(f"{KB_PROBE_OBJECT_ID} ?predicate ?object",),
+            query_vars=("?predicate", "?object"),
+        ),
+    ),
+    ProbeCase(
+        "intent_ablation_head_wave",
+        "intent_route_ablation_execution",
+        "Move your head up and then wave at me.",
+        95.0,
+    ),
+)
+
+ENVIRONMENT_CASES = (
+    ProbeCase(
+        "environment_baseline_table_inventory",
+        "preloaded_environment_kb_query",
+        "What objects are on the table?",
+        12.0,
+        environment_ids=("baseline_table",),
+        conversation_group="preloaded_baseline_table",
+    ),
+    ProbeCase(
+        "environment_lab_table_inventory",
+        "preloaded_environment_kb_query",
+        "What objects are on the table?",
+        12.0,
+        environment_ids=("lab_table",),
+        conversation_group="preloaded_lab_table",
+    ),
+    ProbeCase(
+        "environment_lab_sections_inventory",
+        "preloaded_environment_kb_query",
+        "What can you see in the lab?",
+        14.0,
+        environment_ids=("lab_sections",),
+        conversation_group="preloaded_lab_sections",
+    ),
+    ProbeCase(
+        "environment_lab_sections_delivery",
+        "preloaded_environment_composite_execution",
+        "Bring every object from the work table to ALEX and report what happened.",
+        180.0,
+        environment_ids=("lab_sections",),
+        conversation_group="preloaded_lab_sections",
+    ),
+    ProbeCase(
+        "environment_kitchen_inventory",
+        "preloaded_environment_kb_query",
+        "What is in the kitchen?",
+        12.0,
+        environment_ids=("kitchen_delivery",),
+        conversation_group="preloaded_kitchen_delivery",
+    ),
+    ProbeCase(
+        "environment_grouped_location_delivery",
+        "preloaded_environment_composite_execution",
+        "Bring every object from the kitchen to ALEX and report what happened.",
+        180.0,
+        environment_ids=("kitchen_delivery",),
+        conversation_group="preloaded_kitchen_delivery",
+    ),
+    ProbeCase(
+        "environment_grouped_location_followup",
+        "preloaded_environment_kb_query",
+        "Where is the kitchen cup now?",
+        14.0,
+        environment_ids=("kitchen_delivery",),
+        conversation_group="preloaded_kitchen_delivery",
+    ),
+    ProbeCase(
+        "environment_iiia_floor_inventory",
+        "preloaded_environment_kb_query",
+        "What rooms and objects are in the IIIA floor scene?",
+        16.0,
+        environment_ids=("iiia_floor",),
+        conversation_group="preloaded_iiia_floor",
+    ),
+    ProbeCase(
+        "environment_iiia_kitchen_delivery",
+        "preloaded_environment_composite_execution",
+        "Bring every object from the kitchen to ALEX and report what happened.",
+        180.0,
+        environment_ids=("iiia_floor",),
+        conversation_group="preloaded_iiia_floor",
+    ),
+    ProbeCase(
+        "environment_gold_apple_handoff",
+        "preloaded_environment_multi_turn",
+        "Can you bring that gold apple to the person named ALEX?",
+        160.0,
+        environment_ids=("gold_apple_handoff",),
+        conversation_group="preloaded_gold_apple",
+    ),
+    ProbeCase(
+        "environment_gold_apple_followup",
+        "preloaded_environment_kb_query",
+        "Where is the gold apple now?",
+        14.0,
+        environment_ids=("gold_apple_handoff",),
+        conversation_group="preloaded_gold_apple",
+    ),
+)
+
+FAKE_DEEP_CASES = (
+    ProbeCase(
+        "fake_deep_baseline_inventory",
+        "fake_deep_preflight",
+        "What objects are on the table?",
+        12.0,
+        environment_ids=("baseline_table",),
+        conversation_group="fake_deep_baseline",
+    ),
+    ProbeCase(
+        "fake_deep_ordered_walk_report",
+        "fake_deep_composite_success",
+        "Walk to every object on the table and let me know when you get to each one.",
+        180.0,
+        environment_ids=("lab_table",),
+        conversation_group="fake_deep_lab_table",
+    ),
+    ProbeCase(
+        "fake_deep_grouped_work_table_delivery",
+        "fake_deep_location_delivery",
+        "Bring every object from the work table to ALEX and report what happened.",
+        180.0,
+        environment_ids=("lab_sections",),
+        conversation_group="fake_deep_lab_sections",
+    ),
+    ProbeCase(
+        "fake_deep_missing_object_recovery",
+        "fake_deep_absent_target_replan",
+        "Find the codex missing cup. If you cannot find it, scan the scene and report what you can confirm.",
+        180.0,
+        environment_ids=("baseline_table",),
+        conversation_group="fake_deep_absent_target",
+        absence_guards=(
+            KbAbsenceGuard(
+                "missing_cup_subject_absent",
+                ("codex_missing_cup ?predicate ?object",),
+            ),
+        ),
+    ),
+    ProbeCase(
+        "fake_deep_missing_recipient_clarification",
+        "fake_deep_missing_secondary_target",
+        "Bring every object from the work table to the person named BLAKE and report what happened.",
+        150.0,
+        environment_ids=("lab_sections",),
+        conversation_group="fake_deep_missing_recipient",
+        absence_guards=(
+            KbAbsenceGuard(
+                "blake_subject_absent",
+                ("codex_lab_blake ?predicate ?object",),
+            ),
+            KbAbsenceGuard(
+                "blake_named_person_absent",
+                ("?subject dbp:name BLAKE",),
+                ("?subject",),
+            ),
+        ),
+    ),
+    ProbeCase(
+        "fake_deep_iiia_kitchen_delivery",
+        "fake_deep_maximal_location_delivery",
+        "Bring every object from the kitchen to ALEX and report what happened.",
+        220.0,
+        environment_ids=("iiia_floor",),
+        conversation_group="fake_deep_iiia_floor",
+    ),
+    ProbeCase(
+        "fake_deep_gold_apple_multiturn",
+        "fake_deep_multiturn_pronoun_handoff",
+        "Can you bring that gold apple to the person named ALEX?",
+        180.0,
+        environment_ids=("gold_apple_handoff",),
+        conversation_group="fake_deep_gold_apple",
+    ),
+    ProbeCase(
+        "fake_deep_gold_apple_followup",
+        "fake_deep_post_effect_query",
+        "Where is the gold apple now?",
+        16.0,
+        environment_ids=("gold_apple_handoff",),
+        conversation_group="fake_deep_gold_apple",
+    ),
+)
+
 TOPICS_TO_SAMPLE = (
     "/chatbot_llm/turn_trace",
     "/planner/request",
@@ -670,11 +1002,49 @@ TOPICS_TO_SAMPLE = (
     "/speech",
 )
 
+FAKE_POLICY_PROFILES = {
+    "none": {},
+    "all_success": {"global_mode": "always_success", "mode_overrides_json": "{}"},
+    "every_other": {"global_mode": "every_other", "mode_overrides_json": "{}"},
+    "random_seeded": {
+        "global_mode": "random_seeded",
+        "random_failure_prob": "0.50",
+        "mode_overrides_json": "{}",
+    },
+    "fail_once_navigation": {
+        "global_mode": "scenario",
+        "mode_overrides_json": '{"navigate_to":"fail_once"}',
+    },
+    "fail_once_pick": {
+        "global_mode": "scenario",
+        "mode_overrides_json": '{"pick_object":"fail_once"}',
+    },
+    "delivery_blocked": {
+        "global_mode": "scenario",
+        "mode_overrides_json": '{"bring_object":"delivery_blocked"}',
+    },
+    "recipient_missing": {
+        "global_mode": "scenario",
+        "mode_overrides_json": '{"bring_object":"recipient_unavailable"}',
+    },
+}
+
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--container", default=DEFAULT_CONTAINER)
-    parser.add_argument("--case-set", default="smoke", choices=("smoke", "main", "composite"))
+    parser.add_argument(
+        "--case-set",
+        default="smoke",
+        choices=(
+            "smoke",
+            "main",
+            "composite",
+            "intent_ablation",
+            "environment",
+            "fake_deep",
+        ),
+    )
     parser.add_argument(
         "--case-names",
         default="",
@@ -688,6 +1058,16 @@ def main() -> int:
     parser.add_argument("--out", default="/tmp/nao_active_questionnaire.json")
     parser.add_argument("--since-sec", type=int, default=90)
     parser.add_argument("--global-timeout-sec", type=int, default=DEFAULT_GLOBAL_TIMEOUT_SEC)
+    parser.add_argument(
+        "--max-case-wait-sec",
+        type=float,
+        default=0.0,
+        help=(
+            "Optional cap for per-case post-turn waits. Leave at 0 for the "
+            "formal questionnaire waits; set during interactive deep-fake "
+            "debugging to avoid waiting several minutes after evidence already arrived."
+        ),
+    )
     parser.add_argument(
         "--kb-lifespan-sec",
         type=int,
@@ -706,16 +1086,71 @@ def main() -> int:
         help="Turn injection seam. Speech is full ROS4HRI E2E; service is chatbot-only.",
     )
     parser.add_argument(
+        "--speech-voice-scope",
+        default="shared",
+        choices=("shared", "group", "case"),
+        help=(
+            "Voice id policy for speech-mode runs. Use shared for long-context "
+            "stress, group/case for isolated scored evidence."
+        ),
+    )
+    parser.add_argument(
         "--no-rqt-display-mirror",
         action="store_true",
         help="Do not mirror injected user turns to rqt-visible debug topics.",
     )
+    parser.add_argument(
+        "--expected-turn-pipeline-mode",
+        default="",
+        choices=("", "response_first", "intent_first"),
+        help="Optional assertion label for the active /chatbot_llm turn_pipeline_mode.",
+    )
+    parser.add_argument(
+        "--environment-fixtures",
+        default=str(DEFAULT_ENVIRONMENT_FIXTURE_PATH),
+        help="JSON file containing named KnowledgeCore environment fixtures.",
+    )
+    parser.add_argument(
+        "--preload-environment",
+        default="",
+        help=(
+            "Comma-separated environment fixture ids to inject once before the "
+            "case set. Use --case-set environment for the built-in environment "
+            "validation ladder."
+        ),
+    )
+    parser.add_argument(
+        "--list-environments",
+        action="store_true",
+        help="List available environment fixture ids and exit.",
+    )
+    parser.add_argument(
+        "--fake-policy-profile",
+        default="none",
+        choices=tuple(sorted(FAKE_POLICY_PROFILES.keys())),
+        help=(
+            "Optional fake_skill_server policy profile applied before the run. "
+            "Use this for deterministic success/failure/replan validation."
+        ),
+    )
     args = parser.parse_args()
+
+    environment_fixture_path = resolve_environment_fixture_path(Path(args.environment_fixtures))
+    environment_fixtures = load_environment_fixtures(environment_fixture_path)
+    if args.list_environments:
+        for fixture_id in sorted(environment_fixtures.keys()):
+            description = str(environment_fixtures[fixture_id].get("description", "")).strip()
+            suffix = " - %s" % description if description else ""
+            print("%s%s" % (fixture_id, suffix))
+        return 0
 
     case_sets = {
         "smoke": SMOKE_CASES,
         "main": MAIN_QUESTIONNAIRE_CASES,
         "composite": COMPOSITE_CASES,
+        "intent_ablation": INTENT_ABLATION_CASES,
+        "environment": ENVIRONMENT_CASES,
+        "fake_deep": FAKE_DEEP_CASES,
     }
     cases = list(case_sets[args.case_set])
     cases = filter_cases(
@@ -726,6 +1161,26 @@ def main() -> int:
     results = []
     service_histories: dict[str, list[dict[str, str]]] = {}
     started_at = time.time()
+    runtime_metadata = collect_questionnaire_metadata(
+        args.container,
+        expected_turn_pipeline_mode=args.expected_turn_pipeline_mode,
+    )
+    runtime_metadata["environment_fixture_source"] = str(environment_fixture_path)
+    runtime_metadata["available_environment_fixtures"] = sorted(environment_fixtures.keys())
+    runtime_metadata["fake_policy_profile"] = args.fake_policy_profile
+    runtime_metadata["fake_policy_application"] = apply_fake_policy_profile(
+        args.container,
+        args.fake_policy_profile,
+    )
+    preloaded_environment_ids = parse_csv_list(args.preload_environment)
+    preloaded_environments = inject_environment_fixtures(
+        args.container,
+        preloaded_environment_ids,
+        environment_fixtures=environment_fixtures,
+        lifespan_sec=args.kb_lifespan_sec,
+    )
+    if preloaded_environments:
+        runtime_metadata["preloaded_environments"] = preloaded_environments
     for index, case in enumerate(cases, start=1):
         if time.time() - started_at > max(30, args.global_timeout_sec):
             results.append(
@@ -742,17 +1197,83 @@ def main() -> int:
                     "log_excerpt": recent_logs(args.container, args.since_sec),
                 }
             )
-            write_payload(args.out, args.container, args.case_set, started_at, results)
+            write_payload(
+                args.out,
+                args.container,
+                args.case_set,
+                started_at,
+                results,
+                runtime_metadata=runtime_metadata,
+            )
             return 2
 
         case_start = time.time()
-        setup_result = None
+        setup_result = {}
+        if case.environment_ids:
+            setup_result["environment"] = inject_environment_fixtures(
+                args.container,
+                list(case.environment_ids),
+                environment_fixtures=environment_fixtures,
+                lifespan_sec=args.kb_lifespan_sec,
+            )
         if case.setup is not None:
-            setup_result = inject_kb_probe(args.container, case.setup, lifespan_sec=args.kb_lifespan_sec)
+            setup_result["case"] = inject_kb_probe(
+                args.container,
+                case.setup,
+                lifespan_sec=args.kb_lifespan_sec,
+            )
+        stale_world_guard = run_absence_guards(args.container, case.absence_guards)
+        if stale_world_guard.get("contaminated"):
+            result_entry = {
+                "name": case.name,
+                "category": case.category,
+                "text": case.text,
+                "voice_id": "",
+                "mode": args.mode or case.mode,
+                "setup_result": setup_result or None,
+                "stale_world_guard": stale_world_guard,
+                "turn_result": (
+                    "skipped: stale KnowledgeCore facts matched an absent-target "
+                    "preflight guard; relaunch or clear the fixture namespace"
+                ),
+                "started_at_unix_sec": case_start,
+                "wait_sec": 0.0,
+                "configured_wait_sec": case.wait_sec,
+                "injection_scope": injection_scope(args.mode or case.mode),
+                "topic_samples": {},
+                "log_excerpt": "",
+                "phase_observations": {
+                    "turn_injected": False,
+                    "route_observed": False,
+                    "planner_request_observed": False,
+                    "execution_feedback_observed": False,
+                    "speech_observed": False,
+                    "observability_note": (
+                        "case skipped before turn injection because fixture "
+                        "isolation was contaminated"
+                    ),
+                },
+            }
+            results.append(result_entry)
+            write_payload(
+                args.out,
+                args.container,
+                args.case_set,
+                started_at,
+                results,
+                runtime_metadata=runtime_metadata,
+            )
+            continue
 
         mode = args.mode or case.mode
         conversation_group = case.conversation_group or case.name or f"case_{index}"
-        voice_id = VOICE_ID if mode == "speech" else _voice_id_for_group(conversation_group, index)
+        voice_id = _voice_id_for_case(
+            mode,
+            group=conversation_group,
+            case_name=case.name,
+            index=index,
+            speech_voice_scope=args.speech_voice_scope,
+        )
         if mode == "speech":
             turn_result = publish_voice_turn(
                 args.container,
@@ -773,32 +1294,91 @@ def main() -> int:
             response_text = extract_service_response(turn_result)
             if response_text:
                 history.append({"speaker": "__assistant__", "text": response_text})
-        time.sleep(max(0.0, case.wait_sec))
-        results.append(
-            {
-                "name": case.name,
-                "category": case.category,
-                "text": case.text,
-                "voice_id": voice_id,
-                "mode": mode,
-                "setup_result": setup_result,
-                "turn_result": turn_result,
-                "started_at_unix_sec": case_start,
-                "wait_sec": case.wait_sec,
-                "injection_scope": injection_scope(mode),
-                "topic_samples": sample_topics(args.container) if args.sample_topics else {},
-                "log_excerpt": recent_logs(args.container, args.since_sec),
-            }
+        result_entry = {
+            "name": case.name,
+            "category": case.category,
+            "text": case.text,
+            "voice_id": voice_id,
+            "mode": mode,
+            "setup_result": setup_result or None,
+            "turn_result": turn_result,
+            "stale_world_guard": stale_world_guard or None,
+            "started_at_unix_sec": case_start,
+            "wait_sec": 0.0,
+            "configured_wait_sec": case.wait_sec,
+            "injection_scope": injection_scope(mode),
+            "topic_samples": {},
+            "log_excerpt": "",
+            "phase_observations": phase_observations(
+                mode=mode,
+                turn_result=turn_result,
+                log_excerpt="",
+                topic_samples={},
+            ),
+        }
+        results.append(result_entry)
+        write_payload(
+            args.out,
+            args.container,
+            args.case_set,
+            started_at,
+            results,
+            runtime_metadata=runtime_metadata,
         )
-        write_payload(args.out, args.container, args.case_set, started_at, results)
+        wait_sec = max(0.0, case.wait_sec)
+        if args.max_case_wait_sec > 0:
+            wait_sec = min(wait_sec, max(0.0, args.max_case_wait_sec))
+        _observe_case_during_wait(
+            args.out,
+            args.container,
+            args.case_set,
+            started_at,
+            results,
+            result_entry,
+            mode=mode,
+            turn_result=turn_result,
+            case_start=case_start,
+            wait_sec=wait_sec,
+            runtime_metadata=runtime_metadata,
+        )
+        topic_samples = sample_topics(args.container) if args.sample_topics else {}
+        log_excerpt = recent_logs_since(args.container, case_start)
+        result_entry["wait_sec"] = wait_sec
+        result_entry["topic_samples"] = topic_samples
+        result_entry["log_excerpt"] = log_excerpt
+        result_entry["phase_observations"] = phase_observations(
+            mode=mode,
+            turn_result=turn_result,
+            log_excerpt=log_excerpt,
+            topic_samples=topic_samples,
+        )
+        write_payload(
+            args.out,
+            args.container,
+            args.case_set,
+            started_at,
+            results,
+            runtime_metadata=runtime_metadata,
+        )
 
-    write_payload(args.out, args.container, args.case_set, started_at, results)
+    write_payload(
+        args.out,
+        args.container,
+        args.case_set,
+        started_at,
+        results,
+        runtime_metadata=runtime_metadata,
+    )
     print(args.out)
     return 0
 
 
 def parse_csv(value: str) -> set[str]:
     return {item.strip() for item in str(value or "").split(",") if item.strip()}
+
+
+def parse_csv_list(value: str) -> list[str]:
+    return [item.strip() for item in str(value or "").split(",") if item.strip()]
 
 
 def filter_cases(
@@ -814,21 +1394,382 @@ def filter_cases(
     return cases
 
 
+def load_environment_fixtures(path: Path) -> dict[str, dict]:
+    fixture_path = Path(path)
+    if not fixture_path.exists():
+        return {}
+    payload = json.loads(fixture_path.read_text(encoding="utf-8"))
+    environments = payload.get("environments", {}) if isinstance(payload, dict) else {}
+    if not isinstance(environments, dict):
+        return {}
+    return {
+        str(fixture_id).strip(): fixture
+        for fixture_id, fixture in environments.items()
+        if str(fixture_id).strip() and isinstance(fixture, dict)
+    }
+
+
+def resolve_environment_fixture_path(path: Path) -> Path:
+    if path.exists():
+        return path
+    if FALLBACK_ENVIRONMENT_FIXTURE_PATH.exists():
+        return FALLBACK_ENVIRONMENT_FIXTURE_PATH
+    return path
+
+
+def apply_fake_policy_profile(container: str, profile: str) -> dict[str, str]:
+    clean_profile = str(profile or "none").strip()
+    settings = FAKE_POLICY_PROFILES.get(clean_profile, {})
+    if not settings:
+        return {"profile": clean_profile, "applied": "false", "reason": "no policy changes requested"}
+
+    outputs = {"profile": clean_profile, "applied": "true"}
+    for param_name, value in settings.items():
+        outputs[param_name] = set_ros_param(
+            container,
+            "/fake_skill_server",
+            param_name,
+            value,
+        )
+    return outputs
+
+
+def set_ros_param(container: str, node_name: str, param_name: str, value: str) -> str:
+    parameter_value = str(value)
+    if isinstance(value, str):
+        parameter_value = json.dumps(value)
+    script = """
+%s
+timeout 10 ros2 param set %s %s %s 2>&1 || true
+""" % (
+        ROS_CLI_PREAMBLE,
+        shlex.quote(node_name),
+        shlex.quote(param_name),
+        shlex.quote(parameter_value),
+    )
+    return run(
+        ["docker", "exec", container, "bash", "-lc", script],
+        timeout=15,
+        check=False,
+    )
+
+
+def inject_environment_fixtures(
+    container: str,
+    fixture_ids: list[str],
+    *,
+    environment_fixtures: dict[str, dict],
+    lifespan_sec: int,
+) -> dict[str, dict]:
+    results: dict[str, dict] = {}
+    for fixture_id in fixture_ids:
+        clean_id = str(fixture_id or "").strip()
+        if not clean_id:
+            continue
+        fixture = environment_fixtures.get(clean_id)
+        if not isinstance(fixture, dict):
+            results[clean_id] = {
+                "error": "unknown_environment_fixture",
+                "available": sorted(environment_fixtures.keys()),
+            }
+            continue
+        injection = environment_fixture_to_injection(clean_id, fixture)
+        results[clean_id] = {
+            "description": str(fixture.get("description", "")).strip(),
+            "visual_svg_source": str(fixture.get("visual_svg_source", "")).strip(),
+            "injection": inject_kb_probe(container, injection, lifespan_sec=lifespan_sec),
+        }
+    return results
+
+
+def environment_fixture_to_injection(fixture_id: str, fixture: dict) -> KbInjection:
+    statements = tuple(
+        str(item).strip()
+        for item in fixture.get("statements", [])
+        if str(item).strip()
+    )
+    query_patterns = tuple(
+        str(item).strip()
+        for item in fixture.get("query_patterns", [])
+        if str(item).strip()
+    )
+    if not query_patterns:
+        query_patterns = tuple(_query_patterns_for_fixture(statements))
+    query_vars = tuple(
+        str(item).strip()
+        for item in fixture.get("query_vars", ("?predicate", "?object"))
+        if str(item).strip()
+    )
+    return KbInjection(
+        object_id=fixture_id,
+        statements=statements,
+        query_patterns=query_patterns,
+        query_vars=query_vars or ("?predicate", "?object"),
+    )
+
+
+def _query_patterns_for_fixture(statements: tuple[str, ...]) -> list[str]:
+    subjects: list[str] = []
+    for statement in statements:
+        subject = statement.split(maxsplit=1)[0] if statement.split() else ""
+        if subject and subject not in subjects:
+            subjects.append(subject)
+    return ["%s ?predicate ?object" % subject for subject in subjects]
+
+
+def run_absence_guards(container: str, guards: tuple[KbAbsenceGuard, ...]) -> dict[str, object]:
+    """Return stale-world evidence for guards that require absent KB facts."""
+    if not guards:
+        return {}
+    results: list[dict[str, object]] = []
+    contaminated = False
+    for guard in guards:
+        query_output = query_kb_rows(
+            container,
+            patterns=guard.query_patterns,
+            query_vars=guard.query_vars,
+            timeout_sec=20,
+        )
+        row_count = len(query_output.get("rows", []))
+        guard_result = {
+            "name": guard.name,
+            "query_patterns": list(guard.query_patterns),
+            "query_vars": list(guard.query_vars),
+            "row_count": row_count,
+            "clean": row_count == 0,
+            "query_output": query_output.get("raw_output", ""),
+            "rows": query_output.get("rows", []),
+        }
+        if row_count:
+            contaminated = True
+        results.append(guard_result)
+    return {
+        "contaminated": contaminated,
+        "guard_results": results,
+        "contract": (
+            "absent-target and recovery cases must prove the target is absent "
+            "before injecting the turn"
+        ),
+    }
+
+
+def query_kb_rows(
+    container: str,
+    *,
+    patterns: tuple[str, ...],
+    query_vars: tuple[str, ...],
+    timeout_sec: int,
+) -> dict[str, object]:
+    patterns_yaml = "\n".join("  - '%s'" % item for item in patterns)
+    vars_yaml = "\n".join("  - '%s'" % item for item in query_vars)
+    query_request = f"""
+patterns:
+{patterns_yaml}
+vars:
+{vars_yaml}
+models:
+  - default
+"""
+    raw_output = call_ros_service(
+        container,
+        "/kb/query",
+        "kb_msgs/srv/Query",
+        query_request,
+        timeout_sec=timeout_sec,
+    )
+    return {
+        "raw_output": raw_output,
+        "rows": parse_kb_query_rows(raw_output),
+    }
+
+
+def parse_kb_query_rows(service_output: str) -> list[dict]:
+    """Extract KnowledgeCore JSON bindings from ros2 service-call text."""
+    text = str(service_output or "")
+    for match in re.finditer(
+        r"json=(?P<quote>['\"])(?P<payload>.*?)(?P=quote)(?:[,)\n])",
+        text,
+        flags=re.DOTALL,
+    ):
+        rows = _parse_kb_json_payload(match.group("payload"))
+        if rows:
+            return rows
+    for marker in ("json:", "json="):
+        index = text.find(marker)
+        if index < 0:
+            continue
+        rows = _parse_kb_json_payload(text[index + len(marker):].strip())
+        if rows:
+            return rows
+    return []
+
+
+def _parse_kb_json_payload(payload: str) -> list[dict]:
+    clean_payload = str(payload or "").strip()
+    if not clean_payload:
+        return []
+    if (clean_payload.startswith("'") and clean_payload.endswith("'")) or (
+        clean_payload.startswith('"') and clean_payload.endswith('"')
+    ):
+        clean_payload = clean_payload[1:-1]
+    clean_payload = clean_payload.encode("utf-8").decode("unicode_escape")
+    try:
+        parsed = json.loads(clean_payload)
+    except json.JSONDecodeError:
+        return []
+    if isinstance(parsed, dict):
+        parsed = [parsed]
+    if not isinstance(parsed, list):
+        return []
+    return [row for row in parsed if isinstance(row, dict)]
+
+
 def write_payload(
     out_path: str,
     container: str,
     case_set: str,
     started_at: float,
     results: list[dict],
+    *,
+    runtime_metadata: dict[str, object] | None = None,
 ) -> None:
     payload = {
         "container": container,
         "case_set": case_set,
         "started_at_unix_sec": started_at,
         "finished_at_unix_sec": time.time(),
+        "runtime_metadata": runtime_metadata or {},
         "cases": results,
     }
     Path(out_path).write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def phase_observations(
+    *,
+    mode: str,
+    turn_result: str,
+    log_excerpt: str,
+    topic_samples: dict[str, str],
+) -> dict[str, object]:
+    """Summarize runtime-review phase evidence without scoring the case."""
+    combined = "\n".join(
+        [
+            str(turn_result or ""),
+            str(log_excerpt or ""),
+            "\n".join(str(value or "") for value in topic_samples.values()),
+        ]
+    )
+    injected = bool(str(turn_result or "").strip())
+    if mode == "speech":
+        injected = injected and "ERROR: dialogue_manager speech subscription" not in combined
+    return {
+        "turn_injected": injected,
+        "route_observed": _contains_any(combined, ("ROUTE_RESOLVED", "chatbot_turn_trace")),
+        "planner_request_observed": _contains_any(
+            combined,
+            ("PLANNER_REQUEST", "/planner/request", "planner_request"),
+        ),
+        "execution_feedback_observed": _contains_any(
+            combined,
+            ("execution_feedback", "/planner/execution_feedback", "step_succeeded", "step_failed", "plan_completed"),
+        ),
+        "speech_observed": _contains_any(
+            combined,
+            ("ROBOT OUTPUT", "DEBUG_SPEECH", "/debug/nao_say/speech", "Robot saying"),
+        ),
+        "observability_note": (
+            "phase booleans are trace breadcrumbs, not pass/fail scoring"
+        ),
+    }
+
+
+def _contains_any(value: str, markers: tuple[str, ...]) -> bool:
+    text = str(value or "")
+    return any(marker in text for marker in markers)
+
+
+def _observe_case_during_wait(
+    out_path: str,
+    container: str,
+    case_set: str,
+    started_at: float,
+    results: list[dict],
+    result_entry: dict,
+    *,
+    mode: str,
+    turn_result: str,
+    case_start: float,
+    wait_sec: float,
+    runtime_metadata: dict[str, object],
+) -> None:
+    """Flush per-case phase breadcrumbs while long fake-deep waits run."""
+    deadline = time.time() + max(0.0, float(wait_sec or 0.0))
+    interval_sec = 5.0
+    while True:
+        remaining = deadline - time.time()
+        if remaining <= 0:
+            break
+        time.sleep(min(interval_sec, remaining))
+        elapsed = max(0.0, time.time() - case_start)
+        log_excerpt = recent_logs_since(container, case_start)
+        result_entry["wait_sec"] = min(max(0.0, float(wait_sec or 0.0)), elapsed)
+        result_entry["log_excerpt"] = log_excerpt
+        result_entry["phase_observations"] = phase_observations(
+            mode=mode,
+            turn_result=turn_result,
+            log_excerpt=log_excerpt,
+            topic_samples={},
+        )
+        write_payload(
+            out_path,
+            container,
+            case_set,
+            started_at,
+            results,
+            runtime_metadata=runtime_metadata,
+        )
+
+
+def collect_questionnaire_metadata(
+    container: str,
+    *,
+    expected_turn_pipeline_mode: str,
+) -> dict[str, object]:
+    active_mode = get_ros_param(
+        container,
+        "/chatbot_llm",
+        "turn_pipeline_mode",
+    )
+    expected = str(expected_turn_pipeline_mode or "").strip()
+    return {
+        "chatbot_turn_pipeline_mode": active_mode,
+        "expected_turn_pipeline_mode": expected,
+        "turn_pipeline_mode_matches_expected": (
+            True if not expected else active_mode == expected
+        ),
+        "ablation_note": (
+            "intent_ablation is meaningful only when the active launch sets "
+            "chatbot_turn_pipeline_mode:=intent_first or when comparing against "
+            "a response_first control run."
+        ),
+    }
+
+
+def get_ros_param(container: str, node_name: str, param_name: str) -> str:
+    script = f"""
+{ROS_CLI_PREAMBLE}
+timeout 8 ros2 param get {node_name} {param_name} 2>/dev/null || true
+"""
+    output = run(
+        ["docker", "exec", container, "bash", "-lc", script],
+        timeout=12,
+        check=False,
+    )
+    for line in reversed(output.splitlines()):
+        text = line.strip()
+        if text.startswith("String value is:"):
+            return text.split(":", 1)[1].strip()
+    return output.strip()
 
 
 def injection_scope(mode: str) -> str:
@@ -882,26 +1823,35 @@ cat >/tmp/nao_questionnaire_qos_contract.log <<'EOF'
   speech_qos={VOICE_SPEECH_QOS}
   rqt_display_mirror={str(mirror_rqt_display).lower()}
   rqt_display_topics={RQT_DISPLAY_ROSOUT_TOPIC},{RQT_DISPLAY_CAPTIONS_TOPIC}
-  contract=publish tracked voice with TRANSIENT_LOCAL durability before LiveSpeech.
-  reason=dialogue_manager subscribes to the remapped rqt-chat tracked topic with transient-local QoS.
+  contract=publish tracked voice with TRANSIENT_LOCAL durability and keep the publisher alive until the per-voice LiveSpeech subscription appears.
+  reason=dialogue_manager creates the remapped per-voice rqt-chat subscription only after seeing the tracked voice id.
 EOF
-{mirror_script}
-timeout 8 ros2 topic pub --once -w 1 {VOICE_TRACKED_QOS} {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{voice_id}']}}" >/tmp/nao_questionnaire_voice.log 2>&1 || true
-for _ in $(seq 1 16); do
-  if ros2 topic info -v {voice_topic} 2>/dev/null | grep -q 'Node name: dialogue_manager'; then
-    break
+	{mirror_script}
+	dialogue_state="$(ros2 lifecycle get /dialogue_manager 2>/dev/null || true)"
+	echo "  dialogue_manager_lifecycle=${{dialogue_state:-unavailable}}" >>/tmp/nao_questionnaire_qos_contract.log
+	timeout 18 ros2 topic pub -r 2 {VOICE_TRACKED_QOS} {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{voice_id}']}}" >/tmp/nao_questionnaire_voice.log 2>&1 &
+	tracked_pub_pid=$!
+	subscription_visible=false
+	for _ in $(seq 1 30); do
+	  if timeout 2 ros2 topic info -v {voice_topic} 2>/dev/null | grep -q 'Node name: dialogue_manager'; then
+	    subscription_visible=true
+	    break
   fi
   sleep 0.5
 done
-ros2 topic info -v {VOICE_TRACKED_TOPIC} >/tmp/nao_questionnaire_tracked_info.log 2>&1 || true
-ros2 topic info -v {voice_topic} >/tmp/nao_questionnaire_speech_info.log 2>&1 || true
-if ! grep -q 'Node name: dialogue_manager' /tmp/nao_questionnaire_speech_info.log 2>/dev/null; then
-  echo "[runtime-review] WARNING: dialogue_manager speech subscription was not visible for {voice_topic}" >>/tmp/nao_questionnaire_qos_contract.log
-fi
+	timeout 3 ros2 topic info -v {VOICE_TRACKED_TOPIC} >/tmp/nao_questionnaire_tracked_info.log 2>&1 || true
+	timeout 3 ros2 topic info -v {voice_topic} >/tmp/nao_questionnaire_speech_info.log 2>&1 || true
+	if ! grep -q 'Node name: dialogue_manager' /tmp/nao_questionnaire_speech_info.log 2>/dev/null; then
+	  echo "[runtime-review] ERROR: dialogue_manager speech subscription was not visible for {voice_topic}; this is a lifecycle/ingress preflight failure, not a model result." >>/tmp/nao_questionnaire_qos_contract.log
+	else
+	  echo "[runtime-review] OK: dialogue_manager speech subscription visible before LiveSpeech publish for {voice_topic}." >>/tmp/nao_questionnaire_qos_contract.log
+	fi
 timeout 8 ros2 topic pub --once -w 1 {VOICE_SPEECH_QOS} {voice_topic} hri_msgs/msg/LiveSpeech "{{final: \\"{escaped_text}\\", confidence: 1.0, locale: \\"en_US\\"}}" >/tmp/nao_questionnaire_speech.log 2>&1 || true
+	kill "$tracked_pub_pid" >/dev/null 2>&1 || true
+	wait "$tracked_pub_pid" >/dev/null 2>&1 || true
 cat /tmp/nao_questionnaire_qos_contract.log /tmp/nao_questionnaire_rqt_rosout.log /tmp/nao_questionnaire_rqt_caption.log /tmp/nao_questionnaire_voice.log /tmp/nao_questionnaire_tracked_info.log /tmp/nao_questionnaire_speech_info.log /tmp/nao_questionnaire_speech.log 2>/dev/null || true
 """
-    return run(["docker", "exec", container, "bash", "-lc", script], timeout=20, check=False)
+    return run(["docker", "exec", container, "bash", "-lc", script], timeout=45, check=False)
 
 
 def inject_kb_probe(container: str, injection: KbInjection, *, lifespan_sec: int) -> dict[str, str]:
@@ -1080,6 +2030,57 @@ def recent_logs(container: str, since_sec: int) -> str:
     return "\n".join(interesting[-260:])
 
 
+def recent_logs_since(container: str, since_unix_sec: float) -> str:
+    since_value = max(0.0, float(since_unix_sec) - 1.0)
+    script = (
+        "python3 - <<'PY'\n"
+        "from pathlib import Path\n"
+        f"since={since_value!r}\n"
+        "paths=[Path('/root/.ros/log/latest/launch.log')]\n"
+        "paths.extend(sorted(Path('/root/.ros/log').glob('python3_*.log')))\n"
+        "for path in paths:\n"
+        "    if not path.exists() or not path.is_file():\n"
+        "        continue\n"
+        "    try:\n"
+        "        lines=path.read_text(errors='replace').splitlines()\n"
+        "    except Exception:\n"
+        "        continue\n"
+        "    for line in lines:\n"
+        "        token=line.split(' ',1)[0].strip()\n"
+        "        try:\n"
+        "            if float(token) < since:\n"
+        "                continue\n"
+        "        except Exception:\n"
+        "            pass\n"
+        "        print(line)\n"
+        "PY"
+    )
+    output = run(
+        ["docker", "exec", container, "bash", "-lc", script],
+        timeout=15,
+        check=False,
+    ) or ""
+    interesting = []
+    markers = (
+        "SPEECH INPUT",
+        "CHATBOT",
+        "ROUTE_RESOLVED",
+        "PLANNER_REQUEST",
+        "planner_llm",
+        "execution_feedback",
+        "report_result",
+        "DEBUG_SPEECH",
+        "ROBOT OUTPUT",
+        "GROUNDED_CONTEXT",
+        "ERROR",
+        "WARN",
+    )
+    for line in output.splitlines():
+        if any(marker in line for marker in markers):
+            interesting.append(line)
+    return "\n".join(interesting[-260:])
+
+
 def run(
     cmd: list[str],
     *,
@@ -1116,10 +2117,27 @@ def _voice_id_for_group(group: str, index: int) -> str:
     return f"codex_{text}"
 
 
+def _voice_id_for_case(
+    mode: str,
+    *,
+    group: str,
+    case_name: str,
+    index: int,
+    speech_voice_scope: str,
+) -> str:
+    if mode != "speech":
+        return _voice_id_for_group(group, index)
+    if speech_voice_scope == "case":
+        return _voice_id_for_group(case_name, index)
+    if speech_voice_scope == "group":
+        return _voice_id_for_group(group, index)
+    return VOICE_ID
+
+
 def _voice_speech_topic(voice_id: str) -> str:
     if voice_id == VOICE_ID:
         return VOICE_SPEECH_TOPIC
-    return f"/nao_chatbot/humans/voices/{voice_id}/speech"
+    return f"/humans/voices/{voice_id}/speech"
 
 
 if __name__ == "__main__":

@@ -28,6 +28,7 @@ def test_default_planner_prompt_pack_limits_routine_progress_speech() -> None:
     assert 'Keep emit_progress=false for short plans' in pack.system_prompt
     assert 'Routine internal step transitions' in pack.system_prompt
     assert '"report_result" already covers the completion' in pack.system_prompt
+    assert 'Use emit_progress=true only for meaningful user-visible milestones' in pack.system_prompt
 
 
 def test_default_planner_prompt_pack_rejects_composite_motion_objects() -> None:

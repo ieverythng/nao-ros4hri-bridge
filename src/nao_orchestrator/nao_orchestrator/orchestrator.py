@@ -169,6 +169,28 @@ def _single_entity_statement(statement: str) -> str:
     return token
 
 
+def _kb_remove_subject_alias(statement: str) -> str:
+    tokens = str(statement or '').strip().split()
+    if not tokens:
+        return ''
+    if len(tokens) == 1:
+        return _single_entity_statement(statement)
+    subject, predicate, obj = _statement_parts(statement)
+    if (
+        subject
+        and predicate == 'rdf:type'
+        and obj in {'owl:Thing', 'Thing', 'oro:Entity'}
+    ):
+        return subject
+    if (
+        len(tokens) == 5
+        and tokens[1:5] == ['is', 'in', 'knowledge', 'base']
+        and _single_entity_statement(tokens[0])
+    ):
+        return tokens[0]
+    return ''
+
+
 def _binding_value(row: dict, key: str) -> str:
     if not isinstance(row, dict):
         return ''
@@ -194,6 +216,41 @@ def _dedupe_statements(statements: list[str]) -> list[str]:
         seen.add(clean)
         deduped.append(clean)
     return deduped
+
+
+def _kb_effects_from_result_payload(result_payload: dict) -> list[dict]:
+    """Return structured KB effects reported by a successful skill payload."""
+    if not isinstance(result_payload, dict):
+        return []
+    evidence = result_payload.get('evidence', {})
+    if not isinstance(evidence, dict):
+        return []
+    effects = evidence.get('kb_effects', [])
+    if not isinstance(effects, list):
+        return []
+    return [item for item in effects if isinstance(item, dict)]
+
+
+def _group_kb_effect_statements(effects: list[dict]) -> dict[str, list[str]]:
+    grouped: dict[str, list[str]] = {}
+    for effect in effects:
+        operation = str(
+            effect.get('operation', effect.get('action', ''))
+        ).strip().lower()
+        if operation == 'revise':
+            operation = 'update'
+        if operation not in {'add', 'remove', 'update'}:
+            continue
+        statements = KnowledgeCoreMutationClient.coerce_statements(
+            effect.get('statements', effect.get('statement', []))
+        )
+        if statements:
+            grouped.setdefault(operation, []).extend(statements)
+    return {
+        operation: _dedupe_statements(statements)
+        for operation, statements in grouped.items()
+        if statements
+    }
 
 
 def _normalize_execution_mode(value) -> str:
@@ -224,6 +281,122 @@ def _execution_step_record(
         result_summary=result_summary,
         result_payload=result_payload,
     )
+
+
+def _plan_outcome_summary(
+    plan: list[dict],
+    execution_results: list[dict],
+    *,
+    terminal_reason: str = '',
+    terminal_step: dict | None = None,
+) -> dict:
+    """Build structured execution outcome data without user-facing wording."""
+    action_steps = [
+        step for step in plan
+        if isinstance(step, dict) and _is_required_action_step(step)
+    ]
+    completed_targets: list[str] = []
+    failed_targets: list[str] = []
+    completed_step_ids: set[str] = set()
+    failed_step_ids: set[str] = set()
+    last_successful_step_id = ''
+    terminal_step_id = ''
+    for result in execution_results:
+        if not isinstance(result, dict):
+            continue
+        step_id = str(result.get('id', '')).strip()
+        target = _target_from_step_record(result)
+        status = str(result.get('status', '')).strip().lower()
+        if status == 'succeeded':
+            if step_id:
+                completed_step_ids.add(step_id)
+                last_successful_step_id = step_id
+            if target and target not in completed_targets:
+                completed_targets.append(target)
+        elif status == 'failed':
+            if step_id:
+                failed_step_ids.add(step_id)
+                terminal_step_id = step_id
+            if target and target not in failed_targets:
+                failed_targets.append(target)
+
+    required_targets = [
+        _target_from_plan_step(step) for step in action_steps
+    ]
+    pending_targets = [
+        target for step, target in zip(action_steps, required_targets)
+        if target
+        and str(step.get('id', '')).strip() not in completed_step_ids
+        and str(step.get('id', '')).strip() not in failed_step_ids
+    ]
+    if terminal_step is not None and isinstance(terminal_step, dict):
+        terminal_step_id = str(terminal_step.get('id', '')).strip() or terminal_step_id
+    all_required_steps_succeeded = bool(action_steps) and all(
+        str(step.get('id', '')).strip() in completed_step_ids
+        for step in action_steps
+    )
+    return {
+        'completed_targets': completed_targets,
+        'failed_targets': failed_targets,
+        'pending_targets': pending_targets,
+        'last_successful_step_id': last_successful_step_id,
+        'terminal_step_id': terminal_step_id,
+        'terminal_reason': str(terminal_reason or '').strip(),
+        'all_required_steps_succeeded': all_required_steps_succeeded,
+    }
+
+
+def _is_required_action_step(step: dict) -> bool:
+    step_name = str(step.get('name', '')).strip().lower()
+    step_type = str(step.get('type', '')).strip().lower()
+    return step_type in ('skill', 'look_at') and step_name not in (
+        'report_result',
+        'say',
+        *_ASK_USER_STEP_NAMES,
+    )
+
+
+def _target_from_step_record(result: dict) -> str:
+    payload = result.get('result_payload', {})
+    if not isinstance(payload, dict):
+        payload = {}
+    return _first_non_empty_value(
+        payload,
+        'target',
+        'object',
+        'object_id',
+        'target_frame',
+        'location',
+    ) or _target_from_plan_step(result)
+
+
+def _target_from_plan_step(step: dict) -> str:
+    args = step.get('args', {})
+    if not isinstance(args, dict):
+        args = {}
+    return _first_non_empty_value(
+        args,
+        'target',
+        'object',
+        'object_id',
+        'target_frame',
+        'location',
+    )
+
+
+def _execution_report_dialogue_context(dialogue_context: object) -> list[str]:
+    """Keep user request context without re-feeding assistant wording."""
+    if not isinstance(dialogue_context, list):
+        return []
+    bounded: list[str] = []
+    for item in dialogue_context:
+        text = str(item).strip()
+        if not text:
+            continue
+        if text.lower().startswith('assistant:'):
+            continue
+        bounded.append(text)
+    return bounded[-_MAX_EXECUTION_REPORT_STEPS:]
 
 
 def _report_text_from_execution_results(execution_results: list) -> str:
@@ -361,6 +534,7 @@ class NaoOrchestrator(Node):
         self.declare_parameter('kb_mutation_timeout_sec', 1.0)
         self.declare_parameter('kb_query_service_name', '/kb/query')
         self.declare_parameter('kb_query_timeout_sec', 1.0)
+        self.declare_parameter('apply_success_kb_effects', True)
 
         self.intent_topic = str(self.get_parameter('intent_topic').value)
         self.enable_legacy_intent_bridge = bool(
@@ -529,6 +703,9 @@ class NaoOrchestrator(Node):
         self.kb_query_timeout_sec = max(
             0.05,
             float(self.get_parameter('kb_query_timeout_sec').value),
+        )
+        self.apply_success_kb_effects = bool(
+            self.get_parameter('apply_success_kb_effects').value
         )
 
         self._intent_sub = None
@@ -905,8 +1082,10 @@ class NaoOrchestrator(Node):
             forward_msg.modality = msg.modality
             forward_msg.confidence = msg.confidence
             forward_msg.priority = msg.priority
-            forward_msg.person_id = msg.person_id
-            forward_msg.intent_type = msg.intent_type
+            if hasattr(forward_msg, 'person_id') and hasattr(msg, 'person_id'):
+                forward_msg.person_id = msg.person_id
+            if hasattr(forward_msg, 'intent_type') and hasattr(msg, 'intent_type'):
+                forward_msg.intent_type = msg.intent_type
             forward_msg.data = json.dumps(
                 decision.forward_payload,
                 separators=(',', ':'),
@@ -1233,6 +1412,10 @@ class NaoOrchestrator(Node):
                 dispatch_fallback_data['last_result_payload'] = dict(latest_result_payload)
             if execution_results:
                 dispatch_fallback_data['execution_results'] = list(execution_results)
+            dispatch_fallback_data['plan_outcome_summary'] = _plan_outcome_summary(
+                plan,
+                execution_results,
+            )
 
             step_ok, reason, result_payload = self._dispatch_plan_step(
                 step,
@@ -1270,6 +1453,7 @@ class NaoOrchestrator(Node):
                     step=step,
                     result_summary=latest_result_summary,
                     result_payload=latest_result_payload,
+                    plan_outcome_summary=_plan_outcome_summary(plan, execution_results),
                 )
                 continue
 
@@ -1307,6 +1491,12 @@ class NaoOrchestrator(Node):
                     blocking=False,
                     unmet_preconditions=[],
                     needs_user_input=False,
+                    plan_outcome_summary=_plan_outcome_summary(
+                        plan,
+                        execution_results,
+                        terminal_reason=reason,
+                        terminal_step=step,
+                    ),
                 )
                 self.get_logger().warn(
                     'Planned intent step failed; continuing plan | intent=%s source=%s plan_id=%s step=%s reason=%s'
@@ -1340,6 +1530,12 @@ class NaoOrchestrator(Node):
                     failure_policy in ('ask_user', 'clarify')
                     or step_name in ASK_USER_STEP_NAMES
                 ),
+                plan_outcome_summary=_plan_outcome_summary(
+                    plan,
+                    execution_results,
+                    terminal_reason=reason,
+                    terminal_step=step,
+                ),
             )
             self.get_logger().warn(
                 'Planned intent step failed | intent=%s source=%s plan_id=%s step=%s reason=%s'
@@ -1364,6 +1560,11 @@ class NaoOrchestrator(Node):
                 event_type='plan_completed',
                 result_summary=latest_result_summary,
                 result_payload=latest_result_payload,
+                plan_outcome_summary=_plan_outcome_summary(
+                    plan,
+                    execution_results,
+                    terminal_reason='completed',
+                ),
             )
             self._finalize_execution_plan(
                 goal_id=goal_id,
@@ -1382,6 +1583,11 @@ class NaoOrchestrator(Node):
             event_type='plan_invalid',
             reason='plan contained no executable steps',
             blocking=True,
+            plan_outcome_summary=_plan_outcome_summary(
+                plan,
+                execution_results,
+                terminal_reason='plan contained no executable steps',
+            ),
         )
         self._finalize_execution_plan(
             goal_id=goal_id,
@@ -1515,6 +1721,47 @@ class NaoOrchestrator(Node):
             models,
             query_client=self._kb_query_client,
         )
+
+    def _query_remaining_kb_remove_facts(
+        self,
+        statements: list[str],
+        models: list[str],
+    ) -> list[str]:
+        """Return removed facts that still resolve after a successful retract."""
+        if self._kb_query_client is None:
+            return []
+        remaining: list[str] = []
+        query_models = models if isinstance(models, list) and models else ['default']
+        for statement in statements:
+            subject, predicate, obj = _statement_parts(statement)
+            if not subject or not predicate or not obj:
+                continue
+            rows = self._kb_query_client.query_rows(
+                patterns=['%s %s ?object' % (subject, predicate)],
+                query_vars=['?object'],
+                models=query_models,
+            )
+            remaining.extend(
+                _statement_from_binding(subject, predicate, row)
+                for row in rows
+                if _binding_value(row, 'object') == obj
+            )
+        return _dedupe_statements(remaining)
+
+    def _concrete_kb_facts_for_subject(
+        self,
+        subject: str,
+        query_models: list[str],
+    ) -> list[str]:
+        rows = self._kb_query_client.query_rows(
+            patterns=['%s ?predicate ?object' % subject],
+            query_vars=['?predicate', '?object'],
+            models=query_models,
+        )
+        return [
+            _statement_from_binding(subject, _binding_value(row, 'predicate'), row)
+            for row in rows
+        ]
 
     def _dispatch_planned_look_at(
         self,
@@ -1721,9 +1968,7 @@ class NaoOrchestrator(Node):
         if explicit_text and not is_unresolved_report_template(explicit_text):
             return explicit_text
 
-        chain_text = _report_text_from_execution_results(
-            fallback_data.get('execution_results', [])
-        )
+        chain_text = _report_text_from_execution_results(report_context.get('steps', []))
         if chain_text:
             return chain_text
 
@@ -1744,15 +1989,14 @@ class NaoOrchestrator(Node):
         execution_results = fallback_data.get('execution_results', [])
         if not isinstance(execution_results, list):
             execution_results = []
-        bounded_steps = [
-            dict(step)
-            for step in execution_results[-_MAX_EXECUTION_REPORT_STEPS:]
-            if isinstance(step, dict)
-        ]
         plan_steps = fallback_data.get('plan_steps', [])
         if not isinstance(plan_steps, list):
             plan_steps = []
         current_step_index = int(fallback_data.get('current_step_index', -1) or -1)
+        bounded_steps = [
+            dict(step) for step in execution_results[-_MAX_EXECUTION_REPORT_STEPS:]
+            if isinstance(step, dict)
+        ]
         future_steps = [
             dict(step)
             for step in plan_steps[current_step_index + 1:]
@@ -1763,6 +2007,9 @@ class NaoOrchestrator(Node):
             if str(step.get('name', '')).strip().lower() != 'report_result'
         ]
         report_role = 'intermediate' if future_action_steps else 'final'
+        plan_outcome_summary = fallback_data.get('plan_outcome_summary', {})
+        if not isinstance(plan_outcome_summary, dict):
+            plan_outcome_summary = {}
         return {
             'goal_text': _first_non_empty_value(
                 fallback_data,
@@ -1777,13 +2024,9 @@ class NaoOrchestrator(Node):
                 for item in fallback_data.get('normalized_intents', [])
                 if str(item).strip()
             ] if isinstance(fallback_data.get('normalized_intents', []), list) else [],
-            'dialogue_context': [
-                str(item).strip()
-                for item in fallback_data.get('dialogue_context', [])
-                if str(item).strip()
-            ][-_MAX_EXECUTION_REPORT_STEPS:]
-            if isinstance(fallback_data.get('dialogue_context', []), list)
-            else [],
+            'dialogue_context': _execution_report_dialogue_context(
+                fallback_data.get('dialogue_context', [])
+            ),
             'scene_targets': list(plan_context.get('scene_targets', []))
             if isinstance(plan_context.get('scene_targets', []), list)
             else [],
@@ -1803,6 +2046,7 @@ class NaoOrchestrator(Node):
                 if isinstance(fallback_data.get('last_result_payload', {}), dict)
                 else {}
             ),
+            'plan_outcome_summary': dict(plan_outcome_summary),
         }
 
     def _request_execution_report_text(self, report_context: dict) -> _ExecutionReportResult:
@@ -2096,8 +2340,60 @@ class NaoOrchestrator(Node):
         if not result.success:
             return False, result.reason or summary_text or ('%s action failed' % skill_name), payload
 
+        effect_summary = self._apply_success_kb_effects(payload)
+        if effect_summary:
+            payload['kb_effect_application'] = effect_summary
         self._stats.dispatched_fake_skill += 1
         return True, summary_text, payload
+
+    def _apply_success_kb_effects(self, result_payload: dict) -> dict:
+        """Apply successful skill-reported KB effects through the KB boundary."""
+        if not self.apply_success_kb_effects:
+            return {}
+        if self._kb_mutation_client is None:
+            return {}
+        effects = _kb_effects_from_result_payload(result_payload)
+        if not effects:
+            return {}
+
+        calls: list[dict] = []
+        for operation, statements in _group_kb_effect_statements(effects).items():
+            if not statements:
+                continue
+            result = self._kb_mutation_client.mutate(
+                operation=operation,
+                statements=statements,
+                models=['default'],
+                wait_for_result=True,
+            )
+            calls.append(
+                {
+                    'operation': operation,
+                    'statement_count': result.statement_count,
+                    'success': result.success,
+                    'dispatched': result.dispatched,
+                    'error_msg': result.error_msg,
+                }
+            )
+            if result.success:
+                self._stats.dispatched_kb_mutation += 1
+            else:
+                self._stats.dispatch_failures += 1
+        if not calls:
+            return {}
+        all_success = all(call.get('success') for call in calls)
+        if all_success:
+            self.get_logger().info(
+                'Applied successful skill KB effects | calls=%d' % len(calls)
+            )
+        else:
+            self.get_logger().warn(
+                'Some successful skill KB effects failed | calls=%s' % calls
+            )
+        return {
+            'applied': all_success,
+            'calls': calls,
+        }
 
     def _scan_args_from_step(self, step_args: dict) -> dict:
         scan_args = dict(step_args or {})
@@ -2709,6 +3005,7 @@ class NaoOrchestrator(Node):
         validation_errors: list[str] | None = None,
         result_summary: str = '',
         result_payload: dict | None = None,
+        plan_outcome_summary: dict | None = None,
     ) -> None:
         if self._planner_feedback_pub is None:
             return
@@ -2729,6 +3026,7 @@ class NaoOrchestrator(Node):
             timestamp_sec=round(time.time(), 3),
             result_summary=str(result_summary or '').strip(),
             result_payload=dict(result_payload or {}),
+            plan_outcome_summary=dict(plan_outcome_summary or {}),
         )
         msg = String()
         msg.data = json.dumps(payload, sort_keys=True, separators=(',', ':'))

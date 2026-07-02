@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NAO Preloaded Environment Viewer</title>
+  <style>
+    :root { --bg:#f6f7f9; --ink:#20242b; --muted:#626b78; --line:#cfd5dd; --accent:#235b8c; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:Arial,sans-serif; line-height:1.45; }
+    main { max-width:1180px; margin:auto; padding:24px 20px 56px; }
+    h1 { margin:0 0 6px; font-size:1.8rem; }
+    .meta { color:var(--muted); margin:0 0 18px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:14px; }
+    article { background:white; border:1px solid var(--line); border-left:5px solid var(--accent); padding:12px; }
+    h2 { font-size:1.05rem; margin:0 0 8px; }
+    object { width:100%; aspect-ratio:16/10; border:1px solid var(--line); background:#fff; }
+    code { background:#e7ebef; padding:1px 4px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>NAO Preloaded Environment Viewer</h1>
+  <p class="meta">Installed with <code>nao_chatbot</code> so the operator can open the semantic scene diagrams from inside the runtime container after rqt is already running.</p>
+  <section class="grid">
+    <article>
+      <h2><code>baseline_table</code></h2>
+      <object data="preloaded_environment_svgs/baseline_table.svg" type="image/svg+xml"></object>
+    </article>
+    <article>
+      <h2><code>lab_sections</code></h2>
+      <object data="preloaded_environment_svgs/lab_sections.svg" type="image/svg+xml"></object>
+    </article>
+    <article>
+      <h2><code>kitchen_delivery</code></h2>
+      <object data="preloaded_environment_svgs/semantic_kitchen_delivery.svg" type="image/svg+xml"></object>
+    </article>
+    <article>
+      <h2><code>iiia_floor</code></h2>
+      <object data="preloaded_environment_svgs/iiia_floor.svg" type="image/svg+xml"></object>
+    </article>
+  </section>
+</main>
+</body>
+</html>

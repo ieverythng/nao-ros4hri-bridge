@@ -7,7 +7,8 @@ This top-level docs surface is intentionally small and operational.
 - `contracts.md` — runtime payload contracts.
 - `current_workflow.md` — canonical ownership and runtime flow.
 - `launch_profiles.md` — launch matrix, arguments, operator runbooks.
-- `planner_status.md` — planner execution status, known gaps, next checks.
+- `plans/nao_ros4hri_masterplan.md` — planner execution status, known gaps,
+  and next checks.
 
 ## Architecture
 
@@ -20,10 +21,23 @@ This top-level docs surface is intentionally small and operational.
 ## Plans
 
 - `plans/nao_ros4hri_masterplan.md` (+ HTML) — canonical integration tracker.
-- `plans/fake_skills_codex_handoff.md` (+ HTML) — separate fake-skills stream.
-- `plans/planner_grounding_moe_contract_2026-06-01.md` (+ HTML) — planner grounding ownership and MoE-by-AB seam contract.
-- `plans/planner_replan_lineage_adr.md` (+ HTML) — accepted ADR for replan lineage and Hybrid Minimal T0.
-- `plans/sv_e2e_planner_flow_walkthrough_2026-06-01.md` (+ HTML) — supervisor presentation pack for full E2E planner flow.
+- `plans/ISSUE_TRACKER_FULL_SUITE.html` — detailed runtime-readiness tracker.
+- `plans/ISSUE_TRACKER_FAKE_SUITE.html` — deep fake-skill, preloaded
+  environment, and replan validation tracker.
+- `plans/FINAL_RUNTIME_REVIEW.html` — supervisor-facing runtime review.
+- `plans/IRR_Implementation.html` — intent-route-response ablation tracker.
+- `plans/CRITIC_RUNTIME_HARDENING_2026-06-30.md` (+ HTML) — current
+  source-hardening and live-proof handoff for the CRITIC pass.
+- `plans/deep_fake_replan_stabilization_2026-07-01.md` (+ HTML) — current
+  deep fake/replan stabilization handoff for preloaded fixtures, SVG maps, and
+  dialogue-scoped planner lineage.
+- `plans/CHATBOT_LLM_REFACTOR_REPORT.md` (+ HTML) — separate chatbot
+  modularity/refactor plan. Treat it as a sibling plan until its changes are
+  validated and folded into the masterplan.
+- `plans/locate-anything-3b-impl-report.html` and
+  `plans/locateanything-nao-integration (1).md` — LocateAnything migration references.
+- `plans/semi_symbolic_requirements_handoff_2026-06-11.md` (+ HTML) — semi-symbolic KB requirements.
+- `plans/wsl2-native-setup-plan.md` (+ HTML) — native WSL2 setup plan.
 
 ## Reference/Generated Material
 

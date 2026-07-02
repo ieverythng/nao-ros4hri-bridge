@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turn-State IRR Research Plan</title>
+<style>
+:root { --bg:#f7f8fb; --ink:#1f2933; --muted:#5f6b7a; --line:#d8dee8; --accent:#155e75; --panel:#ffffff; --code:#eef2f7; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; line-height:1.6; }
+main { max-width:1040px; margin:0 auto; padding:36px 22px 72px; }
+h1 { font-size:2.2rem; margin:0 0 0.4rem; color:#0f172a; }
+h2 { margin-top:2rem; padding-top:1rem; border-top:1px solid var(--line); color:#16324a; }
+h3 { color:#1f3b57; }
+p { font-size:1rem; }
+pre { background:var(--code); border:1px solid var(--line); border-radius:10px; padding:14px 16px; overflow:auto; }
+code { font-family:'SFMono-Regular',Consolas,'Liberation Mono',monospace; font-size:0.92em; }
+blockquote { background:#fff; border-left:4px solid var(--accent); padding:10px 14px; margin:16px 0; }
+.tableline { margin:0; border-radius:0; border-top:0; border-bottom:0; }
+.listitem { margin:0.35rem 0 0.35rem 1rem; }
+.meta { color:var(--muted); }
+</style>
+</head>
+<body>
+<main>
+<h1>Turn-State IRR Research Plan for the NAO ROS4HRI Stack</h1>
+<p>**Date:** 2026-06-20   **Working title:** Grounded Semantic Admission through Turn-State IRR   **Scope:** research direction, implementation strategy, prompt-pack revision proposal, ablation plan, and validation priorities for the NAO ROS4HRI planner stack.</p>
+<hr>
+<h2>1. Executive view</h2>
+<p>The current planner architecture is already strong enough to preserve the main ownership boundaries: `dialogue_manager` owns turn lifecycle and speech realization, `chatbot_llm` owns semantic interpretation, `nao_orchestrator` owns admission, validation, dispatch, and feedback, `planner_llm` owns structured skill-plan generation and supervision, and skill servers own live evidence and execution. The proven Memoria contracts should remain the baseline. The proposed work should therefore **extend the chatbot-facing turn contract**, not rewrite the planner request, `grounded_context`, planner output, execution feedback, or skill contracts.</p>
+<p>The main weakness is now **KB-to-action semantic transfer**. The KB may contain valid facts and the runtime may pass a working `grounded_context`, but the model can still drift across long conversations. Drift appears when route, intent, and response are generated or interpreted as separate semantic artefacts. The system may answer correctly in short cases but degrade when history grows, when a user asks a mixed question, or when a target-dependent action requires canonical KB identifiers rather than noun phrases.</p>
+<p>The highest-ROI proposal is to introduce **IRR**, an atomic chatbot turn output containing:</p>
+<pre><code class="language-json">
+{
+  &quot;route&quot;: &quot;dialogue | knowledge_query | execution&quot;,
+  &quot;intent&quot;: { &quot;type&quot;: &quot;...&quot;, &quot;goal_text&quot;: &quot;...&quot;, &quot;scene_targets&quot;: [...] },
+  &quot;response&quot;: { &quot;speak_now&quot;: true, &quot;text&quot;: &quot;...&quot; },
+  &quot;planner_handoff&quot;: { &quot;publish&quot;: false, &quot;reason&quot;: &quot;...&quot; },
+  &quot;evidence_used&quot;: { &quot;snapshot_id&quot;: &quot;...&quot;, &quot;entity_ids&quot;: [...] },
+  &quot;confidence&quot;: 0.0
+}
+</code></pre>
+<p>IRR means **Intent, Route, Response**. The point is not to add another speculative layer. The point is to make the chatbot decision internally consistent before it reaches the orchestrator gate. If the robot says it will act, the route must be `execution`. If the route is `knowledge_query`, the response must be grounded in current scene or KB evidence. If execution is requested, planner handoff must include canonical targets or ask for clarification.</p>
+<hr>
+<h2>2. Current validated seams that must be preserved</h2>
+<p>The validated stack already separates dialogue, semantic interpretation, planner admission, planning, execution, feedback, and speech. These seams are central to the thesis and should not be destabilized.</p>
+<pre class="tableline">| Seam | Preserve | Reason |</pre>
+<pre class="tableline">|---|---|---|</pre>
+<pre class="tableline">| `chatbot_llm -&gt; nao_orchestrator planner_gate -&gt; planner_llm` | Yes | The orchestrator gate is the deterministic admission point. The chatbot may propose execution, but it does not publish directly to the planner. |</pre>
+<pre class="tableline">| `grounded_context` inside planner request | Yes | This is the compact LLM-facing world-state contract. It should not be replaced by full RDF dumps or raw perception streams. |</pre>
+<pre class="tableline">| Raw scene / KB evidence reserved for skills | Yes | Skills require live requery and validation. The planner should not own raw detector or tracker evidence. |</pre>
+<pre class="tableline">| Planner output as ordered skill steps | Yes | Planner remains a structured skill-plan generator, not a controller. |</pre>
+<pre class="tableline">| Execution feedback to planner supervision | Yes | Replanning and clarification should use feedback rather than local orchestrator planning. |</pre>
+<pre class="tableline">| Dialogue acts realized by `dialogue_manager` | Yes | Planner does not directly speak to the user. |</pre>
+<p>The IRR proposal changes **Contract 1: Chatbot Turn Output** and supporting prompt-pack logic. It should be implemented as an ablation branch first. It should not alter Contract 2 (`/planner/request`), Contract 3 (`grounded_context`), or downstream planner contracts until results show clear improvement.</p>
+<hr>
+<h2>3. Research diagnosis</h2>
+<h3>3.1 Why prompt-only routing is fragile</h3>
+<p>The route decision is not a plain text-classification problem. A phrase such as “what do you see?” can mean different things depending on state:</p>
+<pre class="tableline">| User utterance | Current state | Correct route |</pre>
+<pre class="tableline">|---|---|---|</pre>
+<pre class="tableline">| “What do you see?” | Fresh scene/KB snapshot exists | `knowledge_query` |</pre>
+<pre class="tableline">| “What do you see?” | No recent state available | `knowledge_query` with uncertainty, or clarification |</pre>
+<pre class="tableline">| “Look around and tell me what you see.” | Scan skill available | `execution` |</pre>
+<pre class="tableline">| “Did you find the cup?” | Latest skill result exists | `dialogue` or `knowledge_query` over latest execution feedback |</pre>
+<pre class="tableline">| “Can we navigate to the cup later?” | Future/hypothetical action | `dialogue` |</pre>
+<pre class="tableline">| “Navigate to the cup now.” | Cup grounded with canonical ID | `execution` |</pre>
+<pre class="tableline">| “Navigate to the cup now.” | Cup ambiguous or missing | `dialogue` clarification, not execution |</pre>
+<p>The deciding variable is not the phrase itself. It is the phrase plus the turn state, active goal, latest evidence, available skills, and whether the user asks for immediate physical action.</p>
+<h3>3.2 Why KB-to-action is the weakest seam</h3>
+<p>The KB is currently a shallow world model. It can store symbolic facts and expose relations, but it does not yet behave as a full persistent world model with entity salience, conversational continuity, goal-state tracking, object permanence, history compression, or uncertainty management. That makes KB-to-action hard: the planner needs canonical arguments, while users often speak in natural noun phrases.</p>
+<p>Example failure mode:</p>
+<pre><code class="language-text">
+User: Bring the kitchen cup to ALEX.
+Grounded facts: codex_kitchen_cup, codex_recipient_person, codex_kitchen.
+Planner args: &quot;cup&quot;, &quot;ALEX&quot;.
+Fake skill guard: fails because the arguments are not canonical KB ids.
+</code></pre>
+<p>This is an expected failure for a shallow world model. It should not be treated as a general LLM planning failure. The repair should focus on grounded-subject projection and IRR evidence binding.</p>
+<hr>
+<h2>4. Proposed abstraction: Turn State Contract</h2>
+<p>The chatbot should receive one deterministic turn-state packet before producing IRR. This packet is built by code from current runtime evidence and should be treated as authoritative for the current turn.</p>
+<pre><code class="language-json">
+{
+  &quot;turn_state_version&quot;: &quot;ts.v1&quot;,
+  &quot;turn_id&quot;: &quot;turn_20260620_001&quot;,
+  &quot;utterance&quot;: &quot;what do you see?&quot;,
+  &quot;active_goal&quot;: {
+    &quot;goal_id&quot;: null,
+    &quot;status&quot;: &quot;none&quot;,
+    &quot;summary&quot;: null
+  },
+  &quot;dialogue_context&quot;: {
+    &quot;last_user_turns&quot;: [],
+    &quot;last_robot_turns&quot;: [],
+    &quot;awaiting_user_clarification&quot;: false
+  },
+  &quot;world_state&quot;: {
+    &quot;snapshot_id&quot;: &quot;scene_4821&quot;,
+    &quot;snapshot_age_sec&quot;: 3.2,
+    &quot;scene_digest&quot;: &quot;1 person visible; 1 gold cup on table_1&quot;,
+    &quot;entities&quot;: [
+      {
+        &quot;id&quot;: &quot;codex_probe_cup&quot;,
+        &quot;label&quot;: &quot;cup&quot;,
+        &quot;kind&quot;: &quot;object&quot;,
+        &quot;class&quot;: &quot;Cup&quot;,
+        &quot;visible&quot;: true,
+        &quot;relations&quot;: [
+          {&quot;predicate&quot;: &quot;dbp:color&quot;, &quot;object&quot;: &quot;gold&quot;},
+          {&quot;predicate&quot;: &quot;oro:isOn&quot;, &quot;object&quot;: &quot;table_1&quot;}
+        ]
+      }
+    ]
+  },
+  &quot;latest_execution&quot;: {
+    &quot;goal_id&quot;: null,
+    &quot;last_skill&quot;: null,
+    &quot;last_result&quot;: null
+  },
+  &quot;available_skills&quot;: [
+    &quot;scan&quot;, &quot;look_at&quot;, &quot;find_object&quot;, &quot;navigate_to&quot;, &quot;pick_object&quot;, &quot;place_object&quot;, &quot;bring_object&quot;, &quot;report_result&quot;, &quot;wave_greet&quot;
+  ],
+  &quot;route_policy&quot;: {
+    &quot;allowed_routes&quot;: [&quot;dialogue&quot;, &quot;knowledge_query&quot;, &quot;execution&quot;],
+    &quot;execution_requires_admission&quot;: true,
+    &quot;kb_mutation_requires_skill&quot;: true,
+    &quot;target_dependent_execution_requires_canonical_ids&quot;: true
+  }
+}
+</code></pre>
+<h3>Contract rules</h3>
+<p>1. `turn_state` is read-only for LLMs. 2. The chatbot may cite entity ids and relations, but it may not invent new facts. 3. The chatbot output must refer to the same evidence it used. 4. `grounded_context` remains the compact scene/KB projection used downstream. 5. Changes to `grounded_context` should be ablated, not rewritten. 6. Raw scene and KB evidence remain available to skills for live validation.</p>
+<hr>
+<h2>5. IRR: Intent, Route, Response</h2>
+<p>IRR merges the current response and intent split into one atomic decision. The goal is to prevent contradictions such as a dialogue route with execution wording, an execution route with no canonical target, or a knowledge-query answer that does not cite current evidence.</p>
+<h3>Proposed IRR output schema</h3>
+<pre><code class="language-json">
+{
+  &quot;route&quot;: &quot;dialogue | knowledge_query | execution&quot;,
+  &quot;route_reason&quot;: &quot;string&quot;,
+  &quot;confidence&quot;: 0.0,
+  &quot;intent&quot;: {
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;goal_text&quot;: &quot;string&quot;,
+    &quot;scene_targets&quot;: [&quot;string&quot;],
+    &quot;canonical_target_ids&quot;: [&quot;string&quot;],
+    &quot;request_kind&quot;: &quot;new_goal | clarification_answer | goal_update | cancel_request | none&quot;,
+    &quot;intent_sequence&quot;: [&quot;string&quot;]
+  },
+  &quot;response&quot;: {
+    &quot;speak_now&quot;: true,
+    &quot;text&quot;: &quot;string&quot;,
+    &quot;style&quot;: &quot;answer | acknowledgement | clarification | failure | none&quot;
+  },
+  &quot;planner_handoff&quot;: {
+    &quot;publish&quot;: false,
+    &quot;reason&quot;: &quot;string&quot;
+  },
+  &quot;evidence_used&quot;: {
+    &quot;snapshot_id&quot;: &quot;string&quot;,
+    &quot;entity_ids&quot;: [&quot;string&quot;],
+    &quot;kb_subjects&quot;: [&quot;string&quot;],
+    &quot;latest_result_ids&quot;: [&quot;string&quot;]
+  },
+  &quot;safety_flags&quot;: []
+}
+</code></pre>
+<h3>IRR consistency rules</h3>
+<pre class="tableline">| Rule | Deterministic check |</pre>
+<pre class="tableline">|---|---|</pre>
+<pre class="tableline">| Dialogue cannot promise immediate action | If `route=dialogue`, response must not say “I will now move/look/scan/navigate/pick/bring”. |</pre>
+<pre class="tableline">| Knowledge query must cite evidence | If `route=knowledge_query`, `evidence_used` must include a snapshot, KB subject, or latest result. |</pre>
+<pre class="tableline">| Execution must be admitted later | If `route=execution`, `planner_handoff.publish=true`, but publication still goes through `nao_orchestrator`. |</pre>
+<pre class="tableline">| Target-dependent execution needs canonical ids | If skill requires a target, `canonical_target_ids` must be present or the route should remain dialogue with clarification. |</pre>
+<pre class="tableline">| KB mutation is execution | Add/revise/remove facts must route through KB mutation skills, not direct LLM writes. |</pre>
+<pre class="tableline">| Past-action questions are not new execution | “What did you do?” should answer from latest execution feedback unless user asks to repeat the action. |</pre>
+<hr>
+<h2>6. Revised chatbot prompt-pack proposal</h2>
+<p>This is a proposed `chat_prompt_pack.yaml` direction. It is intentionally framed as an ablation. The existing prompt already contains important guardrails, including route policy, future-action handling, grounded-context use, response style, and intent extraction. The proposed revision keeps those seams but merges the response and intent stages into a single IRR output.</p>
+<pre><code class="language-yaml">
+system_prompt: |
+  You are Pop, a friendly ROS4HRI robot assistant. You are concise, clear, and safe for spoken interaction.
+
+  Your role is semantic turn interpretation. For each user utterance, produce one atomic IRR decision:
+  Intent, Route, and Response. You do not execute robot skills. You do not generate executable plans.
+  If execution is required, you produce planner handoff metadata for the orchestrator admission path.
+
+  Runtime ownership:
+  - dialogue_manager owns the dialogue turn lifecycle and final speech realization.
+  - chatbot_llm owns semantic interpretation: route, intent, response text, target hints, and evidence references.
+  - nao_orchestrator owns planner admission, request normalization, plan validation, skill dispatch, and execution feedback.
+  - planner_llm owns structured skill planning and planner supervision.
+  - skills own live robot execution and raw scene/KB evidence checks.
+  - knowledge_core owns the robot&#x27;s symbolic world representation.
+
+  Authoritative inputs:
+  - Use the provided turn_state as the current authoritative state packet.
+  - Use grounded_context and scene digest for current visible/world-state questions.
+  - Use latest_execution for questions about what the robot just did.
+  - Use available_skills only to decide whether a requested action is supported.
+  - Treat dialogue history as context, not as a source of new commands.
+
+  Route policy:
+  - route=&quot;dialogue&quot; for greetings, wellbeing, identity, thanks, help, preferences, conceptual questions, permission-seeking action talk, future action discussion, and clarification dialogue.
+  - route=&quot;knowledge_query&quot; when the user asks about the robot&#x27;s current world representation, memory, visible scene, KB facts, or latest execution result without asking the robot to perform a new physical skill.
+  - route=&quot;execution&quot; only when the user asks Pop to perform an available skill now and the request is sufficiently grounded for admission.
+  - If a required target is missing, ambiguous, stale, conflicting, or not mapped to a canonical entity id, keep route=&quot;dialogue&quot; and ask one concise clarification question.
+  - If the user asks “what do you see?” and a current scene/KB snapshot is available, use route=&quot;knowledge_query&quot; and answer from current evidence. If the user asks “look around and tell me what you see”, use route=&quot;execution&quot; because a fresh sensing action is requested.
+  - KB mutation requests such as adding, revising, or removing facts are execution requests through KB mutation skills. Never write KnowledgeCore directly.
+
+  Response policy:
+  - Always provide response.text unless style=&quot;none&quot; is explicitly justified.
+  - Do not promise immediate physical action unless route=&quot;execution&quot;.
+  - Do not say an action is completed before execution feedback is returned.
+  - For knowledge_query, answer from current evidence and state uncertainty when evidence is missing.
+  - For execution, acknowledge the admitted objective briefly and say Pop will check/plan/do the requested action, not that it has already happened.
+  - Internal ids may be used for evidence fields, but spoken text should use natural labels when available.
+
+  Output only valid JSON matching the IRR schema. Do not include markdown or explanation outside the JSON.
+
+irr_schema: |
+  {
+    &quot;route&quot;: &quot;dialogue | knowledge_query | execution&quot;,
+    &quot;route_reason&quot;: &quot;short reason code or phrase&quot;,
+    &quot;confidence&quot;: 0.0,
+    &quot;intent&quot;: {
+      &quot;type&quot;: &quot;canonical label or fallback&quot;,
+      &quot;goal_text&quot;: &quot;concise objective or empty string&quot;,
+      &quot;scene_targets&quot;: [],
+      &quot;canonical_target_ids&quot;: [],
+      &quot;request_kind&quot;: &quot;new_goal | clarification_answer | goal_update | cancel_request | none&quot;,
+      &quot;intent_sequence&quot;: []
+    },
+    &quot;response&quot;: {
+      &quot;speak_now&quot;: true,
+      &quot;text&quot;: &quot;short user-facing response&quot;,
+      &quot;style&quot;: &quot;answer | acknowledgement | clarification | failure | none&quot;
+    },
+    &quot;planner_handoff&quot;: {
+      &quot;publish&quot;: false,
+      &quot;reason&quot;: &quot;why this should or should not enter the planner path&quot;
+    },
+    &quot;evidence_used&quot;: {
+      &quot;snapshot_id&quot;: &quot;&quot;,
+      &quot;entity_ids&quot;: [],
+      &quot;kb_subjects&quot;: [],
+      &quot;latest_result_ids&quot;: []
+    },
+    &quot;safety_flags&quot;: []
+  }
+
+examples: |
+  User: &quot;What do you see?&quot;
+  State: current scene digest says one person and one gold cup are visible.
+  Output:
+  {
+    &quot;route&quot;:&quot;knowledge_query&quot;,
+    &quot;route_reason&quot;:&quot;broad_scene_question_with_current_snapshot&quot;,
+    &quot;confidence&quot;:0.94,
+    &quot;intent&quot;:{&quot;type&quot;:&quot;kb_query_visible_entities&quot;,&quot;goal_text&quot;:&quot;describe current visible entities&quot;,&quot;scene_targets&quot;:[],&quot;canonical_target_ids&quot;:[],&quot;request_kind&quot;:&quot;none&quot;,&quot;intent_sequence&quot;:[]},
+    &quot;response&quot;:{&quot;speak_now&quot;:true,&quot;text&quot;:&quot;I can currently see a person and a gold cup on the table.&quot;,&quot;style&quot;:&quot;answer&quot;},
+    &quot;planner_handoff&quot;:{&quot;publish&quot;:false,&quot;reason&quot;:&quot;the user asked about current represented state, not for a new scan&quot;},
+    &quot;evidence_used&quot;:{&quot;snapshot_id&quot;:&quot;scene_current&quot;,&quot;entity_ids&quot;:[&quot;person_1&quot;,&quot;cup_1&quot;],&quot;kb_subjects&quot;:[],&quot;latest_result_ids&quot;:[]},
+    &quot;safety_flags&quot;:[]
+  }
+
+  User: &quot;Look around and tell me what you see.&quot;
+  Output:
+  {
+    &quot;route&quot;:&quot;execution&quot;,
+    &quot;route_reason&quot;:&quot;fresh_sensing_action_requested&quot;,
+    &quot;confidence&quot;:0.93,
+    &quot;intent&quot;:{&quot;type&quot;:&quot;scan&quot;,&quot;goal_text&quot;:&quot;scan the scene and report visible entities&quot;,&quot;scene_targets&quot;:[],&quot;canonical_target_ids&quot;:[],&quot;request_kind&quot;:&quot;new_goal&quot;,&quot;intent_sequence&quot;:[&quot;scan&quot;,&quot;report_result&quot;]},
+    &quot;response&quot;:{&quot;speak_now&quot;:true,&quot;text&quot;:&quot;I will look around and report what I find.&quot;,&quot;style&quot;:&quot;acknowledgement&quot;},
+    &quot;planner_handoff&quot;:{&quot;publish&quot;:true,&quot;reason&quot;:&quot;the user requested a fresh perception action and report&quot;},
+    &quot;evidence_used&quot;:{&quot;snapshot_id&quot;:&quot;&quot;,&quot;entity_ids&quot;:[],&quot;kb_subjects&quot;:[],&quot;latest_result_ids&quot;:[]},
+    &quot;safety_flags&quot;:[]
+  }
+</code></pre>
+<hr>
+<h2>7. Implementation plan by ROI</h2>
+<h3>P0: highest ROI, minimal disruption</h3>
+<p>1. Add `TurnStateBuilder` in the chatbot path. 2. Add IRR output schema while preserving current fields through an adapter. 3. Add `IRRConsistencyGuard` before planner handoff. 4. Add deterministic target canonicalization checks for target-dependent execution. 5. Add a small regression suite for route drift and KB-to-action mismatches.</p>
+<h3>P1: high ROI, direct validation value</h3>
+<p>1. Add direct KB lookup for mentioned entities before chatbot call. 2. Add `evidence_used` logging into trace outputs. 3. Add fixture lifespan control for long validation runs. 4. Add isolated scenario groups to avoid long-context contamination. 5. Add canonical target requirements for `bring_object`, `pick_object`, `place_object`, `look_at`, `navigate_to`.</p>
+<h3>P2: research extension, safe to dream</h3>
+<p>1. Add embedding retrieval for dialogue memory only, not KB truth. 2. Add offline LLM-as-judge for trace evaluation, not runtime admission. 3. Add World Model Enricher prototype that produces enriched `turn_state` from KB, scene, active goals, and execution traces. 4. Add ablation experiments comparing current two-stage response/intent vs IRR. 5. Add Qwen-RobotNav-inspired evidence notebook for long-horizon tasks.</p>
+<hr>
+<h2>8. Ablation design</h2>
+<p>Do not change all seams at once. Use controlled ablations.</p>
+<pre class="tableline">| Ablation | Change | Outcome metric |</pre>
+<pre class="tableline">|---|---|---|</pre>
+<pre class="tableline">| A0 baseline | Current prompt pack and contracts | Current route, execution, and report score |</pre>
+<pre class="tableline">| A1 IRR only | Atomic route+intent+response, adapter to current fields | Route consistency, fewer contradictory acknowledgements |</pre>
+<pre class="tableline">| A2 IRR + turn_state | Add deterministic turn-state packet | Better long-context stability |</pre>
+<pre class="tableline">| A3 IRR + canonical target guard | Require canonical IDs before execution handoff | Fewer KB-to-action failures |</pre>
+<pre class="tableline">| A4 IRR + direct KB subject lookup | Mentioned-subject KB lookup before chatbot | Better “what do you remember about X?” answers |</pre>
+<pre class="tableline">| A5 IRR + offline judge | Judge traces after execution | Better evaluation, no runtime latency risk |</pre>
+<hr>
+<h2>9. Validation scenarios</h2>
+<p>Core holdouts:</p>
+<p>1. “What do you see?” with current scene state. 2. “Look around and tell me what you see.” 3. “Could we navigate to the cup later?” 4. “Wave-particle equation?” 5. “What do you remember about codex_arch_marker?” 6. “Bring the kitchen cup to ALEX.” 7. “Bring the cup to ALEX” when cup is ambiguous. 8. “What did you just do?” after execution feedback. 9. “Actually stop.” during active goal.</p>
+<p class="listitem">10. Long-context repeat after six to ten mixed turns.</p>
+<p>Metrics:</p>
+<p class="listitem">- route accuracy;</p>
+<p class="listitem">- planner handoff correctness;</p>
+<p class="listitem">- canonical target usage;</p>
+<p class="listitem">- false execution acknowledgements;</p>
+<p class="listitem">- knowledge-query evidence grounding;</p>
+<p class="listitem">- invalid planner JSON rate after handoff;</p>
+<p class="listitem">- naturalness and truthfulness of response text;</p>
+<p class="listitem">- recovery behaviour under missing target and fake failure.</p>
+<hr>
+<h2>10. Thesis framing</h2>
+<p>The thesis contribution can be framed as follows:</p>
+<blockquote>The system shows that an LLM planner for HRI is not sufficient unless the robot also has a grounded semantic admission layer. The chatbot must decide whether a turn is dialogue, a query over the robot&#x27;s current symbolic state, or an execution request. This decision must be bound to the same response text and the same evidence references before the orchestrator admits execution. The proposed IRR contract provides that binding while preserving the existing ROS4HRI contracts for planner request, compact grounding, planner output, execution feedback, and speech realization.</blockquote>
+<p>This gives you a strong research line without destabilizing the working stack. IRR is an ablation over Contract 1, not a rewrite of the whole architecture.</p>
+<hr>
+<h2>11. Concrete next step</h2>
+<p>Create a branch such as:</p>
+<pre><code class="language-bash">
+git checkout -b feat/turn-state-irr-ablation
+</code></pre>
+<p>Then implement:</p>
+<p>1. `TurnStateBuilder` with current scene digest, grounded entities, latest execution result, and active goal summary. 2. IRR prompt-pack variant. 3. Adapter from IRR to existing `verbal_ack`, `route`, `confidence`, and `user_intent` fields. 4. Deterministic `IRRConsistencyGuard`. 5. Route/target regression tests.</p>
+<p>Keep the existing prompt pack as `A0 baseline`. Treat IRR as `A1/A2` ablation until it proves better in the runtime-review suite.</p>
+</main>
+</body>
+</html>

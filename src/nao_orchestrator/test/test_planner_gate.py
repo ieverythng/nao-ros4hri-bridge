@@ -165,12 +165,60 @@ def test_planner_gate_dialogue_failure_clears_goal() -> None:
     assert gate.active_goal_id == ''
 
 
+def test_planner_gate_dialogue_completion_clears_goal() -> None:
+    gate = PlannerGate()
+    assert gate.decide(_payload('goal_1')).accepted is True
+
+    gate.observe_dialogue_act(json.dumps({'goal_id': 'goal_1', 'act': 'notify_completion'}))
+    assert gate.active_goal_id == ''
+
+
 def test_planner_gate_clarification_keeps_goal_active() -> None:
     gate = PlannerGate()
     assert gate.decide(_payload('goal_1')).accepted is True
 
-    gate.observe_dialogue_act(json.dumps({'goal_id': 'goal_1', 'act': 'ask_clarification'}))
+    gate.observe_dialogue_act(
+        json.dumps(
+            {
+                'goal_id': 'goal_1',
+                'act': 'ask_clarification',
+                'await_user_response': True,
+            }
+        )
+    )
     assert gate.active_goal_id == 'goal_1'
+
+
+def test_planner_gate_terminal_clarification_clears_goal() -> None:
+    gate = PlannerGate()
+    assert gate.decide(_payload('goal_1')).accepted is True
+
+    gate.observe_dialogue_act(
+        json.dumps(
+            {
+                'goal_id': 'goal_1',
+                'act': 'ask_clarification',
+                'context': {'status': 'failed', 'terminal_reason': 'no safe target'},
+            }
+        )
+    )
+    assert gate.active_goal_id == ''
+
+
+def test_planner_gate_terminal_help_act_clears_goal() -> None:
+    gate = PlannerGate()
+    assert gate.decide(_payload('goal_1')).accepted is True
+
+    gate.observe_dialogue_act(
+        json.dumps(
+            {
+                'goal_id': 'goal_1',
+                'act': 'ask_for_help',
+                'status': 'failed',
+            }
+        )
+    )
+    assert gate.active_goal_id == ''
 
 
 def test_planner_gate_ignores_feedback_with_stale_plan_version() -> None:

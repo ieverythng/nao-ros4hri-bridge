@@ -39,6 +39,44 @@ Borrow the SQL review skill's posture:
 - Suggest fixes with exact file/param/topic references.
 - Do not pad findings. If the evidence is inconclusive, say what probe is missing.
 
+## Clean Rebuild And Relaunch
+
+When source changed before a scored review, rebuild an overlay image from the
+current `iiia:nao` base, stop the old stack, and start one fresh container named
+`nao_ros2`. Do not build an overlay with the same tag as `BASE_IMAGE`; the
+repository script refuses that recursive layering shape.
+
+```bash
+BASE_IMAGE=iiia:nao ./scripts/build_docker.sh overlay iiia:nao-critic
+
+docker rm -f nao_ros2 2>/dev/null || true
+xhost +local:root
+docker run --rm -it \
+  --name nao_ros2 \
+  --network host \
+  --ipc host \
+  --device /dev/video0 \
+  -e DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  iiia:nao-critic
+```
+
+Inside the container, use the Fast Start launch command below. After launch,
+verify the fresh runtime before scoring:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source /home/ubuntu/ws/install/setup.bash
+ros2 node list | grep -E 'chatbot_llm|dialogue_manager|planner_llm|nao_orchestrator'
+ros2 lifecycle get /dialogue_manager
+ros2 param get /chatbot_llm turn_pipeline_mode
+ros2 param get /interaction_trace_viewer mirror_trace_lines_to_rosout
+```
+
+If `/dev/video0` is unavailable or object detection is intentionally disabled,
+omit the device flag. Treat a failed lifecycle transition or duplicate launch
+process as a preflight failure, not as runtime questionnaire evidence.
+
 ## Fast Start
 
 For a scored cool-profile runtime review, use the operator launch profile below
@@ -57,6 +95,7 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   network_interface:=wlp1s0 \
   start_planner_llm:=true \
   chatbot_planner_mode_enabled:=true \
+  chatbot_turn_pipeline_mode:=response_first \
   chatbot_server_url:=http://10.7.138.215:8004/v1/chat/completions \
   planner_llm_provider:=openai_compatible \
   planner_llm_base_url:=http://10.7.138.215:8004 \
@@ -87,6 +126,7 @@ For an active E2E questionnaire pass, run:
 python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
   --container nao_ros2 \
   --case-set smoke \
+  --speech-voice-scope group \
   --out /tmp/nao_active_questionnaire.json
 ```
 
@@ -96,8 +136,94 @@ For the thesis-facing main questionnaire, use:
 python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
   --container nao_ros2 \
   --case-set main \
+  --speech-voice-scope group \
   --out /tmp/nao_main_questionnaire.json
 ```
+
+For deterministic preloaded-scene validation, use named KnowledgeCore fixtures
+before or during the questionnaire. These fixtures mirror the ROS4HRI
+interaction simulator semantics (`rdf:type`, `myself sees`, `isIn`, `isOn`,
+`contains`) without requiring manual rqt clicks:
+
+```bash
+python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
+  --container nao_ros2 \
+  --list-environments
+
+python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
+  --container nao_ros2 \
+  --case-set environment \
+  --speech-voice-scope group \
+  --out /tmp/nao_environment_questionnaire.json
+```
+
+For the full-stack runtime score, prefer `--case-set main` plus targeted
+`composite` cases. For the deeper fake-skill/replan score, switch explicitly to
+`--case-set fake_deep`; do not mix it into the basic score unless the base
+dialogue, KB, and simple execution seams already passed in the same runtime
+window.
+
+The active questionnaire writes each case immediately after turn injection and
+then refreshes the same case entry during long waits with updated
+`phase_observations` and log excerpts. Treat these fields as observability
+breadcrumbs, not as pass/fail scoring. They exist so fake-deep cases no longer
+look like silent hangs while execution, replan, or speech evidence is still
+arriving.
+
+```bash
+python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
+  --container nao_ros2 \
+  --case-set fake_deep \
+  --speech-voice-scope group \
+  --fake-policy-profile all_success \
+  --out /tmp/nao_fake_deep_success.json
+
+python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
+  --container nao_ros2 \
+  --case-set fake_deep \
+  --speech-voice-scope group \
+  --fake-policy-profile fail_once_navigation \
+  --out /tmp/nao_fake_deep_fail_once_navigation.json
+```
+
+To preload a fixture for any existing case set, add:
+
+```bash
+  --preload-environment kitchen_delivery
+```
+
+Current fixtures live in `src/nao_chatbot/config/preloaded_environments.json`
+and are mirrored under
+`.codex/skills/robot-runtime-performance-review/references/preloaded_environments.json`
+for skill portability. The SVG environments are visual operator aids. The
+scoreable semantic state is the KnowledgeCore fact set injected through
+`/kb/revise`.
+After rebuilding `nao_chatbot`, the operator-facing SVG selector is installed at
+`/home/ubuntu/ws/install/share/nao_chatbot/config/preloaded_environment_viewer.html`
+inside the container. Open it as a file URL when rqt is already running and the
+operator needs to choose the semantic scene being validated. The helper command
+`ros2 run nao_chatbot preloaded_environment_viewer` prints the file URL, and
+`ros2 run nao_chatbot preloaded_environment_viewer --open` asks the container
+desktop to open it.
+
+For the intent-first route-lock ablation, use the same launch profile but replace
+the turn pipeline argument with `chatbot_turn_pipeline_mode:=intent_first`, then
+run:
+
+```bash
+python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
+  --container nao_ros2 \
+  --case-set intent_ablation \
+  --expected-turn-pipeline-mode intent_first \
+  --sample-topics \
+  --out /tmp/nao_intent_first_ablation.json
+```
+
+For a control run, keep the default `chatbot_turn_pipeline_mode:=response_first`
+and run the same `intent_ablation` case set with
+`--expected-turn-pipeline-mode response_first`. Compare the artifact
+`runtime_metadata.chatbot_turn_pipeline_mode`, route traces, planner requests,
+and speech output before accepting intent-first as an improvement.
 
 For targeted architecture seams before a full speech pass, run:
 
@@ -111,6 +237,9 @@ python3 .codex/skills/robot-runtime-performance-review/scripts/run_architecture_
 Use this sweep to batch-check chatbot-service KB mutation, fake-skill guard
 availability, maximal grounded-subject handoff, and replan behavior. Mark it as
 service/direct-action evidence, not full ROS4HRI speech evidence.
+With `--include-maximal`, the sweep also injects the `kitchen_delivery`
+preloaded environment and asks a grouped-location delivery prompt through the
+chatbot service path.
 
 The questionnaire must include an interaction_sim/KnowledgeCore-style object
 insertion probe when the KB seam is under review. The preferred probe is:
@@ -129,6 +258,9 @@ Live probing requirement:
 - If the container is running, actively probe it. Do not rely on historical logs
   alone for a full review.
 - Confirm node visibility with `docker exec <container> ... ros2 node list`.
+- Confirm lifecycle nodes are active before scoring speech or action behavior.
+  A process-only graph is not enough: `dialogue_manager` must report
+  `active [3]` before it will subscribe to tracked voices and speech.
 - Confirm critical live parameters with `ros2 param dump` or `ros2 param get`,
   especially chatbot token budget, KB query budget, scene-grounding freshness,
   orchestrator execution mode, and fake-skill mode.
@@ -144,6 +276,9 @@ Active questionnaire requirement:
 - For a full runtime pass, inject at least one turn from each applicable
   questionnaire category through the ROS4HRI speech ingress instead of only
   reading historical logs.
+- Use `--speech-voice-scope group` for scored questionnaire passes so unrelated
+  cases do not share an anonymous-speaker dialogue history. Use the default
+  `shared` scope only when deliberately stress-testing long-context carry-over.
 - Prefer the rqt_chat/dialogue_manager input seam used by the active launch:
   `/nao_chatbot/humans/voices/anonymous_speaker/speech`
   (`hri_msgs/msg/LiveSpeech`) plus
@@ -158,6 +293,42 @@ Active questionnaire requirement:
   debug surfaces such as `/rosout` with a `runtime_review_rqt_input` logger and
   `/dialogue_manager/closed_captions`. Treat these mirrors as display aids only;
   the scored ingress remains the `LiveSpeech` publication into `dialogue_manager`.
+- If the interaction trace viewer is not visible, check it from inside the
+  container before assuming the package is missing. The expected executable is
+  `interaction_trace_viewer trace_node` after sourcing the installed workspace:
+
+```bash
+docker exec -it nao_ros2 bash -lc '
+source /opt/ros/jazzy/setup.bash
+source /home/ubuntu/ws/install/setup.bash
+ros2 pkg executables interaction_trace_viewer
+ros2 node list | grep interaction_trace_viewer || true
+ros2 param get /interaction_trace_viewer mirror_trace_lines_to_rosout || true
+'
+```
+
+  To run an additional debug trace node without colliding with the launched
+  node, use a distinct node name and keep the `TRACE_EVENT` rosout mirror on:
+
+```bash
+docker exec -it nao_ros2 bash -lc '
+source /opt/ros/jazzy/setup.bash
+source /home/ubuntu/ws/install/setup.bash
+ros2 run interaction_trace_viewer trace_node --ros-args \
+  -r __node:=interaction_trace_viewer_debug \
+  -p compact_mode:=false \
+  -p include_raw_payloads:=false \
+  -p enable_scene_summary_channel:=false \
+  -p mirror_trace_lines_to_rosout:=true \
+  -p rosout_min_level:=warn \
+  -p rosout_node_allowlist_csv:="chatbot_llm,planner_llm,nao_orchestrator,scan_skill_server,report_result_skill_server,fake_skill_server,dialogue_manager,nao_say_skill,head_motion_skill_server,replay_motion_skill_server,nao_look_at,robot_speech_debug" \
+  -p include_event_types_csv:="planner_request,planner_output,execution_feedback,planner_dialogue_act,chatbot_turn_trace"
+'
+```
+
+  In rqt Console, filter for `TRACE_EVENT`. Do not run this command on the host
+  without `docker exec`; a host shell may not know the container workspace
+  package even when the live stack is healthy.
 - Use direct `/planner/request` publication only for planner-isolated probes.
   Mark those probes as planner-only, because they bypass chatbot routing.
 - Use service/direct-action architecture sweeps when speech ingress or
@@ -233,6 +404,10 @@ Interaction_sim object rule:
   `apple_*`, or `phone_*` are still present in the rendered context.
 - Do not classify a simulator object-add miss as perception noise unless the
   object never enters KnowledgeCore or `/scene/summary`.
+- For preloaded environment runs, score the named fixture separately from
+  manual interaction_sim manipulation. A fixture pass requires `/kb/revise`
+  success, `/kb/query` confirmation, grounded_context projection, and a
+  user-visible answer or plan using the canonical fixture ids.
 
 ### 2. HRI Person Stability
 
@@ -287,6 +462,9 @@ Compare live behavior with the TFM validation plan:
 
 Use fake-skill validation when perception noise is not the target of the test.
 Use full user-turn validation when chatbot routing or grounding is the target.
+Use `--case-set fake_deep` when the target is failure-induced replanning,
+multi-turn fake manipulation, location-scoped delivery, or post-skill KB
+effects over named preloaded fixtures.
 
 ### 6. E2E Operational Questionnaire
 
@@ -332,6 +510,10 @@ skills when the target is deterministic execution, replanning, or failure policy
    - Expected: planner produces multiple ordered steps, orchestrator preserves
      step evidence, `report_result` receives a filled or derivable summary, and
      final speech reflects the whole chain rather than only the last step.
+   - Preloaded environment holdout: run `--case-set environment` and require
+     "Bring every object from the kitchen to ALEX and report what happened" to
+     use the `kitchen_delivery` fixture, canonical objects, and the named human
+     recipient instead of generic noun phrases.
 5. Simple fake-skill scenario execution:
    - Run one-skill cases under all-success, all-failure, fail-once, alternating,
      and random fake modes.
@@ -343,6 +525,14 @@ skills when the target is deterministic execution, replanning, or failure policy
    - Expected: successful steps are not repeated unnecessarily, failed steps are
      reported with structured feedback, user clarification is routed through
      chatbot wording, and exactly one semantic speech event is emitted per stage.
+7. Deep fake-skill and replan suite:
+   - Run `--case-set fake_deep` over `baseline_table`, `lab_sections`,
+     `kitchen_delivery`, `gold_apple_handoff`, and `iiia_floor`.
+   - Run at least `all_success`, `fail_once_navigation`,
+     `fail_once_pick`, `delivery_blocked`, and `recipient_missing`.
+   - Expected: preloaded RDF facts are confirmed before the first turn,
+     failed steps either replan, clarify, or fail truthfully, and successful fake
+     post-effects are visible through `/kb/query` and later chatbot answers.
 
 Questionnaire scoring:
 

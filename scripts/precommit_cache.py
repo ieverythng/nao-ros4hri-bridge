@@ -13,7 +13,18 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-CACHE_PATH = REPO_ROOT / ".git" / "precommit-success.json"
+
+
+def _git_dir() -> Path:
+    raw_path = Path(
+        subprocess.check_output(("git", "rev-parse", "--git-dir"), cwd=REPO_ROOT)
+        .decode()
+        .strip()
+    )
+    return raw_path if raw_path.is_absolute() else REPO_ROOT / raw_path
+
+
+CACHE_PATH = _git_dir() / "precommit-success.json"
 
 
 def _git(*args: str) -> bytes:
@@ -55,7 +66,7 @@ def record() -> int:
         + "\n",
         encoding="utf-8",
     )
-    print(f"Recorded fresh pre-commit result in {CACHE_PATH.relative_to(REPO_ROOT)}")
+    print(f"Recorded fresh pre-commit result in {CACHE_PATH}")
     return 0
 
 

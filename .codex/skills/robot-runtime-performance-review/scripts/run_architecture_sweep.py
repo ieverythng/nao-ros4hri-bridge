@@ -48,6 +48,11 @@ def main() -> int:
             questionnaire,
             lifespan_sec=max(1, int(args.kb_lifespan_sec)),
         )
+        results["preloaded_environment_delivery"] = run_preloaded_environment_delivery(
+            args.container,
+            questionnaire,
+            lifespan_sec=max(1, int(args.kb_lifespan_sec)),
+        )
 
     results["finished_at_unix_sec"] = time.time()
     Path(args.out).write_text(json.dumps(results, indent=2, sort_keys=True), encoding="utf-8")
@@ -89,6 +94,7 @@ def collect_runtime_state(container: str) -> dict[str, str]:
 def run_kb_mutation_sweep(container: str, questionnaire) -> dict[str, object]:
     history: list[dict[str, str]] = []
     turns = []
+    evaluations = []
     for sequence, text in (
         (
             1,
@@ -116,18 +122,26 @@ def run_kb_mutation_sweep(container: str, questionnaire) -> dict[str, object]:
             history=history,
         )
         time.sleep(12 if sequence != 3 else 4)
+        query_after = query_subject(container, MARKER_ID)
+        rows_after = query_subject_json(container, MARKER_ID)
+        evaluation = evaluate_kb_mutation_state(sequence, rows_after)
+        evaluations.append(evaluation)
         turns.append(
             {
                 "sequence": sequence,
                 "text": text,
                 "service_output": output,
-                "query_after": query_subject(container, MARKER_ID),
+                "query_after": query_after,
+                "query_rows_after": rows_after,
+                "evaluation": evaluation,
             }
         )
     return {
         "mode": "chatbot_service_to_planner_orchestrator_kb",
         "marker_id": MARKER_ID,
         "turns": turns,
+        "all_postconditions_passed": all(item["passed"] for item in evaluations),
+        "postcondition_summary": evaluations,
     }
 
 
@@ -184,6 +198,52 @@ def run_maximal_person_delivery(container: str, questionnaire, *, lifespan_sec: 
     return {"setup": setup, "service_output": output, "recent_launch_log": feedback}
 
 
+def run_preloaded_environment_delivery(
+    container: str,
+    questionnaire,
+    *,
+    lifespan_sec: int,
+) -> dict[str, object]:
+    fixtures = questionnaire.load_environment_fixtures(
+        questionnaire.DEFAULT_ENVIRONMENT_FIXTURE_PATH
+    )
+    setup = questionnaire.inject_environment_fixtures(
+        container,
+        ["kitchen_delivery"],
+        environment_fixtures=fixtures,
+        lifespan_sec=lifespan_sec,
+    )
+    history: list[dict[str, str]] = []
+    inventory = questionnaire.call_chatbot_turn(
+        container,
+        "What is in the kitchen?",
+        6,
+        voice_id="codex_architecture_environment",
+        history=history,
+    )
+    time.sleep(8)
+    history.append({"speaker": "codex_architecture_environment", "text": "What is in the kitchen?"})
+    inventory_response = questionnaire.extract_service_response(inventory)
+    if inventory_response:
+        history.append({"speaker": "__assistant__", "text": inventory_response})
+    delivery = questionnaire.call_chatbot_turn(
+        container,
+        "Bring every object from the kitchen to ALEX and report what happened.",
+        7,
+        voice_id="codex_architecture_environment",
+        history=history,
+    )
+    time.sleep(45)
+    return {
+        "setup": setup,
+        "inventory_service_output": inventory,
+        "delivery_service_output": delivery,
+        "cup_after": query_subject_json(container, "codex_kitchen_cup"),
+        "book_after": query_subject_json(container, "codex_kitchen_book"),
+        "recipient_after": query_subject_json(container, "codex_recipient_person"),
+    }
+
+
 def cleanup_marker(container: str, subject: str) -> None:
     rows = query_subject_json(container, subject)
     statements = [
@@ -222,6 +282,53 @@ def query_subject_json(container: str, subject: str) -> list[dict]:
         return json.loads(output[start:end])
     except json.JSONDecodeError:
         return []
+
+
+def evaluate_kb_mutation_state(sequence: int, rows: list[dict]) -> dict[str, object]:
+    facts = {
+        (str(row.get("predicate", "")).strip(), str(row.get("object", "")).strip())
+        for row in rows
+        if row.get("predicate") and row.get("object")
+    }
+    if sequence == 1:
+        required = {
+            ("rdf:type", "Cube"),
+            ("dbp:name", "NOVA"),
+            ("dbp:color", "green"),
+        }
+        return {
+            "name": "kb_add_postcondition",
+            "passed": required.issubset(facts),
+            "expected": sorted("%s %s" % item for item in required),
+            "observed": sorted("%s %s" % item for item in facts),
+        }
+    if sequence == 2:
+        return {
+            "name": "kb_revise_postcondition",
+            "passed": ("dbp:color", "blue") in facts and ("dbp:color", "green") not in facts,
+            "expected": ["dbp:color blue", "not dbp:color green"],
+            "observed": sorted("%s %s" % item for item in facts),
+        }
+    if sequence == 3:
+        return {
+            "name": "kb_query_non_mutating_postcondition",
+            "passed": ("dbp:color", "blue") in facts and ("dbp:name", "NOVA") in facts,
+            "expected": ["dbp:name NOVA", "dbp:color blue"],
+            "observed": sorted("%s %s" % item for item in facts),
+        }
+    if sequence == 4:
+        return {
+            "name": "kb_remove_postcondition",
+            "passed": not facts,
+            "expected": ["no facts for %s" % MARKER_ID],
+            "observed": sorted("%s %s" % item for item in facts),
+        }
+    return {
+        "name": "unknown_kb_mutation_postcondition",
+        "passed": False,
+        "expected": [],
+        "observed": sorted("%s %s" % item for item in facts),
+    }
 
 
 def revise(container: str, method: str, statements) -> str:
