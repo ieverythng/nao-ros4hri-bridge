@@ -194,7 +194,7 @@
   <main class="doc">
 
 <h1>NAO ROS4HRI Masterplan (Consolidated, Active)</h1>
-<p><strong>Date:</strong> 2026-06-30 (CRITIC runtime hardening refresh)</p>
+<p><strong>Date:</strong> 2026-07-01 (deep fake/replan stabilization refresh)</p>
 <p><strong>Branch context:</strong> <code>refactor/deslop_repo</code> with nested <code>chatbot_llm</code></p>
 <p><code>feat/planner_llm_hooks</code> and Neural-Wokbench integration seams</p>
 <p><strong>Scope:</strong> Single active execution plan for planner/chatbot/orchestrator seams,</p>
@@ -276,10 +276,11 @@
 <p>analysis can distinguish completed, failed, and pending targets without</p>
 <p>parsing free text.</p>
 <ul>
+<li><strong>Done (2026-07-01 source gate)</strong>: chatbot planner handoff turn ids now include the dialogue id as well as role and request count. This prevents independent questionnaire dialogues from reusing <code>__default__:1</code> and producing the same planner <code>goal_id</code> lineage.</li>
 <li><strong>Done</strong>: structured <code>chatbot_turn_trace</code> visibility is available for dialogue vs planner-handoff attribution.</li>
 <li><strong>Done (2026-05-26)</strong>: planner-mode routing now guards visibility-only scene questions toward <code>knowledge_query</code> unless the user explicitly requests a new scan/action.</li>
 <li><strong>In progress</strong>: proactive wording + speech arbitration pass to avoid duplicate user-facing utterances when execution acknowledgements and planner dialogue completions occur in the same interaction.</li>
-<li><strong>In progress</strong>: live rebuild proof for the new location-group and KB-effect seams. Source tests pass, but runtime score should not be raised until a fresh response-first run proves the updated container behavior.</li>
+<li><strong>In progress</strong>: live rebuild proof for the new location-group, KB-effect, and dialogue-scoped goal-lineage seams. Source tests pass, but runtime score should not be raised until a fresh response-first run proves the updated container behavior.</li>
 </ul>
 <h3>B. Registry Consistency and Canonicalization</h3>
 <ul>
@@ -332,6 +333,7 @@
 <p><code>lab_table</code>, <code>kitchen_delivery</code>, and <code>gold_apple_handoff</code>, plus a visual SVG</p>
 <p>companion for the kitchen-delivery scene.</p>
 <ul>
+<li><strong>Done (2026-07-01 source gate)</strong>: preloaded-environment SVGs have been normalized for the rqt human-radar loader with positive centimeter canvases and no text labels. This keeps the visual aid separate from scoreable RDF facts and avoids overlapping operator-facing text.</li>
 <li><strong>In progress</strong>: skill-aware KB post-effects. Fake skills already report</li>
 </ul>
 <p><code>evidence.kb_effects</code>; orchestrator now applies successful effects through</p>
@@ -360,6 +362,7 @@
 <p>fail-once navigation, delivery-blocked, and recipient-missing profiles after a</p>
 <p>clean rebuild.</p>
 <ul>
+<li>The fresh rebuilt container imports the patched <code>chatbot_llm</code> source rather than the old build copy before the fake-deep score is raised.</li>
 <li>Fake and real skill payloads use the same <code>kb_effects</code> shape for successful</li>
 </ul>
 <p>state changes.</p>

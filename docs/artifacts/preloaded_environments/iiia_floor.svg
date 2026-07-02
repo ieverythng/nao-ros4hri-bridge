@@ -1,21 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="12m" height="8m" viewBox="-6 -4 12 8">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200cm" height="800cm" viewBox="0 0 1200 800">
   <title>iiia_floor</title>
-  <desc>rqt_human_radar-compatible IIIA-style fixture with lab, kitchen, corridor, robot station, handoff area, distributed objects, and ALEX.</desc>
-  <g id="walls">
-    <rect id="iiia_floor_shell" x="-5.5" y="-3.5" width="11.0" height="7.0" fill="#f7f8fb" stroke="#4d5c68" stroke-width="0.05"/>
-    <rect id="iiia_robot_station" x="-5.0" y="-0.9" width="2.0" height="1.8" fill="#f4efe4" stroke="#8a6d2f" stroke-width="0.04"/>
-    <rect id="iiia_corridor" x="-2.1" y="-0.9" width="1.8" height="1.8" fill="#eef0f4" stroke="#6b7785" stroke-width="0.04"/>
-    <rect id="iiia_lab" x="0.5" y="-3.0" width="4.3" height="2.4" fill="#e8f3fb" stroke="#23618a" stroke-width="0.04"/>
-    <rect id="iiia_lab_table" x="1.6" y="-2.2" width="2.0" height="0.8" fill="#d8c69f" stroke="#6c5630" stroke-width="0.04"/>
-    <rect id="iiia_kitchen" x="0.5" y="0.8" width="4.3" height="2.4" fill="#eef7ec" stroke="#3b753d" stroke-width="0.04"/>
-    <rect id="iiia_kitchen_table" x="1.6" y="1.55" width="2.0" height="0.85" fill="#d8c69f" stroke="#6c5630" stroke-width="0.04"/>
-    <rect id="iiia_handoff_area" x="-4.8" y="-3.0" width="2.1" height="1.55" fill="#fff4df" stroke="#9a6b22" stroke-width="0.04"/>
-  </g>
-  <g id="static_objects">
-    <rect id="iiia_lab_book" class="Book" x="2.0" y="-1.86" width="0.46" height="0.3" fill="#4b76d4" stroke="#1d3d83" stroke-width="0.03"/>
-    <rect id="iiia_lab_phone" class="CellularTelephone" x="2.78" y="-1.82" width="0.55" height="0.2" fill="#9aa4ad" stroke="#45515d" stroke-width="0.03"/>
-    <circle id="iiia_kitchen_cup" class="Cup" cx="2.55" cy="2.0" r="0.2" fill="#f2f2f2" stroke="#59636e" stroke-width="0.03"/>
-    <circle id="iiia_alex_person" class="Human" cx="-3.75" cy="-2.23" r="0.3" fill="#efb35b" stroke="#8a5410" stroke-width="0.03"/>
-    <rect id="iiia_nao_robot" class="Robot" x="-4.25" y="-0.28" width="0.45" height="0.5" fill="#7cc5d8" stroke="#1b6170" stroke-width="0.03"/>
-  </g>
+  <desc>Operator visualization for the iiia_floor KnowledgeCore fixture.</desc>
+  <rect id="iiia_floor_shell" x="35" y="35" width="1130" height="730" rx="18" fill="#f7f8fb" stroke="#4d5c68" stroke-width="8"/>
+  <rect id="iiia_robot_station" x="95" y="330" width="220" height="160" rx="16" fill="#f4efe4" stroke="#8a6d2f" stroke-width="7"/>
+  <rect id="iiia_corridor" x="390" y="330" width="190" height="160" rx="12" fill="#eef0f4" stroke="#6b7785" stroke-width="7"/>
+  <rect id="iiia_lab" x="655" y="95" width="430" height="245" rx="16" fill="#e8f3fb" stroke="#23618a" stroke-width="7"/>
+  <rect id="iiia_lab_table" x="765" y="180" width="210" height="86" rx="8" fill="#d8c69f" stroke="#6c5630" stroke-width="6"/>
+  <rect id="iiia_kitchen" x="655" y="470" width="430" height="245" rx="16" fill="#eef7ec" stroke="#3b753d" stroke-width="7"/>
+  <rect id="iiia_kitchen_table" x="765" y="555" width="210" height="92" rx="8" fill="#d8c69f" stroke="#6c5630" stroke-width="6"/>
+  <rect id="iiia_handoff_area" x="95" y="95" width="225" height="160" rx="16" fill="#fff4df" stroke="#9a6b22" stroke-width="7"/>
+  <rect id="iiia_lab_book" class="Book" x="805" y="214" width="54" height="36" rx="4" fill="#4b76d4" stroke="#1d3d83" stroke-width="5"/>
+  <rect id="iiia_lab_phone" class="CellularTelephone" x="890" y="216" width="64" height="26" rx="5" fill="#9aa4ad" stroke="#45515d" stroke-width="5"/>
+  <circle id="iiia_kitchen_cup" class="Cup" cx="875" cy="602" r="25" fill="#f2f2f2" stroke="#59636e" stroke-width="5"/>
+  <circle id="iiia_alex_person" class="Human" cx="205" cy="175" r="36" fill="#efb35b" stroke="#8a5410" stroke-width="6"/>
+  <rect id="iiia_nao_robot" class="Robot" x="178" y="382" width="52" height="58" rx="10" fill="#7cc5d8" stroke="#1b6170" stroke-width="5"/>
 </svg>

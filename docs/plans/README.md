@@ -20,6 +20,10 @@ Historical handoffs and superseded plans live under `docs/artifacts/plan_archive
   Source hardening handoff for active-goal lifecycle, deep fake/replan
   validation, stale-world guards, user-facing grounding filters, and runtime
   questionnaire evidence.
+- `deep_fake_replan_stabilization_2026-07-01.md` (+ `.html`)
+  July 1 baseline and handoff for dialogue-scoped planner lineage, rqt-friendly
+  SVG maps, preloaded fixture evidence, and the required post-rebuild fake-deep
+  validation gate.
 - `locate-anything-3b-impl-report.html` and
   `locateanything-nao-integration (1).md`
   LocateAnything migration references.

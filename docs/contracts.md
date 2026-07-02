@@ -98,6 +98,7 @@ Current compact shape:
     {
       "id": "codex_kitchen",
       "label": "kitchen",
+      "aliases": ["kitchen_area"],
       "kind": "location_group",
       "role": "navigation_target",
       "member_count": 2,
@@ -131,6 +132,10 @@ Role policy:
   label, visibility flag, and bounded relations.
 - `locations` is a derived compact view. It groups members by support or place
   relation, but it does not replace `entities`.
+- `locations[*].aliases` carries spoken or KB aliases, for example
+  `dbp:name work_table`, only when they differ from the public label. Planner
+  matching may use these aliases before asking for a collection-location
+  clarification.
 - Support surfaces such as tables, desks, counters, and shelves may form
   `support_group` entries. Rooms, kitchens, corridors, labs, and robot stations
   may form `navigation_target` or `location_group` entries.
@@ -140,6 +145,9 @@ Role policy:
   expose `owl:Thing`, `cyc:SpatialThing*`, `Location`, `Place`, support
   surfaces, rooms, or tables as deliverable objects unless the user explicitly
   asks about those categories.
+- Domain object types take precedence over KnowledgeCore spatial materialization
+  types. A `Cup` or `Book` that also carries `cyc:SpatialThing-Localized`
+  remains a user-facing object in the digest and location group.
 - Relation aliases such as `isContainedIn`, `placeOf`, and `isAt` are normalized
   into the compact predicates used by the planner view.
 

@@ -28,6 +28,9 @@ This top-level docs surface is intentionally small and operational.
 - `plans/IRR_Implementation.html` — intent-route-response ablation tracker.
 - `plans/CRITIC_RUNTIME_HARDENING_2026-06-30.md` (+ HTML) — current
   source-hardening and live-proof handoff for the CRITIC pass.
+- `plans/deep_fake_replan_stabilization_2026-07-01.md` (+ HTML) — current
+  deep fake/replan stabilization handoff for preloaded fixtures, SVG maps, and
+  dialogue-scoped planner lineage.
 - `plans/CHATBOT_LLM_REFACTOR_REPORT.md` (+ HTML) — separate chatbot
   modularity/refactor plan. Treat it as a sibling plan until its changes are
   validated and folded into the masterplan.

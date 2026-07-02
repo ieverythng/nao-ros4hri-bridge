@@ -163,6 +163,13 @@ For the full-stack runtime score, prefer `--case-set main` plus targeted
 dialogue, KB, and simple execution seams already passed in the same runtime
 window.
 
+The active questionnaire writes each case immediately after turn injection and
+then refreshes the same case entry during long waits with updated
+`phase_observations` and log excerpts. Treat these fields as observability
+breadcrumbs, not as pass/fail scoring. They exist so fake-deep cases no longer
+look like silent hangs while execution, replan, or speech evidence is still
+arriving.
+
 ```bash
 python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
   --container nao_ros2 \

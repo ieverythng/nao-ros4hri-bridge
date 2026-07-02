@@ -1328,7 +1328,19 @@ def main() -> int:
         wait_sec = max(0.0, case.wait_sec)
         if args.max_case_wait_sec > 0:
             wait_sec = min(wait_sec, max(0.0, args.max_case_wait_sec))
-        time.sleep(wait_sec)
+        _observe_case_during_wait(
+            args.out,
+            args.container,
+            args.case_set,
+            started_at,
+            results,
+            result_entry,
+            mode=mode,
+            turn_result=turn_result,
+            case_start=case_start,
+            wait_sec=wait_sec,
+            runtime_metadata=runtime_metadata,
+        )
         topic_samples = sample_topics(args.container) if args.sample_topics else {}
         log_excerpt = recent_logs_since(args.container, case_start)
         result_entry["wait_sec"] = wait_sec
@@ -1674,6 +1686,48 @@ def phase_observations(
 def _contains_any(value: str, markers: tuple[str, ...]) -> bool:
     text = str(value or "")
     return any(marker in text for marker in markers)
+
+
+def _observe_case_during_wait(
+    out_path: str,
+    container: str,
+    case_set: str,
+    started_at: float,
+    results: list[dict],
+    result_entry: dict,
+    *,
+    mode: str,
+    turn_result: str,
+    case_start: float,
+    wait_sec: float,
+    runtime_metadata: dict[str, object],
+) -> None:
+    """Flush per-case phase breadcrumbs while long fake-deep waits run."""
+    deadline = time.time() + max(0.0, float(wait_sec or 0.0))
+    interval_sec = 5.0
+    while True:
+        remaining = deadline - time.time()
+        if remaining <= 0:
+            break
+        time.sleep(min(interval_sec, remaining))
+        elapsed = max(0.0, time.time() - case_start)
+        log_excerpt = recent_logs_since(container, case_start)
+        result_entry["wait_sec"] = min(max(0.0, float(wait_sec or 0.0)), elapsed)
+        result_entry["log_excerpt"] = log_excerpt
+        result_entry["phase_observations"] = phase_observations(
+            mode=mode,
+            turn_result=turn_result,
+            log_excerpt=log_excerpt,
+            topic_samples={},
+        )
+        write_payload(
+            out_path,
+            container,
+            case_set,
+            started_at,
+            results,
+            runtime_metadata=runtime_metadata,
+        )
 
 
 def collect_questionnaire_metadata(

@@ -1,6 +1,6 @@
 # NAO ROS4HRI Masterplan (Consolidated, Active)
 
-**Date:** 2026-06-30 (CRITIC runtime hardening refresh)
+**Date:** 2026-07-01 (deep fake/replan stabilization refresh)
 **Branch context:** `refactor/deslop_repo` with nested `chatbot_llm`
 `feat/planner_llm_hooks` and Neural-Wokbench integration seams
 **Scope:** Single active execution plan for planner/chatbot/orchestrator seams,
@@ -80,10 +80,17 @@ Everything else should be archived under `docs/artifacts/` unless it is actively
   `plan_outcome_summary` so report-result wording, failure review, and replan
   analysis can distinguish completed, failed, and pending targets without
   parsing free text.
+- **Done (2026-07-01 source gate)**: chatbot planner handoff turn ids now
+  include the dialogue id as well as role and request count. This prevents
+  independent questionnaire dialogues from reusing `__default__:1` and
+  producing the same planner `goal_id` lineage.
 - **Done**: structured `chatbot_turn_trace` visibility is available for dialogue vs planner-handoff attribution.
 - **Done (2026-05-26)**: planner-mode routing now guards visibility-only scene questions toward `knowledge_query` unless the user explicitly requests a new scan/action.
 - **In progress**: proactive wording + speech arbitration pass to avoid duplicate user-facing utterances when execution acknowledgements and planner dialogue completions occur in the same interaction.
-- **In progress**: live rebuild proof for the new location-group and KB-effect seams. Source tests pass, but runtime score should not be raised until a fresh response-first run proves the updated container behavior.
+- **In progress**: live rebuild proof for the new location-group, KB-effect,
+  and dialogue-scoped goal-lineage seams. Source tests pass, but runtime score
+  should not be raised until a fresh response-first run proves the updated
+  container behavior.
 
 ### B. Registry Consistency and Canonicalization
 
@@ -124,6 +131,10 @@ Everything else should be archived under `docs/artifacts/` unless it is actively
   dedicated `environment` case set. The first fixture pack includes
   `lab_table`, `kitchen_delivery`, and `gold_apple_handoff`, plus a visual SVG
   companion for the kitchen-delivery scene.
+- **Done (2026-07-01 source gate)**: preloaded-environment SVGs have been
+  normalized for the rqt human-radar loader with positive centimeter canvases
+  and no text labels. This keeps the visual aid separate from scoreable RDF
+  facts and avoids overlapping operator-facing text.
 - **In progress**: skill-aware KB post-effects. Fake skills already report
   `evidence.kb_effects`; orchestrator now applies successful effects through
   KnowledgeCore. Real skills should adopt the same payload contract before
@@ -142,6 +153,8 @@ Everything else should be archived under `docs/artifacts/` unless it is actively
 - `robot-runtime-performance-review --case-set fake_deep` proves all-success,
   fail-once navigation, delivery-blocked, and recipient-missing profiles after a
   clean rebuild.
+- The fresh rebuilt container imports the patched `chatbot_llm` source rather
+  than the old build copy before the fake-deep score is raised.
 - Fake and real skill payloads use the same `kb_effects` shape for successful
   state changes.
 - LocateAnything facts enter the same grounded-context projection as other
