@@ -12,7 +12,7 @@ from nao_orchestrator.intent_rules import parse_plan_envelope
 from nao_orchestrator.intent_rules import parse_execution_plan
 from nao_orchestrator.intent_rules import parse_intent_data
 from nao_orchestrator.intent_rules import posture_topic_fallback_for_motion
-from nao_orchestrator.intent_rules import resolve_ack_text
+
 from nao_orchestrator.intent_rules import resolve_say_text
 from nao_orchestrator.intent_rules import resolve_scan_result
 from nao_orchestrator.intent_rules import scan_step_should_auto_report
@@ -141,15 +141,6 @@ def test_classify_motion_target_maps_look_at_reset_alias() -> None:
     )
     assert route == 'look_at_reset'
     assert payload['policy'] == 'reset'
-
-
-def test_resolve_ack_text_prefers_explicit_ack_text() -> None:
-    text = resolve_ack_text(
-        Intent.PERFORM_MOTION,
-        {'ack_text': 'Sure, I am standing up now.'},
-        'Default hello',
-    )
-    assert text == 'Sure, I am standing up now.'
 
 
 def test_parse_execution_plan_filters_unknown_steps() -> None:

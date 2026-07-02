@@ -39,7 +39,24 @@ PLAN_FAILURE_POLICIES = (
     'ask_user',
     'ignore',
 )
-_ASK_USER_STEP_NAMES = ('ask_user', 'ask_clarification', 'ask_for_help')
+ASK_USER_STEP_NAMES = ('ask_user', 'ask_clarification', 'ask_for_help')
+DEFAULT_SCAN_SKILL_NAMES = (
+    'scan',
+    'look_around',
+    'inspect_scene',
+    'check_visible_entities',
+)
+DEFAULT_FAKE_SKILL_ALIASES = {
+    'navigate_to': {'navigate_to', 'go_to', 'move_to_location'},
+    'find_object': {'find_object', 'find', 'locate_object', 'find_person'},
+    'perform_motion': {'perform_motion', 'motion', 'posture', 'head_motion'},
+    'wave_greet': {'wave_greet', 'wave', 'greet_wave', 'wave_hello'},
+    'inspect_area': {'inspect_area', 'inspect', 'check_area'},
+    'walk_to': {'walk_to', 'walk_forward', 'step_to'},
+    'pick_object': {'pick_object', 'pick', 'grab', 'grab_object'},
+    'place_object': {'place_object', 'place', 'put_down'},
+    'bring_object': {'bring_object', 'bring', 'deliver_object'},
+}
 PLANNER_REQUEST_KINDS = (
     'new_goal',
     'goal_update',
@@ -1033,7 +1050,7 @@ def normalize_plan_steps(steps) -> list[dict]:
         normalized_failure_policy = _coerce_failure_policy(
             raw_failure_policy or 'fail'
         )
-        if step_type == 'skill' and step_name in _ASK_USER_STEP_NAMES and not raw_failure_policy:
+        if step_type == 'skill' and step_name in ASK_USER_STEP_NAMES and not raw_failure_policy:
             normalized_failure_policy = 'ask_user'
         step_args = _clean_payload(step.get('args', {}))
         if step_type == 'look_at' or step_name == 'look_at':

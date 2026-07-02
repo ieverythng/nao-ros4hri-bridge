@@ -6,9 +6,14 @@ from __future__ import annotations
 import json
 import re
 
-from planner_common.contracts import PLAN_FAILURE_POLICIES
-from planner_common.contracts import PLAN_STEP_TYPES
+from planner_common import ASK_USER_STEP_NAMES
+from planner_common import DEFAULT_FAKE_SKILL_ALIASES
+from planner_common import DEFAULT_SCAN_SKILL_NAMES
 from planner_common.contracts import IntentLabels as Intent
+from planner_common.contracts import _clean_payload
+from planner_common.contracts import _first_non_empty
+from planner_common.contracts import _normalize_look_at_args as _normalize_look_at_step_args
+from planner_common.contracts import normalize_plan_steps
 from planner_common.contracts import optional_float_fields
 from planner_common.skill_registry_bridge import merge_fake_skill_aliases
 from planner_common.skill_registry_bridge import merge_scan_skill_names
@@ -128,42 +133,10 @@ _POSTURE_TOPIC_FALLBACKS = {
     'crouch': 'kneel',
 }
 
-_PLAN_STEP_TYPES_SET = frozenset(PLAN_STEP_TYPES)
-_PLAN_FAILURE_POLICIES_SET = frozenset(PLAN_FAILURE_POLICIES)
-_DEFAULT_SCAN_SKILL_PLAN_NAMES = {
-    'scan',
-    'look_around',
-    'inspect_scene',
-    'check_visible_entities',
-}
 _DEFAULT_FAKE_SKILL_PLAN_NAMES = {
-    'navigate_to',
-    'go_to',
-    'move_to_location',
-    'find_object',
-    'find',
-    'locate_object',
-    'find_person',
-    'wave_greet',
-    'wave',
-    'greet_wave',
-    'wave_hello',
-    'inspect_area',
-    'inspect',
-    'check_area',
-    'walk_to',
-    'walk_forward',
-    'step_to',
-    'pick_object',
-    'pick',
-    'grab',
-    'grab_object',
-    'place_object',
-    'place',
-    'put_down',
-    'bring_object',
-    'bring',
-    'deliver_object',
+    alias
+    for aliases in DEFAULT_FAKE_SKILL_ALIASES.values()
+    for alias in aliases
 }
 _KB_MUTATION_SKILL_PLAN_NAMES = {
     'kb_add',
@@ -180,14 +153,9 @@ _DEFAULT_SUPPORTED_SKILL_PLAN_NAMES = {
     'ask_user',
     'ask_clarification',
     'ask_for_help',
-    *_DEFAULT_SCAN_SKILL_PLAN_NAMES,
+    *DEFAULT_SCAN_SKILL_NAMES,
     *_DEFAULT_FAKE_SKILL_PLAN_NAMES,
     *_KB_MUTATION_SKILL_PLAN_NAMES,
-}
-_ASK_USER_STEP_NAMES = {
-    'ask_user',
-    'ask_clarification',
-    'ask_for_help',
 }
 
 _PEOPLE_SCAN_TARGET_KINDS = {
@@ -210,13 +178,14 @@ def _load_supported_skill_names() -> tuple[set[str], set[str], set[str]]:
         manifest=manifest,
     )
     scan_names = merge_scan_skill_names(
-        fallback_names=_DEFAULT_SCAN_SKILL_PLAN_NAMES,
+        fallback_names=DEFAULT_SCAN_SKILL_NAMES,
         manifest=manifest,
     )
     fake_aliases = merge_fake_skill_aliases(
         fallback_aliases={
-            name: name
-            for name in _DEFAULT_FAKE_SKILL_PLAN_NAMES
+            alias: canonical
+            for canonical, aliases in DEFAULT_FAKE_SKILL_ALIASES.items()
+            for alias in aliases
         },
         manifest=manifest,
     )
@@ -347,22 +316,6 @@ def resolve_say_text(
         )
 
     return ''
-
-
-def resolve_ack_text(
-    intent_name: str,
-    data: dict,
-    default_greeting: str,
-) -> str:
-    """Resolve acknowledgement text without forcing a duplicate speech dispatch."""
-    payload = _clean_payload(data)
-    explicit_ack = _first_non_empty(
-        payload.get('ack_text', ''),
-        payload.get('suggested_response', ''),
-    )
-    if explicit_ack:
-        return explicit_ack
-    return resolve_say_text(intent_name, payload, default_greeting)
 
 
 def is_unresolved_report_template(text: str) -> bool:
@@ -585,13 +538,7 @@ def parse_execution_plan(data: dict) -> list[dict]:
     """Parse an optional structured execution plan embedded in intent data."""
     if not isinstance(data, dict):
         return []
-
-    parsed_steps: list[dict] = []
-    for index, step in enumerate(_plan_steps(data), start=1):
-        normalized_step = _normalize_plan_step(step, index=index)
-        if normalized_step is not None:
-            parsed_steps.append(normalized_step)
-    return parsed_steps
+    return normalize_plan_steps(_plan_steps(data))
 
 
 def parse_plan_envelope(data: dict) -> dict:
@@ -695,7 +642,7 @@ def scan_step_should_auto_report(*, plan: list[dict] | None, step_index: int) ->
         step_name = str(later_step.get('name', '')).strip().lower()
         if step_type == 'say' or step_name in ('say', 'report_result'):
             return False
-    return step_index >= len(plan) - 1
+    return True
 
 
 def classify_motion_target(intent_name: str, data: dict) -> tuple[str, dict]:
@@ -737,16 +684,6 @@ def make_intent_signature(intent_name: str, data: dict) -> str:
     return f'{str(intent_name).strip()}::{serialized}'
 
 
-def _clean_payload(data: dict) -> dict:
-    if not isinstance(data, dict):
-        return {}
-    return {
-        str(key): value
-        for key, value in data.items()
-        if value not in (None, '', [])
-    }
-
-
 def _coerce_str_list(value) -> list[str]:
     if isinstance(value, str):
         return [value] if value.strip() else []
@@ -777,14 +714,6 @@ def _plan_look_at_error(step_args: dict) -> str:
     ):
         return ''
     return 'look_at step is missing target_frame or supported policy'
-
-
-def _first_non_empty(*values: str) -> str:
-    for value in values:
-        clean = str(value).strip()
-        if clean:
-            return clean
-    return ''
 
 
 def _empty_plan_envelope() -> dict:
@@ -838,91 +767,6 @@ def _coerce_dict(value) -> dict:
     return dict(value) if isinstance(value, dict) else {}
 
 
-def _normalize_plan_step(step: dict, *, index: int) -> dict | None:
-    step_type = str(step.get('type', '')).strip().lower()
-    if step_type not in _PLAN_STEP_TYPES_SET:
-        return None
-
-    step_name = str(step.get('name', '')).strip().lower()
-    raw_failure_policy = _first_non_empty(
-        step.get('on_failure', ''),
-        step.get('failure_policy', ''),
-    )
-    normalized_failure_policy = _coerce_failure_policy(raw_failure_policy)
-    if step_type == 'skill' and step_name in _ASK_USER_STEP_NAMES and not raw_failure_policy:
-        normalized_failure_policy = 'ask_user'
-
-    step_args = _clean_payload(step.get('args', {}))
-    if step_type == 'look_at' or step_name == 'look_at':
-        step_args = _normalize_look_at_step_args(step_args)
-
-    return {
-        'id': _first_non_empty(
-            step.get('id', ''),
-            step.get('step_id', ''),
-            f'step_{index}',
-        ),
-        'type': step_type,
-        'name': step_name,
-        'args': step_args,
-        'requires': _coerce_str_list(
-            step.get('requires', step.get('preconditions', []))
-        ),
-        'on_failure': normalized_failure_policy,
-        'retry_budget': _coerce_nonnegative_int(
-            step.get('retry_budget', step.get('retries', 0))
-        ),
-    }
-
-
-def _normalize_look_at_step_args(step_args: dict) -> dict:
-    if not isinstance(step_args, dict):
-        return {}
-
-    normalized = _clean_payload(step_args)
-    policy = str(
-        normalized.get('policy', normalized.get('object', ''))
-    ).strip().lower()
-    if policy in _LOOK_AT_RESET_ALIASES:
-        normalized['policy'] = 'reset'
-        normalized.pop('target_frame', None)
-        normalized.pop('frame_id', None)
-        normalized.pop('target', None)
-        normalized.pop('entity_id', None)
-        return normalized
-
-    target_frame = _first_non_empty(
-        normalized.get('target_frame', ''),
-        normalized.get('frame_id', ''),
-        normalized.get('target', ''),
-        normalized.get('entity_id', ''),
-    )
-    if not target_frame:
-        return normalized
-
-    clean_target = str(target_frame).strip()
-    if clean_target.lower() in _LOOK_AT_RESET_TARGET_ALIASES:
-        normalized['policy'] = 'reset'
-        normalized.pop('target_frame', None)
-        normalized.pop('frame_id', None)
-        normalized.pop('target', None)
-        normalized.pop('entity_id', None)
-        return normalized
-
-    normalized['target_frame'] = clean_target
-    normalized.pop('frame_id', None)
-    normalized.pop('target', None)
-    normalized.pop('entity_id', None)
-    return normalized
-
-
-def _coerce_failure_policy(value) -> str:
-    clean_value = str(value).strip().lower()
-    if clean_value in _PLAN_FAILURE_POLICIES_SET:
-        return clean_value
-    return 'fail'
-
-
 def _normalize_communication_policy(value) -> dict:
     if not isinstance(value, dict):
         return {
@@ -959,7 +803,7 @@ def _plan_step_validation_error(intent_name: str, step: dict) -> str:
         return f'unsupported skill step "{step_name}"'
     if step_name == 'look_at':
         return _plan_look_at_error(step_args)
-    if step_name in _ASK_USER_STEP_NAMES:
+    if step_name in ASK_USER_STEP_NAMES:
         return _plan_ask_user_error(step_args)
     if step_name in _SCAN_SKILL_PLAN_NAMES:
         return ''

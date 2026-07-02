@@ -18,11 +18,14 @@ from chatbot_msgs.srv import DialogueInteraction
 from communication_skills.action import Say
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from geometry_msgs.msg import PointStamped
-from hri_actions_msgs.msg import Intent
+from hri_actions_msgs.msg import Intent as IntentMsg
 from kb_skills.intent_labels import KB_QUERY_INTENTS
 from kb_skills.mutation_client import KnowledgeCoreMutationClient
 from kb_skills.query_client import KnowledgeCoreQueryClient
+from planner_common import ASK_USER_STEP_NAMES
 from planner_common import build_execution_feedback_payload
+from planner_common import DEFAULT_FAKE_SKILL_ALIASES
+from planner_common import DEFAULT_SCAN_SKILL_NAMES
 from planner_common import make_plan_id
 from planner_common import load_shared_skill_manifest
 from planner_common import merge_fake_skill_aliases
@@ -47,7 +50,68 @@ from nao_orchestrator.intent_rules import (
     scan_step_should_auto_report,
     validate_execution_plan,
 )
+from nao_orchestrator.execution_report import (
+    MAX_EXECUTION_REPORT_STEPS as _EXECUTION_REPORT_MAX_STEPS,
+)
+from nao_orchestrator.execution_report import (
+    build_execution_report_context as _build_execution_report_context_impl,
+)
+from nao_orchestrator.execution_report import (
+    execution_step_record as _execution_step_record_impl,
+)
+from nao_orchestrator.execution_report import (
+    looks_like_machine_payload as _looks_like_machine_payload_impl,
+)
+from nao_orchestrator.execution_report import (
+    report_text_from_execution_results as _report_text_from_execution_results_impl,
+)
+from nao_orchestrator.execution_report import (
+    report_text_from_result_payload as _report_text_from_result_payload_impl,
+)
+from nao_orchestrator.execution_report import (
+    resolve_report_result_text as _resolve_report_result_text_impl,
+)
+from nao_orchestrator.kb_effects import KB_MUTATION_OPERATIONS as _KB_MUTATION_OPERATIONS_IMPL
+from nao_orchestrator.kb_effects import (
+    execute_kb_mutation_step as _execute_kb_mutation_step_impl,
+)
+from nao_orchestrator.kb_effects import (
+    expand_kb_remove_statements as _expand_kb_remove_statements_impl,
+)
+from nao_orchestrator.kb_effects import (
+    remove_previous_kb_values as _remove_previous_kb_values_impl,
+)
+from nao_orchestrator.motion_evidence import (
+    build_motion_summary as _build_motion_summary_impl,
+)
+from nao_orchestrator.motion_evidence import (
+    collect_motion_evidence as _collect_motion_evidence_impl,
+)
+from nao_orchestrator.motion_evidence import (
+    execute_motion_plan_step as _execute_motion_plan_step_impl,
+)
 from nao_orchestrator.planner_gate import PlannerGate
+from nao_orchestrator.planner_relay import (
+    MAX_PLANNER_REQUEST_CONTEXTS as _MAX_PLANNER_REQUEST_CONTEXTS_IMPL,
+)
+from nao_orchestrator.planner_relay import (
+    MAX_RELAYED_PLANNER_ACTS as _MAX_RELAYED_PLANNER_ACTS_IMPL,
+)
+from nao_orchestrator.planner_relay import (
+    on_planner_dialogue_act as _on_planner_dialogue_act_impl,
+)
+from nao_orchestrator.planner_relay import (
+    planner_dialogue_act_signature as _planner_dialogue_act_signature_impl,
+)
+from nao_orchestrator.planner_relay import (
+    relay_planner_dialogue_act as _relay_planner_dialogue_act_impl,
+)
+from nao_orchestrator.planner_relay import (
+    remember_planner_request_context as _remember_planner_request_context_impl,
+)
+from nao_orchestrator.planner_relay import (
+    remember_relayed_planner_act as _remember_relayed_planner_act_impl,
+)
 
 try:  # pragma: no cover - available once nao_skills interfaces are rebuilt
     from nao_skills.action import DoHeadMotion, ReplayMotion, ScanScene
@@ -68,32 +132,10 @@ except ImportError:  # pragma: no cover - runtime dependency
 
 # Posture bridge JSON may report `crouch` where orchestrator expects `kneel`.
 _POSTURE_BRIDGE_NAME_ALIASES = {'stand': 'stand', 'sit': 'sit', 'kneel': 'crouch'}
-_DEFAULT_SCAN_SKILL_ALIASES = (
-    'scan',
-    'look_around',
-    'inspect_scene',
-    'check_visible_entities',
-)
-_DEFAULT_FAKE_SKILL_ALIASES = {
-    'navigate_to': {'navigate_to', 'go_to', 'move_to_location'},
-    'find_object': {'find_object', 'find', 'locate_object', 'find_person'},
-    'perform_motion': {'perform_motion', 'motion', 'posture', 'head_motion'},
-    'wave_greet': {'wave_greet', 'wave', 'greet_wave', 'wave_hello'},
-    'inspect_area': {'inspect_area', 'inspect', 'check_area'},
-    'walk_to': {'walk_to', 'walk_forward', 'step_to'},
-    'pick_object': {'pick_object', 'pick', 'grab', 'grab_object'},
-    'place_object': {'place_object', 'place', 'put_down'},
-    'bring_object': {'bring_object', 'bring', 'deliver_object'},
-}
-_ASK_USER_STEP_NAMES = frozenset({'ask_user', 'ask_clarification', 'ask_for_help'})
-_MAX_RELAYED_PLANNER_ACTS = 256
-_MAX_PLANNER_REQUEST_CONTEXTS = 64
-_MAX_EXECUTION_REPORT_STEPS = 8
-_KB_MUTATION_OPERATIONS = {
-    'kb_add': 'add',
-    'kb_remove': 'remove',
-    'kb_revise': 'update',
-}
+_MAX_RELAYED_PLANNER_ACTS = _MAX_RELAYED_PLANNER_ACTS_IMPL
+_MAX_PLANNER_REQUEST_CONTEXTS = _MAX_PLANNER_REQUEST_CONTEXTS_IMPL
+_MAX_EXECUTION_REPORT_STEPS = _EXECUTION_REPORT_MAX_STEPS
+_KB_MUTATION_OPERATIONS = _KB_MUTATION_OPERATIONS_IMPL
 
 
 def _first_non_empty_text(*values) -> str:
@@ -160,36 +202,11 @@ def _normalize_execution_mode(value) -> str:
 
 
 def _looks_like_machine_payload(text: str) -> bool:
-    clean_text = str(text or '').strip()
-    return clean_text.startswith(('{', '[', '```', '"{'))
+    return _looks_like_machine_payload_impl(text)
 
 
 def _report_text_from_result_payload(result_payload: dict) -> str:
-    """Resolve conservative report text from a prior live skill result payload."""
-    if not isinstance(result_payload, dict):
-        return ''
-
-    report_text = _first_non_empty_value(
-        result_payload,
-        'summary_text',
-        'result_summary',
-        'message',
-    )
-    if report_text and not is_unresolved_report_template(report_text):
-        return report_text
-
-    skill_name = str(result_payload.get('skill', '')).strip().lower()
-    if skill_name == 'scan' or any(key in result_payload for key in ('objects', 'people')):
-        scan_payload = build_scan_result_payload(result_payload)
-        report_text = str(scan_payload.get('summary_text', '')).strip()
-        if report_text and not is_unresolved_report_template(report_text):
-            return report_text
-
-    target = _first_non_empty_value(result_payload, 'target', 'object', 'location')
-    status = str(result_payload.get('status', '')).strip().lower()
-    if target and status in ('succeeded', 'success', 'completed'):
-        return 'I completed the task for %s.' % target
-    return ''
+    return _report_text_from_result_payload_impl(result_payload)
 
 
 def _execution_step_record(
@@ -200,119 +217,29 @@ def _execution_step_record(
     result_summary: str = '',
     result_payload: dict | None = None,
 ) -> dict:
-    """Build compact execution evidence for chatbot-authored reports."""
-    return {
-        'id': str(step.get('id', '')).strip(),
-        'type': str(step.get('type', '')).strip().lower(),
-        'name': str(step.get('name', '')).strip().lower(),
-        'args': dict(step.get('args', {}))
-        if isinstance(step.get('args', {}), dict)
-        else {},
-        'status': str(status or '').strip().lower(),
-        'reason': str(reason or '').strip(),
-        'result_summary': str(result_summary or '').strip(),
-        'result_payload': dict(result_payload or {}),
-    }
+    return _execution_step_record_impl(
+        step,
+        status=status,
+        reason=reason,
+        result_summary=result_summary,
+        result_payload=result_payload,
+    )
 
 
 def _report_text_from_execution_results(execution_results: list) -> str:
-    if not isinstance(execution_results, list):
-        return ''
-    summaries = []
-    for step in execution_results[-_MAX_EXECUTION_REPORT_STEPS:]:
-        if not isinstance(step, dict):
-            continue
-        if str(step.get('status', '')).strip().lower() != 'succeeded':
-            continue
-        summary = str(step.get('result_summary', '')).strip()
-        if summary and not is_unresolved_report_template(summary) and summary not in summaries:
-            summaries.append(summary)
-    return ' '.join(summaries)
+    return _report_text_from_execution_results_impl(execution_results)
 
 
 def _motion_result_payload(route: str, step_args: dict, resolved_payload: dict) -> dict:
-    """Build non-spoken execution evidence for successful motion steps."""
-    motion_label = _first_non_empty_value(
-        resolved_payload,
-        'motion_name',
-        'motion',
-        'name',
-        'target',
-        'policy',
-    )
-    if not motion_label:
-        motion_label = _first_non_empty_value(
-            step_args,
-            'motion',
-            'name',
-            'target',
-            'object',
-            'policy',
-        )
-    clean_label = str(motion_label or route or 'motion').strip()
-    summary_text = _motion_summary_text(route, clean_label)
-    return {
-        'skill': 'perform_motion',
-        'route': str(route or '').strip(),
-        'motion': clean_label,
-        'status': 'succeeded',
-        'summary_text': summary_text,
-        'metadata': {
-            'speech_produced': False,
-        },
-    }
+    return _collect_motion_evidence_impl(route, step_args, resolved_payload)
 
 
 def _motion_summary_text(route: str, motion_label: str) -> str:
-    clean_label = str(motion_label or '').strip().lower().replace('_', ' ')
-    if clean_label.startswith('head look '):
-        direction = clean_label.removeprefix('head look ').strip()
-        return 'I moved my head %s.' % direction
-    if clean_label == 'head center':
-        return 'I centered my head.'
-    if str(route or '').strip().lower() == 'look_at_reset':
-        return 'I reset my gaze.'
-    if clean_label:
-        return 'I performed %s.' % clean_label
-    return 'I performed the requested motion.'
+    return _build_motion_summary_impl(route, motion_label)
 
 
 def _planner_dialogue_act_signature(payload: str) -> str:
-    """Canonicalize one semantic planner event for relay deduplication."""
-    try:
-        parsed = json.loads(str(payload or '').strip())
-    except (TypeError, ValueError, json.JSONDecodeError):
-        return str(payload or '').strip()
-    if not isinstance(parsed, dict):
-        return str(payload or '').strip()
-    try:
-        plan_version = max(0, int(parsed.get('plan_version', 0) or 0))
-    except (TypeError, ValueError):
-        plan_version = 0
-    signature = {
-        'goal_id': str(parsed.get('goal_id', '')).strip(),
-        'plan_id': str(parsed.get('plan_id', '')).strip(),
-        'plan_version': plan_version,
-        'act': str(parsed.get('act', '')).strip().lower(),
-    }
-    if signature['act'] == 'progress_update':
-        signature.update(
-            {
-                'reason': str(parsed.get('reason', '')).strip(),
-                'text_hint': str(parsed.get('text_hint', '')).strip(),
-                'context': parsed.get('context', {})
-                if isinstance(parsed.get('context', {}), dict)
-                else {},
-            }
-        )
-    elif signature['act'] == 'ask_clarification':
-        slots_needed = parsed.get('slots_needed', [])
-        signature['slots_needed'] = sorted(
-            str(slot).strip()
-            for slot in slots_needed
-            if str(slot).strip()
-        ) if isinstance(slots_needed, list) else []
-    return json.dumps(signature, sort_keys=True, separators=(',', ':'), ensure_ascii=True)
+    return _planner_dialogue_act_signature_impl(payload)
 
 
 @dataclass(slots=True)
@@ -757,7 +684,7 @@ class NaoOrchestrator(Node):
         )
         if self.enable_planner_gate:
             self._planner_request_pub = self.create_publisher(
-                Intent,
+                IntentMsg,
                 self.planner_request_topic,
                 10,
             )
@@ -795,7 +722,7 @@ class NaoOrchestrator(Node):
         """Start intent subscriptions once the lifecycle node becomes active."""
         self._is_active = True
         self._intent_sub = self.create_subscription(
-            Intent,
+            IntentMsg,
             self.intent_topic,
             self._on_intent,
             10,
@@ -809,7 +736,7 @@ class NaoOrchestrator(Node):
             )
         if self.enable_planner_gate:
             self._planner_gate_sub = self.create_subscription(
-                Intent,
+                IntentMsg,
                 self.planner_gate_request_topic,
                 self._on_planner_gate_request,
                 10,
@@ -937,7 +864,7 @@ class NaoOrchestrator(Node):
             source='legacy_intent_bridge',
         )
 
-    def _on_intent(self, msg: Intent) -> None:
+    def _on_intent(self, msg: IntentMsg) -> None:
         """Normalize canonical `hri_actions_msgs/Intent` messages for dispatch."""
         data = parse_intent_data(msg.data)
         intent_name, normalized_data = normalize_incoming_intent(
@@ -948,10 +875,10 @@ class NaoOrchestrator(Node):
         self._handle_intent(
             intent_name=intent_name,
             data=normalized_data,
-            source=str(msg.source or msg.modality or Intent.UNKNOWN),
+            source=str(msg.source or msg.modality or IntentMsg.UNKNOWN),
         )
 
-    def _on_planner_gate_request(self, msg: Intent) -> None:
+    def _on_planner_gate_request(self, msg: IntentMsg) -> None:
         """Admit chatbot-originated planner requests before planner_llm sees them."""
         if not self._is_active or self._planner_request_pub is None:
             return
@@ -972,7 +899,7 @@ class NaoOrchestrator(Node):
 
         forward_msg = msg
         if isinstance(decision.forward_payload, dict):
-            forward_msg = Intent()
+            forward_msg = IntentMsg()
             forward_msg.intent = msg.intent
             forward_msg.source = msg.source
             forward_msg.modality = msg.modality
@@ -1029,52 +956,26 @@ class NaoOrchestrator(Node):
         self._planner_feedback_pub.publish(msg)
 
     def _on_planner_dialogue_act(self, msg: String) -> None:
-        """Observe and relay planner acts through orchestrator-owned topic seam."""
-        payload = parse_json_object(msg.data)
-        act = str(payload.get('act', '')).strip().lower()
-        if act == 'acknowledge':
-            self._stats.duplicates_ignored += 1
-            self.get_logger().info(
-                'Suppressed contract-violating planner acknowledge; '
-                'chatbot owns immediate acknowledgement'
-            )
-            return
-
-        signature = _planner_dialogue_act_signature(msg.data)
-        if signature in self._relayed_planner_act_signature_set:
-            self._stats.duplicates_ignored += 1
-            self.get_logger().warn('Ignored duplicate planner dialogue act')
-            return
-        self._remember_relayed_planner_act(signature)
-
-        active_goal_before = self._planner_gate.active_goal_id
-        self._planner_gate.observe_dialogue_act(msg.data)
-        active_goal_after = self._planner_gate.active_goal_id
-        if active_goal_before and not active_goal_after:
-            self.get_logger().info(
-                'Planner gate cleared by planner dialogue act | goal_id=%s'
-                % active_goal_before
-            )
-        self._relay_planner_dialogue_act(msg.data)
+        _on_planner_dialogue_act_impl(
+            msg.data,
+            parse_json_object=parse_json_object,
+            relayed_signature_set=self._relayed_planner_act_signature_set,
+            remember_relayed_planner_act_fn=self._remember_relayed_planner_act,
+            planner_gate=self._planner_gate,
+            relay_planner_dialogue_act_fn=self._relay_planner_dialogue_act,
+            stats=self._stats,
+            logger=self.get_logger(),
+        )
 
     def _relay_planner_dialogue_act(self, payload: str) -> None:
-        """Publish planner dialogue acts on the orchestrator-owned relay topic."""
-        if self._planner_dialogue_act_pub is None:
-            return
-        relay_msg = String()
-        relay_msg.data = payload
-        self._planner_dialogue_act_pub.publish(relay_msg)
+        _relay_planner_dialogue_act_impl(payload, publisher=self._planner_dialogue_act_pub)
 
     def _remember_relayed_planner_act(self, signature: str) -> None:
-        """Bound the exact planner-act relay ledger while preserving recent history."""
-        if not signature:
-            return
-        self._relayed_planner_act_signatures.append(signature)
-        self._relayed_planner_act_signature_set.add(signature)
-        if len(self._relayed_planner_act_signatures) <= _MAX_RELAYED_PLANNER_ACTS:
-            return
-        expired = self._relayed_planner_act_signatures.pop(0)
-        self._relayed_planner_act_signature_set.discard(expired)
+        _remember_relayed_planner_act_impl(
+            signature,
+            signatures=self._relayed_planner_act_signatures,
+            signature_set=self._relayed_planner_act_signature_set,
+        )
 
     def _handle_intent(self, intent_name: str, data: dict, source: str) -> None:
         """Route one normalized intent through planned or legacy dispatch paths."""
@@ -1107,7 +1008,7 @@ class NaoOrchestrator(Node):
         ):
             return
 
-        if intent_name in (Intent.GREET, Intent.SAY):
+        if intent_name in (IntentMsg.GREET, IntentMsg.SAY):
             if not self.dispatch_speech_intents:
                 self._stats.last_route = 'ignored:speech_owned_by_dialogue_manager'
                 self.get_logger().info(
@@ -1125,7 +1026,7 @@ class NaoOrchestrator(Node):
                 self._stats.last_route = 'say'
             return
 
-        if intent_name == Intent.PERFORM_MOTION:
+        if intent_name == IntentMsg.PERFORM_MOTION:
             self._start_direct_motion_dispatch(data)
             return
 
@@ -1217,12 +1118,6 @@ class NaoOrchestrator(Node):
             status='accepted',
             event_type='plan_accepted',
         )
-        self._maybe_dispatch_acknowledgement(
-            intent_name=intent_name,
-            data=data,
-            plan=plan,
-            plan_context=plan_context,
-        )
         self._stats.last_route = 'planned:running'
         self._stats.last_plan_status = 'running'
         worker = threading.Thread(
@@ -1245,18 +1140,13 @@ class NaoOrchestrator(Node):
         return True
 
     def _remember_planner_request_context(self, goal_id: str, payload) -> None:
-        """Retain admitted request evidence for execution reports and replans."""
-        clean_goal_id = str(goal_id or '').strip()
-        request_context = parse_json_object(payload)
-        if not clean_goal_id or not request_context:
-            return
-        if clean_goal_id in self._planner_request_context_by_goal:
-            self._planner_request_context_order.remove(clean_goal_id)
-        self._planner_request_context_by_goal[clean_goal_id] = request_context
-        self._planner_request_context_order.append(clean_goal_id)
-        while len(self._planner_request_context_order) > _MAX_PLANNER_REQUEST_CONTEXTS:
-            expired_goal_id = self._planner_request_context_order.pop(0)
-            self._planner_request_context_by_goal.pop(expired_goal_id, None)
+        _remember_planner_request_context_impl(
+            goal_id,
+            payload,
+            parse_json_object=parse_json_object,
+            request_context_by_goal=self._planner_request_context_by_goal,
+            request_context_order=self._planner_request_context_order,
+        )
 
     def _execution_context_for_goal(self, goal_id: str, plan_data: dict) -> dict:
         """Merge the admitted request context with the validated planner output."""
@@ -1264,18 +1154,6 @@ class NaoOrchestrator(Node):
         context.update(dict(plan_data or {}))
         return context
 
-    def _maybe_dispatch_acknowledgement(
-        self,
-        *,
-        intent_name: str,
-        data: dict,
-        plan: list[dict],
-        plan_context: dict,
-    ) -> None:
-        _ = (intent_name, data, plan, plan_context)
-        # Planner acknowledgement speech is realized through planner dialogue acts so
-        # the executor stays focused on deterministic skill dispatch only.
-        return
 
     def _execute_planned_intent(
         self,
@@ -1412,7 +1290,7 @@ class NaoOrchestrator(Node):
                     result_payload=failure_result_payload,
                 )
             )
-            if step_name in _ASK_USER_STEP_NAMES and failure_policy not in (
+            if step_name in ASK_USER_STEP_NAMES and failure_policy not in (
                 'ask_user',
                 'clarify',
             ):
@@ -1460,7 +1338,7 @@ class NaoOrchestrator(Node):
                 unmet_preconditions=[],
                 needs_user_input=(
                     failure_policy in ('ask_user', 'clarify')
-                    or step_name in _ASK_USER_STEP_NAMES
+                    or step_name in ASK_USER_STEP_NAMES
                 ),
             )
             self.get_logger().warn(
@@ -1520,7 +1398,7 @@ class NaoOrchestrator(Node):
         step_index: int = 0,
         on_started=None,
     ) -> tuple[bool, str, dict]:
-        """Execute one step from the optional structured `Intent.data.plan`."""
+        """Execute one step from the optional structured `IntentMsg.data.plan`."""
         step_type = str(step.get('type', '')).strip().lower()
         step_name = str(step.get('name', '')).strip().lower()
         step_args = dict(step.get('args', {}))
@@ -1572,7 +1450,7 @@ class NaoOrchestrator(Node):
                     fallback_data,
                     on_started=on_started,
                 )
-            if step_name in _ASK_USER_STEP_NAMES:
+            if step_name in ASK_USER_STEP_NAMES:
                 return self._execute_ask_user_step(
                     step_args,
                     fallback_data,
@@ -1606,119 +1484,37 @@ class NaoOrchestrator(Node):
         *,
         on_started=None,
     ) -> tuple[bool, str, dict]:
-        """Delegate one explicit planner mutation to the KnowledgeCore seam."""
-        statements = step_args.get('statements', step_args.get('statement', []))
-        statements = KnowledgeCoreMutationClient.coerce_statements(statements)
-        models = step_args.get('models', [])
-        if isinstance(models, str):
-            models = [models]
-        if on_started is not None:
-            on_started()
-        if self._kb_mutation_client is None:
-            self._stats.dispatch_failures += 1
-            return False, 'KnowledgeCore mutation client is unavailable', {}
-
-        if step_name == 'kb_revise':
-            removed, reason = self._remove_previous_kb_values(statements, models)
-            if reason:
-                self._stats.dispatch_failures += 1
-                return False, reason, {
-                    'skill': step_name,
-                    'operation': 'remove_previous_values',
-                    'statement_count': len(removed),
-                    'dispatched': bool(removed),
-                    'success': False,
-                }
-        elif step_name == 'kb_remove':
-            statements = self._expand_kb_remove_statements(statements, models)
-
-        result = self._kb_mutation_client.mutate(
-            operation=_KB_MUTATION_OPERATIONS[step_name],
-            statements=statements,
-            models=models if isinstance(models, list) else [],
-            lifespan_sec=step_args.get('lifespan_sec', 0.0),
-            wait_for_result=True,
+        return _execute_kb_mutation_step_impl(
+            step_name,
+            step_args,
+            mutation_client=self._kb_mutation_client,
+            query_client=self._kb_query_client,
+            stats=self._stats,
+            on_started=on_started,
         )
-        payload = {
-            'skill': step_name,
-            'operation': result.operation,
-            'statement_count': result.statement_count,
-            'dispatched': result.dispatched,
-            'success': result.success,
-        }
-        if result.success:
-            self._stats.dispatched_kb_mutation += 1
-            return True, 'KnowledgeCore mutation completed', payload
-        self._stats.dispatch_failures += 1
-        payload['error_msg'] = result.error_msg
-        return False, result.error_msg or 'KnowledgeCore mutation failed', payload
 
     def _remove_previous_kb_values(
         self,
         statements: list[str],
         models: list[str],
     ) -> tuple[list[str], str]:
-        """Retract existing subject/predicate values before a KB revise update."""
-        if self._kb_query_client is None or self._kb_mutation_client is None:
-            return [], ''
-        removals: list[str] = []
-        query_models = models if isinstance(models, list) and models else ['default']
-        for statement in statements:
-            subject, predicate, new_object = _statement_parts(statement)
-            if not subject or not predicate or not new_object:
-                continue
-            rows = self._kb_query_client.query_rows(
-                patterns=['%s %s ?object' % (subject, predicate)],
-                query_vars=['?object'],
-                models=query_models,
-            )
-            removals.extend(
-                _statement_from_binding(subject, predicate, row)
-                for row in rows
-                if _binding_value(row, 'object') != new_object
-            )
-        removals = _dedupe_statements(removals)
-        if not removals:
-            return [], ''
-        result = self._kb_mutation_client.mutate(
-            operation='remove',
-            statements=removals,
-            models=models if isinstance(models, list) else [],
-            wait_for_result=True,
+        return _remove_previous_kb_values_impl(
+            statements,
+            models,
+            query_client=self._kb_query_client,
+            mutation_client=self._kb_mutation_client,
         )
-        if result.success:
-            return removals, ''
-        return removals, result.error_msg or 'KnowledgeCore previous-value removal failed'
 
     def _expand_kb_remove_statements(
         self,
         statements: list[str],
         models: list[str],
     ) -> list[str]:
-        """Expand entity-only remove requests into current concrete KB facts."""
-        if self._kb_query_client is None:
-            return statements
-        expanded: list[str] = []
-        query_models = models if isinstance(models, list) and models else ['default']
-        for statement in statements:
-            subject, predicate, obj = _statement_parts(statement)
-            if subject and predicate and obj:
-                expanded.append(statement)
-                continue
-            subject = _single_entity_statement(statement)
-            if not subject:
-                expanded.append(statement)
-                continue
-            rows = self._kb_query_client.query_rows(
-                patterns=['%s ?predicate ?object' % subject],
-                query_vars=['?predicate', '?object'],
-                models=query_models,
-            )
-            expanded.extend(
-                _statement_from_binding(subject, _binding_value(row, 'predicate'), row)
-                for row in rows
-            )
-        return _dedupe_statements(expanded)
+        return _expand_kb_remove_statements_impl(
+            statements,
+            models,
+            query_client=self._kb_query_client,
+        )
 
     def _dispatch_planned_look_at(
         self,
@@ -1810,7 +1606,7 @@ class NaoOrchestrator(Node):
             'object',
         )
         text = resolve_say_text(
-            intent_name=Intent.SAY,
+            intent_name=IntentMsg.SAY,
             data={
                 'object': step_text,
                 'suggested_response': _first_non_empty_value(
@@ -2120,47 +1916,74 @@ class NaoOrchestrator(Node):
                 dict(step_args or {}),
                 on_started=on_started,
             )
-            if success:
-                return True, reason, payload
-            return False, reason or 'fake perform_motion dispatch failed', payload
+            return (True, reason, payload) if success else (False, reason or 'fake perform_motion dispatch failed', payload)
 
-        route, resolved_payload = classify_motion_target(Intent.PERFORM_MOTION, step_args)
+        ok, reason = self._route_and_execute_motion(
+            step_args,
+            on_started=on_started,
+        )
+        if ok:
+            route = classify_motion_target(IntentMsg.PERFORM_MOTION, step_args)[0]
+            resolved_payload = classify_motion_target(IntentMsg.PERFORM_MOTION, step_args)[1]
+            payload = _motion_result_payload(route, step_args, resolved_payload)
+            return True, payload['summary_text'], payload
+        return False, reason or 'motion dispatch failed', {}
+
+    def _route_and_execute_motion(
+        self,
+        payload: dict,
+        *,
+        on_started=None,
+    ) -> tuple[bool, str]:
+        """Shared motion routing: classify → dispatch to the right executor."""
+        route, resolved_payload = classify_motion_target(IntentMsg.PERFORM_MOTION, payload)
+
         if route == 'replay_motion':
             motion_name = resolved_payload['motion_name']
-            success, reason = self._execute_replay_motion_step(
-                motion_name,
-                on_started=on_started,
-            )
-            if success:
+            ok, reason = self._execute_replay_motion_step(motion_name, on_started=on_started)
+            if ok:
                 self._stats.dispatched_replay_motion += 1
-                payload = _motion_result_payload(route, step_args, resolved_payload)
-                return True, payload['summary_text'], payload
-            return False, reason or 'motion dispatch failed', {}
+            return ok, reason
 
         if route == 'head_motion':
-            success, reason = self._execute_head_motion_step(
-                resolved_payload,
-                on_started=on_started,
-            )
-            if success:
+            ok, reason = self._execute_head_motion_step(resolved_payload, on_started=on_started)
+            if ok:
                 self._stats.dispatched_head_motion += 1
-                payload = _motion_result_payload(route, step_args, resolved_payload)
-                return True, payload['summary_text'], payload
-            return False, reason or 'motion dispatch failed', {}
+            return ok, reason
 
         if route == 'look_at_reset':
-            success, reason = self._execute_look_at_reset_step(
-                on_started=on_started,
-            )
-            if success:
+            ok, reason = self._execute_look_at_reset_step(on_started=on_started)
+            if ok:
                 self._stats.dispatched_look_at += 1
-                payload = _motion_result_payload(route, step_args, resolved_payload)
-                return True, payload['summary_text'], payload
-            return False, reason or 'look_at reset dispatch failed', {}
+            return ok, reason
 
         self._stats.dispatch_failures += 1
-        self.get_logger().warn('Unsupported motion payload: %s' % step_args)
-        return False, 'unsupported motion payload', {}
+        self.get_logger().warn('Unsupported motion payload: %s' % payload)
+        return False, 'unsupported motion payload'
+
+    def _dispatch_motion_payload(self, payload: dict) -> tuple[bool, str]:
+        """Thin wrapper for direct (non-plan) motion dispatch."""
+        ok, reason = self._route_and_execute_motion(payload)
+        if not ok:
+            return False, reason
+        route = classify_motion_target(IntentMsg.PERFORM_MOTION, payload)[0]
+        return True, route
+
+    def _start_direct_motion_dispatch(self, payload: dict) -> None:
+        """Fire-and-forget motion dispatch in a background thread."""
+        route, _ = classify_motion_target(IntentMsg.PERFORM_MOTION, payload)
+        if route == 'unsupported':
+            self._stats.dispatch_failures += 1
+            self._stats.last_route = 'ignored:unsupported_motion'
+            self.get_logger().warn('Unsupported motion payload: %s' % payload)
+            return
+
+        worker = threading.Thread(
+            target=self._execute_direct_motion_dispatch,
+            kwargs={'payload': dict(payload)},
+            daemon=True,
+        )
+        worker.start()
 
     def _execute_scan_step(
         self,
@@ -2702,13 +2525,13 @@ class NaoOrchestrator(Node):
 
     def _load_scan_skill_names(self) -> set[str]:
         return merge_scan_skill_names(
-            fallback_names=_DEFAULT_SCAN_SKILL_ALIASES,
+            fallback_names=DEFAULT_SCAN_SKILL_NAMES,
             manifest=load_shared_skill_manifest(),
         )
 
     def _load_fake_skill_aliases(self) -> dict[str, str]:
         fallback_aliases: dict[str, str] = {}
-        for canonical, aliases in _DEFAULT_FAKE_SKILL_ALIASES.items():
+        for canonical, aliases in DEFAULT_FAKE_SKILL_ALIASES.items():
             for alias in aliases:
                 fallback_aliases[str(alias).strip().lower()] = canonical
 
@@ -2982,47 +2805,16 @@ class NaoOrchestrator(Node):
             % self.posture_command_result_topic,
         )
 
-    def _dispatch_motion_payload(self, payload: dict) -> tuple[bool, str]:
-        route, resolved_payload = classify_motion_target(Intent.PERFORM_MOTION, payload)
-        if route == 'replay_motion':
-            motion_name = resolved_payload['motion_name']
-            success, reason = self._execute_replay_motion_step(motion_name)
-            return success, 'replay_motion:%s' % motion_name if success else reason
-
-        if route == 'head_motion':
-            success, reason = self._execute_head_motion_step(resolved_payload)
-            return success, 'head_motion' if success else reason
-
-        if route == 'look_at_reset':
-            success, reason = self._execute_look_at_reset_step()
-            return success, 'look_at_reset' if success else reason
-
-        return False, 'unsupported'
-
-    def _start_direct_motion_dispatch(self, payload: dict) -> None:
-        route, _resolved_payload = classify_motion_target(Intent.PERFORM_MOTION, payload)
-        if route == 'unsupported':
-            self._stats.dispatch_failures += 1
-            self._stats.last_route = 'ignored:unsupported_motion'
-            self.get_logger().warn('Unsupported motion payload: %s' % payload)
-            return
-
-        worker = threading.Thread(
-            target=self._execute_direct_motion_dispatch,
-            kwargs={'payload': dict(payload)},
-            daemon=True,
-        )
-        worker.start()
-
     def _execute_direct_motion_dispatch(self, *, payload: dict) -> None:
-        dispatched, route_name = self._dispatch_motion_payload(payload)
-        if dispatched:
-            self._stats.last_route = route_name
+        ok, reason = self._route_and_execute_motion(payload)
+        if ok:
+            route = classify_motion_target(IntentMsg.PERFORM_MOTION, payload)[0]
+            self._stats.last_route = route
             return
-        self._stats.last_route = 'failed:%s' % (route_name or 'perform_motion')
+        self._stats.last_route = 'failed:perform_motion'
         self.get_logger().warn(
-            'Direct motion dispatch failed | payload=%s reason=%s'
-            % (payload, route_name)
+          'Direct motion dispatch failed | payload=%s reason=%s'
+          % (payload, reason)
         )
 
     # -------------------------------------------------------------------------
