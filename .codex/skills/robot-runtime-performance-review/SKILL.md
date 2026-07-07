@@ -96,6 +96,7 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   start_planner_llm:=true \
   chatbot_planner_mode_enabled:=true \
   chatbot_turn_pipeline_mode:=response_first \
+  chatbot_grounded_context_digest_enabled:=true \
   chatbot_server_url:=http://10.7.138.215:8004/v1/chat/completions \
   planner_llm_provider:=openai_compatible \
   planner_llm_base_url:=http://10.7.138.215:8004 \
@@ -114,6 +115,17 @@ python3 .codex/skills/robot-runtime-performance-review/scripts/collect_runtime_s
   --since 30m \
   --out /tmp/nao_runtime_snapshot.json
 ```
+
+For a grounded-context JSON-only ablation, keep the same launch but set:
+
+```bash
+  chatbot_grounded_context_digest_enabled:=false
+```
+
+The `GROUNDED_CONTEXT` trace should then contain the `Grounded context JSON`
+block without the compact natural-language scene digest. Use this when checking
+whether a response error came from lossy digest wording or from the structured
+grounded_context itself.
 
 Then inspect the JSON and the live source files relevant to any flagged seam.
 Add `--sample-topics` only when you need one-shot ROS topic payloads; sparse
@@ -165,10 +177,12 @@ window.
 
 The active questionnaire writes each case immediately after turn injection and
 then refreshes the same case entry during long waits with updated
-`phase_observations` and log excerpts. Treat these fields as observability
-breadcrumbs, not as pass/fail scoring. They exist so fake-deep cases no longer
-look like silent hangs while execution, replan, or speech evidence is still
-arriving.
+`phase_observations` and log excerpts. `terminal_observed` is set when the
+runtime logs show a terminal plan or planner-dialogue outcome, and long waits
+end early only after both terminal and speech evidence are visible. Treat these
+fields as observability breadcrumbs, not as pass/fail scoring. They exist so
+fake-deep cases no longer look like silent hangs while execution, replan, or
+speech evidence is still arriving.
 
 ```bash
 python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
@@ -429,7 +443,9 @@ Check:
 - Response route: `dialogue`, `knowledge_query`, or `execution`.
 - Whether dialogue-only turns were sent to planner.
 - Whether execution-looking turns preserved complete goal text.
-- Whether `grounded_context` is the only world-state input.
+- Whether `grounded_context` is the only world-state input, or whether the
+  optional natural-language digest is enabled through
+  `chatbot_grounded_context_digest_enabled`.
 - Whether prompt builders keep the canonical YAML identity and append only
   structural stage/task instructions.
 

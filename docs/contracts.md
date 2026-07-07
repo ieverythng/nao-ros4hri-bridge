@@ -1,6 +1,6 @@
 # Runtime Contracts
 
-Last updated: 2026-06-30
+Last updated: 2026-07-07
 
 This document is the richer reference for the JSON payloads that move task,
 scene, and execution state between nodes. The root README contains compact
@@ -62,6 +62,17 @@ Purpose:
 - keep raw RDF and detector details available at their owning seams instead of
   exposing ontology helper classes as user-facing objects.
 
+Runtime presentation:
+
+- The structured JSON projection is the authoritative contract. It is passed to
+  the chatbot and planner-facing prompt path as `Grounded context JSON`.
+- `chatbot_llm` can also prepend a compact natural-language scene digest for
+  readability. That digest is optional and can be disabled with
+  `chatbot_grounded_context_digest_enabled:=false` in the integrated launch.
+- When the digest is disabled, the `GROUNDED_CONTEXT` trace should show only the
+  JSON block. Use this mode to diagnose whether a user-visible wording error
+  came from lossy digest compression or from the structured facts.
+
 Current compact shape:
 
 ```json
@@ -79,6 +90,16 @@ Current compact shape:
       "relations": [
         {"predicate": "dbp:name", "object": "TITAS"},
         {"predicate": "dbp:color", "object": "red"},
+        {"predicate": "oro:isIn", "object": "codex_kitchen"}
+      ]
+    },
+    {
+      "id": "codex_kitchen_book",
+      "label": "blue book",
+      "kind": "object",
+      "class": "Book",
+      "visible": true,
+      "relations": [
         {"predicate": "oro:isIn", "object": "codex_kitchen"}
       ]
     },
@@ -122,7 +143,12 @@ Current compact shape:
       ]
     }
   ],
-  "counts": {"entities": 2, "people": 1, "objects": 1, "locations": 1}
+  "counts": {
+    "entities": 4,
+    "people": 1,
+    "objects": 2,
+    "locations": 1
+  }
 }
 ```
 
@@ -130,8 +156,17 @@ Role policy:
 
 - `entities` is the stable subject inventory. Each entity keeps its type,
   label, visibility flag, and bounded relations.
+- Generated people keep their stable HRI identifier as the public label, for
+  example `anonymous_person_fcdai`, unless a real semantic name such as `ALEX`
+  is available through `dbp:name` or an explicit label.
 - `locations` is a derived compact view. It groups members by support or place
-  relation, but it does not replace `entities`.
+  relation, but it does not replace `entities`. Use this view for questions
+  such as “what is on the work table?”, “what is in the kitchen?”, and grouped
+  delivery expansion.
+- `locations[*].role` separates support/place groups from navigation targets:
+  `support_group` for work tables, desks, counters, shelves, and similar support
+  surfaces; `navigation_target` for rooms, kitchens, corridors, stations, and
+  semantic places the robot may navigate to.
 - `locations[*].aliases` carries spoken or KB aliases, for example
   `dbp:name work_table`, only when they differ from the public label. Planner
   matching may use these aliases before asking for a collection-location
@@ -140,7 +175,7 @@ Role policy:
   `support_group` entries. Rooms, kitchens, corridors, labs, and robot stations
   may form `navigation_target` or `location_group` entries.
 - People remain `person` entities and recipients. A person is not treated as a
-  location, even if a pose or room relation is available.
+  location or deliverable object, even if a pose or room relation is available.
 - User-facing object lists filter ontology and support/meta entries. Do not
   expose `owl:Thing`, `cyc:SpatialThing*`, `Location`, `Place`, support
   surfaces, rooms, or tables as deliverable objects unless the user explicitly
@@ -208,6 +243,7 @@ Preferred payload:
   "requested_plan": [],
   "grounded_context": {
     "schema_version": "grounded_context_v3",
+    "observer": "myself",
     "entities": [
       {
         "id": "codex_kitchen",
@@ -223,13 +259,26 @@ Preferred payload:
         "class": "Human",
         "visible": true,
         "relations": [{"predicate": "dbp:name", "object": "ALEX"}]
+      },
+      {
+        "id": "codex_kitchen_cup",
+        "label": "red cup",
+        "kind": "object",
+        "class": "Cup",
+        "visible": true,
+        "relations": [{"predicate": "oro:isIn", "object": "codex_kitchen"}]
       }
     ],
     "locations": [
       {
         "id": "codex_kitchen",
         "label": "kitchen",
+        "aliases": ["kitchen_area"],
+        "kind": "location_group",
         "role": "navigation_target",
+        "member_count": 1,
+        "object_count": 1,
+        "person_count": 0,
         "contains": [
           {
             "id": "codex_kitchen_cup",
@@ -240,7 +289,13 @@ Preferred payload:
           }
         ]
       }
-    ]
+    ],
+    "counts": {
+      "entities": 3,
+      "people": 1,
+      "objects": 1,
+      "locations": 1
+    }
   },
   "planner_mode": "default",
   "interaction_mode": "speech",
@@ -424,6 +479,20 @@ Topic:
 It lets planner supervision and report-result wording distinguish completed,
 failed, and pending targets without asking any node to infer that state from a
 free-text summary.
+
+Skill result payloads may include `result_payload.evidence.kb_effects` when an
+AB=1 skill has deterministic knowledge post-effects. These effects are
+executor-owned evidence, not planner wording. The orchestrator applies them
+through the `kb_skills` mutation boundary and verifies post-conditions when the
+KB query seam is available:
+
+- `remove` effects must no longer resolve through `/kb/query`;
+- `add` and `update` effects must resolve through `/kb/query`;
+- failed mutation or failed post-condition verification makes the skill step
+  fail so the existing planner failure or replan path can handle it.
+
+This preserves KnowledgeCore ownership while keeping fake and real skill
+effects coherent with later grounded-context and chatbot answers.
 
 Important event types:
 

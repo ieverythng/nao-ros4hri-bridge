@@ -28,7 +28,7 @@ mutation must go through the SkillOpt ledger requirement in `AGENTS.md`.
 | Area | Action | Status | Evidence |
 |---|---|---|---|
 | Active planner goal lifecycle | Updated the planner gate so terminal planner dialogue acts clear the active goal. Clarifications that wait for the user still keep lineage. | Source-patched | `src/nao_orchestrator/nao_orchestrator/planner_gate.py`; `src/nao_orchestrator/test/test_planner_gate.py` |
-| Runtime questionnaire observability | Added per-case phase breadcrumbs for turn injection, route, planner request, execution feedback, and speech. Artifacts are written immediately after injection, then updated after the wait. | Source-patched | `.codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py`; `test_run_active_questionnaire.py` |
+| Runtime questionnaire observability | Added per-case phase breadcrumbs for turn injection, route, planner request, execution feedback, terminal outcome, and speech. Artifacts are written immediately after injection, then updated during long waits. The runner only short-circuits after terminal and speech evidence are both present. | Source-patched | `.codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py`; `test_run_active_questionnaire.py` |
 | Stale-world guard | Added absence preflights for missing-object and missing-recipient cases. Contaminated cases are skipped before speech injection. | Source-patched | Questionnaire `stale_world_guard` fields |
 | Grounded context object filtering | Filtered ontology, support, place, and person entries from user-facing location members while preserving raw RDF facts for trace/debug. | Source-patched | `src/planner_common/planner_common/contracts.py`; `src/planner_common/test/test_contracts.py` |
 | Chatbot scene digest filtering | Applied the same user-facing ontology filter to chatbot scene digests, including compact location groups. | Source-patched | `src/chatbot_llm/chatbot_llm/knowledge_snapshot.py`; `src/chatbot_llm/test/test_knowledge_snapshot.py` |
@@ -91,16 +91,16 @@ The `fail_once_navigation` kitchen case produced the desired recovery lineage:
 `plan_version=2` executed and resolved a final report. The final spoken result
 reported that `codex_iiia_cup` was brought to `codex_iiia_alex`.
 
-Keep the score qualified because the questionnaire JSON can still underreport
-late-stage evidence with `wait_sec=0.0`, even when launch logs prove the later
-planner/executor events. The next harness patch should copy late replan and final
-speech evidence into the per-case artifact before scoring.
+Keep the score qualified until the rebuilt stack proves the revised harness
+under the same fake-deep cases. Source now records terminal evidence separately
+from speech and keeps observing until both have appeared or the configured wait
+expires.
 
 ## Current Risk Register
 
 | Risk | Why it matters | Next action |
 |---|---|---|
-| Harness late-phase accounting can underreport success | The `fail_once_navigation` artifact marked route/planner/speech false because the case wrote `wait_sec=0.0`, while launch logs showed replan and final report. | Patch the runner to keep observing until the configured wait or terminal evidence, then copy late replan/report lines into the artifact. |
+| Harness late-phase accounting can underreport success | The `fail_once_navigation` artifact marked route/planner/speech false because the case wrote `wait_sec=0.0`, while launch logs showed replan and final report. | Source now keeps observing until the configured wait or terminal plus speech evidence. Rerun the same case after a clean rebuild and compare the JSON to launch logs. |
 | Missing-recipient speech guard needs live proof | Source now blocks named-person execution admission when the grounded context cannot confirm that recipient. | Rerun the BLAKE case in isolation; expected result is clarification before planner request, no invented recipient, and no duplicate active planner goal. |
 | Grounded-context digest count mismatch | One fail-once run logged `Objects (0): none currently grounded` while the JSON contained visible cups, books, and tables. | Fix the digest count/filter path so the summary and JSON agree before using this view as thesis-facing contract evidence. |
 | Manual vague KB add remains unsafe | “Add one cup” can still become an invalid mutation instead of asking for structured facts. | Add a clarification gate for under-specified KB mutations in a later pass. |

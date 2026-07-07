@@ -269,7 +269,7 @@
 <p>planner request against the wrong person.</p>
 <ul>
 <li><strong>Done (2026-06-23 source gate)</strong>: planner has a late, bounded fallback for grounded “bring every object from location X to recipient Y” requests when model output remains invalid after one repair attempt.</li>
-<li><strong>Done (2026-06-23 source gate)</strong>: successful skill result payloads can apply structured <code>evidence.kb_effects</code> through the orchestrator’s existing <code>/kb/revise</code> boundary. This starts with fake manipulation skills and is reusable by real skills that emit the same payload shape.</li>
+<li><strong>Done (2026-07-02 source gate)</strong>: successful skill result payloads can apply structured <code>evidence.kb_effects</code> through the orchestrator’s existing <code>/kb/revise</code> boundary and verify post-conditions through <code>/kb/query</code> when available. Remove effects must disappear, add/update effects must resolve, and failed verification fails the skill step so the planner can replan or fail truthfully. This starts with fake manipulation skills and is reusable by real skills that emit the same payload shape.</li>
 <li><strong>Done (2026-06-30 source gate)</strong>: execution feedback now includes</li>
 </ul>
 <p><code>plan_outcome_summary</code> so report-result wording, failure review, and replan</p>
@@ -337,8 +337,13 @@
 <li><strong>In progress</strong>: skill-aware KB post-effects. Fake skills already report</li>
 </ul>
 <p><code>evidence.kb_effects</code>; orchestrator now applies successful effects through</p>
-<p>KnowledgeCore. Real skills should adopt the same payload contract before</p>
-<p>direct KB mutation is enabled for them.</p>
+<p>KnowledgeCore and verifies their post-conditions when the query seam is</p>
+<p>available. The 2 July grouped-delivery probe showed that this verification must</p>
+<p>be paired with correct planner target selection: a model plan can target a</p>
+<p>location group instead of its contained objects. <code>planner_llm</code> now preempts</p>
+<p>grounded "bring every object from X to Y" requests with member expansion before</p>
+<p>model planning. Real skills should adopt the same payload contract before direct</p>
+<p>KB mutation is enabled for them.</p>
 <ul>
 <li><strong>Pending</strong>: LocateAnything migration into the grounding stack. Keep it as a</li>
 </ul>
@@ -365,7 +370,7 @@
 <li>The fresh rebuilt container imports the patched <code>chatbot_llm</code> source rather than the old build copy before the fake-deep score is raised.</li>
 <li>Fake and real skill payloads use the same <code>kb_effects</code> shape for successful</li>
 </ul>
-<p>state changes.</p>
+<p>state changes, and executor-side post-condition checks prove those changes before later dialogue treats them as current KB truth.</p>
 <ul>
 <li>LocateAnything facts enter the same grounded-context projection as other</li>
 </ul>

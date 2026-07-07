@@ -1677,10 +1677,34 @@ def phase_observations(
             combined,
             ("ROBOT OUTPUT", "DEBUG_SPEECH", "/debug/nao_say/speech", "Robot saying"),
         ),
+        "terminal_observed": terminal_observed(combined),
         "observability_note": (
             "phase booleans are trace breadcrumbs, not pass/fail scoring"
         ),
     }
+
+
+def terminal_observed(value: str) -> bool:
+    """Return true when logs show a terminal plan or planner-dialogue outcome."""
+    return _contains_any(
+        value,
+        (
+            "plan_completed",
+            "plan_cancelled",
+            "plan_invalid",
+            "planner_gate_rejected",
+            "act=explain_failure",
+            '"act": "explain_failure"',
+            "act=ask_clarification",
+            '"act": "ask_clarification"',
+            "act=ask_for_help",
+            '"act": "ask_for_help"',
+            "act=notify_completion",
+            '"act": "notify_completion"',
+            "act=notify_cancellation",
+            '"act": "notify_cancellation"',
+        ),
+    )
 
 
 def _contains_any(value: str, markers: tuple[str, ...]) -> bool:
@@ -1728,6 +1752,9 @@ def _observe_case_during_wait(
             results,
             runtime_metadata=runtime_metadata,
         )
+        observations = result_entry["phase_observations"]
+        if observations.get("terminal_observed") and observations.get("speech_observed"):
+            break
 
 
 def collect_questionnaire_metadata(

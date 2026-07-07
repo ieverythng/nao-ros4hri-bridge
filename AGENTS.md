@@ -175,6 +175,12 @@ or fabricated completion. State clearly when live ROS, KnowledgeCore, simulator,
 or robot validation remains pending.
 
 Do not relaunch or disturb an existing live stack unless the user requests it.
+For scored runtime validation after source changes, do not hot-copy packages,
+restart individual ROS nodes, or partially relaunch the stack as a substitute
+for a clean rebuild. If the running container imports stale source or a runtime
+fix must be tested live, rebuild the container image from the intended base,
+stop the full stack/container, relaunch the full profile once, and verify node
+uniqueness before scoring.
 
 ## Documentation Hygiene
 

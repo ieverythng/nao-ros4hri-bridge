@@ -75,7 +75,7 @@ Everything else should be archived under `docs/artifacts/` unless it is actively
   current grounded context. The expected behavior is clarification, not a
   planner request against the wrong person.
 - **Done (2026-06-23 source gate)**: planner has a late, bounded fallback for grounded “bring every object from location X to recipient Y” requests when model output remains invalid after one repair attempt.
-- **Done (2026-06-23 source gate)**: successful skill result payloads can apply structured `evidence.kb_effects` through the orchestrator’s existing `/kb/revise` boundary. This starts with fake manipulation skills and is reusable by real skills that emit the same payload shape.
+- **Done (2026-07-02 source gate)**: successful skill result payloads can apply structured `evidence.kb_effects` through the orchestrator’s existing `/kb/revise` boundary and verify post-conditions through `/kb/query` when available. Remove effects must disappear, add/update effects must resolve, and failed verification fails the skill step so the planner can replan or fail truthfully. This starts with fake manipulation skills and is reusable by real skills that emit the same payload shape.
 - **Done (2026-06-30 source gate)**: execution feedback now includes
   `plan_outcome_summary` so report-result wording, failure review, and replan
   analysis can distinguish completed, failed, and pending targets without
@@ -137,7 +137,12 @@ Everything else should be archived under `docs/artifacts/` unless it is actively
   facts and avoids overlapping operator-facing text.
 - **In progress**: skill-aware KB post-effects. Fake skills already report
   `evidence.kb_effects`; orchestrator now applies successful effects through
-  KnowledgeCore. Real skills should adopt the same payload contract before
+  KnowledgeCore and verifies their post-conditions when the query seam is
+  available. The 2 July grouped-delivery probe showed that this verification
+  must be paired with correct planner target selection: a model plan can target a
+  location group instead of its contained objects. `planner_llm` now preempts
+  grounded "bring every object from X to Y" requests with member expansion before
+  model planning. Real skills should adopt the same payload contract before
   direct KB mutation is enabled for them.
 - **Pending**: LocateAnything migration into the grounding stack. Keep it as a
   perception/grounding provider, not as a planner or dialogue policy owner.
@@ -147,7 +152,9 @@ Everything else should be archived under `docs/artifacts/` unless it is actively
 **Exit criteria**
 
 - A response-first runtime review proves grouped-location KB queries, location
-  scoped delivery, and post-skill KB changes on the next turn.
+  scoped delivery, and post-skill KB changes on the next turn, including a
+  post-action KB query proving delivered objects no longer retain stale source
+  support or room relations.
 - `robot-runtime-performance-review --case-set environment` proves the same
   scene can be preloaded deterministically before speech or service turns.
 - `robot-runtime-performance-review --case-set fake_deep` proves all-success,
@@ -156,7 +163,8 @@ Everything else should be archived under `docs/artifacts/` unless it is actively
 - The fresh rebuilt container imports the patched `chatbot_llm` source rather
   than the old build copy before the fake-deep score is raised.
 - Fake and real skill payloads use the same `kb_effects` shape for successful
-  state changes.
+  state changes, and executor-side post-condition checks prove those changes
+  before later dialogue treats them as current KB truth.
 - LocateAnything facts enter the same grounded-context projection as other
   perception or simulator facts.
 

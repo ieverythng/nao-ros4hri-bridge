@@ -230,7 +230,7 @@
 </tr>
 <tr>
 <td>Runtime questionnaire observability</td>
-<td>Added per-case phase breadcrumbs for turn injection, route, planner request, execution feedback, and speech. Artifacts are written immediately after injection, then updated after the wait.</td>
+<td>Added per-case phase breadcrumbs for turn injection, route, planner request, execution feedback, terminal outcome, and speech. Artifacts are written immediately after injection, then updated during long waits. The runner only short-circuits after terminal and speech evidence are both present.</td>
 <td>Source-patched</td>
 <td><code>.codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py</code>; <code>test_run_active_questionnaire.py</code></td>
 </tr>
@@ -304,7 +304,7 @@
 /tmp/nao_fake_deep_grouped_delivery_real_20260630.json
 /tmp/nao_fake_deep_fail_once_navigation_real_20260630.json</code></pre>
 <p>The duplicate active-goal rejection did not recur. Independent speech dialogues now produce runtime goal ids instead of reusing <code>goal_default___1</code>. Isolated grouped work-table delivery passed with route, planner request, three <code>bring_object</code> successes, <code>report_result</code>, final speech, and <code>plan_completed</code>. The <code>fail_once_navigation</code> kitchen case produced the desired recovery lineage: <code>plan_version=1</code> failed <code>navigate_to(codex_iiia_kitchen)</code>, then <code>plan_version=2</code> executed and resolved a final report. The final spoken result reported that <code>codex_iiia_cup</code> was brought to <code>codex_iiia_alex</code>.</p>
-<p>Keep the score qualified because the questionnaire JSON can still underreport late-stage evidence with <code>wait_sec=0.0</code>, even when launch logs prove the later planner/executor events. The next harness patch should copy late replan and final speech evidence into the per-case artifact before scoring.</p>
+<p>Keep the score qualified until the rebuilt stack proves the revised harness under the same fake-deep cases. Source now records terminal evidence separately from speech and keeps observing until both have appeared or the configured wait expires.</p>
 <h2>Current Risk Register</h2>
 <table><thead><tr>
 <th>Risk</th>
@@ -314,7 +314,7 @@
 <tr>
 <td>Harness late-phase accounting can underreport success</td>
 <td>The <code>fail_once_navigation</code> artifact marked route/planner/speech false because the case wrote <code>wait_sec=0.0</code>, while launch logs showed replan and final report.</td>
-<td>Patch the runner to keep observing until configured wait or terminal evidence, then copy late replan/report lines into the artifact.</td>
+<td>Source now keeps observing until the configured wait or terminal plus speech evidence. Rerun the same case after a clean rebuild and compare the JSON to launch logs.</td>
 </tr>
 <tr>
 <td>Missing-recipient speech guard needs live proof</td>
