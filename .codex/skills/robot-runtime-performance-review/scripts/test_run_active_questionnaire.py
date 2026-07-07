@@ -78,3 +78,25 @@ def test_absence_guard_allows_clean_fixture(monkeypatch):
 
     assert result["contaminated"] is False
     assert result["guard_results"][0]["clean"] is True
+
+
+def test_questionnaire_metadata_records_grounded_context_digest(monkeypatch):
+    module = _load_questionnaire_module()
+
+    def fake_get_ros_param(_container, _node_name, param_name):
+        values = {
+            "turn_pipeline_mode": "response_first",
+            "grounded_context_digest_enabled": "Boolean value is: False",
+        }
+        return values[param_name]
+
+    monkeypatch.setattr(module, "get_ros_param", fake_get_ros_param)
+
+    metadata = module.collect_questionnaire_metadata(
+        "nao_ros2",
+        expected_turn_pipeline_mode="response_first",
+    )
+
+    assert metadata["chatbot_turn_pipeline_mode"] == "response_first"
+    assert metadata["grounded_context_digest_enabled"] == "Boolean value is: False"
+    assert metadata["turn_pipeline_mode_matches_expected"] is True

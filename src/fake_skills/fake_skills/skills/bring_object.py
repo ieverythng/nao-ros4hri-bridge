@@ -56,6 +56,11 @@ def execute(*, args: dict, mode: str, metadata: dict, fail_once_active: bool) ->
     )
 
     if mode in {'success', 'delivered'}:
+        kb_effects = _delivery_kb_effects(
+            target=target,
+            recipient=recipient,
+            source=source,
+        )
         return build_skill_result(
             skill='bring_object',
             status='succeeded',
@@ -73,11 +78,7 @@ def execute(*, args: dict, mode: str, metadata: dict, fail_once_active: bool) ->
                     'navigate_to',
                     'place_object',
                 ],
-                'kb_effects': [
-                    kb_effect('remove', '%s oro:isOn %s' % (target, source)),
-                    kb_effect('add', '%s oro:isAt %s' % (target, recipient)),
-                    kb_effect('remove', 'robot oro:holds %s' % target),
-                ],
+                'kb_effects': kb_effects,
                 'simulated': True,
             },
             metadata=metadata,
@@ -108,3 +109,13 @@ def execute(*, args: dict, mode: str, metadata: dict, fail_once_active: bool) ->
         ),
         metadata=metadata,
     ).to_dict()
+
+
+def _delivery_kb_effects(*, target: str, recipient: str, source: str) -> list[dict]:
+    effects = []
+    if source and source != 'unknown_support':
+        for predicate in ('oro:isOn', 'oro:isAt', 'oro:isIn'):
+            effects.append(kb_effect('remove', '%s %s %s' % (target, predicate, source)))
+    effects.append(kb_effect('add', '%s oro:isAt %s' % (target, recipient)))
+    effects.append(kb_effect('remove', 'robot oro:holds %s' % target))
+    return effects

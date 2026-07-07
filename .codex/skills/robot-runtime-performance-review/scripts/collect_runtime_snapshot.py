@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -120,6 +121,8 @@ def _run(command: list[str], *, timeout: float = 20.0) -> dict:
 def _add_derived_metrics(snapshot: dict) -> None:
     logs = snapshot.get('logs', {}).get('stdout', '') + snapshot.get('logs', {}).get('stderr', '')
     lowered = logs.lower()
+    fallback_metrics = _fallback_metrics(logs)
+    fallback_event_metrics = _fallback_event_metrics(logs)
     snapshot['derived'] = {
         'warning_count': lowered.count('[warn') + lowered.count('[warning'),
         'error_count': lowered.count('[error'),
@@ -131,7 +134,86 @@ def _add_derived_metrics(snapshot: dict) -> None:
         'grounded_context_trace_count': lowered.count('grounded_context'),
         'planner_request_count': lowered.count('planner_request'),
         'report_result_count': lowered.count('report_result'),
+        'fallback_metrics': fallback_metrics,
+        'fallback_total_count': fallback_metrics.get('total', 0),
+        'fallback_event_metrics': fallback_event_metrics,
+        'fallback_event_total_count': fallback_event_metrics.get('total', 0),
     }
+
+
+def _fallback_metrics(logs: str) -> dict[str, int]:
+    """Count observable fallback and recovery markers without scoring behavior."""
+    text = str(logs or '')
+    patterns = {
+        'chatbot_llm_response_failed': r'llm response failed fallback',
+        'chatbot_llm_disabled': r'llm disabled fallback response',
+        'chatbot_rules_response_fallback': r'llm response fallback -> rules',
+        'chatbot_rules_intent_fallback': r'rules_llm_intent_fallback',
+        'chatbot_generic_fallback_intent': r"intent[=:]fallback|\"intent\"\\s*:\\s*\"fallback\"",
+        'planner_invalid_json': r'model output did not contain a JSON object',
+        'planner_invalid_executable_plan': r'valid executable plan|model output did not contain executable steps',
+        'planner_gate_rejected': r'planner_gate_rejected',
+        'planner_duplicate_active_goal': r'duplicate active planner goal',
+        'planner_rule_fallback': r'rule_fallback',
+        'execution_report_fallback': r'fallback_execution_report|execution report.*fallback',
+        'route_repair': r'llm_response_route_repair|route_conflict',
+        'language_model_unreachable_speech': r'having trouble reaching my language model',
+    }
+    counts = {
+        name: len(re.findall(pattern, text, flags=re.IGNORECASE))
+        for name, pattern in patterns.items()
+    }
+    counts['total'] = sum(counts.values())
+    return counts
+
+
+def _fallback_event_metrics(logs: str) -> dict[str, int]:
+    """Deduplicate fallback/recovery markers that are mirrored across logs."""
+    text = str(logs or '')
+    patterns = {
+        'chatbot_llm_response_failed': r'llm response failed fallback',
+        'chatbot_llm_disabled': r'llm disabled fallback response',
+        'chatbot_rules_response_fallback': r'llm response fallback -> rules',
+        'chatbot_rules_intent_fallback': r'rules_llm_intent_fallback',
+        'chatbot_generic_fallback_intent': r"intent[=:]fallback|\"intent\"\\s*:\\s*\"fallback\"",
+        'planner_invalid_json': r'model output did not contain a JSON object',
+        'planner_invalid_executable_plan': r'valid executable plan|model output did not contain executable steps',
+        'planner_gate_rejected': r'planner_gate_rejected',
+        'planner_duplicate_active_goal': r'duplicate active planner goal',
+        'planner_rule_fallback': r'rule_fallback',
+        'execution_report_fallback': r'fallback_execution_report|execution report.*fallback',
+        'route_repair': r'llm_response_route_repair|route_conflict',
+        'language_model_unreachable_speech': r'having trouble reaching my language model',
+    }
+    events_by_name = {name: set() for name in patterns}
+    for index, line in enumerate(text.splitlines()):
+        for name, pattern in patterns.items():
+            if not re.search(pattern, line, flags=re.IGNORECASE):
+                continue
+            events_by_name[name].add(_fallback_event_key(line, index))
+    counts = {name: len(events) for name, events in events_by_name.items()}
+    counts['total'] = sum(counts.values())
+    return counts
+
+
+def _fallback_event_key(line: str, index: int) -> str:
+    """Return a stable event key for one mirrored log line."""
+    clean = str(line or '')
+    for pattern in (
+        r'turn[:=]([A-Za-z0-9_:.+-]+)',
+        r'"turn_id"\\s*:\\s*"([^"]+)"',
+        r'goal_id=([A-Za-z0-9_:.+-]+)',
+        r'"goal_id"\\s*:\\s*"([^"]+)"',
+        r'plan_id=([A-Za-z0-9_:.+-]+)',
+        r'"plan_id"\\s*:\\s*"([^"]+)"',
+    ):
+        match = re.search(pattern, clean)
+        if match:
+            return match.group(1)
+    stamp = re.search(r'\[(\d{10}(?:\.\d+)?)\]', clean)
+    if stamp:
+        return stamp.group(1)
+    return 'line_%d' % index
 
 
 if __name__ == '__main__':

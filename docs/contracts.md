@@ -69,6 +69,9 @@ Runtime presentation:
 - `chatbot_llm` can also prepend a compact natural-language scene digest for
   readability. That digest is optional and can be disabled with
   `chatbot_grounded_context_digest_enabled:=false` in the integrated launch.
+  Source also accepts `grounded_context_digest_enabled:=false` as a compatibility
+  alias after the 7 July launch patch, but the prefixed argument remains the
+  thesis-facing launch-script name.
 - When the digest is disabled, the `GROUNDED_CONTEXT` trace should show only the
   JSON block. Use this mode to diagnose whether a user-visible wording error
   came from lossy digest compression or from the structured facts.
@@ -479,6 +482,11 @@ Topic:
 It lets planner supervision and report-result wording distinguish completed,
 failed, and pending targets without asking any node to infer that state from a
 free-text summary.
+`completed_targets` records completed action targets, so it may contain a
+recipient reached by a prior `navigate_to` step. User-facing delivery reports
+must derive delivered objects from successful `bring_object`, `place_object`, or
+equivalent delivery steps, and render people as recipients rather than completed
+deliverables.
 
 Skill result payloads may include `result_payload.evidence.kb_effects` when an
 AB=1 skill has deterministic knowledge post-effects. These effects are

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chatbot LLM Fallback Surface Audit, 7 July 2026</title>
+  <style>
+    body { margin:0; background:#f7f8fa; color:#20242b; font-family:Arial,sans-serif; line-height:1.5; }
+    main { max-width:1040px; margin:auto; padding:32px 22px 72px; }
+    h1 { margin:0 0 6px; font-size:2rem; }
+    h2 { margin-top:28px; padding-top:18px; border-top:1px solid #cfd5dd; }
+    table { width:100%; border-collapse:collapse; background:white; }
+    th,td { border:1px solid #cfd5dd; padding:9px 10px; text-align:left; vertical-align:top; }
+    th { background:#e9edf2; }
+    code { background:#e7ebef; padding:1px 4px; }
+    pre { background:#20242b; color:#f4f6f8; padding:14px; overflow:auto; }
+    .note { border-left:4px solid #235b8c; background:white; padding:10px 14px; }
+    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+    .card { background:white; border:1px solid #cfd5dd; border-left:5px solid #235b8c; padding:12px 14px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Chatbot LLM Fallback Surface Audit</h1>
+  <p class="note">7 July 2026 audit of runtime seams that can influence LLM-facing behavior without changing the canonical prompt packs.</p>
+
+  <section class="cards">
+    <div class="card"><strong>Pipeline</strong><br><code>response_first</code></div>
+    <div class="card"><strong>Digest</strong><br>Enabled in the current live container.</div>
+    <div class="card"><strong>Fallback markers</strong><br>Total <code>0</code> in the latest 30 minute snapshot.</div>
+    <div class="card"><strong>Caveat</strong><br>Two <code>/interaction_trace_viewer</code> nodes share the same name.</div>
+  </section>
+
+  <h2>Live Runtime Snapshot</h2>
+  <ul>
+    <li>Container: <code>nao_ros2</code>, image <code>iiia:nao</code>.</li>
+    <li>Dialogue manager: <code>active [3]</code>.</li>
+    <li>Artifact: <code>/tmp/nao_runtime_snapshot_fallback_audit_20260707.json</code>.</li>
+    <li><code>chatbot_grounded_context_digest_enabled</code>: <code>true</code>.</li>
+  </ul>
+  <p>This is not a JSON-only grounded-context ablation. If response synthesis looks confused while the JSON is correct, rerun with the digest disabled before changing prompts or adding route guards.</p>
+
+  <h2>Influence Surfaces</h2>
+  <table>
+    <thead><tr><th>Surface</th><th>File</th><th>Role</th><th>Risk</th></tr></thead>
+    <tbody>
+      <tr><td>Canonical chatbot policy</td><td><code>src/chatbot_llm/config/chat_prompt_pack.yaml</code></td><td>Response and intent policy.</td><td>Prompt edits require SkillOpt ledger.</td></tr>
+      <tr><td>Canonical planner policy</td><td><code>src/planner_llm/config/planner_prompt_pack.yaml</code></td><td>Planner JSON and recovery policy.</td><td>Prompt edits require SkillOpt ledger.</td></tr>
+      <tr><td>System-turn addenda</td><td><code>src/chatbot_llm/chatbot_llm/system_turn.py</code></td><td>Structural wording tasks.</td><td>Can overconstrain report wording if it becomes policy.</td></tr>
+      <tr><td>Grounded context projection</td><td><code>knowledge_snapshot.py</code> and <code>planner_common/contracts.py</code></td><td>Structured JSON and optional digest.</td><td>Digest compression can introduce ambiguous prose.</td></tr>
+      <tr><td>Route heuristics</td><td><code>src/chatbot_llm/chatbot_llm/route_heuristics.py</code></td><td>Route safety nudges.</td><td>High leverage. Keep as guards, not policy replacement.</td></tr>
+      <tr><td>Response fallbacks</td><td><code>src/chatbot_llm/chatbot_llm/response_fallbacks.py</code></td><td>Bounded fallback wording and report postprocessing.</td><td>Must not fabricate success or hide regressions.</td></tr>
+      <tr><td>Planner request adapter</td><td><code>src/chatbot_llm/chatbot_llm/planner_request_adapter.py</code></td><td>Goal ids, intents, targets, grounded context payload.</td><td>Contract seam. Safe for lineage fixes.</td></tr>
+      <tr><td>Planner engine recovery</td><td><code>src/planner_llm/planner_llm/planner_engine.py</code></td><td>Provider call, retry, narrow structural fallbacks.</td><td>Fallbacks should run only after provider/retry failure.</td></tr>
+      <tr><td>Planner gate</td><td><code>src/nao_orchestrator/nao_orchestrator/planner_gate.py</code></td><td>Goal admission and lifecycle.</td><td>Should not become dialogue policy.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Stash Decision</h2>
+  <p>The nested <code>src/chatbot_llm</code> stash was not restored wholesale. The narrow goal-id contract fix was accepted. The large <code>turn_engine.py</code> missing-person route guard was rejected for now because it adds deterministic route policy around the LLM.</p>
+
+  <h2>Review Instrumentation</h2>
+  <p><code>collect_runtime_snapshot.py</code> now writes <code>derived.fallback_metrics</code> and <code>derived.fallback_total_count</code>. <code>run_active_questionnaire.py</code> now writes <code>phase_observations.fallback_markers</code> per case.</p>
+
+  <h2>Next Scored Pass</h2>
+  <pre><code>chatbot_turn_pipeline_mode:=response_first
+chatbot_grounded_context_digest_enabled:=false</code></pre>
+  <p>Run fake-deep grouped delivery and KB mutation holdouts before changing prompt text or adding new route guards.</p>
+</main>
+</body>
+</html>

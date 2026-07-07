@@ -51,6 +51,7 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   start_planner_llm:=true \
   chatbot_planner_mode_enabled:=true \
   chatbot_turn_pipeline_mode:=response_first \
+  chatbot_grounded_context_digest_enabled:=true \
   start_fake_skills:=true \
   start_interaction_trace_viewer:=true
 ```
@@ -136,6 +137,13 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
 - `chatbot_turn_pipeline_mode`: `response_first` for the current demo and
   validation baseline; `intent_first` remains an ablation until it passes the
   same runtime-review holdouts.
+- `chatbot_grounded_context_digest_enabled`: defaults to `true` and prepends a
+  compact natural-language scene digest before the authoritative
+  `grounded_context` JSON. Set it to `false` for JSON-only grounding ablations
+  when testing whether lossy digest wording is affecting dialogue or planning.
+  After the 7 July launch patch, `grounded_context_digest_enabled` is accepted
+  as a compatibility alias. Either flag set to `false` disables the digest, but
+  the `chatbot_`-prefixed name remains the canonical demo-script argument.
 - `scan_result_mode`: deterministic scan skill result mode (`success` or
   `failure`) for no-robot validation.
 - `scan_summary`: success summary returned by the scan skill.

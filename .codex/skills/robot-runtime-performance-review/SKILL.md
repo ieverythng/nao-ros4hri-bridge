@@ -122,6 +122,12 @@ For a grounded-context JSON-only ablation, keep the same launch but set:
   chatbot_grounded_context_digest_enabled:=false
 ```
 
+After the 7 July launch-alias patch, the shorter
+`grounded_context_digest_enabled:=false` is also accepted. Prefer the
+`chatbot_`-prefixed name in thesis-facing scripts because it is the canonical
+integrated-launch argument; use the shorter alias only for backwards
+compatibility with older notes.
+
 The `GROUNDED_CONTEXT` trace should then contain the `Grounded context JSON`
 block without the compact natural-language scene digest. Use this when checking
 whether a response error came from lossy digest wording or from the structured
@@ -131,6 +137,14 @@ Then inspect the JSON and the live source files relevant to any flagged seam.
 Add `--sample-topics` only when you need one-shot ROS topic payloads; sparse
 topics can slow the loop. Add `--include-heavy-topics` only when raw detector
 messages are the target of the diagnosis.
+The snapshot also reports raw `derived.fallback_metrics` /
+`derived.fallback_total_count` and deduplicated `derived.fallback_event_metrics`
+/ `derived.fallback_event_total_count`. Treat these as fallback-pressure
+observability, not as automatic score deductions: they count markers such as
+route repair, planner invalid JSON, duplicate active planner goals, LLM response
+fallback, and the user-facing "language model unreachable" fallback. Prefer the
+deduplicated event metrics for scoring because rosout, trace viewer mirrors, and
+container logs can repeat the same semantic event several times.
 
 For an active E2E questionnaire pass, run:
 
@@ -183,6 +197,9 @@ end early only after both terminal and speech evidence are visible. Treat these
 fields as observability breadcrumbs, not as pass/fail scoring. They exist so
 fake-deep cases no longer look like silent hangs while execution, replan, or
 speech evidence is still arriving.
+Each case also records `phase_observations.fallback_markers`; use it to explain
+which fallback or repair path appeared in the evidence before assigning blame to
+chatbot, planner, executor, or harness behavior.
 
 ```bash
 python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \

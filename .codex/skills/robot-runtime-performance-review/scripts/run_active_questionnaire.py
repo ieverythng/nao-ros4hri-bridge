@@ -1678,10 +1678,34 @@ def phase_observations(
             ("ROBOT OUTPUT", "DEBUG_SPEECH", "/debug/nao_say/speech", "Robot saying"),
         ),
         "terminal_observed": terminal_observed(combined),
+        "fallback_markers": fallback_markers(combined),
         "observability_note": (
             "phase booleans are trace breadcrumbs, not pass/fail scoring"
         ),
     }
+
+
+def fallback_markers(value: str) -> dict[str, int]:
+    """Return per-case fallback markers for review, not pass/fail scoring."""
+    text = str(value or "")
+    patterns = {
+        "llm_response_failed": r"llm response failed fallback",
+        "llm_disabled": r"llm disabled fallback response",
+        "rules_response_fallback": r"llm response fallback -> rules",
+        "rules_intent_fallback": r"rules_llm_intent_fallback",
+        "planner_invalid_json": r"model output did not contain a JSON object",
+        "planner_invalid_plan": r"valid executable plan|model output did not contain executable steps",
+        "planner_gate_rejected": r"planner_gate_rejected",
+        "duplicate_active_goal": r"duplicate active planner goal",
+        "route_repair": r"llm_response_route_repair|route_conflict",
+        "language_model_unreachable_speech": r"having trouble reaching my language model",
+    }
+    counts = {
+        name: len(re.findall(pattern, text, flags=re.IGNORECASE))
+        for name, pattern in patterns.items()
+    }
+    counts["total"] = sum(counts.values())
+    return counts
 
 
 def terminal_observed(value: str) -> bool:
@@ -1768,8 +1792,14 @@ def collect_questionnaire_metadata(
         "turn_pipeline_mode",
     )
     expected = str(expected_turn_pipeline_mode or "").strip()
+    grounded_context_digest_enabled = get_ros_param(
+        container,
+        "/chatbot_llm",
+        "grounded_context_digest_enabled",
+    )
     return {
         "chatbot_turn_pipeline_mode": active_mode,
+        "grounded_context_digest_enabled": grounded_context_digest_enabled,
         "expected_turn_pipeline_mode": expected,
         "turn_pipeline_mode_matches_expected": (
             True if not expected else active_mode == expected

@@ -331,6 +331,12 @@ def test_engine_bring_object_success_reports_delivery_chain() -> None:
         'simulated': True,
     }
     assert expected_effect in payload['evidence']['kb_effects']
+    for predicate in ('oro:isOn', 'oro:isAt', 'oro:isIn'):
+        assert {
+            'action': 'remove',
+            'statement': 'book_1 %s table_1' % predicate,
+            'simulated': True,
+        } in payload['evidence']['kb_effects']
 
 
 def test_engine_bring_object_delivery_blocked_failure() -> None:
