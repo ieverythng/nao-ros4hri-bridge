@@ -71,6 +71,10 @@ class FakeKnowledgeMutation:
             self.query.facts = [
                 fact for fact in self.query.facts if fact not in clean_statements
             ]
+        elif operation in {'add', 'update'}:
+            for statement in clean_statements:
+                if statement not in self.query.facts:
+                    self.query.facts.append(statement)
         return MutationResult(
             success=True,
             operation=operation,
@@ -169,6 +173,7 @@ def test_successful_skill_kb_effects_are_applied_through_kb_boundary():
     )
 
     assert summary['applied'] is True
+    assert summary['verified'] is True
     assert mutation.calls == [
         {
             'operation': 'remove',
@@ -185,7 +190,35 @@ def test_successful_skill_kb_effects_are_applied_through_kb_boundary():
             'wait_for_result': True,
         },
     ]
+    assert _query.facts == ['robot oro:holds cup_1']
     assert node._stats.dispatched_kb_mutation == 2
+
+
+def test_successful_skill_kb_effects_fail_when_remove_postcondition_remains():
+    node, _query, mutation = _orchestrator_with_kb(
+        ['cup_1 oro:isOn table_1'],
+        apply_remove=False,
+    )
+
+    summary = node._apply_success_kb_effects(
+        {
+            'skill': 'pick_object',
+            'status': 'succeeded',
+            'evidence': {
+                'kb_effects': [
+                    {'action': 'remove', 'statement': 'cup_1 oro:isOn table_1'},
+                    {'action': 'add', 'statement': 'robot oro:holds cup_1'},
+                ]
+            },
+        }
+    )
+
+    assert summary['applied'] is False
+    assert summary['verified'] is True
+    assert summary['remaining_statements'] == ['cup_1 oro:isOn table_1']
+    assert mutation.calls[0]['operation'] == 'remove'
+    assert node._stats.dispatched_kb_mutation == 2
+    assert node._stats.dispatch_failures == 1
 
 
 def test_successful_skill_kb_effects_can_be_disabled():

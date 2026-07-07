@@ -2532,6 +2532,12 @@ class NaoOrchestrator(Node):
         effect_summary = self._apply_success_kb_effects(payload)
         if effect_summary:
             payload['kb_effect_application'] = effect_summary
+            if not effect_summary.get('applied', False):
+                return (
+                    False,
+                    'successful skill KB post-condition failed',
+                    payload,
+                )
         self._stats.dispatched_fake_skill += 1
         return True, summary_text, payload
 
@@ -2545,14 +2551,20 @@ class NaoOrchestrator(Node):
         if not effects:
             return {}
 
+        grouped_effects = _group_kb_effect_statements(effects)
         calls: list[dict] = []
-        for operation, statements in _group_kb_effect_statements(effects).items():
+        remaining_statements: list[str] = []
+        missing_statements: list[str] = []
+        verification_attempted = self._kb_query_client is not None
+        effect_models = ['default']
+
+        for operation, statements in grouped_effects.items():
             if not statements:
                 continue
             result = self._kb_mutation_client.mutate(
                 operation=operation,
                 statements=statements,
-                models=['default'],
+                models=effect_models,
                 wait_for_result=True,
             )
             calls.append(
@@ -2566,23 +2578,72 @@ class NaoOrchestrator(Node):
             )
             if result.success:
                 self._stats.dispatched_kb_mutation += 1
+                if operation == 'remove':
+                    remaining_statements.extend(
+                        self._query_remaining_kb_remove_facts(
+                            statements,
+                            effect_models,
+                        )
+                    )
+                elif operation in {'add', 'update'}:
+                    missing_statements.extend(
+                        self._query_missing_kb_present_facts(
+                            statements,
+                            effect_models,
+                        )
+                    )
             else:
                 self._stats.dispatch_failures += 1
         if not calls:
             return {}
-        all_success = all(call.get('success') for call in calls)
+        remaining_statements = _dedupe_statements(remaining_statements)
+        missing_statements = _dedupe_statements(missing_statements)
+        postcondition_failed = bool(remaining_statements or missing_statements)
+        if postcondition_failed:
+            self._stats.dispatch_failures += 1
+        all_success = all(call.get('success') for call in calls) and not postcondition_failed
         if all_success:
             self.get_logger().info(
-                'Applied successful skill KB effects | calls=%d' % len(calls)
+                'Applied successful skill KB effects | calls=%d verified=%s'
+                % (len(calls), verification_attempted)
             )
         else:
             self.get_logger().warn(
                 'Some successful skill KB effects failed | calls=%s' % calls
             )
-        return {
+        summary = {
             'applied': all_success,
+            'verified': verification_attempted,
             'calls': calls,
         }
+        if remaining_statements:
+            summary['remaining_statements'] = remaining_statements
+        if missing_statements:
+            summary['missing_statements'] = missing_statements
+        return summary
+
+    def _query_missing_kb_present_facts(
+        self,
+        statements: list[str],
+        models: list[str],
+    ) -> list[str]:
+        """Return added facts that are not visible through KnowledgeCore query."""
+        if self._kb_query_client is None:
+            return []
+        missing: list[str] = []
+        query_models = models if isinstance(models, list) and models else ['default']
+        for statement in statements:
+            subject, predicate, obj = _statement_parts(statement)
+            if not subject or not predicate or not obj:
+                continue
+            rows = self._kb_query_client.query_rows(
+                patterns=['%s %s ?object' % (subject, predicate)],
+                query_vars=['?object'],
+                models=query_models,
+            )
+            if not any(_binding_value(row, 'object') == obj for row in rows):
+                missing.append(statement)
+        return _dedupe_statements(missing)
 
     def _scan_args_from_step(self, step_args: dict) -> dict:
         scan_args = dict(step_args or {})

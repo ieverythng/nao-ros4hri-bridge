@@ -454,6 +454,193 @@ def test_planner_engine_falls_back_to_grounded_location_group_delivery() -> None
     }
 
 
+def test_planner_engine_matches_location_group_delivery_by_alias() -> None:
+    provider = _FakeProvider('{}')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_work_table_delivery',
+            'goal_id': 'goal_work_table_delivery',
+            'goal_text': 'Bring every object from the work table to ALEX and report what happened.',
+            'normalized_intents': ['bring_object', 'report_result'],
+            'planner_mode': 'multi_step',
+            'grounded_context': {
+                'entities': [
+                    {'id': 'cup_1', 'label': 'cup', 'kind': 'object', 'class': 'Cup'},
+                    {
+                        'id': 'codex_lab_room',
+                        'label': 'lab',
+                        'kind': 'object',
+                        'class': 'Room',
+                    },
+                    {
+                        'id': 'codex_lab_handoff_area',
+                        'label': 'handoff area',
+                        'kind': 'object',
+                        'class': 'Place',
+                        'relations': [{'predicate': 'oro:isIn', 'object': 'codex_lab_room'}],
+                    },
+                    {
+                        'id': 'codex_gold_recipient',
+                        'label': 'ALEX',
+                        'kind': 'person',
+                        'class': 'Human',
+                        'relations': [
+                            {'predicate': 'dbp:name', 'object': 'ALEX'},
+                            {'predicate': 'oro:isIn', 'object': 'codex_gold_handoff_area'},
+                        ],
+                    },
+                    {
+                        'id': 'codex_lab_alex',
+                        'label': 'ALEX',
+                        'kind': 'person',
+                        'class': 'Human',
+                        'relations': [
+                            {'predicate': 'dbp:name', 'object': 'ALEX'},
+                            {'predicate': 'oro:isIn', 'object': 'codex_lab_handoff_area'},
+                        ],
+                    },
+                ],
+                'locations': [
+                    {
+                        'id': 'codex_gold_table',
+                        'label': 'table',
+                        'class': 'Table',
+                        'contains': [{'id': 'gold_apple', 'label': 'apple', 'kind': 'object'}],
+                    },
+                    {
+                        'id': 'table',
+                        'label': 'table',
+                        'contains': [{'id': 'phone_1', 'label': 'phone', 'kind': 'object'}],
+                    },
+                    {
+                        'id': 'codex_lab_table_section',
+                        'label': 'work_table',
+                        'class': 'Table',
+                        'relations': [{'predicate': 'oro:isIn', 'object': 'codex_lab_room'}],
+                        'contains': [{'id': 'cup_1', 'label': 'cup', 'kind': 'object'}],
+                    }
+                ],
+            },
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_work_table_delivery', plan_version=1)
+
+    assert decision.mode == 'grounded_location_group_fallback'
+    assert decision.payload['plan']['steps'][0]['args'] == {
+        'target': 'cup_1',
+        'recipient': 'codex_lab_alex',
+        'source': 'codex_lab_table_section',
+    }
+
+
+def test_planner_engine_prefers_grounded_group_members_over_model_container_plan() -> None:
+    provider = _FakeProvider(
+        '{"steps":[{"type":"skill","name":"bring_object","args":{"target":"codex_lab_table_section","recipient":"person_1","source":"codex_lab_table_section"}}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_work_table_container_plan',
+            'goal_id': 'goal_work_table_container_plan',
+            'goal_text': 'Bring every object from the work table to ALEX and report what happened.',
+            'normalized_intents': ['bring_object', 'report_result'],
+            'planner_mode': 'multi_step',
+            'grounded_context': {
+                'entities': [
+                    {'id': 'codex_lab_cup', 'label': 'cup', 'kind': 'object', 'class': 'Cup'},
+                    {'id': 'codex_lab_phone', 'label': 'phone', 'kind': 'object', 'class': 'Phone'},
+                    {
+                        'id': 'person_1',
+                        'label': 'ALEX',
+                        'kind': 'person',
+                        'class': 'Human',
+                        'relations': [{'predicate': 'dbp:name', 'object': 'ALEX'}],
+                    },
+                ],
+                'locations': [
+                    {
+                        'id': 'codex_lab_table_section',
+                        'label': 'codex_lab_table_section',
+                        'aliases': ['work_table'],
+                        'class': 'Table',
+                        'contains': [
+                            {'id': 'codex_lab_cup', 'label': 'cup', 'kind': 'object'},
+                            {'id': 'codex_lab_phone', 'label': 'phone', 'kind': 'object'},
+                        ],
+                    }
+                ],
+            },
+        }
+    )
+
+    decision = engine.plan_request(
+        request,
+        goal_id='goal_work_table_container_plan',
+        plan_version=1,
+    )
+
+    steps = decision.payload['plan']['steps']
+    assert decision.mode == 'grounded_location_group_fallback'
+    assert [step['args']['target'] for step in steps[:2]] == [
+        'codex_lab_cup',
+        'codex_lab_phone',
+    ]
+    assert all(
+        step['args']['target'] != 'codex_lab_table_section'
+        for step in steps
+        if step['type'] == 'skill' and step['name'] == 'bring_object'
+    )
+    assert provider.messages == []
+
+
+def test_planner_engine_falls_back_to_ordered_location_walk_after_invalid_json() -> None:
+    provider = _FakeProvider('I cannot format a plan right now.')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_ordered_walk',
+            'goal_id': 'goal_ordered_walk',
+            'goal_text': 'Walk to every object on the table and let me know when you get to each one.',
+            'normalized_intents': ['navigate_to', 'report_result'],
+            'planner_mode': 'multi_step',
+            'grounded_context': {
+                'entities': [
+                    {'id': 'apple_1', 'label': 'apple', 'kind': 'object', 'class': 'Apple'},
+                    {'id': 'book_1', 'label': 'book', 'kind': 'object', 'class': 'Book'},
+                ],
+                'locations': [
+                    {
+                        'id': 'table_1',
+                        'label': 'table',
+                        'class': 'Table',
+                        'contains': [
+                            {'id': 'apple_1', 'label': 'apple', 'kind': 'object'},
+                            {'id': 'book_1', 'label': 'book', 'kind': 'object'},
+                        ],
+                    }
+                ],
+            },
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_ordered_walk', plan_version=1)
+
+    steps = decision.payload['plan']['steps']
+    assert decision.mode == 'grounded_ordered_walk_fallback'
+    assert [step['name'] for step in steps] == [
+        'navigate_to',
+        'report_result',
+        'navigate_to',
+        'report_result',
+    ]
+    assert steps[0]['args'] == {'target': 'apple_1'}
+    assert steps[1]['requires'] == ['step_1']
+    assert steps[2]['requires'] == ['step_2']
+    assert steps[3]['requires'] == ['step_3']
+
+
 def test_planner_engine_clarifies_location_group_delivery_without_recipient() -> None:
     engine = _engine_for_response('{}', retry_budget=1)
     request = PlannerRequest.from_payload(

@@ -1666,6 +1666,31 @@ def generate_profile_launch_description(
             "intent_first for route-locked runtime-review ablations."
         ),
     )
+    chatbot_grounded_context_digest_enabled_arg = DeclareLaunchArgument(
+        "chatbot_grounded_context_digest_enabled",
+        default_value=_profile_default(
+            profile_defaults,
+            "chatbot_grounded_context_digest_enabled",
+            "true",
+        ),
+        description=(
+            "Enable the compact natural-language scene digest before the "
+            "authoritative grounded_context JSON. Set false for JSON-only "
+            "runtime-review ablations."
+        ),
+    )
+    grounded_context_digest_enabled_arg = DeclareLaunchArgument(
+        "grounded_context_digest_enabled",
+        default_value=_profile_default(
+            profile_defaults,
+            "grounded_context_digest_enabled",
+            "true",
+        ),
+        description=(
+            "Compatibility alias for chatbot_grounded_context_digest_enabled. "
+            "Either flag set to false disables the compact scene digest."
+        ),
+    )
     ollama_intent_model_arg = DeclareLaunchArgument(
         "ollama_intent_model",
         default_value="",
@@ -1907,6 +1932,20 @@ def generate_profile_launch_description(
                 "turn_pipeline_mode": ParameterValue(
                     LaunchConfiguration("chatbot_turn_pipeline_mode"),
                     value_type=str,
+                )
+            },
+            {
+                "grounded_context_digest_enabled": ParameterValue(
+                    PythonExpression(
+                        [
+                            '"',
+                            LaunchConfiguration("chatbot_grounded_context_digest_enabled"),
+                            '".lower() == "true" and "',
+                            LaunchConfiguration("grounded_context_digest_enabled"),
+                            '".lower() == "true"',
+                        ]
+                    ),
+                    value_type=bool,
                 )
             },
             {
@@ -3042,6 +3081,8 @@ def generate_profile_launch_description(
             chatbot_intent_max_tokens_arg,
             chatbot_intent_model_arg,
             chatbot_turn_pipeline_mode_arg,
+            chatbot_grounded_context_digest_enabled_arg,
+            grounded_context_digest_enabled_arg,
             ollama_intent_model_arg,
             chatbot_server_url_arg,
             chatbot_request_timeout_sec_arg,

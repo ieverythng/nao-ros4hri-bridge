@@ -510,6 +510,7 @@ def normalize_grounded_context(value) -> dict:
             locations = _derive_location_groups(normalized_entities)
         if locations:
             normalized['locations'] = locations
+        _attach_grounded_context_counts(normalized)
         state_t0 = raw_payload.get('state_t0', {})
         if isinstance(state_t0, dict) and state_t0:
             normalized['state_t0'] = dict(state_t0)
@@ -552,6 +553,7 @@ def project_llm_grounded_context(
             locations = _derive_location_groups(entities)
         if locations:
             compact['locations'] = locations
+        _attach_grounded_context_counts(compact)
         if include_state_t0 and isinstance(normalized.get('state_t0'), dict):
             compact['state_t0'] = dict(normalized.get('state_t0', {}))
         return compact
@@ -658,6 +660,7 @@ def project_llm_grounded_context(
     locations = _derive_location_groups(entities)
     if locations:
         compact['locations'] = locations
+    _attach_grounded_context_counts(compact)
     if include_state_t0 and isinstance(state_t0, dict) and state_t0:
         compact['state_t0'] = dict(state_t0)
     return compact
@@ -699,9 +702,10 @@ def _normalize_grounded_entity(
     label_value = item.get('label', None)
     label = None if label_value is None else str(label_value).strip()
     kind = _normalized_kind(item.get('kind', ''), item.get('class', item.get('type', '')))
+    label = _grounded_entity_label(label, entity_id, kind)
     entity = {
         'id': entity_id,
-        'label': label or None,
+        'label': label,
         'kind': kind,
         'class': str(item.get('class', item.get('type', ''))).strip(),
         'visible': coerce_bool(item.get('visible', True)),
@@ -720,6 +724,49 @@ def _normalize_grounded_entity(
         key: value
         for key, value in entity.items()
         if key == 'label' or value not in ('', [], {})
+    }
+
+
+def _attach_grounded_context_counts(context: dict) -> None:
+    """Attach deterministic counts for the compact grounded context."""
+    if not isinstance(context, dict):
+        return
+    entities = context.get('entities', [])
+    if not isinstance(entities, list):
+        entities = []
+    locations = context.get('locations', [])
+    if not isinstance(locations, list):
+        locations = []
+
+    entity_ids = {
+        str(item.get('id', '')).strip()
+        for item in entities
+        if isinstance(item, dict) and str(item.get('id', '')).strip()
+    }
+    location_ids = {
+        str(item.get('id', '')).strip()
+        for item in locations
+        if isinstance(item, dict) and str(item.get('id', '')).strip()
+    }
+    people_count = sum(
+        1
+        for item in entities
+        if isinstance(item, dict) and _is_recipient_entity(item)
+    )
+    object_count = sum(
+        1
+        for item in entities
+        if isinstance(item, dict)
+        and _is_user_facing_location_member(
+            item,
+            str(item.get('id', '')).strip(),
+        )
+    )
+    context['counts'] = {
+        'entities': len(entity_ids | location_ids),
+        'people': people_count,
+        'objects': object_count,
+        'locations': len(location_ids),
     }
 
 
@@ -779,7 +826,14 @@ def _normalize_location_groups(value, *, entities: list[dict]) -> list[dict]:
             if not group_id:
                 continue
             group_entity = entity_index.get(group_id, {})
+            entity_class = _first_non_empty(
+                item.get('class', ''),
+                item.get('type', ''),
+                group_entity.get('class', ''),
+            )
             if group_entity and _is_recipient_entity(group_entity):
+                continue
+            if not _is_location_group_candidate(group_entity, group_id, entity_class):
                 continue
             group = _ensure_location_group(
                 groups_by_id,
@@ -788,11 +842,8 @@ def _normalize_location_groups(value, *, entities: list[dict]) -> list[dict]:
                     item.get('label', ''),
                     _entity_label(group_entity, group_id),
                 ),
-                entity_class=_first_non_empty(
-                    item.get('class', ''),
-                    item.get('type', ''),
-                    group_entity.get('class', ''),
-                ),
+                entity_class=entity_class,
+                aliases=_location_group_aliases(item, group_entity),
             )
             members = item.get('contains', item.get('members', []))
             if not isinstance(members, list):
@@ -819,6 +870,7 @@ def _normalize_location_groups(value, *, entities: list[dict]) -> list[dict]:
             group.get('id', ''),
             label=group.get('label', ''),
             entity_class=group.get('class', ''),
+            aliases=group.get('aliases', []),
         )
         for member in group.get('contains', []):
             if isinstance(member, dict):
@@ -904,11 +956,49 @@ def _ensure_location_group_for_entity(
     entity = entity_index.get(_compact_term(group_id), {})
     if entity and _is_recipient_entity(entity):
         return {}
+    if not _is_location_group_candidate(entity, group_id, entity.get('class', '')):
+        return {}
     return _ensure_location_group(
         groups_by_id,
         group_id,
         label=_entity_label(entity, group_id),
         entity_class=entity.get('class', ''),
+        aliases=_location_group_aliases({}, entity),
+    )
+
+
+def _is_location_group_candidate(entity: dict, group_id: str, entity_class='') -> bool:
+    """Return true only for real places or support surfaces."""
+    if isinstance(entity, dict) and entity:
+        if _is_recipient_entity(entity):
+            return False
+        kind = str(entity.get('kind', '')).strip().lower()
+        if kind and kind != 'object':
+            return False
+        class_token = _class_token(_first_non_empty(entity_class, entity.get('class', '')))
+    else:
+        class_token = _class_token(entity_class)
+
+    if class_token in _LOCATION_SUPPORT_CLASSES or class_token in _LOCATION_PLACE_CLASSES:
+        return True
+    if class_token and _is_user_object_type_token(class_token):
+        return False
+
+    clean_id = str(group_id or '').strip().lower()
+    return any(
+        marker in clean_id
+        for marker in (
+            'counter',
+            'corridor',
+            'desk',
+            'kitchen',
+            'lab',
+            'room',
+            'shelf',
+            'station',
+            'surface',
+            'table',
+        )
     )
 
 
@@ -918,6 +1008,7 @@ def _ensure_location_group(
     *,
     label: str,
     entity_class,
+    aliases=None,
 ) -> dict:
     clean_id = _compact_term(group_id)
     role = _location_group_role(entity_class, clean_id)
@@ -929,6 +1020,7 @@ def _ensure_location_group(
             'class': str(entity_class or '').strip(),
             'role': role,
             'contains': [],
+            'aliases': [],
         },
     )
     if not group.get('label') and str(label or '').strip():
@@ -937,7 +1029,58 @@ def _ensure_location_group(
         group['class'] = str(entity_class or '').strip()
     if not group.get('role'):
         group['role'] = role
+    _merge_location_aliases(group, aliases)
     return group
+
+
+def _location_group_aliases(group_item: dict, group_entity: dict) -> list[str]:
+    aliases: list[str] = []
+    if isinstance(group_item, dict):
+        raw_aliases = group_item.get('aliases', [])
+        if isinstance(raw_aliases, list):
+            aliases.extend(str(item).strip() for item in raw_aliases)
+        aliases.extend(_relation_values(group_item, 'dbp:name'))
+        aliases.extend(_relation_values(group_item, 'name'))
+    aliases.extend(_relation_values(group_entity, 'dbp:name'))
+    aliases.extend(_relation_values(group_entity, 'name'))
+    return _unique_location_aliases(aliases)
+
+
+def _merge_location_aliases(group: dict, aliases) -> None:
+    if not isinstance(aliases, list):
+        return
+    existing = _unique_location_aliases(group.get('aliases', []))
+    existing_keys = {_alias_key(item) for item in existing}
+    blocked_keys = {
+        _alias_key(group.get('id', '')),
+        _alias_key(group.get('label', '')),
+    }
+    for alias in _unique_location_aliases(aliases):
+        key = _alias_key(alias)
+        if not key or key in blocked_keys or key in existing_keys:
+            continue
+        existing.append(alias)
+        existing_keys.add(key)
+    group['aliases'] = existing
+
+
+def _unique_location_aliases(values) -> list[str]:
+    aliases: list[str] = []
+    seen = set()
+    if not isinstance(values, list):
+        return aliases
+    for value in values:
+        alias = str(value or '').strip()
+        key = _alias_key(alias)
+        if not alias or not key or key in seen:
+            continue
+        aliases.append(alias)
+        seen.add(key)
+    return aliases
+
+
+def _alias_key(value) -> str:
+    return ' '.join(str(value or '').strip().lower().replace('_', ' ').split())
 
 
 def _add_location_member(
@@ -992,6 +1135,7 @@ def _finalize_location_groups(groups_by_id: dict[str, dict]) -> list[dict]:
         finalized = {
             'id': str(group.get('id', '')).strip(),
             'label': group.get('label') if group.get('label') else None,
+            'aliases': _unique_location_aliases(group.get('aliases', [])),
             'class': str(group.get('class', '')).strip(),
             'role': str(group.get('role', '')).strip(),
             'member_count': len(contains),
@@ -1020,21 +1164,29 @@ def _is_user_facing_location_member(entity: dict, entity_id: str) -> bool:
     if kind and kind != 'object':
         return False
     entity_class = _class_token(entity.get('class', ''))
+    rdf_type_tokens = []
+    for relation in entity.get('relations', []):
+        if not isinstance(relation, dict):
+            continue
+        if str(relation.get('predicate', '')).strip() != 'rdf:type':
+            continue
+        rdf_type_tokens.append(_class_token(relation.get('object', '')))
+    if any(_is_user_object_type_token(token) for token in rdf_type_tokens):
+        return True
     if entity_class in _NON_USER_OBJECT_CLASSES:
         return False
     if entity_class.startswith('cyc:spatialthing'):
         return False
     if entity_class in _LOCATION_SUPPORT_CLASSES or entity_class in _LOCATION_PLACE_CLASSES:
         return False
-    for relation in entity.get('relations', []):
-        if not isinstance(relation, dict):
-            continue
-        if str(relation.get('predicate', '')).strip() != 'rdf:type':
-            continue
-        relation_class = _class_token(relation.get('object', ''))
+    if _is_user_object_type_token(entity_class):
+        return True
+    for relation_class in rdf_type_tokens:
         if relation_class in _NON_USER_OBJECT_CLASSES:
             return False
         if relation_class.startswith('cyc:spatialthing'):
+            return False
+        if relation_class in _LOCATION_SUPPORT_CLASSES or relation_class in _LOCATION_PLACE_CLASSES:
             return False
     return True
 
@@ -1078,9 +1230,15 @@ def _entity_label(entity: dict, fallback_id: str) -> str:
 
 
 def _relation_value(entity: dict, predicate: str) -> str:
+    values = _relation_values(entity, predicate)
+    return values[0] if values else ''
+
+
+def _relation_values(entity: dict, predicate: str) -> list[str]:
     if not isinstance(entity, dict):
-        return ''
+        return []
     wanted = str(predicate or '').strip()
+    values = []
     for relation in entity.get('relations', []):
         if not isinstance(relation, dict):
             continue
@@ -1088,8 +1246,21 @@ def _relation_value(entity: dict, predicate: str) -> str:
             continue
         value = str(relation.get('object', '')).strip()
         if value:
-            return value
-    return ''
+            values.append(value)
+    return values
+
+
+def _is_user_object_type_token(class_token: str) -> bool:
+    token = str(class_token or '').strip()
+    if not token:
+        return False
+    if token in _NON_USER_OBJECT_CLASSES:
+        return False
+    if token.startswith('cyc:spatialthing'):
+        return False
+    if token in _LOCATION_SUPPORT_CLASSES or token in _LOCATION_PLACE_CLASSES:
+        return False
+    return True
 
 
 def _normalize_raw_relations(value) -> list[dict]:
@@ -1187,11 +1358,44 @@ def _display_entity_label(value, entity_id: str) -> str:
 
 def _person_label(item: dict, entity_id: str) -> str | None:
     label = str(item.get('label', '')).strip()
-    if label and label != entity_id:
-        return _display_entity_label(label, entity_id)
-    if str(entity_id).startswith('anonymous_'):
-        return None
-    return _display_entity_label(label, entity_id)
+    return _grounded_entity_label(label, entity_id, 'person')
+
+
+def _grounded_entity_label(label: str | None, entity_id: str, kind: str) -> str | None:
+    clean_id = str(entity_id or '').strip()
+    clean_label = str(label or '').strip()
+    if str(kind or '').strip().lower() != 'person':
+        return _display_entity_label(clean_label, clean_id) or None
+    if _is_generic_person_label(clean_label, clean_id):
+        return clean_id or None
+    if clean_label:
+        return _display_entity_label(clean_label, clean_id) or clean_id or None
+    return clean_id or None
+
+
+def _is_generic_person_label(label: str, entity_id: str) -> bool:
+    clean_label = str(label or '').strip().lower()
+    clean_id = str(entity_id or '').strip().lower()
+    if not clean_label:
+        return True
+    if clean_label == clean_id:
+        return True
+    generic_labels = {
+        'anonymous',
+        'anonymous_person',
+        'person',
+        'human',
+        'sim_person',
+        'detected_person',
+        'detected human',
+        'tracked_person',
+    }
+    if clean_label.replace(' ', '_') in generic_labels:
+        return True
+    for prefix in ('anonymous_person_', 'sim_person_', 'person_'):
+        if clean_id.startswith(prefix) and clean_label == prefix.rstrip('_'):
+            return True
+    return False
 
 
 def _looks_generated_suffix(value: str) -> bool:

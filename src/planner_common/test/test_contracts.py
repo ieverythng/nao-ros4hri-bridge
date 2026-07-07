@@ -289,7 +289,12 @@ def test_project_llm_grounded_context_filters_backend_noise_and_relations() -> N
         ],
     )
 
-    assert 'counts' not in projected
+    assert projected['counts'] == {
+        'entities': 3,
+        'people': 1,
+        'objects': 1,
+        'locations': 1,
+    }
     cup = next(item for item in projected['entities'] if item['id'] == 'cup_jrjic')
     person = next(
         item for item in projected['entities'] if item['id'] == 'anonymous_person_ehfbf'
@@ -317,7 +322,7 @@ def test_project_llm_grounded_context_filters_backend_noise_and_relations() -> N
             ],
         }
     ]
-    assert person['label'] is None
+    assert person['label'] == 'anonymous_person_ehfbf'
     forbidden = {'schema_version', 'source', 'backend', 'center_x', 'center_y', 'score', 'last_seen_sec'}
     assert forbidden.isdisjoint(cup.keys())
 
@@ -419,6 +424,70 @@ def test_normalize_grounded_context_accepts_compact_shape() -> None:
                 'relations': [{'predicate': 'dbp:color', 'object': 'blue'}],
             }
         ],
+        'counts': {
+            'entities': 1,
+            'people': 0,
+            'objects': 1,
+            'locations': 0,
+        },
+    }
+
+
+def test_normalize_grounded_context_preserves_generated_person_handles() -> None:
+    grounded_context = normalize_grounded_context(
+        {
+            'entities': [
+                {
+                    'id': 'anonymous_person_fcdai',
+                    'label': 'anonymous_person',
+                    'kind': 'person',
+                    'class': 'Human',
+                },
+                {
+                    'id': 'sim_person_pqbcq',
+                    'label': 'sim_person',
+                    'kind': 'person',
+                    'class': 'Human',
+                },
+                {
+                    'id': 'codex_kitchen',
+                    'label': 'Kitchen',
+                    'kind': 'object',
+                    'class': 'Room',
+                },
+                {
+                    'id': 'apple_rvath',
+                    'label': 'apple',
+                    'kind': 'object',
+                    'class': 'Apple',
+                    'relations': [{'predicate': 'oro:isAt', 'object': 'codex_kitchen'}],
+                },
+            ],
+            'locations': [
+                {
+                    'id': 'codex_kitchen',
+                    'label': 'Kitchen',
+                    'class': 'Room',
+                    'contains': [{'id': 'apple_rvath', 'relation': 'oro:isAt'}],
+                }
+            ],
+        }
+    )
+
+    people = {
+        item['id']: item['label']
+        for item in grounded_context['entities']
+        if item.get('kind') == 'person'
+    }
+    assert people == {
+        'anonymous_person_fcdai': 'anonymous_person_fcdai',
+        'sim_person_pqbcq': 'sim_person_pqbcq',
+    }
+    assert grounded_context['counts'] == {
+        'entities': 4,
+        'people': 2,
+        'objects': 1,
+        'locations': 1,
     }
 
 
@@ -533,6 +602,74 @@ def test_project_llm_grounded_context_derives_location_groups_from_kb_alias_pred
     ]
 
 
+def test_project_llm_grounded_context_preserves_location_aliases_from_named_entities() -> None:
+    projected = project_llm_grounded_context(
+        {
+            'entities': [
+                {
+                    'id': 'codex_lab_table_section',
+                    'label': 'codex_lab_table_section',
+                    'kind': 'object',
+                    'class': 'Table',
+                    'relations': [{'predicate': 'dbp:name', 'object': 'work_table'}],
+                },
+                {
+                    'id': 'codex_lab_cup',
+                    'label': 'cup',
+                    'kind': 'object',
+                    'class': 'Cup',
+                    'relations': [
+                        {'predicate': 'oro:isOn', 'object': 'codex_lab_table_section'},
+                    ],
+                },
+            ],
+            'locations': [
+                {
+                    'id': 'codex_lab_table_section',
+                    'label': 'codex_lab_table_section',
+                    'class': 'Table',
+                    'contains': [{'id': 'codex_lab_cup', 'relation': 'oro:isOn'}],
+                }
+            ],
+        }
+    )
+
+    assert projected['locations'][0]['aliases'] == ['work_table']
+
+
+def test_location_groups_keep_user_objects_with_spatial_materialization_class() -> None:
+    projected = project_llm_grounded_context(
+        {'scene_summary': {}},
+        knowledge_rows=[
+            {'entity': 'codex_lab_table_section', 'predicate': 'rdf:type', 'object': 'Table'},
+            {'entity': 'codex_lab_table_section', 'predicate': 'dbp:name', 'object': 'work_table'},
+            {
+                'entity': 'codex_lab_manual',
+                'predicate': 'rdf:type',
+                'object': 'cyc:SpatialThing-Localized',
+            },
+            {'entity': 'codex_lab_manual', 'predicate': 'rdf:type', 'object': 'Book'},
+            {'entity': 'codex_lab_manual', 'predicate': 'dbp:name', 'object': 'LAB_MANUAL'},
+            {'entity': 'codex_lab_manual', 'predicate': 'oro:isOn', 'object': 'codex_lab_table_section'},
+            {
+                'entity': 'codex_lab_phone',
+                'predicate': 'rdf:type',
+                'object': 'cyc:SpatialThing-Localized',
+            },
+            {'entity': 'codex_lab_phone', 'predicate': 'rdf:type', 'object': 'Phone'},
+            {'entity': 'codex_lab_phone', 'predicate': 'dbp:name', 'object': 'LAB_PHONE'},
+            {'entity': 'codex_lab_phone', 'predicate': 'oro:isOn', 'object': 'codex_lab_table_section'},
+        ],
+    )
+
+    assert projected['locations'][0]['id'] == 'codex_lab_table_section'
+    assert [item['id'] for item in projected['locations'][0]['contains']] == [
+        'codex_lab_manual',
+        'codex_lab_phone',
+    ]
+    assert projected['locations'][0]['object_count'] == 2
+
+
 def test_project_llm_grounded_context_filters_meta_support_and_people_from_location_members() -> None:
     projected = project_llm_grounded_context(
         {'scene_summary': {}},
@@ -540,6 +677,7 @@ def test_project_llm_grounded_context_filters_meta_support_and_people_from_locat
             {'entity': 'codex_lab_table', 'predicate': 'rdf:type', 'object': 'Table'},
             {'entity': 'codex_lab_table', 'predicate': 'dbp:name', 'object': 'work table'},
             {'entity': 'codex_lab_cup', 'predicate': 'rdf:type', 'object': 'Cup'},
+            {'entity': 'codex_lab_cup', 'predicate': 'rdf:type', 'object': 'cyc:SpatialThing-Localized'},
             {'entity': 'codex_lab_cup', 'predicate': 'dbp:name', 'object': 'red cup'},
             {'entity': 'codex_lab_cup', 'predicate': 'oro:isOn', 'object': 'codex_lab_table'},
             {'entity': 'codex_lab_surface', 'predicate': 'rdf:type', 'object': 'Table'},
@@ -604,6 +742,29 @@ def test_normalized_location_groups_never_promote_people_to_locations() -> None:
     )
 
     assert 'locations' not in normalized
+
+
+def test_location_groups_never_promote_objects_or_people_from_contains_relations() -> None:
+    projected = project_llm_grounded_context(
+        {'scene_summary': {}},
+        knowledge_rows=[
+            {'entity': 'anonymous_person_dcdbc', 'predicate': 'rdf:type', 'object': 'Human'},
+            {'entity': 'book_nwred', 'predicate': 'rdf:type', 'object': 'Book'},
+            {'entity': 'book_nwred', 'predicate': 'oro:contains', 'object': 'anonymous_person_dcdbc'},
+            {'entity': 'cup_ohjps', 'predicate': 'rdf:type', 'object': 'Tableware'},
+            {'entity': 'cup_ohjps', 'predicate': 'oro:contains', 'object': 'anonymous_person_dcdbc'},
+            {'entity': 'cup_table', 'predicate': 'rdf:type', 'object': 'Table'},
+            {'entity': 'cup_table', 'predicate': 'oro:contains', 'object': 'cup_ohjps'},
+            {'entity': 'book_nwred', 'predicate': 'oro:isAt', 'object': 'anonymous_person_dcdbc'},
+        ],
+    )
+
+    assert [item['id'] for item in projected['locations']] == ['cup_table']
+    assert projected['locations'][0]['class'] == 'Table'
+    assert projected['locations'][0]['role'] == 'support_group'
+    assert projected['locations'][0]['member_count'] == 1
+    assert projected['locations'][0]['contains'][0]['id'] == 'cup_ohjps'
+    assert projected['locations'][0]['contains'][0]['relation'] == 'oro:contains'
 
 
 def test_build_plan_payload_omits_context_ref_from_new_envelopes() -> None:
