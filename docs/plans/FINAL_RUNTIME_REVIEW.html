@@ -42,6 +42,49 @@
 
   <p class="note">The score is deliberately conservative. The response-first stack remains the cleanest demonstration path. The separate deep fake/replan score is lower because it measures harder requirements: preloaded environments, location-group delivery, missing-target truthfulness, post-skill KB effects, and forced failure recovery.</p>
 
+  <h2>8 July Runtime And Qwen Ablation Pass</h2>
+  <p class="note">Fresh review after fast-forwarding this worktree to <code>refactor/deslop_repo</code> commit <code>be8d831</code>. The live baseline used the cool profile with <code>start_object_detection:=false</code>, <code>chatbot_turn_pipeline_mode:=response_first</code>, <code>chatbot_grounded_context_digest_enabled:=false</code>, and the normal <code>QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ</code> endpoint. A separate ZeroTier ablation used <code>qwen36-turbo-hermes</code> for chatbot response, chatbot intent, and planner.</p>
+
+  <table>
+    <thead>
+      <tr><th>Run</th><th>Status</th><th>Evidence</th><th>Readout</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Main response-first baseline</td>
+        <td class="partial">Degraded</td>
+        <td><code>/tmp/nao_main_questionnaire_20260708_baseline.json</code> (20 cases)</td>
+        <td>Simple dialogue and KB-query turns were healthy. The robot used freshly injected relations such as <code>dbp:name=TITAS</code> and table membership. Later simple/composite execution showed stale final speech and report-result pressure, especially around pick, look_at, and multi-object report cases.</td>
+      </tr>
+      <tr>
+        <td>Preloaded environment baseline</td>
+        <td class="partial">Observability gap</td>
+        <td><code>/tmp/nao_environment_questionnaire_20260708_baseline.json</code> (11 cases)</td>
+        <td>Fixture injection completed, but fresh per-case route and robot speech evidence was mostly absent from the artifact window. Treat this as a harness/trace-correlation gap before treating the fixture semantics as failed.</td>
+      </tr>
+      <tr>
+        <td>Deep fake all-success</td>
+        <td class="partial">Exercised, not acceptance-grade</td>
+        <td><code>/tmp/nao_fake_deep_all_success_20260708_baseline.json</code> (8 cases)</td>
+        <td>The full fake-deep set ran, but the artifact captured no fresh route/speech evidence. This points to the same per-turn observability issue seen in the environment pass.</td>
+      </tr>
+      <tr>
+        <td>Deep fake failure profiles</td>
+        <td class="partial">Targeted evidence only</td>
+        <td><code>/tmp/nao_fake_deep_fail_once_navigation_20260708_baseline.json</code>, <code>/tmp/nao_fake_deep_fail_once_pick_20260708_baseline.json</code>, <code>/tmp/nao_fake_deep_delivery_blocked_20260708_baseline.json</code>, <code>/tmp/nao_fake_deep_recipient_missing_20260708_baseline.json</code></td>
+        <td>Navigation, pick, blocked delivery, and missing-recipient profiles were applied to targeted deep cases. The run is useful as stress evidence, but not final acceptance proof until observations are correlated by <code>dialogue_turn_id</code>, <code>voice_id</code>, and timestamp.</td>
+      </tr>
+      <tr>
+        <td>Qwen3.6 ZeroTier ablation</td>
+        <td class="pending">Blocked by runtime seam</td>
+        <td><code>/tmp/nao_main_questionnaire_20260708_qwen36.json</code> (17 partial cases), <code>/tmp/nao_fake_deep_ordered_walk_qwen36.json</code></td>
+        <td>The endpoint was reachable and both chatbot/planner preflighted with <code>qwen36-turbo-hermes</code>. The questionnaire then captured zero fresh route/speech evidence and hit the same KB query/revise hang. This does not prove Qwen is worse; it proves the ablation currently needs a cleaner ingress/trace reset before model quality can be compared.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="note">Operational conclusion: keep the normal response-first profile for demonstration. The immediate engineering target is not another prompt mutation. It is per-turn runtime-review correlation, bounded <code>/kb/revise</code>/<code>/kb/query</code> handling, and report-result natural-language closure under composite pressure.</p>
+
   <h2>Grounded Context Contract</h2>
   <p>The current planner-facing grounded context is a bounded symbolic projection, not a raw KnowledgeCore dump. It keeps deliverable objects, people, support surfaces, and navigation places distinct so the planner can expand grouped tasks without treating tables, rooms, or people as ordinary objects.</p>
   <p>The JSON block is the authoritative runtime contract. The compact scene digest is now an explicit launch-time aid controlled by <code>chatbot_grounded_context_digest_enabled</code>. Set it to <code>false</code> for JSON-only grounding ablations when checking whether lossy digest wording is causing a dialogue or report-result regression.</p>
