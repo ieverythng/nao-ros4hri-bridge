@@ -452,6 +452,7 @@ def test_planner_engine_falls_back_to_grounded_location_group_delivery() -> None
         'recipient': 'person_1',
         'source': 'codex_kitchen',
     }
+    assert decision.payload['plan']['scene_targets'] == ['book_1', 'cup_1', 'person_1']
 
 
 def test_planner_engine_matches_location_group_delivery_by_alias() -> None:
@@ -533,6 +534,67 @@ def test_planner_engine_matches_location_group_delivery_by_alias() -> None:
         'recipient': 'codex_lab_alex',
         'source': 'codex_lab_table_section',
     }
+    assert decision.payload['plan']['scene_targets'] == ['cup_1', 'codex_lab_alex']
+
+
+def test_planner_engine_matches_compact_room_id_without_named_alias() -> None:
+    provider = _FakeProvider('{}')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_iiia_kitchen_delivery',
+            'goal_id': 'goal_iiia_kitchen_delivery',
+            'goal_text': 'Bring every object from the kitchen to ALEX and report what happened.',
+            'normalized_intents': ['bring_object', 'report_result'],
+            'planner_mode': 'multi_step',
+            'grounded_context': {
+                'entities': [
+                    {'id': 'codex_iiia_cup', 'label': 'IIIA_CUP', 'kind': 'object', 'class': 'Cup'},
+                    {
+                        'id': 'codex_iiia_alex',
+                        'label': 'ALEX',
+                        'kind': 'person',
+                        'class': 'Human',
+                        'relations': [{'predicate': 'dbp:name', 'object': 'ALEX'}],
+                    },
+                ],
+                'locations': [
+                    {
+                        'id': 'codex_iiia_kitchen',
+                        'label': 'codex_iiia_kitchen',
+                        'class': 'Room',
+                        'role': 'navigation_target',
+                        'contains': [
+                            {
+                                'id': 'codex_iiia_cup',
+                                'label': 'IIIA_CUP',
+                                'kind': 'object',
+                                'class': 'Cup',
+                                'relation': 'oro:isIn',
+                            }
+                        ],
+                    },
+                    {
+                        'id': 'codex_iiia_kitchen_table',
+                        'label': 'codex_iiia_kitchen',
+                        'class': 'Table',
+                        'role': 'support_group',
+                        'contains': [],
+                    },
+                ],
+            },
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_iiia_kitchen_delivery', plan_version=1)
+
+    assert decision.mode == 'grounded_location_group_fallback'
+    assert decision.payload['plan']['steps'][0]['args'] == {
+        'target': 'codex_iiia_cup',
+        'recipient': 'codex_iiia_alex',
+        'source': 'codex_iiia_kitchen',
+    }
+    assert decision.payload['plan']['scene_targets'] == ['codex_iiia_cup', 'codex_iiia_alex']
 
 
 def test_planner_engine_prefers_grounded_group_members_over_model_container_plan() -> None:
@@ -592,6 +654,11 @@ def test_planner_engine_prefers_grounded_group_members_over_model_container_plan
         for step in steps
         if step['type'] == 'skill' and step['name'] == 'bring_object'
     )
+    assert decision.payload['plan']['scene_targets'] == [
+        'codex_lab_cup',
+        'codex_lab_phone',
+        'person_1',
+    ]
     assert provider.messages == []
 
 
@@ -639,6 +706,86 @@ def test_planner_engine_falls_back_to_ordered_location_walk_after_invalid_json()
     assert steps[1]['requires'] == ['step_1']
     assert steps[2]['requires'] == ['step_2']
     assert steps[3]['requires'] == ['step_3']
+    assert decision.payload['plan']['scene_targets'] == ['apple_1', 'book_1']
+
+
+def test_ordered_location_walk_scene_targets_do_not_include_support_locations() -> None:
+    provider = _FakeProvider('not json')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_ordered_walk_support_groups',
+            'goal_id': 'goal_ordered_walk_support_groups',
+            'goal_text': (
+                'Walk to every object on the table and let me know when you get to each one.'
+            ),
+            'normalized_intents': ['navigate_to', 'report_result'],
+            'planner_mode': 'multi_step',
+            'grounded_context': {
+                'entities': [
+                    {'id': 'codex_base_table', 'label': 'table', 'kind': 'object', 'class': 'Table'},
+                    {'id': 'codex_lab_table', 'label': 'table', 'kind': 'object', 'class': 'Table'},
+                    {'id': 'codex_probe_book', 'label': 'book', 'kind': 'object', 'class': 'Book'},
+                    {'id': 'codex_probe_cup', 'label': 'cup', 'kind': 'object', 'class': 'Cup'},
+                    {'id': 'codex_probe_phone', 'label': 'phone', 'kind': 'object', 'class': 'Phone'},
+                ],
+                'locations': [
+                    {
+                        'id': 'codex_base_table',
+                        'label': 'table',
+                        'class': 'Table',
+                        'role': 'support_group',
+                        'contains': [
+                            {
+                                'id': 'codex_probe_book',
+                                'label': 'book',
+                                'kind': 'object',
+                                'class': 'Book',
+                            },
+                            {
+                                'id': 'codex_probe_cup',
+                                'label': 'cup',
+                                'kind': 'object',
+                                'class': 'Cup',
+                            },
+                            {
+                                'id': 'codex_probe_phone',
+                                'label': 'phone',
+                                'kind': 'object',
+                                'class': 'Phone',
+                            },
+                        ],
+                    },
+                    {
+                        'id': 'codex_lab_table',
+                        'label': 'work table',
+                        'class': 'Table',
+                        'role': 'support_group',
+                        'contains': [],
+                    },
+                ],
+            },
+        }
+    )
+
+    decision = engine.plan_request(
+        request,
+        goal_id='goal_ordered_walk_support_groups',
+        plan_version=1,
+    )
+
+    steps = decision.payload['plan']['steps']
+    assert decision.mode == 'grounded_ordered_walk_fallback'
+    assert [step['args']['target'] for step in steps if step['name'] == 'navigate_to'] == [
+        'codex_probe_book',
+        'codex_probe_cup',
+        'codex_probe_phone',
+    ]
+    assert decision.payload['plan']['scene_targets'] == [
+        'codex_probe_book',
+        'codex_probe_cup',
+        'codex_probe_phone',
+    ]
 
 
 def test_planner_engine_clarifies_location_group_delivery_without_recipient() -> None:

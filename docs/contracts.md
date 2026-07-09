@@ -1,6 +1,6 @@
 # Runtime Contracts
 
-Last updated: 2026-07-07
+Last updated: 2026-07-09
 
 This document is the richer reference for the JSON payloads that move task,
 scene, and execution state between nodes. The root README contains compact
@@ -488,6 +488,94 @@ must derive delivered objects from successful `bring_object`, `place_object`, or
 equivalent delivery steps, and render people as recipients rather than completed
 deliverables.
 
+## Report Outcome
+
+Owner:
+
+- `planner_common` defines the pure `report_outcome` contract.
+- `nao_orchestrator` builds it from plan steps, execution feedback, grounded
+  context, and `plan_outcome_summary`.
+- `chatbot_llm` receives it as evidence for system report wording and may reject
+  unsafe returned text. It remains the normal natural-language authority.
+
+Purpose:
+
+- distinguish deliverable objects from recipients, support surfaces, rooms, and
+  navigation-only targets.
+- give the chatbot enough structured evidence to word `report_result` naturally
+  without relying on prewritten deterministic sentences.
+- keep deterministic code limited to evidence structuring and unsafe-text
+  rejection.
+
+Current shape:
+
+```json
+{
+  "mode": "delivery",
+  "reportable_objects": [
+    {
+      "id": "codex_lab_cup",
+      "label": "red cup",
+      "class": "Cup",
+      "kind": "object",
+      "status": "completed"
+    }
+  ],
+  "recipients": [
+    {
+      "id": "codex_lab_alex",
+      "label": "ALEX",
+      "kind": "person"
+    }
+  ],
+  "anchors": [
+    {
+      "id": "codex_lab_table_section",
+      "label": "work_table",
+      "role": "location"
+    }
+  ],
+  "excluded_targets": [
+    {
+      "id": "codex_lab_alex",
+      "label": "ALEX",
+      "reason": "recipient"
+    },
+    {
+      "id": "codex_lab_table_section",
+      "label": "work_table",
+      "reason": "navigation_only"
+    }
+  ],
+  "events": [
+    {
+      "step_id": "step_3",
+      "skill": "bring_object",
+      "status": "succeeded",
+      "target": "codex_lab_cup",
+      "summary": "I brought codex_lab_cup to codex_lab_alex."
+    }
+  ],
+  "failures": []
+}
+```
+
+Report policy:
+
+- `reportable_objects` is the only normal source for delivered or completed
+  object lists.
+- `recipients`, support groups, rooms, tables, and navigation-only targets must
+  not be spoken as completed deliverables.
+- `events` and `failures` provide chronology and failure reasons. They are
+  evidence, not a sentence template.
+
+Implementation references:
+
+- contract builder: `src/planner_common/planner_common/report_outcome.py`
+- report context wiring: `src/nao_orchestrator/nao_orchestrator/orchestrator.py`
+- chatbot unsafe-text rejection:
+  `src/chatbot_llm/chatbot_llm/response_fallbacks.py`
+
 Skill result payloads may include `result_payload.evidence.kb_effects` when an
 AB=1 skill has deterministic knowledge post-effects. These effects are
 executor-owned evidence, not planner wording. The orchestrator applies them
@@ -498,6 +586,14 @@ KB query seam is available:
 - `add` and `update` effects must resolve through `/kb/query`;
 - failed mutation or failed post-condition verification makes the skill step
   fail so the existing planner failure or replan path can handle it.
+- successful manipulation skill spatial effects are treated as replacement
+  facts for `oro:isAt`, `oro:isOn`, `oro:isIn`, `oro:contains`, and
+  `oro:placeOf` aliases on the moved subject. The cleanup logic lives in
+  `src/nao_orchestrator/nao_orchestrator/kb_effects.py`.
+- `kb_add` and `kb_revise` require explicit RDF-style
+  `subject predicate object` statements at the executor boundary. Vague prose
+  such as “add one cup” is rejected before KnowledgeCore dispatch with
+  `requires_clarification=true`.
 
 This preserves KnowledgeCore ownership while keeping fake and real skill
 effects coherent with later grounded-context and chatbot answers.

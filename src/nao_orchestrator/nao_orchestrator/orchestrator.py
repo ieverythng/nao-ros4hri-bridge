@@ -23,6 +23,7 @@ from kb_skills.intent_labels import KB_QUERY_INTENTS
 from kb_skills.mutation_client import KnowledgeCoreMutationClient
 from kb_skills.query_client import KnowledgeCoreQueryClient
 from planner_common import build_execution_feedback_payload
+from planner_common import build_report_outcome
 from planner_common import make_plan_id
 from planner_common import load_shared_skill_manifest
 from planner_common import merge_fake_skill_aliases
@@ -47,6 +48,10 @@ from nao_orchestrator.intent_rules import (
     scan_step_should_auto_report,
     validate_execution_plan,
 )
+from nao_orchestrator.kb_effects import SPATIAL_EFFECT_CLEANUP_PREDICATES
+from nao_orchestrator.kb_effects import SPATIAL_EFFECT_PREDICATES
+from nao_orchestrator.kb_effects import SPATIAL_EFFECT_SKILLS
+from nao_orchestrator.kb_effects import remove_stale_spatial_effect_values
 from nao_orchestrator.planner_gate import PlannerGate
 
 try:  # pragma: no cover - available once nao_skills interfaces are rebuilt
@@ -94,6 +99,9 @@ _KB_MUTATION_OPERATIONS = {
     'kb_remove': 'remove',
     'kb_revise': 'update',
 }
+_SPATIAL_EFFECT_PREDICATES = SPATIAL_EFFECT_PREDICATES
+_SPATIAL_EFFECT_CLEANUP_PREDICATES = SPATIAL_EFFECT_CLEANUP_PREDICATES
+_SPATIAL_EFFECT_SKILLS = SPATIAL_EFFECT_SKILLS
 
 
 def _first_non_empty_text(*values) -> str:
@@ -125,6 +133,13 @@ def _single_entity_statement(statement: str) -> str:
     if any(char in token for char in ('"', "'", '{', '}', '[', ']')):
         return ''
     return token
+
+
+def _kb_mutation_statement_is_explicit(statement: str) -> bool:
+    subject, predicate, obj = _statement_parts(statement)
+    if not subject or not predicate or not obj:
+        return False
+    return ':' in predicate or predicate in {'rdf:type', 'dbp:name'}
 
 
 def _kb_remove_subject_alias(statement: str) -> str:
@@ -162,6 +177,33 @@ def _statement_from_binding(subject: str, predicate: str, row: dict) -> str:
     if not clean_subject or not clean_predicate or not clean_object:
         return ''
     return '%s %s %s' % (clean_subject, clean_predicate, clean_object)
+
+
+def _statement_from_values(subject: str, predicate: str, obj: str) -> str:
+    clean_subject = str(subject or '').strip()
+    clean_predicate = str(predicate or '').strip()
+    clean_object = str(obj or '').strip()
+    if not clean_subject or not clean_predicate or not clean_object:
+        return ''
+    return '%s %s %s' % (clean_subject, clean_predicate, clean_object)
+
+
+def _spatial_effect_identifier_looks_like_place(value: str) -> bool:
+    text = str(value or '').strip().lower().replace('_', ' ').replace('-', ' ')
+    if not text:
+        return False
+    return any(
+        marker in text
+        for marker in (
+            'corridor',
+            'kitchen',
+            'lab',
+            'park',
+            'place',
+            'room',
+            'station',
+        )
+    )
 
 
 def _dedupe_statements(statements: list[str]) -> list[str]:
@@ -1823,6 +1865,20 @@ class NaoOrchestrator(Node):
         if self._kb_mutation_client is None:
             self._stats.dispatch_failures += 1
             return False, 'KnowledgeCore mutation client is unavailable', {}
+        if step_name in {'kb_add', 'kb_revise'} and (
+            not statements
+            or any(not _kb_mutation_statement_is_explicit(statement) for statement in statements)
+        ):
+            self._stats.dispatch_failures += 1
+            return False, 'KnowledgeCore mutation requires explicit RDF-style statements', {
+                'skill': step_name,
+                'operation': _KB_MUTATION_OPERATIONS[step_name],
+                'statement_count': len(statements),
+                'dispatched': False,
+                'success': False,
+                'requires_clarification': True,
+                'slots_needed': ['subject', 'predicate', 'object'],
+            }
 
         if step_name == 'kb_revise':
             removed, reason = self._remove_previous_kb_values(statements, models)
@@ -1915,6 +1971,93 @@ class NaoOrchestrator(Node):
         if result.success:
             return removals, ''
         return removals, result.error_msg or 'KnowledgeCore previous-value removal failed'
+
+    def _remove_stale_spatial_effect_values(
+        self,
+        statements: list[str],
+        models: list[str],
+    ) -> tuple[list[str], str]:
+        """Retract stale spatial facts when a skill reports a new object location."""
+        return remove_stale_spatial_effect_values(
+            statements=statements,
+            models=models,
+            query_client=self._kb_query_client,
+            mutation_client=self._kb_mutation_client,
+        )
+
+    def _normalize_spatial_effect_statements(
+        self,
+        statements: list[str],
+        models: list[str],
+    ) -> list[str]:
+        """Resolve movable-object delivery targets to their containing place."""
+        if self._kb_query_client is None:
+            return statements
+        query_models = models if isinstance(models, list) and models else ['default']
+        normalized = [
+            self._normalize_spatial_effect_statement(statement, query_models)
+            for statement in statements
+        ]
+        return _dedupe_statements(normalized)
+
+    def _normalize_spatial_effect_statement(
+        self,
+        statement: str,
+        query_models: list[str],
+    ) -> str:
+        subject, predicate, obj = _statement_parts(statement)
+        if predicate != 'oro:isAt' or not subject or not obj:
+            return statement
+        if self._spatial_effect_target_is_person(obj, query_models):
+            return statement
+        place = self._spatial_effect_target_place(
+            obj,
+            query_models,
+            excluded={subject, obj},
+        )
+        if not place:
+            return statement
+        return _statement_from_values(subject, predicate, place)
+
+    def _spatial_effect_target_is_person(self, target: str, query_models: list[str]) -> bool:
+        target_text = str(target or '').strip().lower()
+        if 'person' in target_text or 'human' in target_text:
+            return True
+        rows = self._kb_query_client.query_rows(
+            patterns=['%s rdf:type ?object' % target],
+            query_vars=['?object'],
+            models=query_models,
+        )
+        for row in rows:
+            type_text = _binding_value(row, 'object').lower()
+            if 'person' in type_text or 'human' in type_text:
+                return True
+        return False
+
+    def _spatial_effect_target_place(
+        self,
+        target: str,
+        query_models: list[str],
+        *,
+        excluded: set[str],
+    ) -> str:
+        candidates: list[str] = []
+        for predicate in ('oro:isAt', 'oro:isIn'):
+            rows = self._kb_query_client.query_rows(
+                patterns=['%s %s ?object' % (target, predicate)],
+                query_vars=['?object'],
+                models=query_models,
+            )
+            for row in rows:
+                candidate = _binding_value(row, 'object')
+                if candidate and candidate not in excluded:
+                    candidates.append(candidate)
+        if not candidates:
+            return ''
+        for candidate in candidates:
+            if _spatial_effect_identifier_looks_like_place(candidate):
+                return candidate
+        return ''
 
     def _expand_kb_remove_statements(
         self,
@@ -2226,6 +2369,20 @@ class NaoOrchestrator(Node):
         plan_outcome_summary = fallback_data.get('plan_outcome_summary', {})
         if not isinstance(plan_outcome_summary, dict):
             plan_outcome_summary = {}
+        scene_targets = list(plan_context.get('scene_targets', [])) \
+            if isinstance(plan_context.get('scene_targets', []), list) else []
+        grounded_context = dict(
+            fallback_data.get('grounded_context', {})
+            if isinstance(fallback_data.get('grounded_context', {}), dict)
+            else {}
+        )
+        report_outcome = build_report_outcome(
+            plan_steps=plan_steps,
+            execution_results=execution_results,
+            plan_outcome_summary=plan_outcome_summary,
+            grounded_context=grounded_context,
+            scene_targets=scene_targets,
+        )
         return {
             'goal_text': _first_non_empty_value(
                 fallback_data,
@@ -2243,14 +2400,8 @@ class NaoOrchestrator(Node):
             'dialogue_context': _execution_report_dialogue_context(
                 fallback_data.get('dialogue_context', [])
             ),
-            'scene_targets': list(plan_context.get('scene_targets', []))
-            if isinstance(plan_context.get('scene_targets', []), list)
-            else [],
-            'grounded_context': dict(
-                fallback_data.get('grounded_context', {})
-                if isinstance(fallback_data.get('grounded_context', {}), dict)
-                else {}
-            ),
+            'scene_targets': scene_targets,
+            'grounded_context': grounded_context,
             'plan_id': str(plan_context.get('plan_id', '')).strip(),
             'plan_version': int(plan_context.get('plan_version', 0) or 0),
             'report_role': report_role,
@@ -2263,6 +2414,7 @@ class NaoOrchestrator(Node):
                 else {}
             ),
             'plan_outcome_summary': dict(plan_outcome_summary),
+            'report_outcome': report_outcome,
         }
 
     def _request_execution_report_text(self, report_context: dict) -> _ExecutionReportResult:
@@ -2557,10 +2709,40 @@ class NaoOrchestrator(Node):
         missing_statements: list[str] = []
         verification_attempted = self._kb_query_client is not None
         effect_models = ['default']
+        should_clean_spatial_effects = (
+            str(result_payload.get('skill', '')).strip() in _SPATIAL_EFFECT_SKILLS
+        )
 
         for operation, statements in grouped_effects.items():
             if not statements:
                 continue
+            should_normalize_spatial_effects = (
+                operation in {'add', 'update'} and should_clean_spatial_effects
+            )
+            if should_normalize_spatial_effects:
+                statements = self._normalize_spatial_effect_statements(
+                    statements,
+                    effect_models,
+                )
+                removals, error_msg = self._remove_stale_spatial_effect_values(
+                    statements,
+                    effect_models,
+                )
+                if removals or error_msg:
+                    calls.append(
+                        {
+                            'operation': 'remove_stale_spatial_values',
+                            'statement_count': len(removals),
+                            'success': not error_msg,
+                            'dispatched': bool(removals),
+                            'error_msg': error_msg,
+                        }
+                    )
+                    if error_msg:
+                        self._stats.dispatch_failures += 1
+                        remaining_statements.extend(removals)
+                        continue
+                    self._stats.dispatched_kb_mutation += 1
             result = self._kb_mutation_client.mutate(
                 operation=operation,
                 statements=statements,
