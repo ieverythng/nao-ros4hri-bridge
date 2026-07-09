@@ -58,13 +58,6 @@ repos:
         stages: [pre-commit]
         pass_filenames: false
 
-      - id: record-precommit-cache
-        name: record-precommit-cache
-        entry: python3 scripts/precommit_cache.py record
-        language: system
-        stages: [pre-commit]
-        pass_filenames: false
-
       - id: check-precommit-cache
         name: check-precommit-cache
         entry: python3 scripts/precommit_cache.py check

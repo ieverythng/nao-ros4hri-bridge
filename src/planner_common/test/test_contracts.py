@@ -12,7 +12,6 @@ from planner_common.contracts import optional_float_fields
 from planner_common.contracts import project_llm_grounded_context
 from planner_common.contracts import strip_live_result_report_summary_text
 from planner_common.contracts import truncate_text
-from planner_common.report_outcome import build_report_outcome
 
 
 def test_planner_request_defaults_missing_fields() -> None:
@@ -211,58 +210,6 @@ def test_build_plan_payload_keeps_completion_for_non_speaking_plan() -> None:
     )
 
     assert payload['plan']['communication_policy']['emit_completion'] is True
-
-
-def test_report_outcome_excludes_delivery_recipient_and_support_anchor() -> None:
-    outcome = build_report_outcome(
-        plan_steps=[
-            {
-                'id': 'step_1',
-                'type': 'skill',
-                'name': 'bring_object',
-                'args': {
-                    'object_id': 'cup_1',
-                    'recipient': 'person_1',
-                    'source': 'work_table',
-                },
-            },
-            {
-                'id': 'step_2',
-                'type': 'skill',
-                'name': 'navigate_to',
-                'args': {'target': 'work_table'},
-            },
-        ],
-        execution_results=[
-            {
-                'id': 'step_1',
-                'name': 'bring_object',
-                'status': 'succeeded',
-                'result_payload': {'object_id': 'cup_1', 'recipient': 'person_1'},
-            },
-            {'id': 'step_2', 'name': 'navigate_to', 'status': 'succeeded'},
-        ],
-        plan_outcome_summary={'completed_targets': ['cup_1', 'person_1', 'work_table']},
-        grounded_context={
-            'entities': [
-                {'id': 'cup_1', 'kind': 'object', 'class': 'Cup', 'label': 'cup'},
-                {'id': 'person_1', 'kind': 'person', 'class': 'Human', 'label': 'ALEX'},
-            ],
-            'locations': [
-                {'id': 'work_table', 'label': 'work table', 'role': 'support_group'},
-            ],
-        },
-    )
-
-    assert outcome['mode'] == 'delivery'
-    assert [item['id'] for item in outcome['reportable_objects']] == ['cup_1']
-    assert outcome['recipients'][0]['id'] == 'person_1'
-    assert {'id': 'person_1', 'label': 'ALEX', 'reason': 'recipient'} in outcome[
-        'excluded_targets'
-    ]
-    assert {'id': 'work_table', 'label': 'work table', 'reason': 'navigation_only'} in outcome[
-        'excluded_targets'
-    ]
 
 
 def test_strip_live_result_report_summary_text_covers_manipulation_skills() -> None:

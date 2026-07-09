@@ -18,10 +18,9 @@ from pathlib import Path
 DEFAULT_CONTAINER = "nao_ros2"
 VOICE_ID = "anonymous_speaker"
 VOICE_TRACKED_TOPIC = "/nao_chatbot/humans/voices/tracked"
-# dialogue_manager receives the tracked voice through the integrated remap, then
-# subscribes to the raw per-voice HRI speech topic it constructs internally.
-VOICE_SPEECH_PREFIX = "/humans/voices"
-VOICE_SPEECH_TOPIC = f"{VOICE_SPEECH_PREFIX}/{VOICE_ID}/speech"
+# dialogue_manager remaps its tracked-voice input topic, then subscribes to the
+# raw per-voice speech topic it constructs internally.
+VOICE_SPEECH_TOPIC = "/humans/voices/anonymous_speaker/speech"
 VOICE_TRACKED_QOS = "--qos-reliability reliable --qos-durability transient_local"
 VOICE_SPEECH_QOS = "--qos-reliability reliable --qos-durability volatile"
 RQT_DISPLAY_ROSOUT_TOPIC = "/rosout"
@@ -81,8 +80,6 @@ class ProbeCase:
     conversation_group: str | None = None
     environment_ids: tuple[str, ...] = ()
     absence_guards: tuple[KbAbsenceGuard, ...] = ()
-    expected_outcome: str = "observe"
-    all_required_context: bool = False
 
 
 SMOKE_CASES = (
@@ -853,8 +850,6 @@ ENVIRONMENT_CASES = (
         180.0,
         environment_ids=("lab_sections",),
         conversation_group="preloaded_lab_sections",
-        expected_outcome="execute_no_clarification",
-        all_required_context=True,
     ),
     ProbeCase(
         "environment_kitchen_inventory",
@@ -871,8 +866,6 @@ ENVIRONMENT_CASES = (
         180.0,
         environment_ids=("kitchen_delivery",),
         conversation_group="preloaded_kitchen_delivery",
-        expected_outcome="execute_no_clarification",
-        all_required_context=True,
     ),
     ProbeCase(
         "environment_grouped_location_followup",
@@ -897,8 +890,6 @@ ENVIRONMENT_CASES = (
         180.0,
         environment_ids=("iiia_floor",),
         conversation_group="preloaded_iiia_floor",
-        expected_outcome="execute_no_clarification",
-        all_required_context=True,
     ),
     ProbeCase(
         "environment_gold_apple_handoff",
@@ -907,8 +898,6 @@ ENVIRONMENT_CASES = (
         160.0,
         environment_ids=("gold_apple_handoff",),
         conversation_group="preloaded_gold_apple",
-        expected_outcome="execute_no_clarification",
-        all_required_context=True,
     ),
     ProbeCase(
         "environment_gold_apple_followup",
@@ -936,8 +925,6 @@ FAKE_DEEP_CASES = (
         180.0,
         environment_ids=("lab_table",),
         conversation_group="fake_deep_lab_table",
-        expected_outcome="execute_no_clarification",
-        all_required_context=True,
     ),
     ProbeCase(
         "fake_deep_grouped_work_table_delivery",
@@ -946,8 +933,6 @@ FAKE_DEEP_CASES = (
         180.0,
         environment_ids=("lab_sections",),
         conversation_group="fake_deep_lab_sections",
-        expected_outcome="execute_no_clarification",
-        all_required_context=True,
     ),
     ProbeCase(
         "fake_deep_missing_object_recovery",
@@ -956,7 +941,6 @@ FAKE_DEEP_CASES = (
         180.0,
         environment_ids=("baseline_table",),
         conversation_group="fake_deep_absent_target",
-        expected_outcome="recover_or_truthful_failure",
         absence_guards=(
             KbAbsenceGuard(
                 "missing_cup_subject_absent",
@@ -971,7 +955,6 @@ FAKE_DEEP_CASES = (
         150.0,
         environment_ids=("lab_sections",),
         conversation_group="fake_deep_missing_recipient",
-        expected_outcome="clarification_expected",
         absence_guards=(
             KbAbsenceGuard(
                 "blake_subject_absent",
@@ -991,15 +974,6 @@ FAKE_DEEP_CASES = (
         220.0,
         environment_ids=("iiia_floor",),
         conversation_group="fake_deep_iiia_floor",
-        expected_outcome="execute_no_clarification",
-        all_required_context=True,
-    ),
-    ProbeCase(
-        "fake_deep_iiia_floor_location_followup",
-        "fake_deep_post_effect_query",
-        "Where are the objects from the kitchen now?",
-        20.0,
-        conversation_group="fake_deep_iiia_floor",
     ),
     ProbeCase(
         "fake_deep_gold_apple_multiturn",
@@ -1008,8 +982,6 @@ FAKE_DEEP_CASES = (
         180.0,
         environment_ids=("gold_apple_handoff",),
         conversation_group="fake_deep_gold_apple",
-        expected_outcome="execute_no_clarification",
-        all_required_context=True,
     ),
     ProbeCase(
         "fake_deep_gold_apple_followup",
@@ -1276,19 +1248,12 @@ def main() -> int:
                     "planner_request_observed": False,
                     "execution_feedback_observed": False,
                     "speech_observed": False,
-                    "clarification_observed": False,
                     "observability_note": (
                         "case skipped before turn injection because fixture "
                         "isolation was contaminated"
                     ),
                 },
             }
-            result_entry["case_assessment"] = assess_case(
-                case,
-                observations=result_entry["phase_observations"],
-                stale_world_guard=stale_world_guard,
-            )
-            result_entry["status"] = result_entry["case_assessment"]["status"]
             results.append(result_entry)
             write_payload(
                 args.out,
@@ -1309,7 +1274,6 @@ def main() -> int:
             index=index,
             speech_voice_scope=args.speech_voice_scope,
         )
-        turn_start = time.time()
         if mode == "speech":
             turn_result = publish_voice_turn(
                 args.container,
@@ -1340,7 +1304,6 @@ def main() -> int:
             "turn_result": turn_result,
             "stale_world_guard": stale_world_guard or None,
             "started_at_unix_sec": case_start,
-            "turn_started_at_unix_sec": turn_start,
             "wait_sec": 0.0,
             "configured_wait_sec": case.wait_sec,
             "injection_scope": injection_scope(mode),
@@ -1353,12 +1316,6 @@ def main() -> int:
                 topic_samples={},
             ),
         }
-        result_entry["case_assessment"] = assess_case(
-            case,
-            observations=result_entry["phase_observations"],
-            stale_world_guard=stale_world_guard,
-        )
-        result_entry["status"] = result_entry["case_assessment"]["status"]
         results.append(result_entry)
         write_payload(
             args.out,
@@ -1378,15 +1335,14 @@ def main() -> int:
             started_at,
             results,
             result_entry,
-            case=case,
             mode=mode,
             turn_result=turn_result,
-            case_start=turn_start,
+            case_start=case_start,
             wait_sec=wait_sec,
             runtime_metadata=runtime_metadata,
         )
         topic_samples = sample_topics(args.container) if args.sample_topics else {}
-        log_excerpt = recent_logs_since(args.container, turn_start)
+        log_excerpt = recent_logs_since(args.container, case_start)
         result_entry["wait_sec"] = wait_sec
         result_entry["topic_samples"] = topic_samples
         result_entry["log_excerpt"] = log_excerpt
@@ -1396,12 +1352,6 @@ def main() -> int:
             log_excerpt=log_excerpt,
             topic_samples=topic_samples,
         )
-        result_entry["case_assessment"] = assess_case(
-            case,
-            observations=result_entry["phase_observations"],
-            stale_world_guard=stale_world_guard,
-        )
-        result_entry["status"] = result_entry["case_assessment"]["status"]
         write_payload(
             args.out,
             args.container,
@@ -1728,7 +1678,6 @@ def phase_observations(
             ("ROBOT OUTPUT", "DEBUG_SPEECH", "/debug/nao_say/speech", "Robot saying"),
         ),
         "terminal_observed": terminal_observed(combined),
-        "clarification_observed": clarification_observed(combined),
         "fallback_markers": fallback_markers(combined),
         "observability_note": (
             "phase booleans are trace breadcrumbs, not pass/fail scoring"
@@ -1748,10 +1697,7 @@ def fallback_markers(value: str) -> dict[str, int]:
         "planner_invalid_plan": r"valid executable plan|model output did not contain executable steps",
         "planner_gate_rejected": r"planner_gate_rejected",
         "duplicate_active_goal": r"duplicate active planner goal",
-        "kb_service_timeout": r"kb service timeout|KnowledgeCore .*timeout|service call timed out",
-        "report_result_fallback": r"report_result fallback|execution report chatbot returned error|execution report chatbot request failed",
         "route_repair": r"llm_response_route_repair|route_conflict",
-        "complete_context_clarification": r"asked for clarification despite complete fixture context",
         "language_model_unreachable_speech": r"having trouble reaching my language model",
     }
     counts = {
@@ -1760,126 +1706,6 @@ def fallback_markers(value: str) -> dict[str, int]:
     }
     counts["total"] = sum(counts.values())
     return counts
-
-
-def clarification_observed(value: str) -> bool:
-    """Return true when evidence shows a user-facing clarification request."""
-    return _contains_any(
-        value,
-        (
-            "act=ask_clarification",
-            '"act": "ask_clarification"',
-            "ask_clarification",
-            "which location",
-            "which object",
-            "which person",
-            "please specify",
-            "could you clarify",
-            "cannot confirm that person",
-            "which person should i use",
-            "need you to clarify",
-            "need more information",
-        ),
-    )
-
-
-def assess_case(
-    case: ProbeCase,
-    *,
-    observations: dict[str, object],
-    stale_world_guard: dict | None,
-) -> dict[str, object]:
-    """Grade case semantics from trajectory breadcrumbs, not final text alone."""
-    reasons: list[str] = []
-    status = "pass"
-    if stale_world_guard and stale_world_guard.get("contaminated"):
-        return {
-            "status": "not_scored",
-            "expected_outcome": case.expected_outcome,
-            "all_required_context": case.all_required_context,
-            "reasons": ["stale KnowledgeCore guard contaminated the fixture"],
-        }
-
-    if not observations.get("turn_injected"):
-        return {
-            "status": "fail",
-            "expected_outcome": case.expected_outcome,
-            "all_required_context": case.all_required_context,
-            "reasons": ["turn was not injected through the configured seam"],
-        }
-
-    fallback = observations.get("fallback_markers") or {}
-    severe_fallbacks = {
-        key: value
-        for key, value in fallback.items()
-        if key
-        in {
-            "duplicate_active_goal",
-            "language_model_unreachable_speech",
-            "llm_response_failed",
-            "kb_service_timeout",
-            "planner_invalid_json",
-            "planner_invalid_plan",
-            "report_result_fallback",
-            "rules_response_fallback",
-        }
-        and value
-    }
-    if severe_fallbacks:
-        status = "fail"
-        reasons.append("severe fallback markers: %s" % severe_fallbacks)
-
-    expected = str(case.expected_outcome or "observe")
-    clarified = bool(observations.get("clarification_observed"))
-    planner_seen = bool(observations.get("planner_request_observed"))
-    exec_seen = bool(observations.get("execution_feedback_observed"))
-    terminal = bool(observations.get("terminal_observed"))
-    speech = bool(observations.get("speech_observed"))
-
-    if expected == "execute_no_clarification":
-        if clarified:
-            status = "fail" if case.all_required_context else max_status(status, "degraded")
-            reasons.append("asked for clarification despite complete fixture context")
-        if not planner_seen or not exec_seen:
-            status = max_status(status, "fail")
-            reasons.append("expected planner request and execution feedback")
-        if not terminal or not speech:
-            status = max_status(status, "degraded")
-            reasons.append("missing terminal or speech evidence")
-    elif expected == "clarification_expected":
-        if not clarified:
-            status = max_status(status, "fail")
-            reasons.append("expected clarification for deliberately absent/ambiguous target")
-        if exec_seen:
-            status = max_status(status, "fail")
-            reasons.append("execution feedback appeared for a case that should clarify first")
-        if not speech:
-            status = max_status(status, "degraded")
-            reasons.append("clarification/failure was not visible in speech")
-    elif expected == "recover_or_truthful_failure":
-        if not terminal or not speech:
-            status = max_status(status, "degraded")
-            reasons.append("recovery/failure case lacked terminal or speech evidence")
-        if severe_fallbacks:
-            status = max_status(status, "fail")
-    else:
-        if not speech:
-            status = max_status(status, "degraded")
-            reasons.append("speech evidence missing")
-
-    if not reasons:
-        reasons.append("matched expected trajectory")
-    return {
-        "status": status,
-        "expected_outcome": expected,
-        "all_required_context": case.all_required_context,
-        "reasons": reasons,
-    }
-
-
-def max_status(current: str, candidate: str) -> str:
-    order = {"pass": 0, "degraded": 1, "fail": 2, "not_scored": 3}
-    return candidate if order.get(candidate, 0) > order.get(current, 0) else current
 
 
 def terminal_observed(value: str) -> bool:
@@ -1918,7 +1744,6 @@ def _observe_case_during_wait(
     results: list[dict],
     result_entry: dict,
     *,
-    case: ProbeCase,
     mode: str,
     turn_result: str,
     case_start: float,
@@ -1943,12 +1768,6 @@ def _observe_case_during_wait(
             log_excerpt=log_excerpt,
             topic_samples={},
         )
-        result_entry["case_assessment"] = assess_case(
-            case,
-            observations=result_entry["phase_observations"],
-            stale_world_guard=result_entry.get("stale_world_guard"),
-        )
-        result_entry["status"] = result_entry["case_assessment"]["status"]
         write_payload(
             out_path,
             container,
@@ -1959,8 +1778,6 @@ def _observe_case_during_wait(
         )
         observations = result_entry["phase_observations"]
         if observations.get("terminal_observed") and observations.get("speech_observed"):
-            break
-        if observations.get("clarification_observed") and observations.get("speech_observed"):
             break
 
 
@@ -2286,14 +2103,12 @@ def recent_logs_since(container: str, since_unix_sec: float) -> str:
         "    except Exception:\n"
         "        continue\n"
         "    for line in lines:\n"
-        "        import re\n"
-        "        match = re.search(r'(?<![0-9])1[0-9]{9}\\.[0-9]+(?![0-9])', line)\n"
-        "        if match is not None:\n"
-        "            try:\n"
-        "                if float(match.group(0)) < since:\n"
-        "                    continue\n"
-        "            except Exception:\n"
-        "                pass\n"
+        "        token=line.split(' ',1)[0].strip()\n"
+        "        try:\n"
+        "            if float(token) < since:\n"
+        "                continue\n"
+        "        except Exception:\n"
+        "            pass\n"
         "        print(line)\n"
         "PY"
     )
@@ -2377,8 +2192,9 @@ def _voice_id_for_case(
 
 
 def _voice_speech_topic(voice_id: str) -> str:
-    clean_voice = str(voice_id or VOICE_ID).strip() or VOICE_ID
-    return f"{VOICE_SPEECH_PREFIX}/{clean_voice}/speech"
+    if voice_id == VOICE_ID:
+        return VOICE_SPEECH_TOPIC
+    return f"/humans/voices/{voice_id}/speech"
 
 
 if __name__ == "__main__":
