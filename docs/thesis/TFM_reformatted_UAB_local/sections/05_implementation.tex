@@ -1,0 +1,137 @@
+\chapter{Implementation: ROS Nodes and APIs}
+\label{chap:implementation}
+\label{sec:implementation}
+% ============================================================
+
+This section describes how the architecture defined in Section~3 and the runtime contracts in Section~4 are implemented in the current ROS stack. The focus is node-level behaviour, package responsibilities, runtime interfaces, configuration files, and validation seams. Each package is responsible for one part of the dialogue, grounding, planning, execution, or feedback pipeline. This separation is important because the system uses LLMs for semantic interpretation and high-level planning, while keeping robot execution behind deterministic ROS interfaces.
+
+The implementation follows the contracts introduced earlier in Table \ref{tab:contract-map}. \code{chatbot_llm} interprets the user turn and proposes route and intent metadata. \code{nao_orchestrator} admits execution-eligible requests, validates planner outputs, dispatches skills, and publishes feedback. \code{planner_llm} generates structured skill plans and supervises execution outcomes. \code{dialogue_manager} owns the dialogue lifecycle and final speech realization. Grounding and knowledge components provide symbolic state, but raw perception and KB evidence remain available to skills for live validation. The implementation therefore preserves a clear boundary between language-level reasoning and robot-level control. The main \code{nao-ros4hri-bridge} repository contains the planner-facing runtime, orchestration layer, grounding utilities, KnowledgeCore access seams, fake-skill validation infrastructure, and NAO-specific skill adapters. The nested \texttt{chatbot\_llm} repository contains the prompt-pack and turn interpretation logic used to classify user utterances, produce natural responses, and construct planner-relevant task metadata.
+
+\section{Runtime Flow}
+
+The runtime flow begins when a user utterance enters \code{dialogue_manager}. The dialogue manager forwards the turn to \code{chatbot_llm}, together with recent dialogue context and the current grounding information available to the chatbot path. The chatbot determines whether the turn should remain conversational, be answered from the robot's current symbolic state, or be proposed as an execution request.
+
+If the turn is classified as \code{dialogue}, the system produces a direct conversational response and no planner request is published. This covers greetings, help requests, identity questions, wellbeing questions, reflective questions about prior robot behaviour, and future or hypothetical action discussion. If the turn is classified as \code{knowledge_query}, the chatbot answers from the current scene digest, grounded context, KnowledgeCore facts, or recent execution evidence without asking the robot to perform a new physical skill. If the turn is classified as \code{execution}, the chatbot produces planner-facing metadata rather than an executable plan.
+
+Execution-eligible turns are passed to \code{nao_orchestrator} through the planner-admission seam. The orchestrator normalizes the request, attaches or verifies goal metadata, and publishes the admitted planner request only when the request is complete enough for planning. \code{planner_llm} then receives the admitted request and generates a structured skill plan. The orchestrator validates the plan against the skill registry and dispatches executable steps through skill servers. Each skill produces a result, and the orchestrator publishes execution feedback. The planner may use this feedback to mark completion, request clarification, fail safely, or produce a revised plan.
+
+This flow preserves three important guarantees. First, a conversational response cannot accidentally become robot execution unless the request has been admitted through the orchestrator. Second, the planner cannot bypass execution validation because all skill calls pass through \code{nao_orchestrator}. Third, skills remain responsible for live evidence checks, which prevents the planner from treating stale compact context as final execution truth.
+
+\section{ROS Nodes}
+
+\subsection{\code{dialogue_manager}}
+
+\code{dialogue_manager} owns the dialogue turn lifecycle and the final user-facing speech realization. It receives user input, invokes the chatbot path, and realizes dialogue acts emitted later by the planner or orchestrator. Its role is to coordinate interaction flow and ensure that spoken responses remain part of the dialogue layer.
+
+\textbf{Planner dialogue acts} return to this layer
+as communication requests, not as direct robot control as the orchestrator remains the execution gate. \texttt{planner\_llm} can request acknowledgement, clarification, failure explanation, or completion notification
+through \texttt{/planner/dialogue\_act}, but the user-facing utterance is realized through
+the dialogue/speech layer. As a result, the planner can supervise execution without
+becoming a speaking node, and the orchestrator can report status without inventing
+conversational wording
+
+\subsection{\code{chatbot_llm}}
+
+\code{chatbot_llm} is responsible for semantic interpretation. It derives the route, intent label, goal text, request kind, and compact target hints from the user turn. It may propose an execution request, but it does not generate executable skill plans. This separation prevents the chatbot layer from bypassing planner admission, skill validation, or orchestrator control.
+
+Starting points to cover:
+\begin{itemize}
+  \item describe the output contract for dialogue, knowledge-query, and execution turns;
+  \item explain the route split: \code{dialogue}, \code{knowledge_query}, and \code{execution};
+  \item describe how broad perception questions such as ``what do you see?'' can be answered from current knowledge if no fresh scan is requested;
+  \item explain how execution turns become candidate planner requests;
+  \item mention the canonical prompt pack, especially if \code{chat_prompt_pack.yaml} is the source of truth.
+\end{itemize}
+
+\subsection{\code{planner_llm}}
+
+\code{planner_llm} is the high-level planning and supervision node. After a planner request has been admitted, it builds a prompt from the goal text, request kind, normalized intents, compact grounded context, skill registry, allowed step types, and output contract. It then produces a structured JSON plan. Invalid JSON, unsupported skills, malformed arguments, or invalid recovery policies should be rejected before execution.
+
+Starting points to cover:
+\begin{itemize}
+  \item describe \code{planner_llm} as a planning and supervision node, not a controller;
+  \item explain prompt construction from the admitted planner request, compact grounding, skill registry, allowed step types, and output contract;
+  \item describe JSON extraction, schema normalization, validation retry, and failure payloads;
+  \item explain deterministic shortcut paths only if they remain active in the implementation;
+  \item state that invalid outputs are not executed and must be corrected, rejected, or converted into failure/clarification states.
+\end{itemize}
+
+\subsection{Goal-Keyed Supervisor}
+
+The goal-keyed supervisor keeps planner supervision tied to an active \code{goal_id}. This allows replans, feedback, dialogue acts, and completion states to remain associated with the correct user objective. The supervisor should distinguish completed goals, failed goals, waiting-for-user states, and replanning states.
+
+Starting points to cover:
+\begin{itemize}
+  \item explain the active-goal model using \code{goal_id};
+  \item describe optional lineage through \code{plan_id} and \code{plan_version};
+  \item explain waiting-user, replanning, completed, and failed states;
+  \item clarify that \code{nao_orchestrator} does not invent replacement plans locally;
+  \item explain how execution feedback can trigger planner supervision, clarification, safe failure, or a revised validated plan.
+\end{itemize}
+
+\subsection{Skill Registry (\code{skill_common})}
+
+The skill registry is the planner-facing capability interface. It defines which skills exist, what arguments they accept, and how they should be exposed to the planner. The planner should select from registry entries rather than inventing robot-specific actions or calling low-level robot APIs directly.
+
+Starting points to cover:
+\begin{itemize}
+  \item define the skill registry as the planner-facing capability interface;
+  \item distinguish skill name, arguments, preconditions, output payload, and recovery policy;
+  \item include current skills such as \code{perform_motion}, \code{look_at}, \code{scan}, \code{report_result}, and any stable navigation or social skills;
+  \item explain why the planner should select from registry entries rather than inventing robot-specific actions;
+  \item state that skills may be backed by NAO-specific adapters, fake-skill servers, or simulation.
+\end{itemize}
+
+\subsection{\code{nao_orchestrator} and the Execution Boundary}
+
+\code{nao_orchestrator} is the deterministic execution boundary. It admits candidate planner requests, normalizes planner-facing fields, validates planner outputs, dispatches ordered skill steps, tracks step status, and publishes execution feedback. It does not generate replacement plans locally. If recovery is needed, it publishes feedback to \code{planner_llm} and waits for a revised validated plan before dispatching further actions.
+
+Starting points to cover:
+\begin{itemize}
+  \item describe planner-gate admission and request normalization;
+  \item explain validation of planner outputs against the allowed registry and step schema;
+  \item describe ordered dispatch and step-level status tracking;
+  \item explain execution feedback publication;
+  \item emphasise that physical execution remains mediated by ROS interfaces and skill servers.
+\end{itemize}
+
+\section{Grounding and Knowledge}
+
+The grounding layer converts scene and KB evidence into compact symbolic context for \code{chatbot_llm} and \code{planner_llm}. It should not require the planner to consume raw perception streams. Skills may still access raw scene or KB evidence for live requery and validation before reporting outcomes.
+
+Starting points to cover:
+\begin{itemize}
+  \item explain \code{nao_scene_grounding}, \code{/scene/summary}, \code{kb_skills}, and knowledge snapshots;
+  \item describe compact \code{grounded_context} as the planner-facing projection;
+  \item distinguish compact planner context from raw detector, tracker, and KB evidence;
+  \item explain how broad perception questions can be answered from current knowledge when no fresh scan is requested;
+  \item describe how skills requery live evidence before reporting results.
+\end{itemize}
+
+\section{Fake Skills and Simulation Seams}
+
+The fake-skill layer provides a validation seam for testing planner behaviour without depending on the physical robot for every experiment. Fake skills allow controlled success, failure, ambiguity, and randomised outcomes. This is useful for validating planner output, execution feedback, clarification behaviour, and replanning logic under reproducible conditions.
+
+Starting points to cover:
+\begin{itemize}
+  \item describe the fake-skill server as a controlled substitute for real robot skills;
+  \item identify supported modes such as \code{always_success}, \code{always_fail}, \code{every_other}, \code{random_seeded}, or named scenarios if they remain in the implementation;
+  \item explain how fake-skill events are captured in traces;
+  \item connect fake-skill validation to the later validation methodology;
+  \item clarify that fake skills test planner/orchestrator behaviour, not final robot hardware performance.
+\end{itemize}
+
+\section{Models and Runtime Configuration}
+
+The runtime configuration determines which LLM provider, prompt packs, skill registry, grounding inputs, and execution modes are used in a given experiment. These settings should be documented because planner behaviour depends on prompt structure, available skills, model latency, JSON reliability, and whether the system is running against fake skills or the physical NAO robot.
+
+Starting points to cover:
+\begin{itemize}
+  \item document the selected cloud or local LLM provider for chatbot and planner paths;
+  \item explain the prompt-pack files as canonical runtime configuration;
+  \item describe JSON validity, latency, quota, local fallback, and reproducibility constraints;
+  \item include relevant environment variables and launch parameters only when stable;
+  \item explain which configuration was used for final validation.
+\end{itemize}
+
+% ============================================================

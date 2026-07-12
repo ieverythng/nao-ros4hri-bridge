@@ -1,0 +1,30 @@
+\chapter{Discussion}
+\label{chap:discussion}
+
+\section{Architectural Findings}
+
+The implementation indicates that a modular planner architecture is preferable to a direct dialogue-to-skill pipeline for this project. The planner does not own robot execution, speech output, or raw perception. It receives structured requests and returns structured plans or dialogue acts. This reduces the number of places where an LLM can accidentally bypass runtime safety constraints.
+
+The most useful architectural seam is the boundary between \code{planner_llm} and \code{nao_orchestrator}. The planner can propose a sequence, but the orchestrator validates and dispatches it. This makes it possible to test the planner with fake skills, physical skills, or unavailable skills without changing the planner prompt itself. It also means that execution feedback can be represented as a first-class input to replanning rather than as an unstructured error message.
+
+\section{Planner Behaviour}
+
+The planner design is strongest when the task can be represented as a sequence of available skill contracts. Atomic commands, object search, navigation, and report-generation tasks map naturally to the registry. Composite instructions are harder because they require the planner to preserve order, carry evidence between steps, and decide whether a later step should still run after an earlier failure.
+
+The preliminary validation evidence shows one expected clarification behaviour, but also suggests a request-admission risk after a clarification state. This is an important runtime finding. A planner-mediated robot must handle a sequence of user goals, not only the first accepted request. Future validation should therefore include repeated-goal tests, superseded-goal tests, and clarification-follow-up tests.
+
+\section{Grounding and World State}
+
+Grounding remains a central limitation. The architecture distinguishes \code{knowledge_snapshot}, \code{scene_summary}, and \code{state_t0}, which is useful because each object has a different role. The chatbot needs a compact prompt-level world state, the planner needs actionable entity identifiers and targets, and operators need a traceable scene summary. However, this separation only helps if the facts are fresh and stable at the time of the user turn.
+
+The validation methodology therefore treats simulator or KnowledgeCore object insertion as a required probe. If a fact reaches KnowledgeCore but disappears before the next turn, the problem is a grounding freshness issue. If it reaches \code{grounded_context} but the answer ignores it, the problem is likely prompt or model behaviour. This distinction prevents perception noise from being misclassified as planner failure.
+
+\section{ROS4HRI Modularity}
+
+The stack is partly robot-agnostic and partly NAO-specific. The planner request, planner output, execution feedback, and dialogue act contracts are not inherently tied to NAO. The same architecture could be reused with another ROS-compatible platform if an equivalent skill registry and orchestrator adapter were provided. By contrast, speech execution, replay motion, posture control, head motion, and look-at behaviour depend on NAO-specific packages or adapters.
+
+This separation is a practical strength. It allows the thesis to evaluate the planner loop independently from the physical robot while still preserving a credible path to robot execution. The fake-skill layer is especially valuable because it provides deterministic execution evidence while the physical skills remain subject to hardware, safety, and perception variability.
+
+\section{Validation Implications}
+
+The preliminary results show why the final evaluation should combine planner-request injection and full user-turn injection. Planner-request injection is reliable for testing plan validity and fake-skill recovery. Full user-turn injection is necessary for testing route correctness, dialogue ownership, and exactly-once speech. A thesis evaluation based on only one of these modes would either miss HRI integration faults or make planner scoring unnecessarily noisy.

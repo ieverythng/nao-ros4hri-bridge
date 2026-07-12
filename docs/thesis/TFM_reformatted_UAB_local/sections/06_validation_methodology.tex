@@ -1,0 +1,136 @@
+\chapter{Validation Methodology}
+\label{chap:validation-methodology}
+
+\section{Evaluation Aim}
+
+The validation methodology is designed to test the thesis claim at the architectural level: a robot-facing LLM planner is useful only if its plans remain grounded in the live ROS4HRI state, respect the available skill contracts, expose execution failures through typed feedback, and produce user-facing dialogue through the intended speech owner. The evaluation therefore does not treat success as a single demonstration outcome. It treats success as a combination of route correctness, plan validity, execution supervision, recovery behaviour, and traceability.
+
+The validation strategy is based on three evidence layers. The first layer is a controlled planner-request suite, where the planner receives deterministic requests with fixed grounded context. This isolates planning, schema compliance, and orchestrator dispatch from ASR and dialogue timing. The second layer is a full user-turn questionnaire, where utterances enter through the ROS4HRI speech path and therefore test dialogue routing, chatbot prompt behaviour, planner handoff, and exactly-once speech. The third layer is a fake-skill scenario suite, where deterministic skill outcomes are injected through the fake skill server to test success, failure, ambiguity, and recovery without depending on the physical robot.
+
+\section{Validation Goals}
+
+Table~\ref{tab:validation-goals-expanded} gives the validation goals used to score the system. These goals are deliberately operational. Each goal can be checked from ROS topic traces, planner JSON, fake-skill events, or container logs.
+
+\begin{longtable}{p{0.23\linewidth}p{0.34\linewidth}p{0.32\linewidth}}
+\toprule
+\textbf{Goal} & \textbf{Question} & \textbf{Evidence source}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Goal} & \textbf{Question} & \textbf{Evidence source}\\
+\midrule
+\endhead
+Route correctness & Does the chatbot keep dialogue-only turns out of the planner and send execution-looking turns to the planner or orchestrator? & \code{/chatbot_llm/turn_trace}, \code{/intents}, \code{/planner/request}\\
+Plan validity & Does the planner output valid JSON using admissible skill names, argument fields, and failure policies? & Planner output, \code{planner_common} normalisation, orchestrator validation\\
+Skill coverage & Are all requested subgoals represented in the emitted plan, including composite instructions? & Plan steps, expected-plan checklist\\
+Grounding use & Does the planner use \code{grounded_context}, \code{knowledge_snapshot}, \code{scene_summary}, and \code{state_t0} when a task depends on visible objects or people? & Planner request payload, KB query evidence, \code{/scene/summary}\\
+Execution supervision & Does \code{nao_orchestrator} execute only validated steps and return structured feedback to the planner? & \code{/planner/execution_feedback}, orchestrator logs\\
+Failure handling & Does a failure cause clarification, replanning, or safe termination rather than a false success message? & Fake-skill result payloads, planner dialogue acts\\
+Exactly-once speech & Does one semantic event produce one user-facing response, without duplicated acknowledgement or completion speech? & \code{/planner/dialogue_act}, \code{/debug/nao_say/speech}, dialogue manager output\\
+Trace completeness & Can each run be reconstructed from the saved JSONL trace and report bundle? & \code{interaction_trace_viewer}, \code{/fake_skills/events}, validation reports\\
+\bottomrule
+\caption{Validation goals for planner-mediated ROS4HRI execution.}
+\label{tab:validation-goals-expanded}
+\end{longtable}
+
+\section{Questionnaire-Based Runtime Checks}
+
+The runtime questionnaire complements the structured validation suite. Its purpose is to expose integration faults that planner-only tests can miss. Each item is marked as \emph{pass}, \emph{degraded}, \emph{fail}, or \emph{not run}. A failure in simple dialogue, duplicate speech, raw planner leakage, or false execution success is treated as a high-severity result because it directly affects user-visible behaviour.
+
+\begin{longtable}{p{0.18\linewidth}p{0.32\linewidth}p{0.38\linewidth}}
+\toprule
+\textbf{Category} & \textbf{Representative prompt} & \textbf{Expected behaviour}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Category} & \textbf{Representative prompt} & \textbf{Expected behaviour}\\
+\midrule
+\endhead
+Simple dialogue & ``Hey'', ``How are you?'', ``What is your favourite colour?'' & The route remains dialogue-only, no planner request is emitted, and exactly one response is spoken.\\
+Knowledge dialogue & ``What can you see?'', followed by a simulator object insertion and a repeated query & Newly inserted simulator or KB facts appear in \code{grounded_context} and are used in the answer.\\
+Simple skill & ``Move your head to the right'', ``Wave at me'' & The system emits one acknowledgement, dispatches one skill, and reports truthful completion or failure.\\
+Composite skill & ``Navigate to the phone and tell me what else you see'' & The planner emits ordered steps, preserves intermediate evidence, and reports the complete chain.\\
+Simple fake skill & \code{find_object(cup)} under success, ambiguity, and failure modes & Fake payloads include \code{metadata.fake=true}, stable result modes, and recoverable failure fields where appropriate.\\
+Composite fake skill & Multi-step navigation, search, and report under controlled fake outcomes & Completed steps are not repeated unnecessarily, failed steps are explained, and clarification is routed through dialogue.\\
+\bottomrule
+\caption{Tailored runtime questionnaire used for end-to-end validation.}
+\label{tab:runtime-questionnaire}
+\end{longtable}
+
+\section{Fake-Skill Scenario Validation}
+
+The fake-skill suite is the primary deterministic validation substrate. It avoids the main weakness of purely prompt-based simulation: the planner and orchestrator still interact with a ROS package that returns typed skill payloads, emits events, and can be configured at runtime. The fake-skill package supports global modes such as \code{scenario}, \code{always_success}, \code{always_fail}, \code{every_other}, and \code{random_seeded}. It also supports named scenarios such as \code{ambiguous_cup}, \code{path_blocked}, \code{social_wave_unavailable}, and \code{area_person_found}.
+
+The scenario suite is organised around case families rather than isolated commands. This makes it possible to compare planner behaviour under different outcome policies while keeping the user goal fixed.
+
+\begin{longtable}{p{0.17\linewidth}p{0.22\linewidth}p{0.27\linewidth}p{0.23\linewidth}}
+\toprule
+\textbf{Case family} & \textbf{Skill path} & \textbf{Outcome policies} & \textbf{Expected response}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Case family} & \textbf{Skill path} & \textbf{Outcome policies} & \textbf{Expected response}\\
+\midrule
+\endhead
+Object search & \code{find_object} & Found, not found, ambiguous, backend unavailable & Report object evidence, ask clarification when ambiguous, or explain failure.\\
+Navigation & \code{navigate_to} or \code{walk_to} & Success, path blocked, unknown location, timeout & Continue on success, ask for alternative or safe stop on recoverable failure.\\
+Perception and reporting & \code{scan -> report_result} & Success, empty scene, backend failure & Fill report from payload when available and avoid unsupported claims.\\
+Social gesture & \code{look_at -> wave_greet} & Success, motion unavailable, safety disabled & Execute only admissible steps and explain social-motion failure.\\
+Area inspection & \code{inspect_area} or \code{navigate_to -> scan -> report_result} & Clear, object found, person found, ambiguous area & Report observed area state or request clarification.\\
+Composite instruction & Ordered mix of navigation, search, and reporting & All success, first failure, middle failure, alternating failure & Preserve step order, stop or replan safely, and summarise completed work.\\
+\bottomrule
+\caption{Scenario matrix for deterministic fake-skill validation.}
+\label{tab:fake-skill-scenario-matrix}
+\end{longtable}
+
+\section{Deep Fake-Skill Scenario Blocks}
+
+The term \emph{deep fake-skill scenario} is used here to mean a multi-step fake execution scenario with structured state, deterministic failure injection, and trace-level evidence. It is not a synthetic-media or deepfake-video component. These scenarios are important because many planner failures only appear after the first step has succeeded and the stack must decide whether to continue, replan, ask the user, or stop.
+
+Three deep scenario blocks are used in the thesis evaluation design:
+
+\begin{enumerate}
+  \item \textbf{Ambiguous object recovery.} The user asks the robot to find or move toward ``the cup'' while the fake scene contains two cup candidates. The expected behaviour is not to choose arbitrarily. The planner should request clarification or produce a safe blocked outcome.
+  \item \textbf{Path-blocked navigation.} The user asks the robot to navigate to a target. The fake skill returns \code{path_blocked} with \code{recoverable=true}. The expected behaviour is a replan, an alternative-route question, or a clear explanation that the path is blocked.
+  \item \textbf{Composite report after execution.} The user asks the robot to visit or inspect several targets and report after each stage. The expected behaviour is an ordered plan, one feedback event per executed step, and a final response that reflects all completed and failed stages rather than only the last event.
+\end{enumerate}
+
+\section{Primary and Secondary Execution Modes}
+
+The primary validation mode is planner-request injection. A controlled payload is published to the planner or planner-gate seam with fixed \code{goal_text}, \code{normalized_intents}, \code{scene_targets}, and \code{grounded_context}. This mode is fast and isolates the planner, orchestrator, and fake skill server.
+
+The secondary validation mode is full user-turn injection. A user utterance is published through the ROS4HRI speech ingress, normally \code{/nao_chatbot/humans/voices/anonymous_speaker/speech}, after the corresponding speaker id has been published on the tracked voices topic. This mode is slower and more sensitive to runtime load, but it tests the chatbot route, dialogue manager handoff, and speech ownership.
+
+\section{Metrics}
+
+For each run, the validation log records the case id, utterance, route mode, fake-skill mode, scenario id, seed, planner call status, plan steps, dispatched skills, result statuses, clarification flag, final status, final response text, timeout flag, warning count, and error count. The main aggregate metrics are:
+
+\begin{itemize}
+  \item route accuracy;
+  \item valid-plan rate;
+  \item expected-skill coverage;
+  \item fake-skill dispatch rate;
+  \item safe-failure rate;
+  \item clarification rate when ambiguity is expected;
+  \item timeout rate;
+  \item forbidden-plan rate, especially executable \code{say} steps when speech should remain under dialogue ownership;
+  \item mean and maximum latency, when timestamps are available.
+\end{itemize}
+
+\section{Evidence Bundle}
+
+A complete validation run should produce a reproducible bundle containing the suite configuration, JSONL trace, per-case metrics, aggregate metrics, and a short report. The expected layout is:
+
+\begin{lstlisting}[style=sharedCode, caption={Expected validation evidence bundle.}]
+docs/evaluation/runs/<timestamp>/
+  suite_config.yaml
+  trace.jsonl
+  per_case_metrics.csv
+  aggregate_metrics.json
+  report.md
+  report.html
+  selected_traces/
+    <case_id>_trace.json
+\end{lstlisting}
+
+The thesis uses this structure as the evidence contract. Results are considered preliminary when they come from focused runtime probes rather than a full repeated suite.

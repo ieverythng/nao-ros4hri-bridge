@@ -1,0 +1,518 @@
+\chapter{Runtime Contracts}
+\label{chap:runtime-contracts}
+% ============================================================
+
+The architecture relies on explicit runtime contracts between dialogue interpretation, planner admission, grounding, plan generation, execution, feedback, and speech realization. These contracts are used to keep the LLM-facing parts of the system inspectable while preserving deterministic control over robot execution. Each contract defines what is exchanged, which node produces it, which node consumes it, and where validation or ownership should occur. This is important because the planner does not control the robot directly: \code{chatbot_llm} interprets the user turn, \code{nao_orchestrator} admits and validates execution requests, \code{planner_llm} proposes structured skill plans, skills execute with live evidence, and \code{dialogue_manager} realizes user-facing speech. The table below gives the contract map used throughout the rest of this section. Later subsections describe the main payloads in more detail.
+
+\section{Runtime Ownership Rules}
+
+\begin{itemize}
+\item \code{dialogue_manager} owns the dialogue turn lifecycle and user-facing speech realization.
+\item \code{chatbot_llm} owns user-facing semantic interpretation: intent derivation, route selection (dialogue or execution) and goal text for planner.
+\item \code{nao_orchestrator} owns deterministic planner admission, request normalization, executable-step validation, dispatch, step status, and feedback publication.
+\item \code{planner_llm} owns structured skill-plan generation, plan supervision, replanning decisions, and dialogue-act intent.
+\item Skills own live interaction with the robot, scene, and KB evidence required to complete their operation truthfully.
+\end{itemize}
+
+\section{Contract Map and Field Presentation}
+
+Table~\ref{tab:contract-map} lists the active runtime contracts.
+
+\begin{table}[H]
+\centering
+\scriptsize
+\renewcommand{\arraystretch}{1.18}
+\caption{Runtime contract map and ownership in the active planner stack.}
+\label{tab:contract-map}
+
+\begin{tabularx}{\textwidth}{
+@{}
+>{\raggedright\arraybackslash}p{0.04\textwidth}
+>{\raggedright\arraybackslash}p{0.17\textwidth}
+>{\raggedright\arraybackslash}p{0.38\textwidth}
+>{\raggedright\arraybackslash}X
+@{}}
+\toprule
+\textbf{ID} & \textbf{Contract} & \textbf{Interface / payload} & \textbf{Ownership}\\
+\midrule
+
+1 & Chatbot turn output
+& Internal chatbot result before ROS planner publication.
+& \code{dialogue_manager} invokes the chatbot path; \code{chatbot_llm} produces the semantic result.\\
+
+2 & Planner request and admission
+& Candidate topic \code{/nao_orchestrator/planner_request}. Admitted topic \code{/planner/request}. Planner-facing payload is carried in \code{Intent.data}.
+& \code{chatbot_llm} proposes the execution request; \code{nao_orchestrator} admits and normalizes it; \code{planner_llm} consumes the admitted request.\\
+
+3 & Compact grounding
+& \code{grounded_context} inside Contract~2.
+& Scene and KB projection provide compact symbolic context for \code{chatbot_llm} and \code{planner_llm}.\\
+
+4 & Planner output
+& Topic \code{/intents}. Structured plan payload in \code{Intent.data.plan}.
+& \code{planner_llm} produces the plan; \code{nao_orchestrator} validates and dispatches executable steps.\\
+
+5 & Skill execution
+& ROS skill actions or services.
+& \code{nao_orchestrator} dispatches skill calls; skill servers execute robot or simulated actions.\\
+
+6 & Execution feedback
+& Topic \code{/planner/execution_feedback}. Structured JSON feedback payload.
+& \code{nao_orchestrator} publishes feedback; \code{planner_llm} uses it for supervision, replanning, clarification, or failure handling.\\
+
+7 & Planner dialogue act
+& Topic \code{/planner/dialogue_act}. Structured communication request.
+& \code{planner_llm} emits dialogue-act intent; \code{dialogue_manager} realizes the final speech.\\
+
+8 & Raw evidence
+& Topics and sources include \code{/scene/summary}, \code{/kb/query}, knowledge snapshots, skill results, and action evidence.
+& Scene, KB, and skill nodes provide evidence for compact projection, skill-local checks, and later feedback.\\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The table above lists only the contract and its meaning. Compact planner-facing fields are kept in the tables, while additional runtime metadata is described in prose when it is relevant for orchestration, planner supervision, tracing, or debugging.
+
+\section{Contract 1: Chatbot Turn Output}
+
+The intent in this contract is the user's goal as extracted by the chatbot. It is not a planner output.
+
+\begin{lstlisting}
+{
+  "verbal_ack": "Okay, I will do that.",
+  "route": "execution",
+  "confidence": 0.82,
+  "user_intent": {
+    "type": "look_at",
+    "goal_text": "look at the person",
+    "scene_targets": ["person"],
+    "request_kind": "new_goal"
+  }
+}
+\end{lstlisting}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.18}
+\caption{Fields in Contract 1: chatbot turn output.}
+\label{tab:chatbot-fields}
+
+\begin{tabularx}{\textwidth}{
+@{}
+>{\raggedright\arraybackslash}p{0.33\textwidth}
+>{\raggedright\arraybackslash}X
+@{}}
+\toprule
+\textbf{Field} & \textbf{Meaning}\\
+\midrule
+
+\code{verbal_ack}
+& Optional immediate acknowledgement generated by the chatbot layer. This may be spoken or logged before execution begins, depending on the dialogue policy.\\
+
+\code{route}
+& Turn classification produced by \code{chatbot_llm}. Supported values include \code{dialogue}, \code{knowledge_query}, and \code{execution}. Only \code{execution} turns enter the planner path; \code{dialogue} and \code{knowledge_query} remain non-execution turns but are still useful for tracing.\\
+
+\code{confidence}
+& Confidence assigned by the chatbot or intent-extraction stage. It is useful for debugging and possible admission policy, but it is not a planner priority score.\\
+
+\code{user_intent.type}
+& Normalized user-intent label extracted by \code{chatbot_llm}, such as \code{look_at}, \code{find_object}, \code{scan}, or \code{navigate_to}.\\
+
+\code{user_intent.goal_text}
+& Natural-language objective passed toward the planner path as the task to satisfy. This field preserves the user's goal in a compact form.\\
+
+\begin{tabular}[t]{@{}l@{}}
+\code{user_intent.}\\
+\code{scene_targets}
+\end{tabular}
+& Optional target hints extracted from the utterance, such as \code{person}, \code{cup}, or \code{table}. These are hints, not validated grounded entities.\\
+
+\begin{tabular}[t]{@{}l@{}}
+\code{user_intent.}\\
+\code{request_kind}
+\end{tabular}
+& Proposed goal transition class, such as \code{new_goal}, \code{update_goal}, \code{answer_to_clarification}, or \code{cancel_goal}. The planner gate inside \code{nao_orchestrator} should normalize and admit this field before publishing \code{/planner/request}.\\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+\clearpage
+\section{Contract 2: Planner Request}
+
+The planner request is the task description generated by the orchestrator from the chatbot output and consumed by the planner 
+
+\begin{lstlisting}
+{
+  "goal_id": "goal_turn_123",
+  "request_kind": "new_goal",
+  "goal_text": "look at the person and report completion",
+  "normalized_intents": ["look_at"],
+  "grounded_context": {
+    "entities": [
+      {
+        "id": "anonymous_person_ehfbf",
+        "label": null,
+        "kind": "person",
+        "class": "Human",
+        "visible": true,
+        "relations": []
+      }
+    ]
+  }
+}
+\end{lstlisting}
+
+```latex
+\begin{table}[H]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.18}
+\caption{Fields in Contract 2: minimal planner-facing request.}
+\label{tab:planner-request-fields}
+
+\begin{tabularx}{\textwidth}{
+@{}
+>{\raggedright\arraybackslash}p{0.33\textwidth}
+>{\raggedright\arraybackslash}X
+@{}}
+\toprule
+\textbf{Field} & \textbf{Meaning}\\
+\midrule
+
+\code{goal_id}
+& Identifier for the active objective. It groups replans and feedback for the same task.\\
+
+\code{request_kind}
+& States whether this is a new goal, an update to the current goal, a cancellation, or another supported transition. \code{chatbot_llm} may propose it, but \code{nao_orchestrator} normalizes and admits it before publishing \code{/planner/request}.\\
+
+\code{goal_text}
+& Objective extracted from the user utterance. This is the central planning input for \code{planner_llm}.\\
+
+\code{normalized_intents}
+& Intent labels extracted by \code{chatbot_llm}. They help \code{planner_llm} choose suitable skills from the available skill registry.\\
+
+\code{grounded_context}
+& Compact scene graph used by the planner as the current symbolic state of the world. It contains validated entities and relations rather than raw detector output.\\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+```
+
+
+Implementation metadata can still exist on the ROS envelope or runtime trace. Examples include request identifiers, dialogue turn identifiers, planner mode, parent goal ID, or superseded goal ID. These fields are useful for tracing, debugging, and goal management, but they are not the core task description consumed by \code{planner_llm}.
+
+\clearpage
+\section{Contract 3: Grounded Context}
+
+The planner receives a compact, JSON-native view of relevant world state. This is best described as a compact scene graph derived from the KB, continually updated by the perception pipeline (human/person detection and object perception). Raw KB triples, detector metadata, and tracker-derived details remain available through scene/KB evidence paths to skills, but they are not duplicated into every LLM prompt.
+
+\Needspace{18\baselineskip}
+\begin{lstlisting}
+{
+  "grounded_context": {
+    "entities": [
+      {
+        "id": "cup_jrjic",
+        "label": "cup",
+        "kind": "object",
+        "class": "Cup",
+        "visible": true,
+        "relations": [
+          {"predicate": "dbp:color", "object": "blue"},
+          {"predicate": "oro:isOn", "object": "table_1"}
+        ]
+      },
+      {
+        "id": "anonymous_person_ehfbf",
+        "label": null,
+        "kind": "person",
+        "class": "Human",
+        "visible": true,
+        "relations": []
+      }
+    ]
+  }
+}
+\end{lstlisting}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.18}
+\caption{Fields in Contract 3: grounded context.}
+\label{tab:grounded-context-fields}
+
+\begin{tabularx}{\textwidth}{
+@{}
+>{\raggedright\arraybackslash}p{0.33\textwidth}
+>{\raggedright\arraybackslash}X
+@{}}
+\toprule
+\textbf{Field} & \textbf{Meaning}\\
+\midrule
+
+\code{id}
+& Stable entity handle used by planner steps and skill arguments. This is the preferred reference when a skill needs to target a known person, object, or location.\\
+
+\code{label}
+& Human-readable name or class hint. It may be empty for anonymous people or entities that should not be assigned a personal name.\\
+
+\code{kind}
+& Entity category, such as \code{object}, \code{person}, or another supported runtime category. This prevents people from being treated as generic objects.\\
+
+\code{class}
+& Compact semantic class used by the planner for reasoning, such as \code{Cup}, \code{Human}, or \code{Table}.\\
+
+\code{visible}
+& Indicates whether the entity is currently grounded in the latest accepted scene or KB state. It should not be treated as a guarantee that the entity will still be available at execution time.\\
+
+\code{relations}
+& Bounded list of relevant semantic relations, such as colour, containment, support, proximity, or ownership-style facts. These relations add task-relevant context without exposing the full KB.\\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The compact view should omit detector score, image coordinates, backend, source, and recency by default. Those values are execution evidence, not planning semantics, unless a future skill explicitly needs them in its own action arguments.
+
+\section{Grounded Context Pipeline}
+
+\texttt{JSON} object passed (along the system prompt and skills registry) to the chatbot and planner. Acts as LLM facing grounded context representing current entities in the KB.
+
+\begin{figure}[H]
+\centering
+\resizebox{0.96\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\scriptsize,
+  >=Latex,
+  box/.style={
+    draw,
+    rounded corners,
+    align=center,
+    inner sep=4pt
+  },
+  source/.style={
+    box,
+    text width=2.85cm,
+    minimum height=0.72cm,
+    fill=orange!10
+  },
+  helper/.style={
+    box,
+    text width=3.05cm,
+    minimum height=1.05cm,
+    fill=green!8
+  },
+  llmctx/.style={
+    box,
+    text width=3.45cm,
+    minimum height=0.90cm,
+    fill=blue!7
+  },
+  execctx/.style={
+    box,
+    text width=3.45cm,
+    minimum height=0.90cm,
+    fill=purple!7
+  },
+  skill/.style={
+    box,
+    text width=3.65cm,
+    minimum height=1.00cm,
+    fill=purple!7
+  },
+  arr/.style={-{Latex[length=2.1mm]}, line width=0.62pt},
+  support/.style={-{Latex[length=2.0mm]}, line width=0.55pt, dashed}
+]
+
+% Evidence sources
+\node[source] (scene) at (0,2.05) {\code{/scene/summary}};
+\node[source] (people) at (0,0) {tracked people};
+\node[source] (kb) at (0,-2.05) {\code{/kb/query}\\rows and triples};
+
+% Projection helper
+\node[helper] (helper) at (4.35,0)
+{\textbf{grounded}\\\textbf{perception helper}\\compact projection};
+
+% Separated outputs
+\node[llmctx] (grounded) at (9.35,1.65)
+{\code{grounded_context}\\compact context\\for chatbot/planner};
+
+\node[execctx] (raw) at (9.35,-1.65)
+{raw execution evidence\\skill-facing view};
+
+\node[skill] (skill) at (14.00,-1.65)
+{skill-local validation\\planner args\\+ live KB/scene requery};
+
+% Inputs into helper
+\draw[arr] (scene.east) -- ([yshift=0.42cm]helper.west);
+\draw[arr] (people.east) -- (helper.west);
+\draw[arr] (kb.east) -- ([yshift=-0.42cm]helper.west);
+
+% Helper outputs, deliberately separated
+\draw[arr] ([yshift=0.45cm]helper.east) -- (grounded.west);
+\draw[arr] ([yshift=-0.45cm]helper.east) -- (raw.west);
+
+% Skill-facing evidence path
+\draw[arr] (raw.east) -- (skill.west);
+
+% Optional direct live requery paths, drawn without labels to avoid visual collision
+\draw[support] (scene.north east) to[out=20,in=155] (skill.north west);
+\draw[support] (kb.south east) to[out=-20,in=205] (skill.south west);
+
+\end{tikzpicture}%
+}
+\caption{Grounded-context pipeline. Scene and KB evidence are projected by a grounded perception helper into a compact \code{grounded_context} for \code{chatbot_llm} and \code{planner_llm}. Skills receive planner-approved arguments through execution, while also retaining access to raw scene and KB evidence for live requery and validation before reporting outcomes.}
+\label{fig:grounded-context-pipeline}
+\end{figure}
+
+
+
+Derivation rules:
+\begin{enumerate}
+\item Use text-derived entities only when unable to confirm entities with KB.
+\item Keep anonymous people anonymous; do not invent personal names.
+\item Keep IDs and labels separate.
+\item Bound relation count per entity to keep prompt size manageable.
+\end{enumerate}
+
+\section{Planner LLM Internals}
+
+After the planner request is admitted, \code{planner_llm} builds a prompt from the compact request, compact grounding, the skill registry, allowed step types, and the output contract. Rule-based shortcuts may produce deterministic plans for simple motions. Otherwise, the LLM provider returns JSON, which is parsed and validated before publication. Invalid JSON or unsupported steps trigger a validation retry or a failure result.
+
+The planner prompt should not contain raw detector coordinates, full RDF dumps, or stale perceptual reports. Those belong to skills and execution evidence.
+
+\section{Contract 4: Planner Output}
+
+The planner output is a plan: a sequence of skill steps to achieve the user goal. It should focus on executable content and minimal lineage. Communication policy and retry metadata are still valid runtime fields when used by the stack, but this controlled version foregrounds the ordered \code{steps} list because that is the essential planner output.
+
+\Needspace{18\baselineskip}
+\begin{lstlisting}
+{
+  "plan": {
+    "goal_id": "goal_turn_123",
+    "plan_id": "plan_123",
+    "plan_version": 1,
+    "status": "planned",
+    "steps": [
+      {
+        "id": "step_1",
+        "type": "skill",
+        "name": "look_at",
+        "args": {"target_frame": "anonymous_person_ehfbf"},
+        "requires": [],
+        "on_failure": "replan"
+      }
+    ]
+  }
+}
+\end{lstlisting}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.18}
+\caption{Fields in Contract 4: planner output.}
+\label{tab:planner-output-fields}
+
+\begin{tabularx}{\textwidth}{
+@{}
+>{\raggedright\arraybackslash}p{0.32\textwidth}
+>{\raggedright\arraybackslash}X
+@{}}
+\toprule
+\textbf{Field} & \textbf{Meaning}\\
+\midrule
+
+\code{goal_id}
+& User objective that this plan attempts to satisfy. It links the planner output to the active goal.\\
+
+\code{plan_id}
+& Identifier for this concrete plan proposal. It is useful when the runtime keeps plan history or compares revised plans for the same goal.\\
+
+\code{plan_version}
+& Revision number for replans of the same goal. This helps distinguish the initial plan from later planner-supervision outputs.\\
+
+\code{status}
+& Planning outcome for this plan, such as \code{planned}, \code{needs_clarification}, or \code{failed_to_plan}. This describes whether \code{planner_llm} produced an executable plan, not whether the robot has already executed it.\\
+
+\code{steps}
+& Ordered list of skill calls produced by the planner. This is the essential planner output consumed by \code{nao_orchestrator}.\\
+
+\code{steps[].id}
+& Stable step identifier used for execution feedback, dependency tracking, and possible replan joins.\\
+
+\code{steps[].name}
+& Skill name selected from the allowed skill registry. The planner should not invent skills or use robot-specific APIs directly.\\
+
+\code{steps[].args}
+& Skill arguments. They should refer to known entity IDs, explicit primitive values, or arguments supported by the selected skill schema.\\
+
+\code{steps[].requires}
+& Dependencies between steps, if any. This allows the runtime to know which steps depend on previous successful outcomes.\\
+
+\begin{tabular}[t]{@{}l@{}}
+\code{steps[].}\\
+\code{on_failure}
+\end{tabular}
+& Recovery policy proposed by \code{planner_llm} for this step. If the step fails, \code{nao_orchestrator} may fail safely, continue if allowed, request user input, or send feedback back to \code{planner_llm} for replanning. Allowed values include \code{replan}, \code{clarify}, \code{ask_user}, \code{continue}, \code{ignore}, and \code{fail}.\\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Runtime recovery metadata.}
+The current contract supports recovery metadata as skill failure may require controlled recovery. Each step may carry a \code{retry_budget}, and the plan envelope may also carry a plan-level \code{retry_budget}. This does not mean that \code{retry} is a separate \code{on_failure} value. Instead, retry behaviour is controlled by \code{nao_orchestrator} using the available retry budget together with the step's \code{on_failure} policy. The plan envelope may also carry \code{communication_policy}. This controls when the planner/dialogue path should communicate progress, completion, clarification needs, or failure. 
+
+When a step fails with \code{on_failure = replan}, \code{nao_orchestrator} halts or blocks continuation, publishes execution feedback to \code{planner_llm}, and waits for a revised validated plan before dispatching further actions. This keeps execution authority inside \code{nao_orchestrator}, while allowing recovery to be driven by planner supervision rather than by hard-coded local replanning.
+
+These fields are included because they support runtime recovery, traceability, and human-robot interaction, but the essential planner output remains the ordered \code{steps} list. If the planner cannot produce a plan, the output should represent that as a planning result rather than filling the plan with ambiguous failure fields. For the simple version, \code{steps} is the most important field.
+
+\section{Contract 5: Execution Feedback}
+
+For the simple version, execution feedback can be minimal. The planner needs to know which goal is affected, which step failed or succeeded, and a compact result if that result is useful for replanning or dialogue. A larger payload is justified only when the planner supervision logic, orchestrator, traces, or debug tooling use the extra fields.
+
+\Needspace{18\baselineskip}
+\begin{lstlisting}
+{
+  "goal_id": "goal_turn_123",
+  "status": "failed",
+  "step": {
+    "id": "step_1",
+    "name": "look_at"
+  },
+  "reason": "target frame unavailable",
+  "result_payload": {
+    "target_found": false,
+    "target_kind": "person"
+  }
+}
+\end{lstlisting}
+
+
+
+Runtime feedback may include additional fields used by \code{nao_orchestrator}, logging, and planner supervision. Examples include \code{plan_id}, \code{plan_version}, \code{event_type}, \code{validation_status}, \code{blocking}, \code{needs_user_input}, \code{timestamp_sec}, \code{result_summary}, and retry metadata. These fields are useful for execution control and debugging, but the minimal planner-facing feedback is the goal, step, status, reason, and result payload.
+
+\section{Contract 6: Planner Dialogue Act}
+
+Planner dialogue acts represent planner intent to communicate, not direct speech execution. They are relayed through the orchestrator and realized by the dialogue layer.
+
+\begin{lstlisting}
+{
+  "goal_id": "goal_turn_123",
+  "act": "ask_clarification",
+  "await_user_response": true,
+  "reason": "multiple visible people",
+  "text_hint": "Which person should I look at?",
+  "slots_needed": ["target_person"]
+}
+\end{lstlisting}
+
+Allowed dialogue acts are acknowledgement, progress update, clarification, help request, failure explanation, completion notification, and cancellation notification. The planner does not speak directly; it emits a structured communication request.
+
+% ============================================================

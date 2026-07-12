@@ -1,0 +1,101 @@
+\chapter{Results}
+\label{chap:results}
+
+\section{Current Status of the Validation Evidence}
+
+The results in this chapter should be read as the first populated validation pass rather than as a final statistical evaluation. At the time of this thesis draft, the available evidence supports three claims. First, the core ROS stack can launch with the planner, chatbot, orchestrator, trace viewer, and fake-skill server active in the same profile. Second, deterministic fake-skill scenarios can return the expected structured failure modes for ambiguity, blocked navigation, and unavailable social motion. Third, the live user-turn and planner-admission paths still show integration risks that must be resolved before the final validation suite can be treated as complete.
+
+\section{Runtime Stack Health}
+
+A live-stack validation pass on 26 May 2026 used the \code{nao_ros2} container with fake skills and the interaction trace viewer enabled. The planner, chatbot, orchestrator, trace viewer, and fake skill server were observed as active. The trace viewer was subscribed to the key planning and execution topics, including \code{/planner/request}, \code{/intents}, \code{/planner/execution_feedback}, \code{/planner/dialogue_act}, \code{/chatbot_llm/turn_trace}, and \code{/fake_skills/events}.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{0.27\linewidth}p{0.20\linewidth}p{0.40\linewidth}}
+\toprule
+\textbf{Runtime component} & \textbf{Observed status} & \textbf{Evidence note}\\
+\midrule
+\code{planner_llm} & Ready & Planner startup reported readiness with automatic replanning enabled.\\
+\code{chatbot_llm} & Ready & Chatbot startup reported planner mode enabled.\\
+\code{nao_orchestrator} & Active & Orchestrator was running as the deterministic execution boundary.\\
+\code{interaction_trace_viewer} & Active & Subscribed to planner, intent, feedback, dialogue, chatbot trace, and fake-skill event topics.\\
+\code{fake_skill_server} & Active & Named scenarios were available, including \code{ambiguous_cup}, \code{area_person_found}, \code{path_blocked}, and \code{social_wave_unavailable}.\\
+\bottomrule
+\end{tabular}
+\caption{Observed runtime health during the live-stack validation pass.}
+\label{tab:runtime-health-results}
+\end{table}
+
+\section{Action-Level Fake-Skill Results}
+
+The strongest current result is the deterministic behaviour of the fake-skill action path. Three failure-oriented scenarios were tested directly at action level. Each returned the expected aborted status and failure code. This is important because the thesis validation methodology depends on being able to inject controlled execution outcomes without relying on physical robot variability.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{0.22\linewidth}p{0.18\linewidth}p{0.18\linewidth}p{0.14\linewidth}p{0.15\linewidth}}
+\toprule
+\textbf{Skill} & \textbf{Scenario} & \textbf{Target} & \textbf{Observed result} & \textbf{Assessment}\\
+\midrule
+\code{find_object} & \code{ambiguous_cup} & \code{cup} & \code{ABORTED}, failure code \code{ambiguous} & Pass\\
+\code{navigate_to} & \code{path_blocked} & \code{kitchen} & \code{ABORTED}, failure code \code{path_blocked} & Pass\\
+\code{wave_greet} & \code{social_wave_unavailable} & \code{person} & \code{ABORTED}, failure code \code{motion_unavailable} & Pass\\
+\bottomrule
+\end{tabular}
+\caption{Preliminary fake-skill scenario results from the action-level runtime probe.}
+\label{tab:fake-skill-action-results}
+\end{table}
+
+These results validate the fake-skill layer as a usable substrate for later planner-level testing. They do not yet prove that the planner always reacts correctly to those failures. The next validation step is to run the same scenarios through planner-request injection and full user-turn injection, then check whether the planner asks for clarification, replans, or fails safely according to the expected policy.
+
+\section{Planner Request Admission}
+
+The same runtime pass exposed a planner-admission risk. One fixture request, \code{goal_probe}, was processed and produced an \code{ask_clarification} dialogue act, which was the expected response to ambiguous goal text. Later fixture requests were visible on \code{/planner/request}, but no corresponding planner request log was observed in the same observation window. This suggests that the supervisor or request-admission path may remain in a waiting state after the first clarification.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{0.24\linewidth}p{0.29\linewidth}p{0.32\linewidth}}
+\toprule
+\textbf{Probe} & \textbf{Observation} & \textbf{Interpretation}\\
+\midrule
+\code{goal_probe} & Planner received the request and emitted \code{ask_clarification}. & Expected behaviour for ambiguous goal text.\\
+\code{goal_nav_1} and \code{goal_exec_1} & Requests were visible on \code{/planner/request}, but planner processing was not observed in the window. & Degraded result. Request admission or supervisor state transition requires further testing.\\
+\bottomrule
+\end{tabular}
+\caption{Planner request-admission observations from the preliminary runtime pass.}
+\label{tab:planner-admission-results}
+\end{table}
+
+\section{Speech Ingress and User-Turn Responsiveness}
+
+A speech-ingress probe published a tracked anonymous speaker and then a user utterance. The dialogue manager received the speech and issued a chatbot request. However, no corresponding \code{/chatbot_llm/turn_trace} event was observed during the window. This is a degraded result for full user-turn validation because it prevents a complete trace from speech input to chatbot response. It does not invalidate the planner-request or fake-skill action results, but it means that full end-to-end scoring should remain provisional until the user-turn trace is reliable.
+
+\section{Results Matrix}
+
+Table~\ref{tab:current-results-matrix} summarises the current validation status against the methodology in Chapter~\ref{chap:validation-methodology}.
+
+\begin{longtable}{p{0.24\linewidth}p{0.16\linewidth}p{0.44\linewidth}}
+\toprule
+\textbf{Validation area} & \textbf{Status} & \textbf{Current evidence}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Validation area} & \textbf{Status} & \textbf{Current evidence}\\
+\midrule
+\endhead
+Runtime launch profile & Pass & Planner, chatbot, orchestrator, trace viewer, and fake skill server were active in the live stack.\\
+Fake-skill action scenarios & Pass & Ambiguous object search, blocked navigation, and unavailable wave scenarios returned expected failure codes.\\
+Planner clarification on ambiguous goal & Partial pass & One ambiguous fixture produced \code{ask_clarification}.\\
+Planner admission across repeated requests & Degraded & Later planner requests were visible on the topic but not processed in the observed window.\\
+Full user-turn trace & Degraded & Speech reached \code{dialogue_manager}, but the expected chatbot turn trace was not observed.\\
+Composite fake-skill planner suite & Not yet complete & The deterministic substrate exists, but repeated planner-level suite results are still pending.\\
+Physical NAO execution comparison & Not yet complete & Current evidence focuses on controlled fake-skill and stack-level validation.\\
+\bottomrule
+\caption{Current validation status matrix.}
+\label{tab:current-results-matrix}
+\end{longtable}
+
+\section{Interpretation}
+
+The preliminary results support the architectural decision to separate fake execution, orchestrator feedback, and planner reasoning. The fake-skill layer can produce controlled failure payloads with scenario identifiers, which gives the planner a reproducible basis for recovery evaluation. The results also show why planner-only success is insufficient. A full HRI system must maintain reliable admission across multiple goals and preserve trace continuity from user speech to planner feedback and final dialogue.
+
+The main unresolved issue is not the fake-skill substrate itself. The current risk lies in runtime coordination: request admission after clarification, speech-ingress trace completeness, and the remaining head-motion failure-injection seam. These findings define the next validation priorities before the final results chapter is closed.

@@ -1,0 +1,14 @@
+\chapter{Limitations and Future Work}
+\label{chap:limitations-future-work}
+
+\section{Current Limitations}
+
+The current system has several limitations. The physical implementation is centred on NAO, so cross-robot portability is architectural rather than fully proven. LLM planning remains sensitive to prompt design, model availability, token limits, and JSON schema adherence. The validation strategy is scenario-based and cannot prove exhaustive safety. Perception and grounding quality also constrain planner performance because a correct planner cannot reliably act on objects that are missing, stale, or ambiguously represented in the world state.
+
+The current evidence base is also incomplete. The fake-skill substrate has been validated for selected deterministic action-level scenarios, but the full repeated planner-level suite still needs to be run. The user-turn path has shown degraded trace continuity in at least one live-stack pass. The planner request-admission path after clarification requires further focused testing.
+
+\section{Future Work}
+
+Future work should stabilise the planner-gate and supervisor state transitions, then run the full fake-skill validation suite with repeated seeds and saved evidence bundles. The next implementation step is to make per-case metrics and aggregate reports a routine output of validation rather than a manual analysis product.
+
+The architecture should also be extended in four directions: richer grounding through a persistent world model, broader skill-registry generation from reviewed contracts, safer composite and macro-skill execution, and cross-platform validation on another ROS-compatible robot or simulator. A longer-term extension would integrate a World Model Enricher that tracks uncertainty, object identity, and temporal freshness explicitly rather than passing only a compact snapshot to the planner.

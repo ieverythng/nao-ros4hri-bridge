@@ -1,0 +1,234 @@
+\chapter{System Requirements and Architecture}
+\label{chap:architecture-requirements}
+% ============================================================
+
+\section{Functional Requirements}
+
+This section defines the requirements and design principles that guide the proposed planner stack. The aim is to establish the architectural boundaries that the implementation must satisfy: natural-language interaction should remain separate from executable robot control, LLM-generated plans should be validated before dispatch, and live execution feedback should be returned to the planner when the world state or task status changes. Section 5 has detailed node implementation 
+
+\begin{table}[H] \centering \small \begin{tabular}{p{0.14\linewidth}p{0.78\linewidth}} \toprule \textbf{ID} & \textbf{Requirement}\\ \midrule FR1 & The system shall accept natural-language user input through the dialogue stack.\\
+FR2 & The system shall distinguish dialogue-only turns from execution-eligible turns.\\
+FR3 & The system shall convert execution-eligible user turns into admitted planner requests before invoking the planner.\\
+FR4 & The planner shall generate structured skill plans over an explicit skill registry.\\
+FR5 & The orchestrator shall validate planner outputs before any robot skill is dispatched.\\
+FR6 & The system shall publish execution feedback after relevant plan and step/skill events.\\
+FR7 & The planner shall support asking for clarification, replanning and plan failure when execution feedback indicates that the current plan cannot continue safely.\\
+FR8 & The system shall expose traces, logs, or runtime messages suitable for validation of the stack.\\
+\bottomrule \end{tabular} \caption{Functional requirements for the proposed ROS4HRI planner stack.} \label{tab:functional-requirements} \end{table}
+
+\section{Design Principles}
+
+\begin{enumerate}
+  \item \textbf{Dialogue must remain distinct from execution.} Dialogue-based turns such as greetings, conversation and queries about the robot's world state should be remain as dialogue and must not be routed to execution unless the user explicitly requests an action.
+  \item \textbf{Planner doesn't execute, it proposes structued skill plans:} \code{planner_llm} selects skills from the allowed registry and produces a structured plan based on the grounded scene context. It does not execute skills, speak directly, or call robot-specific APIs.
+  \item \textbf{The orchestrator remains the execution gate:} all robot execution is validated and dispatched downstream by \code{nao_orchestrator}. It admits planner requests, validates plans, dispatches skills, and publishes execution feedback.
+  \item \textbf{Skills own live evidence.} Perception and execution skills should query the Knowledge Base (KB), or robot state when needed. Final execution evidence remains skill-local.
+\end{enumerate}
+
+% ============================================================
+\section{High-Level ROS Architecture}
+% ============================================================
+
+The proposed architecture separates the HRI stack into interpretation, planning, grounding, execution, and feedback responsibilities, enabling a clear distinction between conversational reasoning, task-level decision making, deterministic execution, and environment-aware adaptation.
+
+\begin{itemize}
+\item \code{dialogue_manager} acts as the central dialogue ownership component, maintaining conversational state, coordinating turn-taking, managing interaction flow, and serving as the integration point between user-facing dialogue and downstream planning services.
+
+\item \code{chatbot_llm} is responsible for robot utterance generation, intent declaration and goal extraction during planner-relevant turns. It transforms natural language interactions into structured representations that depict the nature of the interaction. \textbf{Dialogue} and \textbf{knowledge query }turns remain conversational, \textbf{execution} turns trigger a planner request. 
+
+\item \code{planner_llm} performs proactive task planning over the available skill registry, normalized user intents, dialogue context, and current robot world state. The planner reasons over high-level objectives, decomposes user requests into executable actions, and generates candidate plans that align with both robot capabilities and current world state constraints.
+
+\item \code{nao_orchestrator} provides deterministic plan validation and skill execution management. It verifies planner outputs against available skills and execution constraints, coordinates skill invocation, monitors execution progress, and emits structured execution feedback that can be consumed by both the dialogue and planning layers.
+
+\item \code{grounded_context} represents a detector-to-KB JSON object by linking perception outputs to semantically meaningful entities within the robot knowledge base. This grounding layer provides a shared representation of objects, locations, and contextual information that is consumed across the chatbot, planner and execution components.
+
+\item \code{skill_servers} provide the execution interface that call lower-level ROS components and robot capabilities. These servers encapsulate perception, navigation, manipulation, and interaction robot actions. Skill servers allow the planner to invoke complex robot actions with structured plans. They consume raw knowledge-base updates originating from perception pipelines and execution feedback, ensuring that newly observed entities, spatial data, state changes, and environmental information for subsequent task execution.
+
+\end{itemize}
+
+The interaction between these packages establishes a layered architecture in which conversational understanding produces structured intents, planning generates task-level strategies, grounding enriches decisions with environmental knowledge, orchestration ensures safe and deterministic execution, and feedback mechanisms continuously update the system state for subsequent reasoning cycles.
+
+% ============================================================
+% High-level layered architecture
+% ============================================================
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\normalsize,
+  >=Latex,
+  box/.style={
+    draw,
+    rounded corners,
+    align=center,
+    inner sep=6pt
+  },
+  topbox/.style={
+    box,
+    text width=6.1cm,
+    minimum height=1.70cm
+  },
+  widebox/.style={
+    box,
+    text width=13.2cm,
+    minimum height=1.30cm
+  },
+  control/.style={-{Latex[length=2.7mm]}, thick},
+  support/.style={-{Latex[length=2.4mm]}, thick, dashed},
+  label/.style={font=\scriptsize, fill=white, inner sep=1.3pt}
+]
+
+% Top row: dialogue and grounding are parallel inputs.
+\node[topbox, fill=blue!7] (dialogue) at (-4.45,0)
+{\textbf{Dialogue Layer}\\
+\code{dialogue_manager} + \code{chatbot_llm}\\
+turn lifecycle, speech ownership, route and intent};
+
+\node[topbox, fill=orange!10] (grounding) at (4.45,0)
+{\textbf{Grounding Layer}\\
+\code{nao_scene_grounding}, \code{kb_skills}, KnowledgeCore\\
+symbolic state, scene summaries, entity grounding};
+
+% Main layers, with enough vertical spacing to avoid overlap.
+\node[widebox, fill=green!8] (planning) at (0,-4.35)
+{\textbf{Planning Layer}\\
+\code{planner_llm}: structured skill-plan generation, goal supervision, replanning decisions, dialogue-act intent};
+
+\node[widebox, fill=purple!7] (execution) at (0,-7.10)
+{\textbf{Execution Layer}\\
+\code{nao_orchestrator} + skill servers: planner admission, validation, ordered dispatch, skill results, execution feedback};
+
+% Grounding also supports chatbot interpretation.
+\draw[support]
+  (grounding.west) -- node[label, below]{scene / symbolic context}
+  (dialogue.east);
+
+% Parallel inputs into the planner.
+\draw[control]
+  (dialogue.south) -- node[label, left]{task metadata / planner request}
+  ([xshift=-3.35cm]planning.north);
+
+\draw[support]
+  (grounding.south) -- node[label, right]{compact grounded context}
+  ([xshift=3.35cm]planning.north);
+
+% Planner to execution.
+\draw[control]
+  (planning.south) -- node[label, right]{validated structured plan}
+  (execution.north);
+
+% Feedback loop, kept close to avoid shrinking the whole figure.
+\draw[control]
+  ([yshift=0.10cm]execution.west) to[out=180,in=180,looseness=0.75]
+  node[label, left]{execution feedback / supervision}
+  ([yshift=-0.10cm]planning.west);
+
+% Evidence update loop, kept close to avoid widening the bounding box.
+\draw[support]
+  ([yshift=0.10cm]execution.east) to[out=0,in=0,looseness=0.75]
+  node[label, right]{skill evidence / KB updates}
+  ([yshift=-0.10cm]grounding.east);
+
+\end{tikzpicture}%
+}
+\caption{High-level layered architecture. Dialogue interpretation and symbolic grounding provide parallel inputs to the planning layer. The chatbot layer also consumes symbolic scene context. The planner proposes structured skill plans, while the execution layer validates and dispatches skills before returning feedback for supervision.}
+\label{fig:layered-architecture}
+\end{figure}
+
+% ============================================================
+% Runtime flow
+% ============================================================
+
+\subsection{Runtime Flow}
+
+\begin{figure}[H]
+\centering
+\resizebox{0.90\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\small,
+  >=Latex,
+  node distance=0.58cm,
+  box/.style={
+    draw,
+    rounded corners,
+    align=center,
+    text width=6.8cm,
+    minimum height=0.82cm,
+    fill=gray!5,
+    inner sep=4pt
+  },
+  dialogue/.style={box,fill=blue!7},
+  planning/.style={box,fill=green!8},
+  execution/.style={box,fill=purple!7},
+  evidence/.style={
+    draw,
+    rounded corners,
+    align=center,
+    text width=3.9cm,
+    minimum height=0.82cm,
+    fill=orange!10,
+    inner sep=4pt
+  },
+  arr/.style={-{Latex[length=2.4mm]},line width=0.65pt},
+  side/.style={-{Latex[length=2.2mm]},line width=0.55pt,dashed},
+  edgelabel/.style={font=\scriptsize,fill=white,inner sep=1.2pt}
+]
+
+\node[box] (u) {1. User utterance};
+
+\node[dialogue,below=0.62cm of u] (dm)
+{2. \code{dialogue_manager}: receive dialogue turn and invoke chatbot};
+
+\node[dialogue,below=0.62cm of dm] (c)
+{3. \code{chatbot_llm}: derive intent, route, goal text, and compact context};
+
+\node[execution,below=0.62cm of c] (g)
+{4. \code{nao_orchestrator}:\\ \textbf{planner\_gate} admits execution request};
+
+\node[planning,below=0.62cm of g] (p)
+{5. \code{planner_llm}: generate structured skill plan};
+
+\node[execution,below=0.62cm of p] (o)
+{6. \code{nao_orchestrator}: dispatch executable steps after validation};
+
+\node[execution,below=0.62cm of o] (s)
+{7. Skills: execute action and refresh live evidence};
+
+\node[execution,below=0.62cm of s] (f)
+{8. \code{nao_orchestrator}: publish execution feedback};
+
+\node[planning,below=0.62cm of f] (sup)
+{9. \code{planner_llm}: supervise result, replan, or request communication};
+
+\node[dialogue,below=0.62cm of sup] (d)
+{10. \code{dialogue_manager}: realize spoken response};
+
+\node[evidence,right=1.10cm of c] (kb1)
+{Scene / KB\\compact projection};
+
+\node[evidence,right=1.10cm of s] (kb2)
+{Raw scene / KB state};
+
+\draw[arr] (u) -- (dm);
+\draw[arr] (dm) -- node[edgelabel,right]{chatbot turn call} (c);
+\draw[arr] (c) -- node[edgelabel,right]{\code{/nao_orchestrator/planner_request}} (g);
+\draw[arr] (g) -- node[edgelabel,right]{\code{/planner/request}} (p);
+\draw[arr] (p) -- node[edgelabel,right]{sequence of steps/skills} (o);
+\draw[arr] (o) -- node[edgelabel,right]{skill action/service call} (s);
+\draw[arr] (s) -- node[edgelabel,right]{skill result} (f);
+\draw[arr] (f) -- node[edgelabel,right]{\code{/planner/execution_feedback}} (sup);
+\draw[arr] (sup) -- node[edgelabel,right]{\code{/planner/dialogue_act}} (d);
+
+% Grounding/evidence support paths.
+\draw[side] (kb1) -- node[edgelabel,above]{symbolic context} (c);
+\draw[side] (s) -- (kb2);
+\draw[side] (kb2) -- (s);
+
+\end{tikzpicture}%
+}
+\caption{Runtime message and responsibility sequence from user input to spoken response. The colour coding follows Figure~\ref{fig:layered-architecture}: dialogue components are blue, grounding and evidence are orange, planning is green, and execution is purple.}
+\label{fig:runtime-sequence}
+\end{figure}
+
+% ============================================================
