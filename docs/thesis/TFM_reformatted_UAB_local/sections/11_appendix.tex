@@ -1,0 +1,35 @@
+\chapter{Full Runtime Contracts}
+\label{chap:appendix}
+
+The full runtime contracts are described in Chapter~\ref{chap:runtime-contracts}. This appendix is reserved for additional machine-readable schemas when the final validation artefacts are frozen.
+
+\chapter{Launch Commands}
+
+\begin{lstlisting}[style=sharedCode]
+ros2 launch nao_chatbot nao_chatbot_sim_demo.launch.py \
+  start_planner_llm:=true \
+  chatbot_planner_mode_enabled:=true \
+  planner_llm_think:=false
+\end{lstlisting}
+
+\chapter{Validation Log Template}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{0.20\linewidth}p{0.70\linewidth}}
+\toprule
+\textbf{Field} & \textbf{Value}\\
+\midrule
+Scenario ID & \textit{S1--S8}\\
+User command & \textit{Paste command}\\
+Model & \textit{Model name}\\
+Planner request & \textit{Path or pasted payload}\\
+Planner output & \textit{Path or pasted payload}\\
+Execution feedback & \textit{Path or pasted payload}\\
+Dialogue act & \textit{Path or pasted payload}\\
+Outcome & \textit{success / failure / recovered / clarification}\\
+Notes & \textit{Observations}\\
+\bottomrule
+\end{tabular}
+\caption{Validation log template.}
+\end{table}

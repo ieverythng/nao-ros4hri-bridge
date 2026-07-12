@@ -1,0 +1,189 @@
+\documentclass[12pt,a4paper]{report}
+
+% ============================================================
+% UAB MSc Thesis, ROS4HRI / LLM Planner Architecture
+% ============================================================
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[a4paper,margin=22mm,headheight=15pt]{geometry}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{tabularx}
+\usepackage{csquotes}
+\usepackage{url}
+\usepackage[toc]{appendix}
+\usepackage[section]{placeins}
+\usepackage{pdflscape}
+\usepackage{ragged2e}
+\usepackage{microtype}
+\usepackage{needspace}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, shapes.multipart, shadows, fit, backgrounds, calc}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage[colorlinks=true, linkcolor=black, citecolor=blue, urlcolor=blue]{hyperref}
+\usepackage[
+  backend=biber,
+  style=authoryear,
+  maxcitenames=1,
+  mincitenames=1,
+  uniquelist=false,
+  uniquename=false,
+  maxbibnames=99
+]{biblatex}
+
+\AtEveryCitekey{%
+  \defcounter{maxnames}{1}%
+  \defcounter{minnames}{1}%
+}
+\addbibresource{bibliography.bib}
+
+\graphicspath{{images/}}
+
+% ---- Header / footer ----
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{#1}}
+\fancyhead[L]{\nouppercase{\leftmark}}
+\fancyhead[R]{Juan David Bendek Williamson}
+\fancyfoot[C]{\thepage}
+
+% ---- Paragraph and list spacing ----
+\setstretch{1.15}
+\setlength{\parskip}{6pt}
+\setlength{\parindent}{0pt}
+\setlist[itemize]{topsep=3pt,itemsep=2pt,parsep=0pt}
+\setlist[enumerate]{topsep=3pt,itemsep=2pt,parsep=0pt}
+
+% ---- Code blocks ----
+\lstdefinestyle{sharedCode}{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{gray!5},
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue!70!black},
+  commentstyle=\color{gray!80!black},
+  stringstyle=\color{green!40!black},
+  showstringspaces=false,
+  breaklines=true,
+  tabsize=2
+}
+\lstdefinestyle{jsonStyle}{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{gray!5},
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  showstringspaces=false,
+  breaklines=true
+}
+\lstdefinestyle{pythonStyle}{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{gray!5},
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue!70!black},
+  commentstyle=\color{gray!80!black},
+  stringstyle=\color{green!40!black},
+  showstringspaces=false,
+  breaklines=true
+}
+\lstset{style=sharedCode}
+
+% ---- Colours and commands ----
+\definecolor{uabgreen}{RGB}{0,128,64}
+\definecolor{lightblue}{RGB}{232,242,255}
+\definecolor{lightgreen}{RGB}{235,249,240}
+\definecolor{lightorange}{RGB}{255,245,230}
+\definecolor{lightgraybox}{RGB}{247,247,247}
+\DeclareRobustCommand{\code}[1]{\texttt{\detokenize{#1}}}
+
+\begin{document}
+\pagenumbering{roman}
+
+\begin{titlepage}
+\centering
+\includegraphics[width=0.58\textwidth]{images/uab_logo-gs.png}\\[0.2cm]
+{\fontfamily{qhv}\selectfont
+\large\textbf{Faculty of Science}
+}\\[2.2cm]
+
+\hrule
+\vspace{0.9cm}
+{\LARGE Implementation and Validation of an LLM-Based Planner for Modular ROS4HRI Robotic Systems}\\[8mm]
+\hrule
+\vspace{18mm}
+
+{\Large\textbf{Juan David Bendek Williamson}}\\[2.3cm]
+
+\large{Supervised by Raquel Ros}\\[0.6cm]
+\large{Institution / Lab: IIIA-CSIC / Universitat Aut\`onoma de Barcelona}\\[1.8cm]
+
+\large\textit{Thesis submitted as a requirement for the degree of\\ MSc in Modelling for Science \& Engineering}\\
+
+\vfill
+\large{Academic year: 2025--2026}\\[2mm]
+Date: \today\\[3mm]
+\end{titlepage}
+
+\clearpage
+\input{sections/00_abstract}
+\clearpage
+\input{sections/00_acknowledgements}
+
+\tableofcontents
+
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{List of Figures}
+\listoffigures
+
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{List of Tables}
+\listoftables
+
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{List of Abbreviations}
+\input{acronyms}
+
+\clearpage
+\pagenumbering{arabic}
+
+\input{sections/01_introduction}
+\input{sections/02_background}
+\input{sections/03_architecture_requirements}
+\input{sections/04_runtime_contracts}
+\input{sections/05_implementation}
+\input{sections/06_validation_methodology}
+\input{sections/07_results}
+\input{sections/08_discussion}
+\input{sections/09_limitations_future_work}
+\input{sections/10_conclusion}
+
+\appendix
+\input{sections/11_appendix}
+
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{Bibliography}
+\nocite{*}
+\printbibliography
+
+\end{document}
