@@ -26,6 +26,10 @@ This top-level docs surface is intentionally small and operational.
   environment, and replan validation tracker.
 - `plans/FINAL_RUNTIME_REVIEW.html` — supervisor-facing runtime review.
 - `plans/IRR_Implementation.html` — intent-route-response ablation tracker.
+- `plans/LLM_MODEL_ABLATIONS.md` (+ HTML) — model-backend ablation ledger for
+  Watson/Qwen, lab Qwen3-VL, mixed-role runs, and launch-wiring lessons.
+- `plans/AGENT_HARNESS_RESEARCH_2026-07-11.md` (+ HTML) — research plan for a
+  Watson/Hermes-style applied harness around ROS4HRI and future agent systems.
 - `plans/CRITIC_RUNTIME_HARDENING_2026-06-30.md` (+ HTML) — current
   source-hardening and live-proof handoff for the CRITIC pass.
 - `plans/deep_fake_replan_stabilization_2026-07-01.md` (+ HTML) — current
@@ -54,6 +58,12 @@ This top-level docs surface is intentionally small and operational.
 ## Reference/Generated Material
 
 - `artifacts/` — archived handoffs, historical plans, and research notes.
+- `artifacts/runtime_review_2026-07-10_sv_seams.md` — latest evidence-backed
+  runtime review for KB mutation, grouped delivery, fake-deep recovery, and
+  report-result seams.
+- `artifacts/runtime_review_2026-07-11_qwen_personal_stack.md` — Qwen personal
+  stack model-ablation runtime review, including full main and deep fake-suite
+  comparison.
 - `knowledge/` — GitNexus knowledge layer docs and generated wiki snapshots.
 
 ## Retention rule

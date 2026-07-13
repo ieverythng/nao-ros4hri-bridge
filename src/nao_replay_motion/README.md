@@ -45,7 +45,7 @@ Head-motion parameters:
 | `require_joint_angles_subscribers` | `false` | Fail when no joint controller is subscribed. |
 | `convergence_timeout_sec` | `3.0` | Wait time for joint-state convergence. |
 | `retry_on_convergence_timeout` | `true` | Retry once on convergence timeout. |
-| `allow_open_loop_without_joint_state` | `false` | Demo/sim fallback: publish absolute goals even before head joint state is available. |
+| `allow_open_loop_without_joint_state` | `false` | Profile-controlled fallback: publish absolute goals when no head joint state is available. |
 | `assume_success_on_convergence_timeout` | `false` | Demo/sim fallback: report success after publishing when convergence cannot be observed. |
 
 ### Head motion node lifecycle
@@ -98,8 +98,8 @@ python3 -m pytest -q src/nao_replay_motion/test/test_nao_replay_motion_unit.py
 - First-party NAO adapter package.
 - `/skill/do_posture` is transitional and should not become the long-term
   planner-facing surface.
-- Head motion is still useful for simple demos, but hardware convergence can be
-  unreliable. The open-loop parameters are intended for simulator/demo use, not
-  for claiming physical convergence on the robot.
+- Head motion remains a real adapter path in the integrated profiles, but
+  hardware convergence can be unavailable. The open-loop parameters permit a
+  command to be published without claiming physical convergence.
 - Connect-time autonomous-life disable and wake-up behavior are opt-in through
   launch parameters.

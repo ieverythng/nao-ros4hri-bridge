@@ -12,6 +12,7 @@ from planner_common.contracts import optional_float_fields
 from planner_common.contracts import project_llm_grounded_context
 from planner_common.contracts import strip_live_result_report_summary_text
 from planner_common.contracts import truncate_text
+from planner_common.report_outcome import build_report_outcome
 
 
 def test_planner_request_defaults_missing_fields() -> None:
@@ -210,6 +211,133 @@ def test_build_plan_payload_keeps_completion_for_non_speaking_plan() -> None:
     )
 
     assert payload['plan']['communication_policy']['emit_completion'] is True
+
+
+def test_report_outcome_excludes_delivery_recipient_and_support_anchor() -> None:
+    outcome = build_report_outcome(
+        plan_steps=[
+            {
+                'id': 'step_1',
+                'type': 'skill',
+                'name': 'bring_object',
+                'args': {
+                    'object_id': 'cup_1',
+                    'recipient': 'person_1',
+                    'source': 'work_table',
+                },
+            },
+            {
+                'id': 'step_2',
+                'type': 'skill',
+                'name': 'navigate_to',
+                'args': {'target': 'work_table'},
+            },
+        ],
+        execution_results=[
+            {
+                'id': 'step_1',
+                'name': 'bring_object',
+                'status': 'succeeded',
+                'result_payload': {'object_id': 'cup_1', 'recipient': 'person_1'},
+            },
+            {'id': 'step_2', 'name': 'navigate_to', 'status': 'succeeded'},
+        ],
+        plan_outcome_summary={'completed_targets': ['cup_1', 'person_1', 'work_table']},
+        grounded_context={
+            'entities': [
+                {'id': 'cup_1', 'kind': 'object', 'class': 'Cup', 'label': 'cup'},
+                {'id': 'person_1', 'kind': 'person', 'class': 'Human', 'label': 'ALEX'},
+            ],
+            'locations': [
+                {'id': 'work_table', 'label': 'work table', 'role': 'support_group'},
+            ],
+        },
+    )
+
+    assert outcome['mode'] == 'delivery'
+    assert [item['id'] for item in outcome['reportable_objects']] == ['cup_1']
+    assert outcome['recipients'][0]['id'] == 'person_1'
+    assert {'id': 'person_1', 'label': 'ALEX', 'reason': 'recipient'} in outcome[
+        'excluded_targets'
+    ]
+    assert {'id': 'work_table', 'label': 'work table', 'reason': 'navigation_only'} in outcome[
+        'excluded_targets'
+    ]
+
+
+def test_report_outcome_treats_location_destination_as_delivery_anchor() -> None:
+    outcome = build_report_outcome(
+        plan_steps=[
+            {
+                'id': 'step_1',
+                'type': 'skill',
+                'name': 'bring_object',
+                'args': {
+                    'object_id': 'book_1',
+                    'destination': 'kitchen',
+                },
+            },
+        ],
+        execution_results=[
+            {
+                'id': 'step_1',
+                'name': 'bring_object',
+                'status': 'succeeded',
+                'result_payload': {'object_id': 'book_1', 'destination': 'kitchen'},
+            },
+        ],
+        plan_outcome_summary={'completed_targets': ['book_1', 'kitchen']},
+        grounded_context={
+            'entities': [
+                {'id': 'book_1', 'kind': 'object', 'class': 'Book', 'label': 'book'},
+            ],
+            'locations': [
+                {'id': 'kitchen', 'label': 'kitchen', 'class': 'Room', 'role': 'location_group'},
+            ],
+        },
+        scene_targets=['book_1', 'kitchen'],
+    )
+
+    assert outcome['mode'] == 'delivery'
+    assert [item['id'] for item in outcome['reportable_objects']] == ['book_1']
+    assert outcome['recipients'] == []
+    assert {'id': 'kitchen', 'label': 'kitchen', 'role': 'location'} in outcome['anchors']
+    assert {'id': 'kitchen', 'label': 'kitchen', 'reason': 'room'} in outcome[
+        'excluded_targets'
+    ]
+
+
+def test_report_outcome_does_not_promote_raw_completed_target_aliases() -> None:
+    outcome = build_report_outcome(
+        plan_steps=[
+            {
+                'id': 'step_1',
+                'type': 'skill',
+                'name': 'bring_object',
+                'args': {'object_id': 'cup_1', 'recipient': 'person_1'},
+            },
+        ],
+        execution_results=[
+            {
+                'id': 'step_1',
+                'name': 'bring_object',
+                'status': 'succeeded',
+                'result_payload': {'object_id': 'cup_1', 'recipient': 'person_1'},
+            },
+        ],
+        plan_outcome_summary={'completed_targets': ['cup_1', 'ALEX']},
+        grounded_context={
+            'entities': [
+                {'id': 'cup_1', 'kind': 'object', 'class': 'Cup', 'label': 'cup'},
+                {'id': 'person_1', 'kind': 'person', 'class': 'Human', 'label': 'ALEX'},
+            ],
+        },
+    )
+
+    assert outcome['mode'] == 'delivery'
+    assert [item['id'] for item in outcome['reportable_objects']] == ['cup_1']
+    assert [item['id'] for item in outcome['recipients']] == ['person_1']
+    assert all(item['id'] != 'ALEX' for item in outcome['reportable_objects'])
 
 
 def test_strip_live_result_report_summary_text_covers_manipulation_skills() -> None:

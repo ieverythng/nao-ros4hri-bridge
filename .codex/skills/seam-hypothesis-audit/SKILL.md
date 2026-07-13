@@ -160,4 +160,3 @@ the final ROS4HRI change audit. State clearly what still requires live ROS,
 KnowledgeCore, simulator, or robot validation.
 
 Run a bounded SkillOpt-style iteration (baseline -> mutate -> holdout gate -> accept/reject log) before finalizing major wording changes.
-

@@ -14,6 +14,19 @@ This file is the active launch guide. Historical launch notes are under
 | `nao_chatbot_demo.launch.py` | Sim-only demo with mock scan and demo-oriented defaults | Extends sim profile with demo skills and grounding |
 | `nao_chatbot_asr_only.launch.py` | Isolated ASR | No dialogue/planner/executor |
 
+`perform_motion` uses the real motion adapter by default in every profile. Its
+head-motion branch publishes an honest open-loop command when no recent head
+joint state is available, while convergence-as-success remains disabled. The
+controlled fake perform-motion seam remains available for validation. `look_at`
+continues to default to its fake action server until its real adapter is
+introduced into the stack:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
+  perform_motion_execution_mode:=real \
+  look_at_execution_mode:=fake
+```
+
 ## Common Commands
 
 Simulator:

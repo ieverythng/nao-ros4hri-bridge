@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent Harness Research Plan</title>
+  <style>
+    :root { --ink:#172033; --muted:#64748b; --line:#d9e1ec; --soft:#f7f9fc; --accent:#0f766e; --risk:#b91c1c; }
+    body { margin:0; font:15px/1.55 system-ui,-apple-system,Segoe UI,sans-serif; color:var(--ink); background:#fff; }
+    main { max-width:1120px; margin:0 auto; padding:34px 22px 52px; }
+    h1 { font-size:34px; margin:0 0 4px; letter-spacing:0; }
+    h2 { font-size:20px; margin:30px 0 12px; padding-top:20px; border-top:1px solid var(--line); }
+    .meta { color:var(--muted); margin-bottom:22px; }
+    p { max-width:84ch; }
+    .diagram { background:#0f172a; color:#e5edf6; padding:18px; border-radius:6px; overflow:auto; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(245px,1fr)); gap:12px; }
+    .panel { border:1px solid var(--line); border-radius:6px; padding:14px; background:var(--soft); }
+    .panel strong { display:block; margin-bottom:6px; color:#0f172a; }
+    .accent { color:var(--accent); font-weight:700; }
+    .risk { color:var(--risk); font-weight:700; }
+    code { background:#edf2f7; padding:2px 4px; border-radius:4px; }
+    ol, ul { padding-left:22px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Agent Harness Research Plan</h1>
+  <div class="meta">Watson/Hermes-style applied harness, 2026-07-11</div>
+
+  <h2>Position</h2>
+  <p>The harness should start as a typed environment layer around the seams already validated in the NAO ROS4HRI stack: dialogue, planner request, execution feedback, KnowledgeCore mutation, artifacts, and runtime traces. Once stable, the same shape can support non-robot applied-agent work.</p>
+
+  <h2>Core Architecture</h2>
+  <pre class="diagram">User / evaluator
+  -> Harness session controller
+  -> Role router
+     -> response model
+     -> intent model
+     -> planner model
+     -> critic model
+  -> Environment adapter layer
+     -> ROS4HRI adapter
+     -> workspace/code adapter
+     -> browser/service adapter
+     -> future trading/simulation adapter
+  -> Tool schema registry
+  -> Postcondition checker
+  -> Trace and replay store
+  -> HTML/operator dashboard</pre>
+
+  <h2>Design Principles</h2>
+  <div class="grid">
+    <div class="panel"><strong>Typed state</strong>Environment state must be bounded, inspectable, and replayable.</div>
+    <div class="panel"><strong>Model roles</strong>Response, intent, planning, critique, and summarization are separate jobs.</div>
+    <div class="panel"><strong>Postconditions</strong>Claims are unproven until checked against KB, execution feedback, or artifacts.</div>
+    <div class="panel"><strong>ROS ownership</strong>The harness observes and requests through accepted seams; it does not bypass orchestrator or KB skills.</div>
+  </div>
+
+  <h2>Ablation Lessons</h2>
+  <ul>
+    <li>Qwen/Watson improves natural wording, but fluency alone did not fix fake-deep or KB postconditions.</li>
+    <li>Runtime parameter mutation is not a reliable model-ablation boundary. Launch role bindings must be explicit.</li>
+    <li>Planner JSON validity is not enough. Mixed mode still failed KB revise/remove and fake-deep handoff.</li>
+    <li>Grouped delivery needs stale-location and human/object leakage checks.</li>
+    <li>Speech instrumentation failures should be separated from planner and executor failures.</li>
+  </ul>
+
+  <h2>Grilling Checkpoints</h2>
+  <div class="grid">
+    <div class="panel"><strong>Start point</strong><span class="accent">Recommended:</span> evolve the runtime-review scripts into a harness.</div>
+    <div class="panel"><strong>Generalization</strong><span class="accent">Recommended:</span> keep ROS4HRI as one adapter under a general core.</div>
+    <div class="panel"><strong>Roles</strong><span class="accent">Recommended:</span> configure response, intent, planner, critic, and summarizer independently.</div>
+    <div class="panel"><strong>Evidence</strong><span class="accent">Recommended:</span> make postconditions mandatory for research-grade runs.</div>
+  </div>
+
+  <h2>Milestones</h2>
+  <ol>
+    <li>Ablation ledger with role bindings, launch args, endpoint checks, artifacts, and scores.</li>
+    <li>Replayable runtime session manifest around questionnaires and architecture sweeps.</li>
+    <li>Role router for independently configured models.</li>
+    <li>Postcondition DSL for KB, execution, report-result, and human/object assertions.</li>
+    <li>Watson ROS adapter.</li>
+    <li>Applied-agent adapters for workspace, service/browser, and iTrader-style simulations.</li>
+  </ol>
+
+  <h2>Risks</h2>
+  <p><span class="risk">Main risks:</span> overfitting to the thesis stack, treating prompt text as the only control surface, direct KB writes outside fixtures, scoring launch failures as model failures, and accepting natural language reports without world-state evidence.</p>
+</main>
+</body>
+</html>
