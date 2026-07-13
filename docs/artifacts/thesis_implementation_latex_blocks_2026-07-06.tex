@@ -130,7 +130,7 @@
   \node[execNode, right=of plan, minimum width=31mm] (validate) {5. Validate + dispatch\\\code{nao_orchestrator}};
   \node[skillNode, right=of validate, minimum width=28mm] (skill) {6. Skill result\\runtime action};
 
-  \node[plannerNode, below=13mm of plan, minimum width=30mm] (supervise) {7. Update goal state\\replan, clarify,\\complete, fail};
+  \node[plannerNode, below=13mm of plan, minimum width=30mm] (statehelper) {7. Update goal state\\replan, clarify,\\complete, fail};
   \node[dialogueNode, below=13mm of route, minimum width=34mm] (speak) {8. User-facing speech\\\code{dialogue_manager}\\via \code{/nao/say}};
 
   \draw[thesisFlow] (turn) -- (route);
@@ -138,10 +138,10 @@
   \draw[thesisFlow] (admit) -- (plan);
   \draw[thesisFlow] (plan) -- (validate);
   \draw[thesisFlow] (validate) -- (skill);
-  \draw[feedbackFlow] (skill) |- node[pos=0.25, right, font=\scriptsize]{typed result} (supervise);
-  \draw[feedbackFlow] (validate) |- node[pos=0.27, left, font=\scriptsize]{plan/step status} (supervise);
-  \draw[thesisFlow] (supervise) -- node[below, font=\scriptsize]{dialogue act} (speak);
-  \draw[feedbackFlow] (supervise) to[bend right=20] node[above, font=\scriptsize]{revised plan when needed} (validate);
+  \draw[feedbackFlow] (skill) |- node[pos=0.25, right, font=\scriptsize]{typed result} (statehelper);
+  \draw[feedbackFlow] (validate) |- node[pos=0.27, left, font=\scriptsize]{plan/step status} (statehelper);
+  \draw[thesisFlow] (statehelper) -- node[below, font=\scriptsize]{dialogue act} (speak);
+  \draw[feedbackFlow] (statehelper) to[bend right=20] node[above, font=\scriptsize]{revised plan when needed} (validate);
 \end{tikzpicture}%
 }
 \caption{Planner loop used by the implemented stack. The executor reports status and evidence; it does not invent replacement plans or final wording.}
@@ -160,7 +160,7 @@
   \node[groundingNode, below=of smoke, minimum width=95mm] (env) {Preloaded environment: RDF fixture, \code{/kb/query}, \code{grounded_context}};
   \node[plannerNode, below=of env, minimum width=95mm] (main) {Main response-first suite: speech ingress, planner request, execution feedback, report wording};
   \node[skillNode, below=of main, minimum width=95mm] (fake) {Fake-skill matrix: \code{always_success}, \code{always_fail}, \code{every_other}, \code{random_seeded}};
-  \node[execNode, below=of fake, minimum width=95mm] (deep) {Deep fake/replan suite: grouped delivery, missing target, recipient missing, fail-once recovery};
+  \node[execNode, below=of fake, minimum width=95mm] (deep) {Multi-step deterministic fake-skill suite: grouped delivery, missing target, recipient missing, fail-once recovery};
   \node[futureNode, below=of deep, minimum width=95mm] (robot) {Robot validation: bounded \code{/skill/move_to} dry-run/real route, guarded gestures, live perception};
 
   \draw[thesisFlow] (smoke) -- (env);

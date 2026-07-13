@@ -39,6 +39,18 @@ This top-level docs surface is intentionally small and operational.
 - `plans/semi_symbolic_requirements_handoff_2026-06-11.md` (+ HTML) — semi-symbolic KB requirements.
 - `plans/wsl2-native-setup-plan.md` (+ HTML) — native WSL2 setup plan.
 
+## Universal Agentic Harness
+
+- `agentic_harness/README.md` — project index and current extraction decision.
+- `agentic_harness/universal_agentic_harness_foundation.md` (+ HTML) —
+  AB-aware harness architecture, implementation survey, current-stack
+  extraction map, hypothesis registry, serving strategy, evals, and phased
+  implementation plan.
+- `agentic_harness/neural_workbench_adaptive_ab_harness.md` (+ HTML) —
+  frame-relative AB control, adaptive pulse graphs, task interaction skills,
+  trace-derived capability profiles, and staged Neural Workbench
+  crystallization.
+
 ## Reference/Generated Material
 
 - `artifacts/` — archived handoffs, historical plans, and research notes.

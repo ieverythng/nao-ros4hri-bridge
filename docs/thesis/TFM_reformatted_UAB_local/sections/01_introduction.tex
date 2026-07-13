@@ -35,10 +35,10 @@ The main objective of this investigation is to design, implement, and evaluate a
 \begin{enumerate}
   \item design and implement an LLM-based planning layer for a  ROS-based robot stack;
   \item define explicit runtime contracts between user intent extraction, planner admission, symbolic grounding, skill planning, execution, and feedback;
-  \item expose and discretize robot capabilities through an abstract skill registry instead of direct robot-specific APIs;
+  \item expose and discretize robot capabilities through a reviewed skill registry instead of direct robot-specific APIs;
   \item support multi-intent and multi-step user instructions through structured plan generation;
   \item constrain planner outputs through deterministic validation before robot actions are dispatched;
-  \item implement execution feedback and planner supervision so  the system can handle failed steps, ambiguous targets, clarification requests, replanning and changes in the world state;
+  \item implement execution feedback and feedback-driven planning so the system can handle failed steps, ambiguous targets, clarification requests, replanning, and changes in the world state;
   \item evaluate the system through representative validation scenarios involving successful execution, failure, ambiguity, replanning, and user-facing responses.
 \end{enumerate}
 
@@ -51,7 +51,7 @@ This thesis is guided by the following research questions:
 
   \item \textbf{RQ2:} To what extent does compact symbolic grounding help the planner refer to objects, people, and scene context in a way that is consistent with the robot's current world state?
 
-  \item \textbf{RQ3:} Does an abstract skill registry, combined with deterministic validation, reduce invalid planner outputs such as unsupported skills, malformed arguments, or robot-specific API calls?
+  \item \textbf{RQ3:} Does a reviewed skill registry, combined with deterministic validation, reduce invalid planner outputs such as unsupported skills, malformed arguments, or robot-specific API calls?
 
   \item \textbf{RQ4:} How does execution feedback affect the system's ability to recover from failed actions, request clarification, or produce a revised plan when the world state changes?
 

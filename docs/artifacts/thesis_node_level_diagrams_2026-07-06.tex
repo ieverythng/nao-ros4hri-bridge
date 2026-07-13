@@ -126,7 +126,7 @@
   \node[plannerNode, right=of model, minimum width=32mm] (validate) {Extract + validate\\schema repair\\failure payload};
 
   \node[execNode, below=of validate, minimum width=32mm] (intent) {Executable output\\\code{/intents}\\nested \code{plan}};
-  \node[plannerNode, below=of prompt, minimum width=32mm] (supervisor) {Goal-state helper\\active goal\\replan / clarify};
+  \node[plannerNode, below=of prompt, minimum width=32mm] (statehelper) {Goal-state helper\\active goal\\replan / clarify};
   \node[input, below=of normalize, minimum width=34mm] (feedback) {Execution feedback\\\code{/planner/execution_feedback}\\step outcomes};
   \node[dialogueNode, below=of model, minimum width=32mm] (act) {Planner dialogue act\\\code{/planner/dialogue_act}\\clarify/fail/complete};
 
@@ -136,10 +136,10 @@
   \draw[adapter] (prompt) -- (model);
   \draw[control] (model) -- (validate);
   \draw[control] (validate) -- (intent);
-  \draw[feedback] (feedback) -- (supervisor);
-  \draw[feedback] (supervisor) -- (prompt);
-  \draw[control] (supervisor) -- (act);
-  \draw[feedback] (validate) -- (supervisor);
+  \draw[feedback] (feedback) -- (statehelper);
+  \draw[feedback] (statehelper) -- (prompt);
+  \draw[control] (statehelper) -- (act);
+  \draw[feedback] (validate) -- (statehelper);
 \end{tikzpicture}%
 }
 \caption{\code{planner_llm} node-level view. The planner generates structured plan envelopes and maintains feedback-driven goal state; execution and speech remain downstream responsibilities.}

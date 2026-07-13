@@ -8,12 +8,15 @@ The full runtime contracts are described in Chapter~\ref{chap:runtime-contracts}
 
 Table~\ref{tab:runtime-skill-inventory} gives the compressed runtime projection used by the current planner and orchestrator profiles. The values are taken from the shared skill registry and are shortened only to fit the appendix. The machine-readable registry and the generated runtime projections are frozen with the source revision of each validation bundle. \code{ask_user} is retained as a planner dialogue act under Contract~7 and is not included in this execution-skill inventory.
 
+\begin{landscape}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
 \begin{longtable}{
->{\raggedright\arraybackslash}p{0.15\textwidth}
->{\raggedright\arraybackslash}p{0.14\textwidth}
->{\raggedright\arraybackslash}p{0.20\textwidth}
->{\raggedright\arraybackslash}p{0.25\textwidth}
->{\raggedright\arraybackslash}p{0.18\textwidth}}
+>{\raggedright\arraybackslash}p{0.14\linewidth}
+>{\raggedright\arraybackslash}p{0.12\linewidth}
+>{\raggedright\arraybackslash}p{0.20\linewidth}
+>{\raggedright\arraybackslash}p{0.28\linewidth}
+>{\raggedright\arraybackslash}p{0.18\linewidth}}
 \caption{Compressed runtime skill inventory and registry values.}\label{tab:runtime-skill-inventory}\\
 \toprule
 \textbf{Skill and category} & \textbf{Required parameters} & \textbf{Expected effect or evidence} & \textbf{Known failure modes} & \textbf{Executor and status}\\
@@ -34,95 +37,103 @@ Table~\ref{tab:runtime-skill-inventory} gives the compressed runtime projection 
 & none
 & refreshed scene evidence and typed scan payload
 & \code{no_person}, \code{objects_only}, \code{backend_unavailable}, \code{unexpected_payload}
-& \code{nao_orchestrator.scan}; first-party\\
+& \code{orchestrator.scan}; first-party\\
 
 \code{find_object}\\ perception
 & \code{target}
 & object or person evidence is returned
 & \code{not_found}, \code{ambiguous}, \code{backend_unavailable}
-& \code{fake_skills.find_object}; fake\\
+& \code{fake.find_object}; fake\\
 
 \code{navigate_to}\\ navigation
 & \code{target}
 & robot arrives at the target location
 & \code{path_blocked}, \code{unknown_location}, \code{safety_disabled}
-& \code{fake_skills.navigate_to}; fake\\
+& \code{fake.navigate_to}; fake\\
 
 \code{walk_to}\\ navigation
 & none
 & short local walking segment is executed or dry-run
 & \code{invalid_local_goal}, \code{safety_disabled}, \code{path_blocked}, \code{naoqi_move_failed}
-& \code{nao_orchestrator.walk_to}; hybrid\\
+& \code{orchestrator.walk_to}; hybrid\\
 
 \code{bring_object}\\ manipulation
 & \code{target}, \code{recipient}
 & object is delivered to recipient or destination
 & \code{acquisition_failure}, \code{navigation_failure}, \code{delivery_blocked}, \code{recipient_unavailable}
-& \code{fake_skills.bring_object}; fake\\
+& \code{fake.bring_object}; fake\\
 
 \code{place_object}\\ manipulation
 & \code{target}, \code{destination}
 & object is released and a support relation is added
 & \code{destination_unavailable}, \code{invalid_support}, \code{no_held_object}, \code{placement_failed}
-& \code{fake_skills.place_object}; fake\\
+& \code{fake.place_object}; fake\\
 
 \code{pick_object}\\ manipulation
 & \code{target}
 & robot holds the object and updates its support relation
 & \code{object_unavailable}, \code{unreachable}, \code{already_held}, \code{grasp_failed}
-& \code{fake_skills.pick_object}; fake\\
+& \code{fake.pick_object}; fake\\
 
 \code{perform_motion}\\ embodiment
 & \code{object}
 & robot posture or head orientation changes
 & \code{unsupported_motion}, \code{dispatch_failed}
-& \code{nao_orchestrator.perform_motion}; first-party\\
+& \code{orchestrator.perform_motion}; first-party\\
 
 \code{look_at}\\ attention
 & none
 & robot gaze is redirected or reset
 & \code{missing_target}, \code{dispatch_failed}
-& \code{nao_orchestrator.look_at}; first-party\\
+& \code{orchestrator.look_at}; first-party\\
 
 \code{kb_add}\\ knowledge
 & \code{statements}
 & requested predicates are added through KnowledgeCore
 & \code{missing_statements}, \code{kb_service_unavailable}, \code{kb_mutation_rejected}
-& \code{nao_orchestrator.kb_add}; first-party\\
+& \code{orchestrator.kb_add}; first-party\\
 
 \code{kb_revise}\\ knowledge
 & \code{statements}
 & requested predicates are revised through KnowledgeCore
 & \code{missing_statements}, \code{kb_service_unavailable}, \code{kb_mutation_rejected}
-& \code{nao_orchestrator.kb_revise}; first-party\\
+& \code{orchestrator.kb_revise}; first-party\\
 
 \code{kb_remove}\\ knowledge
 & \code{statements}
 & requested predicates are removed through KnowledgeCore
 & \code{missing_statements}, \code{kb_service_unavailable}, \code{kb_mutation_rejected}
-& \code{nao_orchestrator.kb_remove}; first-party\\
+& \code{orchestrator.kb_remove}; first-party\\
 
 \code{report_result}\\ communication
 & none
 & user receives a result summary through robot speech
 & \code{missing_summary}, \code{say_dispatch_failed}
-& \code{nao_orchestrator.report_result}; first-party\\
+& \code{orchestrator.report_result}; first-party\\
 
 \code{wave_greet}\\ social motion
 & none
 & robot performs a greeting wave gesture
 & \code{motion_unavailable}, \code{safety_disabled}, \code{unexpected_payload}
-& \code{nao_orchestrator.wave_greet}; hybrid\\
+& \code{orchestrator.wave_greet}; hybrid\\
 
 \code{inspect_area}\\ perception
 & \code{target}
 & scene evidence for the target area is returned
 & \code{ambiguous}, \code{area_unknown}, \code{backend_unavailable}
-& \code{fake_skills.inspect_area}; fake\\
+& \code{fake.inspect_area}; fake\\
 
 \end{longtable}
+\end{landscape}
 
-The inventory separates the planner-facing name from the executor mapping. It also records whether failure injection is supported in the current fake profile, which is used by the multi-step deterministic fake-skill cases in Chapter~\ref{chap:validation-methodology}. The table does not imply that every hybrid or fake entry is enabled in the primary scored launch profile.
+The inventory separates the planner-facing name from the executor mapping. In
+the display column, \code{orchestrator.*} abbreviates
+\code{nao_orchestrator.*}, and \code{fake.*} abbreviates
+\code{fake_skills.*}. The table also records whether failure injection is
+supported in the current fake profile, which is used by the multi-step
+deterministic fake-skill cases in Chapter~\ref{chap:validation-methodology}.
+The table does not imply that every hybrid or fake entry is enabled in the
+primary scored launch profile.
 
 \chapter{Launch Commands}
 

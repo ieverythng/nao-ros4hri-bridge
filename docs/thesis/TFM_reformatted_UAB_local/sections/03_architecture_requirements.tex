@@ -93,7 +93,7 @@ symbolic state, scene summaries, entity grounding};
 % Main layers, with enough vertical spacing to avoid overlap.
 \node[widebox, fill=green!8] (planning) at (0,-4.35)
 {\textbf{Planning Layer}\\
-\code{planner_llm}: structured skill-plan generation, goal supervision, replanning decisions, dialogue-act intent};
+\code{planner_llm}: structured skill-plan generation, feedback-driven goal-state handling, replanning decisions, dialogue-act intent};
 
 \node[widebox, fill=purple!7] (execution) at (0,-7.10)
 {\textbf{Execution Layer}\\
@@ -121,7 +121,7 @@ symbolic state, scene summaries, entity grounding};
 % Feedback loop, kept close to avoid shrinking the whole figure.
 \draw[control]
   ([yshift=0.10cm]execution.west) to[out=180,in=180,looseness=0.75]
-  node[label, left]{execution feedback / supervision}
+  node[label, left]{execution feedback / goal-state handling}
   ([yshift=-0.10cm]planning.west);
 
 % Evidence update loop, kept close to avoid widening the bounding box.
@@ -132,7 +132,7 @@ symbolic state, scene summaries, entity grounding};
 
 \end{tikzpicture}%
 }
-\caption{High-level layered architecture. Dialogue interpretation and symbolic grounding provide parallel inputs to the planning layer. The chatbot layer also consumes symbolic scene context. The planner proposes structured skill plans, while the execution layer validates and dispatches skills before returning feedback for supervision.}
+\caption{High-level layered architecture. Dialogue interpretation and symbolic grounding provide parallel inputs to the planning layer. The chatbot layer also consumes symbolic scene context. The planner proposes structured skill plans, while the execution layer validates and dispatches skills before returning feedback for replanning or dialogue.}
 \label{fig:layered-architecture}
 \end{figure}
 
@@ -199,7 +199,7 @@ symbolic state, scene summaries, entity grounding};
 {8. \code{nao_orchestrator}: publish execution feedback};
 
 \node[planning,below=0.62cm of f] (sup)
-{9. \code{planner_llm}: supervise result, replan, or request communication};
+{9. \code{planner_llm}: process result, replan, or request communication};
 
 \node[dialogue,below=0.62cm of sup] (d)
 {10. \code{dialogue_manager}: realize spoken response};

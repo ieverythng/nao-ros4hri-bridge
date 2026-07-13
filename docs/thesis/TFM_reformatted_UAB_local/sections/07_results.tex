@@ -49,7 +49,7 @@ These results validate the fake-skill layer as a usable substrate for later plan
 
 \section{Planner Request Admission}
 
-The same runtime pass exposed a planner-admission risk. One fixture request, \code{goal_probe}, was processed and produced an \code{ask_clarification} dialogue act, which was the expected response to ambiguous goal text. Later fixture requests were visible on \code{/planner/request}, but no corresponding planner request log was observed in the same observation window. This suggests that the supervisor or request-admission path may remain in a waiting state after the first clarification.
+The same runtime pass exposed a planner-admission risk. One fixture request, \code{goal_probe}, was processed and produced an \code{ask_clarification} dialogue act, which was the expected response to ambiguous goal text. Later fixture requests were visible on \code{/planner/request}, but no corresponding planner request log was observed in the same observation window. This suggests that the goal-state helper or request-admission path may remain in a waiting state after the first clarification.
 
 \begin{table}[H]
 \centering
@@ -58,7 +58,7 @@ The same runtime pass exposed a planner-admission risk. One fixture request, \co
 \textbf{Probe} & \textbf{Observation} & \textbf{Interpretation}\\
 \midrule
 \code{goal_probe} & Planner received the request and emitted \code{ask_clarification}. & Expected behaviour for ambiguous goal text.\\
-\code{goal_nav_1} and \code{goal_exec_1} & Requests were visible on \code{/planner/request}, but planner processing was not observed in the window. & Degraded result. Request admission or supervisor state transition requires further testing.\\
+\code{goal_nav_1} and \code{goal_exec_1} & Requests were visible on \code{/planner/request}, but planner processing was not observed in the window. & Degraded result. Request admission or goal-state transition requires further testing.\\
 \bottomrule
 \end{tabular}
 \caption{Planner request-admission observations from the preliminary runtime pass.}

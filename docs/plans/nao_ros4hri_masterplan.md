@@ -346,7 +346,80 @@ This track merges prior simple-viewer and full-dashboard plans.
 - static HTML report generation
 - optional replay bundle for postmortems
 
-## 6. Backlog (Prioritized, Cross-Track)
+## 6. Research Track: Universal AB-Aware Agentic Harness
+
+The [Universal Agentic Harness foundation](../agentic_harness/universal_agentic_harness_foundation.md)
+defines a NAO-agnostic harness that compiles task-specific interaction modules
+from an AB capability graph. The current NAO stack is its first reference
+subsystem because `chatbot_llm` and `planner_llm` already contain substantial,
+duplicated harness mechanisms: provider transport, prompt-pack loading,
+structured-output repair, bounded context and skill projection, fallbacks, and
+trace stages.
+
+The extraction rule is deliberately narrow:
+
+- keep dialogue policy and speaking in their current owners;
+- keep planning, retry, replan, cancellation, and supervision in `planner_llm`;
+- keep deterministic admission, dispatch, and execution evidence in
+  `nao_orchestrator` and AB1 skills;
+- consolidate only provider-neutral harness mechanisms behind compatibility
+  adapters;
+- allow an initial implementation in this repository for parity testing, while
+  prohibiting ROS/NAO imports and semantics in the core;
+- target a pure-Python `ab_harness` package beside Neural Workbench
+  `skill_common`, with the canonical registry referenced rather than copied.
+
+### HARNESS-0: Contract and Evidence Baseline (P0) - Parent Proof Done
+
+- Freeze `HarnessSpec`, `TaskSpec`, `InteractionModuleSpec`, `ModelProfile`, and
+  `TraceEvent`.
+- Retain current chatbot/planner tests as behavioral oracles.
+- Capture same-model and same-task baselines before moving shared mechanisms.
+- Follow the H0 release in the
+  [adaptive Neural Workbench extension](../agentic_harness/neural_workbench_adaptive_ab_harness.md):
+  represent chatbot/planner as role-bounded AB3 model-agent objects inside the
+  NAO AB4 system, compile only their admitted AB views, gate output reachability,
+  and preserve a complete trace.
+- Parent-only `src/ab_harness` now proves registry projection, role/output
+  reachability, AB0 inspection-only enforcement, execution-claim rejection, and
+  JSONL trace reconstruction without modifying nested LLM packages or runtime
+  wiring. Live cooperative node integration remains HARNESS-1.
+
+### HARNESS-1: Cooperative Node Migration (P1)
+
+- Introduce thin adapters without changing node ownership or prompt policy.
+- Migrate one mechanism at a time: capability probe, structured output,
+  prompt-pack mechanics, task projection, then trace events.
+- Compare standalone and harness-backed paths for route safety, KB behavior,
+  planner admission, report wording, retry/replan, and duplicate speech.
+- Reject or roll back any slice that fails behavioral parity.
+
+### HARNESS-2: Portability and Uplift Proof (P2)
+
+- Run generic-all-tools versus AB-projected interaction ablations.
+- Prove the same contracts with one non-NAO synthetic adapter before declaring
+  the kernel universal.
+- Promote the package boundary only when relocation changes imports and package
+  metadata, not behavior or schemas.
+
+### HARNESS-3: Adaptive Workbench and Interaction Skills (P2-P4)
+
+- Add candidate/recovery graph search only after the H0 compatibility path is
+  stable.
+- Maintain task-relative `InteractionSkill` objects with permissions, effects,
+  proof obligations, capability profiles, supporting traces, and
+  counterexamples.
+- Let agents propose interaction repairs, but require independent validators,
+  tests, environment evidence, or human review before acceptance.
+- Introduce trace priors, entropy proxies, and crystallization in separate
+  ablations; never allow frequency-only runtime promotion.
+- Require one non-NAO AB4 adapter before calling the kernel universal.
+
+No runtime harness migration is complete at this checkpoint. The foundation is
+the accepted research baseline; implementation remains gated by schema review,
+parity tests, and the ROS4HRI ownership invariants above.
+
+## 7. Backlog (Prioritized, Cross-Track)
 
 1. **P0** Complete speech-ownership arbitration so each turn has one user-facing utterance authority (no duplicate execution-ack + planner-dialogue speech).
 2. **P0** Live-prove preloaded environment fixtures, grouped-location delivery,
@@ -366,7 +439,7 @@ This track merges prior simple-viewer and full-dashboard plans.
 - Live stack validation artifact:
   - `docs/artifacts/runtime_validation_report_2026-05-26_stack_live.md`
 
-## 7. Mandatory Validation Gates (Per Change Slice)
+## 8. Mandatory Validation Gates (Per Change Slice)
 
 1. **Pre-edit audit**
    `python3 scripts/ros4hri_change_audit.py --mode working`
@@ -386,7 +459,7 @@ This track merges prior simple-viewer and full-dashboard plans.
    - one success path
    - one failure/supersede path where applicable
 
-## 8. Documentation Hygiene Rules (Going Forward)
+## 9. Documentation Hygiene Rules (Going Forward)
 
 - New tactical notes go to `docs/artifacts/` unless they are active operator docs.
 - Plans in `docs/plans/` must be either:
@@ -401,7 +474,7 @@ Superseded fake-skill, grounding, replan-lineage, seam-hardening, runtime-fricti
 and TFM fake-skill validation sub-plans were moved to
 `docs/artifacts/plan_archive/2026-06-23/`. No files were deleted.
 
-## 9. Immediate Next Session Checklist
+## 10. Immediate Next Session Checklist
 
 1. Rebuild the response-first container and run the runtime-review main
    questionnaire plus the architecture sweep.

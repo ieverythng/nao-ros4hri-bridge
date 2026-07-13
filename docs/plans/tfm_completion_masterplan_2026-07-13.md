@@ -166,6 +166,17 @@ The TFM is closed only when all of the following are true:
 - [x] **TFM-I14:** Cross-link implementation statements to functional
   requirements and Contracts 1--3 and 7 where the corresponding runtime
   constraint is enforced.
+- [x] **TFM-I15:** Add the deterministic-guards section covering chatbot route
+  repair, bounded planner fallback modes, orchestrator guards, trace markers,
+  and failure behaviour.
+- [x] **TFM-I16:** Add Contract 3A for the shared skill-entry shape and connect
+  its fields to prompt construction, admission, dispatch, and evidence-based
+  reporting.
+- [x] **TFM-I17:** Add the compressed runtime skill inventory to the appendix
+  from the canonical registry, including required parameters, effects,
+  failure modes, and executor status.
+- [x] **TFM-I18:** Remove remaining internal schema suffixes and stale diagram
+  labels, regenerate all affected PDFs, and complete visual QA.
 
 ### P1: Chapter 6 experimental completeness
 
@@ -374,3 +385,4 @@ frozen experiment or be explicitly qualified.
 |---|---|---|
 | 2026-07-13 | Created closure masterplan from local thesis, IIIAV3 correction ledger, current runtime trackers, and recent commits | `08f9129`, `ISSUE_TRACKER_FULL_SUITE.html`, `ISSUE_TRACKER_FAKE_SUITE.html`, current chapter inventory |
 | 2026-07-13 | Completed the first surgical Chapter 5 correction slice: TFM-facing skill terminology, KB first-use definition, goal-supervisor clarification, grounded-context and contract links, route bullets, response/intent ordering, dialogue-manager provenance, and the revised simulator/WME stack figure | `TFM-C01`, `TFM-C02`, `TFM-C06`, `TFM-I04`, `TFM-I05`, `TFM-I13`, `TFM-I14` |
+| 2026-07-13 | Completed the implementation-depth slice: deterministic guards and bounded fallbacks, shared skill-entry Contract 3A, canonical runtime skill inventory, schema-label cleanup, regenerated vector figures, and visual PDF QA | `TFM-I15`, `TFM-I16`, `TFM-I17`, `TFM-I18`, `build/main.pdf` |

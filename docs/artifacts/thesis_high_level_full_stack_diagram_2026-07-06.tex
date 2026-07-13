@@ -132,7 +132,7 @@
   \node[font=\scriptsize\bfseries, anchor=west] at (34,56.6) {Grounding and symbolic evidence};
   \node[groundingNode, text width=29mm] (scene) at (48,40) {\code{nao_scene_grounding}\\detector facts\\\code{/scene/summary}};
   \node[groundingNode, text width=22mm] (kb) at (79,40) {\code{kb_skills}\\KnowledgeCore\\query/revise};
-  \node[groundingNode] (context) at (110,40) {\code{grounded}\\\code{context_v3}\\entities, locations\\bounded relations};
+  \node[groundingNode] (context) at (110,40) {\code{grounded_context}\\entities, locations\\bounded relations};
 
   \node[bus, minimum width=91mm] (evidenceBus) at (77,22) {
     Evidence bus: \code{/scene/summary}, \code{/kb/query}, \code{/kb/revise}
@@ -185,7 +185,7 @@
   \node[align=left, font=\tiny, anchor=west] at (224,-12) {
     \tikz{\draw[control] (0,0)--(5mm,0);} control / ROS contract\\
     \tikz{\draw[evidence] (0,0)--(5mm,0);} grounding / evidence\\
-    \tikz{\draw[feedback] (0,0)--(5mm,0);} feedback / supervision\\
+    \tikz{\draw[feedback] (0,0)--(5mm,0);} feedback / goal-state handling\\
     \tikz{\draw[adapter] (0,0)--(5mm,0);} action / adapter call\\
     \tikz{\draw[future] (0,0)--(5mm,0);} future extension
   };
