@@ -10,7 +10,7 @@ The architecture relies on explicit runtime contracts between dialogue interpret
 \item \code{dialogue_manager} owns the dialogue turn lifecycle and user-facing speech realization.
 \item \code{chatbot_llm} owns user-facing semantic interpretation: intent derivation, route selection (dialogue or execution) and goal text for planner.
 \item \code{nao_orchestrator} owns deterministic planner admission, request normalization, executable-step validation, dispatch, step status, and feedback publication.
-\item \code{planner_llm} owns structured skill-plan generation, plan supervision, replanning decisions, and dialogue-act intent.
+\item \code{planner_llm} owns structured skill-plan generation, feedback-driven goal-state handling, replanning decisions, and dialogue-act intent.
 \item Skills own live interaction with the robot, scene, and KB evidence required to complete their operation truthfully.
 \end{itemize}
 
@@ -48,6 +48,10 @@ Table~\ref{tab:contract-map} lists the active runtime contracts.
 & \code{grounded_context} inside Contract~2.
 & Scene and KB projection provide compact symbolic context for \code{chatbot_llm} and \code{planner_llm}.\\
 
+3A & Shared skill entry
+& Registry projection consumed by the planner, orchestrator, and skill servers.
+& \code{skill_common} defines the shared capability shape; \code{planner_llm} uses it for prompt construction and \code{nao_orchestrator} uses it for admission and dispatch.\\
+
 4 & Planner output
 & Topic \code{/intents}. Structured plan payload in \code{Intent.data.plan}.
 & \code{planner_llm} produces the plan; \code{nao_orchestrator} validates and dispatches executable steps.\\
@@ -58,7 +62,7 @@ Table~\ref{tab:contract-map} lists the active runtime contracts.
 
 6 & Execution feedback
 & Topic \code{/planner/execution_feedback}. Structured JSON feedback payload.
-& \code{nao_orchestrator} publishes feedback; \code{planner_llm} uses it for supervision, replanning, clarification, or failure handling.\\
+& \code{nao_orchestrator} publishes feedback; a goal-keyed planning-state helper inside \code{planner_llm} uses it for replanning, clarification, or failure handling.\\
 
 7 & Planner dialogue act
 & Topic \code{/planner/dialogue_act}. Structured communication request.
@@ -72,7 +76,7 @@ Table~\ref{tab:contract-map} lists the active runtime contracts.
 \end{tabularx}
 \end{table}
 
-The table above lists only the contract and its meaning. Compact planner-facing fields are kept in the tables, while additional runtime metadata is described in prose when it is relevant for orchestration, planner supervision, tracing, or debugging.
+The table above lists only the contract and its meaning. Compact planner-facing fields are kept in the tables, while additional runtime metadata is described in prose when it is relevant for orchestration, feedback-driven planning, tracing, or debugging.
 
 \section{Contract 1: Chatbot Turn Output}
 
@@ -280,6 +284,70 @@ The planner receives a compact, JSON-native view of relevant world state. This i
 
 The compact view should omit detector score, image coordinates, backend, source, and recency by default. Those values are execution evidence, not planning semantics, unless a future skill explicitly needs them in its own action arguments.
 
+\section{Contract 3A: Shared Skill Entry}
+
+The planner and orchestrator use one shared entry shape to describe a skill before it is placed in a prompt, admitted for execution, or mapped to an action server. This entry is a capability contract, not a claim that every listed adapter is available in every launch profile. It separates the information needed to select a skill from the information needed to verify its result.
+
+\begin{lstlisting}
+{
+  "name": "navigate_to",
+  "category": "navigation",
+  "aliases": ["go_to"],
+  "params": {"target": "entity or location identifier"},
+  "required_params": ["target"],
+  "preconditions": ["target is grounded or scenario-owned"],
+  "expected_effects": ["robot arrives at the target location"],
+  "observable_success": ["status=success", "arrival evidence"],
+  "failure_modes": ["path_blocked", "unknown_location"],
+  "planner_guidance": ["use for a single destination"],
+  "result_schema": {"required": ["skill", "status", "summary_text"]},
+  "safety_flags": ["navigation"],
+  "runtime_available": true,
+  "implementation_status": "fake",
+  "executor": "fake_skills.navigate_to"
+}
+\end{lstlisting}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\caption{Shared skill-entry fields used by planning and execution.}
+\label{tab:skill-entry-contract}
+\begin{tabularx}{\textwidth}{
+@{}
+>{\raggedright\arraybackslash}p{0.25\textwidth}
+>{\raggedright\arraybackslash}X
+@{}}
+\toprule
+\textbf{Field} & \textbf{Runtime role}\\
+\midrule
+\code{name}, \code{category}, \code{aliases}
+& Canonical planner name, semantic group, and accepted compatibility names.\\
+\code{params}, \code{required_params}
+& Typed planner-facing arguments and the subset required before admission.\\
+\code{preconditions}
+& Grounding or state assumptions that must be satisfied or explicitly owned by a scenario. They do not prove a future effect.\\
+\code{expected_effects}
+& Intended state changes or evidence products used to select and order skills.\\
+\code{observable_success}
+& Result or trace evidence that can support completion after execution.\\
+\code{failure_modes}
+& Typed outcomes used by the orchestrator and the goal-state helper to stop, clarify, or request replanning.\\
+\code{planner_guidance}
+& Bounded selection and ordering guidance inserted into the planner prompt.\\
+\code{result_schema}
+& Required and optional result fields, including the summary and evidence payload.\\
+\code{safety_flags}, \code{runtime_available}
+& Safety-relevant labels and profile-specific availability checks.\\
+\code{implementation_status}, \code{executor}
+& Whether the selected profile has an implementation and which adapter or skill server receives the call.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The same shape is projected to the planner prompt, deterministic orchestrator checks, fake-skill policies, and adapter configuration. Preconditions constrain admission, while expected effects remain hypotheses until a skill returns observable evidence. This distinction is used by \code{report_result}: a final summary must be derived from result payloads or trace evidence rather than copied from a planner-generated claim. The complete runtime inventory is provided in Appendix~\ref{sec:runtime-skill-inventory}.
+
 \section{Grounded Context Pipeline}
 
 \texttt{JSON} object passed (along the system prompt and skills registry) to the chatbot and planner. Acts as LLM facing grounded context representing current entities in the KB.
@@ -383,7 +451,9 @@ Derivation rules:
 
 \section{Planner LLM Internals}
 
-After the planner request is admitted, \code{planner_llm} builds a prompt from the compact request, compact grounding, the skill registry, allowed step types, and the output contract. Rule-based shortcuts may produce deterministic plans for simple motions. Otherwise, the LLM provider returns JSON, which is parsed and validated before publication. Invalid JSON or unsupported steps trigger a validation retry or a failure result.
+After the planner request is admitted, \code{planner_llm} builds a prompt from the compact request, grounded context, the shared skill-entry projection, allowed step types, and the output contract. The prompt carries the goal and request kind, normalized intent hints, relevant grounded entities, permitted skill names, argument requirements, and recovery vocabulary. A bounded feedback payload is added when the current goal is responding to an execution event. Rule-based shortcuts may produce deterministic plans for simple motions, but the normal path remains model-generated and contract-checked.
+
+The provider response is handled as an untrusted candidate. The planner extracts the first admissible JSON object, normalizes plan and step metadata, validates skill names, arguments, ordering, and failure policies, then performs one bounded validation retry when the prompt pack enables it. The retry receives the validation error and a bounded portion of the previous output. A second invalid result becomes a typed planner failure or clarification outcome. No raw model text is sent to \code{/intents}, and no invalid plan is passed to the orchestrator.
 
 The planner prompt should not contain raw detector coordinates, full RDF dumps, or stale perceptual reports. Those belong to skills and execution evidence.
 
@@ -436,7 +506,7 @@ The planner output is a plan: a sequence of skill steps to achieve the user goal
 & Identifier for this concrete plan proposal. It is useful when the runtime keeps plan history or compares revised plans for the same goal.\\
 
 \code{plan_version}
-& Revision number for replans of the same goal. This helps distinguish the initial plan from later planner-supervision outputs.\\
+& Revision number for replans of the same goal. This helps distinguish the initial plan from later feedback-driven planning outputs.\\
 
 \code{status}
 & Planning outcome for this plan, such as \code{planned}, \code{needs_clarification}, or \code{failed_to_plan}. This describes whether \code{planner_llm} produced an executable plan, not whether the robot has already executed it.\\
@@ -469,13 +539,13 @@ The planner output is a plan: a sequence of skill steps to achieve the user goal
 \paragraph{Runtime recovery metadata.}
 The current contract supports recovery metadata as skill failure may require controlled recovery. Each step may carry a \code{retry_budget}, and the plan envelope may also carry a plan-level \code{retry_budget}. This does not mean that \code{retry} is a separate \code{on_failure} value. Instead, retry behaviour is controlled by \code{nao_orchestrator} using the available retry budget together with the step's \code{on_failure} policy. The plan envelope may also carry \code{communication_policy}. This controls when the planner/dialogue path should communicate progress, completion, clarification needs, or failure. 
 
-When a step fails with \code{on_failure = replan}, \code{nao_orchestrator} halts or blocks continuation, publishes execution feedback to \code{planner_llm}, and waits for a revised validated plan before dispatching further actions. This keeps execution authority inside \code{nao_orchestrator}, while allowing recovery to be driven by planner supervision rather than by hard-coded local replanning.
+When a step fails with \code{on_failure = replan}, \code{nao_orchestrator} halts or blocks continuation, publishes execution feedback to \code{planner_llm}, and waits for a revised validated plan before dispatching further actions. This keeps execution authority inside \code{nao_orchestrator}, while allowing recovery to be driven by feedback-driven planning rather than by hard-coded local replanning.
 
 These fields are included because they support runtime recovery, traceability, and human-robot interaction, but the essential planner output remains the ordered \code{steps} list. If the planner cannot produce a plan, the output should represent that as a planning result rather than filling the plan with ambiguous failure fields. For the simple version, \code{steps} is the most important field.
 
 \section{Contract 5: Execution Feedback}
 
-For the simple version, execution feedback can be minimal. The planner needs to know which goal is affected, which step failed or succeeded, and a compact result if that result is useful for replanning or dialogue. A larger payload is justified only when the planner supervision logic, orchestrator, traces, or debug tooling use the extra fields.
+For the simple version, execution feedback can be minimal. The planner needs to know which goal is affected, which step failed or succeeded, and a compact result if that result is useful for replanning or dialogue. A larger payload is justified only when the goal-state helper, orchestrator, traces, or debug tooling use the extra fields.
 
 \Needspace{18\baselineskip}
 \begin{lstlisting}
@@ -496,7 +566,7 @@ For the simple version, execution feedback can be minimal. The planner needs to 
 
 
 
-Runtime feedback may include additional fields used by \code{nao_orchestrator}, logging, and planner supervision. Examples include \code{plan_id}, \code{plan_version}, \code{event_type}, \code{validation_status}, \code{blocking}, \code{needs_user_input}, \code{timestamp_sec}, \code{result_summary}, and retry metadata. These fields are useful for execution control and debugging, but the minimal planner-facing feedback is the goal, step, status, reason, and result payload.
+Runtime feedback may include additional fields used by \code{nao_orchestrator}, logging, and the goal-state helper. Examples include \code{plan_id}, \code{plan_version}, \code{event_type}, \code{validation_status}, \code{blocking}, \code{needs_user_input}, \code{timestamp_sec}, \code{result_summary}, and retry metadata. These fields are useful for execution control and debugging, but the minimal planner-facing feedback is the goal, step, status, reason, and result payload.
 
 \section{Contract 6: Planner Dialogue Act}
 

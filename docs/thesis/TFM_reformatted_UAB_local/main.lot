@@ -10,18 +10,18 @@
 \contentsline {table}{\numberline {4.5}{\ignorespaces Fields in Contract 4: planner output.}}{22}{table.caption.18}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {6.1}{\ignorespaces Validation goals for planner-mediated ROS4HRI execution.}}{36}{table.6.1}%
-\contentsline {table}{\numberline {6.2}{\ignorespaces Tailored runtime questionnaire used for end-to-end validation.}}{36}{table.6.2}%
-\contentsline {table}{\numberline {6.3}{\ignorespaces Scenario matrix for deterministic fake-skill validation.}}{37}{table.6.3}%
+\contentsline {table}{\numberline {6.1}{\ignorespaces Validation goals for planner-mediated ROS4HRI execution.}}{37}{table.6.1}%
+\contentsline {table}{\numberline {6.2}{\ignorespaces Tailored runtime questionnaire used for end-to-end validation.}}{37}{table.6.2}%
+\contentsline {table}{\numberline {6.3}{\ignorespaces Scenario matrix for deterministic fake-skill validation.}}{38}{table.6.3}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {7.1}{\ignorespaces Observed runtime health during the live-stack validation pass.}}{42}{table.caption.25}%
-\contentsline {table}{\numberline {7.2}{\ignorespaces Preliminary fake-skill scenario results from the action-level runtime probe.}}{42}{table.caption.26}%
-\contentsline {table}{\numberline {7.3}{\ignorespaces Planner request-admission observations from the preliminary runtime pass.}}{43}{table.caption.27}%
-\contentsline {table}{\numberline {7.4}{\ignorespaces Current validation status matrix.}}{44}{table.7.4}%
-\addvspace {10\p@ }
-\addvspace {10\p@ }
+\contentsline {table}{\numberline {7.1}{\ignorespaces Observed runtime health during the live-stack validation pass.}}{43}{table.caption.25}%
+\contentsline {table}{\numberline {7.2}{\ignorespaces Preliminary fake-skill scenario results from the action-level runtime probe.}}{43}{table.caption.26}%
+\contentsline {table}{\numberline {7.3}{\ignorespaces Planner request-admission observations from the preliminary runtime pass.}}{44}{table.caption.27}%
+\contentsline {table}{\numberline {7.4}{\ignorespaces Current validation status matrix.}}{45}{table.7.4}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {C.1}{\ignorespaces Validation log template.}}{51}{table.caption.28}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {C.1}{\ignorespaces Validation log template.}}{52}{table.caption.28}%

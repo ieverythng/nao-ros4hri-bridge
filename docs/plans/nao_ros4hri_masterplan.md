@@ -7,6 +7,10 @@
 grounded-context reliability, canonical registry alignment, fake-skill
 operational hardening, LocateAnything migration, and validation reporting.
 
+The manuscript, final evidence synthesis, and submission closure track lives in
+`docs/plans/tfm_completion_masterplan_2026-07-13.md` (+ `.html`). This
+integration masterplan remains authoritative for runtime implementation status.
+
 ## 1. Consolidation Policy (What This File Replaces)
 
 This file is now the canonical integration plan and absorbs execution tracking from:

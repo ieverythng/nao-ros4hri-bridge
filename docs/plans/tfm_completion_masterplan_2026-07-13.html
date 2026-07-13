@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TFM Completion Masterplan</title>
+  <style>
+    :root {
+      --ink: #18212b;
+      --muted: #5d6875;
+      --line: #cbd3dc;
+      --paper: #ffffff;
+      --canvas: #edf1f4;
+      --green: #176b4d;
+      --green-bg: #e9f5ef;
+      --amber: #8a5700;
+      --amber-bg: #fff4d8;
+      --red: #9a2d35;
+      --red-bg: #fdecee;
+      --blue: #245b86;
+      --blue-bg: #eaf2f9;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--canvas);
+      color: var(--ink);
+      font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main { max-width: 1240px; margin: 0 auto; background: var(--paper); min-height: 100vh; }
+    header { padding: 34px 42px 28px; border-bottom: 4px solid var(--green); }
+    h1 { margin: 0 0 8px; font: 700 34px/1.15 Georgia, serif; letter-spacing: 0; }
+    h2 { margin: 0 0 15px; font: 700 24px/1.25 Georgia, serif; letter-spacing: 0; }
+    h3 { margin: 22px 0 10px; font-size: 17px; letter-spacing: 0; }
+    p { margin: 8px 0 13px; }
+    a { color: var(--blue); }
+    code { font: 0.92em ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+    section { padding: 28px 42px; border-bottom: 1px solid var(--line); }
+    .meta { color: var(--muted); }
+    .status-line { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    .tag { border: 1px solid var(--line); border-radius: 4px; padding: 5px 9px; font-weight: 650; }
+    .active { background: var(--green-bg); color: var(--green); }
+    .p0 { background: var(--red-bg); color: var(--red); }
+    .p1 { background: var(--amber-bg); color: var(--amber); }
+    .p2 { background: var(--blue-bg); color: var(--blue); }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .card { border: 1px solid var(--line); border-left: 5px solid var(--blue); padding: 14px; background: #fbfcfd; }
+    .card strong { display: block; font-size: 20px; margin-bottom: 4px; }
+    .callout { border-left: 5px solid var(--amber); background: var(--amber-bg); padding: 13px 16px; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { border: 1px solid var(--line); padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #eef2f5; }
+    tr:nth-child(even) td { background: #fafbfc; }
+    ul, ol { margin: 8px 0 12px; padding-left: 24px; }
+    li { margin: 4px 0; }
+    .tasks { list-style: none; padding: 0; }
+    .tasks li { border-bottom: 1px solid #e4e8ec; padding: 8px 0 8px 31px; position: relative; }
+    .tasks li::before { content: ""; position: absolute; left: 4px; top: 12px; width: 14px; height: 14px; border: 2px solid #8693a0; border-radius: 2px; background: white; }
+    .tasks li.done::before { content: "✓"; color: white; background: var(--green); border-color: var(--green); font-size: 11px; line-height: 13px; text-align: center; }
+    .tasks li.done { color: #385146; }
+    .task-id { display: inline-block; min-width: 76px; font: 700 0.9em ui-monospace, monospace; color: var(--blue); }
+    nav { padding: 12px 42px; background: #f7f9fa; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 3; }
+    nav a { margin-right: 15px; white-space: nowrap; }
+    footer { padding: 24px 42px; color: var(--muted); }
+    @media (max-width: 800px) {
+      header, section, nav, footer { padding-left: 18px; padding-right: 18px; }
+      .grid { grid-template-columns: 1fr; }
+      table { display: block; overflow-x: auto; }
+      nav { position: static; }
+    }
+    @media print {
+      body { background: white; font-size: 11px; }
+      main { max-width: none; }
+      nav { display: none; }
+      section { break-inside: avoid; padding: 16px 24px; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>TFM Completion Masterplan</h1>
+    <p class="meta">Active thesis-closure tracker · 13 July 2026 · branch <code>refactor/deslop_repo</code> · committed thesis baseline <code>08f9129</code></p>
+    <div class="status-line">
+      <span class="tag active">Stack approximately 95% complete</span>
+      <span class="tag p0">Evidence closure active</span>
+      <span class="tag p1">Results synthesis pending</span>
+      <span class="tag p2">Submission QA pending</span>
+    </div>
+  </header>
+
+  <nav>
+    <a href="#definition">Definition of done</a>
+    <a href="#baseline">Evidence</a>
+    <a href="#chapters">Chapters</a>
+    <a href="#corrections">Corrections</a>
+    <a href="#experiments">Experiments</a>
+    <a href="#graphics">Graphics</a>
+    <a href="#execution">Execution</a>
+  </nav>
+
+  <section id="scope">
+    <h2>Purpose And Control</h2>
+    <p>This is the canonical closure tracker for the written TFM. The repository masterplan remains the engineering integration authority; the full and fake suite trackers remain the detailed runtime evidence ledgers.</p>
+    <div class="callout"><strong>Hand-edit rule:</strong> the current Chapter 5 working-tree edits belong to Juan. Inspect and preserve them until a specific iteration is requested. Every later edit begins from the current diff, not the last generated draft.</div>
+    <h3>Source precedence</h3>
+    <ol>
+      <li>Current source, tests, launch files, package guidance, and canonical skill registry.</li>
+      <li>Contracts, workflow, launch profiles, and accepted architecture decisions.</li>
+      <li>Full/fake runtime trackers for dated evidence.</li>
+      <li>Repository masterplan for cross-track implementation status.</li>
+      <li>Chapter 7 and historical artifacts, which must be corrected when superseded.</li>
+    </ol>
+  </section>
+
+  <section id="definition">
+    <h2>Definition Of Done</h2>
+    <ul class="tasks">
+      <li>Freeze source and nested SHAs, container image, models, prompt packs, registry, launch profile, and fixtures.</li>
+      <li>Map each research question to declared metrics, results, discussion, and conclusion statements.</li>
+      <li>Freeze case IDs, fixtures, expected routes/plans, forbidden observations, repetitions, seeds, timeouts, and pass rules.</li>
+      <li>Collect one complete canonical <code>response_first</code> speech-ingress evidence bundle.</li>
+      <li>Report fake multi-step, detector, physical robot, planner-isolated, and full-stack evidence separately.</li>
+      <li>Make Chapters 5 and 6 implementation-traceable and experimentally reproducible.</li>
+      <li>Rebuild Chapter 7 from artifacts with denominators and uncertainty or dispersion.</li>
+      <li>Rewrite Chapters 8--10 and the abstract around the final evidence, in past tense.</li>
+      <li>Pass citation, terminology, LaTeX, diagram, table, grayscale, and page-level visual QA.</li>
+      <li>Regenerate and archive the PDF, source bundle, source revisions, container digest, and evidence index.</li>
+    </ul>
+  </section>
+
+  <section id="baseline">
+    <h2>Evidence Baseline</h2>
+    <div class="grid">
+      <div class="card"><strong>8.7 / 10</strong>Fresh response-first evidence reported by the full-suite tracker. Reuse only with recoverable artifact and revision provenance.</div>
+      <div class="card"><strong>8.6 / 10</strong>Accepted 17 June response-first success-path baseline. Suitable as historical progression, not the final canonical score.</div>
+      <div class="card"><strong>8.6 / 10 qualified</strong>8 July fake multi-step speech score. Two policies are complete; two retain long-suite instability.</div>
+    </div>
+    <table>
+      <thead><tr><th>Evidence</th><th>Standing</th><th>Closure decision</th></tr></thead>
+      <tbody>
+        <tr><td>17 June speech sweep</td><td>Accepted historical baseline</td><td>Reuse for development progression.</td></tr>
+        <tr><td>Fresh response-first session</td><td>Strong integrated evidence</td><td>Reuse if artifact and exact revision are recoverable; otherwise rerun the frozen equivalent.</td></tr>
+        <tr><td>8 July fake policy matrix</td><td><code>all_success</code> 8/8; <code>fail_once_navigation</code> 8/8; <code>fail_once_pick</code> 7/8; <code>delivery_blocked</code> 6/8</td><td>Use in qualified heatmap; rerun unstable cells after freeze.</td></tr>
+        <tr><td>Direct fake action matrix</td><td>Typed substrate proven</td><td>Implementation verification only, not planner recovery or hardware evidence.</td></tr>
+        <tr><td>Intent-first probes</td><td>Ablation with known regressions</td><td>Keep separate and run only the subset needed by the final claim.</td></tr>
+      </tbody>
+    </table>
+    <h3>Open evidence gates</h3>
+    <ul>
+      <li>Clean canonical response-first run after the 9 July source gates.</li>
+      <li>Stable or explicitly qualified <code>fail_once_pick</code> and <code>delivery_blocked</code> evidence.</li>
+      <li>Separate detector-enabled profile.</li>
+      <li>Final per-case summaries, repetitions, seeds, exclusions, and statistical policy.</li>
+      <li>Decision on the direct-execution comparison promised by the abstract.</li>
+    </ul>
+  </section>
+
+  <section id="chapters">
+    <h2>Chapter Closure Matrix</h2>
+    <table>
+      <thead><tr><th>Chapter</th><th>Current state</th><th>Required closure</th><th>Exit gate</th></tr></thead>
+      <tbody>
+        <tr><td>Abstract/front matter</td><td>Formatted; future tense and baseline promise remain</td><td>Rewrite last</td><td>Matches Chapters 6--10</td></tr>
+        <tr><td>1 Introduction</td><td>Substantive</td><td>Language and RQ alignment</td><td>Every RQ has result and conclusion answer</td></tr>
+        <tr><td>2 Background</td><td>Substantive</td><td>Citation audit; KnowledgeCore, vLLM, prompt optimization</td><td>No uncited literature claim</td></tr>
+        <tr><td>3 Architecture</td><td>Strong</td><td>Terminology, typos, grayscale future labels</td><td>Agrees with frozen contracts</td></tr>
+        <tr><td>4 Contracts</td><td>Detailed</td><td>Formatting and source/type verification</td><td>Examples validate; critical overflow removed</td></tr>
+        <tr><td>5 Implementation</td><td>Expanded; hand edits active</td><td>Provenance, APIs, supervisor, reporting, observability, config</td><td>Claims point to source and interfaces</td></tr>
+        <tr><td>6 Methodology</td><td>Good scaffold</td><td>Manifest, acceptance, metrics, resets, repetitions, statistics, validity</td><td>Independently repeatable</td></tr>
+        <tr><td>7 Results</td><td>Outdated May-centred narrative</td><td>Replace with final and qualified July data and graphics</td><td>Every number has artifact and denominator</td></tr>
+        <tr><td>8 Discussion</td><td>Short preliminary draft</td><td>Expand by RQ and literature</td><td>Claims do not exceed evidence</td></tr>
+        <tr><td>9 Limitations</td><td>Very short</td><td>Observed, scope, and future categories</td><td>No blocker disguised as future work</td></tr>
+        <tr><td>10 Conclusion</td><td>Preliminary</td><td>Rewrite last in past tense</td><td>No new results</td></tr>
+        <tr><td>Appendices</td><td>Minimal</td><td>Manifest, config, interfaces, commands, artifact index</td><td>Reproduction details complete</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="corrections">
+    <h2>IIIAV3 Correction Register</h2>
+    <h3><span class="tag p0">P0</span> Claims And Methodology</h3>
+    <ul class="tasks">
+      <li class="done"><span class="task-id">TFM-C01</span> Replace guarantees with enforced constraints or evidenced behaviour.</li>
+      <li class="done"><span class="task-id">TFM-C02</span> Keep internal decomposition terminology out of the TFM; describe reviewed skills and runtime mappings directly.</li>
+      <li><span class="task-id">TFM-C03</span> Implement, substitute, or remove the direct-execution baseline promise.</li>
+      <li><span class="task-id">TFM-C04</span> Freeze the unit of analysis and configuration tuple.</li>
+      <li><span class="task-id">TFM-C05</span> Add pass rules and denominators; timeouts and inferred events are not silent successes.</li>
+      <li class="done"><span class="task-id">TFM-C06</span> Rename deep fake-skill to multi-step deterministic fake-skill.</li>
+    </ul>
+
+    <h3><span class="tag p1">P1</span> Chapter 5 Precision</h3>
+    <ul class="tasks">
+      <li><span class="task-id">TFM-I01</span> Add implementation scope and frozen revision.</li>
+      <li><span class="task-id">TFM-I02</span> Add source-to-responsibility provenance map.</li>
+      <li><span class="task-id">TFM-I03</span> Add verified ROS interface, type, QoS, lifecycle, profile, and timeout inventory.</li>
+      <li class="done"><span class="task-id">TFM-I04</span> Define compact grounded context and version status.</li>
+      <li class="done"><span class="task-id">TFM-I05</span> Define response-first and intent-first operationally.</li>
+      <li><span class="task-id">TFM-I06</span> Add planner extraction/validation/repair algorithm.</li>
+      <li><span class="task-id">TFM-I07</span> Expand goal/plan/version/step supervisor invariants and transitions.</li>
+      <li><span class="task-id">TFM-I08</span> Explain truthful <code>report_result</code> construction from live payloads.</li>
+      <li><span class="task-id">TFM-I09</span> Explain admission, deduplication, report accumulation, and executor limits.</li>
+      <li><span class="task-id">TFM-I10</span> Define matching, recency, visibility, and freshness precisely.</li>
+      <li><span class="task-id">TFM-I11</span> Document fake-policy precedence and proven metadata/effects only.</li>
+      <li><span class="task-id">TFM-I12</span> Add final configuration table and define SkillOpt.</li>
+      <li class="done"><span class="task-id">TFM-I13</span> Ground dialogue-manager prose in its multi-person/group lifecycle and public interaction interfaces.</li>
+      <li class="done"><span class="task-id">TFM-I14</span> Cross-link implementation constraints to functional requirements and runtime contracts.</li>
+    </ul>
+
+    <h3><span class="tag p1">P1</span> Chapter 6 Completeness</h3>
+    <ul class="tasks">
+      <li><span class="task-id">TFM-M01</span> Add independent and dependent variables.</li>
+      <li><span class="task-id">TFM-M02</span> Add E2E, planner, fake, detector, and ablation profile table.</li>
+      <li><span class="task-id">TFM-M03</span> Freeze the detailed case manifest.</li>
+      <li><span class="task-id">TFM-M04</span> Define exactly-once speech per semantic stage.</li>
+      <li><span class="task-id">TFM-M05</span> Define reset and fixture-isolation sequence.</li>
+      <li><span class="task-id">TFM-M06</span> Add formulae for routing, planning, ordering, safety, phases, clarification, speech, and stale state.</li>
+      <li><span class="task-id">TFM-M07</span> Report median, IQR, p95, maximum, and timeout count.</li>
+      <li><span class="task-id">TFM-M08</span> Define repetitions, seeds, exclusions, retries, missing events, and status denominators.</li>
+      <li><span class="task-id">TFM-M09</span> Add holdouts and threats to validity.</li>
+    </ul>
+
+    <h3><span class="tag p2">P2</span> Presentation And References</h3>
+    <ul class="tasks">
+      <li><span class="task-id">TFM-P01</span> Check figure crops, margins, landscape, captions, and grayscale.</li>
+      <li><span class="task-id">TFM-P02</span> Keep node diagrams full-width unless panels remain readable.</li>
+      <li><span class="task-id">TFM-P03</span> Add supervisor-state and results figures.</li>
+      <li><span class="task-id">TFM-P04</span> Normalize skill, context, topic, adapter, KB, and fake-profile terminology.</li>
+      <li><span class="task-id">TFM-P05</span> Audit bibliography, software citations, repository, KnowledgeCore, vLLM, and SkillOpt.</li>
+      <li><span class="task-id">TFM-P06</span> Complete grammar, reference, table-break, and overfull-box QA.</li>
+    </ul>
+  </section>
+
+  <section id="experiments">
+    <h2>Final Experiment Programme</h2>
+    <h3>Freeze gate</h3>
+    <ul class="tasks">
+      <li>Record source and nested SHAs and build one final container image.</li>
+      <li>Record model IDs, decoding, timeouts, prompt/registry hashes, response mode, digest, detector, and fake policy.</li>
+      <li>Freeze the case manifest before the scored run; document later amendments.</li>
+    </ul>
+    <table>
+      <thead><tr><th>Profile</th><th>Entry point</th><th>Required evidence</th><th>Use</th></tr></thead>
+      <tbody>
+        <tr><td><code>E2E-RF</code></td><td>Tracked voice + LiveSpeech</td><td>Turn, route, admitted request, plan, feedback, terminal, speech</td><td>Primary score</td></tr>
+        <tr><td><code>PLAN-ISO</code></td><td>Planner gate</td><td>Request, validation, dispatch, feedback</td><td>Diagnostic plan score</td></tr>
+        <tr><td><code>FAKE-MULTI</code></td><td>Declared speech/gate path + fake actions</td><td>Policy, seed, events, lineage, recovery, speech</td><td>Controlled recovery score</td></tr>
+        <tr><td><code>DET-E2E</code></td><td>Detector launch + speech</td><td>Detector provenance, scene, compact context, answer/plan</td><td>Perception grounding</td></tr>
+        <tr><td><code>ABL-IF</code></td><td>Frozen intent-first subset</td><td>Comparable full phase evidence</td><td>Ablation only</td></tr>
+      </tbody>
+    </table>
+    <h3>Required gates</h3>
+    <ul class="tasks">
+      <li>Run response-first questionnaire after lifecycle, QoS, model, KB, and action preflight.</li>
+      <li>Run fixtures with stale-world guard and post-action KB query.</li>
+      <li>Run all-success, fail-once navigation, fail-once pick, delivery blocked, and recipient missing; seed stress comes last.</li>
+      <li>Rerun unstable ordered-walk/report cells both in-suite and isolated.</li>
+      <li>Run detector and bounded ablation profiles separately.</li>
+      <li>Generate and preserve raw plus summarized JSON/CSV/HTML evidence.</li>
+    </ul>
+    <div class="callout"><strong>Stop rule:</strong> after the frozen rerun, fix only central-RQ blockers, provenance failures, false successes, duplicate speech, or deterministic admission failures. Record other defects as measured limitations.</div>
+  </section>
+
+  <section id="graphics">
+    <h2>Results Synthesis And Graphics</h2>
+    <h3>Required tables</h3>
+    <ul>
+      <li>Configuration/provenance and frozen case manifest.</li>
+      <li>Per-profile aggregate metrics and per-case status with denominators.</li>
+      <li>Fake policy matrix and error taxonomy.</li>
+      <li>Research-question evidence matrix.</li>
+    </ul>
+    <h3>High-value figures</h3>
+    <ol>
+      <li>Separate profile score overview.</li>
+      <li>Case-by-policy pass/degraded/fail heatmap.</li>
+      <li>Phase-completion funnel.</li>
+      <li>Latency distributions with timeout counts.</li>
+      <li>Representative recovery lineage trace.</li>
+      <li>Grounding freshness and stale-world comparison.</li>
+    </ol>
+    <p>Every result figure must be reproducible, state <code>N</code>, profile, revision/date, and denominator, and remain legible in grayscale.</p>
+  </section>
+
+  <section id="guardrails">
+    <h2>Architectural Guardrails</h2>
+    <ul>
+      <li><code>dialogue_manager</code> owns dialogue lifecycle and speaking.</li>
+      <li><code>chatbot_llm</code> owns user-facing LLM dialogue, routing, grounded projection, and planner ingress, not plans.</li>
+      <li><code>planner_llm</code> owns planning, supervision, replan policy, and planner dialogue acts, not execution or speech.</li>
+      <li><code>nao_orchestrator</code> owns admission, deterministic validation, dispatch, lineage, feedback, and dialogue relay, not LLM policy.</li>
+      <li><code>kb_skills</code> owns KnowledgeCore transport; <code>nao_scene_grounding</code> owns detector normalization and scene summaries.</li>
+      <li>Runtime skills own fresh execution-time evidence.</li>
+      <li>Prompt changes require prospective SkillOpt baseline and holdout records.</li>
+      <li>Nested/upstream packages receive seam-focused changes only.</li>
+    </ul>
+  </section>
+
+  <section id="execution">
+    <h2>Execution Order</h2>
+    <table>
+      <thead><tr><th>Phase</th><th>Work</th><th>Completion signal</th></tr></thead>
+      <tbody>
+        <tr><td>A · Freeze contract</td><td>Baseline decision, RQs, units, profiles, manifest, metrics, resets, artifact naming</td><td>Methodology contract approved before scoring</td></tr>
+        <tr><td>B · Collect evidence</td><td>Freeze build; run E2E, environment, fake, detector, bounded ablation; preserve artifacts</td><td>Complete artifact index and summaries</td></tr>
+        <tr><td>C · Evidence chapters</td><td>Finalize Chapter 6; rebuild 7; expand 8--9; rewrite 10 and abstract</td><td>Every RQ answered with qualified evidence</td></tr>
+        <tr><td>D · Reconcile implementation</td><td>Apply Chapter 5 corrections; recheck 3--4; generate appendices</td><td>Frozen source and prose agree</td></tr>
+        <tr><td>E · Submission QA</td><td>Clean compile, page inspection, references, formatting, archive</td><td>Reproducible final PDF and source/evidence package</td></tr>
+      </tbody>
+    </table>
+    <h3>Immediate next session</h3>
+    <ol>
+      <li>Preserve and review Chapter 5 hand edits against ownership rules.</li>
+      <li>Decide the direct-execution comparison.</li>
+      <li>Create the frozen case manifest and RQ-to-metric map.</li>
+      <li>Inventory historical artifacts as reuse, rerun, or exclude.</li>
+      <li>Complete Chapter 6 acceptance and reset/repetition policy.</li>
+      <li>Collect the canonical run and replace Chapter 7's May-centred narrative.</li>
+    </ol>
+  </section>
+
+  <footer>
+    <p><strong>Progress log:</strong> 2026-07-13 · Initial closure plan derived from IIIAV3, the local thesis, commit <code>08f9129</code>, and the active full/fake runtime trackers.</p>
+    <p>2026-07-13 · Completed <code>TFM-C01</code>, <code>TFM-C02</code>, <code>TFM-C06</code>, <code>TFM-I04</code>, <code>TFM-I05</code>, <code>TFM-I13</code>, and <code>TFM-I14</code> in the first surgical Chapter 5 correction slice.</p>
+    <p>Markdown authority: <a href="tfm_completion_masterplan_2026-07-13.md"><code>tfm_completion_masterplan_2026-07-13.md</code></a></p>
+  </footer>
+</main>
+</body>
+</html>

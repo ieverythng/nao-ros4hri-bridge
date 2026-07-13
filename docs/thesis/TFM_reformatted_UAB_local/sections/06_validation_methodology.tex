@@ -3,9 +3,9 @@
 
 \section{Evaluation Aim}
 
-The validation methodology is designed to test the thesis claim at the architectural level: a robot-facing LLM planner is useful only if its plans remain grounded in the live ROS4HRI state, respect the available skill contracts, expose execution failures through typed feedback, and produce user-facing dialogue through the intended speech owner. The evaluation therefore does not treat success as a single demonstration outcome. It treats success as a combination of route correctness, plan validity, execution supervision, recovery behaviour, and traceability.
+The validation methodology is designed to test the thesis claim at the architectural level: a robot-facing LLM planner is useful only if its plans remain grounded in the live ROS4HRI state, respect the available skill contracts, expose execution failures through typed feedback, and produce user-facing dialogue through the intended speech owner. The evaluation therefore does not treat success as a single demonstration outcome. It treats success as a combination of route correctness, plan validity, execution validation, recovery behaviour, and traceability.
 
-The strategy separates four evidence layers so that a success in one layer cannot conceal a failure in another. First, controlled planner-request probes use fixed grounded context to isolate schema compliance, skill selection, plan lineage, and orchestrator dispatch from speech and dialogue timing. Second, the thesis-facing questionnaire injects complete user turns through the ROS4HRI speech path in the canonical \code{response_first} profile; this is the main full-stack score because it covers routing, planner handoff, execution feedback, and exactly-once speech. Third, named environment fixtures preload deterministic KnowledgeCore and scene state so that grounding-sensitive cases can be repeated. Fourth, a separate \code{fake_deep} policy ladder injects staged skill outcomes to test success, recoverable failure, ambiguity, and replan behaviour without depending on physical hardware. The \code{intent_first} mode and a detector-enabled launch are reported as ablation and perception profiles respectively, not merged into the baseline score.
+The strategy separates four evidence layers so that a success in one layer cannot conceal a failure in another. First, controlled planner-request probes use fixed grounded context to isolate schema compliance, skill selection, plan lineage, and orchestrator dispatch from speech and dialogue timing. Second, the thesis-facing questionnaire injects complete user turns through the ROS4HRI speech path in the canonical \code{response_first} profile; this is the main full-stack score because it covers routing, planner handoff, execution feedback, and exactly-once speech. Third, named environment fixtures preload deterministic KnowledgeCore and scene state so that grounding-sensitive cases can be repeated. Fourth, a separate multi-step deterministic fake-skill policy ladder injects staged skill outcomes to test success, recoverable failure, ambiguity, and replan behaviour without depending on physical hardware. The \code{intent_first} mode and a detector-enabled launch are reported as ablation and perception profiles respectively, not merged into the baseline score.
 
 \section{Validation Goals}
 
@@ -24,7 +24,7 @@ Route correctness & Does the chatbot keep dialogue-only turns out of the planner
 Plan validity & Does the planner output valid JSON using admissible skill names, argument fields, and failure policies? & Planner output, \code{planner_common} normalisation, orchestrator validation\\
 Skill coverage & Are all requested subgoals represented in the emitted plan, including composite instructions? & Plan steps, expected-plan checklist\\
 Grounding use & Does the planner use \code{grounded_context}, \code{knowledge_snapshot}, \code{scene_summary}, and \code{state_t0} when a task depends on visible objects or people? & Planner request payload, KB query evidence, \code{/scene/summary}\\
-Execution supervision & Does \code{nao_orchestrator} execute only validated steps and return structured feedback to the planner? & \code{/planner/execution_feedback}, orchestrator logs\\
+Execution validation & Does \code{nao_orchestrator} execute only validated steps and return structured feedback to the planner? & \code{/planner/execution_feedback}, orchestrator logs\\
 Failure handling & Does a failure cause clarification, replanning, or safe termination rather than a false success message? & Fake-skill result payloads, planner dialogue acts\\
 Exactly-once speech & Does one semantic event produce one user-facing response, without duplicated acknowledgement or completion speech? & \code{/planner/dialogue_act}, \code{/debug/nao_say/speech}, dialogue manager output\\
 Trace completeness & Can each run be reconstructed from the saved JSONL trace and report bundle? & \code{interaction_trace_viewer}, \code{/fake_skills/events}, validation reports\\
@@ -85,9 +85,9 @@ Composite instruction & Ordered mix of navigation, search, and reporting & All s
 \label{tab:fake-skill-scenario-matrix}
 \end{longtable}
 
-\section{Deep Fake-Skill Scenario Blocks}
+\section{Multi-Step Deterministic Fake-Skill Scenarios}
 
-The term \emph{deep fake-skill scenario} is used here to mean a multi-step fake execution scenario with structured state, deterministic failure injection, and trace-level evidence. It is not a synthetic-media or deepfake-video component. These scenarios are important because many planner failures only appear after the first step has succeeded and the stack must decide whether to continue, replan, ask the user, or stop.
+These scenarios combine multi-step fake execution, structured fixture state, deterministic failure injection, and trace-level evidence. They are important because many planning failures only appear after the first step has succeeded and the stack must decide whether to continue, replan, ask the user, or stop.
 
 The deep suite uses a policy ladder over representative multi-step goals:
 
@@ -103,7 +103,7 @@ The deep suite uses a policy ladder over representative multi-step goals:
 
 The primary thesis-facing mode is full user-turn injection through the ROS4HRI speech ingress. Before a \code{LiveSpeech} event is published, the corresponding speaker is made visible on the tracked-voices stream using reliable, transient-local delivery. Scored questionnaire cases use a group voice scope so that the dialogue stack observes the same ingress contract as a live interaction. This profile is slower than direct request injection but is the only one that jointly tests chatbot routing, planner admission, feedback relay, and speech ownership.
 
-Planner-request injection remains a diagnostic profile. A controlled payload with fixed \code{goal_text}, normalised intents, scene targets, and \code{grounded_context} is published at the planner gate to isolate the planner, orchestrator, and selected skill server. It is useful for narrowing a failure, but it does not receive the main end-to-end score. The \code{fake_deep} score is also reported separately because it measures supervision under controlled action outcomes rather than robot hardware performance. Finally, object-recognition cases use a distinct detector-enabled profile when the main runtime deliberately launches with object detection disabled; a missing detector process is never counted as negative detector evidence.
+Planner-request injection remains a diagnostic profile. A controlled payload with fixed \code{goal_text}, normalised intents, scene targets, and \code{grounded_context} is published at the planner gate to isolate the planner, orchestrator, and selected skill server. It is useful for narrowing a failure, but it does not receive the main end-to-end score. The multi-step deterministic fake-skill score is also reported separately because it measures goal handling under controlled action outcomes rather than robot hardware performance. Finally, object-recognition cases use a distinct detector-enabled profile when the main runtime deliberately launches with object detection disabled; a missing detector process is never counted as negative detector evidence.
 
 \section{Metrics}
 

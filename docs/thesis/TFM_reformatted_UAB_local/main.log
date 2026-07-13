@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Homebrew) (preloaded format=pdflatex 2026.3.4)  12 JUL 2026 21:07
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Homebrew) (preloaded format=pdflatex 2026.3.4)  13 JUL 2026 03:13
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -1222,41 +1222,41 @@ Chapter 5.
 [25
 
 ] [26]
-<figures/chapter5_full_stack.pdf, id=859, 774.895pt x 399.4925pt>
+<figures/chapter5_full_stack.pdf, id=859, 759.83875pt x 393.47pt>
 File: figures/chapter5_full_stack.pdf Graphic file (type pdf)
 <use figures/chapter5_full_stack.pdf>
 Package pdftex.def Info: figures/chapter5_full_stack.pdf  used on input line 22.
-(pdftex.def)             Requested size: 705.45456pt x 363.69722pt.
+(pdftex.def)             Requested size: 705.45456pt x 365.31691pt.
  [27 <./figures/chapter5_full_stack.pdf>]
 LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <14.4> not available
 (Font)              Font shape `T1/cmtt/m/n' tried instead on input line 30.
-<figures/chapter5_chatbot_llm.pdf, id=906, 490.83376pt x 137.51375pt>
-File: figures/chapter5_chatbot_llm.pdf Graphic file (type pdf)
-<use figures/chapter5_chatbot_llm.pdf>
-Package pdftex.def Info: figures/chapter5_chatbot_llm.pdf  used on input line 47.
-(pdftex.def)             Requested size: 472.31577pt x 132.33063pt.
  [28
 
 
 ]
-<figures/chapter5_planner_llm.pdf, id=913, 490.83376pt x 88.33pt>
+<figures/chapter5_chatbot_llm.pdf, id=927, 490.83376pt x 137.51375pt>
+File: figures/chapter5_chatbot_llm.pdf Graphic file (type pdf)
+<use figures/chapter5_chatbot_llm.pdf>
+Package pdftex.def Info: figures/chapter5_chatbot_llm.pdf  used on input line 56.
+(pdftex.def)             Requested size: 472.31577pt x 132.33063pt.
+ [29 <./figures/chapter5_chatbot_llm.pdf>]
+<figures/chapter5_planner_llm.pdf, id=961, 490.83376pt x 88.33pt>
 File: figures/chapter5_planner_llm.pdf Graphic file (type pdf)
 <use figures/chapter5_planner_llm.pdf>
-Package pdftex.def Info: figures/chapter5_planner_llm.pdf  used on input line 62.
+Package pdftex.def Info: figures/chapter5_planner_llm.pdf  used on input line 71.
 (pdftex.def)             Requested size: 472.31577pt x 85.00069pt.
- [29 <./figures/chapter5_chatbot_llm.pdf> <./figures/chapter5_planner_llm.pdf>] [30]
-<figures/chapter5_nao_orchestrator.pdf, id=982, 490.83376pt x 152.57pt>
+ [30 <./figures/chapter5_planner_llm.pdf>] [31]
+<figures/chapter5_nao_orchestrator.pdf, id=1001, 490.83376pt x 152.57pt>
 File: figures/chapter5_nao_orchestrator.pdf Graphic file (type pdf)
 <use figures/chapter5_nao_orchestrator.pdf>
-Package pdftex.def Info: figures/chapter5_nao_orchestrator.pdf  used on input line 89.
+Package pdftex.def Info: figures/chapter5_nao_orchestrator.pdf  used on input line 98.
 (pdftex.def)             Requested size: 472.31577pt x 146.8194pt.
- [31 <./figures/chapter5_nao_orchestrator.pdf>]
-<figures/chapter5_perception_grounding.pdf, id=1017, 490.83376pt x 144.54pt>
+<figures/chapter5_perception_grounding.pdf, id=1002, 490.83376pt x 144.54pt>
 File: figures/chapter5_perception_grounding.pdf Graphic file (type pdf)
 <use figures/chapter5_perception_grounding.pdf>
-Package pdftex.def Info: figures/chapter5_perception_grounding.pdf  used on input line 104.
+Package pdftex.def Info: figures/chapter5_perception_grounding.pdf  used on input line 113.
 (pdftex.def)             Requested size: 472.31577pt x 139.09204pt.
- [32 <./figures/chapter5_perception_grounding.pdf>]) (./sections/06_validation_methodology.tex [33]
+ [32 <./figures/chapter5_nao_orchestrator.pdf>] [33 <./figures/chapter5_perception_grounding.pdf>]) (./sections/06_validation_methodology.tex [34]
 Chapter 6.
 
 Underfull \hbox (badness 1308) in paragraph at lines 23--23
@@ -1373,10 +1373,10 @@ Underfull \hbox (badness 2318) in paragraph at lines 32--33
 []|\T1/cmr/m/n/12 (+20) Fixture man-i-fest, KB ev-i-
  []
 
-[34
+[35
 
 ]
-ignored: Infinite glue shrinkage found in box being split [35]
+ignored: Infinite glue shrinkage found in box being split [36]
 Underfull \hbox (badness 3128) in paragraph at lines 52--52
 []|\T1/cmr/m/n/12 (+20) Knowledge di-a-
  []
@@ -1406,7 +1406,7 @@ Underfull \hbox (badness 1194) in paragraph at lines 56--56
 []|\T1/cmr/m/n/12 (+20) Composite fake
  []
 
-[36]
+[37]
 Underfull \hbox (badness 5696) in paragraph at lines 77--78
 []|\T1/cmr/m/n/12 (+20) Report ob-ject ev-i-
  []
@@ -1466,14 +1466,14 @@ Underfull \hbox (badness 10000) in paragraph at lines 82--82
 []|\T1/cmr/m/n/12 (+20) Composite
  []
 
-[37] [38]
+[38] [39]
 Package hyperref Info: bookmark level for unknown lstlisting defaults to 0 on input line 133.
 ) (./sections/07_results.tex
 Overfull \hbox (66.13196pt too wide) in paragraph at lines 147--1
 []\T1/cmr/m/n/12 (-20) Each case trace records ex-plicit \T1/cmtt/m/n/12 phase_observations\T1/cmr/m/n/12 (-20) , fall-back mark-ers, a ter-mi-nal \T1/cmtt/m/n/12 plan_outcome_summary\T1/cmr/m/n/12 (-20) ,
  []
 
-[39] [40]
+[40] [41]
 Chapter 7.
 
 Overfull \hbox (20.63655pt too wide) in paragraph at lines 21--21
@@ -1490,7 +1490,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 22--23
 \T1/cmr/m/n/12 (+20) able, in-clud-ing \T1/cmtt/m/n/12 ambiguous_cup\T1/cmr/m/n/12 (+20) ,
  []
 
-[41
+[42
 
 ]
 Underfull \hbox (badness 10000) in paragraph at lines 37--37
@@ -1542,7 +1542,7 @@ Overfull \hbox (44.99895pt too wide) in paragraph at lines 41--41
 \T1/cmtt/m/n/12 motion_unavailable| 
  []
 
-[42]
+[43]
 Underfull \hbox (badness 10000) in paragraph at lines 60--60
 []|\T1/cmr/m/n/12 (+20) Planner re-ceived the
  []
@@ -1607,30 +1607,30 @@ Underfull \hbox (badness 1127) in paragraph at lines 91--91
 []|\T1/cmr/m/n/12 (+20) Not yet com-
  []
 
-[43]) (./sections/08_discussion.tex [44]
+[44]) (./sections/08_discussion.tex [45]
 Chapter 8.
 
 Overfull \hbox (16.43056pt too wide) in paragraph at lines 8--9
 []\T1/cmr/m/n/12 (-20) The most use-ful ar-chi-tec-tural seam is the bound-ary be-tween \T1/cmtt/m/n/12 planner_llm \T1/cmr/m/n/12 (-20) and \T1/cmtt/m/n/12 nao_orchestrator\T1/cmr/m/n/12 (-20) .
  []
 
-[45
+[46
 
-]) (./sections/09_limitations_future_work.tex [46]
+]) (./sections/09_limitations_future_work.tex [47]
 Chapter 9.
-) (./sections/10_conclusion.tex [47
+) (./sections/10_conclusion.tex [48
 
 ]
 Chapter 10.
-) (./sections/11_appendix.tex [48
+) (./sections/11_appendix.tex [49
 
 ]
 Appendix A.
-[49
+[50
 
 ]
 Appendix B.
-[50
+[51
 
 ]
 Appendix C.
@@ -1639,40 +1639,40 @@ Underfull \hbox (badness 10000) in paragraph at lines 28--28
 []|\T1/cmr/m/n/12 (+20) Execution feed-
  []
 
-) [51
+) [52
 
 ]
 Overfull \hbox (2.8396pt too wide) in paragraph at lines 188--188
 \T1/cmr/m/n/12 (-20) manoid: a com-bi-na-tion of per-for-mance and af-ford-abil-ity^^Q. In: \T1/cmr/m/it/12 (-20) arXiv preprint arXiv:0807.3223\T1/cmr/m/n/12 (-20) . 
  []
 
-[52
+[53
 
 
-] [53] [54] (./main.aux)
+] [54] [55] (./main.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 365E4E818CFB4EB4AD29BA5CA09A07FD;13168.
+(rerunfilecheck)             Checksum: 2B0CF194BAC7143F0BFAC9C7E50E868A;13238.
 Package logreq Info: Writing requests to 'main.run.xml'.
 \openout1 = `main.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 48821 strings out of 467525
- 1087874 string characters out of 5408440
- 2122411 words of memory out of 5000000
- 76393 multiletter control sequences out of 15000+600000
- 668481 words of font info for 224 fonts, out of 8000000 for 9000
+ 48829 strings out of 467525
+ 1087973 string characters out of 5408440
+ 2122506 words of memory out of 5000000
+ 76396 multiletter control sequences out of 15000+600000
+ 669258 words of font info for 226 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 103i,16n,108p,1278b,1571s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/tex-gyre/qhvb.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx0800.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1000.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx2488.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm0600.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm2074.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfti1440.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt0800.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt1095.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt1440.pfb>
-Output written on main.pdf (63 pages, 950911 bytes).
+ 103i,16n,108p,1311b,1571s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/tex-gyre/qhvb.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx0800.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1000.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx2488.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm0600.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm2074.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfti1440.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt0800.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt1095.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt1440.pfb>
+Output written on main.pdf (64 pages, 1202262 bytes).
 PDF statistics:
- 1361 PDF objects out of 1440 (max. 8388607)
- 1165 compressed objects within 12 object streams
- 341 named destinations out of 1000 (max. 500000)
- 58099 words of extra memory for PDF output out of 61914 (max. 10000000)
+ 1377 PDF objects out of 1440 (max. 8388607)
+ 1172 compressed objects within 12 object streams
+ 343 named destinations out of 1000 (max. 500000)
+ 60147 words of extra memory for PDF output out of 61914 (max. 10000000)
 

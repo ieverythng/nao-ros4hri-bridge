@@ -96,7 +96,7 @@
 
   % External context boxes.
   \node[actor] (human) at (10,97) {Human / operator\\speech, rqt, traces};
-  \node[actor] (environment) at (10,60) {Environment\\camera, simulator,\\preloaded KB};
+  \node[actor, text width=25mm] (environment) at (10,60) {Environment\\\code{interaction_sim}\\camera + KB fixtures};
   \node[outerBox, minimum width=36mm, minimum height=29mm, anchor=north west] (llmBox) at (242,116) {};
   \node[font=\scriptsize\bfseries, anchor=west] at (245,111.8) {LLM backend(s)};
   \node[nodebox, fill=layerPlanner, text width=27mm] (llm) at (260,98) {chatbot model\\planner model\\Ollama / vLLM};
@@ -111,16 +111,16 @@
   \node[dialogueNode] (chatbot) at (78,84) {\code{chatbot_llm}\\route, response\\planner handoff};
 
   \node[subsystem, fill=layerPlanner, minimum width=64mm, minimum height=31mm, anchor=north west] (planningArea) at (96,105) {};
-  \node[font=\scriptsize\bfseries, anchor=west] at (99,100.6) {Planning and supervision};
+  \node[font=\scriptsize\bfseries, anchor=west] at (99,100.6) {Planning and goal handling};
   \node[execNode] (gate) at (113,84) {\code{nao_orchestrator}\\planner gate\\admission};
-  \node[plannerNode] (planner) at (144,84) {\code{planner_llm}\\plan generation\\supervision};
+  \node[plannerNode] (planner) at (144,84) {\code{planner_llm}\\plan generation\\feedback response};
 
   \node[subsystem, fill=layerExec, minimum width=50mm, minimum height=31mm, anchor=north west] (executionArea) at (171,105) {};
   \node[font=\scriptsize\bfseries, anchor=west] at (174,100.6) {Execution boundary};
   \node[execNode, text width=29mm] (orchestrator) at (196,84) {\code{nao_orchestrator}\\validate plan\\dispatch steps};
 
   % Contract bus separated from the nodes.
-  \node[bus, minimum width=184mm] (plannerBus) at (127,69) {
+  \node[bus, minimum width=176mm] (plannerBus) at (123,69) {
     Planner contract bus:
     \code{/nao_orchestrator/planner_request} \(\rightarrow\)
     \code{/planner/request} \(\rightarrow\) \code{/intents} \(\rightarrow\)
@@ -130,7 +130,7 @@
   % Evidence row.
   \node[subsystem, fill=layerGrounding, minimum width=92mm, minimum height=29mm, anchor=north west] (groundingArea) at (31,61) {};
   \node[font=\scriptsize\bfseries, anchor=west] at (34,56.6) {Grounding and symbolic evidence};
-  \node[groundingNode] (scene) at (48,40) {\code{nao_scene_grounding}\\detector facts\\\code{/scene/summary}};
+  \node[groundingNode, text width=29mm] (scene) at (48,40) {\code{nao_scene_grounding}\\detector facts\\\code{/scene/summary}};
   \node[groundingNode, text width=22mm] (kb) at (79,40) {\code{kb_skills}\\KnowledgeCore\\query/revise};
   \node[groundingNode] (context) at (110,40) {\code{grounded}\\\code{context_v3}\\entities, locations\\bounded relations};
 
@@ -140,7 +140,7 @@
 
   % Skills row.
   \node[subsystem, fill=layerSkill, minimum width=107mm, minimum height=29mm, anchor=north west] (skillsArea) at (126,61) {};
-  \node[font=\scriptsize\bfseries, anchor=west] at (129,56.6) {AB=1 runtime skills and validation seams};
+  \node[font=\scriptsize\bfseries, anchor=west] at (129,56.6) {Runtime skills and validation seams};
   \node[skillNode, text width=19mm] (scan) at (140,40) {\code{/skill/scan}\\fresh evidence};
   \node[skillNode, text width=20mm] (report) at (166,40) {\code{/skill/}\\\code{report_result}\\summary};
   \node[skillNode, text width=20mm] (move) at (193,40) {\code{/skill/move_to}\\bounded local};
@@ -150,9 +150,9 @@
   \node[subsystem, fill=white, minimum width=188mm, minimum height=34mm, anchor=north west] (validationArea) at (31,8) {};
   \node[font=\scriptsize\bfseries, anchor=west] at (34,2.8) {Validation, observability, and extension tracks};
   \node[skillNode, text width=38mm] (trace) at (56,-14) {\code{interaction_trace}\\\code{viewer}\\JSON/HTML traces};
-  \node[skillNode, text width=39mm] (review) at (102,-14) {\code{robot-runtime}\\\code{performance-review}\\main + fake\_deep};
-  \node[futureNode, text width=34mm] (wme) at (148,-14) {World Model\\Enricher\\future compact\\memory};
-  \node[futureNode, text width=39mm] (neural) at (194,-14) {Neural Workbench\\AB>=2 decomposition\\promotion gates};
+  \node[skillNode, text width=39mm] (review) at (102,-14) {\code{robot-runtime}\\\code{performance-review}\\main + fake policies};
+  \node[skillNode, text width=34mm] (simprofile) at (148,-14) {\code{interaction_sim}\\perception +\\KB fixtures};
+  \node[futureNode, text width=39mm] (wme) at (194,-14) {World Model Enricher\\future temporal state\\and uncertainty};
 
   % Primary sequential control path.
   \draw[control] (human.east) -- (dm.west);
@@ -169,13 +169,13 @@
   \draw[evidence] (kb.south) -- (evidenceBus.north);
 
   % Skill execution and feedback.
-  \draw[adapter] (orchestrator.east) -- ++(15,0) |- ([xshift=-8mm]skillsArea.north east);
+  \draw[adapter] (orchestrator.east) -- ++(18,0) |- ([xshift=-4mm]skillsArea.north east);
   \draw[adapter] (skillsArea.east) -- (robot.west);
 
   % Observability and extension paths.
   \draw[evidence] ([yshift=-4mm]trace.east) -- ([yshift=-4mm]review.west);
+  \draw[evidence] ([yshift=-4mm]review.east) -- ([yshift=-4mm]simprofile.west);
   \draw[future] (wme.north) -- (context.south);
-  \draw[future] (neural.north) -- (skillsArea.south);
 
   % The backend is a deployment callout: chatbot_llm and planner_llm call it,
   % but the arrows are intentionally omitted here to keep the architecture plate
@@ -191,7 +191,7 @@
   };
 \end{tikzpicture}%
 }
-\caption{High-level full-stack architecture of the implemented NAO ROS4HRI bridge. The diagram complements the runtime sequence view by emphasizing subsystem ownership, deployment boundaries, ROS contract buses, validation seams, and future extension points. The colour coding follows the thesis runtime section: dialogue components are blue, grounding and evidence are orange, planning is green, execution is purple, and skill/adaptor nodes are neutral grey.}
+\caption{High-level full-stack architecture of the implemented NAO ROS4HRI bridge. The diagram complements the runtime sequence view by emphasizing subsystem ownership, deployment boundaries, ROS contract buses, validation seams, and the future World Model Enricher. The colour coding follows the thesis runtime section: dialogue components are blue, grounding and evidence are orange, planning is green, execution is purple, and skill/adaptor nodes are neutral grey.}
 \label{fig:full-stack-architecture-plate}
 \end{figure}
 \end{landscape}

@@ -38,41 +38,41 @@
 \contentsline {section}{\numberline {5.2}ROS Nodes}{28}{section.5.2}%
 \contentsline {subsection}{\numberline {5.2.1}\code {dialogue_manager}}{28}{subsection.5.2.1}%
 \contentsline {subsection}{\numberline {5.2.2}\code {chatbot_llm}}{28}{subsection.5.2.2}%
-\contentsline {subsection}{\numberline {5.2.3}\code {planner_llm}}{29}{subsection.5.2.3}%
+\contentsline {subsection}{\numberline {5.2.3}\code {planner_llm}}{30}{subsection.5.2.3}%
 \contentsline {subsection}{\numberline {5.2.4}Goal-Keyed Supervisor}{30}{subsection.5.2.4}%
-\contentsline {subsection}{\numberline {5.2.5}Skill Registry (\code {skill_common})}{30}{subsection.5.2.5}%
-\contentsline {subsection}{\numberline {5.2.6}\code {nao_orchestrator} and the Execution Boundary}{30}{subsection.5.2.6}%
-\contentsline {section}{\numberline {5.3}Grounding and Knowledge}{31}{section.5.3}%
-\contentsline {section}{\numberline {5.4}Fake Skills and Simulation Seams}{32}{section.5.4}%
+\contentsline {subsection}{\numberline {5.2.5}Skill Registry (\code {skill_common})}{31}{subsection.5.2.5}%
+\contentsline {subsection}{\numberline {5.2.6}\code {nao_orchestrator} and the Execution Boundary}{31}{subsection.5.2.6}%
+\contentsline {section}{\numberline {5.3}Grounding and Knowledge}{32}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Fake Skills and Simulation Seams}{33}{section.5.4}%
 \contentsline {section}{\numberline {5.5}Models and Runtime Configuration}{33}{section.5.5}%
-\contentsline {chapter}{\numberline {6}Validation Methodology}{34}{chapter.6}%
-\contentsline {section}{\numberline {6.1}Evaluation Aim}{34}{section.6.1}%
-\contentsline {section}{\numberline {6.2}Validation Goals}{34}{section.6.2}%
-\contentsline {section}{\numberline {6.3}Questionnaire-Based Runtime Checks}{36}{section.6.3}%
-\contentsline {section}{\numberline {6.4}Fake-Skill Scenario Validation}{36}{section.6.4}%
-\contentsline {section}{\numberline {6.5}Deep Fake-Skill Scenario Blocks}{37}{section.6.5}%
-\contentsline {section}{\numberline {6.6}Execution Profiles}{38}{section.6.6}%
-\contentsline {section}{\numberline {6.7}Metrics}{38}{section.6.7}%
-\contentsline {section}{\numberline {6.8}Evidence Bundle}{39}{section.6.8}%
-\contentsline {chapter}{\numberline {7}Results}{41}{chapter.7}%
-\contentsline {section}{\numberline {7.1}Current Status of the Validation Evidence}{41}{section.7.1}%
-\contentsline {section}{\numberline {7.2}Runtime Stack Health}{41}{section.7.2}%
-\contentsline {section}{\numberline {7.3}Action-Level Fake-Skill Results}{42}{section.7.3}%
-\contentsline {section}{\numberline {7.4}Planner Request Admission}{43}{section.7.4}%
-\contentsline {section}{\numberline {7.5}Speech Ingress and User-Turn Responsiveness}{43}{section.7.5}%
-\contentsline {section}{\numberline {7.6}Results Matrix}{43}{section.7.6}%
-\contentsline {section}{\numberline {7.7}Interpretation}{44}{section.7.7}%
-\contentsline {chapter}{\numberline {8}Discussion}{45}{chapter.8}%
-\contentsline {section}{\numberline {8.1}Architectural Findings}{45}{section.8.1}%
-\contentsline {section}{\numberline {8.2}Planner Behaviour}{45}{section.8.2}%
-\contentsline {section}{\numberline {8.3}Grounding and World State}{46}{section.8.3}%
-\contentsline {section}{\numberline {8.4}ROS4HRI Modularity}{46}{section.8.4}%
-\contentsline {section}{\numberline {8.5}Validation Implications}{46}{section.8.5}%
-\contentsline {chapter}{\numberline {9}Limitations and Future Work}{47}{chapter.9}%
-\contentsline {section}{\numberline {9.1}Current Limitations}{47}{section.9.1}%
-\contentsline {section}{\numberline {9.2}Future Work}{47}{section.9.2}%
-\contentsline {chapter}{\numberline {10}Conclusion}{48}{chapter.10}%
-\contentsline {chapter}{\numberline {A}Full Runtime Contracts}{49}{appendix.A}%
-\contentsline {chapter}{\numberline {B}Launch Commands}{50}{appendix.B}%
-\contentsline {chapter}{\numberline {C}Validation Log Template}{51}{appendix.C}%
-\contentsline {chapter}{Bibliography}{52}{section*.29}%
+\contentsline {chapter}{\numberline {6}Validation Methodology}{35}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Evaluation Aim}{35}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Validation Goals}{35}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Questionnaire-Based Runtime Checks}{37}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Fake-Skill Scenario Validation}{37}{section.6.4}%
+\contentsline {section}{\numberline {6.5}Multi-Step Deterministic Fake-Skill Scenarios}{38}{section.6.5}%
+\contentsline {section}{\numberline {6.6}Execution Profiles}{39}{section.6.6}%
+\contentsline {section}{\numberline {6.7}Metrics}{39}{section.6.7}%
+\contentsline {section}{\numberline {6.8}Evidence Bundle}{40}{section.6.8}%
+\contentsline {chapter}{\numberline {7}Results}{42}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Current Status of the Validation Evidence}{42}{section.7.1}%
+\contentsline {section}{\numberline {7.2}Runtime Stack Health}{42}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Action-Level Fake-Skill Results}{43}{section.7.3}%
+\contentsline {section}{\numberline {7.4}Planner Request Admission}{44}{section.7.4}%
+\contentsline {section}{\numberline {7.5}Speech Ingress and User-Turn Responsiveness}{44}{section.7.5}%
+\contentsline {section}{\numberline {7.6}Results Matrix}{44}{section.7.6}%
+\contentsline {section}{\numberline {7.7}Interpretation}{45}{section.7.7}%
+\contentsline {chapter}{\numberline {8}Discussion}{46}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Architectural Findings}{46}{section.8.1}%
+\contentsline {section}{\numberline {8.2}Planner Behaviour}{46}{section.8.2}%
+\contentsline {section}{\numberline {8.3}Grounding and World State}{47}{section.8.3}%
+\contentsline {section}{\numberline {8.4}ROS4HRI Modularity}{47}{section.8.4}%
+\contentsline {section}{\numberline {8.5}Validation Implications}{47}{section.8.5}%
+\contentsline {chapter}{\numberline {9}Limitations and Future Work}{48}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Current Limitations}{48}{section.9.1}%
+\contentsline {section}{\numberline {9.2}Future Work}{48}{section.9.2}%
+\contentsline {chapter}{\numberline {10}Conclusion}{49}{chapter.10}%
+\contentsline {chapter}{\numberline {A}Full Runtime Contracts}{50}{appendix.A}%
+\contentsline {chapter}{\numberline {B}Launch Commands}{51}{appendix.B}%
+\contentsline {chapter}{\numberline {C}Validation Log Template}{52}{appendix.C}%
+\contentsline {chapter}{Bibliography}{53}{section*.29}%

@@ -84,12 +84,12 @@
   \node[input, minimum width=30mm] (turn) {Dialogue turn\\\code{DialogueInteraction}\\or backend action};
   \node[groundNode, below=of turn, minimum width=30mm] (kb) {KB and scene inputs\\\code{/kb/query}\\\code{/scene/summary}};
 
-  \node[dialogueNode, right=of turn, minimum width=30mm] (history) {Conversation state\\role, locale,\\recent turns};
+  \node[dialogueNode, right=of turn, minimum width=30mm] (history) {Conversation state\\dialogue role, user id,\\recent turns};
   \node[dialogueNode, right=of history, minimum width=31mm] (prompt) {Prompt pack + builder\\\code{chat_prompt_pack.yaml}\\stage framing};
   \node[dialogueNode, right=of prompt, minimum width=29mm] (model) {LLM call\\response + intent\\low token budget};
   \node[dialogueNode, right=of model, minimum width=31mm] (route) {Structured route\\\code{dialogue}\\\code{knowledge_query}\\\code{execution}};
 
-  \node[groundNode, below=of prompt, minimum width=32mm] (context) {\code{grounded_context_v3}\\entities, locations,\\bounded relations};
+  \node[groundNode, below=of prompt, minimum width=32mm] (context) {\code{grounded_context}\\entities, locations,\\bounded relations};
   \node[execNode, below=13mm of route, minimum width=35mm] (handoff) {Planner handoff adapter\\\code{/nao_orchestrator/planner_request}};
   \node[input, above=of route, minimum width=30mm] (speech) {User-facing response\\returned to\\\code{dialogue_manager}};
   \node[bus, below=of model, minimum width=45mm] (trace) {\code{/chatbot_llm/turn_trace}\\route, evidence, handoff visibility};
@@ -118,7 +118,7 @@
 \resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[node distance=8mm and 11mm]
   \node[input, minimum width=34mm] (request) {Admitted request\\\code{/planner/request}\\\code{goal_id}};
-  \node[groundNode, below=of request, minimum width=34mm] (ctx) {Planner context\\\code{grounded_context_v3}\\scene targets};
+  \node[groundNode, below=of request, minimum width=34mm] (ctx) {Planner context\\\code{grounded_context}\\scene targets};
 
   \node[plannerNode, right=of request, minimum width=31mm] (normalize) {Normalize request\\\code{planner_common}\\contract shape};
   \node[plannerNode, right=of normalize, minimum width=33mm] (prompt) {Planner prompt\\skill registry\\allowed step types};
@@ -126,7 +126,7 @@
   \node[plannerNode, right=of model, minimum width=32mm] (validate) {Extract + validate\\schema repair\\failure payload};
 
   \node[execNode, below=of validate, minimum width=32mm] (intent) {Executable output\\\code{/intents}\\nested \code{plan}};
-  \node[plannerNode, below=of prompt, minimum width=32mm] (supervisor) {Goal supervisor\\active goal\\replan / clarify};
+  \node[plannerNode, below=of prompt, minimum width=32mm] (supervisor) {Goal-state helper\\active goal\\replan / clarify};
   \node[input, below=of normalize, minimum width=34mm] (feedback) {Execution feedback\\\code{/planner/execution_feedback}\\step outcomes};
   \node[dialogueNode, below=of model, minimum width=32mm] (act) {Planner dialogue act\\\code{/planner/dialogue_act}\\clarify/fail/complete};
 
@@ -142,7 +142,7 @@
   \draw[feedback] (validate) -- (supervisor);
 \end{tikzpicture}%
 }
-\caption{\code{planner_llm} node-level view. The planner generates and supervises structured plan envelopes; execution and speech remain downstream responsibilities.}
+\caption{\code{planner_llm} node-level view. The planner generates structured plan envelopes and maintains feedback-driven goal state; execution and speech remain downstream responsibilities.}
 \label{fig:planner-llm-node}
 \end{figure}
 
@@ -160,7 +160,7 @@
   \node[input, below=15mm of ingress, minimum width=37mm] (intent) {Executable intent\\\code{/intents}\\planner or direct};
   \node[execNode, right=of intent, minimum width=31mm] (validator) {Plan validator\\registry check\\step schema};
   \node[execNode, right=of validator, minimum width=32mm] (dispatcher) {Ordered dispatcher\\step state\\dedupe};
-  \node[skillNode, right=of dispatcher, minimum width=31mm] (skills) {Skill/adaptor calls\\AB=1 actions\\fake profiles};
+  \node[skillNode, right=of dispatcher, minimum width=31mm] (skills) {Skill/adaptor calls\\runtime actions\\fake profiles};
   \node[groundNode, right=of skills, minimum width=31mm] (kbmut) {KB mutation seam\\\code{kb_skills}\\explicit effects only};
 
   \node[bus, below=15mm of dispatcher, minimum width=58mm] (feedback) {\code{/planner/execution_feedback}\\accepted, started, succeeded, failed, completed};
@@ -196,7 +196,7 @@
 
   \node[groundNode, below=of grounding, minimum width=30mm] (kb) {KnowledgeCore update\\via \code{/kb/revise}\\transient facts};
   \node[groundNode, right=of kb, minimum width=30mm] (kbskills) {\code{kb_skills}\\\code{/kb/query}\\transport boundary};
-  \node[dialogueNode, right=of kbskills, minimum width=32mm] (projection) {Chatbot projection\\\code{knowledge_snapshot}\\\code{grounded_context_v3}};
+  \node[dialogueNode, right=of kbskills, minimum width=32mm] (projection) {Chatbot projection\\\code{knowledge_snapshot}\\\code{grounded_context}};
 
   \node[plannerNode, above=of projection, minimum width=32mm] (plannerContext) {Planner-facing T0\\entities, locations,\\role-separated people};
   \node[futureNode, below=of kb, minimum width=34mm] (overlay) {Future spatial overlay\\metric frame\\distance evidence};

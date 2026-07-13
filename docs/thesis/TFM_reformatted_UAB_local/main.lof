@@ -6,11 +6,11 @@
 \addvspace {10\p@ }
 \contentsline {figure}{\numberline {4.1}{\ignorespaces Grounded-context pipeline. Scene and KB evidence are projected by a grounded perception helper into a compact \code {grounded_context} for \code {chatbot_llm} and \code {planner_llm}. Skills receive planner-approved arguments through execution, while also retaining access to raw scene and KB evidence for live requery and validation before reporting outcomes.}}{20}{figure.caption.17}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {5.1}{\ignorespaces Full-stack implementation of the NAO ROS4HRI bridge. Dialogue components are blue, grounding and evidence components orange, planning components green, execution components purple, and skills or adapters neutral grey. Dashed red boxes denote future extensions rather than claims about the implemented runtime.}}{27}{figure.caption.20}%
+\contentsline {figure}{\numberline {5.1}{\ignorespaces Full-stack implementation of the NAO ROS4HRI bridge. Dialogue components are blue, grounding and evidence components orange, planning components green, execution components purple, and skills or adapters neutral grey. The \code {interaction_sim} and KB-fixture paths provide controlled validation inputs. The dashed red World Model Enricher box denotes future work rather than an implemented runtime component.}}{27}{figure.caption.20}%
 \contentsline {figure}{\numberline {5.2}{\ignorespaces Internal \code {chatbot_llm} path. The node owns semantic interpretation and candidate planner metadata, but not plan construction, dispatch, or speech execution.}}{29}{figure.caption.21}%
-\contentsline {figure}{\numberline {5.3}{\ignorespaces Internal \code {planner_llm} path, from admitted request through validated plan envelope and goal-keyed supervision.}}{29}{figure.caption.22}%
-\contentsline {figure}{\numberline {5.4}{\ignorespaces The \code {nao_orchestrator} admission and execution boundaries. All effects cross deterministic validation and retain goal and plan lineage.}}{31}{figure.caption.23}%
-\contentsline {figure}{\numberline {5.5}{\ignorespaces Combined perception and symbolic-grounding pipeline. Compact projections serve dialogue and planning, while raw and fresh evidence remains at its owning seam.}}{32}{figure.caption.24}%
+\contentsline {figure}{\numberline {5.3}{\ignorespaces Internal \code {planner_llm} path, from admitted request through validated plan envelope and goal-keyed supervision.}}{30}{figure.caption.22}%
+\contentsline {figure}{\numberline {5.4}{\ignorespaces The \code {nao_orchestrator} admission and execution boundaries. All effects cross deterministic validation and retain goal and plan lineage.}}{32}{figure.caption.23}%
+\contentsline {figure}{\numberline {5.5}{\ignorespaces Combined perception and symbolic-grounding pipeline. Compact projections serve dialogue and planning, while raw and fresh evidence remains at its owning seam.}}{33}{figure.caption.24}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \addvspace {10\p@ }
