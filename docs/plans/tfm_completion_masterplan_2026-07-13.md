@@ -169,7 +169,7 @@ The TFM is closed only when all of the following are true:
 - [x] **TFM-I15:** Add the deterministic-guards section covering chatbot route
   repair, bounded planner fallback modes, orchestrator guards, trace markers,
   and failure behaviour.
-- [x] **TFM-I16:** Add Contract 3A for the shared skill-entry shape and connect
+- [x] **TFM-I16:** Add Contract 4 for the shared skill-entry shape and connect
   its fields to prompt construction, admission, dispatch, and evidence-based
   reporting.
 - [x] **TFM-I17:** Add the compressed runtime skill inventory to the appendix
@@ -177,6 +177,19 @@ The TFM is closed only when all of the following are true:
   failure modes, and executor status.
 - [x] **TFM-I18:** Remove remaining internal schema suffixes and stale diagram
   labels, regenerate all affected PDFs, and complete visual QA.
+- [x] **TFM-I19:** Renumber the runtime contract sequence around Contract 4,
+  add the typed skill-result and raw-evidence contracts, and reconcile all
+  Chapter 5 and appendix cross-references.
+- [x] **TFM-I20:** Add the complete sixteen-skill implementation table and
+  expand orchestrator ingress, execution feedback, detector grounding, and
+  verified post-skill KB effects from current source.
+- [x] **TFM-I21:** Replace the repetitive runtime-configuration prose with the
+  simulator and robot/RViz launch profiles, their principal arguments,
+  lifecycle sequencing, and the current model-provider configuration.
+- [ ] **TFM-I22:** Synchronize the generated planner skill projection with the
+  canonical registry before freezing the scored source revision. The current
+  gate reports stale `walk_to` parameters and adapter mapping, plus a stale
+  `wave_greet` adapter mapping.
 
 ### P1: Chapter 6 experimental completeness
 
@@ -385,4 +398,6 @@ frozen experiment or be explicitly qualified.
 |---|---|---|
 | 2026-07-13 | Created closure masterplan from local thesis, IIIAV3 correction ledger, current runtime trackers, and recent commits | `08f9129`, `ISSUE_TRACKER_FULL_SUITE.html`, `ISSUE_TRACKER_FAKE_SUITE.html`, current chapter inventory |
 | 2026-07-13 | Completed the first surgical Chapter 5 correction slice: TFM-facing skill terminology, KB first-use definition, goal-supervisor clarification, grounded-context and contract links, route bullets, response/intent ordering, dialogue-manager provenance, and the revised simulator/WME stack figure | `TFM-C01`, `TFM-C02`, `TFM-C06`, `TFM-I04`, `TFM-I05`, `TFM-I13`, `TFM-I14` |
-| 2026-07-13 | Completed the implementation-depth slice: deterministic guards and bounded fallbacks, shared skill-entry Contract 3A, canonical runtime skill inventory, schema-label cleanup, regenerated vector figures, and visual PDF QA | `TFM-I15`, `TFM-I16`, `TFM-I17`, `TFM-I18`, `build/main.pdf` |
+| 2026-07-13 | Completed the implementation-depth slice: deterministic guards and bounded fallbacks, shared skill-entry Contract 4, canonical runtime skill inventory, schema-label cleanup, regenerated vector figures, and visual PDF QA | `TFM-I15`, `TFM-I16`, `TFM-I17`, `TFM-I18`, `build/main.pdf` |
+| 2026-07-13 | Reconciled Contracts 1--9, added the complete runtime-skill table, expanded direct and planner orchestrator ingress, grounded the custom YOLO and KB-effect paths, and documented the simulator and robot/RViz profiles | `TFM-I19`, `TFM-I20`, `TFM-I21`, `04_runtime_contracts.tex`, `05_implementation.tex`, `11_appendix.tex` |
+| 2026-07-13 | Registry verification identified generated-projection drift in `walk_to` and `wave_greet`; retained canonical entries as the thesis authority and opened a final-source synchronization gate | `TFM-I22`, `check_skill_registry_consistency.py`, `sync_skill_registry_views.py --check` |

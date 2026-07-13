@@ -6,10 +6,12 @@ The full runtime contracts are described in Chapter~\ref{chap:runtime-contracts}
 \section{Runtime Skill Inventory}
 \label{sec:runtime-skill-inventory}
 
-Table~\ref{tab:runtime-skill-inventory} gives the compressed runtime projection used by the current planner and orchestrator profiles. The values are taken from the shared skill registry and are shortened only to fit the appendix. The machine-readable registry and the generated runtime projections are frozen with the source revision of each validation bundle. \code{ask_user} is retained as a planner dialogue act under Contract~7 and is not included in this execution-skill inventory.
+Table~\ref{tab:runtime-skill-inventory} gives the compressed runtime projection used by the current planner and orchestrator profiles. The values are taken from the shared skill registry and are shortened only to fit the appendix. The machine-readable registry and the generated runtime projections are frozen with the source revision of each validation bundle. The inventory includes all sixteen planner-visible runtime skills, including the non-physical communication skill \code{ask_user}. Its inclusion does not move final wording or speech ownership out of the dialogue layer described by Contract~8.
 
 \begin{landscape}
 \scriptsize
+\setstretch{1.0}
+\renewcommand{\arraystretch}{1.02}
 \setlength{\tabcolsep}{3pt}
 \begin{longtable}{
 >{\raggedright\arraybackslash}p{0.14\linewidth}
@@ -33,91 +35,97 @@ Table~\ref{tab:runtime-skill-inventory} gives the compressed runtime projection 
 \bottomrule
 \endlastfoot
 
-\code{scan}\\ perception
+\shortstack[l]{\code{scan}\\perception}
 & none
 & refreshed scene evidence and typed scan payload
 & \code{no_person}, \code{objects_only}, \code{backend_unavailable}, \code{unexpected_payload}
 & \code{orchestrator.scan}; first-party\\
 
-\code{find_object}\\ perception
+\shortstack[l]{\code{find_object}\\perception}
 & \code{target}
 & object or person evidence is returned
 & \code{not_found}, \code{ambiguous}, \code{backend_unavailable}
 & \code{fake.find_object}; fake\\
 
-\code{navigate_to}\\ navigation
+\shortstack[l]{\code{navigate_to}\\navigation}
 & \code{target}
 & robot arrives at the target location
 & \code{path_blocked}, \code{unknown_location}, \code{safety_disabled}
 & \code{fake.navigate_to}; fake\\
 
-\code{walk_to}\\ navigation
+\shortstack[l]{\code{walk_to}\\navigation}
 & none
 & short local walking segment is executed or dry-run
 & \code{invalid_local_goal}, \code{safety_disabled}, \code{path_blocked}, \code{naoqi_move_failed}
 & \code{orchestrator.walk_to}; hybrid\\
 
-\code{bring_object}\\ manipulation
+\shortstack[l]{\code{bring_object}\\manipulation}
 & \code{target}, \code{recipient}
 & object is delivered to recipient or destination
 & \code{acquisition_failure}, \code{navigation_failure}, \code{delivery_blocked}, \code{recipient_unavailable}
 & \code{fake.bring_object}; fake\\
 
-\code{place_object}\\ manipulation
+\shortstack[l]{\code{place_object}\\manipulation}
 & \code{target}, \code{destination}
 & object is released and a support relation is added
 & \code{destination_unavailable}, \code{invalid_support}, \code{no_held_object}, \code{placement_failed}
 & \code{fake.place_object}; fake\\
 
-\code{pick_object}\\ manipulation
+\shortstack[l]{\code{pick_object}\\manipulation}
 & \code{target}
 & robot holds the object and updates its support relation
 & \code{object_unavailable}, \code{unreachable}, \code{already_held}, \code{grasp_failed}
 & \code{fake.pick_object}; fake\\
 
-\code{perform_motion}\\ embodiment
+\shortstack[l]{\code{perform_motion}\\embodiment}
 & \code{object}
 & robot posture or head orientation changes
 & \code{unsupported_motion}, \code{dispatch_failed}
 & \code{orchestrator.perform_motion}; first-party\\
 
-\code{look_at}\\ attention
+\shortstack[l]{\code{look_at}\\attention}
 & none
 & robot gaze is redirected or reset
 & \code{missing_target}, \code{dispatch_failed}
 & \code{orchestrator.look_at}; first-party\\
 
-\code{kb_add}\\ knowledge
+\shortstack[l]{\code{kb_add}\\knowledge}
 & \code{statements}
 & requested predicates are added through KnowledgeCore
 & \code{missing_statements}, \code{kb_service_unavailable}, \code{kb_mutation_rejected}
 & \code{orchestrator.kb_add}; first-party\\
 
-\code{kb_revise}\\ knowledge
+\shortstack[l]{\code{kb_revise}\\knowledge}
 & \code{statements}
 & requested predicates are revised through KnowledgeCore
 & \code{missing_statements}, \code{kb_service_unavailable}, \code{kb_mutation_rejected}
 & \code{orchestrator.kb_revise}; first-party\\
 
-\code{kb_remove}\\ knowledge
+\shortstack[l]{\code{kb_remove}\\knowledge}
 & \code{statements}
 & requested predicates are removed through KnowledgeCore
 & \code{missing_statements}, \code{kb_service_unavailable}, \code{kb_mutation_rejected}
 & \code{orchestrator.kb_remove}; first-party\\
 
-\code{report_result}\\ communication
+\shortstack[l]{\code{report_result}\\communication}
 & none
 & user receives a result summary through robot speech
 & \code{missing_summary}, \code{say_dispatch_failed}
 & \code{orchestrator.report_result}; first-party\\
 
-\code{wave_greet}\\ social motion
+\shortstack[l]{\code{ask_user}\\communication}
+& none
+& structured clarification request obtains missing user information
+& \code{missing_prompt}, \code{dialogue_relay_unavailable}
+& \code{orchestrator.ask_user}; first-party\\
+
+\shortstack[l]{\code{wave_greet}\\social motion}
 & none
 & robot performs a greeting wave gesture
 & \code{motion_unavailable}, \code{safety_disabled}, \code{unexpected_payload}
 & \code{orchestrator.wave_greet}; hybrid\\
 
-\code{inspect_area}\\ perception
+\shortstack[l]{\code{inspect_area}\\perception}
 & \code{target}
 & scene evidence for the target area is returned
 & \code{ambiguous}, \code{area_unknown}, \code{backend_unavailable}

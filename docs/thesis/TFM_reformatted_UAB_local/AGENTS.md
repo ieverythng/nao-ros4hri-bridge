@@ -58,11 +58,15 @@ Preserve these boundaries in every chapter and figure:
 Use these cross-links when describing enforcement:
 
 - dialogue versus execution: FR2, FR3, Contract 1, and Contract 2;
-- deterministic plan validation: FR5, Contract 4, and the orchestrator section;
+- skill admissibility and deterministic plan validation: FR5, Contracts 4 and
+  5, and the orchestrator section;
 - compact grounding: Contract 3 and the grounded-context pipeline figure;
-- feedback-driven planning: FR6, FR7, Contract 5, and Contract 6;
-- speech ownership and duplicate prevention: the ownership map, Contract 6,
-  and the validation speech metric.
+- state-changing skill evidence and verified KB effects: Contract 6 and the
+  grounding/knowledge section;
+- feedback-driven planning: FR6, FR7, and Contract 7;
+- speech ownership and duplicate prevention: the ownership map, Contract 8,
+  and the validation speech metric;
+- raw scene, KB, action, and trace evidence: Contract 9 and the evidence bundle.
 
 ## Planner And Fallback Description
 
@@ -186,3 +190,52 @@ wrong node or requiring internal registry vocabulary in the manuscript.
 **Next mutation hypothesis:** after three accepted thesis-writing iterations,
 consolidate duplicated vocabulary rules and add only a focused table/figure
 check if a repeated formatting defect appears.
+
+### Iteration 2026-07-13: contracts, skills, and runtime profiles
+
+- **Target artifacts:** Chapters 4 and 5, the runtime-skill appendix, and the
+  synchronized completion-plan pair.
+- **Objective:** make the Contract 4 skill seam, orchestrator ownership,
+  perception/KB effects, fake validation, and launch profiles precise enough to
+  support Chapters 6 and 7 without internal registry terminology.
+- **Train set:** the requested Contract 4 renumbering, complete runtime-skill
+  table, direct and planner orchestrator ingress, custom YOLO grounding,
+  post-skill KB effects, fake-skill scope, and simulator/robot profile prose.
+- **Holdout set:** dialogue/speech ownership, all contract references outside
+  Chapter 5, canonical-versus-generated registry consistency, and landscape
+  appendix layout.
+- **Acceptance gate:** Contracts 1--9 remain sequential; all sixteen canonical
+  runtime skills are represented; no forbidden thesis vocabulary returns;
+  Chapters 4 and 5 compile without overfull boxes; affected pages pass visual
+  inspection; unresolved runtime drift is tracked rather than hidden.
+
+**Baseline:** the shared entry had been inserted as Contract 3A, later contracts
+still used the old numbering, the orchestrator prose was planner-centred, and
+the launch section repeated prompt-policy material without naming the two
+integrated profiles.
+
+**Mutation batch:**
+
+1. Renumber the contract map and add typed skill-result and raw-evidence
+   contracts around the canonical Contract 4 entry.
+2. Add the complete skill surface and expand the orchestrator, detector,
+   verified KB-effect, and fake-skill implementation descriptions.
+3. Replace the runtime-configuration prose with source-derived simulator and
+   robot/RViz profiles, lifecycle sequencing, and model-provider defaults.
+
+**Train result:** accepted. The source compiles to a 72-page PDF, and visual
+inspection found no overlap or clipping in the changed contract and Chapter 5
+tables.
+
+**Holdout result:** accepted with one external implementation gate. The
+canonical inventory contains all sixteen skills and the thesis references are
+consistent. Registry scripts identified stale generated planner projections for
+`walk_to` and `wave_greet`; this source drift is tracked as `TFM-I22` and was not
+silently repaired during the prose-only pass.
+
+**Decision:** accept the thesis mutation batch. Keep the final scored-source
+freeze conditional on `TFM-I22` passing both registry consistency checks.
+
+**Next mutation hypothesis:** define Chapter 6 acceptance denominators and the
+frozen case manifest against Contracts 1--9 before replacing Chapter 7's
+preliminary results.
