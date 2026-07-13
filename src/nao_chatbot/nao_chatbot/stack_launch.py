@@ -126,7 +126,7 @@ _ROBOT_CAMERA_DEFAULTS = {
     "head_motion_allow_open_loop_without_joint_state": "true",
     "head_motion_assume_success_on_convergence_timeout": "false",
     "perform_motion_execution_mode": "real",
-    "look_at_execution_mode": "real",
+    "look_at_execution_mode": "fake",
     "start_interaction_sim": "false",
     "start_interaction_sim_perception": "false",
     "start_interaction_sim_tools": "true",
@@ -1249,12 +1249,12 @@ def generate_profile_launch_description(
     perform_motion_execution_mode_arg = DeclareLaunchArgument(
         "perform_motion_execution_mode",
         default_value=_profile_default(profile_defaults, "perform_motion_execution_mode", "real"),
-        description="perform_motion dispatch mode: real|fake.",
+        description="perform_motion dispatch mode: real by default; fake is an explicit validation opt-in.",
     )
     look_at_execution_mode_arg = DeclareLaunchArgument(
         "look_at_execution_mode",
-        default_value=_profile_default(profile_defaults, "look_at_execution_mode", "real"),
-        description="look_at dispatch mode: real|fake.",
+        default_value=_profile_default(profile_defaults, "look_at_execution_mode", "fake"),
+        description="look_at dispatch mode: fake by default; real is an explicit opt-in.",
     )
     start_nao_say_skill_arg = DeclareLaunchArgument(
         "start_nao_say_skill",

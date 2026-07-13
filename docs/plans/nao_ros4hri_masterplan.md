@@ -58,8 +58,8 @@ Everything else should be archived under `docs/artifacts/` unless it is actively
 - **Done**: `scan` is action-server owned and dispatched by orchestrator.
 - **Done**: `report_result` now executes as action-server-owned AB=1 skill (`/skill/report_result`) instead of a dialogue-act shortcut.
 - **Done**: planner/orchestrator action routing validated for `/skill/scan`, `/skill/report_result`, `/skill/say`, `/skill/do_head_motion`.
-- **Done (2026-06-12)**: real head motion is strict by default; convergence timeout is reported as execution failure unless an explicit debug override enables open-loop success.
-- **Done (2026-06-12)**: fake `perform_motion` is available for validation runs and is selected only through explicit orchestrator launch/config mode, keeping fake outcomes scenario-controlled.
+- **Done (2026-06-12)**: when real head motion is explicitly selected, convergence timeout is strict and reported as execution failure unless an explicit debug override enables open-loop success.
+- **Done (2026-06-12)**: `perform_motion` uses the real motion adapter by default; head motion enters honest open-loop dispatch when no recent joint state is available, while convergence-as-success remains disabled. The fake adapter remains an explicit validation seam.
 - **Done**: planner lineage now uses `goal_id` continuity plus `plan_id`/`plan_version`; token-based ownership seams were removed.
 - **Done**: route-hardening now defaults visibility-only scene checks to `knowledge_query` unless explicit scan/action wording is requested.
 - **Done**: planner dialogue acts run in direct mode by default, while completion wording stays chatbot-relay-owned when a chatbot client is available.
@@ -111,7 +111,7 @@ Everything else should be archived under `docs/artifacts/` unless it is actively
 ### C. Lifecycle and Launch Reliability
 
 - **Done**: current live stack can expose expected action servers and dispatch path reliably.
-- **Done (2026-06-12)**: sim/robot profile defaults no longer accept head-motion convergence timeout as success; fake validation can opt into `perform_motion_execution_mode=fake`.
+- **Done (2026-06-12)**: sim/robot profile defaults no longer accept head-motion convergence timeout as success; `perform_motion` uses the real adapter with profile-controlled open-loop fallback, while `look_at` remains fake by default until its real adapter is introduced.
 - **In progress**: reduce lifecycle-race/operator confusion in mixed sim/robot toggles.
 - **Done**: interaction trace viewer can be run as a separate operator window; sim default no longer auto-launches it.
 - **Done**: compact trace channel/event filtering args are exposed through stack launch and can be toggled without code edits.

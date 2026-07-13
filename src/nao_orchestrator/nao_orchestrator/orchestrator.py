@@ -657,7 +657,7 @@ class NaoOrchestrator(Node):
         self.declare_parameter('scan_report_after_success', True)
         self.declare_parameter('fake_skill_wait_sec', 0.2)
         self.declare_parameter('fake_skill_result_timeout_sec', 20.0)
-        self.declare_parameter('perform_motion_execution_mode', 'fake')
+        self.declare_parameter('perform_motion_execution_mode', 'real')
         self.declare_parameter('look_at_execution_mode', 'fake')
         self.declare_parameter('fake_skill_navigate_to_action', '/skill/fake/navigate_to')
         self.declare_parameter('fake_skill_find_object_action', '/skill/fake/find_object')
