@@ -5,6 +5,11 @@ Historical handoffs and superseded plans live under `docs/artifacts/plan_archive
 
 ## Active Plans
 
+- `tfm_completion_masterplan_2026-07-13.md` (+ `.html`)
+  Canonical thesis-closure tracker for manuscript completion, final evidence
+  collection, results synthesis, figures, research-question claims, and
+  submission QA. It consumes runtime truth from the integration masterplan and
+  full/fake suite trackers without replacing them.
 - `nao_ros4hri_masterplan.md` (+ `.html`)
   Canonical integration tracker for planner, chatbot, orchestrator, grounding,
   fake-skill validation, registry alignment, and remaining thesis seams.

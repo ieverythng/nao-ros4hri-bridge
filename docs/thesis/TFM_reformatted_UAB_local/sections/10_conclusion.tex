@@ -1,0 +1,10 @@
+\chapter{Conclusion}
+\label{chap:conclusion}
+
+This thesis has presented the design and implementation of a modular LLM-based planner for a ROS4HRI-compatible NAO robot stack. The central architectural decision is to keep dialogue, grounding, planning, deterministic execution, and speech ownership separated by explicit runtime contracts. This separation allows the planner to use natural-language reasoning while the robot-facing stack continues to validate skill names, arguments, execution feedback, and dialogue acts through inspectable ROS interfaces.
+
+The implementation demonstrates how a chatbot can route execution-looking turns to a planner, how the planner can produce structured plans over a skill registry, and how an orchestrator can act as the execution boundary between generated plans and robot or fake-skill adapters. The runtime contracts make the system more auditable than a direct prompt-to-action design because planner requests, grounded context, generated plans, execution feedback, and dialogue acts can be captured and checked independently.
+
+The preliminary validation evidence supports the usefulness of the fake-skill substrate for controlled evaluation. Deterministic scenarios for ambiguous object search, blocked navigation, and unavailable social motion returned the expected structured failure codes. These results make it possible to evaluate recovery behaviour without depending on physical robot variability. The same validation pass also exposed integration risks in repeated planner request admission and full user-turn trace continuity. These are useful findings because they identify the remaining runtime seams that must be stabilised before the system can be assessed as a complete end-to-end HRI planner.
+
+Overall, the work supports a measured conclusion: LLM planning can be integrated into ROS4HRI more safely when it is constrained by symbolic context, skill contracts, deterministic orchestration, and structured feedback. The approach does not remove the need for careful runtime validation, but it gives that validation clear seams and reproducible evidence.

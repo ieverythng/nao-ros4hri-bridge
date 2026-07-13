@@ -194,12 +194,15 @@
   <main class="doc">
 
 <h1>NAO ROS4HRI Masterplan (Consolidated, Active)</h1>
-<p><strong>Date:</strong> 2026-07-01 (deep fake/replan stabilization refresh)</p>
+<p><strong>Date:</strong> 2026-07-07 (JSON-only deep fake/replan strict scoring refresh)</p>
 <p><strong>Branch context:</strong> <code>refactor/deslop_repo</code> with nested <code>chatbot_llm</code></p>
 <p><code>feat/planner_llm_hooks</code> and Neural-Wokbench integration seams</p>
 <p><strong>Scope:</strong> Single active execution plan for planner/chatbot/orchestrator seams,</p>
 <p>grounded-context reliability, canonical registry alignment, fake-skill</p>
 <p>operational hardening, LocateAnything migration, and validation reporting.</p>
+<p>The manuscript, final evidence synthesis, and submission closure track lives in
+<code>docs/plans/tfm_completion_masterplan_2026-07-13.md</code> (+ <code>.html</code>).
+This integration masterplan remains authoritative for runtime implementation status.</p>
 <h2>1. Consolidation Policy (What This File Replaces)</h2>
 <p>This file is now the canonical integration plan and absorbs execution tracking from:</p>
 <ul>
@@ -281,6 +284,7 @@
 <li><strong>Done (2026-05-26)</strong>: planner-mode routing now guards visibility-only scene questions toward <code>knowledge_query</code> unless the user explicitly requests a new scan/action.</li>
 <li><strong>In progress</strong>: proactive wording + speech arbitration pass to avoid duplicate user-facing utterances when execution acknowledgements and planner dialogue completions occur in the same interaction.</li>
 <li><strong>In progress</strong>: live rebuild proof for the new location-group, KB-effect, and dialogue-scoped goal-lineage seams. Source tests pass, but runtime score should not be raised until a fresh response-first run proves the updated container behavior.</li>
+<li><strong>Done (2026-07-07 source gate)</strong>: JSON-only deep fake scoring now treats clarification as failure when a preloaded fixture already provides the required source location and recipient. The runner also records fallback pressure per case and no longer leaks older ROS events into later cases when logs start with <code>[INFO]</code>.</li>
 </ul>
 <h3>B. Registry Consistency and Canonicalization</h3>
 <ul>
@@ -326,6 +330,12 @@
 </ul>
 <p>“bring every object from the kitchen to ALEX”.</p>
 <ul>
+<li><strong>Done (2026-07-07 source gate)</strong>: location matching now prefers the most specific grounded label or alias over generic support terms. In the work-table failure, <code>work_table</code> now beats generic <code>table</code> matches when several table-like locations are present. Repeated named people such as multiple ALEX fixtures are disambiguated by relation scope first and by stable fixture namespace only as a tie-breaker.</li>
+<li><strong>Done (2026-07-07 source gate)</strong>: compact location groups now keep movable user objects that also carry KnowledgeCore spatial materialization classes when their RDF type still identifies a deliverable object. This prevents books, phones, or cups from disappearing from <code>locations.contains</code> merely because the KB also includes <code>cyc:SpatialThing-Localized</code>.</li>
+<li><strong>Done (2026-07-07 source gate)</strong>: grouped delivery and ordered walk fallback metadata now exports concrete member object ids in <code>scene_targets</code>, not the source table or support location. This fixes the trace-level regression where chatbot-authored <code>report_result</code> could truthfully follow the prompt but speak about completing a table because planner metadata named the table as the completed target.</li>
+<li><strong>Done (2026-07-09 source gate)</strong>: <code>planner_common</code> now provides a shared <code>report_outcome</code> contract for <code>report_result</code> wording. The orchestrator injects reportable objects, recipients, anchors, excluded targets, events, and failures into the chatbot execution-report turn, while chatbot post-processing only rejects unsafe text such as treating a person, room, or table as a delivered object.</li>
+</ul>
+<ul>
 <li><strong>Done (harness source)</strong>: runtime-review now supports named preloaded</li>
 </ul>
 <p>KnowledgeCore environment fixtures through <code>--preload-environment</code> and the</p>
@@ -345,6 +355,9 @@
 <p>model planning. Real skills should adopt the same payload contract before direct</p>
 <p>KB mutation is enabled for them.</p>
 <ul>
+<li><strong>Done (2026-07-09 source gate)</strong>: stale spatial cleanup now lives in <code>nao_orchestrator.kb_effects</code> and covers <code>oro:isAt</code>, <code>oro:isOn</code>, <code>oro:isIn</code>, <code>oro:contains</code>, and <code>oro:placeOf</code> style aliases. Vague <code>kb_add</code> and <code>kb_revise</code> prose is rejected before KnowledgeCore dispatch so the dialogue stack can clarify the subject, predicate, and object.</li>
+</ul>
+<ul>
 <li><strong>Pending</strong>: LocateAnything migration into the grounding stack. Keep it as a</li>
 </ul>
 <p>perception/grounding provider, not as a planner or dialogue policy owner.</p>
@@ -362,12 +375,11 @@
 </ul>
 <p>scene can be preloaded deterministically before speech or service turns.</p>
 <ul>
-<li><code>robot-runtime-performance-review --case-set fake_deep</code> proves all-success,</li>
+<li><code>robot-runtime-performance-review --case-set fake_deep</code> now proves the all-success ladder behaviorally and the full <code>fail_once_navigation</code> ladder after a clean rebuild with <code>grounded_context_digest_enabled=false</code>. <code>fail_once_pick</code> and <code>delivery_blocked</code> remain the next recovery profiles.</li>
 </ul>
-<p>fail-once navigation, delivery-blocked, and recipient-missing profiles after a</p>
-<p>clean rebuild.</p>
 <ul>
 <li>The fresh rebuilt container imports the patched <code>chatbot_llm</code> source rather than the old build copy before the fake-deep score is raised.</li>
+<li>The fresh rebuilt container imports the 7 July <code>planner_common</code> and <code>planner_llm</code> source gates. Proof now exists for <code>grounded_context_digest_enabled=false</code>, grouped work-table delivery member expansion without clarification, compact kitchen id matching, and missing-recipient clarification before planner handoff.</li>
 <li>Fake and real skill payloads use the same <code>kb_effects</code> shape for successful</li>
 </ul>
 <p>state changes, and executor-side post-condition checks prove those changes before later dialogue treats them as current KB truth.</p>

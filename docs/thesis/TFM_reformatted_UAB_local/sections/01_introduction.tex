@@ -1,0 +1,61 @@
+\chapter{Introduction}
+\label{chap:introduction}
+% ============================================================
+
+\section{Planning for HRI}
+
+Successfully creating planning and execution systems for human-robot interaction (HRI) builds on a long tradition of automated planning. Classical planning languages such as the Planning Domain Definition Language (PDDL) were introduced to make planning domains, actions, preconditions, effects, initial states, and goals explicit and reusable across planners \cite{mcdermott1998pddl}. This formal view of planning shaped later hierarchical task network (HTN) approaches, where high-level tasks are decomposed into executable subtasks through domain-specific methods \cite{erol1994htn,nau2003shop2,georgievski2014htn}. More recent neuro-symbolic and LLM-assisted planning work has revisited the same underlying problem from a different direction: how to connect flexible natural-language reasoning with grounded, verifiable action structures \cite{liu2023llmp,valmeekam2023planning,ahn2022saycan}.
+
+Large Language Models (LLMs) have therefore become promising natural-language operators for robot systems. They can transform user utterances into structured intent payloads, infer likely task goals, and propose multi-step action decompositions. In HRI, this is valuable because users rarely speak in planner-ready commands. They ask questions, refer to visible objects, change goals, and expect the robot to interpret context. At the same time, LLMs are not naturally grounded in the robot's live scene state, skill availability, or execution constraints. A plan that is plausible in language may still refer to an unavailable object, use an unsupported action, or ignore a failed step.
+
+This thesis focuses on the problem of integrating LLM-based task planning into a modular ROS4HRI robotic system centred on the NAO robot stack. The target is not to build an unconstrained prompt-to-action robot. The aim is to evaluate whether an LLM planner can operate more robustly when it is constrained by symbolic state, explicit skill contracts, deterministic validation, and execution feedback. In this architecture, natural language is used to interpret the user's goal, but execution remains mediated by ROS interfaces, an orchestrator, and skill-level validation.
+
+\section{Problem Statement}
+
+Current LLM-robot integrations often face at least one of the following limitations:
+
+\begin{itemize}
+  \item they are tightly coupled to one robot or one task domain;
+  \item they rely on prompt-only action generation without strong execution validation;
+  \item they do not clearly separate dialogue, planning, perception, and execution;
+  \item they struggle with multi-intent instructions that unfold over time;
+  \item they provide weak mechanisms for clarification, replanning, and failure recovery.
+\end{itemize}
+
+The central problem addressed in this thesis is therefore:
+
+\begin{quote}
+\textit{How can an LLM-based planner be integrated into a ROS4HRI robotic system so that it can generate and revise structured plans while preserving modularity, groundedness, and deterministic execution boundaries?}
+\end{quote}
+
+\section{Objectives}
+
+The main objective of this investigation is to design, implement, and evaluate an LLM-based planner the NAO robot stack usign principles from ROS4HRI. The planner is intended to extract user intent into known labels and natural language goals, generate structured skill plans, and remain grounded in the robot's available capabilities, symbolic scene context, and execution feedback.
+
+\begin{enumerate}
+  \item design and implement an LLM-based planning layer for a  ROS-based robot stack;
+  \item define explicit runtime contracts between user intent extraction, planner admission, symbolic grounding, skill planning, execution, and feedback;
+  \item expose and discretize robot capabilities through an abstract skill registry instead of direct robot-specific APIs;
+  \item support multi-intent and multi-step user instructions through structured plan generation;
+  \item constrain planner outputs through deterministic validation before robot actions are dispatched;
+  \item implement execution feedback and planner supervision so  the system can handle failed steps, ambiguous targets, clarification requests, replanning and changes in the world state;
+  \item evaluate the system through representative validation scenarios involving successful execution, failure, ambiguity, replanning, and user-facing responses.
+\end{enumerate}
+
+\section{Research Questions}
+
+This thesis is guided by the following research questions:
+
+\begin{enumerate}
+  \item \textbf{RQ1:} Can a structured LLM planner enable a ROS4HRI robot to generate coherent multi-step skill plans from natural-language user requests?
+
+  \item \textbf{RQ2:} To what extent does compact symbolic grounding help the planner refer to objects, people, and scene context in a way that is consistent with the robot's current world state?
+
+  \item \textbf{RQ3:} Does an abstract skill registry, combined with deterministic validation, reduce invalid planner outputs such as unsupported skills, malformed arguments, or robot-specific API calls?
+
+  \item \textbf{RQ4:} How does execution feedback affect the system's ability to recover from failed actions, request clarification, or produce a revised plan when the world state changes?
+
+  \item \textbf{RQ5:} Which architectural boundaries are required to keep LLM-based planning inspectable, modular, and safe enough for a ROS4HRI execution stack?
+\end{enumerate}
+
+% ============================================================

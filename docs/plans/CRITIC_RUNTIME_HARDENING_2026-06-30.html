@@ -276,6 +276,18 @@
 <td>Source-patched</td>
 <td><code>src/nao_chatbot/setup.py</code>; <code>src/nao_chatbot/config/preloaded_environment_svgs/</code></td>
 </tr>
+<tr>
+<td>7 Jul strict fake-deep scoring</td>
+<td>Complete-context clarifications are now scored as failures, fallback pressure is recorded per case, and the log slicer now extracts timestamps from ROS log bodies instead of accepting stale <code>[INFO]</code> lines.</td>
+<td>Source-patched</td>
+<td><code>.codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py</code>; <code>test_run_active_questionnaire.py</code></td>
+</tr>
+<tr>
+<td>7 Jul grouped-location resolution</td>
+<td>Planner matching now prefers specific grounded labels/aliases such as <code>work_table</code> over generic <code>table</code>, preserves spatially materialized user objects with explicit RDF types, and resolves repeated named people by relation scope or stable namespace before asking for clarification.</td>
+<td>Source-patched; rebuilt fake-deep pass</td>
+<td><code>src/planner_llm/planner_llm/planner_engine.py</code>; <code>src/planner_common/planner_common/contracts.py</code></td>
+</tr>
 </tbody></table>
 <h2>Validation Completed</h2>
 <p>Focused source validation was run before this handoff:</p>
@@ -295,8 +307,8 @@
 <li><code>git diff --check</code> passed</li>
 <li><code>scripts/ros4hri_change_audit.py --mode working</code> passed</li>
 </ul>
-<p>These checks prove source consistency. They do not replace the required rebuilt</p>
-<p>container run.</p>
+<p>On 7 July, an additional strict JSON-only source gate passed: <code>42 passed</code> for <code>planner_llm</code>, <code>35 passed</code> for <code>planner_common</code>, <code>9 passed</code> for the runtime-review questionnaire harness, and <code>py_compile</code> passed for the touched planner, contract, and harness files.</p>
+<p>The clean rebuilt fake-deep proof then passed the all-success ladder behaviorally and passed the full <code>fail_once_navigation</code> ladder. The remaining pressure marker was <code>route_repair</code>; severe fallback classes stayed at zero: no duplicate active goal, invalid planner JSON, invalid executable plan, backend-unreachable speech, or rules-response fallback.</p>
 <h2>Remaining Live Proof</h2>
 <p>The later 30 June real-image pass rebuilt <code>iiia:nao</code>, removed the temporary critic image, and launched a clean <code>nao_ros2</code> response-first stack. The graph contained <code>/chatbot_llm</code>, <code>/dialogue_manager</code>, <code>/planner_llm</code>, <code>/nao_orchestrator</code>, <code>/kb/knowledge_core</code>, <code>/fake_skill_server</code>, <code>/report_result_skill_server</code>, <code>/scan_skill_server</code>, <code>/interaction_trace_viewer</code>, and the HRI person/visualization nodes. <code>/chatbot_llm turn_pipeline_mode</code> matched <code>response_first</code>, <code>mirror_trace_lines_to_rosout</code> was enabled, and <code>nao_chatbot</code> exposed <code>preloaded_environment_viewer</code>.</p>
 <p>The rebuilt pass used the patched harness and produced these artifacts:</p>
@@ -324,7 +336,17 @@
 <tr>
 <td>Grounded-context digest count mismatch</td>
 <td>One fail-once run logged <code>Objects (0): none currently grounded</code> while the JSON contained visible cups, books, and tables.</td>
-<td>Fix the digest count/filter path so the summary and JSON agree before using this view as thesis-facing contract evidence.</td>
+<td>The scored JSON-only path now disables the compact digest. Keep digest disabled for strict fake-deep scoring until it is rebuilt from the same location-group contract and revalidated against the JSON.</td>
+</tr>
+<tr>
+<td>Grouped-location clarification despite complete fixture context</td>
+<td>The 7 Jul JSON-only run proved the planner could still ask which location to collect from even though the fixture exposed <code>codex_lab_table_section</code> with <code>dbp:name work_table</code>.</td>
+<td>Source now replays that grounded context into a valid member-expanded plan, and the rebuilt fake-deep run proved grouped work-table delivery without the old clarification. Keep <code>fail_once_pick</code> and <code>delivery_blocked</code> as the next recovery gates.</td>
+</tr>
+<tr>
+<td>Ordered walk/report completed a support location</td>
+<td>A 7 Jul shared-voice trace showed <code>report_result</code> saying it completed the base table and table. The trace showed no execution-report fallback; the planner fallback had exported support locations in <code>scene_targets</code>.</td>
+<td>Source now exports concrete member object ids for grouped delivery and ordered walk fallback metadata. The rebuilt fake-deep run passed ordered walk/report and grouped delivery; keep a separate speech holdout for subjective report phrasing.</td>
 </tr>
 <tr>
 <td>Manual vague KB add remains unsafe</td>
