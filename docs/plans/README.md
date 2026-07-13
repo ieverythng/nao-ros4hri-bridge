@@ -17,10 +17,22 @@ Historical handoffs and superseded plans live under `docs/artifacts/plan_archive
   Detailed readiness tracker and provenance log for runtime validation.
 - `ISSUE_TRACKER_FAKE_SUITE.html`
   Deep fake-skill, preloaded-environment, and replan validation tracker.
+- `../artifacts/runtime_review_2026-07-10_sv_seams.md`
+  Dated evidence artifact for the 10 July SV-critical runtime review. Folded
+  conclusions are mirrored into the full and fake-suite trackers.
+- `../artifacts/runtime_review_2026-07-11_qwen_personal_stack.md`
+  Dated evidence artifact for the Qwen personal-stack ablation. Folded
+  conclusions are mirrored into the full and fake-suite trackers.
 - `FINAL_RUNTIME_REVIEW.html`
   Condensed supervisor-facing runtime review.
 - `IRR_Implementation.html`
   Intent-route-response ablation design and implementation tracker.
+- `LLM_MODEL_ABLATIONS.md` (+ `.html`)
+  Model-backend ablation ledger covering Watson/Qwen, intended lab Qwen3-VL,
+  mixed-role attempts, launch-wiring traps, and next model-role runs.
+- `AGENT_HARNESS_RESEARCH_2026-07-11.md` (+ `.html`)
+  Research-side plan for a Watson/Hermes-style harness with typed environment
+  adapters, model roles, postconditions, and replayable traces.
 - `CRITIC_RUNTIME_HARDENING_2026-06-30.md` (+ `.html`)
   Source hardening handoff for active-goal lifecycle, deep fake/replan
   validation, stale-world guards, user-facing grounding filters, and runtime

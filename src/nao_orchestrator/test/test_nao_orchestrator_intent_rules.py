@@ -130,10 +130,10 @@ def test_classify_motion_target_maps_head_motion() -> None:
     assert payload['yaw'] == 0.45
 
 
-def test_normalize_execution_mode_defaults_to_real() -> None:
+def test_normalize_execution_mode_defaults_to_fake() -> None:
     assert _normalize_execution_mode('fake') == 'fake'
     assert _normalize_execution_mode('real') == 'real'
-    assert _normalize_execution_mode('unexpected') == 'real'
+    assert _normalize_execution_mode('unexpected') == 'fake'
 
 
 def test_classify_motion_target_maps_look_at_reset_alias() -> None:
@@ -754,16 +754,79 @@ def test_execution_report_context_includes_plan_outcome_summary() -> None:
             'plan_outcome_summary': {
                 'completed_targets': ['cup', 'book'],
                 'pending_targets': ['phone'],
+                'terminal_reason': 'phone was unavailable',
                 'all_required_steps_succeeded': False,
             },
         }
     )
 
     assert context['plan_outcome_summary'] == {
-        'completed_targets': ['cup', 'book'],
-        'pending_targets': ['phone'],
+        'terminal_reason': 'phone was unavailable',
         'all_required_steps_succeeded': False,
     }
+    assert 'completed_targets' not in context['plan_outcome_summary']
+    assert 'pending_targets' not in context['plan_outcome_summary']
+
+
+def test_execution_report_context_keeps_report_outcome_as_target_evidence() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+
+    context = orchestrator._execution_report_context(
+        {
+            'plan_steps': [
+                {
+                    'id': 'step_1',
+                    'type': 'skill',
+                    'name': 'navigate_to',
+                    'args': {'target': 'person_1'},
+                },
+                {
+                    'id': 'step_2',
+                    'type': 'skill',
+                    'name': 'bring_object',
+                    'args': {'object_id': 'cup_1', 'recipient': 'person_1'},
+                },
+            ],
+            'execution_results': [
+                {
+                    'id': 'step_1',
+                    'name': 'navigate_to',
+                    'status': 'succeeded',
+                    'args': {'target': 'person_1'},
+                },
+                {
+                    'id': 'step_2',
+                    'name': 'bring_object',
+                    'status': 'succeeded',
+                    'args': {'object_id': 'cup_1', 'recipient': 'person_1'},
+                },
+            ],
+            'plan_outcome_summary': {
+                'completed_targets': ['person_1', 'cup_1'],
+                'all_required_steps_succeeded': True,
+            },
+            'grounded_context': {
+                'entities': [
+                    {'id': 'cup_1', 'label': 'cup', 'kind': 'object', 'class': 'Cup'},
+                    {'id': 'person_1', 'label': 'ALEX', 'kind': 'person', 'class': 'Human'},
+                ]
+            },
+        }
+    )
+
+    assert context['plan_outcome_summary'] == {'all_required_steps_succeeded': True}
+    assert context['report_outcome']['reportable_objects'] == [
+        {
+            'id': 'cup_1',
+            'label': 'cup',
+            'class': 'Cup',
+            'kind': 'object',
+            'status': 'completed',
+        }
+    ]
+    assert context['report_outcome']['recipients'] == [
+        {'id': 'person_1', 'label': 'ALEX', 'class': 'Human', 'kind': 'person'}
+    ]
 
 
 def test_execution_report_context_keeps_only_user_dialogue_lines() -> None:
@@ -871,6 +934,35 @@ def test_report_result_text_falls_back_to_successful_step_chain() -> None:
     )
 
     assert report_text == 'I navigated to the cup. I found two blueberries.'
+
+
+def test_report_result_text_preserves_delivery_step_evidence_before_generic_fallback() -> None:
+    orchestrator = NaoOrchestrator.__new__(NaoOrchestrator)
+    orchestrator._request_execution_report_text = (
+        lambda _context: _ExecutionReportResult(source='unavailable')
+    )
+
+    report_text = orchestrator._resolve_report_result_text(
+        {},
+        {
+            'execution_results': [
+                {
+                    'name': 'bring_object',
+                    'status': 'succeeded',
+                    'args': {'object_id': 'cup_1', 'recipient': 'person_1'},
+                    'result_summary': 'I brought cup_1 to person_1.',
+                },
+                {
+                    'name': 'bring_object',
+                    'status': 'succeeded',
+                    'args': {'object_id': 'phone_1', 'recipient': 'person_1'},
+                    'result_summary': 'I brought phone_1 to person_1.',
+                },
+            ],
+        },
+    )
+
+    assert report_text == 'I brought cup_1 to person_1. I brought phone_1 to person_1.'
 
 
 def test_motion_result_payload_supplies_reportable_internal_summary() -> None:

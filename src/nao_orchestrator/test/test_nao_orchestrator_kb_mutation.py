@@ -27,13 +27,15 @@ class FakeKnowledgeQuery:
         rows = []
         for fact in self.facts:
             fact_subject, fact_predicate, fact_object = fact.split(maxsplit=2)
-            if subject != fact_subject:
+            if subject not in {'?subject', fact_subject}:
                 continue
             if predicate not in {'?predicate', fact_predicate}:
                 continue
             if obj not in {'?object', fact_object}:
                 continue
             row = {}
+            if '?subject' in query_vars:
+                row['?subject'] = fact_subject
             if '?predicate' in query_vars:
                 row['?predicate'] = fact_predicate
             if '?object' in query_vars:
@@ -134,6 +136,22 @@ def test_kb_remove_expands_subject_only_request_and_verifies_empty_postcondition
     assert node._stats.dispatch_failures == 0
 
 
+def test_kb_add_rejects_vague_non_rdf_statement_before_dispatch():
+    node, _query, mutation = _orchestrator_with_kb([])
+
+    success, reason, payload = node._execute_kb_mutation_step(
+        'kb_add',
+        {'statements': ['add one cup']},
+    )
+
+    assert success is False
+    assert reason == 'KnowledgeCore mutation requires explicit RDF-style statements'
+    assert payload['requires_clarification'] is True
+    assert payload['slots_needed'] == ['subject', 'predicate', 'object']
+    assert mutation.calls == []
+    assert node._stats.dispatch_failures == 1
+
+
 def test_success_kb_effect_helpers_group_valid_statements():
     payload = {
         'evidence': {
@@ -192,6 +210,168 @@ def test_successful_skill_kb_effects_are_applied_through_kb_boundary():
     ]
     assert _query.facts == ['robot oro:holds cup_1']
     assert node._stats.dispatched_kb_mutation == 2
+
+
+def test_successful_skill_kb_effects_replace_stale_spatial_values():
+    node, query, mutation = _orchestrator_with_kb(
+        [
+            'book_1 oro:isAt Lab',
+            'book_1 oro:isOn lab_table',
+            'book_1 dbp:name Manual',
+        ]
+    )
+
+    summary = node._apply_success_kb_effects(
+        {
+            'skill': 'bring_object',
+            'status': 'succeeded',
+            'evidence': {
+                'kb_effects': [
+                    {'action': 'add', 'statement': 'book_1 oro:isAt Kitchen'},
+                ]
+            },
+        }
+    )
+
+    assert summary['applied'] is True
+    assert mutation.calls == [
+        {
+            'operation': 'remove',
+            'statements': ['book_1 oro:isOn lab_table', 'book_1 oro:isAt Lab'],
+            'models': ['default'],
+            'lifespan_sec': 0.0,
+            'wait_for_result': True,
+        },
+        {
+            'operation': 'add',
+            'statements': ['book_1 oro:isAt Kitchen'],
+            'models': ['default'],
+            'lifespan_sec': 0.0,
+            'wait_for_result': True,
+        },
+    ]
+    assert query.facts == [
+        'book_1 dbp:name Manual',
+        'book_1 oro:isAt Kitchen',
+    ]
+    assert summary['calls'][0]['operation'] == 'remove_stale_spatial_values'
+    cleanup_patterns = [call['patterns'] for call in query.calls]
+    assert cleanup_patterns.count(['book_1 ?predicate ?object']) == 1
+    assert cleanup_patterns.count(['?subject ?predicate book_1']) == 1
+    assert ['book_1 oro:isOn ?object'] not in cleanup_patterns
+    assert node._stats.dispatched_kb_mutation == 2
+    assert node._stats.dispatch_failures == 0
+
+
+def test_successful_skill_kb_effects_remove_spatial_aliases_and_reciprocals():
+    node, query, mutation = _orchestrator_with_kb(
+        [
+            'book_1 dbp:name Manual',
+            'book_1 oro:isAt Park',
+            'book_1 oro:isAt cup_1',
+            'book_1 oro:contains cup_1',
+            'book_1 oro:isUnder cup_1',
+            'cup_1 oro:isAt book_1',
+            'cup_1 oro:isOn book_1',
+            'cup_1 oro:contains book_1',
+            'cup_1 oro:placeOf book_1',
+            'cup_1 dbp:color Black',
+        ]
+    )
+
+    summary = node._apply_success_kb_effects(
+        {
+            'skill': 'bring_object',
+            'status': 'succeeded',
+            'evidence': {
+                'kb_effects': [
+                    {'action': 'add', 'statement': 'cup_1 oro:isAt book_1'},
+                ]
+            },
+        }
+    )
+
+    assert summary['applied'] is True
+    assert mutation.calls[0]['operation'] == 'remove'
+    assert mutation.calls[0]['statements'] == [
+        'cup_1 oro:isOn book_1',
+        'cup_1 oro:isAt book_1',
+        'cup_1 oro:contains book_1',
+        'cup_1 oro:placeOf book_1',
+        'book_1 oro:isAt cup_1',
+        'book_1 oro:contains cup_1',
+        'book_1 oro:isUnder cup_1',
+    ]
+    assert query.facts == [
+        'book_1 dbp:name Manual',
+        'book_1 oro:isAt Park',
+        'cup_1 dbp:color Black',
+        'cup_1 oro:isAt Park',
+    ]
+    assert node._stats.dispatched_kb_mutation == 2
+    assert node._stats.dispatch_failures == 0
+
+
+def test_successful_skill_kb_effects_preserve_person_recipient_location():
+    node, query, mutation = _orchestrator_with_kb(
+        [
+            'person_1 rdf:type Human',
+            'person_1 oro:isAt Park',
+            'cup_1 oro:isOn table_1',
+        ]
+    )
+
+    summary = node._apply_success_kb_effects(
+        {
+            'skill': 'bring_object',
+            'status': 'succeeded',
+            'evidence': {
+                'kb_effects': [
+                    {'action': 'add', 'statement': 'cup_1 oro:isAt person_1'},
+                ]
+            },
+        }
+    )
+
+    assert summary['applied'] is True
+    assert mutation.calls[-1]['operation'] == 'add'
+    assert mutation.calls[-1]['statements'] == ['cup_1 oro:isAt person_1']
+    assert query.facts == [
+        'person_1 rdf:type Human',
+        'person_1 oro:isAt Park',
+        'cup_1 oro:isAt person_1',
+    ]
+
+
+def test_successful_skill_kb_effects_do_not_invent_place_from_movable_target():
+    node, query, mutation = _orchestrator_with_kb(
+        [
+            'book_1 oro:isAt cup_2',
+            'cup_1 oro:isOn table_1',
+            'cup_2 dbp:color red',
+        ]
+    )
+
+    summary = node._apply_success_kb_effects(
+        {
+            'skill': 'bring_object',
+            'status': 'succeeded',
+            'evidence': {
+                'kb_effects': [
+                    {'action': 'add', 'statement': 'cup_1 oro:isAt book_1'},
+                ]
+            },
+        }
+    )
+
+    assert summary['applied'] is True
+    assert mutation.calls[-1]['operation'] == 'add'
+    assert mutation.calls[-1]['statements'] == ['cup_1 oro:isAt book_1']
+    assert query.facts == [
+        'book_1 oro:isAt cup_2',
+        'cup_2 dbp:color red',
+        'cup_1 oro:isAt book_1',
+    ]
 
 
 def test_successful_skill_kb_effects_fail_when_remove_postcondition_remains():

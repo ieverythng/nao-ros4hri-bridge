@@ -31,16 +31,43 @@
 <body>
 <main>
   <h1>NAO ROS4HRI Runtime Review</h1>
-  <p class="meta">Condensed supervisor-facing report from <code>ISSUE_TRACKER_FULL_SUITE.html</code>, <code>ISSUE_TRACKER_FAKE_SUITE.html</code>, and the latest rebuilt-stack checks. Last updated 9 July 2026 source-gated runtime seam hardening pass.</p>
+  <p class="meta">Condensed supervisor-facing report from <code>ISSUE_TRACKER_FULL_SUITE.html</code>, <code>ISSUE_TRACKER_FAKE_SUITE.html</code>, and the latest rebuilt-stack checks. Last updated 11 July 2026 after the Qwen personal-stack ablation.</p>
 
   <section class="score">
     <div class="card"><div class="big">8.7 / 10</div><div>Fresh response-first targeted baseline. This is the recommended supervisor demo profile.</div></div>
     <div class="card"><div class="big">8.6 / 10</div><div>Qualified deep fake/replan baseline. Fresh speech-mode runs passed all-success and fail-once-navigation 8/8, with manipulation and blocked-delivery recovery mostly passing.</div></div>
+    <div class="card"><div class="big">6.7 / 10</div><div>10 July current-image baseline for SV-critical seams. Report wording and fake recovery improved, but KB mutation and grouped delivery post-effects remain blockers.</div></div>
+    <div class="card"><div class="big">5.8 / 10</div><div>11 July Qwen personal-stack ablation. Main dialogue looked fluent, but KB mutation and deep fake/replan reliability regressed.</div></div>
     <div class="card"><div class="big">Intent-first WIP</div><div>Live ablation improves some route locks, but currently regresses ordinary dialogue wording and one action/report route.</div></div>
     <div class="card"><div class="big">Not 9.0 Yet</div><div>Long-suite ordered target extraction under some failure profiles, spatial/proximity proof, delivery-blocked report wording, and intent-first response behavior remain open.</div></div>
   </section>
 
   <p class="note">The score is deliberately conservative. The response-first stack remains the cleanest demonstration path. The separate deep fake/replan score is lower because it measures harder requirements: preloaded environments, location-group delivery, missing-target truthfulness, post-skill KB effects, and forced failure recovery.</p>
+
+  <h2>11 July Qwen Personal-Stack Ablation</h2>
+  <p class="note">Full evidence lives in <code>docs/artifacts/runtime_review_2026-07-11_qwen_personal_stack.md</code>. The run used <code>qwen36-turbo-hermes</code> at <code>http://10.88.140.94:4000</code> with <code>grounded_context_digest_enabled=false</code>. The model was more fluent in the base questionnaire, but it was less reliable on planner JSON, KB mutation, and fake-deep recovery.</p>
+  <table>
+    <thead><tr><th>Area</th><th>Status</th><th>Evidence</th><th>Readout</th></tr></thead>
+    <tbody>
+      <tr><td>Main questionnaire</td><td class="done">20/20 pass</td><td><code>/tmp/nao_qwen_main_full_20260711.json</code></td><td>Surface dialogue and ordinary execution were strong. Treat KB mutation pass labels cautiously because postcondition evidence still failed elsewhere.</td></tr>
+      <tr><td>Architecture KB mutation</td><td class="pending">Fail</td><td><code>/tmp/nao_qwen_architecture_sweep_20260711.json</code></td><td>Add passed, but revise, non-mutating query expectation, and remove failed. The robot said it updated/removed facts while `/kb/query` still showed the old green marker.</td></tr>
+      <tr><td>Grouped delivery KB effects</td><td class="pending">Fail</td><td>Direct `/kb/query` after grouped kitchen delivery</td><td>Objects still retained stale kitchen predicates, and ALEX gained object-like spatial relations. This is unchanged from 10 July.</td></tr>
+      <tr><td>Deep fake/replan</td><td class="pending">Regressed</td><td>Five fake-deep policy artifacts</td><td>22 pass, 7 degraded, 9 fail. The previous JSON-only baseline was stronger, especially for fail-once navigation.</td></tr>
+      <tr><td>Runtime pressure</td><td class="partial">High</td><td><code>/tmp/nao_qwen_runtime_snapshot_post_20260711.json</code></td><td>9 deduplicated planner-invalid-JSON events, 9 invalid executable plan events, 6 planner-gate rejections, and 53 route-repair events.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>10 July SV-Critical Runtime Review</h2>
+  <p class="note">Full evidence lives in <code>docs/artifacts/runtime_review_2026-07-10_sv_seams.md</code>. The running container does include the report-outcome and KB-effect seam modules, but its mutable <code>iiia:nao</code> tag and dirty worktree provenance mean the next scored run needs a unique image tag and live module fingerprint gate.</p>
+  <table>
+    <thead><tr><th>Area</th><th>Status</th><th>Evidence</th><th>Next action</th></tr></thead>
+    <tbody>
+      <tr><td>Report/result execution match</td><td class="partial">Improved</td><td>Head-all-directions executed multiple <code>perform_motion</code> steps and completed, avoiding the earlier single-motion mismatch.</td><td>Keep this as a holdout in the next full review.</td></tr>
+      <tr><td>Natural KB mutation</td><td class="pending">Fail</td><td>Natural “add a red cup” reached <code>kb_add</code> with invalid statement strings and was rejected by the orchestrator.</td><td>Normalize to subject-qualified RDF-style statements or clarify before execution.</td></tr>
+      <tr><td>Grouped location delivery</td><td class="pending">Fail</td><td>The kitchen delivery report named only the book; follow-up placed the cup in the kitchen; direct KB query showed stale kitchen predicates on delivered objects and object-like predicates on the recipient.</td><td>Patch spatial post-effect cleanup and require postcondition scoring.</td></tr>
+      <tr><td>Fake-deep recovery</td><td class="done">Pass in focused subset</td><td>All-success focused cases passed, and <code>fail_once_navigation</code> showed failed navigation, replan, recovery, and plan completion.</td><td>Repeat after KB post-effect patch and include delivery-blocked plus fail-once-pick.</td></tr>
+    </tbody>
+  </table>
 
   <h2>9 July Runtime Seam Hardening</h2>
   <p class="note">This pass is source-gated and awaits a clean rebuilt-stack runtime review. It does not change prompt wording or add ROS interfaces. The goal is to structure evidence better while keeping <code>chatbot_llm</code> as the normal wording authority.</p>

@@ -4,7 +4,7 @@
 
 \section{Functional Requirements}
 
-This section defines the requirements and design principles that guide the proposed planner stack. The aim is to establish the architectural boundaries that the implementation must satisfy: natural-language interaction should remain separate from executable robot control, LLM-generated plans should be validated before dispatch, and live execution feedback should be returned to the planner when the world state or task status changes. Section 5 has detailed node implementation 
+This section defines the requirements and design principles that guide the proposed planner stack. The aim is to establish the architectural boundaries that the implementation must satisfy: natural-language interaction should remain separate from executable robot control, LLM-generated plans should be validated before dispatch, and live execution feedback should be returned to the planner when the world state or task status changes. Section 5 has detailed node implementation
 
 \begin{table}[H] \centering \small \begin{tabular}{p{0.14\linewidth}p{0.78\linewidth}} \toprule \textbf{ID} & \textbf{Requirement}\\ \midrule FR1 & The system shall accept natural-language user input through the dialogue stack.\\
 FR2 & The system shall distinguish dialogue-only turns from execution-eligible turns.\\
@@ -34,7 +34,7 @@ The proposed architecture separates the HRI stack into interpretation, planning,
 \begin{itemize}
 \item \code{dialogue_manager} acts as the central dialogue ownership component, maintaining conversational state, coordinating turn-taking, managing interaction flow, and serving as the integration point between user-facing dialogue and downstream planning services.
 
-\item \code{chatbot_llm} is responsible for robot utterance generation, intent declaration and goal extraction during planner-relevant turns. It transforms natural language interactions into structured representations that depict the nature of the interaction. \textbf{Dialogue} and \textbf{knowledge query }turns remain conversational, \textbf{execution} turns trigger a planner request. 
+\item \code{chatbot_llm} is responsible for robot utterance generation, intent declaration and goal extraction during planner-relevant turns. It transforms natural language interactions into structured representations that depict the nature of the interaction. \textbf{Dialogue} and \textbf{knowledge query }turns remain conversational, \textbf{execution} turns trigger a planner request.
 
 \item \code{planner_llm} performs proactive task planning over the available skill registry, normalized user intents, dialogue context, and current robot world state. The planner reasons over high-level objectives, decomposes user requests into executable actions, and generates candidate plans that align with both robot capabilities and current world state constraints.
 

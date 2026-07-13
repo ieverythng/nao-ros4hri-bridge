@@ -892,28 +892,35 @@
       ],
       "abstraction_level": 1,
       "params": [
-        "distance_m",
-        "direction",
-        "dry_run"
+        "x_m",
+        "y_m",
+        "theta_rad",
+        "speed_fraction",
+        "dry_run",
+        "target"
       ],
       "required_params": [],
       "preconditions": [
         "walking must be operator-enabled"
       ],
       "expected_effects": [
-        "robot moves a short distance or reports dry-run result"
+        "robot executes or dry-runs a short body-relative local walking segment"
       ],
       "observable_success": [
         "status"
       ],
       "failure_modes": [
+        "invalid_local_goal",
         "safety_disabled",
-        "path_blocked"
+        "path_blocked",
+        "naoqi_move_failed"
       ],
       "planner_guidance": [
+        "use real walk_to only with body-relative x_m/y_m/theta_rad arguments",
+        "use navigate_to or fake validation for semantic destinations such as objects, people, or rooms",
         "keep dry-run enabled until real walking is explicitly approved"
       ],
-      "robot_adapter_mapping": "fake_skills.walk_to",
+      "robot_adapter_mapping": "nao_orchestrator.walk_to(mode=fake|real); real=/skill/move_to; fake=/skill/fake/walk_to",
       "result_schema": {
         "required": [
           "skill",
@@ -937,7 +944,7 @@
       "decomposition": {
         "max_depth": -1,
         "policy": "ab1_to_effect_primitives",
-        "notes": "Short walking is represented as a safety-checked movement segment; real walking remains operator-gated and adapter-owned."
+        "notes": "Short walking is represented as a safety-checked local movement segment; semantic navigation decomposes separately."
       }
     },
     {
@@ -971,9 +978,10 @@
         "unexpected_payload"
       ],
       "planner_guidance": [
-        "use wave_greet for social greeting gestures"
+        "use wave_greet for explicit social greeting gestures",
+        "real gesture execution is operator-gated by enable_gesture_motions"
       ],
-      "robot_adapter_mapping": "fake_skills.wave_greet",
+      "robot_adapter_mapping": "nao_orchestrator.wave_greet(mode=fake|real); real=/skill/replay_motion:wave; fake=/skill/fake/wave_greet",
       "result_schema": {
         "required": [
           "skill",
@@ -998,7 +1006,7 @@
       "decomposition": {
         "max_depth": -1,
         "policy": "ab1_to_effect_primitives",
-        "notes": "Greeting wave is currently fake-callable but semantically grounded as a safety-checked motion effect."
+        "notes": "Greeting wave can dispatch to a guarded replay-motion gesture or to the fake skill depending on launch mode."
       }
     }
   ]

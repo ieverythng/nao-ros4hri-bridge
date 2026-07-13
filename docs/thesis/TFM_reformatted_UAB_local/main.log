@@ -301,7 +301,7 @@ File: csquotes.def 2024-04-04 v5.2o csquotes generic definitions (JAW)
 Package csquotes Info: Trying to load configuration file 'csquotes.cfg'...
 Package csquotes Info: ... configuration file loaded successfully.
  (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/csquotes/csquotes.cfg
-File: csquotes.cfg 
+File: csquotes.cfg
 )) (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/url/url.sty
 \Urlmuskip=\muskip18
 Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
@@ -977,18 +977,18 @@ Package biblatex Info: Redefining '\textcites'.
 Package biblatex Info: Trying to load configuration file...
 Package biblatex Info: ... file 'biblatex.cfg' found.
  (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/biblatex/biblatex.cfg
-File: biblatex.cfg 
+File: biblatex.cfg
 )
 Package biblatex Info: Input encoding 'utf8' detected.
 Package biblatex Info: Document encoding is UTF8 ....
  (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/l3kernel/expl3.sty
-Package: expl3 2026-01-19 L3 programming layer (loader) 
+Package: expl3 2026-01-19 L3 programming layer (loader)
  (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 File: l3backend-pdftex.def 2025-10-09 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count505
 ))
 Package biblatex Info: ... and expl3
-(biblatex)             2026-01-19 L3 programming layer (loader) 
+(biblatex)             2026-01-19 L3 programming layer (loader)
 (biblatex)             is new enough (at least 2020/04/06),
 (biblatex)             setting 'casechanger=expl3'.
  (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/biblatex/blx-case-expl3.sty (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/l3packages/xparse/xparse.sty
@@ -1027,7 +1027,7 @@ LaTeX Font Info:    ... okay on input line 116.
 * paper: a4paper
 * layout: <same size as paper>
 * layoutoffset:(h,v)=(0.0pt,0.0pt)
-* modes: 
+* modes:
 * h-part:(L,W,R)=(62.59605pt, 472.31577pt, 62.59605pt)
 * v-part:(T,H,B)=(62.59605pt, 719.85474pt, 62.59605pt)
 * \paperwidth=597.50787pt
@@ -1137,8 +1137,8 @@ Package microtype Info: Loading generic protrusion settings for font family
 
 {/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/map/pdftex/updmap/pdftex.map}{/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/enc/dvips/tex-gyre/q-ec.enc}{/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc} <./images/uab_logo-gs.png>] (./sections/00_abstract.tex)
 pdfTeX warning (ext4): destination with the same identifier (name{page.i}) has been already used, duplicate ignored
-<to be read again> 
-                   \relax 
+<to be read again>
+                   \relax
 l.146 \clearpage
                  [1
 
@@ -1473,7 +1473,7 @@ Overfull \hbox (66.13196pt too wide) in paragraph at lines 147--1
 Chapter 7.
 
 Overfull \hbox (20.63655pt too wide) in paragraph at lines 21--21
-[]|\T1/cmtt/m/n/12 interaction_trace_viewer| 
+[]|\T1/cmtt/m/n/12 interaction_trace_viewer|
  []
 
 
@@ -1515,12 +1515,12 @@ Underfull \hbox (badness 2376) in paragraph at lines 40--40
 
 
 Overfull \hbox (7.958pt too wide) in paragraph at lines 40--40
-\T1/cmtt/m/n/12 path_blocked| 
+\T1/cmtt/m/n/12 path_blocked|
  []
 
 
 Overfull \hbox (56.97696pt too wide) in paragraph at lines 41--41
-[]|\T1/cmtt/m/n/12 social_wave_unavailable| 
+[]|\T1/cmtt/m/n/12 social_wave_unavailable|
  []
 
 
@@ -1535,7 +1535,7 @@ Underfull \hbox (badness 2376) in paragraph at lines 41--41
 
 
 Overfull \hbox (44.99895pt too wide) in paragraph at lines 41--41
-\T1/cmtt/m/n/12 motion_unavailable| 
+\T1/cmtt/m/n/12 motion_unavailable|
  []
 
 [45]
@@ -1619,187 +1619,187 @@ Chapter 10.
 Appendix A.
 
 Overfull \hbox (22.20662pt too wide) in alignment at lines 16--21
- [] [] [] [] [] 
+ [] [] [] [] []
  []
 
 
 Overfull \hbox (22.20662pt too wide) in alignment at lines 21--26
- [] [] [] [] [] 
+ [] [] [] [] []
  []
 
 
 Overfull \hbox (22.20662pt too wide) in alignment at lines 26--29
- [] [] [] [] [] 
+ [] [] [] [] []
  []
 
 
 Overfull \hbox (22.20662pt too wide) in alignment at lines 29--31
- [] [] [] [] [] 
+ [] [] [] [] []
  []
 
 
 Overfull \hbox (0.78238pt too wide) in paragraph at lines 36--37
-\T1/cmtt/m/n/12 backend_unavailable\T1/cmr/m/n/12 (-20) , 
+\T1/cmtt/m/n/12 backend_unavailable\T1/cmr/m/n/12 (-20) ,
  []
 
 
 Overfull \hbox (46.19493pt too wide) in paragraph at lines 37--38
-[]|\T1/cmtt/m/n/12 nao_orchestrator.scan\T1/cmr/m/n/12 (-20) ; 
+[]|\T1/cmtt/m/n/12 nao_orchestrator.scan\T1/cmr/m/n/12 (-20) ;
  []
 
 
 Overfull \hbox (58.54192pt too wide) in paragraph at lines 43--44
-[]|\T1/cmtt/m/n/12 fake_skills.find_object\T1/cmr/m/n/12 (-20) ; 
+[]|\T1/cmtt/m/n/12 fake_skills.find_object\T1/cmr/m/n/12 (-20) ;
  []
 
 
 Overfull \hbox (58.54192pt too wide) in paragraph at lines 49--50
-[]|\T1/cmtt/m/n/12 fake_skills.navigate_to\T1/cmr/m/n/12 (-20) ; 
+[]|\T1/cmtt/m/n/12 fake_skills.navigate_to\T1/cmr/m/n/12 (-20) ;
  []
 
 
 Overfull \hbox (64.71541pt too wide) in paragraph at lines 55--56
-[]|\T1/cmtt/m/n/12 nao_orchestrator.walk_to\T1/cmr/m/n/12 (-20) ; 
+[]|\T1/cmtt/m/n/12 nao_orchestrator.walk_to\T1/cmr/m/n/12 (-20) ;
  []
 
 
 Overfull \hbox (3.23744pt too wide) in paragraph at lines 57--57
-[]|\T1/cmtt/m/n/12 bring_object|  
+[]|\T1/cmtt/m/n/12 bring_object|
  []
 
 
 Overfull \hbox (0.78238pt too wide) in paragraph at lines 60--61
-[]|\T1/cmtt/m/n/12 acquisition_failure\T1/cmr/m/n/12 (-20) , 
+[]|\T1/cmtt/m/n/12 acquisition_failure\T1/cmr/m/n/12 (-20) ,
  []
 
 
 Overfull \hbox (11.5644pt too wide) in paragraph at lines 60--61
-\T1/cmtt/m/n/12 recipient_unavailable|  
+\T1/cmtt/m/n/12 recipient_unavailable|
  []
 
 
 Overfull \hbox (64.71541pt too wide) in paragraph at lines 61--62
-[]|\T1/cmtt/m/n/12 fake_skills.bring_object\T1/cmr/m/n/12 (-20) ; 
+[]|\T1/cmtt/m/n/12 fake_skills.bring_object\T1/cmr/m/n/12 (-20) ;
  []
 
 
 Overfull \hbox (3.23744pt too wide) in paragraph at lines 63--63
-[]|\T1/cmtt/m/n/12 place_object|  
+[]|\T1/cmtt/m/n/12 place_object|
  []
 
 
 Overfull \hbox (1.7845pt too wide) in paragraph at lines 64--65
-\T1/cmtt/m/n/12 destination|  
+\T1/cmtt/m/n/12 destination|
  []
 
 
 Overfull \hbox (25.47635pt too wide) in paragraph at lines 66--67
-[]|\T1/cmtt/m/n/12 destination_unavailable\T1/cmr/m/n/12 (-20) , 
+[]|\T1/cmtt/m/n/12 destination_unavailable\T1/cmr/m/n/12 (-20) ,
  []
 
 
 Overfull \hbox (64.71541pt too wide) in paragraph at lines 67--68
-[]|\T1/cmtt/m/n/12 fake_skills.place_object\T1/cmr/m/n/12 (-20) ; 
+[]|\T1/cmtt/m/n/12 fake_skills.place_object\T1/cmr/m/n/12 (-20) ;
  []
 
 
 Overfull \hbox (58.54192pt too wide) in paragraph at lines 73--74
-[]|\T1/cmtt/m/n/12 fake_skills.pick_object\T1/cmr/m/n/12 (-20) ; 
+[]|\T1/cmtt/m/n/12 fake_skills.pick_object\T1/cmr/m/n/12 (-20) ;
  []
 
 
 Overfull \hbox (15.58443pt too wide) in paragraph at lines 75--75
-[]|\T1/cmtt/m/n/12 perform_motion|  
+[]|\T1/cmtt/m/n/12 perform_motion|
  []
 
 
 Overfull \hbox (107.92986pt too wide) in paragraph at lines 79--80
-[]|\T1/cmtt/m/n/12 nao_orchestrator.perform_motion\T1/cmr/m/n/12 (-20) ; 
+[]|\T1/cmtt/m/n/12 nao_orchestrator.perform_motion\T1/cmr/m/n/12 (-20) ;
  []
 
 
 Overfull \hbox (64.71541pt too wide) in paragraph at lines 85--86
-[]|\T1/cmtt/m/n/12 nao_orchestrator.look_at\T1/cmr/m/n/12 (-20) ; 
+[]|\T1/cmtt/m/n/12 nao_orchestrator.look_at\T1/cmr/m/n/12 (-20) ;
  []
 
 
 Overfull \hbox (19.30286pt too wide) in paragraph at lines 90--91
-\T1/cmtt/m/n/12 kb_service_unavailable\T1/cmr/m/n/12 (-20) , 
+\T1/cmtt/m/n/12 kb_service_unavailable\T1/cmr/m/n/12 (-20) ,
  []
 
 
 Overfull \hbox (5.39091pt too wide) in paragraph at lines 90--91
-\T1/cmtt/m/n/12 kb_mutation_rejected|  
+\T1/cmtt/m/n/12 kb_mutation_rejected|
  []
 
 
 Overfull \hbox (58.54192pt too wide) in paragraph at lines 91--92
-[]|\T1/cmtt/m/n/12 nao_orchestrator.kb_add\T1/cmr/m/n/12 (-20) ; 
+[]|\T1/cmtt/m/n/12 nao_orchestrator.kb_add\T1/cmr/m/n/12 (-20) ;
  []
 
 
 Overfull \hbox (19.30286pt too wide) in paragraph at lines 96--97
-\T1/cmtt/m/n/12 kb_service_unavailable\T1/cmr/m/n/12 (-20) , 
+\T1/cmtt/m/n/12 kb_service_unavailable\T1/cmr/m/n/12 (-20) ,
  []
 
 
 Overfull \hbox (5.39091pt too wide) in paragraph at lines 96--97
-\T1/cmtt/m/n/12 kb_mutation_rejected|  
+\T1/cmtt/m/n/12 kb_mutation_rejected|
  []
 
 
 Overfull \hbox (77.0624pt too wide) in paragraph at lines 97--98
-[]|\T1/cmtt/m/n/12 nao_orchestrator.kb_revise\T1/cmr/m/n/12 (-20) ; 
+[]|\T1/cmtt/m/n/12 nao_orchestrator.kb_revise\T1/cmr/m/n/12 (-20) ;
  []
 
 
 Overfull \hbox (19.30286pt too wide) in paragraph at lines 102--103
-\T1/cmtt/m/n/12 kb_service_unavailable\T1/cmr/m/n/12 (-20) , 
+\T1/cmtt/m/n/12 kb_service_unavailable\T1/cmr/m/n/12 (-20) ,
  []
 
 
 Overfull \hbox (5.39091pt too wide) in paragraph at lines 102--103
-\T1/cmtt/m/n/12 kb_mutation_rejected|  
+\T1/cmtt/m/n/12 kb_mutation_rejected|
  []
 
 
 Overfull \hbox (77.0624pt too wide) in paragraph at lines 103--104
-[]|\T1/cmtt/m/n/12 nao_orchestrator.kb_remove\T1/cmr/m/n/12 (-20) ; 
+[]|\T1/cmtt/m/n/12 nao_orchestrator.kb_remove\T1/cmr/m/n/12 (-20) ;
  []
 
 
 Overfull \hbox (9.41093pt too wide) in paragraph at lines 105--105
-[]|\T1/cmtt/m/n/12 report_result|  
+[]|\T1/cmtt/m/n/12 report_result|
  []
 
 
 Overfull \hbox (5.57707pt too wide) in paragraph at lines 105--106
-[]|\T1/cmr/m/n/12 (-20) communication|  
+[]|\T1/cmr/m/n/12 (-20) communication|
  []
 
 
 Overfull \hbox (101.75636pt too wide) in paragraph at lines 109--110
-[]|\T1/cmtt/m/n/12 nao_orchestrator.report_result\T1/cmr/m/n/12 (-20) ; 
+[]|\T1/cmtt/m/n/12 nao_orchestrator.report_result\T1/cmr/m/n/12 (-20) ;
  []
 
 
 Overfull \hbox (83.23589pt too wide) in paragraph at lines 115--116
-[]|\T1/cmtt/m/n/12 nao_orchestrator.wave_greet\T1/cmr/m/n/12 (-20) ; 
+[]|\T1/cmtt/m/n/12 nao_orchestrator.wave_greet\T1/cmr/m/n/12 (-20) ;
  []
 
 
 Overfull \hbox (3.23744pt too wide) in paragraph at lines 117--117
-[]|\T1/cmtt/m/n/12 inspect_area|  
+[]|\T1/cmtt/m/n/12 inspect_area|
  []
 
 
 Overfull \hbox (64.71541pt too wide) in paragraph at lines 121--122
-[]|\T1/cmtt/m/n/12 fake_skills.inspect_area\T1/cmr/m/n/12 (-20) ; 
+[]|\T1/cmtt/m/n/12 fake_skills.inspect_area\T1/cmr/m/n/12 (-20) ;
  []
 
 
 Overfull \hbox (22.20662pt too wide) in alignment at lines 31--123
- [] [] [] [] [] 
+ [] [] [] [] []
  []
 
 
@@ -1821,7 +1821,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 149--149
 
 ]
 Overfull \hbox (2.8396pt too wide) in paragraph at lines 188--188
-\T1/cmr/m/n/12 (-20) manoid: a com-bi-na-tion of per-for-mance and af-ford-abil-ity^^Q. In: \T1/cmr/m/it/12 (-20) arXiv preprint arXiv:0807.3223\T1/cmr/m/n/12 (-20) . 
+\T1/cmr/m/n/12 (-20) manoid: a com-bi-na-tion of per-for-mance and af-ford-abil-ity^^Q. In: \T1/cmr/m/it/12 (-20) arXiv preprint arXiv:0807.3223\T1/cmr/m/n/12 (-20) .
  []
 
 [57
@@ -1837,7 +1837,7 @@ Package rerunfilecheck Info: File `main.out' has not changed.
 Package logreq Info: Writing requests to 'main.run.xml'.
 \openout1 = `main.run.xml'.
 
- ) 
+ )
 Here is how much of TeX's memory you used:
  48874 strings out of 467525
  1088600 string characters out of 5408440
@@ -1853,4 +1853,3 @@ PDF statistics:
  1237 compressed objects within 13 object streams
  371 named destinations out of 1000 (max. 500000)
  62219 words of extra memory for PDF output out of 74296 (max. 10000000)
-

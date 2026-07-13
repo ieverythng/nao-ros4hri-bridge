@@ -75,6 +75,19 @@ def _looks_like_location_group_delivery(goal_text: str) -> bool:
     return any(marker in clean for marker in (' from ', ' in ', ' on '))
 
 
+def _looks_like_ordered_location_walk(goal_text: str) -> bool:
+    clean = _normalized_text(goal_text)
+    if not clean:
+        return False
+    if not any(marker in clean for marker in (' all object', ' every object', ' each object')):
+        return False
+    if not any(marker in clean for marker in (' walk ', ' navigate ', ' go ', ' move ')):
+        return False
+    if not any(marker in clean for marker in (' tell me ', ' let me know ', ' report ')):
+        return False
+    return any(marker in clean for marker in (' from ', ' in ', ' on '))
+
+
 def _looks_like_grounded_look_at(goal_text: str) -> bool:
     clean = _normalized_text(goal_text)
     return any(marker in clean for marker in (' look at ', ' gaze at ', ' face '))
@@ -98,16 +111,46 @@ def _matched_location_group(grounded_context: dict, goal_text: str) -> dict:
     groups = grounded_context.get('locations', []) if isinstance(grounded_context, dict) else []
     if not isinstance(groups, list):
         return {}
-    matches = [
-        group for group in groups
-        if isinstance(group, dict) and _entity_mentioned(group, goal_text)
-    ]
-    if len(matches) == 1:
-        return matches[0]
+    matches = []
+    for group in groups:
+        if not isinstance(group, dict):
+            continue
+        score = _entity_goal_match_score(group, goal_text)
+        if score > 0:
+            matches.append((score, group))
+    if matches:
+        best_score = max(score for score, _group in matches)
+        best_matches = [group for score, group in matches if score == best_score]
+        if len(best_matches) == 1:
+            return best_matches[0]
     if not matches and len(groups) == 1 and _mentions_location_collection(goal_text):
         group = groups[0]
         return group if isinstance(group, dict) else {}
     return {}
+
+
+def _location_group_object_members(location_group: dict) -> list[dict]:
+    """Return concrete object members of a matched location group."""
+    members = []
+    if not isinstance(location_group, dict):
+        return members
+    for item in location_group.get('contains', []):
+        if not isinstance(item, dict):
+            continue
+        item_id = str(item.get('id', '')).strip()
+        kind = str(item.get('kind', 'object')).strip().lower()
+        if item_id and kind == 'object':
+            members.append(item)
+    return members
+
+
+def _member_ids(members: list[dict]) -> list[str]:
+    ids = []
+    for member in members:
+        member_id = str(member.get('id', '')).strip()
+        if member_id and member_id not in ids:
+            ids.append(member_id)
+    return ids
 
 
 def _matched_recipient_entity(
@@ -115,23 +158,44 @@ def _matched_recipient_entity(
     goal_text: str,
     *,
     exclude_id: str = '',
+    source_location_group: dict | None = None,
 ) -> str:
     if not isinstance(grounded_context, dict):
         return ''
     if ' to ' not in _normalized_text(goal_text):
         return ''
     excluded = str(exclude_id or '').strip()
+    entity_index = _entity_index(grounded_context)
+    candidates = []
     for entity in grounded_context.get('entities', []):
         if not isinstance(entity, dict):
             continue
-        if str(entity.get('id', '')).strip() == excluded:
+        entity_id = str(entity.get('id', '')).strip()
+        if entity_id == excluded:
             continue
         kind = str(entity.get('kind', '')).strip().lower()
         entity_class = str(entity.get('class', '')).strip().lower()
         if kind != 'person' and 'human' not in entity_class and 'person' not in entity_class:
             continue
         if _entity_mentioned(entity, goal_text):
-            return str(entity.get('id', '')).strip()
+            candidates.append((entity_id, entity))
+    if len(candidates) == 1:
+        return candidates[0][0]
+    if len(candidates) > 1 and excluded:
+        source_entity = entity_index.get(excluded, {})
+        source_scope = _entity_location_scope(source_entity, entity_index)
+        if isinstance(source_location_group, dict):
+            source_scope.update(_entity_location_scope(source_location_group, entity_index))
+        scoped_matches = [
+            entity_id for entity_id, entity in candidates
+            if source_scope and source_scope.intersection(_entity_location_scope(entity, entity_index))
+        ]
+        if len(scoped_matches) == 1:
+            return scoped_matches[0]
+        namespace_matches = _unique_best_namespace_matches(excluded, candidates)
+        if len(namespace_matches) == 1:
+            return namespace_matches[0]
+        return ''
     for group in grounded_context.get('locations', []):
         if (
             isinstance(group, dict)
@@ -140,6 +204,73 @@ def _matched_recipient_entity(
         ):
             return str(group.get('id', '')).strip()
     return ''
+
+
+def _entity_index(grounded_context: dict) -> dict[str, dict]:
+    if not isinstance(grounded_context, dict):
+        return {}
+    indexed: dict[str, dict] = {}
+    for entity in grounded_context.get('entities', []):
+        if not isinstance(entity, dict):
+            continue
+        entity_id = str(entity.get('id', '')).strip()
+        if entity_id and entity_id not in indexed:
+            indexed[entity_id] = entity
+    return indexed
+
+
+def _entity_location_scope(entity: dict, entity_index: dict[str, dict]) -> set[str]:
+    if not isinstance(entity, dict):
+        return set()
+    scope: set[str] = set()
+    for target_id in _entity_location_targets(entity):
+        scope.add(target_id)
+        parent = entity_index.get(target_id, {})
+        scope.update(_entity_location_targets(parent))
+    return scope
+
+
+def _entity_location_targets(entity: dict) -> set[str]:
+    targets: set[str] = set()
+    if not isinstance(entity, dict):
+        return targets
+    for relation in entity.get('relations', []):
+        if not isinstance(relation, dict):
+            continue
+        predicate = str(relation.get('predicate', '')).strip()
+        if predicate not in {'oro:isAt', 'oro:isIn', 'oro:isOn'}:
+            continue
+        target_id = str(relation.get('object', '')).strip()
+        if target_id:
+            targets.add(target_id)
+    return targets
+
+
+def _unique_best_namespace_matches(source_id: str, candidates: list[tuple[str, dict]]) -> list[str]:
+    source_tokens = _namespace_tokens(source_id)
+    if len(source_tokens) < 2:
+        return []
+    scored = []
+    for entity_id, _entity in candidates:
+        candidate_tokens = _namespace_tokens(entity_id)
+        score = 0
+        for source_token, candidate_token in zip(source_tokens, candidate_tokens):
+            if source_token != candidate_token:
+                break
+            score += 1
+        if score >= 2:
+            scored.append((score, entity_id))
+    if not scored:
+        return []
+    best_score = max(score for score, _entity_id in scored)
+    return sorted(entity_id for score, entity_id in scored if score == best_score)
+
+
+def _namespace_tokens(value: str) -> list[str]:
+    return [
+        token for token in str(value or '').strip().lower().split('_')
+        if token and token not in {'person', 'recipient'}
+    ]
 
 
 def _matched_action_target_entity(grounded_context: dict, goal_text: str) -> str:
@@ -176,6 +307,9 @@ def _entity_goal_match_score(entity: dict, goal_text: str) -> int:
         str(entity.get('label', '') or '').strip(),
         str(entity.get('class', '') or '').strip(),
     ]
+    aliases = entity.get('aliases', [])
+    if isinstance(aliases, list):
+        candidates.extend(str(alias).strip() for alias in aliases)
     for relation in entity.get('relations', []):
         if not isinstance(relation, dict):
             continue
@@ -187,16 +321,17 @@ def _entity_goal_match_score(entity: dict, goal_text: str) -> int:
         if not clean_candidate:
             continue
         if clean_candidate in clean_goal:
-            best_score = max(best_score, 3)
+            token_count = len(clean_candidate.split())
+            best_score = max(best_score, 4 if token_count >= 2 else 2)
             continue
         candidate_tokens = [
             token for token in clean_candidate.split()
-            if token and token not in {'codex', 'probe', 'arch'}
+            if token and token not in {'codex', 'probe', 'arch', 'iiia', 'base', 'lab', 'gold'}
         ]
         if len(candidate_tokens) >= 2:
             suffix = ' %s ' % ' '.join(candidate_tokens[-2:])
             if suffix in clean_goal:
-                best_score = max(best_score, 2)
+                best_score = max(best_score, 3)
         elif candidate_tokens and (' %s ' % candidate_tokens[0]) in clean_goal:
             best_score = max(best_score, 1)
     return best_score
@@ -354,6 +489,18 @@ class PlannerEngine:
         )
         if location_group_decision is not None:
             return location_group_decision
+
+        ordered_walk_decision = self._ordered_location_walk_decision(
+            request,
+            feedback=feedback,
+            raw_model_output=raw_model_output,
+            goal_id=resolved_goal_id,
+            plan_version=resolved_plan_version,
+            status=status,
+            communication_policy=resolved_policy,
+        )
+        if ordered_walk_decision is not None:
+            return ordered_walk_decision
 
         grounded_look_decision = self._grounded_look_decision(
             request,
@@ -765,6 +912,7 @@ class PlannerEngine:
             request.grounded_context,
             goal_text,
             exclude_id=str(location_group.get('id', '')).strip(),
+            source_location_group=location_group,
         )
         if not recipient:
             return self._clarification_decision(
@@ -778,14 +926,7 @@ class PlannerEngine:
                 status='waiting_user',
                 communication_policy=communication_policy,
             )
-        members = [
-            item for item in location_group.get('contains', [])
-            if (
-                isinstance(item, dict)
-                and str(item.get('id', '')).strip()
-                and str(item.get('kind', 'object')).strip().lower() == 'object'
-            )
-        ]
+        members = _location_group_object_members(location_group)
         if not members:
             return self._clarification_decision(
                 request,
@@ -835,9 +976,109 @@ class PlannerEngine:
             steps=supported_steps,
             validation_status='draft',
             retry_budget=self._next_retry_budget({}, feedback)[0],
-            scene_targets=[str(location_group.get('id', '')).strip(), recipient],
+            scene_targets=_member_ids(members) + [recipient],
             raw_model_output=raw_model_output,
             mode='grounded_location_group_fallback',
+            goal_id=goal_id,
+            plan_version=plan_version,
+            status=status,
+            communication_policy=communication_policy,
+        )
+
+    def _ordered_location_walk_decision(
+        self,
+        request: PlannerRequest,
+        *,
+        feedback: ExecutionFeedback | None,
+        raw_model_output: str,
+        goal_id: str,
+        plan_version: int,
+        status: str,
+        communication_policy: dict,
+    ) -> PlannerDecision | None:
+        """Fallback for grounded ordered walk/report after invalid model output."""
+        goal_text = str(request.goal_text or '').strip()
+        if not _looks_like_ordered_location_walk(goal_text):
+            return None
+        navigate_skill_name = self._first_supported_skill_name('navigate_to', 'walk_to')
+        if not navigate_skill_name or 'report_result' not in self._skill_registry.allowed_skill_names:
+            return None
+        location_group = _matched_location_group(
+            request.grounded_context,
+            goal_text,
+        )
+        if not location_group:
+            return self._clarification_decision(
+                request,
+                feedback=feedback,
+                reason='Which location should I use for the object sequence?',
+                raw_model_output=raw_model_output,
+                mode='clarify',
+                goal_id=goal_id,
+                plan_version=plan_version,
+                status='waiting_user',
+                communication_policy=communication_policy,
+            )
+        members = _location_group_object_members(location_group)
+        if not members:
+            return self._clarification_decision(
+                request,
+                feedback=feedback,
+                reason='I do not have any current objects grounded in that location.',
+                raw_model_output=raw_model_output,
+                mode='clarify',
+                goal_id=goal_id,
+                plan_version=plan_version,
+                status='waiting_user',
+                communication_policy=communication_policy,
+            )
+
+        steps = []
+        previous_report_id = ''
+        step_index = 1
+        for member in members:
+            member_id = str(member.get('id', '')).strip()
+            navigate_id = 'step_%d' % step_index
+            step_index += 1
+            navigate_step = self._step(
+                step_type='skill',
+                name=navigate_skill_name,
+                args={'target': member_id},
+                on_failure='replan',
+            )
+            navigate_step['id'] = navigate_id
+            if previous_report_id:
+                navigate_step['requires'] = [previous_report_id]
+            steps.append(navigate_step)
+
+            report_id = 'step_%d' % step_index
+            step_index += 1
+            report_step = self._step(
+                step_type='skill',
+                name='report_result',
+                args={},
+                on_failure='fail',
+            )
+            report_step['id'] = report_id
+            report_step['requires'] = [navigate_id]
+            steps.append(report_step)
+            previous_report_id = report_id
+
+        steps = normalize_plan_steps(steps)
+        supported_steps, rejected_steps = (
+            self._skill_registry.filter_supported_steps_with_rejections(steps)
+        )
+        if rejected_steps:
+            return None
+        return self._build_decision(
+            request=request,
+            feedback=feedback,
+            steps=supported_steps,
+            validation_status='draft',
+            retry_budget=self._next_retry_budget({}, feedback)[0],
+            scene_targets=_member_ids(members),
+            raw_model_output=raw_model_output,
+            mode='grounded_ordered_walk_fallback',
             goal_id=goal_id,
             plan_version=plan_version,
             status=status,

@@ -44,6 +44,7 @@ from planner_common.skill_registry_bridge import merge_scan_skill_names
 from planner_common.skill_registry_bridge import merge_supported_skill_names
 from planner_common.skill_registry_bridge import names_from_manifest
 from planner_common.contracts import truncate_text
+from planner_common.report_outcome import build_report_outcome
 
 __all__ = [
     'DEFAULT_PERFORM_MOTION_OBJECT_LABELS',
@@ -64,6 +65,7 @@ __all__ = [
     'build_dialogue_act_payload',
     'build_execution_feedback_payload',
     'build_plan_payload',
+    'build_report_outcome',
     'coerce_bool',
     'coerce_optional_float',
     'coerce_str_list',
