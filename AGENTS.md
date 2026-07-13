@@ -91,6 +91,26 @@ user-facing utterance authority per turn.
   skills, and AB>=2 entries are non-runtime proposals unless explicitly
   promoted.
 
+## Difficult Cross-Seam Investigations
+
+- Invoke the repo-local `seam-hypothesis-audit` skill when a problem has several
+  plausible causes across packages, contracts, prompts, registries, runtime
+  nodes, or evidence sources. Do not use it for an obvious local fix.
+- Freeze the exact target contract, protected owners, non-goals, acceptance
+  gate, and evidence budget before proposing a change.
+- Maintain an explicit investigation registry of materially different approach
+  families, discriminating probes, evidence, status, and exact gaps. Do not let
+  the first elegant explanation become the default without comparison.
+- Mark theorem-strength missing facts, unsupported interface assumptions, and
+  unavailable runtime evidence as blocked with a reopen condition. Do not turn
+  partial progress into a completion claim.
+- Require concrete artifacts from each serious route and run an adversarial
+  review against ROS ownership, lineage, duplicate speech, registry/AB levels,
+  grounded evidence, and relevant failure/recovery paths before accepting a
+  change.
+- This protocol supplements the existing `iiia-ros4hri-check`, SkillOpt, and
+  runtime-review workflows; it does not move ownership or relax their gates.
+
 ## Prompt And LLM Contract Changes
 
 - Treat prompt text as runtime-critical code. Do not add prompt wording,
