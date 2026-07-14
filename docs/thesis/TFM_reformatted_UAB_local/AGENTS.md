@@ -284,3 +284,53 @@ no clipped text, overlap, or broken continued-table headers.
 
 **Next mutation hypothesis:** freeze the holdout prompts and stable evidence
 hashes, then generate Chapter 7 plots from checked-in aggregate tables.
+
+### Iteration 2026-07-14: semantic validation depth and durable evidence
+
+- **Target artifacts:** Chapters 6--10, the runtime-review questionnaire, and
+  the TFM evidence-bundle builder.
+- **Objective:** prevent ROS trajectory completion from being reported as task
+  correctness when selected entities, roles, postconditions, or final reports
+  disagree with the user request.
+- **Train set:** the F13 ordered-target false success, incomplete grouped
+  report, stale KB postconditions, non-action execution leak, and the F14
+  ordered, work-table, kitchen, and gold-apple focused probes.
+- **Holdout set:** ROS4HRI speech and planner-gate ownership, detector-profile
+  separation, historical versus diagnostic denominators, fake-versus-physical
+  claim boundaries, and academic writing rules.
+- **Acceptance gate:** target-selection counterexamples fail; F14 exact-member
+  cases retain their observed verdicts; main, environment, fake, and robustness
+  manifest counts are fixed; evidence files are hash-addressed; registry checks,
+  Python tests, static LaTeX structure, and repository whitespace checks pass.
+
+**Baseline:** the main questionnaire could mark a case pass from route,
+execution, terminal, and speech breadcrumbs without proving that the selected
+or reported target set matched the request. F13 therefore contained a 20/20
+trajectory result alongside semantic false success.
+
+**Mutation batch:**
+
+1. Add exact selected-member, recipient, and report-policy expectations to the
+   questionnaire and freeze a five-case robustness set.
+2. Add validation-depth boundaries, semantic metrics, RQ maps, and the F13/F14
+   interpretation to the thesis.
+3. Add immutable evidence bundles with original and bundled SHA-256 hashes,
+   normalized case rows, and explicit historical or diagnostic standing.
+
+**Train result:** accepted. Twenty-five focused Python tests passed. Regrading
+the saved F14 artifacts preserved the ordered, work-table, and kitchen passes
+and retained the gold-apple failure because its authoritative selection was
+absent.
+
+**Holdout result:** accepted with external visual QA pending. Registry
+consistency and generated-view checks passed, static LaTeX brace, environment,
+label, and reference checks passed, and `git diff --check` was clean. A TeX
+engine was unavailable on this machine, so compilation and page rendering are
+assigned to the TeX-equipped handoff.
+
+**Decision:** accept the semantic-oracle and manuscript mutation. Do not assign
+a final runtime score until one clean fingerprinted run completes the frozen
+main, environment, deterministic-policy, robustness, and detector programme.
+
+**Next mutation hypothesis:** generate final profile, policy, phase, and latency
+figures only from the frozen aggregate bundle.

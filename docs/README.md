@@ -57,6 +57,9 @@ This top-level docs surface is intentionally small and operational.
 
 ## Reference/Generated Material
 
+- `evaluation/` — hash-addressed thesis runtime evidence, normalized per-case
+  metrics, and provenance manifests. Historical and diagnostic bundles remain
+  separate from the pending final frozen run.
 - `artifacts/` — archived handoffs, historical plans, and research notes.
 - `artifacts/runtime_review_2026-07-10_sv_seams.md` — latest evidence-backed
   runtime review for KB mutation, grouped delivery, fake-deep recovery, and

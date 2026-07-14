@@ -3,7 +3,7 @@
 
 \section{Architectural Findings}
 
-The implementation indicates that a modular planner architecture is preferable to a direct dialogue-to-skill pipeline for this project. The planner does not own robot execution, speech output, or raw perception. It receives structured requests and returns structured plans or dialogue acts. This reduces the number of places where an LLM can accidentally bypass runtime safety constraints.
+The implementation and runtime traces show that modular planning can be inspected at boundaries that are absent from a prompt-to-action design. The planner does not own robot execution, speech output, or raw perception. It receives structured requests and returns structured plans or dialogue acts. Direct atomic execution was retained as an orchestrator control seam, but it was not treated as a matched experimental baseline because its capability scope differs from multi-step planner mediation.
 
 The most useful architectural seam is the boundary between \code{planner_llm} and \code{nao_orchestrator}. The planner can propose a sequence, but the orchestrator validates and dispatches it. This makes it possible to test the planner with fake skills, physical skills, or unavailable skills without changing the planner prompt itself. It also means that execution feedback can be represented as a first-class input to replanning rather than as an unstructured error message.
 
@@ -11,13 +11,13 @@ The most useful architectural seam is the boundary between \code{planner_llm} an
 
 The planner design is strongest when the task can be represented as a sequence of available skill contracts. Atomic commands, object search, navigation, and report-generation tasks map naturally to the registry. Composite instructions are harder because they require the planner to preserve order, carry evidence between steps, and decide whether a later step should still run after an earlier failure.
 
-The preliminary validation evidence shows one expected clarification behaviour, but also suggests a request-admission risk after a clarification state. This is an important runtime finding. A planner-mediated robot must handle a sequence of user goals, not only the first accepted request. Future validation should therefore include repeated-goal tests, superseded-goal tests, and clarification-follow-up tests.
+The deterministic failure profiles showed that recovery quality depends on both feedback lineage and the availability of a semantically different valid plan. Navigation fail-once cases produced newer plan versions and truthful closure in the strongest historical sweep. Pick and blocked-delivery cases were less stable, and some later traces reached a safe stop without a complete post-terminal report. The planner can therefore react to feedback, but the evidence does not support a general recovery guarantee.
 
 \section{Grounding and World State}
 
-Grounding remains a central limitation. The architecture distinguishes \code{knowledge_snapshot}, \code{scene_summary}, and \code{state_t0}, which is useful because each object has a different role. The chatbot needs a compact prompt-level world state, the planner needs actionable entity identifiers and targets, and operators need a traceable scene summary. However, this separation only helps if the facts are fresh and stable at the time of the user turn.
+Grounding remains a central limitation. The architecture distinguishes compact prompt context, the detector-derived scene summary, and raw KB evidence because each has a different role. The chatbot needs a bounded world-state projection, the planner needs actionable entity identifiers and targets, and operators need traceable source evidence. The F13 semantic audit showed that presence in the projection is insufficient when target roles are not preserved through selection, planning, dispatch, and reporting.
 
-The validation methodology therefore treats simulator or KnowledgeCore object insertion as a required probe. If a fact reaches KnowledgeCore but disappears before the next turn, the problem is a grounding freshness issue. If it reaches \code{grounded_context} but the answer ignores it, the problem is likely prompt or model behaviour. This distinction prevents perception noise from being misclassified as planner failure.
+The stable KB insertion probes separated fact availability from model use. Name, colour, support, and count queries passed in broad runs, while grouped post-effect queries exposed stale location relations after apparent delivery success. Action completion and state correctness must therefore be evaluated independently. This distinction also prevents detector variability from being misclassified as a planner or semantic-grounding failure.
 
 \section{ROS4HRI Modularity}
 
@@ -27,4 +27,6 @@ This separation is a practical strength. It allows the thesis to evaluate the pl
 
 \section{Validation Implications}
 
-The preliminary results show why the final evaluation should combine planner-request injection and full user-turn injection. Planner-request injection is reliable for testing plan validity and fake-skill recovery. Full user-turn injection is necessary for testing route correctness, dialogue ownership, and exactly-once speech. A thesis evaluation based on only one of these modes would either miss HRI integration faults or make planner scoring unnecessarily noisy.
+The difference between the F13 trajectory result and semantic audit is the main methodological finding. A case can contain speech ingress, planner admission, execution feedback, a terminal marker, and final speech while still acting on the wrong targets. Full user-turn injection remains necessary for route correctness, dialogue ownership, and exactly-once speech. Planner and action-level probes remain useful for isolating plan admission and skill guards. Neither is sufficient without an oracle that compares requested, selected, planned, executed, and reported members and then verifies the resulting KB state.
+
+The runtime-review index is useful for operational triage, but it is secondary to explicit denominators and acceptance rules. The earlier 8.2 assessment and later 6.0 cap describe different evidence depths rather than a uniform performance decline. Reporting both makes the change in theorem strength visible instead of suppressing a safety finding to preserve a headline score.

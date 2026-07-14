@@ -6,7 +6,7 @@ Large language models have shown strong potential for high-level reasoning, inst
 
 The proposed system separates dialogue, symbolic grounding, task planning, and deterministic execution. A dialogue layer handles user-facing interaction and semantic intent declaration; a planner layer generates structured plans over a reviewed skill registry; and an orchestrator validates and executes admissible actions while returning execution feedback to the planner. The work focuses on multi-intent instructions, feedback-driven planning, failure handling, clarification requests, and the use of symbolic scene context through a knowledge and grounding pipeline.
 
-The expected contribution is a reusable and inspectable planning framework for grounded human-robot interaction, together with an empirical evaluation of its robustness, modularity, and limitations. The thesis will compare direct execution against planner-mediated execution and analyse how skill contracts, execution feedback, and grounded context influence task completion, replanning, and interaction quality.
+The contribution is an inspectable planning framework for grounded human-robot interaction together with a seam-based validation of its behaviour and limitations. Direct atomic execution is retained as an orchestrator safety control rather than used as a causal baseline. The evaluation analyses how skill contracts, execution feedback, grounded context, and deterministic admission affect plan validity, recovery, symbolic state, and user-facing reporting.
 
 \vspace{10pt}
 \textbf{Keywords:} Human-Robot Interaction, ROS4HRI, Large Language Models, Task Planning, NAO Robot, Symbolic Grounding, Execution Monitoring, Replanning.

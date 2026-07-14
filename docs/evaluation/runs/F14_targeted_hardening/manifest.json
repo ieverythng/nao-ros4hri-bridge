@@ -1,0 +1,165 @@
+{
+  "artifacts": [
+    {
+      "bundle_path": "raw/nao_semantic_ordered_v4_20260714.json",
+      "bundle_sha256": "5ccddf8dceaa759f20afe9ac473b8a60926c7d20f18310256f56d7307b6faaa8",
+      "compressed": false,
+      "name": "nao_semantic_ordered_v4_20260714.json",
+      "source_sha256": "8868e83e4a67fa369a010376edb97fb179648171e516b856a176e3eccd743984",
+      "source_size_bytes": 27096
+    },
+    {
+      "bundle_path": "raw/nao_semantic_work_table_v5_20260714.json",
+      "bundle_sha256": "7d9f57485de00e4713ee3196ff01f47d04a8dbd9ce1334840961c72cf3df9193",
+      "compressed": false,
+      "name": "nao_semantic_work_table_v5_20260714.json",
+      "source_sha256": "b547fae3ad0c5e3804b4dec5890cae67f8780f0d4dc32730f79b367cea93ee3b",
+      "source_size_bytes": 28457
+    },
+    {
+      "bundle_path": "raw/nao_v6_targeted_success.json",
+      "bundle_sha256": "6fa3f5e65e4e6f8f2aefe816c1b4fe08fe189e67d265601e175ed5278cae828d",
+      "compressed": false,
+      "name": "nao_v6_targeted_success.json",
+      "source_sha256": "f9ab7c2d17ce9734a4d5ab435501efbf073fed37b53e056812e94552035005aa",
+      "source_size_bytes": 85694
+    },
+    {
+      "bundle_path": "raw/nao_stack_20260714_v4.log.gz",
+      "bundle_sha256": "bd4edacf64d2577925ff1a17761ea5036193d34dbdf7f2340c5317595cb43de3",
+      "compressed": true,
+      "name": "nao_stack_20260714_v4.log",
+      "source_sha256": "9cdac95fe1cbcb5b65983cf5d739c4258fe98e164d2833a12488b066bc1dc73e",
+      "source_size_bytes": 1047111
+    },
+    {
+      "bundle_path": "raw/nao_stack_20260714_v5.log.gz",
+      "bundle_sha256": "8a6e0bdefe20efa459be4e5754dd93fa382b028d774b5e6acd97dc2d71e3baca",
+      "compressed": true,
+      "name": "nao_stack_20260714_v5.log",
+      "source_sha256": "040507679c4190c59b96b6ae6d91c5a9d59012f554ca3cddc6c0b7d3ba7b9983",
+      "source_size_bytes": 891361
+    },
+    {
+      "bundle_path": "raw/gold_v6.log.gz",
+      "bundle_sha256": "cfc640e47ef9d7ef3e6cb52bf98d13994de2d5716f111a96abca2507ab2225cf",
+      "compressed": true,
+      "name": "gold_v6.log",
+      "source_sha256": "a441a136f81062abea46f19abcc7bae1b0d752b3c5a4dcbc8d2eb355623ec3bd",
+      "source_size_bytes": 24812
+    },
+    {
+      "bundle_path": "raw/gold_context.txt.gz",
+      "bundle_sha256": "91d4439043d5f3f740f4c562789f72c41876b252c98f368a02b367e78772f3ca",
+      "compressed": true,
+      "name": "gold_context.txt",
+      "source_sha256": "776a6feb09e4b5a4042be8ab725572a975e9d0a67a74fcb3607a474d243f4df3",
+      "source_size_bytes": 15055
+    }
+  ],
+  "classification": "diagnostic",
+  "metadata": {
+    "chatbot_model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+    "detector_scored": false,
+    "evidence_date": "2026-07-14",
+    "grounded_context_digest_enabled": false,
+    "main_revision": "3a95f08",
+    "main_worktree_state": "dirty",
+    "nested_chatbot_revision": "96ecc34",
+    "nested_chatbot_worktree_state": "dirty",
+    "planner_model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+    "provenance_grade": "diagnostic",
+    "provenance_note": "Focused ordered-selection and grouped-delivery probes span three successive rebuilt images and do not form one complete run tuple.",
+    "runtime_images": {
+      "v4": "sha256:e3a321f4704e383cf3f92e89b72680226f7966f7dc2ab70c2b8e527591cdd372",
+      "v5": "sha256:c06c107ba56b9d6e63d3252b21c3f6638b0df9a6b6c214c7aeaa7a025b097c84",
+      "v6": "sha256:5d4e93c3612afd03b1a3151408172940c2cc841eb1dac55b3f0a69f18b407b38"
+    },
+    "turn_pipeline_mode": "response_first"
+  },
+  "notes": "Focused post-hardening probes. These artifacts support case-level findings only and have no run-level score.",
+  "questionnaire_metadata": [
+    {
+      "artifact": "nao_semantic_ordered_v4_20260714.json",
+      "case_set": "main",
+      "runtime_metadata": {
+        "ablation_note": "intent_ablation is meaningful only when the active launch sets chatbot_turn_pipeline_mode:=intent_first or when comparing against a response_first control run.",
+        "available_environment_fixtures": [
+          "baseline_table",
+          "gold_apple_handoff",
+          "iiia_floor",
+          "kitchen_delivery",
+          "lab_sections",
+          "lab_table"
+        ],
+        "chatbot_turn_pipeline_mode": "response_first",
+        "environment_fixture_source": "/home/juanbeck/nao-ros4hri-bridge/src/nao_chatbot/config/preloaded_environments.json",
+        "expected_turn_pipeline_mode": "response_first",
+        "fake_policy_application": {
+          "applied": "false",
+          "profile": "none",
+          "reason": "no policy changes requested"
+        },
+        "fake_policy_profile": "none",
+        "grounded_context_digest_enabled": "Boolean value is: False",
+        "turn_pipeline_mode_matches_expected": true
+      }
+    },
+    {
+      "artifact": "nao_semantic_work_table_v5_20260714.json",
+      "case_set": "fake_deep",
+      "runtime_metadata": {
+        "ablation_note": "intent_ablation is meaningful only when the active launch sets chatbot_turn_pipeline_mode:=intent_first or when comparing against a response_first control run.",
+        "available_environment_fixtures": [
+          "baseline_table",
+          "gold_apple_handoff",
+          "iiia_floor",
+          "kitchen_delivery",
+          "lab_sections",
+          "lab_table"
+        ],
+        "chatbot_turn_pipeline_mode": "response_first",
+        "environment_fixture_source": "/home/juanbeck/nao-ros4hri-bridge/src/nao_chatbot/config/preloaded_environments.json",
+        "expected_turn_pipeline_mode": "response_first",
+        "fake_policy_application": {
+          "applied": "true",
+          "global_mode": "Set parameter successful",
+          "mode_overrides_json": "Set parameter successful",
+          "profile": "all_success"
+        },
+        "fake_policy_profile": "all_success",
+        "grounded_context_digest_enabled": "Boolean value is: False",
+        "turn_pipeline_mode_matches_expected": true
+      }
+    },
+    {
+      "artifact": "nao_v6_targeted_success.json",
+      "case_set": "fake_deep",
+      "runtime_metadata": {
+        "ablation_note": "intent_ablation is meaningful only when the active launch sets chatbot_turn_pipeline_mode:=intent_first or when comparing against a response_first control run.",
+        "available_environment_fixtures": [
+          "baseline_table",
+          "gold_apple_handoff",
+          "iiia_floor",
+          "kitchen_delivery",
+          "lab_sections",
+          "lab_table"
+        ],
+        "chatbot_turn_pipeline_mode": "response_first",
+        "environment_fixture_source": "/home/juanbeck/nao-ros4hri-bridge/src/nao_chatbot/config/preloaded_environments.json",
+        "expected_turn_pipeline_mode": "response_first",
+        "fake_policy_application": {
+          "applied": "true",
+          "global_mode": "Set parameter successful",
+          "mode_overrides_json": "Set parameter successful",
+          "profile": "all_success"
+        },
+        "fake_policy_profile": "all_success",
+        "grounded_context_digest_enabled": "Boolean value is: False",
+        "turn_pipeline_mode_matches_expected": true
+      }
+    }
+  ],
+  "run_id": "F14_targeted_hardening",
+  "schema_version": 1
+}
