@@ -239,3 +239,48 @@ freeze conditional on `TFM-I22` passing both registry consistency checks.
 **Next mutation hypothesis:** define Chapter 6 acceptance denominators and the
 frozen case manifest against Contracts 1--9 before replacing Chapter 7's
 preliminary results.
+
+### Iteration 2026-07-13: evaluation protocol and evidence-set results
+
+- **Target artifacts:** Chapters 6 and 7 and the synchronized completion-plan
+  pair.
+- **Objective:** convert the validation scaffold and historical status narrative
+  into a reproducible evaluation protocol and evidence-based results chapter.
+- **Train set:** the full and deterministic-fake validation ledgers, the
+  twenty-case questionnaire, nine-case canonical fake-skill manifest, accepted
+  June/July run records, and the runtime-review scorecard.
+- **Holdout set:** ROS4HRI speech ownership, planner admission, KB transport,
+  detector-profile separation, full-sweep versus isolated denominators, and the
+  ban on development-status language in the manuscript.
+- **Acceptance gate:** no unsupported result is introduced; the historical
+  eight-case sweeps remain distinct from the nine-case protocol; reviewer scores
+  support one-decimal values; Chapters 6 and 7 compile without overfull boxes;
+  affected pages pass visual inspection.
+
+**Baseline:** Chapter 6 lacked fixed manifests, denominators, reset rules, and a
+formal score. Chapter 7 was organized as a development-status report and did
+not reconcile the accepted full, fake, strict-KB, and alternate-model evidence.
+
+**Mutation batch:**
+
+1. Add the unit of analysis, execution profiles, acceptance gates, exact case
+   manifests, reset policy, metrics, status rules, and evidence-bundle shape.
+2. Define a weighted eight-dimension 1--10 score with critical-failure caps and
+   explicit treatment of fallback counters as pressure telemetry.
+3. Populate Chapter 7 with F28, F08, F10, and F11 evidence sets, preserving
+   full-sweep denominators and adding a ROS4HRI contract-results table.
+
+**Train result:** accepted. The protocol distinguishes the twenty-case main
+questionnaire, nine-case canonical fake matrix, historical eight-case F08
+sweeps, isolated diagnostic probes, and alternate-model records.
+
+**Holdout result:** accepted. Speech ownership, planner-gate ownership, skill
+feedback lineage, KB mutation ownership, and detector-score separation remain
+explicit. Static review found no banned status phrases in Chapters 6 or 7.
+
+**Decision:** accept. MacTeX produced a 75-page PDF after the score-table
+addition. Chapters 6 and 7 have no overfull boxes, and visual inspection found
+no clipped text, overlap, or broken continued-table headers.
+
+**Next mutation hypothesis:** freeze the holdout prompts and stable evidence
+hashes, then generate Chapter 7 plots from checked-in aggregate tables.

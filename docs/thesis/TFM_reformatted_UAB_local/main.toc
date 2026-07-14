@@ -46,38 +46,41 @@
 \contentsline {subsection}{\numberline {5.2.5}Skill Registry (\code {skill_common})}{33}{subsection.5.2.5}%
 \contentsline {subsection}{\numberline {5.2.6}\code {nao_orchestrator} and the Execution Boundary}{34}{subsection.5.2.6}%
 \contentsline {section}{\numberline {5.3}Deterministic Guards and Bounded Fallbacks}{35}{section.5.3}%
-\contentsline {section}{\numberline {5.4}Grounding and Knowledge}{36}{section.5.4}%
+\contentsline {section}{\numberline {5.4}World State and Scene Grounding}{36}{section.5.4}%
 \contentsline {section}{\numberline {5.5}Fake Skills and Simulation Seams}{37}{section.5.5}%
 \contentsline {section}{\numberline {5.6}Models and Runtime Configuration}{38}{section.5.6}%
 \contentsline {chapter}{\numberline {6}Validation Methodology}{40}{chapter.6}%
-\contentsline {section}{\numberline {6.1}Evaluation Aim}{40}{section.6.1}%
-\contentsline {section}{\numberline {6.2}Validation Goals}{40}{section.6.2}%
-\contentsline {section}{\numberline {6.3}Questionnaire-Based Runtime Checks}{42}{section.6.3}%
-\contentsline {section}{\numberline {6.4}Fake-Skill Scenario Validation}{42}{section.6.4}%
-\contentsline {section}{\numberline {6.5}Multi-Step Deterministic Fake-Skill Scenarios}{43}{section.6.5}%
-\contentsline {section}{\numberline {6.6}Execution Profiles}{44}{section.6.6}%
-\contentsline {section}{\numberline {6.7}Metrics}{44}{section.6.7}%
-\contentsline {section}{\numberline {6.8}Evidence Bundle}{45}{section.6.8}%
-\contentsline {chapter}{\numberline {7}Results}{47}{chapter.7}%
-\contentsline {section}{\numberline {7.1}Current Status of the Validation Evidence}{47}{section.7.1}%
-\contentsline {section}{\numberline {7.2}Runtime Stack Health}{47}{section.7.2}%
-\contentsline {section}{\numberline {7.3}Action-Level Fake-Skill Results}{48}{section.7.3}%
-\contentsline {section}{\numberline {7.4}Planner Request Admission}{49}{section.7.4}%
-\contentsline {section}{\numberline {7.5}Speech Ingress and User-Turn Responsiveness}{49}{section.7.5}%
-\contentsline {section}{\numberline {7.6}Results Matrix}{49}{section.7.6}%
-\contentsline {section}{\numberline {7.7}Interpretation}{50}{section.7.7}%
-\contentsline {chapter}{\numberline {8}Discussion}{51}{chapter.8}%
-\contentsline {section}{\numberline {8.1}Architectural Findings}{51}{section.8.1}%
-\contentsline {section}{\numberline {8.2}Planner Behaviour}{51}{section.8.2}%
-\contentsline {section}{\numberline {8.3}Grounding and World State}{52}{section.8.3}%
-\contentsline {section}{\numberline {8.4}ROS4HRI Modularity}{52}{section.8.4}%
-\contentsline {section}{\numberline {8.5}Validation Implications}{52}{section.8.5}%
-\contentsline {chapter}{\numberline {9}Limitations and Future Work}{53}{chapter.9}%
-\contentsline {section}{\numberline {9.1}Current Limitations}{53}{section.9.1}%
-\contentsline {section}{\numberline {9.2}Future Work}{53}{section.9.2}%
-\contentsline {chapter}{\numberline {10}Conclusion}{54}{chapter.10}%
-\contentsline {chapter}{\numberline {A}Full Runtime Contracts}{55}{appendix.A}%
-\contentsline {section}{\numberline {A.1}Runtime Skill Inventory}{55}{section.A.1}%
-\contentsline {chapter}{\numberline {B}Launch Commands}{58}{appendix.B}%
-\contentsline {chapter}{\numberline {C}Validation Log Template}{59}{appendix.C}%
-\contentsline {chapter}{Bibliography}{60}{section*.32}%
+\contentsline {section}{\numberline {6.1}Evaluation Claims and Unit of Analysis}{40}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Execution Profiles}{40}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Validation Goals and Acceptance Rules}{41}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Full Runtime Questionnaire}{43}{section.6.4}%
+\contentsline {section}{\numberline {6.5}Multi-Step Deterministic Fake-Skill Matrix}{44}{section.6.5}%
+\contentsline {section}{\numberline {6.6}ROS4HRI and Architecture Compliance Gates}{45}{section.6.6}%
+\contentsline {section}{\numberline {6.7}Reset, Repetition, and Isolation}{45}{section.6.7}%
+\contentsline {section}{\numberline {6.8}Metrics and Denominators}{46}{section.6.8}%
+\contentsline {section}{\numberline {6.9}Run-Level Score}{46}{section.6.9}%
+\contentsline {section}{\numberline {6.10}Evidence Bundle}{47}{section.6.10}%
+\contentsline {section}{\numberline {6.11}Threats to Validity}{48}{section.6.11}%
+\contentsline {chapter}{\numberline {7}Results}{49}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Evidence Selection}{49}{section.7.1}%
+\contentsline {section}{\numberline {7.2}Full ROS4HRI Runtime Results}{50}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Deterministic Fake-Skill and Replan Results}{51}{section.7.3}%
+\contentsline {section}{\numberline {7.4}Strict KB-Effect and Reporting Audit}{51}{section.7.4}%
+\contentsline {section}{\numberline {7.5}Alternate-Model Ablation}{52}{section.7.5}%
+\contentsline {section}{\numberline {7.6}ROS4HRI Contract Preservation}{52}{section.7.6}%
+\contentsline {section}{\numberline {7.7}Result Synthesis}{53}{section.7.7}%
+\contentsline {chapter}{\numberline {8}Discussion}{54}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Architectural Findings}{54}{section.8.1}%
+\contentsline {section}{\numberline {8.2}Planner Behaviour}{54}{section.8.2}%
+\contentsline {section}{\numberline {8.3}Grounding and World State}{55}{section.8.3}%
+\contentsline {section}{\numberline {8.4}ROS4HRI Modularity}{55}{section.8.4}%
+\contentsline {section}{\numberline {8.5}Validation Implications}{55}{section.8.5}%
+\contentsline {chapter}{\numberline {9}Limitations and Future Work}{56}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Current Limitations}{56}{section.9.1}%
+\contentsline {section}{\numberline {9.2}Future Work}{56}{section.9.2}%
+\contentsline {chapter}{\numberline {10}Conclusion}{57}{chapter.10}%
+\contentsline {chapter}{\numberline {A}Full Runtime Contracts}{58}{appendix.A}%
+\contentsline {section}{\numberline {A.1}Runtime Skill Inventory}{58}{section.A.1}%
+\contentsline {chapter}{\numberline {B}Launch Commands}{61}{appendix.B}%
+\contentsline {chapter}{\numberline {C}Validation Log Template}{62}{appendix.C}%
+\contentsline {chapter}{Bibliography}{63}{section*.36}%

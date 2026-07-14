@@ -1,137 +1,243 @@
 \chapter{Validation Methodology}
 \label{chap:validation-methodology}
 
-\section{Evaluation Aim}
+\section{Evaluation Claims and Unit of Analysis}
 
-The validation methodology is designed to test the thesis claim at the architectural level: a robot-facing LLM planner is useful only if its plans remain grounded in the live ROS4HRI state, respect the available skill contracts, expose execution failures through typed feedback, and produce user-facing dialogue through the intended speech owner. The evaluation therefore does not treat success as a single demonstration outcome. It treats success as a combination of route correctness, plan validity, execution validation, recovery behaviour, and traceability.
+The evaluation tests whether planner-mediated interaction preserves the runtime contracts defined in Chapter~\ref{chap:runtime-contracts}. A successful case must route the user turn correctly, use the declared grounded evidence, produce an admissible plan when execution is required, dispatch only registered skills, retain execution lineage, and report the observed outcome through the designated dialogue and speech seams. Task completion alone is insufficient when it is accompanied by duplicate speech, unsupported world-state claims, invalid planner output, or missing trace evidence.
 
-The strategy separates four evidence layers so that a success in one layer cannot conceal a failure in another. First, controlled planner-request probes use fixed grounded context to isolate schema compliance, skill selection, plan lineage, and orchestrator dispatch from speech and dialogue timing. Second, the thesis-facing questionnaire injects complete user turns through the ROS4HRI speech path in the canonical \code{response_first} profile; this is the main full-stack score because it covers routing, planner handoff, execution feedback, and exactly-once speech. Third, named environment fixtures preload deterministic KnowledgeCore and scene state so that grounding-sensitive cases can be repeated. Fourth, a separate multi-step deterministic fake-skill policy ladder injects staged skill outcomes to test success, recoverable failure, ambiguity, and replan behaviour without depending on physical hardware. The \code{intent_first} mode and a detector-enabled launch are reported as ablation and perception profiles respectively, not merged into the baseline score.
+The unit of analysis is one case execution under a fixed configuration tuple:
 
-\section{Validation Goals}
+\[
+\mathcal{C} = (u, p, e, m_c, m_p, h_c, h_p, f, s),
+\]
 
-Table~\ref{tab:validation-goals-expanded} gives the validation goals used to score the system. These goals are deliberately operational. Each goal can be checked from ROS topic traces, planner JSON, fake-skill events, or container logs.
+where \(u\) is the user utterance, \(p\) the launch profile, \(e\) the environment fixture, \(m_c\) and \(m_p\) the chatbot and planner models, \(h_c\) and \(h_p\) the corresponding prompt-pack revisions, \(f\) the real or fake execution policy, and \(s\) the deterministic seed when one is used. A run is one complete case-set execution under a shared tuple. Results from different tuples are reported as separate evidence sets rather than merged into one aggregate.
 
-\begin{longtable}{p{0.23\linewidth}p{0.34\linewidth}p{0.32\linewidth}}
-\toprule
-\textbf{Goal} & \textbf{Question} & \textbf{Evidence source}\\
-\midrule
-\endfirsthead
-\toprule
-\textbf{Goal} & \textbf{Question} & \textbf{Evidence source}\\
-\midrule
-\endhead
-Route correctness & Does the chatbot keep dialogue-only turns out of the planner and send execution-looking turns to the planner or orchestrator? & \code{/chatbot_llm/turn_trace}, \code{/intents}, \code{/planner/request}\\
-Plan validity & Does the planner output valid JSON using admissible skill names, argument fields, and failure policies? & Planner output, \code{planner_common} normalisation, orchestrator validation\\
-Skill coverage & Are all requested subgoals represented in the emitted plan, including composite instructions? & Plan steps, expected-plan checklist\\
-Grounding use & Does the planner use \code{grounded_context}, \code{knowledge_snapshot}, \code{scene_summary}, and \code{state_t0} when a task depends on visible objects or people? & Planner request payload, KB query evidence, \code{/scene/summary}\\
-Execution validation & Does \code{nao_orchestrator} execute only validated steps and return structured feedback to the planner? & \code{/planner/execution_feedback}, orchestrator logs\\
-Failure handling & Does a failure cause clarification, replanning, or safe termination rather than a false success message? & Fake-skill result payloads, planner dialogue acts\\
-Exactly-once speech & Does one semantic event produce one user-facing response, without duplicated acknowledgement or completion speech? & \code{/planner/dialogue_act}, \code{/debug/nao_say/speech}, dialogue manager output\\
-Trace completeness & Can each run be reconstructed from the saved JSONL trace and report bundle? & \code{interaction_trace_viewer}, \code{/fake_skills/events}, validation reports\\
-Phase completeness & Were ingress, route, planner request, execution feedback, terminal state, and speech actually observed rather than inferred from a timeout fallback? & Per-case \code{phase_observations}, fallback markers, timestamps\\
-State freshness & Did the case use the declared fixture and avoid stale facts from a previous run? & Fixture manifest, KB evidence, stale-world guard\\
-\bottomrule
-\caption{Validation goals for planner-mediated ROS4HRI execution.}
-\label{tab:validation-goals-expanded}
-\end{longtable}
-
-\section{Questionnaire-Based Runtime Checks}
-
-The runtime questionnaire complements the structured validation suite. Its purpose is to expose integration faults that planner-only tests can miss. Each item is marked as \emph{pass}, \emph{degraded}, \emph{fail}, or \emph{not run}. A failure in simple dialogue, duplicate speech, raw planner leakage, or false execution success is treated as a high-severity result because it directly affects user-visible behaviour.
-
-\begin{longtable}{p{0.18\linewidth}p{0.32\linewidth}p{0.38\linewidth}}
-\toprule
-\textbf{Category} & \textbf{Representative prompt} & \textbf{Expected behaviour}\\
-\midrule
-\endfirsthead
-\toprule
-\textbf{Category} & \textbf{Representative prompt} & \textbf{Expected behaviour}\\
-\midrule
-\endhead
-Simple dialogue & ``Hey'', ``How are you?'', ``What is your favourite colour?'' & The route remains dialogue-only, no planner request is emitted, and exactly one response is spoken.\\
-Knowledge dialogue & ``What can you see?'', followed by a fixture or detector-state change and a repeated query & The declared environment state appears in \code{grounded_context}; stale entities from a previous case do not contaminate the answer.\\
-Simple skill & ``Move your head to the right'', ``Wave at me'' & The system emits one acknowledgement, dispatches one skill, and reports truthful completion or failure.\\
-Composite skill & ``Navigate to the phone and tell me what else you see'' & The planner emits ordered steps, preserves intermediate evidence, and reports the complete chain.\\
-Simple fake skill & \code{find_object(cup)} under success, ambiguity, and failure modes & Fake payloads include \code{metadata.fake=true}, stable result modes, and recoverable failure fields where appropriate.\\
-Composite fake skill & Multi-step navigation, search, and report under controlled fake outcomes & Completed steps are not repeated unnecessarily, failed steps are explained, and clarification is routed through dialogue.\\
-\bottomrule
-\caption{Tailored runtime questionnaire used for end-to-end validation.}
-\label{tab:runtime-questionnaire}
-\end{longtable}
-
-\section{Fake-Skill Scenario Validation}
-
-The fake-skill suite is the deterministic substrate for recovery testing. It avoids the main weakness of prompt-only simulation: the planner and orchestrator still interact with ROS actions that return typed payloads, emit \code{/fake_skills/events}, and can update controlled scenario state. The package supports global modes such as \code{scenario}, \code{always_success}, \code{always_fail}, \code{every_other}, and \code{random_seeded}, together with named or dynamic policies that fail a selected navigation, search, manipulation, delivery, or recipient-resolution stage.
-
-The scenario suite is organised around case families rather than isolated commands. This makes it possible to compare planner behaviour under different outcome policies while keeping the user goal fixed.
-
-\begin{longtable}{p{0.17\linewidth}p{0.22\linewidth}p{0.27\linewidth}p{0.23\linewidth}}
-\toprule
-\textbf{Case family} & \textbf{Skill path} & \textbf{Outcome policies} & \textbf{Expected response}\\
-\midrule
-\endfirsthead
-\toprule
-\textbf{Case family} & \textbf{Skill path} & \textbf{Outcome policies} & \textbf{Expected response}\\
-\midrule
-\endhead
-Object search & \code{find_object} & Found, not found, ambiguous, backend unavailable & Report object evidence, ask clarification when ambiguous, or explain failure.\\
-Navigation & \code{navigate_to} or \code{walk_to} & Success, path blocked, unknown location, timeout & Continue on success, ask for alternative or safe stop on recoverable failure.\\
-Perception and reporting & \code{scan -> report_result} & Success, empty scene, backend failure & Fill report from payload when available and avoid unsupported claims.\\
-Social gesture & \code{look_at -> wave_greet} & Success, motion unavailable, safety disabled & Execute only admissible steps and explain social-motion failure.\\
-Area inspection & \code{inspect_area} or \code{navigate_to -> scan -> report_result} & Clear, object found, person found, ambiguous area & Report observed area state or request clarification.\\
-Composite instruction & Ordered mix of navigation, search, and reporting & All success, first failure, middle failure, alternating failure & Preserve step order, stop or replan safely, and summarise completed work.\\
-\bottomrule
-\caption{Scenario matrix for deterministic fake-skill validation.}
-\label{tab:fake-skill-scenario-matrix}
-\end{longtable}
-
-\section{Multi-Step Deterministic Fake-Skill Scenarios}
-
-These scenarios combine multi-step fake execution, structured fixture state, deterministic failure injection, and trace-level evidence. They are important because many planning failures only appear after the first step has succeeded and the stack must decide whether to continue, replan, ask the user, or stop.
-
-The deep suite uses a policy ladder over representative multi-step goals:
-
-\begin{enumerate}
-  \item \textbf{All-success baseline.} Every planned step succeeds. The expected trace contains ordered, non-duplicated dispatch, complete lineage, one terminal state, and one final user-facing report.
-  \item \textbf{Fail-once navigation.} The first relevant navigation step fails recoverably and a later attempt may succeed. The planner must preserve completed work, issue a newer plan version when replanning, and avoid replaying unrelated steps.
-  \item \textbf{Fail-once manipulation.} A pick or placement stage fails after earlier movement or search has succeeded. The response must not claim delivery, and any retry must remain tied to the same goal with stable step lineage where applicable.
-  \item \textbf{Blocked delivery or missing recipient.} A required path, object, or recipient cannot be resolved. The expected outcome is clarification or truthful safe termination rather than an invented substitute or false completion.
-  \item \textbf{Seeded stress profile.} After deterministic policies pass, \code{random_seeded} explores additional outcome combinations while retaining an exact seed and event trace for reproduction.
-\end{enumerate}
+The independent variables are the turn-pipeline mode, case set, fixture, detector state, skill-adapter profile, injected failure policy, seed, and model configuration. The dependent variables are route correctness, plan validity, required-skill coverage, order correctness, safe failure, clarification behaviour, phase completeness, speech multiplicity, state freshness, latency, and the run-level score defined in Section~\ref{sec:runtime-score}.
 
 \section{Execution Profiles}
 
-The primary thesis-facing mode is full user-turn injection through the ROS4HRI speech ingress. Before a \code{LiveSpeech} event is published, the corresponding speaker is made visible on the tracked-voices stream using reliable, transient-local delivery. Scored questionnaire cases use a group voice scope so that the dialogue stack observes the same ingress contract as a live interaction. This profile is slower than direct request injection but is the only one that jointly tests chatbot routing, planner admission, feedback relay, and speech ownership.
+Table~\ref{tab:evaluation-profiles} separates the scored full-stack profile from diagnostic and ablation profiles. This prevents planner-isolated success or detector variability from being reported as full ROS4HRI performance.
 
-Planner-request injection remains a diagnostic profile. A controlled payload with fixed \code{goal_text}, normalised intents, scene targets, and \code{grounded_context} is published at the planner gate to isolate the planner, orchestrator, and selected skill server. It is useful for narrowing a failure, but it does not receive the main end-to-end score. The multi-step deterministic fake-skill score is also reported separately because it measures goal handling under controlled action outcomes rather than robot hardware performance. Finally, object-recognition cases use a distinct detector-enabled profile when the main runtime deliberately launches with object detection disabled; a missing detector process is never counted as negative detector evidence.
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.14}
+\caption{Evaluation profiles and their evidential scope.}
+\label{tab:evaluation-profiles}
+\begin{tabularx}{\textwidth}{@{}p{0.16\textwidth}p{0.22\textwidth}p{0.33\textwidth}X@{}}
+\toprule
+\textbf{Profile} & \textbf{Entry point} & \textbf{Components under test} & \textbf{Score use}\\
+\midrule
+E2E-main & Tracked voice and \path{hri_msgs/LiveSpeech} & Dialogue lifecycle, chatbot routing, grounding, planner admission, execution feedback, and speech ownership & Primary full-runtime score.\\
+Planner-isolated & \path{/nao_orchestrator/planner_request} & Planner gate, planner output, orchestrator validation, selected skills, and feedback & Diagnostic score only.\\
+Fake-multistep & E2E-main with named fixtures and deterministic fake policies & Ordered execution, failure injection, replanning, clarification, KB effects, and truthful reporting & Separate fake/replan score.\\
+Detector-enabled & E2E-main with the detector and grounding bridge enabled & Detector normalisation, scene summary, KB projection, and detector-derived dialogue & Perception score reported separately.\\
+Intent ablation & E2E-main with \code{intent_first} & Route lock, response consistency, planner admission, and speech behaviour under changed stage ordering & Paired ablation against \code{response_first}.\\
+Architecture sweep & Chatbot service, KB services, and direct fake actions & Contract-specific add/revise/remove, no-mutation, skill guard, and adapter checks & Compliance evidence, not a substitute for E2E-main.\\
+\bottomrule
+\end{tabularx}
+\end{table}
 
-\section{Metrics}
+The primary E2E profile uses \code{response_first}, group-scoped synthetic voices, and the ROS4HRI speech ingress. Unrelated cases receive separate conversation groups, while intentional follow-ups share a declared group. The detector is disabled in the principal semantic-stack score and enabled only for the detector profile. Stable KB-authored objects are therefore not confused with object-recognition performance.
 
-For each run, the validation log records the case id, utterance, route mode, fake-skill mode, scenario id, seed, planner call status, plan steps, dispatched skills, result statuses, clarification flag, final status, final response text, timeout flag, warning count, and error count. The main aggregate metrics are:
+\section{Validation Goals and Acceptance Rules}
 
-\begin{itemize}
-  \item route accuracy;
-  \item valid-plan rate;
-  \item expected-skill coverage;
-  \item fake-skill dispatch rate;
-  \item safe-failure rate;
-  \item clarification rate when ambiguity is expected;
-  \item timeout rate;
-  \item forbidden-plan rate, especially executable \code{say} steps when speech should remain under dialogue ownership;
-  \item phase-completion rate across turn injection, route observation, planner request, execution feedback, terminal state, and speech;
-  \item fallback-event rate, distinguishing observed ROS evidence from timeout or log-derived inference;
-  \item stale-world contamination rate across fixture changes;
-  \item exactly-once acknowledgement and terminal-speech rate;
-  \item replan-lineage correctness, including plan-version changes and preservation of completed work;
-  \item mean and maximum latency, when timestamps are available.
-\end{itemize}
+Each goal in Table~\ref{tab:validation-goals-expanded} has an explicit pass rule. Evidence inferred only from a timeout, a console summary, or a topic that was not observed does not satisfy the corresponding rule.
+
+\begin{longtable}{p{0.20\linewidth}p{0.36\linewidth}p{0.34\linewidth}}
+\caption{Validation goals, acceptance rules, and evidence sources.}
+\label{tab:validation-goals-expanded}\\
+\toprule
+\textbf{Goal} & \textbf{Pass rule} & \textbf{Evidence source}\\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\small\itshape Table~\thetable\ continued}\\
+\toprule
+\textbf{Goal} & \textbf{Pass rule} & \textbf{Evidence source}\\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Route correctness & The observed route equals the declared route. Dialogue and knowledge turns emit no planner request or execution feedback. & \code{/chatbot_llm/turn_trace}, planner-request and intent topics.\\
+Plan validity & Every candidate plan admitted for execution passes Contract~5 schema, Contract~4 skill-name, argument, ordering, failure-policy, and lineage checks. & Planner decision record, \code{/intents}, orchestrator validation events.\\
+Skill and order coverage & All required subgoals appear, forbidden skills are absent, and declared partial-order constraints hold. & Expected-plan manifest and observed plan steps.\\
+Grounding use & Required fixture entities appear in Contract~3 using canonical identifiers and the declared people/object/location roles. & KB pre-query, \code{/scene/summary}, planner request, grounded-context trace.\\
+Execution validation & Only admitted steps are dispatched, and every dispatch has a Contract~6 result and Contract~7 feedback with matching lineage. & Action events, \path{/planner/execution_feedback}, trace JSONL.\\
+Safe failure & An injected failure ends in a valid replan, clarification, help request, or truthful terminal failure. False completion is a fail. & Fake result, plan versions, dialogue act, spoken result.\\
+Exactly-once speech & Each expected semantic stage produces one speech event. Acknowledgement and terminal reporting count as separate stages only when both are declared. & Planner dialogue relay, dialogue output, \code{/debug/nao_say/speech}.\\
+Trace completeness & All mandatory phases contain timestamps, identifiers, and payload evidence sufficient to reconstruct the case. & Per-case \code{phase_observations}, JSONL trace, report bundle.\\
+State freshness & The pre-case fixture is verified, undeclared earlier entities are absent, and successful material effects are visible in a post-case KB query. & Fixture manifest, stale-world guard, \code{/kb/query}, skill KB effects.\\
+ROS4HRI compliance & Public interaction follows the tracked-voice and \code{LiveSpeech} contracts; dialogue ownership, lifecycle readiness, and planner-dialogue relay remain intact. & ROS graph, lifecycle state, QoS/subscription preflight, relay topics.\\
+\end{longtable}
+
+\section{Full Runtime Questionnaire}
+
+The principal questionnaire contains twenty cases in four equal groups. Table~\ref{tab:main-questionnaire-manifest} records the exact utterances used by the runtime harness. Dialogue and KB-query cases forbid planner activity. Execution cases admit planner work but still require grounded arguments, registered skills, truthful evidence, and the speech policy declared for the case.
+
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{p{0.23\linewidth}p{0.35\linewidth}p{0.13\linewidth}p{0.20\linewidth}}
+\caption{Frozen twenty-case full-runtime questionnaire.}
+\label{tab:main-questionnaire-manifest}\\
+\toprule
+\textbf{Case ID} & \textbf{Exact utterance} & \textbf{Route} & \textbf{Required or forbidden evidence}\\
+\midrule
+\endfirsthead
+\multicolumn{4}{l}{\small\itshape Table~\thetable\ continued}\\
+\toprule
+\textbf{Case ID} & \textbf{Exact utterance} & \textbf{Route} & \textbf{Required or forbidden evidence}\\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\path{dialogue_greeting} & ``Hey, how are you?'' & dialogue & One response; no planner activity.\\
+\path{dialogue_favorite_movie} & ``What is your favourite movie?'' & dialogue & Natural answer; no planner activity.\\
+\path{dialogue_movie_followup} & ``My favourite movie is Back to the Future!'' & dialogue & Contextual acknowledgement; no planner activity.\\
+\path{dialogue_weekend_plans} & ``Any ideas for plans this weekend?'' & dialogue & Advice is not promoted to execution.\\
+\path{dialogue_speed_of_light} & ``What is the speed of light?'' & dialogue & Informational answer; no planner activity.\\
+\path{kb_visible_now_baseline} & ``What can you see now?'' & knowledge & Answer from declared state; no planner activity.\\
+\path{kb_probe_scene_update} & ``What else can you see now?'' & knowledge & Newly injected cup/table facts are used.\\
+\path{kb_object_on_table} & ``What object is on the table?'' & knowledge & Correct support relation and canonical subject.\\
+\path{kb_cup_name} & ``Can you tell me the name of the cup?'' & knowledge & Name is recovered from the KB projection.\\
+\path{kb_multi_object_count} & ``How many objects can you see?'' & knowledge & Correct count without treating people/supports as objects.\\
+\path{skill_head_up} & ``Move your head up.'' & execution & Admissible motion and evidence-based report.\\
+\path{skill_pick_phone_generic} & ``Pick up the phone.'' & execution & Grounded \code{pick_object}; noun phrase is resolved before dispatch.\\
+\path{skill_pick_object_on_table} & ``Pick up the object on the table.'' & execution & Support relation identifies one canonical target.\\
+\path{skill_look_at_person} & ``Look at the person named ALEX.'' & execution & Person remains a human target; \code{look_at} is dispatched.\\
+\path{kb_mutation_add_red_cup} & ``Add a red cup to your KB.'' & execution & Explicit \code{kb_add} through the KB boundary and post-query.\\
+\path{composite_head_all_directions} & ``Can you move your head in all directions?'' & execution & Multi-step motion; no one-step collapse.\\
+\path{composite_bring_every_object_to_person} & ``Can you bring every object in view to the person named ALEX?'' & execution & Canonical objects and human recipient; complete report.\\
+\path{maximal_kitchen_cup_to_operator} & ``Can you go to the kitchen and bring me the cup?'' & execution & Grounded location/object chain; no fabricated detector evidence.\\
+\path{composite_go_to_person_wave_report} & ``Go to the person named ALEX and wave at them. Let me know when you've done that.'' & execution & Ordered navigation, social motion, and terminal report.\\
+\path{composite_walk_every_object_reports_main} & ``Walk to every object and let me know when you get to each one.'' & execution & Alternating navigation/report stages for every grounded object.\\
+\end{longtable}
+\endgroup
+
+\section{Multi-Step Deterministic Fake-Skill Matrix}
+
+The fake-skill matrix reuses the full ROS4HRI ingress and replaces hardware-dependent outcomes with named, typed policies. The canonical manifest contains the nine cases in Table~\ref{tab:fake-deep-manifest}. Each policy sweep retains the same prompts and fixtures, allowing differences to be attributed to injected outcomes rather than changed language.
+
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{p{0.25\linewidth}p{0.17\linewidth}p{0.32\linewidth}p{0.17\linewidth}}
+\caption{Canonical multi-step deterministic fake-skill manifest.}
+\label{tab:fake-deep-manifest}\\
+\toprule
+\textbf{Case ID} & \textbf{Fixture} & \textbf{Exact utterance} & \textbf{Acceptance focus}\\
+\midrule
+\endfirsthead
+\multicolumn{4}{l}{\small\itshape Table~\thetable\ continued}\\
+\toprule
+\textbf{Case ID} & \textbf{Fixture} & \textbf{Exact utterance} & \textbf{Acceptance focus}\\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\path{fake_deep_baseline_inventory} & \path{baseline_table} & ``What objects are on the table?'' & Fixture and grounding preflight.\\
+\path{fake_deep_ordered_walk_report} & \path{lab_table} & ``Walk to every object on the table and let me know when you get to each one.'' & Ordered reports and no repeated steps.\\
+\path{fake_deep_grouped_work_table_delivery} & \path{lab_sections} & ``Bring every object from the work table to ALEX and report what happened.'' & Group expansion, recipient, and KB effects.\\
+\path{fake_deep_missing_object_recovery} & \path{baseline_table} & ``Find the codex missing cup. If you cannot find it, scan the scene and report what you can confirm.'' & Replan or truthful failure.\\
+\path{fake_deep_missing_recipient_clarification} & \path{lab_sections} & ``Bring every object from the work table to the person named BLAKE and report what happened.'' & No invented recipient or false completion.\\
+\path{fake_deep_iiia_kitchen_delivery} & \path{iiia_floor} & ``Bring every object from the kitchen to ALEX and report what happened.'' & Maximal location-scoped delivery.\\
+\path{fake_deep_iiia_floor_location_followup} & \path{iiia_floor} & ``Where are the objects from the kitchen now?'' & Post-effect state, not stale origin facts.\\
+\path{fake_deep_gold_apple_multiturn} & \path{gold_apple_handoff} & ``Can you bring that gold apple to the person named ALEX?'' & Pronoun, colour, recipient, and delivery.\\
+\path{fake_deep_gold_apple_followup} & \path{gold_apple_handoff} & ``Where is the gold apple now?'' & Follow-up from verified KB state.\\
+\end{longtable}
+\endgroup
+
+The deterministic policy ladder is \code{all_success}, \code{fail_once_navigation}, \code{fail_once_pick}, \code{delivery_blocked}, and \code{recipient_missing}. A seeded pseudo-random profile is used only after these policies have been completed, and its seed is part of the run tuple. An isolated rerun may diagnose a failed case, but it does not overwrite the full-ladder result; both outcomes are reported.
+
+\section{ROS4HRI and Architecture Compliance Gates}
+
+The following preflight checks are mandatory before any speech-mode case is scored:
+
+\begin{enumerate}
+  \item the container fingerprint, source revision, image tag, and model configuration are recorded;
+  \item \code{dialogue_manager} is in the active lifecycle state and subscribes to the remapped speech topic;
+  \item the tracked-voice topic uses reliable transient-local delivery and the per-voice \code{LiveSpeech} topic uses reliable volatile delivery;
+  \item the planner ingress follows \code{chatbot_llm -> nao_orchestrator -> planner_llm};
+  \item planner communication is published on \path{/planner/dialogue_act}; \code{nao_orchestrator} relays it and \code{dialogue_manager} realizes the utterance;
+  \item long-running skills expose action servers, streamed state remains on topics, and short KB operations remain behind \code{kb_skills};
+  \item no duplicate nodes, stale container imports, or unconfigured required lifecycle skill servers are present.
+\end{enumerate}
+
+A preflight failure marks the run as \emph{not scored}; it is not attributed to chatbot, planner, or model behaviour. NAO-specific transport remains behind adapters, people and objects remain semantically distinct, and planner or orchestrator code must not bypass the public ROS4HRI dialogue path.
+
+\section{Reset, Repetition, and Isolation}
+
+Before each case group, the harness clears terminal goal state, resets fake-skill counters and policy, injects the declared fixture through \code{/kb/revise}, verifies the fixture through \code{/kb/query}, checks the stale-world guard, and begins a new trace interval. The dialogue scope is new unless the case explicitly tests a follow-up. Fixture lifetimes must exceed the maximum group duration.
+
+One full questionnaire or policy sweep is the primary run unit. Any degraded or failed case is repeated once in isolation using the same tuple to distinguish case interaction from intrinsic failure. The isolated result is reported beside the full-sweep result. Latency statistics are computed only for case families with at least three valid observations. Infrastructure failures before turn injection may be retried once and are logged as exclusions; failures after injection remain in the denominator.
+
+\section{Metrics and Denominators}
+
+Let \(N\) be the number of declared cases, including cases that fail or do not reach a terminal event. The principal rates are:
+
+\begin{align}
+\mathrm{RouteAccuracy} &= \frac{N_{\mathrm{correct\ route}}}{N},\\
+\mathrm{ValidPlanRate} &= \frac{N_{\mathrm{plans\ accepted}}}{N_{\mathrm{planner\ eligible}}},\\
+\mathrm{SkillCoverage} &= \frac{\sum_c |S_c^{\mathrm{required}} \cap S_c^{\mathrm{observed}}|}{\sum_c |S_c^{\mathrm{required}}|},\\
+\mathrm{OrderAccuracy} &= \frac{N_{\mathrm{cases\ satisfying\ required\ order}}}{N_{\mathrm{ordered\ cases}}},\\
+\mathrm{SafeFailureRate} &= \frac{N_{\mathrm{safe\ failure\ outcomes}}}{N_{\mathrm{injected\ failure\ cases}}},\\
+\mathrm{PhaseCompletion} &= \frac{\sum_c N_{c,\mathrm{observed\ mandatory\ phases}}}{\sum_c N_{c,\mathrm{mandatory\ phases}}},\\
+\mathrm{ExactlyOnceSpeech} &= \frac{N_{\mathrm{semantic\ stages\ spoken\ once}}}{N_{\mathrm{expected\ speech\ stages}}}.
+\end{align}
+
+Clarification precision and recall are reported separately. A clarification is incorrect when the fixture already supplies the required object, location, or recipient. State freshness is the proportion of cases whose pre-case guard is clean and whose declared post-effects pass the post-query. Latency is reported with median, interquartile range, 95th percentile, maximum, and timeout count; the mean is supplementary.
+
+Case status uses four values. \emph{Pass} means that all mandatory observations and the declared terminal behaviour are present. \emph{Degraded} means that the behaviour is truthful but a non-critical requirement or observation is incomplete. \emph{Fail} includes a wrong route, invalid admitted plan, missing mandatory phase, unsafe recovery, false success, duplicate semantic speech, or incorrect state transition. \emph{Not scored} is reserved for a failed preflight or an artifact that never reached case injection. The weighted case rate is
+
+\[
+\mathrm{WeightedCaseRate} = \frac{N_{\mathrm{pass}} + 0.5N_{\mathrm{degraded}}}{N};
+\]
+
+cases marked not scored remain in \(N\), so incomplete coverage cannot increase the rate.
+
+\section{Run-Level Score}
+\label{sec:runtime-score}
+
+The thesis also reports a 1--10 reviewer score for each complete run. This score is a compact cross-run summary and does not replace the case metrics. Table~\ref{tab:runtime-score-components} defines eight weighted dimensions. For dimension \(j\), the compliant fraction \(r_j\) is calculated from its declared cases or mandatory observations and lies in \([0,1]\).
+
+\begin{table}[H]
+\centering
+\small
+\caption{Components of the run-level reviewer score.}
+\label{tab:runtime-score-components}
+\begin{tabularx}{\textwidth}{@{}p{0.27\textwidth}p{0.13\textwidth}X@{}}
+\toprule
+\textbf{Dimension} & \textbf{Weight} & \textbf{Principal evidence}\\
+\midrule
+Dialogue and route safety & 1.0 & Route accuracy, non-execution of dialogue/KB turns, and response quality.\\
+Grounding and KB state & 1.5 & Fixture use, canonical identities, state freshness, and verified KB effects.\\
+Plan admission & 1.5 & Valid-plan rate, registered skills, arguments, ordering, and lineage.\\
+Skill execution & 1.5 & Required-skill coverage, action results, terminal behaviour, and truthful reporting.\\
+Failure and replan handling & 1.5 & Safe-failure rate, clarification correctness, plan-version progression, and recovery.\\
+Speech ownership & 1.0 & Exactly-once semantic stages and absence of raw planner/backend text.\\
+Trace completeness & 1.0 & Mandatory phase observations, identifiers, timestamps, and attributable outcomes.\\
+Runtime health & 1.0 & Lifecycle/QoS preflight, node uniqueness, bounded latency, and absence of sustained resource pressure.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The uncapped score and reported score are
+
+\[
+S_{\mathrm{raw}} = \max\left(1, \sum_j w_j r_j\right),
+\qquad
+S_r = \min\left(S_{\mathrm{raw}}, C_r\right),
+\]
+
+where the weights \(w_j\) sum to 10 and \(C_r\) is the critical-failure cap. Component values are retained at full precision and \(S_r\) is rounded to one decimal place. A simple-dialogue failure, duplicate semantic speech, raw planner leakage, or false execution success sets \(C_r=6\). Missing mandatory evidence or failure of stable simulator/KB grounding sets \(C_r=7\); otherwise \(C_r=10\). Detector-only variability is reported under the detector profile and does not cap the semantic-stack score. Route-repair and fallback counters are pressure telemetry: they lower a component only when they produce an incorrect route, invalid admitted plan, missing phase, unsafe recovery, or user-visible failure. A score of 9 or above additionally requires complete speech ingress, natural-chat KB mutation, deterministic failure/replan evidence, exactly-once speech, and a complete fingerprinted evidence bundle.
 
 \section{Evidence Bundle}
 
-A complete validation run should produce a reproducible bundle containing the suite configuration, JSONL trace, per-case metrics, aggregate metrics, and a short report. The expected layout is:
+Every scored run produces a reproducible bundle:
 
-\begin{lstlisting}[style=sharedCode, caption={Expected validation evidence bundle.}]
-docs/evaluation/runs/<timestamp>/
+\begin{lstlisting}[style=sharedCode, caption={Validation evidence bundle.}]
+docs/evaluation/runs/<run_id>/
   suite_config.yaml
   runtime_metadata.json
   environment_fixture.yaml
@@ -144,4 +250,8 @@ docs/evaluation/runs/<timestamp>/
     <case_id>_trace.json
 \end{lstlisting}
 
-Each case trace records explicit \code{phase_observations}, fallback markers, a terminal \code{plan_outcome_summary}, planning and KB evidence, and the speech events used for exactly-once assessment. Runtime metadata identifies the source revision, launch profile, model configuration, prompt-pack revisions, registry projection, fixture, and fake policy or physical adapter. The stale-world guard records whether undeclared state from an earlier case was observed. The thesis uses this structure as the evidence contract; focused probes remain diagnostic until reproduced by the declared suite and profile.
+Runtime metadata records source and nested-repository revisions, image identity, model and provider settings, prompt-pack and registry hashes, turn-pipeline mode, digest setting, detector state, fake policy, seed, and lifecycle/QoS preflight. Each case records its emitted utterance, fixture, route, plan, skill events, Contract~6 results, Contract~7 feedback, KB pre/post queries, speech stages, fallback markers, timestamps, and terminal assessment.
+
+\section{Threats to Validity}
+
+Deterministic fake skills evaluate software supervision and recovery, not physical navigation or manipulation accuracy. A fixed questionnaire samples only part of the language space, and repeated development against known prompts can tune behaviour to the evaluation set. Model output may vary despite fixed prompts and low temperature. Results from different model, source, or prompt tuples are therefore not pooled. Fixture leakage, expiring facts, reused conversation history, and mutable container tags can confound a run; the reset and fingerprint gates are intended to expose these effects. Finally, a single NAO platform limits claims about transfer to other robots, while detector-enabled results depend on camera conditions and the restricted proof-of-concept object classes described in Chapter~\ref{chap:implementation}.

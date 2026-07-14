@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Homebrew) (preloaded format=pdflatex 2026.3.4)  13 JUL 2026 21:54
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Homebrew) (preloaded format=pdflatex 2026.3.4)  14 JUL 2026 03:32
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -1120,7 +1120,7 @@ Package biblatex Info: ... file 'main.bbl' found.
  (./main.bbl)
 Package biblatex Info: Reference section=0 on input line 116.
 Package biblatex Info: Reference segment=0 on input line 116.
-<images/uab_logo-gs.png, id=360, 1310.64656pt x 527.72156pt>
+<images/uab_logo-gs.png, id=372, 1310.64656pt x 527.72156pt>
 File: images/uab_logo-gs.png Graphic file (type png)
 <use images/uab_logo-gs.png>
 Package pdftex.def Info: images/uab_logo-gs.png  used on input line 121.
@@ -1212,7 +1212,7 @@ Chapter 5.
 [27
 
 ] [28]
-<figures/chapter5_full_stack.pdf, id=945, 774.895pt x 396.48125pt>
+<figures/chapter5_full_stack.pdf, id=966, 774.895pt x 396.48125pt>
 File: figures/chapter5_full_stack.pdf Graphic file (type pdf)
 <use figures/chapter5_full_stack.pdf>
 Package pdftex.def Info: figures/chapter5_full_stack.pdf  used on input line 22.
@@ -1224,25 +1224,25 @@ LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <14.4> not available
 
 
 ]
-<figures/chapter5_chatbot_llm.pdf, id=1003, 490.83376pt x 132.495pt>
+<figures/chapter5_chatbot_llm.pdf, id=1024, 490.83376pt x 132.495pt>
 File: figures/chapter5_chatbot_llm.pdf Graphic file (type pdf)
 <use figures/chapter5_chatbot_llm.pdf>
 Package pdftex.def Info: figures/chapter5_chatbot_llm.pdf  used on input line 56.
 (pdftex.def)             Requested size: 472.31577pt x 127.50104pt.
  [31 <./figures/chapter5_chatbot_llm.pdf>]
-<figures/chapter5_planner_llm.pdf, id=1024, 506.89375pt x 80.3pt>
+<figures/chapter5_planner_llm.pdf, id=1045, 506.89375pt x 80.3pt>
 File: figures/chapter5_planner_llm.pdf Graphic file (type pdf)
 <use figures/chapter5_planner_llm.pdf>
 Package pdftex.def Info: figures/chapter5_planner_llm.pdf  used on input line 73.
 (pdftex.def)             Requested size: 472.31577pt x 74.82402pt.
  [32 <./figures/chapter5_planner_llm.pdf>] [33] [34]
-<figures/chapter5_nao_orchestrator.pdf, id=1052, 506.89375pt x 155.58125pt>
+<figures/chapter5_nao_orchestrator.pdf, id=1073, 506.89375pt x 155.58125pt>
 File: figures/chapter5_nao_orchestrator.pdf Graphic file (type pdf)
 <use figures/chapter5_nao_orchestrator.pdf>
 Package pdftex.def Info: figures/chapter5_nao_orchestrator.pdf  used on input line 131.
 (pdftex.def)             Requested size: 472.31577pt x 144.97156pt.
  [35 <./figures/chapter5_nao_orchestrator.pdf>] [36]
-<figures/chapter5_perception_grounding.pdf, id=1071, 506.89375pt x 140.525pt>
+<figures/chapter5_perception_grounding.pdf, id=1092, 506.89375pt x 140.525pt>
 File: figures/chapter5_perception_grounding.pdf Graphic file (type pdf)
 <use figures/chapter5_perception_grounding.pdf>
 Package pdftex.def Info: figures/chapter5_perception_grounding.pdf  used on input line 159.
@@ -1262,375 +1262,406 @@ Underfull \hbox (badness 4819) in paragraph at lines 196--197
 \T1/cmtt/m/n/12 perception$\T1/cmr/m/n/12 (+20) , $\T1/cmtt/m/n/12 start _ interaction _ sim _ tools$\T1/cmr/m/n/12 (+20) , $\T1/cmtt/m/n/12 start _ fake _ skills$\T1/cmr/m/n/12 (+20) , $\T1/cmtt/m/n/12 preloaded _
  []
 
-[38]) (./sections/06_validation_methodology.tex [39]
+) (./sections/06_validation_methodology.tex [38] [39]
 Chapter 6.
 
-Underfull \hbox (badness 1308) in paragraph at lines 23--23
-\T1/cmr/m/n/12 (+20) only turns out of the plan-
+Underfull \hbox (badness 10000) in paragraph at lines 39--39
+[]|\T1/cmr/m/n/10.95 (+20) Tracked voice
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 23--24
-[]|\T1/cmtt/m/n/12 /chatbot_llm/turn_trace\T1/cmr/m/n/12 (+20) ,
+Underfull \hbox (badness 10000) in paragraph at lines 39--39
+\T1/cmr/m/n/10.95 (+20) and $\T1/cmtt/m/n/10.95 hri _ msgs /
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 23--24
-\T1/cmtt/m/n/12 /intents\T1/cmr/m/n/12 (+20) ,
+Underfull \hbox (badness 1092) in paragraph at lines 39--39
+\T1/cmr/m/n/10.95 (+20) sion, ex-e-cu-tion feed-back, and
  []
 
 
-Underfull \hbox (badness 1867) in paragraph at lines 24--24
-\T1/cmr/m/n/12 (+20) JSON us-ing ad-mis-si-ble skill
+Underfull \hbox (badness 10000) in paragraph at lines 39--39
+[]|\T1/cmr/m/n/10.95 (+20) Planner-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 24--25
-[]|\T1/cmr/m/n/12 (+20) Planner out-put,
+Underfull \hbox (badness 10000) in paragraph at lines 39--39
+[]|$\T1/cmtt/m/n/10.95 /nao _ orchestrator /
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 24--25
-\T1/cmtt/m/n/12 planner_common \T1/cmr/m/n/12 (+20) nor-mal-i-
+Underfull \hbox (badness 1087) in paragraph at lines 39--39
+[]|\T1/cmr/m/n/10.95 (+20) Planner gate, plan-ner out-put,
  []
 
 
-Underfull \hbox (badness 5954) in paragraph at lines 25--26
-[]|\T1/cmr/m/n/12 (+20) Plan steps, expected-plan
+Underfull \hbox (badness 10000) in paragraph at lines 39--39
+[]|\T1/cmr/m/n/10.95 (+20) Detector-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 26--26
-[]|\T1/cmr/m/n/12 (+20) Does the plan-ner use
+Underfull \hbox (badness 2717) in paragraph at lines 39--39
+[]|\T1/cmr/m/n/10.95 (+20) Detector nor-mal-i-sa-tion, scene
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 26--26
-\T1/cmtt/m/n/12 grounded_context\T1/cmr/m/n/12 (+20) ,
+Underfull \hbox (badness 10000) in paragraph at lines 39--39
+[]|\T1/cmr/m/n/10.95 (+20) E2E-main with
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 26--26
-\T1/cmtt/m/n/12 knowledge_snapshot\T1/cmr/m/n/12 (+20) ,
+Underfull \hbox (badness 10000) in paragraph at lines 39--39
+[]|\T1/cmr/m/n/10.95 (+20) Paired ab-la-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 26--27
-[]|\T1/cmr/m/n/12 (+20) Planner re-quest pay-
+Underfull \hbox (badness 10000) in paragraph at lines 39--39
+\T1/cmr/m/n/10.95 (+20) tion against
  []
 
 
-Underfull \hbox (badness 3612) in paragraph at lines 26--27
-\T1/cmr/m/n/12 (+20) load, KB query ev-i-dence,
+Underfull \hbox (badness 10000) in paragraph at lines 39--39
+[]|\T1/cmr/m/n/10.95 (+20) Architecture
  []
 
 
-Underfull \hbox (badness 1400) in paragraph at lines 27--27
-[]|\T1/cmr/m/n/12 (+20) Does \T1/cmtt/m/n/12 nao_orchestrator \T1/cmr/m/n/12 (+20) ex-e-
+Underfull \hbox (badness 2150) in paragraph at lines 39--39
+\T1/cmr/m/n/10.95 (+20) ser-vices, and di-rect
  []
 
 
-Overfull \hbox (17.10475pt too wide) in paragraph at lines 27--28
-[]|\T1/cmtt/m/n/12 /planner/execution_feedback\T1/cmr/m/n/12 (-20) ,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 28--29
-[]|\T1/cmr/m/n/12 (+20) Fake-skill re-sult pay-loads,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 29--30
-[]|\T1/cmtt/m/n/12 /planner/dialogue_act\T1/cmr/m/n/12 (+20) ,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 29--30
-\T1/cmtt/m/n/12 /debug/nao_say/speech\T1/cmr/m/n/12 (+20) ,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 30--31
-[]|\T1/cmtt/m/n/12 interaction_trace_viewer\T1/cmr/m/n/12 (+20) ,
- []
-
-
-Underfull \hbox (badness 2205) in paragraph at lines 30--31
-\T1/cmtt/m/n/12 /fake_skills/events\T1/cmr/m/n/12 (+20) , val-i-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 31--32
-[]|\T1/cmr/m/n/12 (+20) Per-case
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 31--32
-\T1/cmtt/m/n/12 phase_observations\T1/cmr/m/n/12 (+20) , fall-
- []
-
-
-Underfull \hbox (badness 2318) in paragraph at lines 32--33
-[]|\T1/cmr/m/n/12 (+20) Fixture man-i-fest, KB ev-i-
+Underfull \hbox (badness 10000) in paragraph at lines 39--39
+[]|\T1/cmr/m/n/10.95 (+20) Contract-specific
  []
 
 [40
 
 ]
-ignored: Infinite glue shrinkage found in box being split [41]
-Underfull \hbox (badness 3128) in paragraph at lines 52--52
-[]|\T1/cmr/m/n/12 (+20) Knowledge di-a-
+Underfull \hbox (badness 10000) in paragraph at lines 62--63
+[]|\T1/cmtt/m/n/12 /chatbot_llm/turn_trace\T1/cmr/m/n/12 (+20) ,
  []
 
 
-Underfull \hbox (badness 3417) in paragraph at lines 54--55
-\T1/cmr/m/n/12 (+20) pre-serves in-ter-me-di-ate ev-i-dence,
+Underfull \hbox (badness 10000) in paragraph at lines 62--63
+\T1/cmr/m/n/12 (+20) planner-request and in-tent
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 55--56
-[]|\T1/cmr/m/n/12 (+20) Fake pay-loads in-clude
+Underfull \hbox (badness 10000) in paragraph at lines 63--64
+[]|\T1/cmr/m/n/12 (+20) Planner de-ci-sion record,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 55--56
-\T1/cmtt/m/n/12 metadata.fake=true\T1/cmr/m/n/12 (+20) , sta-ble
+Underfull \hbox (badness 10000) in paragraph at lines 65--66
+[]|\T1/cmr/m/n/12 (+20) KB pre-query,
  []
 
 
-Underfull \hbox (badness 5681) in paragraph at lines 55--56
-\T1/cmr/m/n/12 (+20) re-sult modes, and re-cov-er-able
+Underfull \hbox (badness 10000) in paragraph at lines 65--66
+\T1/cmtt/m/n/12 /scene/summary\T1/cmr/m/n/12 (+20) , plan-ner
  []
 
 
-Underfull \hbox (badness 1194) in paragraph at lines 56--56
-[]|\T1/cmr/m/n/12 (+20) Composite fake
- []
-
-[42]
-Underfull \hbox (badness 5696) in paragraph at lines 77--78
-[]|\T1/cmr/m/n/12 (+20) Report ob-ject ev-i-
+Underfull \hbox (badness 10000) in paragraph at lines 65--66
+\T1/cmr/m/n/12 (+20) re-quest, grounded-context
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 78--78
-[]|\T1/cmtt/m/n/12 navigate_to \T1/cmr/m/n/12 (+20) or
+Underfull \hbox (badness 1789) in paragraph at lines 66--66
+[]|\T1/cmr/m/n/12 (+20) Execution val-i-da-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 79--79
-[]|\T1/cmtt/m/n/12 scan ->
+Underfull \hbox (badness 2418) in paragraph at lines 66--66
+[]|\T1/cmr/m/n/12 (+20) Only ad-mit-ted steps are dis-
  []
 
 
-Underfull \hbox (badness 4739) in paragraph at lines 79--79
-[]|\T1/cmr/m/n/12 (+20) Success, empty scene,
+Underfull \hbox (badness 10000) in paragraph at lines 66--67
+[]|\T1/cmr/m/n/12 (+20) Action events, $\T1/cmtt/m/n/12 /planner /
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 79--80
-[]|\T1/cmr/m/n/12 (+20) Fill re-port from
+Underfull \hbox (badness 10000) in paragraph at lines 66--67
+\T1/cmtt/m/n/12 execution _ feedback$\T1/cmr/m/n/12 (+20) , trace
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 79--80
-\T1/cmr/m/n/12 (+20) able and avoid
+Underfull \hbox (badness 10000) in paragraph at lines 68--68
+[]|\T1/cmr/m/n/12 (+20) Exactly-once
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 80--80
-[]|\T1/cmtt/m/n/12 look_at ->
+Underfull \hbox (badness 10000) in paragraph at lines 68--69
+[]|\T1/cmr/m/n/12 (+20) Planner di-a-logue re-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 81--81
-[]|\T1/cmtt/m/n/12 inspect_area
+Underfull \hbox (badness 10000) in paragraph at lines 68--69
+\T1/cmr/m/n/12 (+20) lay, di-a-logue out-put,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 81--81
-\T1/cmr/m/n/12 (+20) or \T1/cmtt/m/n/12 navigate_to
+Underfull \hbox (badness 10000) in paragraph at lines 69--69
+[]|\T1/cmr/m/n/12 (+20) Trace com-plete-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 81--81
-\T1/cmtt/m/n/12 -> scan ->
+Underfull \hbox (badness 1173) in paragraph at lines 69--69
+[]|\T1/cmr/m/n/12 (+20) All manda-tory phases con-tain
  []
 
 
-Underfull \hbox (badness 3009) in paragraph at lines 81--81
-\T1/cmr/m/n/12 (+20) son found, am-bigu-ous
+Underfull \hbox (badness 2245) in paragraph at lines 71--71
+[]|\T1/cmr/m/n/12 (+20) Public in-ter-ac-tion fol-lows the
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 82--82
-[]|\T1/cmr/m/n/12 (+20) Composite
+Underfull \hbox (badness 3579) in paragraph at lines 71--71
+\T1/cmr/m/n/12 (+20) tracked-voice and \T1/cmtt/m/n/12 LiveSpeech
  []
 
-[43] [44]
-Package hyperref Info: bookmark level for unknown lstlisting defaults to 0 on input line 133.
-) (./sections/07_results.tex
-Overfull \hbox (66.13196pt too wide) in paragraph at lines 147--1
-[]\T1/cmr/m/n/12 (-20) Each case trace records ex-plicit \T1/cmtt/m/n/12 phase_observations\T1/cmr/m/n/12 (-20) , fall-back mark-ers, a ter-mi-nal \T1/cmtt/m/n/12 plan_outcome_summary\T1/cmr/m/n/12 (-20) ,
+
+Underfull \hbox (badness 2293) in paragraph at lines 71--71
+\T1/cmr/m/n/12 (+20) con-tracts; di-a-logue own-er-ship,
  []
 
-[45] [46]
+
+Underfull \hbox (badness 4569) in paragraph at lines 71--72
+[]|\T1/cmr/m/n/12 (+20) ROS graph, life-cy-cle state,
+ []
+
+[41]
+ignored: Infinite glue shrinkage found in box being split [42]
+Underfull \hbox (badness 7451) in paragraph at lines 100--101
+[]|\T1/cmr/m/n/8 (+20) Answer from de-clared
+ []
+
+
+Underfull \hbox (badness 4765) in paragraph at lines 104--105
+[]|\T1/cmr/m/n/8 (+20) Correct count with-out
+ []
+
+
+Underfull \hbox (badness 1721) in paragraph at lines 105--106
+[]|\T1/cmr/m/n/8 (+20) Admissible mo-tion and
+ []
+
+
+Underfull \hbox (badness 7740) in paragraph at lines 106--107
+[]|\T1/cmr/m/n/8 (+20) Grounded \T1/cmtt/m/n/8 pick_object\T1/cmr/m/n/8 (+20) ;
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 107--107
+[]|$\T1/cmtt/m/n/8 skill _ pick _ object _ on _
+ []
+
+
+Underfull \hbox (badness 1895) in paragraph at lines 108--109
+\T1/cmr/m/n/8 (+20) tar-get; \T1/cmtt/m/n/8 look_at \T1/cmr/m/n/8 (+20) is dis-
+ []
+
+
+Underfull \hbox (badness 1721) in paragraph at lines 109--110
+\T1/cmr/m/n/8 (+20) the KB bound-ary and
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 110--110
+[]|$\T1/cmtt/m/n/8 composite _ head _ all _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 111--111
+[]|$\T1/cmtt/m/n/8 composite _ bring _ every _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 112--112
+[]|$\T1/cmtt/m/n/8 maximal _ kitchen _ cup _ to _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 113--113
+[]|$\T1/cmtt/m/n/8 composite _ go _ to _ person _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 114--114
+[]|$\T1/cmtt/m/n/8 composite _ walk _ every _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 114--115
+[]|\T1/cmr/m/n/8 (+20) Alternating nav-i-ga-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 114--115
+\T1/cmr/m/n/8 (+20) tion/report stages for
+ []
+
+
+ignored: Infinite glue shrinkage found in box being split [43]
+Underfull \hbox (badness 10000) in paragraph at lines 139--139
+[]|$\T1/cmtt/m/n/8 fake _ deep _ baseline _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 140--140
+[]|$\T1/cmtt/m/n/8 fake _ deep _ ordered _ walk _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 141--141
+[]|$\T1/cmtt/m/n/8 fake _ deep _ grouped _ work _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 142--142
+[]|$\T1/cmtt/m/n/8 fake _ deep _ missing _ object _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 143--143
+[]|$\T1/cmtt/m/n/8 fake _ deep _ missing _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 144--144
+[]|$\T1/cmtt/m/n/8 fake _ deep _ iiia _ kitchen _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 144--145
+[]|\T1/cmr/m/n/8 (+20) Maximal location-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 145--145
+[]|$\T1/cmtt/m/n/8 fake _ deep _ iiia _ floor _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 146--146
+[]|$\T1/cmtt/m/n/8 fake _ deep _ gold _ apple _
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 147--147
+[]|$\T1/cmtt/m/n/8 fake _ deep _ gold _ apple _
+ []
+
+[44] [45] [46]
+Package hyperref Info: bookmark level for unknown lstlisting defaults to 0 on input line 239.
+ [47]) (./sections/07_results.tex [48]
 Chapter 7.
 
-Overfull \hbox (20.63655pt too wide) in paragraph at lines 21--21
-[]|\T1/cmtt/m/n/12 interaction_trace_viewer| 
+Underfull \hbox (badness 10000) in paragraph at lines 25--25
+[]|\T1/cmr/m/n/10.95 (+20) Speech ingress, KB
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 22--23
-[]|\T1/cmr/m/n/12 (+20) Named sce-nar-ios were avail-
+Underfull \hbox (badness 10000) in paragraph at lines 25--25
+\T1/cmr/m/n/10.95 (+20) add/revise/remove, sim-ple
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 22--23
-\T1/cmr/m/n/12 (+20) able, in-clud-ing \T1/cmtt/m/n/12 ambiguous_cup\T1/cmr/m/n/12 (+20) ,
- []
-
-[47
-
-]
-Underfull \hbox (badness 10000) in paragraph at lines 37--37
-[]|\T1/cmr/bx/n/12 (+20) Observed
+Underfull \hbox (badness 2150) in paragraph at lines 25--25
+\T1/cmr/m/n/10.95 (+20) and com-pos-ite skills, grouped
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 39--39
-[]|\T1/cmtt/m/n/12 ABORTED\T1/cmr/m/n/12 (+20) ,
+Underfull \hbox (badness 10000) in paragraph at lines 25--25
+[]|\T1/cmtt/m/n/10.95 response_first\T1/cmr/m/n/10.95 (+20) ,
  []
 
 
-Underfull \hbox (badness 2376) in paragraph at lines 39--39
-\T1/cmr/m/n/12 (+20) fail-ure code
+Underfull \hbox (badness 2326) in paragraph at lines 25--25
+\T1/cmr/m/n/10.95 (+20) icy sweeps through ROS4HRI
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 40--40
-[]|\T1/cmtt/m/n/12 ABORTED\T1/cmr/m/n/12 (+20) ,
+Underfull \hbox (badness 10000) in paragraph at lines 25--25
+[]|\T1/cmr/m/n/10.95 (+20) Main plus
+ []
+
+[49
+
+] [50]
+Underfull \hbox (badness 1721) in paragraph at lines 77--77
+\T1/cmr/m/n/10.95 (+20) de-liv-ery, max-i-mal de-liv-ery, and
  []
 
 
-Underfull \hbox (badness 2376) in paragraph at lines 40--40
-\T1/cmr/m/n/12 (+20) fail-ure code
+Underfull \hbox (badness 10000) in paragraph at lines 77--77
+[]|$\T1/cmtt/m/n/10.95 fail _ once _
  []
 
 
-Overfull \hbox (7.958pt too wide) in paragraph at lines 40--40
-\T1/cmtt/m/n/12 path_blocked| 
+Underfull \hbox (badness 10000) in paragraph at lines 77--77
+[]|\T1/cmr/m/n/10.95 (+20) Failed ordered-
  []
 
 
-Overfull \hbox (56.97696pt too wide) in paragraph at lines 41--41
-[]|\T1/cmtt/m/n/12 social_wave_unavailable| 
+Underfull \hbox (badness 10000) in paragraph at lines 77--77
+[]|\T1/cmr/m/n/10.95 (+20) Gold-apple case
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 41--41
-[]|\T1/cmtt/m/n/12 ABORTED\T1/cmr/m/n/12 (+20) ,
+Underfull \hbox (badness 5417) in paragraph at lines 77--77
+\T1/cmr/m/n/10.95 (+20) passed; or-dered
  []
 
 
-Underfull \hbox (badness 2376) in paragraph at lines 41--41
-\T1/cmr/m/n/12 (+20) fail-ure code
+Underfull \hbox (badness 5847) in paragraph at lines 77--77
+\T1/cmr/m/n/10.95 (+20) re-port re-mained
+ []
+
+[51]
+Underfull \hbox (badness 4454) in paragraph at lines 111--111
+[]|\T1/cmr/m/n/10.95 (+20) 22 pass, 7 de-
  []
 
 
-Overfull \hbox (44.99895pt too wide) in paragraph at lines 41--41
-\T1/cmtt/m/n/12 motion_unavailable| 
- []
-
-[48]
-Underfull \hbox (badness 10000) in paragraph at lines 60--60
-[]|\T1/cmr/m/n/12 (+20) Planner re-ceived the
+Underfull \hbox (badness 10000) in paragraph at lines 139--139
+[]|\T1/cmr/m/n/10.95 (+20) Deterministic ex-e-cu-tion
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 60--60
-\T1/cmr/m/n/12 (+20) re-quest and emit-ted
+Underfull \hbox (badness 6047) in paragraph at lines 139--139
+[]|\T1/cmr/m/n/10.95 (+20) Degraded in
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 61--61
-[]|\T1/cmtt/m/n/12 goal_nav_1 \T1/cmr/m/n/12 (+20) and
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 61--61
-\T1/cmtt/m/n/12 /planner/request\T1/cmr/m/n/12 (+20) , but
- []
-
-
-Underfull \hbox (badness 1117) in paragraph at lines 85--86
-[]|\T1/cmr/m/n/12 (+20) Planner, chat-bot, or-ches-tra-tor, trace
- []
-
-
-Underfull \hbox (badness 5460) in paragraph at lines 87--87
-[]|\T1/cmr/m/n/12 (+20) Planner clar-i-fi-ca-tion
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 87--88
-[]|\T1/cmr/m/n/12 (+20) One am-bigu-ous fix-ture pro-duced
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 88--88
-[]|\T1/cmr/m/n/12 (+20) Planner ad-mis-sion
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 88--88
-\T1/cmr/m/n/12 (+20) across re-peated
- []
-
-
-Underfull \hbox (badness 6300) in paragraph at lines 90--90
-[]|\T1/cmr/m/n/12 (+20) Composite fake-skill
- []
-
-
-Underfull \hbox (badness 1127) in paragraph at lines 90--90
-[]|\T1/cmr/m/n/12 (+20) Not yet com-
- []
-
-
-Underfull \hbox (badness 1127) in paragraph at lines 91--91
-[]|\T1/cmr/m/n/12 (+20) Not yet com-
- []
-
-[49]) (./sections/08_discussion.tex [50]
+[52]) (./sections/08_discussion.tex [53]
 Chapter 8.
 
 Overfull \hbox (16.43056pt too wide) in paragraph at lines 8--9
 []\T1/cmr/m/n/12 (-20) The most use-ful ar-chi-tec-tural seam is the bound-ary be-tween \T1/cmtt/m/n/12 planner_llm \T1/cmr/m/n/12 (-20) and \T1/cmtt/m/n/12 nao_orchestrator\T1/cmr/m/n/12 (-20) .
  []
 
-[51
+[54
 
-]) (./sections/09_limitations_future_work.tex [52]
+]) (./sections/09_limitations_future_work.tex [55]
 Chapter 9.
-) (./sections/10_conclusion.tex [53
+) (./sections/10_conclusion.tex [56
 
 ]
 Chapter 10.
-) (./sections/11_appendix.tex [54
+) (./sections/11_appendix.tex [57
 
 ]
 Appendix A.
-[55
+[58
 
-] [56
+] [59
 
-] [57
+] [60
 
 ]
 Appendix B.
-[58
+[61
 
 ]
 Appendix C.
@@ -1639,40 +1670,40 @@ Underfull \hbox (badness 10000) in paragraph at lines 168--168
 []|\T1/cmr/m/n/12 (+20) Execution feed-
  []
 
-) [59
+) [62
 
 ]
 Overfull \hbox (2.8396pt too wide) in paragraph at lines 188--188
 \T1/cmr/m/n/12 (-20) manoid: a com-bi-na-tion of per-for-mance and af-ford-abil-ity^^Q. In: \T1/cmr/m/it/12 (-20) arXiv preprint arXiv:0807.3223\T1/cmr/m/n/12 (-20) . 
  []
 
-[60
+[63
 
 
-] [61] [62] (./main.aux)
+] [64] [65] (./main.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: B417DA13D4E95A4EE4E21A3A9F72DA91;14391.
+(rerunfilecheck)             Checksum: 4C50934A7B667A008429285A497C187B;15325.
 Package logreq Info: Writing requests to 'main.run.xml'.
 \openout1 = `main.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 48915 strings out of 467525
- 1089159 string characters out of 5408440
- 2123132 words of memory out of 5000000
- 76410 multiletter control sequences out of 15000+600000
- 670528 words of font info for 235 fonts, out of 8000000 for 9000
+ 48997 strings out of 467525
+ 1090166 string characters out of 5408440
+ 2123308 words of memory out of 5000000
+ 76420 multiletter control sequences out of 15000+600000
+ 672211 words of font info for 262 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 103i,16n,108p,1472b,2042s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/tex-gyre/qhvb.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx0800.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1000.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx2488.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm0600.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm2074.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfti1440.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt0800.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt1095.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt1440.pfb>
-Output written on main.pdf (72 pages, 905703 bytes).
+ 103i,16n,108p,1472b,2092s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/tex-gyre/qhvb.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx0800.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1000.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfbx2488.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm0600.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfrm2074.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sfti1440.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt0800.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt1095.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/cm-super/sftt1440.pfb>
+Output written on main.pdf (75 pages, 1003208 bytes).
 PDF statistics:
- 1421 PDF objects out of 1440 (max. 8388607)
- 1240 compressed objects within 13 object streams
- 398 named destinations out of 1000 (max. 500000)
- 62235 words of extra memory for PDF output out of 74296 (max. 10000000)
+ 1505 PDF objects out of 1728 (max. 8388607)
+ 1310 compressed objects within 14 object streams
+ 416 named destinations out of 1000 (max. 500000)
+ 62259 words of extra memory for PDF output out of 74296 (max. 10000000)
 

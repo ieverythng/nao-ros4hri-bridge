@@ -1,101 +1,146 @@
 \chapter{Results}
 \label{chap:results}
 
-\section{Current Status of the Validation Evidence}
+\section{Evidence Selection}
 
-The results in this chapter should be read as the first populated validation pass rather than as a final statistical evaluation. At the time of this thesis draft, the available evidence supports three claims. First, the core ROS stack can launch with the planner, chatbot, orchestrator, trace viewer, and fake-skill server active in the same profile. Second, deterministic fake-skill scenarios can return the expected structured failure modes for ambiguity, blocked navigation, and unavailable social motion. Third, the live user-turn and planner-admission paths still show integration risks that must be resolved before the final validation suite can be treated as complete.
+Each evidence set fixes its launch mode, model or source configuration, case set, artifact, and 1--10 run score. Scores from different tuples are not averaged because a model can produce fluent dialogue while reducing planner-schema validity or recovery reliability.
 
-\section{Runtime Stack Health}
-
-A live-stack validation pass on 26 May 2026 used the \code{nao_ros2} container with fake skills and the interaction trace viewer enabled. The planner, chatbot, orchestrator, trace viewer, and fake skill server were observed as active. The trace viewer was subscribed to the key planning and execution topics, including \code{/planner/request}, \code{/intents}, \code{/planner/execution_feedback}, \code{/planner/dialogue_act}, \code{/chatbot_llm/turn_trace}, and \code{/fake_skills/events}.
+The evaluation contains four evidence sets. The 28 June response-first run supplies the broad full-stack baseline. The 8 July response-first run supplies the deterministic fake/replan matrix under JSON-only grounded context. The 10 July audit applies stricter KB-effect and report-result checks. The 11 July run is an alternate-model ablation and is reported separately from the principal configuration.
 
 \begin{table}[H]
 \centering
-\begin{tabular}{p{0.27\linewidth}p{0.20\linewidth}p{0.40\linewidth}}
+\small
+\renewcommand{\arraystretch}{1.15}
+\caption{Run-level evidence sets and reviewer scores.}
+\label{tab:run-level-evidence}
+\begin{tabularx}{\textwidth}{@{}p{0.12\textwidth}p{0.20\textwidth}p{0.16\textwidth}X p{0.08\textwidth}@{}}
 \toprule
-\textbf{Runtime component} & \textbf{Observed status} & \textbf{Evidence note}\\
+\textbf{Run} & \textbf{Profile} & \textbf{Scope} & \textbf{Evidence summary} & \textbf{Score}\\
 \midrule
-\code{planner_llm} & Ready & Planner startup reported readiness with automatic replanning enabled.\\
-\code{chatbot_llm} & Ready & Chatbot startup reported planner mode enabled.\\
-\code{nao_orchestrator} & Active & Orchestrator was running as the deterministic execution boundary.\\
-\code{interaction_trace_viewer} & Active & Subscribed to planner, intent, feedback, dialogue, chatbot trace, and fake-skill event topics.\\
-\code{fake_skill_server} & Active & Named scenarios were available, including \code{ambiguous_cup}, \code{area_person_found}, \code{path_blocked}, and \code{social_wave_unavailable}.\\
+F28 & \code{response_first} & Full runtime & Speech ingress, KB add/revise/remove, simple and composite skills, grouped delivery, direct fake guards, and KB post-effects. & 8.7\\
+F08 & \code{response_first}, JSON-only grounding & Fake/replan & Four eight-case deterministic policy sweeps through ROS4HRI speech ingress, with isolated confirmation probes. & 8.6\\
+F10 & Strict seam audit & KB/report holdout & Natural KB mutation, grouped delivery effects, follow-up state, and replan/report checks. & 6.7\\
+F11 & Alternate-model ablation & Main plus fake/replan & Fluent main questionnaire output, followed by planner-schema and deterministic-recovery regressions. & 5.8\\
 \bottomrule
-\end{tabular}
-\caption{Observed runtime health during the live-stack validation pass.}
-\label{tab:runtime-health-results}
+\end{tabularx}
 \end{table}
 
-\section{Action-Level Fake-Skill Results}
+F28 and F08 are recorded in the full-suite and deterministic-fake-suite validation ledgers, including the source artifact identifiers and case-level assessments. F10 and F11 are preserved as the repository reports \path{runtime_review_2026-07-10_sv_seams.md} and \path{runtime_review_2026-07-11_qwen_personal_stack.md}. The scores in Table~\ref{tab:run-level-evidence} are the reviewer summaries recorded with those evidence sets; case counts and seam-level observations remain the primary quantitative results. The final evidence bundle described in Chapter~\ref{chap:validation-methodology} assigns these records stable run identifiers and hashes rather than relying on temporary runtime paths.
 
-The strongest current result is the deterministic behaviour of the fake-skill action path. Three failure-oriented scenarios were tested directly at action level. Each returned the expected aborted status and failure code. This is important because the thesis validation methodology depends on being able to inject controlled execution outcomes without relying on physical robot variability.
+\section{Full ROS4HRI Runtime Results}
+
+F28 exercised the response-first speech path from tracked voice and \code{LiveSpeech} through dialogue, planning, deterministic execution, feedback, and final speech. Table~\ref{tab:full-runtime-results} reports the principal seams retained from that run.
 
 \begin{table}[H]
 \centering
-\begin{tabular}{p{0.22\linewidth}p{0.18\linewidth}p{0.18\linewidth}p{0.14\linewidth}p{0.15\linewidth}}
+\small
+\renewcommand{\arraystretch}{1.14}
+\caption{Full-runtime results for evidence set F28.}
+\label{tab:full-runtime-results}
+\begin{tabularx}{\textwidth}{@{}p{0.24\textwidth}p{0.13\textwidth}X@{}}
 \toprule
-\textbf{Skill} & \textbf{Scenario} & \textbf{Target} & \textbf{Observed result} & \textbf{Assessment}\\
+\textbf{Validation seam} & \textbf{Result} & \textbf{Observed evidence}\\
 \midrule
-\code{find_object} & \code{ambiguous_cup} & \code{cup} & \code{ABORTED}, failure code \code{ambiguous} & Pass\\
-\code{navigate_to} & \code{path_blocked} & \code{kitchen} & \code{ABORTED}, failure code \code{path_blocked} & Pass\\
-\code{wave_greet} & \code{social_wave_unavailable} & \code{person} & \code{ABORTED}, failure code \code{motion_unavailable} & Pass\\
+Dialogue routing & Pass & Simple dialogue and informational turns remained outside planner execution and produced one user-facing response.\\
+Stable KB query & Pass & Injected cup name, colour, and support relation were available through KB query, grounded context, and dialogue.\\
+Explicit KB mutation & Pass & Structured add, revise, query, and remove traversed the planner/orchestrator KB boundary; the post-remove query was empty.\\
+Simple skill & Pass & Head motion and wave cases reached registered execution paths and evidence-derived reporting.\\
+Composite skill & Pass & Head-motion plus wave and ordered multi-object navigation/report produced ordered plans and terminal reports.\\
+Grouped semantic execution & Pass & Kitchen objects and the named recipient were represented in planner work without fabricated detector evidence.\\
+Fake skill guards & Pass & Canonical targets succeeded and absent or non-canonical targets returned typed failures.\\
+Exactly-once speech & Pass & The retained speech traces contained no duplicated acknowledgement or terminal semantic event.\\
 \bottomrule
-\end{tabular}
-\caption{Preliminary fake-skill scenario results from the action-level runtime probe.}
-\label{tab:fake-skill-action-results}
+\end{tabularx}
 \end{table}
 
-These results validate the fake-skill layer as a usable substrate for later planner-level testing. They do not yet prove that the planner always reacts correctly to those failures. The next validation step is to run the same scenarios through planner-request injection and full user-turn injection, then check whether the planner asks for clarification, replans, or fails safely according to the expected policy.
+The run score of 8.7 reflects broad success across dialogue, grounding, execution, and KB transport while keeping detector object recognition outside the semantic-stack score. The score does not combine detector variability with KB-authored object grounding.
 
-\section{Planner Request Admission}
+\section{Deterministic Fake-Skill and Replan Results}
 
-The same runtime pass exposed a planner-admission risk. One fixture request, \code{goal_probe}, was processed and produced an \code{ask_clarification} dialogue act, which was the expected response to ambiguous goal text. Later fixture requests were visible on \code{/planner/request}, but no corresponding planner request log was observed in the same observation window. This suggests that the goal-state helper or request-admission path may remain in a waiting state after the first clarification.
+Evidence set F08 used \code{response_first}, disabled the compact grounded-context digest, and exercised the same ROS4HRI speech ingress under four deterministic fake policies. Table~\ref{tab:fake-policy-results} reports the full-ladder result and the isolated confirmation result separately.
 
 \begin{table}[H]
 \centering
-\begin{tabular}{p{0.24\linewidth}p{0.29\linewidth}p{0.32\linewidth}}
+\small
+\renewcommand{\arraystretch}{1.14}
+\caption{Deterministic fake-skill policy results for evidence set F08.}
+\label{tab:fake-policy-results}
+\begin{tabularx}{\textwidth}{@{}p{0.23\textwidth}p{0.16\textwidth}p{0.18\textwidth}X@{}}
 \toprule
-\textbf{Probe} & \textbf{Observation} & \textbf{Interpretation}\\
+\textbf{Policy} & \textbf{Full ladder} & \textbf{Isolated probe} & \textbf{Interpretation}\\
 \midrule
-\code{goal_probe} & Planner received the request and emitted \code{ask_clarification}. & Expected behaviour for ambiguous goal text.\\
-\code{goal_nav_1} and \code{goal_exec_1} & Requests were visible on \code{/planner/request}, but planner processing was not observed in the window. & Degraded result. Request admission or goal-state transition requires further testing.\\
+\path{all_success} & 8/8 pass & Not required & Inventory, ordered reports, grouped delivery, maximal delivery, and multi-turn follow-up completed.\\
+\path{fail_once_navigation} & 8/8 pass & Not required & Failed navigation produced a newer plan version or truthful recovery without duplicate active goals.\\
+\path{fail_once_pick} & 7/8 pass & Failed ordered-report case passed in isolation & Recovery was correct outside the full-ladder context; the full-ladder result remains 7/8.\\
+\path{delivery_blocked} & 6/8 pass & Gold-apple case passed; ordered report remained failed & Delivery failure was generally truthful, but case interaction affected ordered-target extraction.\\
 \bottomrule
-\end{tabular}
-\caption{Planner request-admission observations from the preliminary runtime pass.}
-\label{tab:planner-admission-results}
+\end{tabularx}
 \end{table}
 
-\section{Speech Ingress and User-Turn Responsiveness}
+The four full sweeps produced 29 passes from 32 cases. Severe fallback markers remained zero: no duplicate active goal, invalid planner JSON, invalid executable plan, backend-unreachable speech, execution-report fallback, or rules-response fallback was recorded in the selected run. The run-level reviewer score was 8.6. Isolated passes are retained as diagnostic evidence and do not replace the corresponding full-ladder failures.
 
-A speech-ingress probe published a tracked anonymous speaker and then a user utterance. The dialogue manager received the speech and issued a chatbot request. However, no corresponding \code{/chatbot_llm/turn_trace} event was observed during the window. This is a degraded result for full user-turn validation because it prevents a complete trace from speech input to chatbot response. It does not invalidate the planner-request or fake-skill action results, but it means that full end-to-end scoring should remain provisional until the user-turn trace is reliable.
+The F08 ledger records one artifact for each policy sweep and separate artifacts for the isolated ordered-report and blocked-delivery probes. Keeping the full-sweep and isolated records distinct prevents a diagnostic pass from replacing the primary 29/32 result.
 
-\section{Results Matrix}
+\section{Strict KB-Effect and Reporting Audit}
 
-Table~\ref{tab:current-results-matrix} summarises the current validation status against the methodology in Chapter~\ref{chap:validation-methodology}.
+F10 applied stricter post-condition checks than the broad success-path run. The focused ordered-walk, grouped work-table delivery, missing-object recovery, and missing-recipient clarification cases passed under \code{all_success}; \code{fail_once_navigation} also showed failed navigation, replanning, and completed recovery. The run score was reduced to 6.7 because grouped kitchen delivery reported only one delivered object, a follow-up answer retained the cup in the kitchen, and direct KB queries exposed stale source-location facts and recipient-side object-like spatial predicates.
 
-\begin{longtable}{p{0.24\linewidth}p{0.16\linewidth}p{0.44\linewidth}}
+This result distinguishes execution completion from state correctness. A successful action result is insufficient when the verified post-state still contains mutually inconsistent location relations. The finding supports the use of Contract~6 KB effects, post-query verification, and a separate state-freshness metric.
+
+\section{Alternate-Model Ablation}
+
+F11 evaluated \code{qwen36-turbo-hermes} with response-first routing and JSON-only grounded context. The twenty-case main questionnaire was marked 20/20 pass and produced fluent dialogue. The deterministic fake/replan artifacts contained 38 scored case records: 22 pass, 7 degraded, and 9 fail. The post-run snapshot recorded nine deduplicated planner-invalid-JSON events, nine invalid executable-plan events, six planner-gate rejections, and 53 route-repair events.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Alternate-model ablation results for evidence set F11.}
+\label{tab:model-ablation-results}
+\begin{tabularx}{\textwidth}{@{}p{0.25\textwidth}p{0.18\textwidth}X@{}}
 \toprule
-\textbf{Validation area} & \textbf{Status} & \textbf{Current evidence}\\
+\textbf{Measure} & \textbf{Result} & \textbf{Interpretation}\\
 \midrule
-\endfirsthead
-\toprule
-\textbf{Validation area} & \textbf{Status} & \textbf{Current evidence}\\
-\midrule
-\endhead
-Runtime launch profile & Pass & Planner, chatbot, orchestrator, trace viewer, and fake skill server were active in the live stack.\\
-Fake-skill action scenarios & Pass & Ambiguous object search, blocked navigation, and unavailable wave scenarios returned expected failure codes.\\
-Planner clarification on ambiguous goal & Partial pass & One ambiguous fixture produced \code{ask_clarification}.\\
-Planner admission across repeated requests & Degraded & Later planner requests were visible on the topic but not processed in the observed window.\\
-Full user-turn trace & Degraded & Speech reached \code{dialogue_manager}, but the expected chatbot turn trace was not observed.\\
-Composite fake-skill planner suite & Not yet complete & The deterministic substrate exists, but repeated planner-level suite results are still pending.\\
-Physical NAO execution comparison & Not yet complete & Current evidence focuses on controlled fake-skill and stack-level validation.\\
+Main questionnaire & 20/20 pass & Response fluency and broad route behaviour were strong.\\
+Fake/replan records & 22 pass, 7 degraded, 9 fail & Structured planning and recovery reliability regressed under deterministic policies.\\
+Planner invalid JSON & 9 events & Fluent acknowledgement did not imply a valid executable plan.\\
+Invalid executable plan & 9 events & Deterministic validation prevented malformed work from reaching skill dispatch.\\
+Planner-gate rejection & 6 events & Admission guards remained observable under model pressure.\\
+Route repair & 53 events & The turn engine frequently reconciled model route inconsistencies.\\
+Reviewer score & 5.8/10 & Critical structured-output and recovery failures outweighed the fluent main-suite surface.\\
 \bottomrule
-\caption{Current validation status matrix.}
-\label{tab:current-results-matrix}
-\end{longtable}
+\end{tabularx}
+\end{table}
 
-\section{Interpretation}
+The ablation demonstrates why the 1--10 score and the fake/replan matrix are reported alongside questionnaire pass counts. A model that answers well at the dialogue surface may still impose substantial planner repair and validation pressure.
 
-The preliminary results support the architectural decision to separate fake execution, orchestrator feedback, and planner reasoning. The fake-skill layer can produce controlled failure payloads with scenario identifiers, which gives the planner a reproducible basis for recovery evaluation. The results also show why planner-only success is insufficient. A full HRI system must maintain reliable admission across multiple goals and preserve trace continuity from user speech to planner feedback and final dialogue.
+\section{ROS4HRI Contract Preservation}
 
-The main unresolved issue is not the fake-skill substrate itself. The current risk lies in runtime coordination: request admission after clarification, speech-ingress trace completeness, and the remaining head-motion failure-injection seam. These findings define the next validation priorities before the final results chapter is closed.
+Table~\ref{tab:ros4hri-results} summarises the architecture checks applied across the response-first evidence.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.14}
+\caption{ROS4HRI and runtime-contract results.}
+\label{tab:ros4hri-results}
+\begin{tabularx}{\textwidth}{@{}p{0.27\textwidth}p{0.14\textwidth}X@{}}
+\toprule
+\textbf{Contract check} & \textbf{Result} & \textbf{Evidence}\\
+\midrule
+Tracked voice and speech ingress & Pass & Scored speech cases entered through tracked voice and per-voice \code{LiveSpeech} with the dialogue manager active.\\
+Dialogue and speech ownership & Pass & Planner dialogue crossed the orchestrator relay; no selected run contained duplicate semantic speech or raw planner text.\\
+Planner admission ownership & Pass & Execution requests crossed the orchestrator planner gate before planner consumption.\\
+Deterministic execution boundary & Pass & Invalid plans were observable as validation or gate events rather than direct robot dispatch.\\
+Skill actions and feedback lineage & Pass & Fake/replan traces retained goal, plan version, step results, terminal evidence, and speech evidence.\\
+KB transport ownership & Pass & Explicit mutations traversed \code{kb_skills}; ordinary questions did not mutate the KB.\\
+Post-skill KB consistency & Degraded in F10 & Stale and recipient-side spatial predicates remained after one grouped-delivery configuration.\\
+Detector profile separation & Pass & Detector object recognition was excluded from the semantic-stack score and retained as a separate profile.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Result Synthesis}
+
+The response-first evidence supports three conclusions. First, the architecture can preserve dialogue, planning, execution, and speech ownership while completing grounded simple and composite tasks. Second, deterministic fake policies provide stronger evidence than all-success demonstrations because they expose replan lineage, clarification, and truthful terminal behaviour. Navigation recovery was stable in F08, while manipulation and blocked-delivery profiles were more sensitive to full-ladder context. Third, surface fluency is not an adequate proxy for planner reliability. The alternate-model run passed the main questionnaire but produced substantially more invalid planner output and recovery failures.
+
+The strict KB audit also shows that action success and state correctness must be reported separately. Contract~6 evidence and a terminal speech event can coexist with stale KB relations unless post-effects are verified. For that reason, Chapter~\ref{chap:validation-methodology} treats post-query state freshness, trace completeness, and exactly-once speech as independent acceptance dimensions rather than optional diagnostics.

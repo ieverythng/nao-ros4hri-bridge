@@ -85,7 +85,7 @@
     <div class="status-line">
       <span class="tag active">Stack approximately 95% complete</span>
       <span class="tag p0">Evidence closure active</span>
-      <span class="tag p1">Results synthesis pending</span>
+      <span class="tag p1">Results evidence structure populated</span>
       <span class="tag p2">Submission QA pending</span>
     </div>
   </header>
@@ -168,8 +168,8 @@
         <tr><td>3 Architecture</td><td>Strong</td><td>Terminology, typos, grayscale future labels</td><td>Agrees with frozen contracts</td></tr>
         <tr><td>4 Contracts</td><td>Detailed</td><td>Formatting and source/type verification</td><td>Examples validate; critical overflow removed</td></tr>
         <tr><td>5 Implementation</td><td>Expanded; hand edits active</td><td>Provenance, APIs, supervisor, reporting, observability, config</td><td>Claims point to source and interfaces</td></tr>
-        <tr><td>6 Methodology</td><td>Good scaffold</td><td>Manifest, acceptance, metrics, resets, repetitions, statistics, validity</td><td>Independently repeatable</td></tr>
-        <tr><td>7 Results</td><td>Outdated May-centred narrative</td><td>Replace with final and qualified July data and graphics</td><td>Every number has artifact and denominator</td></tr>
+        <tr><td>6 Methodology</td><td>Reproducible protocol</td><td>Add final holdout manifest and freeze scored tuple</td><td>Independently repeatable</td></tr>
+        <tr><td>7 Results</td><td>F28/F08/F10/F11 evidence sets populated</td><td>Add stable run hashes, aggregate graphics, latency/dispersion, and RQ synthesis</td><td>Every number has durable artifact and denominator</td></tr>
         <tr><td>8 Discussion</td><td>Short preliminary draft</td><td>Expand by RQ and literature</td><td>Claims do not exceed evidence</td></tr>
         <tr><td>9 Limitations</td><td>Very short</td><td>Observed, scope, and future categories</td><td>No blocker disguised as future work</td></tr>
         <tr><td>10 Conclusion</td><td>Preliminary</td><td>Rewrite last in past tense</td><td>No new results</td></tr>
@@ -185,8 +185,8 @@
       <li class="done"><span class="task-id">TFM-C01</span> Replace guarantees with enforced constraints or evidenced behaviour.</li>
       <li class="done"><span class="task-id">TFM-C02</span> Keep internal decomposition terminology out of the TFM; describe reviewed skills and runtime mappings directly.</li>
       <li><span class="task-id">TFM-C03</span> Implement, substitute, or remove the direct-execution baseline promise.</li>
-      <li><span class="task-id">TFM-C04</span> Freeze the unit of analysis and configuration tuple.</li>
-      <li><span class="task-id">TFM-C05</span> Add pass rules and denominators; timeouts and inferred events are not silent successes.</li>
+      <li class="done"><span class="task-id">TFM-C04</span> Freeze the unit of analysis and configuration tuple.</li>
+      <li class="done"><span class="task-id">TFM-C05</span> Add pass rules and denominators; timeouts and inferred events are not silent successes.</li>
       <li class="done"><span class="task-id">TFM-C06</span> Rename deep fake-skill to multi-step deterministic fake-skill.</li>
     </ul>
 
@@ -218,15 +218,25 @@
 
     <h3><span class="tag p1">P1</span> Chapter 6 Completeness</h3>
     <ul class="tasks">
-      <li><span class="task-id">TFM-M01</span> Add independent and dependent variables.</li>
-      <li><span class="task-id">TFM-M02</span> Add E2E, planner, fake, detector, and ablation profile table.</li>
-      <li><span class="task-id">TFM-M03</span> Freeze the detailed case manifest.</li>
-      <li><span class="task-id">TFM-M04</span> Define exactly-once speech per semantic stage.</li>
-      <li><span class="task-id">TFM-M05</span> Define reset and fixture-isolation sequence.</li>
-      <li><span class="task-id">TFM-M06</span> Add formulae for routing, planning, ordering, safety, phases, clarification, speech, and stale state.</li>
-      <li><span class="task-id">TFM-M07</span> Report median, IQR, p95, maximum, and timeout count.</li>
-      <li><span class="task-id">TFM-M08</span> Define repetitions, seeds, exclusions, retries, missing events, and status denominators.</li>
-      <li><span class="task-id">TFM-M09</span> Add holdouts and threats to validity.</li>
+      <li class="done"><span class="task-id">TFM-M01</span> Add independent and dependent variables.</li>
+      <li class="done"><span class="task-id">TFM-M02</span> Add E2E, planner, fake, detector, and ablation profile table.</li>
+      <li class="done"><span class="task-id">TFM-M03</span> Freeze the detailed case manifest.</li>
+      <li class="done"><span class="task-id">TFM-M04</span> Define exactly-once speech per semantic stage.</li>
+      <li class="done"><span class="task-id">TFM-M05</span> Define reset and fixture-isolation sequence.</li>
+      <li class="done"><span class="task-id">TFM-M06</span> Add formulae for routing, planning, ordering, safety, phases, clarification, speech, and stale state.</li>
+      <li class="done"><span class="task-id">TFM-M07</span> Report median, IQR, p95, maximum, and timeout count.</li>
+      <li class="done"><span class="task-id">TFM-M08</span> Define repetitions, seeds, exclusions, retries, missing events, and status denominators.</li>
+      <li><span class="task-id">TFM-M09</span> Add the final holdout prompt manifest; threats to validity are complete.</li>
+    </ul>
+
+    <h3><span class="tag p1">P1</span> Chapter 7 Evidence Synthesis</h3>
+    <ul class="tasks">
+      <li class="done"><span class="task-id">TFM-R01</span> Remove development-status framing and organise results by fixed evidence tuple.</li>
+      <li class="done"><span class="task-id">TFM-R02</span> Populate F28, F08, F10, and F11 evidence tables with explicit denominators.</li>
+      <li class="done"><span class="task-id">TFM-R03</span> Add ROS4HRI and runtime-contract preservation results.</li>
+      <li><span class="task-id">TFM-R04</span> Move ledger-only provenance into stable, hashed evidence bundles.</li>
+      <li><span class="task-id">TFM-R05</span> Add final profile, policy, latency, and phase-completion graphics.</li>
+      <li><span class="task-id">TFM-R06</span> Complete the RQ evidence matrix and reconcile Chapters 7--10.</li>
     </ul>
 
     <h3><span class="tag p2">P2</span> Presentation And References</h3>
@@ -321,10 +331,10 @@
     <ol>
       <li>Preserve and review Chapter 5 hand edits against ownership rules.</li>
       <li>Decide the direct-execution comparison.</li>
-      <li>Create the frozen case manifest and RQ-to-metric map.</li>
-      <li>Inventory historical artifacts as reuse, rerun, or exclude.</li>
-      <li>Complete Chapter 6 acceptance and reset/repetition policy.</li>
-      <li>Collect the canonical run and replace Chapter 7's May-centred narrative.</li>
+      <li>Complete the RQ-to-metric and RQ-to-evidence map.</li>
+      <li>Convert selected June/July ledger records into stable, hashed evidence bundles.</li>
+      <li>Freeze the holdout manifest and scored configuration tuple.</li>
+      <li>Generate Chapter 7 graphics and reconcile Chapters 8--10 with the final evidence set.</li>
     </ol>
   </section>
 
@@ -334,6 +344,7 @@
     <p>2026-07-13 · Completed <code>TFM-I15</code>, <code>TFM-I16</code>, <code>TFM-I17</code>, and <code>TFM-I18</code>: deterministic guards, shared skill-entry contract, appendix inventory, schema-label cleanup, regenerated figures, and visual PDF QA.</p>
     <p>2026-07-13 · Completed <code>TFM-I19</code>, <code>TFM-I20</code>, and <code>TFM-I21</code>: Contracts 1--9 reconciled, complete runtime-skill table added, orchestrator and verified KB-effect paths expanded, and simulator/robot profiles documented.</p>
     <p>2026-07-13 · Opened <code>TFM-I22</code> after registry checks found stale generated <code>walk_to</code> and <code>wave_greet</code> planner projections; the thesis inventory remains anchored to the canonical registry.</p>
+    <p>2026-07-13 · Completed <code>TFM-C04</code>, <code>TFM-C05</code>, <code>TFM-M01</code>--<code>TFM-M08</code>, and <code>TFM-R01</code>--<code>TFM-R03</code>: fixed the evaluation protocol, populated evidence-set results, added the 1--10 score, and verified ROS4HRI contract reporting.</p>
     <p>Markdown authority: <a href="tfm_completion_masterplan_2026-07-13.md"><code>tfm_completion_masterplan_2026-07-13.md</code></a></p>
   </footer>
 </main>
