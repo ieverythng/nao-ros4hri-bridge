@@ -1,6 +1,6 @@
 # Runtime Contracts
 
-Last updated: 2026-07-09
+Last updated: 2026-07-14
 
 This document is the richer reference for the JSON payloads that move task,
 scene, and execution state between nodes. The root README contains compact
@@ -159,6 +159,12 @@ Role policy:
 
 - `entities` is the stable subject inventory. Each entity keeps its type,
   label, visibility flag, and bounded relations.
+- Entity `kind` is semantic, not a synonym for physical RDF materialization.
+  Real rooms, places, and containers use `kind: "location"`. Physical support
+  entities such as tables, benches, desks, counters, and shelves use
+  `kind: "object"`, while their relations can still create a derived
+  `support_group`. A domain object remains an object even when KnowledgeCore
+  also assigns `cyc:SpatialThing-Localized` or `Location` types.
 - Generated people keep their stable HRI identifier as the public label, for
   example `anonymous_person_fcdai`, unless a real semantic name such as `ALEX`
   is available through `dbp:name` or an explicit label.
@@ -179,10 +185,18 @@ Role policy:
   may form `navigation_target` or `location_group` entries.
 - People remain `person` entities and recipients. A person is not treated as a
   location or deliverable object, even if a pose or room relation is available.
-- User-facing object lists filter ontology and support/meta entries. Do not
-  expose `owl:Thing`, `cyc:SpatialThing*`, `Location`, `Place`, support
-  surfaces, rooms, or tables as deliverable objects unless the user explicitly
-  asks about those categories.
+- Location entities are not deliverable objects. Their object membership is
+  represented through `locations[*].contains`, with `object_count` derived from
+  those members rather than from the location record itself. Physical support
+  objects remain in `entities` and in the top-level object count, but the
+  support anchor itself is excluded from its own `contains` members. The
+  top-level `counts.locations` value includes every normalized location entity,
+  including locations without members in the compact relation view.
+- User-facing object lists filter ontology and meta entries. Do not expose
+  `owl:Thing`, `cyc:SpatialThing*`, `Location`, or `Place` as deliverable
+  objects. Support objects such as tables remain physical objects, but grouped
+  expansion treats them as anchors unless the user explicitly asks for the
+  support object itself.
 - Domain object types take precedence over KnowledgeCore spatial materialization
   types. A `Cup` or `Book` that also carries `cyc:SpatialThing-Localized`
   remains a user-facing object in the digest and location group.

@@ -5,7 +5,7 @@
 
 Each evidence set fixes its launch mode, model or source configuration, case set, artifact, and evidential standing. Scores from different tuples are not averaged because a model can produce fluent dialogue while reducing planner-schema validity or recovery reliability. Case metrics are the primary results; the runtime-review index is retained as a secondary operational summary.
 
-The recovered evidence contains four historical sets and two later diagnostic sets. The 28 June response-first run supplies the broad full-stack baseline. The 8 July response-first run supplies the deterministic fake/replan matrix under JSON-only grounded context. The 10 July audit applies stricter KB-effect and report-result checks. The 11 July run is an alternate-model ablation. The 13 July evidence is reported under both its original trajectory rubric and a later semantic audit. The 14 July artifacts are focused post-hardening probes and do not form a complete run tuple. None of these sets satisfies the final clean-source fingerprint gate, so the final aggregate remains unassigned rather than being inferred from diagnostic runs.
+The recovered evidence contains four historical sets and two later diagnostic sets. The 28 June response-first run supplies the broad full-stack baseline. The 8 July response-first run supplies the deterministic fake/replan matrix under JSON-only grounded context. The 10 July audit applies stricter KB-effect and report-result checks. The 11 July run is an alternate-model ablation. The 13 July evidence is reported under both its original trajectory rubric and a later semantic audit. The 14 July artifacts are focused post-hardening probes and do not form a complete run tuple. None of these sets satisfies the clean-source fingerprint gate. Consequently, no cross-run aggregate is inferred from them.
 
 \begin{table}[H]
 \centering
@@ -28,6 +28,8 @@ F14 & JSON-only targeted hardening & Ordered and grouped cases & Exact target se
 \end{table}
 
 F28 and F08 are recorded in the full-suite and deterministic-fake-suite validation ledgers, including the source artifact identifiers and case-level assessments. F10 and F11 are preserved as the repository reports \path{runtime_review_2026-07-10_sv_seams.md} and \path{runtime_review_2026-07-11_qwen_personal_stack.md}. F13 and F14 are preserved under \path{docs/evaluation/runs} with source and bundled hashes. Their manifests mark both sets as diagnostic because their dirty-source or multi-image provenance prevents final-run status. The scores in Table~\ref{tab:run-level-evidence} are the operational summaries recorded with the corresponding evidence; case counts and seam-level observations remain primary.
+
+The packaged F13 diagnostic aggregate contains 54 case assessments: 39 pass, 5 degraded, 4 fail, and 6 not scored. The packaged F14 aggregate contains seven focused assessments: six pass and one fail. These totals preserve the recorded harness classifications. They do not promote a trajectory-level pass to semantic or embodied proof.
 
 \section{Trajectory and Semantic Contract Results}
 
@@ -57,7 +59,7 @@ The earlier 8.2 operational assessment measured broad runtime availability under
 
 \section{Focused Post-Hardening Results}
 
-Evidence set F14 contains targeted runs across three successive rebuilt images. It is not assigned a run-level score because the artifacts do not share one complete configuration tuple. The ordered-object probe carried the exact apple, book, and phone identifiers with sequential ordering and per-target reporting. It produced three navigation results and corresponding user-facing reports without visiting the table, a location, or a person. The work-table delivery carried the cup, manual, and phone identifiers with ALEX as recipient and reported all three delivered object classes. A later kitchen probe selected the single kitchen cup, executed delivery and report steps, and answered the post-effect follow-up. The explicit non-action recipient-memory case remained dialogue-only.
+Evidence set F14 contains seven targeted assessments across three successive rebuilt images, of which six passed and one failed. It is not assigned a run-level score because the artifacts do not share one complete configuration tuple. The ordered-object probe carried the exact apple, book, and phone identifiers with sequential ordering and per-target reporting. It produced three navigation results and corresponding user-facing reports without visiting the table, a location, or a person. The work-table delivery carried the cup, manual, and phone identifiers with ALEX as recipient and reported all three delivered object classes. A later kitchen probe selected the single kitchen cup, executed delivery and report steps, and answered the post-effect follow-up. The explicit non-action recipient-memory case remained dialogue-only.
 
 The gold-apple handoff remained a negative result. The planner request exposed the apple and recipient as scene targets but carried an empty authoritative selection. The planner therefore asked for clarification rather than executing an unsafe placement. The failure is truthful, but the complete fixture should have allowed a valid handoff selection. This case remains a grounding-to-admission limitation rather than a successful recovery result.
 
@@ -80,7 +82,7 @@ Stable KB query & Pass & Injected cup name, colour, and support relation were av
 Explicit KB mutation & Pass & Structured add, revise, query, and remove traversed the planner/orchestrator KB boundary; the post-remove query was empty.\\
 Simple skill & Pass & Head motion and wave cases reached registered execution paths and evidence-derived reporting.\\
 Composite skill & Pass & Head-motion plus wave and ordered multi-object navigation/report produced ordered plans and terminal reports.\\
-Grouped semantic execution & Pass & Kitchen objects and the named recipient were represented in planner work without fabricated detector evidence.\\
+Grouped task trajectory & Pass at trajectory depth & Kitchen objects and the named recipient appeared in planner work without fabricated detector evidence; exact selected-set and post-state semantics were not established by this rubric.\\
 Fake skill guards & Pass & Canonical targets succeeded and absent or non-canonical targets returned typed failures.\\
 Exactly-once speech & Pass & The retained speech traces contained no duplicated acknowledgement or terminal semantic event.\\
 \bottomrule
@@ -134,7 +136,7 @@ F11 evaluated \code{qwen36-turbo-hermes} with response-first routing and JSON-on
 \toprule
 \textbf{Measure} & \textbf{Result} & \textbf{Interpretation}\\
 \midrule
-Main questionnaire & 20/20 pass & Response fluency and broad route behaviour were strong.\\
+Main questionnaire & 20/20 trajectory pass & Response fluency and broad route behaviour were strong under the original trajectory rubric.\\
 Fake/replan records & 22 pass, 7 degraded, 9 fail & Structured planning and recovery reliability regressed under deterministic policies.\\
 Planner invalid JSON & 9 events & Fluent acknowledgement did not imply a valid executable plan.\\
 Invalid executable plan & 9 events & Deterministic validation prevented malformed work from reaching skill dispatch.\\
@@ -187,7 +189,7 @@ Detector profile separation & Pass & Detector object recognition was excluded fr
 \midrule
 RQ1 & Supported with limits & The planner generated ordered multi-step plans for motion, navigation, reporting, and grouped delivery. F14 showed exact selected-member preservation for ordered and grouped cases, while the gold-apple case showed that this behaviour is not complete across all grounded references.\\
 RQ2 & Mixed & Stable KB insertion, name, colour, support, and count queries passed in the broad runs. F10 and F13 exposed stale or contradictory post-effects, so compact grounding supported next-turn reference but did not by itself guarantee state consistency.\\
-RQ3 & Supported & Registry and deterministic validation prevented malformed or semantically invalid plans from reaching dispatch. F11 showed nine invalid JSON and nine invalid executable-plan events while the gate remained observable. This reduces unsafe dispatch, but it does not prevent the model from proposing invalid work.\\
+RQ3 & Supported within enforced contracts & Registry and deterministic validation prevented schema-invalid, registry-invalid, or lineage-invalid plans from reaching dispatch. F11 showed nine invalid JSON and nine invalid executable-plan events while the gate remained observable. The F13 counterexamples show that admission does not detect every target-selection or post-state semantic error.\\
 RQ4 & Partially supported & F08 established navigation replan lineage and truthful failure handling under deterministic policies. Pick failure, blocked delivery, and missing-recipient cases were less stable in full sweeps, and several F13 cases lacked complete post-terminal closure.\\
 RQ5 & Supported within the evaluated seams & Speech ingress, planner admission, deterministic dispatch, typed feedback, and planner-dialogue relay remained inspectable. The F13 semantic counterexamples show that ownership separation must be combined with exact target, postcondition, and closure validation.\\
 \bottomrule

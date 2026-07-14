@@ -33,6 +33,32 @@ def test_parse_kb_query_rows_handles_empty_result():
     assert module.parse_kb_query_rows(output) == []
 
 
+def test_fixture_type_readiness_requires_declared_rdf_types():
+    module = _load_questionnaire_module()
+    injection = module.KbInjection(
+        object_id="lab",
+        statements=(
+            "codex_phone rdf:type CellularTelephone",
+            "codex_phone dbp:name VEGA",
+            "myself sees codex_phone",
+        ),
+        query_patterns=("codex_phone ?predicate ?object",),
+        query_vars=("?predicate", "?object"),
+    )
+
+    assert module._fixture_type_bindings(injection) == {
+        ("codex_phone", "CellularTelephone")
+    }
+    assert module._present_fixture_type_bindings(
+        [{"entity": "codex_phone", "predicate": "rdf:type", "object": "owl:Thing"}]
+    ) == {("codex_phone", "owl:Thing")}
+    assert not module._fixture_type_bindings(injection).issubset(
+        module._present_fixture_type_bindings(
+            [{"entity": "codex_phone", "predicate": "rdf:type", "object": "owl:Thing"}]
+        )
+    )
+
+
 def test_absence_guard_marks_stale_rows_as_contaminated(monkeypatch):
     module = _load_questionnaire_module()
 
@@ -113,6 +139,44 @@ def test_voice_speech_topic_uses_integrated_remap_for_shared_speaker():
         module._voice_speech_topic("fake_deep_lab_sections_1")
         == "/humans/voices/fake_deep_lab_sections_1/speech"
     )
+
+
+def test_publish_voice_turn_keeps_tracked_voice_alive_for_group_continuity(monkeypatch):
+    module = _load_questionnaire_module()
+    commands = []
+
+    def fake_run(command, **_kwargs):
+        commands.append(command)
+        return "published"
+
+    monkeypatch.setattr(module, "run", fake_run)
+
+    assert module.publish_voice_turn(
+        "nao_ros2",
+        "Bring those objects to the person.",
+        voice_id="robust_group",
+        mirror_rqt_display=False,
+    ) == "published"
+
+    script = commands[0][-1]
+    assert "nao_questionnaire_tracked_robust_group.pid" in script
+    assert "nohup ros2 topic pub -r 2" in script
+    assert 'kill "$tracked_pub_pid"' not in script
+
+
+def test_cleanup_tracked_voice_publishers_removes_persistent_publishers(monkeypatch):
+    module = _load_questionnaire_module()
+    commands = []
+    monkeypatch.setattr(
+        module,
+        "run",
+        lambda command, **_kwargs: commands.append(command) or "cleaned",
+    )
+
+    result = module.cleanup_tracked_voice_publishers("nao_ros2")
+
+    assert result == "cleaned"
+    assert "nao_questionnaire_tracked_*.pid" in commands[0][-1]
 
 
 def test_posture_ablation_covers_body_postures_without_head_motion():
@@ -264,6 +328,38 @@ def test_failure_profile_is_not_scored_when_configured_failure_did_not_fire():
 
     assert result["status"] == "not_scored"
     assert "not exercised" in " ".join(result["reasons"])
+
+
+def test_recoverable_failure_case_requires_replan_evidence_when_declared():
+    module = _load_questionnaire_module()
+    case = module.ProbeCase(
+        "ordered_walk",
+        "fake_deep",
+        "Walk to every object on the table.",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_replan=True,
+    )
+    result = module.assess_case(
+        case,
+        observations={
+            "turn_injected": True,
+            "planner_request_observed": True,
+            "execution_feedback_observed": True,
+            "terminal_observed": True,
+            "speech_observed": True,
+            "post_terminal_speech_observed": True,
+            "failure_observed": True,
+            "replan_observed": False,
+            "clarification_observed": False,
+            "fallback_markers": {"total": 0},
+        },
+        stale_world_guard=None,
+        fake_policy_profile="fail_once_navigation",
+    )
+
+    assert result["status"] == "fail"
+    assert "did not produce a replan" in " ".join(result["reasons"])
 
 
 def test_phase_observations_expose_failure_and_replan_evidence():

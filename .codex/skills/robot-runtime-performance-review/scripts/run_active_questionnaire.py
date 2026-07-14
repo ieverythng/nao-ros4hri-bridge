@@ -5,8 +5,6 @@ from __future__ import annotations
 
 import argparse
 import ast
-from datetime import datetime
-from datetime import timezone
 import json
 import re
 import shlex
@@ -34,6 +32,8 @@ TOPIC_SAMPLE_TIMEOUT_SEC = 1.5
 TOPIC_SAMPLE_KILL_AFTER_SEC = 1.0
 DEFAULT_GLOBAL_TIMEOUT_SEC = 420
 DEFAULT_KB_LIFESPAN_SEC = 300
+KB_FIXTURE_READY_TIMEOUT_SEC = 12.0
+KB_FIXTURE_READY_POLL_SEC = 0.5
 DEFAULT_ENVIRONMENT_FIXTURE_PATH = (
     Path(__file__).resolve().parents[4]
     / "src"
@@ -87,6 +87,7 @@ class ProbeCase:
     expected_outcome: str = "observe"
     all_required_context: bool = False
     requires_target_selection: bool = False
+    requires_replan: bool = False
     expected_member_ids: tuple[str, ...] = ()
     expected_recipient_id: str = ""
     expected_report_policy: str = ""
@@ -1040,6 +1041,7 @@ FAKE_DEEP_CASES = (
         expected_outcome="execute_no_clarification",
         all_required_context=True,
         requires_target_selection=True,
+        requires_replan=True,
         expected_member_ids=(
             "codex_lab_apple",
             "codex_lab_book",
@@ -1420,6 +1422,9 @@ def main() -> int:
         args.container,
         args.fake_policy_profile,
     )
+    runtime_metadata["tracked_voice_cleanup_before_run"] = cleanup_tracked_voice_publishers(
+        args.container
+    )
     preloaded_environment_ids = parse_csv_list(args.preload_environment)
     preloaded_environments = inject_environment_fixtures(
         args.container,
@@ -1444,6 +1449,9 @@ def main() -> int:
                 ),
             )
             runtime_metadata["fake_policy_restore"] = restore_fake_policy_profile(
+                args.container
+            )
+            runtime_metadata["tracked_voice_cleanup"] = cleanup_tracked_voice_publishers(
                 args.container
             )
             results.append(
@@ -1697,6 +1705,9 @@ def main() -> int:
         final_environment_cleanup,
     )
     runtime_metadata["fake_policy_restore"] = restore_fake_policy_profile(args.container)
+    runtime_metadata["tracked_voice_cleanup"] = cleanup_tracked_voice_publishers(
+        args.container
+    )
     write_payload(
         args.out,
         args.container,
@@ -2493,6 +2504,11 @@ def assess_case(
         ):
             status = max_status(status, "degraded")
             reasons.append("recovery closure was not spoken after failure evidence")
+        if recovery_profile and case.requires_replan and failure_seen and not observations.get(
+            "replan_observed"
+        ):
+            status = max_status(status, "fail")
+            reasons.append("configured recoverable failure did not produce a replan")
     elif expected == "dialogue_only":
         if planner_seen or exec_seen:
             status = max_status(status, "fail")
@@ -2790,6 +2806,8 @@ def publish_voice_turn(
     escaped_text = text.replace("\\", "\\\\").replace('"', '\\"')
     yaml_text = text.replace("'", "''")
     voice_topic = _voice_speech_topic(voice_id)
+    safe_voice_id = re.sub(r"[^A-Za-z0-9_.-]+", "_", voice_id)
+    tracked_pid_file = f"/tmp/nao_questionnaire_tracked_{safe_voice_id}.pid"
     mirror_script = ""
     if mirror_rqt_display:
         mirror_script = f"""
@@ -2829,8 +2847,12 @@ EOF
 	{mirror_script}
 	dialogue_state="$(ros2 lifecycle get /dialogue_manager 2>/dev/null || true)"
 	echo "  dialogue_manager_lifecycle=${{dialogue_state:-unavailable}}" >>/tmp/nao_questionnaire_qos_contract.log
-	timeout 18 ros2 topic pub -r 2 {VOICE_TRACKED_QOS} {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{voice_id}']}}" >/tmp/nao_questionnaire_voice.log 2>&1 &
-	tracked_pub_pid=$!
+	tracked_pub_pid="$(cat {tracked_pid_file} 2>/dev/null || true)"
+	if [ -z "$tracked_pub_pid" ] || ! kill -0 "$tracked_pub_pid" 2>/dev/null; then
+	  nohup ros2 topic pub -r 2 {VOICE_TRACKED_QOS} {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{voice_id}']}}" >/tmp/nao_questionnaire_voice_{safe_voice_id}.log 2>&1 &
+	  tracked_pub_pid=$!
+	  echo "$tracked_pub_pid" > {tracked_pid_file}
+	fi
 	subscription_visible=false
 	for _ in $(seq 1 30); do
 	  if timeout 2 ros2 topic info -v {voice_topic} 2>/dev/null | grep -q 'Node name: dialogue_manager'; then
@@ -2847,17 +2869,31 @@ done
 	  echo "[runtime-review] OK: dialogue_manager speech subscription visible before LiveSpeech publish for {voice_topic}." >>/tmp/nao_questionnaire_qos_contract.log
 	fi
 timeout 8 ros2 topic pub --once -w 1 {VOICE_SPEECH_QOS} {voice_topic} hri_msgs/msg/LiveSpeech "{{final: \\"{escaped_text}\\", confidence: 1.0, locale: \\"en_US\\"}}" >/tmp/nao_questionnaire_speech.log 2>&1 || true
-	kill "$tracked_pub_pid" >/dev/null 2>&1 || true
-	wait "$tracked_pub_pid" >/dev/null 2>&1 || true
 cat /tmp/nao_questionnaire_qos_contract.log /tmp/nao_questionnaire_rqt_rosout.log /tmp/nao_questionnaire_rqt_caption.log /tmp/nao_questionnaire_voice.log /tmp/nao_questionnaire_tracked_info.log /tmp/nao_questionnaire_speech_info.log /tmp/nao_questionnaire_speech.log 2>/dev/null || true
 """
     return run(["docker", "exec", container, "bash", "-lc", script], timeout=45, check=False)
 
 
-def inject_kb_probe(container: str, injection: KbInjection, *, lifespan_sec: int) -> dict[str, str]:
+def cleanup_tracked_voice_publishers(container: str) -> str:
+    script = """
+for pid_file in /tmp/nao_questionnaire_tracked_*.pid; do
+  [ -e "$pid_file" ] || continue
+  tracked_pid="$(cat "$pid_file" 2>/dev/null || true)"
+  if [ -n "$tracked_pid" ]; then
+    kill "$tracked_pid" >/dev/null 2>&1 || true
+  fi
+  rm -f "$pid_file"
+done
+"""
+    return run(
+        ["docker", "exec", container, "bash", "-lc", script],
+        timeout=12,
+        check=False,
+    )
+
+
+def inject_kb_probe(container: str, injection: KbInjection, *, lifespan_sec: int) -> dict[str, object]:
     statements_yaml = "\n".join("  - '%s'" % item for item in injection.statements)
-    patterns_yaml = "\n".join("  - '%s'" % item for item in injection.query_patterns)
-    vars_yaml = "\n".join("  - '%s'" % item for item in injection.query_vars)
     revise_request = f"""
 method: update
 statements:
@@ -2867,14 +2903,6 @@ models:
 lifespan:
   sec: {max(1, int(lifespan_sec))}
   nanosec: 0
-"""
-    query_request = f"""
-patterns:
-{patterns_yaml}
-vars:
-{vars_yaml}
-models:
-  - default
 """
     service_probe = run(
         [
@@ -2901,19 +2929,100 @@ models:
         timeout_sec=20,
     )
     time.sleep(1.0)
-    query_output = call_ros_service(
-        container,
-        "/kb/query",
-        "kb_msgs/srv/Query",
-        query_request,
-        timeout_sec=20,
-    )
+    query_result = _wait_for_fixture_type_rows(container, injection)
     return {
         "object_id": injection.object_id,
         "service_probe": service_probe,
         "revise_output": revise_output,
-        "query_output": query_output,
+        "query_output": query_result["raw_output"],
+        "fixture_readiness": query_result["readiness"],
     }
+
+
+def _wait_for_fixture_type_rows(
+    container: str,
+    injection: KbInjection,
+) -> dict[str, object]:
+    """Wait for declared fixture RDF types before starting a dialogue case."""
+    required_types = _fixture_type_bindings(injection)
+    deadline = time.monotonic() + KB_FIXTURE_READY_TIMEOUT_SEC
+    latest_raw_output = ""
+    while True:
+        present, latest_raw_output = _query_fixture_type_bindings(
+            container,
+            required_types,
+        )
+        missing = sorted(required_types - present)
+        if not missing:
+            return {
+                "raw_output": latest_raw_output,
+                "readiness": {
+                    "ready": True,
+                    "required_type_count": len(required_types),
+                    "missing_type_bindings": [],
+                    "poll_timeout_sec": KB_FIXTURE_READY_TIMEOUT_SEC,
+                },
+            }
+        if time.monotonic() >= deadline:
+            return {
+                "raw_output": latest_raw_output,
+                "readiness": {
+                    "ready": False,
+                    "required_type_count": len(required_types),
+                    "missing_type_bindings": missing,
+                    "poll_timeout_sec": KB_FIXTURE_READY_TIMEOUT_SEC,
+                },
+            }
+        time.sleep(KB_FIXTURE_READY_POLL_SEC)
+
+
+def _query_fixture_type_bindings(
+    container: str,
+    required_types: set[tuple[str, str]],
+) -> tuple[set[tuple[str, str]], str]:
+    """Query each constant fixture subject so subject identity is preserved."""
+    present = set()
+    latest_raw_output = ""
+    subjects = sorted({subject for subject, _ in required_types})
+    for subject in subjects:
+        result = query_kb_rows(
+            container,
+            patterns=(f"{subject} rdf:type ?object",),
+            query_vars=("?object",),
+            timeout_sec=20,
+        )
+        latest_raw_output = str(result.get("raw_output", ""))
+        for row in result.get("rows", []):
+            if not isinstance(row, dict):
+                continue
+            obj = str(row.get("object", "")).strip()
+            if obj:
+                present.add((subject, obj))
+    return present, latest_raw_output
+
+
+def _fixture_type_bindings(injection: KbInjection) -> set[tuple[str, str]]:
+    bindings = set()
+    for statement in injection.statements:
+        parts = str(statement or "").split()
+        if len(parts) < 3 or parts[0] in {"myself", "nao_robot"}:
+            continue
+        if parts[1] == "rdf:type":
+            bindings.add((parts[0], " ".join(parts[2:])))
+    return bindings
+
+
+def _present_fixture_type_bindings(rows) -> set[tuple[str, str]]:
+    present = set()
+    for row in rows if isinstance(rows, list) else []:
+        if not isinstance(row, dict):
+            continue
+        predicate = str(row.get("predicate", "")).strip()
+        entity = str(row.get("entity", row.get("subject", ""))).strip()
+        obj = str(row.get("object", "")).strip()
+        if entity and predicate == "rdf:type" and obj:
+            present.add((entity, obj))
+    return present
 
 
 def call_ros_service(

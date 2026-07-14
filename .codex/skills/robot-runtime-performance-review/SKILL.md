@@ -77,6 +77,31 @@ If `/dev/video0` is unavailable or object detection is intentionally disabled,
 omit the device flag. Treat a failed lifecycle transition or duplicate launch
 process as a preflight failure, not as runtime questionnaire evidence.
 
+### Startup initialization gate
+
+Run this gate before injecting a fixture or sending the first questionnaire
+turn. Record the container id, image, launch pid, node list, lifecycle states,
+required service list, and KnowledgeCore readiness timestamp. Wait for the graph
+to settle, then verify that:
+
+- exactly one integrated `ros2 launch` process owns the stack;
+- each core node (`chatbot_llm`, `planner_llm`, `nao_orchestrator`,
+  `dialogue_manager`, `kb/knowledge_core`, and `fake_skill_server`) appears
+  once;
+- required lifecycle nodes are active and their readiness logs have appeared;
+- KnowledgeCore accepts a baseline query before any fixture injection;
+- no startup log contains a KnowledgeCore bind error, stale service timeout,
+  duplicate-goal initialization, or failed lifecycle transition;
+- optional manually launched viewers are recorded separately and do not replace
+  the core-node uniqueness check. `interaction_trace_viewer` is operator-owned
+  and is never a semantic issue or a stack-duplicate finding.
+
+If any required check fails, label the run `preflight_not_scored`, preserve the
+startup logs, and restart from a clean full-container launch before semantic
+scoring. Do not inject fixtures into a graph whose KnowledgeCore or lifecycle
+state is still settling. This separates initialization regressions from model,
+grounding, and planner behavior.
+
 ## Fast Start
 
 For a scored cool-profile runtime review, use the operator launch profile below

@@ -72,9 +72,16 @@ The compact contract keeps roles separate:
 
 - `entities` is the bounded subject inventory.
 - `locations` is a derived grouping view for support/place relations.
+- Rooms, places, and containers use `kind: "location"`; physical supports such
+  as tables and benches use `kind: "object"` and may also form derived
+  `support_group` records. Spatial materialization types do not promote domain
+  objects into locations, and a support anchor is not repeated as its own group
+  member.
 - people remain recipients or human targets, not locations.
-- support surfaces, rooms, ontology/meta classes, and people are filtered out
-  of deliverable object lists unless the user asks about those categories.
+- rooms, ontology/meta classes, and people are filtered out of deliverable
+  object lists. Physical supports remain objects in the entity inventory, but
+  grouped expansion treats them as anchors unless the user asks for the support
+  object itself.
 
 ## Planner Loop
 
