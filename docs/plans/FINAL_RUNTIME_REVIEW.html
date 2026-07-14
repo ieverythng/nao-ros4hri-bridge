@@ -31,7 +31,7 @@
 <body>
 <main>
   <h1>NAO ROS4HRI Runtime Review</h1>
-  <p class="meta">Condensed supervisor-facing report from <code>ISSUE_TRACKER_FULL_SUITE.html</code>, <code>ISSUE_TRACKER_FAKE_SUITE.html</code>, and the latest rebuilt-stack checks. Last updated 11 July 2026 after the Qwen personal-stack ablation.</p>
+  <p class="meta">Condensed supervisor-facing report from <code>ISSUE_TRACKER_FULL_SUITE.html</code>, <code>ISSUE_TRACKER_FAKE_SUITE.html</code>, and the latest rebuilt-stack checks. Last consolidated update 14 July 2026 after more than 31 rebuild/relaunch iterations and the v1-v7 deslop sequence.</p>
 
   <section class="score">
     <div class="card"><div class="big">8.7 / 10</div><div>Fresh response-first targeted baseline. This is the recommended supervisor demo profile.</div></div>
@@ -39,10 +39,27 @@
     <div class="card"><div class="big">6.7 / 10</div><div>10 July current-image baseline for SV-critical seams. Report wording and fake recovery improved, but KB mutation and grouped delivery post-effects remain blockers.</div></div>
     <div class="card"><div class="big">5.8 / 10</div><div>11 July Qwen personal-stack ablation. Main dialogue looked fluent, but KB mutation and deep fake/replan reliability regressed.</div></div>
     <div class="card"><div class="big">Intent-first WIP</div><div>Live ablation improves some route locks, but currently regresses ordinary dialogue wording and one action/report route.</div></div>
-    <div class="card"><div class="big">Not 9.0 Yet</div><div>Long-suite ordered target extraction under some failure profiles, spatial/proximity proof, delivery-blocked report wording, and intent-first response behavior remain open.</div></div>
+    <div class="card"><div class="big">8.6 / 10</div><div>Current qualified conglomerated score. Main SV-facing seams are accepted; the final v7 deep-fake matrix remains endpoint-blocked.</div></div>
+    <div class="card"><div class="big">Not 9.0 Yet</div><div>The final v7 all-success and forced-navigation-failure profiles, physical-robot convergence, and one frame-qualified proximity proof remain open.</div></div>
   </section>
 
   <p class="note">The score is deliberately conservative. The response-first stack remains the cleanest demonstration path. The separate deep fake/replan score is lower because it measures harder requirements: preloaded environments, location-group delivery, missing-target truthfulness, post-skill KB effects, and forced failure recovery.</p>
+
+  <h2>14 July Conglomerated Supervisor Readout</h2>
+  <p class="note">The recent campaign spans more than 31 container rebuild and relaunch iterations. That number records engineering iteration, including rejected and unscored containers. The score below uses only clean launches with source or installed-module fingerprints, active lifecycle nodes, ready KnowledgeCore, and successful model preflight.</p>
+  <table>
+    <thead><tr><th>Area</th><th>Status</th><th>Current evidence</th><th>Readout</th></tr></thead>
+    <tbody>
+      <tr><td>Canonical image</td><td class="done">Verified</td><td><code>iiia:nao</code> <code>bb62ec1a4589</code> matched 56/56 changed runtime files and all inspected built modules. Runtime defaults preserve <code>response_first</code>, real motion dispatch, open-loop head motion, and a 256-token intent budget.</td><td>The base is suitable for the demonstration after rebuilding the final v7 chatbot change.</td></tr>
+      <tr><td>Main capability</td><td class="done">Accepted</td><td>Dialogue, KB queries, natural-language mutation, head motion, person lookup, grouped delivery, ordered object visits, and route safety passed accepted live probes.</td><td>Use response-first as the SV profile.</td></tr>
+      <tr><td>KB continuity</td><td class="done">Accepted</td><td>Add/revise/query/remove isolation passed. Grouped effects removed stale spatial relations, post-action queries matched expected locations, and fixture cleanup ended uncontaminated.</td><td>KB mutation is semi-solid under the tested seams.</td></tr>
+      <tr><td>Natural reporting</td><td class="done">Accepted success path</td><td>The chatbot named all delivered objects in natural final closure. No accepted case used <code>report_result_fallback</code> or duplicate speech.</td><td>Structured outcome evidence is working without replacing healthy wording.</td></tr>
+      <tr><td>Recipient safety</td><td class="done">Accepted</td><td>Missing named people and an ungrounded synthetic “me” clarify before execution. The rejected v5 experiment proved why partial pickup before recipient confirmation is unsafe.</td><td>Do not relax the recipient gate; ground speaker identity instead.</td></tr>
+      <tr><td>Deep fake/replan</td><td class="partial">Qualified</td><td>Prior complete all-success and fail-once-navigation baselines remain valid. Final source adds bounded invalid-intent retry and retry-exhausted salvage provenance, with 156 chatbot tests passing.</td><td>Final runtime acceptance awaits endpoint recovery and two complete v7 profiles.</td></tr>
+      <tr><td>External blocker</td><td class="pending">vLLM unavailable</td><td>The final clean v7 launch received connection refused for all planner preflight attempts and six host probes. Planner failed closed, so no semantic score was assigned.</td><td>This is an infrastructure outage, not evidence of a model or robot pass.</td></tr>
+    </tbody>
+  </table>
+  <p class="note"><strong>Recommendation:</strong> show the accepted response-first main path at <strong>8.6 / 10 qualified</strong>. Do not claim 9.x until ordered-walk retry exhaustion, full deep-fake all-success, and <code>fail_once_navigation</code> complete on the final rebuilt image. Full evidence: <code>docs/artifacts/runtime_seam_deslop_review_2026-07-14.md</code>.</p>
 
   <h2>11 July Qwen Personal-Stack Ablation</h2>
   <p class="note">Full evidence lives in <code>docs/artifacts/runtime_review_2026-07-11_qwen_personal_stack.md</code>. The run used <code>qwen36-turbo-hermes</code> at <code>http://10.88.140.94:4000</code> with <code>grounded_context_digest_enabled=false</code>. The model was more fluent in the base questionnaire, but it was less reliable on planner JSON, KB mutation, and fake-deep recovery.</p>
@@ -415,7 +432,7 @@
   <h2>13 July Clean Runtime Closure Checkpoint</h2>
   <p class="note">A fresh overlay and full <code>response_first</code> launch proved ordered walk/report, grouped work-table delivery, fail-once navigation, and truthful blocked-delivery closure. The blocked path retried the grounded handoff once and then asked for help without claiming delivery or substituting table placement. Fail-once pick now succeeds on its second attempt across argument aliases, but the subsequent replan still failed to confirm the placement support in KnowledgeCore. Severe fallback markers were zero in the final pick probe; grouped cases still used route repair. Focused gates passed 106 planner/contract tests, 28 chatbot handoff tests, 14 harness tests, 22 fake-policy tests, and 4 fixture/SVG tests. SVG rendering remains visually unproven until an rqt screenshot confirms the selected map and static objects.</p>
   <h2>14 July Semantic Admission Checkpoint</h2>
-  <p class="note">The stronger semantic rubric is now implemented in source. Grouped delivery and ordered navigation carry a bounded <code>target_selection</code> through chatbot handoff, planner output, and final orchestrator admission. Selected members must be concrete objects; people remain recipients; rooms and supports remain anchors. Invalid selections fail closed and can no longer fall through to the old phrase-based grouped-task planners. Final report evidence exposes selected members without successful execution evidence, while the chatbot remains the normal wording authority. Fixture cleanup now checks incoming and outgoing KnowledgeCore relations, and questionnaire evidence is correlated by voice, dialogue, turn, and goal lineage. Focused gates passed 53 planner-common, 78 planner, 124 chatbot, 15 harness, and 2 pure KB-effect tests. A clean rebuilt runtime review is still required before changing the displayed score.</p>
+  <p class="note">The semantic rubric is implemented and the main runtime has now been rescored. Grouped delivery and ordered navigation carry bounded target selections; selected members remain objects, people remain recipients, and supports remain anchors. Final report evidence is structured while chatbot wording remains authoritative. The final source gates pass 156 chatbot, 65 planner, and 37 harness tests. The displayed score is now 8.6/10 qualified. Only the final v7 deep-fake and forced-failure matrix remains blocked by the external endpoint outage.</p>
 </main>
 </body>
 </html>

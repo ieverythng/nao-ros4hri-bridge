@@ -36,7 +36,7 @@
 <body>
 <main>
   <h1>NAO ROS4HRI Full Runtime Issue Tracker</h1>
-  <p class="meta">Submission readiness tracker for the NAO ROS4HRI planner, dialogue, grounding, and fake-skill stack. Last updated: 9 July 2026, source hardening for execution-report wording authority and fake-skill report evidence.</p>
+  <p class="meta">Submission readiness tracker for the NAO ROS4HRI planner, dialogue, grounding, and fake-skill stack. Last consolidated update: 14 July 2026 after the runtime deslop and v1-v7 overlay sequence.</p>
 
   <p class="note">This tracker is the ground-truth working document. The top sections are supervisor-facing and summarize the current architecture state. The long implementation and SkillOpt logs remain below as provenance. The dedicated fake-skill, preloaded-environment, and replan tracker is <code>ISSUE_TRACKER_FAKE_SUITE.html</code>.</p>
 
@@ -54,6 +54,7 @@
     <div class="card"><strong>8.6 / 10</strong>Best accepted isolated live success-path baseline, from the response-first rqt speech sweep. This remains the strongest demonstration profile, but not the latest full-suite score.</div>
     <div class="card"><strong>7.0 / 10</strong>Fresh 25 June full-suite response-first score. Dialogue routing improved and KB mutation passed at the architecture seam, but speech-level KB ingestion and long composite/fake cases still cap the score.</div>
     <div class="card"><strong>8.7 / 10</strong>Fresh response-first validation session confirms the prior 8.6 success-path baseline and adds live proof for the corrected speech-ingress harness, KB add/revise/remove, fake-skill KB guards, grouped kitchen delivery, and post-skill KB effects.</div>
+    <div class="card"><strong>8.6 / 10 qualified</strong>14 July conglomerated score. Main SV-facing seams are accepted; the complete final deep-fake and forced-failure matrix is withheld after an external vLLM outage.</div>
     <div class="card"><strong>29 Jun qualified pass</strong>Latest cool-profile review preserved the healthy response-first dialogue and KB-query seams, proved preloaded table inventory through <code>/kb/revise</code> and speech, and found review-harness timeouts plus a fake-policy parameter quoting bug rather than a new duplicate-speech or raw-planner regression.</div>
     <div class="card"><strong>30 Jun source hardening</strong>Active-goal cleanup, incremental questionnaire phase evidence, absent-target stale-world guards, user-facing location members, chatbot digest filtering, and structured plan-outcome summaries are source-patched. Live proof requires a clean rebuild and a deep fake-suite rerun.</div>
     <div class="card"><strong>Intent-first: WIP</strong>Live ablation fixes several false-execution seams, but regressed open-domain dialogue wording and one action/report route. Unlogged prompt wording was rejected; structural route and digest fixes are source-patched with live rebuild proof pending.</div>
@@ -465,9 +466,24 @@
       <tr><td>Route admission</td><td class="pass">Focused source proven</td><td>Explicit non-action dialogue cannot leak an executable KB mutation. Existing immediate wave execution holdouts remain green.</td><td>Recreate the exact ALEX “do not act yet” turn through speech ingress.</td></tr>
       <tr><td>Grouped task meaning</td><td class="pass">Focused source proven</td><td>The authoritative target selection survives the nested plan envelope and is revalidated before orchestrator dispatch. Dead lexical grouped-task fallbacks were removed.</td><td>Clean runtime ordered and grouped cases.</td></tr>
       <tr><td>Report closure</td><td class="partial">Source complete</td><td>Final evidence identifies selected members without successful execution evidence and rejects unsafe full-completion wording. Chatbot remains the default wording owner.</td><td>Grouped partial failure and blocked delivery speech holdouts.</td></tr>
-      <tr><td>Runtime score</td><td class="pending">Not reassigned</td><td>Focused gates passed 53 planner-common, 78 planner, 124 chatbot, 15 harness, and 2 pure KB-effect tests.</td><td>Clean rebuild from <code>iiia:nao</code>, orchestrator ROS tests, focused probes, then full and fake-deep matrices.</td></tr>
+      <tr><td>Runtime score</td><td class="partial">8.6 qualified</td><td>The rebuilt main runtime was rescored after the semantic-contract work. Final source gates pass 156 chatbot, 65 planner, and 37 harness tests.</td><td>Run the final v7 deep-fake and forced-failure matrix when the external model endpoint is available.</td></tr>
     </tbody>
   </table>
+  <h2>14 July Conglomerated Runtime Closure</h2>
+  <p class="note">More than 31 rebuild and relaunch iterations contributed to diagnosis across the recent CRITIC and model-ablation work. The final local sequence used clean v1-v7 overlays and rejected stale or partially imported containers. Rebuild count is provenance only. Scored evidence requires one launch owner, active lifecycle nodes, ready KnowledgeCore, successful chatbot/planner preflight, and matching source or installed-module hashes.</p>
+  <table>
+    <thead><tr><th>Area</th><th>Status</th><th>14 July evidence</th><th>Submission implication</th></tr></thead>
+    <tbody>
+      <tr><td>Image provenance</td><td class="done">Verified</td><td>Canonical <code>iiia:nao</code> image <code>bb62ec1a4589</code> matched all 56 changed runtime files, with zero missing or mismatched files. Ten imported critical modules matched workspace hashes. Installed defaults exposed <code>intent_max_tokens=256</code>, <code>response_first</code>, real <code>perform_motion</code>, and head-motion open loop.</td><td>Rebuild once more with the final v7 chatbot file before the frozen run.</td></tr>
+      <tr><td>Main questionnaire</td><td class="done">Accepted</td><td>Fourteen cases passed before the original 420-second suite ceiling. The seven-case continuation produced five direct passes; its two apparent failures were resolved by corrected semantic oracles and targeted canonical-image reruns.</td><td>Use as the supervisor demonstration baseline.</td></tr>
+      <tr><td>KB concurrency and mutation</td><td class="done">Accepted</td><td>Natural-language add, explicit add/revise/query/remove, grouped post-effects, stale relation removal, and uncontaminated cleanup passed. Questions did not mutate the KB.</td><td>Keep strict statement validation and postcondition queries enabled.</td></tr>
+      <tr><td>Humans and objects</td><td class="done">Accepted</td><td>People remain recipients, movable entities remain objects, supports remain anchors, and absent or synthetic recipients clarify before execution. Grouped delivery preserved grounded object members and ALEX.</td><td>The unresolved “me” case is identity grounding, not permission to invent a recipient.</td></tr>
+      <tr><td><code>report_result</code></td><td class="done">Accepted success path</td><td>Chatbot-owned closure named all required delivered objects naturally. Accepted cases recorded zero <code>report_result_fallback</code> and no duplicate speech.</td><td>Emergency deterministic wording remains fallback-only.</td></tr>
+      <tr><td>Fallback pressure</td><td class="partial">Visible, reduced</td><td>Route repair remained in several successful dialogue and motion turns. Invalid intent output now receives one model retry; quantified target salvage is eligible only after retry exhaustion and carries explicit provenance.</td><td>Report route-repair rate separately from semantic failure.</td></tr>
+      <tr><td>Final runtime gate</td><td class="pending">Endpoint blocked</td><td>v7 source passed 156 chatbot, 65 planner, and 37 harness tests. The clean runtime was not scored because the vLLM endpoint refused connections and planner preflight failed closed.</td><td>Run ordered-walk, full <code>all_success</code>, and <code>fail_once_navigation</code> after endpoint recovery.</td></tr>
+    </tbody>
+  </table>
+  <p class="note"><strong>Current qualified overall score: 8.6 / 10.</strong> Main runtime acceptance is strong enough for the SV show-and-tell. A 9.x claim remains inappropriate until the final v7 deep-fake success and forced-failure profiles complete. Canonical evidence: <code>docs/artifacts/runtime_seam_deslop_review_2026-07-14.md</code>.</p>
 </main>
 </body>
 </html>

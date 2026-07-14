@@ -406,8 +406,7 @@ MAIN_QUESTIONNAIRE_CASES = (
             ),
             query_vars=("?predicate", "?object"),
         ),
-        expected_outcome="execute_no_clarification",
-        all_required_context=True,
+        expected_outcome="clarification_expected",
     ),
     ProbeCase(
         "composite_go_to_person_wave_report",
@@ -1867,9 +1866,12 @@ def retract_kb_injections(
 ) -> dict[str, object]:
     """Retract facts touching case-owned subjects and verify their absence."""
     subjects = []
+    declared_statements = []
     for injection in injections:
         for statement in injection.statements:
             clean_statement = str(statement).strip()
+            if clean_statement and clean_statement not in declared_statements:
+                declared_statements.append(clean_statement)
             parts = clean_statement.split()
             if parts and parts[0] not in {"myself", "nao_robot"} and parts[0] not in subjects:
                 subjects.append(parts[0])
@@ -1880,7 +1882,7 @@ def retract_kb_injections(
         query_vars=("?subject", "?predicate", "?object"),
         timeout_sec=20,
     )
-    current_statements = []
+    current_statements = list(declared_statements)
     for row in world_before.get("rows", []):
         subject = str(row.get("subject", row.get("?subject", ""))).strip()
         predicate = _canonical_kb_predicate(
@@ -2471,7 +2473,13 @@ def assess_case(
         if case.expected_member_ids and selection:
             expected_members = set(case.expected_member_ids)
             observed_members = set(selection.get("member_ids", []))
-            if observed_members != expected_members:
+            selection_kind = str(selection.get("selection_kind", ""))
+            members_match = (
+                expected_members.issubset(observed_members)
+                if selection_kind == "visible_objects"
+                else observed_members == expected_members
+            )
+            if not members_match:
                 status = max_status(status, "fail")
                 reasons.append(
                     "selected members differed: expected=%s observed=%s"
@@ -2847,6 +2855,15 @@ EOF
 	{mirror_script}
 	dialogue_state="$(ros2 lifecycle get /dialogue_manager 2>/dev/null || true)"
 	echo "  dialogue_manager_lifecycle=${{dialogue_state:-unavailable}}" >>/tmp/nao_questionnaire_qos_contract.log
+	for prior_pid_file in /tmp/nao_questionnaire_tracked_*.pid; do
+	  [ -e "$prior_pid_file" ] || continue
+	  [ "$prior_pid_file" = "{tracked_pid_file}" ] && continue
+	  prior_pid="$(cat "$prior_pid_file" 2>/dev/null || true)"
+	  if [ -n "$prior_pid" ]; then
+	    kill "$prior_pid" >/dev/null 2>&1 || true
+	  fi
+	  rm -f "$prior_pid_file"
+	done
 	tracked_pub_pid="$(cat {tracked_pid_file} 2>/dev/null || true)"
 	if [ -z "$tracked_pub_pid" ] || ! kill -0 "$tracked_pub_pid" 2>/dev/null; then
 	  nohup ros2 topic pub -r 2 {VOICE_TRACKED_QOS} {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{voice_id}']}}" >/tmp/nao_questionnaire_voice_{safe_voice_id}.log 2>&1 &

@@ -171,6 +171,14 @@ fallback, and the user-facing "language model unreachable" fallback. Prefer the
 deduplicated event metrics for scoring because rosout, trace viewer mirrors, and
 container logs can repeat the same semantic event several times.
 
+Before interpreting any fallback count, inspect `derived.preflight`. It reports
+`status=ready_for_semantic_scoring` only when the required core nodes are
+present, lifecycle probes are active, KnowledgeCore readiness is visible, and
+the required chatbot/planner LLM preflights have passed. A
+`preflight_not_scored` status is a startup or external-dependency result, even
+when the fallback counters are zero; do not run or score semantic cases from
+that snapshot.
+
 For an active E2E questionnaire pass, run:
 
 ```bash

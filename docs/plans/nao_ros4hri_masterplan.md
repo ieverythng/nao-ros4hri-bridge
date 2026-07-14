@@ -11,6 +11,10 @@ The manuscript, final evidence synthesis, and submission closure track lives in
 `docs/plans/tfm_completion_masterplan_2026-07-13.md` (+ `.html`). This
 integration masterplan remains authoritative for runtime implementation status.
 
+The active 14 July fallback, report-result, planner-retry, and KB-effect cleanup
+is specified in `docs/plans/runtime_seam_deslop_2026-07-14.md` (+ `.html`). It
+is an implementation tranche under this masterplan, not a competing authority.
+
 ## 1. Consolidation Policy (What This File Replaces)
 
 This file is now the canonical integration plan and absorbs execution tracking from:
@@ -477,6 +481,14 @@ and TFM fake-skill validation sub-plans were moved to
 ## 10. Immediate Next Session Checklist
 
 ### 13 July runtime-closure implementation
+
+- **14 July source gate:** the active seam-deslop tranche is source-green for
+  chatbot-owned target selection, one chatbot validation retry, conditional
+  planner retry two, evidence-specific report fallback, and strict typed KB
+  spatial effects. A clean overlay (`iiia:nao-deslop-20260714-v1`) contains
+  byte-matching source. Runtime acceptance is `preflight_not_scored` because
+  `10.7.138.215:8004` refused connections; chatbot/dialogue did not activate and
+  planner exited before semantic cases could run.
 
 - Runtime-proven for focused fixtures: semantic fixture labels no longer
   collapse `codex_*` ids; fixture validation requires robot and person

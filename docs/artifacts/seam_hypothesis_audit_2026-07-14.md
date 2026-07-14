@@ -147,20 +147,86 @@ have been unsafe.
       reporting were correct.
 - [ ] Fixture cleanup needs a separate harness pass. One gold-apple case was
       correctly marked `not_scored` after stale KnowledgeCore facts remained
-      during preflight; it was not counted as a semantic failure.
-- [ ] Context poisoning remains a bounded hypothesis, not a confirmed root
-      cause. The next probe should compare the same request with empty history,
-      bounded history, and the full active history while logging route repair,
-      target admission, and exact grounded-context relations.
+    during preflight; it was not counted as a semantic failure.
+11. **Context-boundary probe.** The v28 trace reproduced the unsupported scene
+    claim. The current turn contained five objects, only `apple_jbdym` had a
+    `Table` relation, and the other visible phone, pear, and apple had no table
+    relation. The response nevertheless named stale `ATLAS`, `MIDAS`, `TITAS`,
+    and `VEGA` entities from an earlier lab turn and said all objects were on
+    the table. Source tests now enforce a scene boundary for current inventory
+    and attribute queries: the live grounded snapshot is sent without the
+    previous dialogue window, and the returned history starts a fresh scene
+    window. Reflective scene-change questions retain history.
+12. **Context architecture probe.** The MCP comparison found no missing
+    transport primitive that explains the regression. The existing
+    `kb_skills -> grounded_context_v3` projection is already the specialized
+    resource seam. An additional stateful context server would add session
+    complexity without defining freshness. The research note is recorded in
+    `docs/artifacts/context_projection_research_2026-07-14.md`.
+13. **Clean v29 runtime probe.** Image `iiia:nao-sos-20260714-v29` was built
+    from `iiia:nao`, the full stack was stopped and relaunched, and the active
+    profile reported `response_first` with the digest disabled. Core nodes and
+    KnowledgeCore services were singular. Two current-scene speech queries
+    emitted `CONTEXT_BOUNDARY` in the chatbot log, and their replies stayed
+    within the live fixture evidence. The environment questionnaire produced
+    one semantic pass and one `not_scored` case because targeted cleanup left
+    inferred base-table and robot-station facts. The latter is an explicit
+    harness/KB lifecycle limitation, not a lowered semantic score.
+14. **Live grouped-delivery follow-up diagnosis.** Direct log inspection of
+    the `sim_person_lznze` case separated two failures. The first response
+    correctly rejected the misspelled `iznze` reference. After the user said
+    `I meant person lznze!`, the grounded context contained both phone IDs and
+    the person ID, but the planner request contained only that correction as
+    `goal_text`, with empty `normalized_intents` and `scene_targets`. The
+    planner consequently returned no JSON object. This was a handoff-contract
+    loss, not stale grounded context. The source patch now carries the
+    rejected execution task across a named-person correction, resolves
+    `sim_person_*` suffixes, expands `both phones` to concrete object IDs, and
+    reopens planner admission only for a uniquely grounded correction, then
+    clears the continuation after publication.
+15. **v30 rebuild gate.** The source patch rebuilt successfully from
+    `iiia:nao` as `iiia:nao-sos-20260714-v30`. The full launch reached the
+    simulator, KnowledgeCore, HRI nodes, fake skills, and operator viewer, but
+    the required chatbot and planner preflights both failed with connection
+    refused at `10.7.138.215:8004`. The alternate historical address
+    `192.168.50.86:8004` also did not respond from the host. No semantic score
+    was assigned to this launch. The failure is external model-endpoint
+    reachability, and the `/chatbot_llm` lifecycle remained unconfigured while
+    `/planner_llm` exited, so this is not valid runtime evidence for the
+    continuation patch.
+16. **Fresh normal-base v31 preflight.** The overlay
+    `iiia:nao-sos-20260714-v31` was built from the unchanged `iiia:nao` image
+    after the handoff-admission test was added. The old v30 container was
+    stopped before launching one fresh `nao_ros2` container. The startup graph
+    contained one each of `chatbot_llm`, `dialogue_manager`,
+    `nao_orchestrator`, `kb/knowledge_core`, `fake_skill_server`, and the HRI
+    nodes; KnowledgeCore reached `ready`, and the active parameters were
+    `response_first` with the grounded-context digest disabled. The
+    operator-owned RQT/viewer process is excluded from semantic uniqueness.
+    Chatbot and planner preflight again failed with connection refused at
+    `10.7.138.215:8004`, so the run is `preflight_not_scored`, not a semantic
+    regression. The snapshot now records this explicitly under
+    `derived.preflight`, including the missing planner node and inactive
+    lifecycle states, instead of relying on a zero fallback count.
+    Snapshot: `/tmp/nao_runtime_v31_preflight.json`.
+- [ ] Context poisoning from retained dialogue history is source-fixed and
+      unit-tested, but a longer live repeated-KB sequence remains pending.
+- [x] Current-scene queries reset stale dialogue scene context while reflective
+      scene-change questions retain history. The operator-owned
+      `interaction_trace_viewer` remains outside this change.
+- [x] v29 clean rebuild verified the context-boundary log marker and did not
+      reproduce the stale lab-name claim in the new current-scene replies.
 
 ## Decision: bounded handoff
 
-The source diagnosis and runtime fixes are accepted for this bounded handoff.
+The source diagnosis and runtime fix are accepted for this bounded handoff.
 The former clarification was a contract/admission regression, not evidence of
 an unreachable LLM endpoint or missing KB fact. Location classification and
 top-level count normalization are live-proven, and the replan supervisor now
 distinguishes autonomous recoverable failures from delivery failures that need
-user choice. The stack is not a fallback-free or real-robot acceptance yet.
+user choice. The stack is not a fallback-free or real-robot acceptance yet,
+and the questionnaire still needs a KnowledgeCore reset or stronger
+inferred-fact cleanup strategy between isolated fixture cases.
 
 ## Residual risk and next probe
 
@@ -172,16 +238,19 @@ fixture cleanup verification so stale facts yield `not_scored` before the case,
 without weakening the guard. A separate real-robot run is required for NAOqi
 actuation because the current endpoint is unreachable.
 
-For the context-poisoning question, do not increase the context window or add
-more prompt instructions as a first response. Capture the assembled request
-shape for one passing and one failing repeated-KB turn, then ablate only the
-history window and the optional digest. A failure that persists with empty
-history and the same grounded JSON points to route or contract handling; a
-failure that disappears only when history is removed points to bounded-history
-contamination. The operator-owned `interaction_trace_viewer` remains outside
-this diagnosis and must not be modified or scored as a core failure.
+For the context-poisoning question, the source ablation now removes the old
+dialogue window for current-scene inventory and attribute queries. The next
+runtime probe must repeat the failing sequence on a clean rebuilt stack and
+verify that the live `chatbot_turn_trace` contains only the current scene
+claim. A failure that persists with the boundary points to route or contract
+handling; a failure that disappears confirms bounded-history contamination.
+The operator-owned `interaction_trace_viewer` remains outside this diagnosis
+and must not be modified or scored as a core failure.
 
-Do not change prompt text until that structural holdout is complete. If a
-complete grounded single-object request still clarifies after the rebuild,
-start a bounded SkillOpt baseline and holdout for the prompt/model route rather
-than adding another deterministic fallback.
+Do not change prompt text while the model endpoint is unreachable. The current
+canonical chatbot pack already requires a concise semantic `goal_text` rather
+than a transcript; the new structural continuation test enforces that
+contract without changing wording. Once the endpoint is reachable, run the
+bounded SkillOpt baseline and holdout for short correction turns before any
+prompt mutation. The holdout must include ordinary dialogue, current-scene KB
+queries, direct execution, grouped delivery, and report-result wording.

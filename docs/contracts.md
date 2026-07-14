@@ -75,6 +75,15 @@ Runtime presentation:
 - When the digest is disabled, the `GROUNDED_CONTEXT` trace should show only the
   JSON block. Use this mode to diagnose whether a user-visible wording error
   came from lossy digest compression or from the structured facts.
+- For non-mutating current-scene inventory and attribute questions,
+  `chatbot_llm` starts a fresh scene context boundary. The response and intent
+  requests receive the current grounded JSON without the previous dialogue
+  window, and the returned history begins with the current scene query. This
+  prevents earlier scene claims from being treated as current facts.
+- Reflective scene-change questions, such as comparisons with an earlier
+  person or object, retain dialogue history because temporal comparison is part
+  of their meaning. This is a context-selection rule, not a second world-model
+  representation.
 
 Current compact shape:
 
@@ -210,6 +219,14 @@ Admission policy:
 - If the request names a person that is not present in `entities`, chatbot
   routing must ask for clarification instead of handing an executable request to
   the planner.
+- A named-person clarification must preserve the rejected execution contract.
+  When the user supplies a grounded correction, the next planner request
+  reuses the original action and object scope, replaces only the recipient,
+  and derives concrete IDs from the current `grounded_context`. A correction
+  is not published as a new free-text goal with empty `normalized_intents`.
+  Handoff admission may reopen this preserved execution only when the
+  correction resolves to one grounded person; it must not promote ordinary
+  dialogue corrections.
 - Stale or absent facts should produce a truthful clarification, help request,
   replan, or failure. They must not be hidden behind generic object names.
 

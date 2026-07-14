@@ -162,6 +162,8 @@ def test_publish_voice_turn_keeps_tracked_voice_alive_for_group_continuity(monke
     assert "nao_questionnaire_tracked_robust_group.pid" in script
     assert "nohup ros2 topic pub -r 2" in script
     assert 'kill "$tracked_pub_pid"' not in script
+    assert '[ "$prior_pid_file" = "/tmp/nao_questionnaire_tracked_robust_group.pid" ]' in script
+    assert 'kill "$prior_pid"' in script
 
 
 def test_cleanup_tracked_voice_publishers_removes_persistent_publishers(monkeypatch):
@@ -517,6 +519,16 @@ def test_fake_deep_iiia_floor_has_post_effect_location_followup_without_refixtur
     assert followup.environment_ids == ()
 
 
+def test_synthetic_operator_delivery_requires_grounded_recipient_clarification():
+    module = _load_questionnaire_module()
+    cases = {case.name: case for case in module.MAIN_QUESTIONNAIRE_CASES}
+
+    case = cases["maximal_kitchen_cup_to_operator"]
+
+    assert case.expected_outcome == "clarification_expected"
+    assert case.all_required_context is False
+
+
 def test_phase_observations_extract_complete_target_selection():
     module = _load_questionnaire_module()
     observations = module.phase_observations(
@@ -572,6 +584,49 @@ def test_semantic_oracle_rejects_wrong_selected_member_set():
 
     assert result["status"] == "fail"
     assert "selected members differed" in " ".join(result["reasons"])
+
+
+def test_semantic_oracle_allows_extra_live_objects_for_visible_scope():
+    module = _load_questionnaire_module()
+    case = module.ProbeCase(
+        "all_visible_objects",
+        "composite",
+        "Walk to every object.",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=("apple_1", "book_1", "phone_1"),
+        expected_report_policy="per_target",
+    )
+    result = module.assess_case(
+        case,
+        observations={
+            "turn_injected": True,
+            "planner_request_observed": True,
+            "execution_feedback_observed": True,
+            "target_selection_observed": True,
+            "target_selections": [
+                {
+                    "selection_kind": "visible_objects",
+                    "member_ids": [
+                        "apple_1",
+                        "book_1",
+                        "phone_1",
+                        "live_cup",
+                    ],
+                    "recipient_id": "",
+                    "report_policy": "per_target",
+                }
+            ],
+            "terminal_observed": True,
+            "speech_observed": True,
+            "clarification_observed": False,
+            "fallback_markers": {"total": 0},
+        },
+        stale_world_guard=None,
+    )
+
+    assert result["status"] == "pass"
 
 
 def test_empty_target_selection_is_not_semantic_evidence():
@@ -701,6 +756,7 @@ def test_case_injection_cleanup_retracts_post_effects_touching_fixture_subjects(
         statements=(
             "codex_cup rdf:type Cup",
             "codex_person rdf:type Human",
+            "codex_cup dbp:poseX 0.00",
             "myself sees codex_cup",
         ),
         query_patterns=("codex_cup ?predicate ?object",),
@@ -710,6 +766,7 @@ def test_case_injection_cleanup_retracts_post_effects_touching_fixture_subjects(
     result = module.retract_kb_injections("nao_ros2", (injection,))
 
     assert result["subjects"] == ["codex_cup", "codex_person"]
+    assert "codex_cup dbp:poseX 0.00" in revised[0]
     assert "codex_cup oro:isAt codex_person" in revised[0]
     assert "unrelated oro:isAt elsewhere" not in revised[0]
     assert result["contaminated"] is False

@@ -100,6 +100,49 @@ def test_engine_fail_once_switches_to_success_on_second_call() -> None:
     assert second['status'] == 'succeeded'
 
 
+def test_engine_fail_once_tracks_object_across_argument_aliases() -> None:
+    engine = _engine()
+
+    first, _ = engine.execute(
+        skill='pick_object',
+        args={'object_id': 'cup', 'result_mode': 'fail_once'},
+    )
+    second, _ = engine.execute(
+        skill='pick_object',
+        args={'target': 'cup', 'result_mode': 'fail_once'},
+    )
+
+    assert first['status'] == 'failed'
+    assert second['status'] == 'succeeded'
+
+
+def test_engine_policy_fail_once_applies_once_per_skill_across_targets() -> None:
+    engine = _engine_with_policy(mode_overrides={'navigate_to': 'fail_once'})
+
+    first, _ = engine.execute(skill='navigate_to', args={'target': 'apple'})
+    second, _ = engine.execute(skill='navigate_to', args={'target': 'book'})
+
+    assert first['status'] == 'failed'
+    assert second['status'] == 'succeeded'
+
+
+def test_engine_policy_change_starts_a_fresh_failure_sequence() -> None:
+    engine = _engine_with_policy(global_mode='always_success')
+    engine.execute(skill='navigate_to', args={'target': 'apple'})
+
+    engine.update_policy(
+        global_mode='scenario',
+        random_failure_prob=0.5,
+        mode_overrides={'navigate_to': 'fail_once'},
+    )
+    first_after_change, _ = engine.execute(
+        skill='navigate_to',
+        args={'target': 'apple'},
+    )
+
+    assert first_after_change['status'] == 'failed'
+
+
 def test_engine_find_object_treats_success_mode_as_found() -> None:
     payload, _delay = _engine().execute(
         skill='find_object',
@@ -152,6 +195,41 @@ def test_engine_perform_motion_fail_once_switches_to_success_on_second_call() ->
     assert first['status'] == 'failed'
     assert first['failure']['code'] == 'convergence_timeout'
     assert second['status'] == 'succeeded'
+
+
+def test_engine_remembers_successful_fake_posture_state() -> None:
+    engine = _engine()
+
+    stand, _ = engine.execute(skill='perform_motion', args={'object': 'stand'})
+    sit, _ = engine.execute(skill='perform_motion', args={'object': 'sit'})
+
+    assert stand['evidence']['previous_posture_state'] == 'unknown'
+    assert stand['evidence']['current_posture_state'] == 'stand'
+    assert sit['evidence']['previous_posture_state'] == 'stand'
+    assert sit['evidence']['current_posture_state'] == 'sit'
+    assert engine.posture_state == 'sit'
+
+
+def test_engine_failed_fake_posture_does_not_change_state() -> None:
+    engine = _engine()
+    engine.execute(skill='perform_motion', args={'object': 'stand'})
+
+    failed, _ = engine.execute(
+        skill='perform_motion',
+        args={'object': 'sit', 'result_mode': 'motion_unavailable'},
+    )
+
+    assert failed['status'] == 'failed'
+    assert engine.posture_state == 'stand'
+
+
+def test_engine_head_motion_does_not_change_posture_state() -> None:
+    engine = _engine()
+    engine.execute(skill='perform_motion', args={'object': 'stand'})
+    head, _ = engine.execute(skill='perform_motion', args={'object': 'head_look_left'})
+
+    assert 'previous_posture_state' not in head['evidence']
+    assert engine.posture_state == 'stand'
 
 
 def test_engine_unknown_skill_returns_structured_failure() -> None:

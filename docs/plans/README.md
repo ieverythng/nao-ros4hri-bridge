@@ -13,6 +13,10 @@ Historical handoffs and superseded plans live under `docs/artifacts/plan_archive
 - `nao_ros4hri_masterplan.md` (+ `.html`)
   Canonical integration tracker for planner, chatbot, orchestrator, grounding,
   fake-skill validation, registry alignment, and remaining thesis seams.
+- `runtime_seam_deslop_2026-07-14.md` (+ `.html`)
+  Active implementation tranche for model-first contract ownership, semantic
+  fallback budgets, report-result consolidation, strict KB postconditions, and
+  clean rebuilt runtime acceptance.
 - `ISSUE_TRACKER_FULL_SUITE.html`
   Detailed readiness tracker and provenance log for runtime validation.
 - `ISSUE_TRACKER_FAKE_SUITE.html`
@@ -23,6 +27,9 @@ Historical handoffs and superseded plans live under `docs/artifacts/plan_archive
 - `../artifacts/runtime_review_2026-07-11_qwen_personal_stack.md`
   Dated evidence artifact for the Qwen personal-stack ablation. Folded
   conclusions are mirrored into the full and fake-suite trackers.
+- `../artifacts/runtime_seam_deslop_review_2026-07-14.md`
+  Qualified review for the accepted main deslop seams and the endpoint-blocked
+  final deep-fake retry gate.
 - `FINAL_RUNTIME_REVIEW.html`
   Condensed supervisor-facing runtime review.
 - `IRR_Implementation.html`

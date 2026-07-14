@@ -32,7 +32,7 @@
 <body>
 <main>
   <h1>Fake Skill And Replan Validation Suite</h1>
-  <p class="meta">Canonical deep tracker for deterministic fake-skill execution, preloaded KnowledgeCore environments, multi-turn manipulation, and failure-induced replanning. Created 29 June 2026. Last source update: 9 July 2026.</p>
+  <p class="meta">Canonical deep tracker for deterministic fake-skill execution, preloaded KnowledgeCore environments, multi-turn manipulation, and failure-induced replanning. Created 29 June 2026. Last consolidated update: 14 July 2026 after the runtime deslop sequence.</p>
 
   <p class="note">Use <code>ISSUE_TRACKER_FULL_SUITE.html</code> for the full-stack health score. Use this page for the harder fake-skill and replan score once the base dialogue, KB, and simple execution seams are healthy. The scoreable state is the RDF fixture injected through <code>/kb/revise</code>, then verified through <code>/kb/query</code>, <code>grounded_context</code>, planner requests, fake-skill feedback, post-skill KB effects, and user-facing speech.</p>
 
@@ -56,6 +56,7 @@
     <div class="card"><strong>Fallback tracking</strong>The questionnaire records per-case <code>fallback_markers</code>. Treat <code>route_repair</code> as routing pressure, not as report-result fallback. Severe fallback classes are tracked separately: duplicate active goal, invalid planner JSON, invalid executable plan, backend unreachable speech, and rules response fallback.</div>
     <div class="card"><strong>10 Jul readout</strong>Fake-deep all-success and fail-once-navigation are healthier, but grouped kitchen delivery still leaves stale KB location facts and incomplete reports. Patch KB post-effects before raising the fake-suite score.</div>
     <div class="card"><strong>11 Jul Qwen ablation</strong><code>qwen36-turbo-hermes</code> improved fluent responses but regressed fake-deep reliability. Deep profiles produced 22 pass, 7 degraded, and 9 fail across five policy artifacts.</div>
+    <div class="card"><strong>14 Jul qualified state</strong>Main KB, grouped-delivery, ordered-target, motion, and report seams are accepted. The complete final deep-fake matrix remains open because vLLM failed during the clean v7 preflight.</div>
   </section>
 
   <p><span class="tag">P0: speech-mode fail-once replan</span><span class="tag">P0: location-scoped delivery</span><span class="tag">P0: post-skill KB effects</span><span class="tag">P1: spatial/proximity fixture proof</span></p>
@@ -204,6 +205,21 @@
       <tr><td>KB post-effects</td><td class="partial">Type gate proven</td><td>Spatial projection recognizes containing places from KnowledgeCore type evidence and no longer infers a place from an identifier such as <code>Kitchen</code>.</td><td>Container ROS test plus grouped delivery location follow-up.</td></tr>
     </tbody>
   </table>
+
+  <h2>14 July Consolidated Deslop And Rebuild Readout</h2>
+  <p class="note">The stabilization campaign spanned more than 31 container rebuild and relaunch iterations across CRITIC, model ablation, fallback mapping, KB-effect hardening, report-result ownership, and the v1-v7 deslop overlays. The count is iteration provenance, not 31 independent scored trials. Only runs with a clean launch, matching source or installed-module hashes, active lifecycle nodes, ready KnowledgeCore, and successful LLM preflight contribute to the score.</p>
+  <table>
+    <thead><tr><th>Deep seam</th><th>Current status</th><th>Consolidated evidence</th><th>Remaining gate</th></tr></thead>
+    <tbody>
+      <tr><td>Fixture and KB isolation</td><td class="done">Accepted</td><td>Add, revise, query, and remove isolation passed. Exact fixture retraction now precedes inferred/materialized cleanup, and accepted runs ended with <code>contaminated=false</code> and no remaining fixture facts.</td><td>Retain cleanup checks in every complete matrix.</td></tr>
+      <tr><td>Grouped delivery</td><td class="done">Accepted success path</td><td>The kitchen and work-table probes preserved concrete object members, ALEX as a person recipient, stale spatial cleanup, and a final report policy. Natural closure included both delivered objects and did not use the emergency report renderer.</td><td>Repeat under <code>fail_once_navigation</code> and blocked delivery.</td></tr>
+      <tr><td>Ordered object visits</td><td class="done">Accepted success path</td><td>The canonical image selected the three probe objects in sequence with per-target reporting. The oracle now permits additional live objects only for <code>visible_objects</code>; explicit and location-member selections remain exact.</td><td>Rescore the final retry-exhaustion path on v7.</td></tr>
+      <tr><td>Missing recipient</td><td class="done">Accepted</td><td>Named absent recipients clarify before execution. Synthetic “bring me” also clarifies because the questionnaire voice has no grounded HRI person; partial navigation or pickup before that clarification is rejected.</td><td>Add a separate grounded speaker-to-person test before expecting “bring me” execution.</td></tr>
+      <tr><td>Failure and replan</td><td class="partial">Prior proof retained</td><td>Earlier clean runs proved failed navigation, <code>plan_version=2</code>, and truthful recovery closure. The final source preserves one chatbot validation retry and bounded planner retries before deterministic salvage.</td><td>Complete v7 <code>all_success</code> and <code>fail_once_navigation</code> runs after endpoint recovery.</td></tr>
+      <tr><td>Final v7 attempt</td><td class="pending">Not scored</td><td>The final chatbot seam passed 156 tests, but <code>10.7.138.215:8004</code> returned connection refused during all planner preflight attempts and six direct host probes. Planner failed closed.</td><td>Rebuild canonical <code>iiia:nao</code> with final <code>turn_engine.py</code>, relaunch once, rerun ordered walk, then both full deep profiles.</td></tr>
+    </tbody>
+  </table>
+  <p class="note"><strong>Qualified deep score: 8.6 / 10.</strong> This preserves the last complete deep-fake baseline while recognizing the stronger accepted main seams. It does not promote the final v7 change until the endpoint-backed profiles finish. Consolidated report: <code>docs/artifacts/runtime_seam_deslop_review_2026-07-14.md</code>.</p>
 
   <h2 id="artifacts">Artifact Contract</h2>
   <table>
