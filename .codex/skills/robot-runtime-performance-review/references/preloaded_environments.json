@@ -78,14 +78,19 @@
         "codex_probe_cup dbp:color gold",
         "codex_probe_cup oro:isOn codex_lab_table",
         "myself sees codex_probe_cup",
-        "myself canReach codex_probe_cup"
+        "myself canReach codex_probe_cup",
+        "codex_lab_table_station rdf:type Place",
+        "codex_lab_table_station dbp:name robot_station",
+        "myself oro:isAt codex_lab_table_station",
+        "nao_robot oro:isAt codex_lab_table_station"
       ],
       "query_patterns": [
         "codex_lab_table ?predicate ?object",
         "codex_lab_apple ?predicate ?object",
         "codex_lab_book ?predicate ?object",
         "codex_lab_phone ?predicate ?object",
-        "codex_probe_cup ?predicate ?object"
+        "codex_probe_cup ?predicate ?object",
+        "codex_lab_table_station ?predicate ?object"
       ],
       "query_vars": [
         "?predicate",
@@ -262,13 +267,18 @@
         "codex_gold_recipient dbp:poseSource semantic_fixture",
         "codex_gold_recipient oro:isIn codex_gold_handoff_area",
         "codex_gold_handoff_area oro:contains codex_gold_recipient",
-        "myself sees codex_gold_recipient"
+        "myself sees codex_gold_recipient",
+        "codex_gold_station rdf:type Place",
+        "codex_gold_station dbp:name robot_station",
+        "myself oro:isAt codex_gold_station",
+        "nao_robot oro:isAt codex_gold_station"
       ],
       "query_patterns": [
         "codex_gold_table ?predicate ?object",
         "codex_gold_handoff_area ?predicate ?object",
         "codex_gold_apple ?predicate ?object",
-        "codex_gold_recipient ?predicate ?object"
+        "codex_gold_recipient ?predicate ?object",
+        "codex_gold_station ?predicate ?object"
       ],
       "query_vars": [
         "?predicate",

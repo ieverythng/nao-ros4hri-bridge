@@ -153,7 +153,7 @@
       <li>Stable or explicitly qualified <code>fail_once_pick</code> and <code>delivery_blocked</code> evidence.</li>
       <li>Separate detector-enabled profile.</li>
       <li>Final per-case summaries, repetitions, seeds, exclusions, and statistical policy.</li>
-      <li>Decision on the direct-execution comparison promised by the abstract.</li>
+      <li>Direct atomic execution is retained as an orchestrator safety control, not as a causal planner baseline.</li>
     </ul>
   </section>
 
@@ -168,11 +168,11 @@
         <tr><td>3 Architecture</td><td>Strong</td><td>Terminology, typos, grayscale future labels</td><td>Agrees with frozen contracts</td></tr>
         <tr><td>4 Contracts</td><td>Detailed</td><td>Formatting and source/type verification</td><td>Examples validate; critical overflow removed</td></tr>
         <tr><td>5 Implementation</td><td>Expanded; hand edits active</td><td>Provenance, APIs, supervisor, reporting, observability, config</td><td>Claims point to source and interfaces</td></tr>
-        <tr><td>6 Methodology</td><td>Reproducible protocol</td><td>Add final holdout manifest and freeze scored tuple</td><td>Independently repeatable</td></tr>
-        <tr><td>7 Results</td><td>F28/F08/F10/F11 evidence sets populated</td><td>Add stable run hashes, aggregate graphics, latency/dispersion, and RQ synthesis</td><td>Every number has durable artifact and denominator</td></tr>
-        <tr><td>8 Discussion</td><td>Short preliminary draft</td><td>Expand by RQ and literature</td><td>Claims do not exceed evidence</td></tr>
-        <tr><td>9 Limitations</td><td>Very short</td><td>Observed, scope, and future categories</td><td>No blocker disguised as future work</td></tr>
-        <tr><td>10 Conclusion</td><td>Preliminary</td><td>Rewrite last in past tense</td><td>No new results</td></tr>
+        <tr><td>6 Methodology</td><td>Validation depths, twenty-one-case main, five-case robustness set, semantic metrics, and evidence bundle</td><td>Freeze scored tuple</td><td>Independently repeatable</td></tr>
+        <tr><td>7 Results</td><td>F28/F08/F10/F11 plus F13/F14 evidence</td><td>Add final frozen aggregate and graphics</td><td>Every number has durable artifact and denominator</td></tr>
+        <tr><td>8 Discussion</td><td>Reconciled with trajectory-versus-semantic evidence</td><td>Add final literature comparison</td><td>Claims do not exceed evidence</td></tr>
+        <tr><td>9 Limitations</td><td>Observed and scope limitations separated</td><td>Reconcile detector and physical evidence</td><td>No blocker disguised as future work</td></tr>
+        <tr><td>10 Conclusion</td><td>Qualified RQ findings present</td><td>Recheck after frozen aggregate</td><td>No new results</td></tr>
         <tr><td>Appendices</td><td>Minimal</td><td>Manifest, config, interfaces, commands, artifact index</td><td>Reproduction details complete</td></tr>
       </tbody>
     </table>
@@ -184,7 +184,7 @@
     <ul class="tasks">
       <li class="done"><span class="task-id">TFM-C01</span> Replace guarantees with enforced constraints or evidenced behaviour.</li>
       <li class="done"><span class="task-id">TFM-C02</span> Keep internal decomposition terminology out of the TFM; describe reviewed skills and runtime mappings directly.</li>
-      <li><span class="task-id">TFM-C03</span> Implement, substitute, or remove the direct-execution baseline promise.</li>
+      <li class="done"><span class="task-id">TFM-C03</span> Retain direct atomic execution as an orchestrator safety control and remove the unsupported causal comparison promise.</li>
       <li class="done"><span class="task-id">TFM-C04</span> Freeze the unit of analysis and configuration tuple.</li>
       <li class="done"><span class="task-id">TFM-C05</span> Add pass rules and denominators; timeouts and inferred events are not silent successes.</li>
       <li class="done"><span class="task-id">TFM-C06</span> Rename deep fake-skill to multi-step deterministic fake-skill.</li>
@@ -226,7 +226,7 @@
       <li class="done"><span class="task-id">TFM-M06</span> Add formulae for routing, planning, ordering, safety, phases, clarification, speech, and stale state.</li>
       <li class="done"><span class="task-id">TFM-M07</span> Report median, IQR, p95, maximum, and timeout count.</li>
       <li class="done"><span class="task-id">TFM-M08</span> Define repetitions, seeds, exclusions, retries, missing events, and status denominators.</li>
-      <li><span class="task-id">TFM-M09</span> Add the final holdout prompt manifest; threats to validity are complete.</li>
+      <li class="done"><span class="task-id">TFM-M09</span> Add the frozen five-case robustness manifest and repetition policy.</li>
     </ul>
 
     <h3><span class="tag p1">P1</span> Chapter 7 Evidence Synthesis</h3>
@@ -234,9 +234,9 @@
       <li class="done"><span class="task-id">TFM-R01</span> Remove development-status framing and organise results by fixed evidence tuple.</li>
       <li class="done"><span class="task-id">TFM-R02</span> Populate F28, F08, F10, and F11 evidence tables with explicit denominators.</li>
       <li class="done"><span class="task-id">TFM-R03</span> Add ROS4HRI and runtime-contract preservation results.</li>
-      <li><span class="task-id">TFM-R04</span> Move ledger-only provenance into stable, hashed evidence bundles.</li>
+      <li><span class="task-id">TFM-R04</span> Move ledger-only provenance into stable, hashed evidence bundles. F13 and F14 are complete; earlier and final runs remain.</li>
       <li><span class="task-id">TFM-R05</span> Add final profile, policy, latency, and phase-completion graphics.</li>
-      <li><span class="task-id">TFM-R06</span> Complete the RQ evidence matrix and reconcile Chapters 7--10.</li>
+      <li class="done"><span class="task-id">TFM-R06</span> Add the RQ evidence matrix and reconcile Chapters 7--10; recheck after the frozen run.</li>
     </ul>
 
     <h3><span class="tag p2">P2</span> Presentation And References</h3>
@@ -330,11 +330,11 @@
     <h3>Immediate next session</h3>
     <ol>
       <li>Preserve and review Chapter 5 hand edits against ownership rules.</li>
-      <li>Decide the direct-execution comparison.</li>
-      <li>Complete the RQ-to-metric and RQ-to-evidence map.</li>
-      <li>Convert selected June/July ledger records into stable, hashed evidence bundles.</li>
-      <li>Freeze the holdout manifest and scored configuration tuple.</li>
-      <li>Generate Chapter 7 graphics and reconcile Chapters 8--10 with the final evidence set.</li>
+      <li>Freeze the final source, container, model, prompt, registry, and fixture tuple.</li>
+      <li>Run the main, environment, deterministic-policy, and three-repeat robustness profiles.</li>
+      <li>Convert the remaining selected ledger records into stable, hashed evidence bundles.</li>
+      <li>Run the separately scored detector profile.</li>
+      <li>Generate Chapter 7 graphics and recheck Chapters 8--10 with the final evidence set.</li>
     </ol>
   </section>
 
@@ -345,6 +345,7 @@
     <p>2026-07-13 · Completed <code>TFM-I19</code>, <code>TFM-I20</code>, and <code>TFM-I21</code>: Contracts 1--9 reconciled, complete runtime-skill table added, orchestrator and verified KB-effect paths expanded, and simulator/robot profiles documented.</p>
     <p>2026-07-13 · Opened <code>TFM-I22</code> after registry checks found stale generated <code>walk_to</code> and <code>wave_greet</code> planner projections; the thesis inventory remains anchored to the canonical registry.</p>
     <p>2026-07-13 · Completed <code>TFM-C04</code>, <code>TFM-C05</code>, <code>TFM-M01</code>--<code>TFM-M08</code>, and <code>TFM-R01</code>--<code>TFM-R03</code>: fixed the evaluation protocol, populated evidence-set results, added the 1--10 score, and verified ROS4HRI contract reporting.</p>
+    <p>2026-07-14 · Completed <code>TFM-C03</code>, <code>TFM-M09</code>, and <code>TFM-R06</code>: added evidence-depth boundaries, semantic target grading, the twenty-one-case main and five-case robustness manifests, F13/F14 hashed bundles, and trajectory-versus-semantic RQ synthesis.</p>
     <p>Markdown authority: <a href="tfm_completion_masterplan_2026-07-13.md"><code>tfm_completion_masterplan_2026-07-13.md</code></a></p>
   </footer>
 </main>

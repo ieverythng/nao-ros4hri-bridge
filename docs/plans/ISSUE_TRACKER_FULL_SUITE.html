@@ -448,6 +448,26 @@
     <li>Validate one frame-qualified object pose, derived relation, and proximity answer through scene summary, KB, grounded context, and user-visible response.</li>
     <li>Run <code>scripts/summarize_validation_traces.py</code> on the next interaction trace and attach the generated HTML/CSV metrics to the validation bundle.</li>
   </ol>
+  <h2>13 July Runtime Closure Status</h2>
+  <table>
+    <thead><tr><th>Area</th><th>Status</th><th>Evidence</th><th>Next gate</th></tr></thead>
+    <tbody>
+      <tr><td>Grounded grouped targets</td><td class="pass">Work-table proven</td><td>Clean speech-mode work-table delivery used validated location members and recipient ids without clarification.</td><td>Repeat the IIIA kitchen delivery holdout.</td></tr>
+      <tr><td>Blocking replan closure</td><td class="pass">Runtime proven</td><td>Versions 1 and 2 both preserved the grounded handoff. The second blocked failure terminated through chatbot-authored help.</td><td>Keep the artifact as the regression baseline.</td></tr>
+      <tr><td>Report semantics</td><td class="partial">Source complete</td><td>Shared report evidence rejects a person as a <code>place_object</code> support and does not convert that event into success speech.</td><td>Gold-apple and grouped delivery report holdouts.</td></tr>
+      <tr><td>Fixture and evidence isolation</td><td class="pass">Focused runtime proven</td><td>Fixture facts were isolated between focused cases; failed cleanup is not scored; recovery requires speech after terminal evidence.</td><td>Repeat across the uninterrupted full ladder.</td></tr>
+    </tbody>
+  </table>
+  <h2>14 July Semantic Contract Status</h2>
+  <table>
+    <thead><tr><th>Area</th><th>Status</th><th>Evidence</th><th>Next gate</th></tr></thead>
+    <tbody>
+      <tr><td>Route admission</td><td class="pass">Focused source proven</td><td>Explicit non-action dialogue cannot leak an executable KB mutation. Existing immediate wave execution holdouts remain green.</td><td>Recreate the exact ALEX “do not act yet” turn through speech ingress.</td></tr>
+      <tr><td>Grouped task meaning</td><td class="pass">Focused source proven</td><td>The authoritative target selection survives the nested plan envelope and is revalidated before orchestrator dispatch. Dead lexical grouped-task fallbacks were removed.</td><td>Clean runtime ordered and grouped cases.</td></tr>
+      <tr><td>Report closure</td><td class="partial">Source complete</td><td>Final evidence identifies selected members without successful execution evidence and rejects unsafe full-completion wording. Chatbot remains the default wording owner.</td><td>Grouped partial failure and blocked delivery speech holdouts.</td></tr>
+      <tr><td>Runtime score</td><td class="pending">Not reassigned</td><td>Focused gates passed 53 planner-common, 78 planner, 124 chatbot, 15 harness, and 2 pure KB-effect tests.</td><td>Clean rebuild from <code>iiia:nao</code>, orchestrator ROS tests, focused probes, then full and fake-deep matrices.</td></tr>
+    </tbody>
+  </table>
 </main>
 </body>
 </html>

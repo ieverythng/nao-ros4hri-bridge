@@ -792,3 +792,43 @@ Example:
   ]
 }
 ```
+
+## Authoritative Target Selection
+
+Grouped object requests may carry a bounded `target_selection` object in the
+planner request. This object records a selection that has already been resolved
+against the current `grounded_context`; it is not an executable plan.
+
+```json
+{
+  "target_selection": {
+    "selection_kind": "location_members",
+    "operation": "deliver",
+    "source_location_id": "work_table",
+    "member_ids": ["book_1", "cup_1"],
+    "recipient_id": "person_1",
+    "ordering": "none",
+    "report_policy": "final"
+  }
+}
+```
+
+The chatbot handoff may derive this contract only from structured intent fields
+and unambiguous grounded records. The planner verifies that every member is a
+grounded object, that location members belong to the stated location, and that a
+delivery recipient is a grounded person. Locations, support surfaces, and people
+remain anchors or recipients rather than deliverable objects.
+
+## Environment Fixture Contract
+
+Questionnaire fixtures must state an explicit robot location and an explicit
+location for every preloaded person, including the reciprocal
+`location oro:contains person` fact. The runtime harness retracts all current
+facts for the previous fixture's subjects when the conversation group changes.
+If absence cannot be verified, the following case is `not_scored` rather than
+being evaluated against a contaminated world.
+
+Operator SVGs follow the upstream `rqt_human_radar` loader contract. They use
+Inkscape-labelled `walls`, `zones`, and `static_objects` groups, millimetre-scale
+view boxes, and `name class` labels on every simulated static object. Selecting
+an SVG therefore loads both the visual map and its static simulated objects.

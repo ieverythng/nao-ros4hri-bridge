@@ -102,17 +102,36 @@ def test_questionnaire_metadata_records_grounded_context_digest(monkeypatch):
     assert metadata["turn_pipeline_mode_matches_expected"] is True
 
 
-def test_voice_speech_topic_uses_raw_per_voice_hri_namespace():
+def test_voice_speech_topic_uses_integrated_remap_for_shared_speaker():
     module = _load_questionnaire_module()
 
     assert (
         module._voice_speech_topic("anonymous_speaker")
-        == "/humans/voices/anonymous_speaker/speech"
+        == "/nao_chatbot/humans/voices/anonymous_speaker/speech"
     )
     assert (
         module._voice_speech_topic("fake_deep_lab_sections_1")
         == "/humans/voices/fake_deep_lab_sections_1/speech"
     )
+
+
+def test_posture_ablation_covers_body_postures_without_head_motion():
+    module = _load_questionnaire_module()
+
+    names = {case.name for case in module.POSTURE_ABLATION_CASES}
+    combined_text = " ".join(case.text.lower() for case in module.POSTURE_ABLATION_CASES)
+
+    assert names == {
+        "posture_stand_report",
+        "posture_sit_report",
+        "posture_kneel_report",
+        "posture_sequence_final_state",
+    }
+    assert all(
+        case.expected_outcome == "execute_no_clarification"
+        for case in module.POSTURE_ABLATION_CASES
+    )
+    assert "head" not in combined_text
 
 
 def test_complete_context_execution_fails_on_clarification():
@@ -172,6 +191,15 @@ def test_missing_person_wording_counts_as_clarification():
     )
 
 
+def test_execution_help_after_evidenced_failure_is_not_context_clarification():
+    module = _load_questionnaire_module()
+
+    assert not module.clarification_observed(
+        'act=ask_for_help reason=I could not navigate to codex_lab_book. '
+        'Could you help me?'
+    )
+
+
 def test_fallback_markers_track_report_and_kb_failures():
     module = _load_questionnaire_module()
 
@@ -184,6 +212,203 @@ def test_fallback_markers_track_report_and_kb_failures():
     assert markers["total"] >= 2
 
 
+def test_recovery_requires_speech_after_terminal_event():
+    module = _load_questionnaire_module()
+    case = module.ProbeCase(
+        "blocked_delivery",
+        "fake_deep",
+        "Bring the cup.",
+        expected_outcome="recover_or_truthful_failure",
+    )
+    observations = {
+        "turn_injected": True,
+        "terminal_observed": True,
+        "speech_observed": True,
+        "post_terminal_speech_observed": False,
+        "fallback_markers": {"total": 0},
+    }
+
+    result = module.assess_case(case, observations=observations, stale_world_guard=None)
+
+    assert result["status"] == "degraded"
+    assert "after terminal" in " ".join(result["reasons"])
+
+
+def test_failure_profile_is_not_scored_when_configured_failure_did_not_fire():
+    module = _load_questionnaire_module()
+    case = module.ProbeCase(
+        "grouped_delivery",
+        "fake_deep",
+        "Bring every object from the work table to ALEX.",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+    )
+    observations = {
+        "turn_injected": True,
+        "planner_request_observed": True,
+        "execution_feedback_observed": True,
+        "terminal_observed": True,
+        "speech_observed": True,
+        "post_terminal_speech_observed": True,
+        "clarification_observed": False,
+        "failure_observed": False,
+        "fallback_markers": {"total": 0},
+    }
+
+    result = module.assess_case(
+        case,
+        observations=observations,
+        stale_world_guard=None,
+        fake_policy_profile="fail_once_pick",
+    )
+
+    assert result["status"] == "not_scored"
+    assert "not exercised" in " ".join(result["reasons"])
+
+
+def test_phase_observations_expose_failure_and_replan_evidence():
+    module = _load_questionnaire_module()
+
+    observations = module.phase_observations(
+        mode="speech",
+        turn_result="published",
+        log_excerpt="step_failed status=failed\nplanner mode=replan plan_version=2",
+        topic_samples={},
+    )
+
+    assert observations["failure_observed"] is True
+    assert observations["replan_observed"] is True
+
+
+def test_case_evidence_excludes_unrelated_goal_lines():
+    module = _load_questionnaire_module()
+    logs = "\n".join(
+        [
+            "[100.0] source=voice_case goal_id=goal_current PLANNER_REQUEST",
+            "[101.0] goal_id=goal_current event_type=plan_completed",
+            "[102.0] goal_id=goal_old DEBUG_SPEECH_PUBLISHED",
+        ]
+    )
+
+    correlated = module.correlate_case_evidence(logs, voice_id="voice_case")
+    observations = module.phase_observations(
+        mode="speech",
+        turn_result="published",
+        log_excerpt=logs,
+        topic_samples={},
+        voice_id="voice_case",
+    )
+
+    assert "goal_current" in correlated
+    assert "goal_old" not in correlated
+    assert observations["terminal_observed"] is True
+    assert observations["speech_observed"] is False
+
+
+def test_case_evidence_includes_speech_inside_goal_scoped_report_step():
+    module = _load_questionnaire_module()
+    logs = "\n".join(
+        [
+            "[100.0] source=voice_case goal_id=goal_current PLANNER_REQUEST",
+            "[101.0] goal_id=goal_current event_type=step_started,step=report_result",
+            '[101.2] [ROBOT OUTPUT] "I arrived at the cup."',
+            "[101.3] goal_id=goal_current event_type=step_succeeded,step=report_result",
+            '[102.0] [ROBOT OUTPUT] "Unrelated speech."',
+        ]
+    )
+
+    correlated = module.correlate_case_evidence(logs, voice_id="voice_case")
+
+    assert "I arrived at the cup" in correlated
+    assert "Unrelated speech" not in correlated
+
+
+def test_dialogue_only_case_rejects_planner_handoff():
+    module = _load_questionnaire_module()
+    case = module.ProbeCase(
+        "non_action",
+        "route_safety",
+        "Remember ALEX, but do not act yet.",
+        expected_outcome="dialogue_only",
+    )
+
+    result = module.assess_case(
+        case,
+        observations={
+            "turn_injected": True,
+            "route_observed": True,
+            "speech_observed": True,
+            "planner_request_observed": True,
+            "execution_feedback_observed": False,
+            "fallback_markers": {"total": 0},
+        },
+        stale_world_guard=None,
+    )
+
+    assert result["status"] == "fail"
+    assert "leaked" in " ".join(result["reasons"])
+
+
+def test_complete_grouped_case_requires_target_selection_evidence():
+    module = _load_questionnaire_module()
+    case = module.ProbeCase(
+        "grouped",
+        "fake_deep",
+        "Bring every object from the table to ALEX.",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+    )
+
+    result = module.assess_case(
+        case,
+        observations={
+            "turn_injected": True,
+            "planner_request_observed": True,
+            "execution_feedback_observed": True,
+            "terminal_observed": True,
+            "speech_observed": True,
+            "clarification_observed": False,
+            "fallback_markers": {"total": 0},
+        },
+        stale_world_guard=None,
+    )
+
+    assert result["status"] == "fail"
+    assert "target_selection" in " ".join(result["reasons"])
+
+
+def test_complete_context_help_request_is_a_clarification_failure():
+    module = _load_questionnaire_module()
+    case = module.ProbeCase(
+        "grouped_delivery",
+        "fake_deep",
+        "Bring every object from the work table to ALEX.",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+    )
+    result = module.assess_case(
+        case,
+        observations={
+            "turn_injected": True,
+            "planner_request_observed": True,
+            "execution_feedback_observed": True,
+            "terminal_observed": True,
+            "speech_observed": True,
+            "clarification_observed": module.clarification_observed(
+                "act=ask_for_help I need help identifying the person named ALEX"
+            ),
+            "fallback_markers": {"total": 0},
+        },
+        stale_world_guard=None,
+    )
+
+    assert result["status"] == "fail"
+    assert result["reasons"] == [
+        "asked for clarification despite complete fixture context"
+    ]
+
+
 def test_fake_deep_iiia_floor_has_post_effect_location_followup_without_refixture():
     module = _load_questionnaire_module()
     cases = {case.name: case for case in module.FAKE_DEEP_CASES}
@@ -194,3 +419,253 @@ def test_fake_deep_iiia_floor_has_post_effect_location_followup_without_refixtur
     assert followup.category == "fake_deep_post_effect_query"
     assert followup.conversation_group == delivery.conversation_group
     assert followup.environment_ids == ()
+
+
+def test_phase_observations_extract_complete_target_selection():
+    module = _load_questionnaire_module()
+    observations = module.phase_observations(
+        mode="speech",
+        turn_result="published",
+        log_excerpt=(
+            "planner request target_selection={'selection_kind': 'explicit_members', "
+            "'operation': 'visit', 'member_ids': ['cup_1', 'book_1'], "
+            "'recipient_id': '', 'ordering': 'sequential', "
+            "'report_policy': 'per_target'} source=voice_case"
+        ),
+        topic_samples={},
+    )
+
+    assert observations["target_selection_observed"] is True
+    assert observations["target_selections"][0]["member_ids"] == ["book_1", "cup_1"]
+    assert observations["target_selections"][0]["report_policy"] == "per_target"
+
+
+def test_semantic_oracle_rejects_wrong_selected_member_set():
+    module = _load_questionnaire_module()
+    case = module.ProbeCase(
+        "ordered_objects",
+        "composite",
+        "Walk to every object.",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=("apple_1", "book_1", "phone_1"),
+        expected_report_policy="per_target",
+    )
+    result = module.assess_case(
+        case,
+        observations={
+            "turn_injected": True,
+            "planner_request_observed": True,
+            "execution_feedback_observed": True,
+            "target_selection_observed": True,
+            "target_selections": [
+                {
+                    "member_ids": ["table_1", "person_1"],
+                    "recipient_id": "",
+                    "report_policy": "per_target",
+                }
+            ],
+            "terminal_observed": True,
+            "speech_observed": True,
+            "clarification_observed": False,
+            "fallback_markers": {"total": 0},
+        },
+        stale_world_guard=None,
+    )
+
+    assert result["status"] == "fail"
+    assert "selected members differed" in " ".join(result["reasons"])
+
+
+def test_empty_target_selection_is_not_semantic_evidence():
+    module = _load_questionnaire_module()
+    observations = module.phase_observations(
+        mode="speech",
+        turn_result="published",
+        log_excerpt="planner request target_selection={} source=voice_case",
+        topic_samples={},
+    )
+
+    assert observations["target_selection_observed"] is False
+    assert observations["target_selections"] == []
+
+
+def test_fallback_markers_deduplicate_mirrored_rosout_lines():
+    module = _load_questionnaire_module()
+    evidence = "\n".join(
+        (
+            "1783999158.933 [node] [INFO] [1783999158.933366] "
+            "ROUTE_RESOLVED source=llm_response_route_repair turn=turn_1",
+            "[INFO] [1783999158.933366] ROUTE_RESOLVED "
+            "source=llm_response_route_repair turn=turn_1",
+            "[INFO] [1783999160.100000] ROUTE_RESOLVED "
+            "source=llm_response_route_repair turn=turn_2",
+        )
+    )
+
+    markers = module.fallback_markers(evidence)
+
+    assert markers["route_repair"] == 2
+    assert markers["total"] == 2
+
+
+def test_fixture_cleanup_uses_two_world_snapshots_and_filters_locally(monkeypatch):
+    module = _load_questionnaire_module()
+    query_calls = []
+    query_results = [
+        {
+            "raw_output": "before",
+            "rows": [
+                {
+                    "subject": "codex_cup",
+                    "predicate": "oro:isAt",
+                    "object": "codex_person",
+                },
+                {
+                    "subject": "unrelated",
+                    "predicate": "oro:isAt",
+                    "object": "elsewhere",
+                },
+            ],
+        },
+        {"raw_output": "after", "rows": []},
+    ]
+    revised = []
+
+    def fake_query(_container, *, patterns, query_vars, timeout_sec):
+        query_calls.append((patterns, query_vars, timeout_sec))
+        return query_results.pop(0)
+
+    def fake_revise(_container, _service, _service_type, request_yaml, *, timeout_sec):
+        revised.append(request_yaml)
+        return "success"
+
+    monkeypatch.setattr(module, "query_kb_rows", fake_query)
+    monkeypatch.setattr(module, "call_ros_service", fake_revise)
+    monkeypatch.setattr(module.time, "sleep", lambda _seconds: None)
+
+    result = module.retract_environment_fixtures(
+        "nao_ros2",
+        ("fixture",),
+        environment_fixtures={
+            "fixture": {
+                "statements": [
+                    "codex_cup rdf:type Cup",
+                    "codex_person rdf:type Human",
+                ]
+            }
+        },
+    )
+
+    assert len(query_calls) == 2
+    assert all(call[0] == ("?subject ?predicate ?object",) for call in query_calls)
+    assert "codex_cup oro:isAt codex_person" in revised[0]
+    assert "unrelated oro:isAt elsewhere" not in revised[0]
+    assert result["contaminated"] is False
+
+
+def test_case_injection_cleanup_retracts_post_effects_touching_fixture_subjects(monkeypatch):
+    module = _load_questionnaire_module()
+    query_results = [
+        {
+            "raw_output": "before",
+            "rows": [
+                {
+                    "subject": "codex_cup",
+                    "predicate": "oro:isAt",
+                    "object": "codex_person",
+                },
+                {
+                    "subject": "unrelated",
+                    "predicate": "oro:isAt",
+                    "object": "elsewhere",
+                },
+            ],
+        },
+        {"raw_output": "after", "rows": []},
+    ]
+    revised = []
+
+    monkeypatch.setattr(
+        module,
+        "query_kb_rows",
+        lambda *_args, **_kwargs: query_results.pop(0),
+    )
+    monkeypatch.setattr(
+        module,
+        "call_ros_service",
+        lambda _container, _service, _service_type, request_yaml, **_kwargs: (
+            revised.append(request_yaml) or "success"
+        ),
+    )
+    monkeypatch.setattr(module.time, "sleep", lambda _seconds: None)
+    injection = module.KbInjection(
+        object_id="case_fixture",
+        statements=(
+            "codex_cup rdf:type Cup",
+            "codex_person rdf:type Human",
+            "myself sees codex_cup",
+        ),
+        query_patterns=("codex_cup ?predicate ?object",),
+        query_vars=("?predicate", "?object"),
+    )
+
+    result = module.retract_kb_injections("nao_ros2", (injection,))
+
+    assert result["subjects"] == ["codex_cup", "codex_person"]
+    assert "codex_cup oro:isAt codex_person" in revised[0]
+    assert "unrelated oro:isAt elsewhere" not in revised[0]
+    assert result["contaminated"] is False
+
+
+def test_recovery_wait_requires_speech_after_terminal_event():
+    module = _load_questionnaire_module()
+    observations = {
+        "terminal_observed": True,
+        "speech_observed": True,
+        "post_terminal_speech_observed": False,
+        "clarification_observed": False,
+    }
+
+    assert module.case_wait_complete(observations, "all_success") is True
+    assert module.case_wait_complete(observations, "fail_once_navigation") is False
+
+    observations["post_terminal_speech_observed"] = True
+    assert module.case_wait_complete(observations, "fail_once_navigation") is True
+
+
+def test_recovery_wait_accepts_report_speech_after_failure_before_plan_completed():
+    module = _load_questionnaire_module()
+    observations = {
+        "terminal_observed": True,
+        "speech_observed": True,
+        "post_terminal_speech_observed": False,
+        "post_failure_speech_observed": True,
+        "clarification_observed": False,
+    }
+
+    assert module.case_wait_complete(observations, "fail_once_navigation") is True
+
+
+def test_post_failure_speech_excludes_initial_acknowledgement():
+    module = _load_questionnaire_module()
+    logs = "\n".join(
+        (
+            '[100.0] [ROBOT OUTPUT] "I will try that now."',
+            '[101.0] event_type=step_failed step=navigate_to',
+            '[102.0] [ROBOT OUTPUT] "I recovered and reached the cup."',
+            '[103.0] event_type=plan_completed',
+        )
+    )
+
+    assert module.post_failure_speech_observed(logs) is True
+
+
+def test_thesis_manifests_have_frozen_case_counts():
+    module = _load_questionnaire_module()
+
+    assert len(module.MAIN_QUESTIONNAIRE_CASES) == 21
+    assert len(module.ENVIRONMENT_CASES) == 11
+    assert len(module.FAKE_DEEP_CASES) == 9
+    assert len(module.ROBUSTNESS_CASES) == 5

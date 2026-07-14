@@ -301,7 +301,7 @@ File: csquotes.def 2024-04-04 v5.2o csquotes generic definitions (JAW)
 Package csquotes Info: Trying to load configuration file 'csquotes.cfg'...
 Package csquotes Info: ... configuration file loaded successfully.
  (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/csquotes/csquotes.cfg
-File: csquotes.cfg 
+File: csquotes.cfg
 )) (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/url/url.sty
 \Urlmuskip=\muskip18
 Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
@@ -977,18 +977,18 @@ Package biblatex Info: Redefining '\textcites'.
 Package biblatex Info: Trying to load configuration file...
 Package biblatex Info: ... file 'biblatex.cfg' found.
  (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/biblatex/biblatex.cfg
-File: biblatex.cfg 
+File: biblatex.cfg
 )
 Package biblatex Info: Input encoding 'utf8' detected.
 Package biblatex Info: Document encoding is UTF8 ....
  (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/l3kernel/expl3.sty
-Package: expl3 2026-01-19 L3 programming layer (loader) 
+Package: expl3 2026-01-19 L3 programming layer (loader)
  (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 File: l3backend-pdftex.def 2025-10-09 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count505
 ))
 Package biblatex Info: ... and expl3
-(biblatex)             2026-01-19 L3 programming layer (loader) 
+(biblatex)             2026-01-19 L3 programming layer (loader)
 (biblatex)             is new enough (at least 2020/04/06),
 (biblatex)             setting 'casechanger=expl3'.
  (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/biblatex/blx-case-expl3.sty (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/l3packages/xparse/xparse.sty
@@ -1027,7 +1027,7 @@ LaTeX Font Info:    ... okay on input line 116.
 * paper: a4paper
 * layout: <same size as paper>
 * layoutoffset:(h,v)=(0.0pt,0.0pt)
-* modes: 
+* modes:
 * h-part:(L,W,R)=(62.59605pt, 472.31577pt, 62.59605pt)
 * v-part:(T,H,B)=(62.59605pt, 719.85474pt, 62.59605pt)
 * \paperwidth=597.50787pt
@@ -1137,8 +1137,8 @@ Package microtype Info: Loading generic protrusion settings for font family
 
 {/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/map/pdftex/updmap/pdftex.map}{/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/enc/dvips/tex-gyre/q-ec.enc}{/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc} <./images/uab_logo-gs.png>] (./sections/00_abstract.tex)
 pdfTeX warning (ext4): destination with the same identifier (name{page.i}) has been already used, duplicate ignored
-<to be read again> 
-                   \relax 
+<to be read again>
+                   \relax
 l.146 \clearpage
                  [1
 
@@ -1674,7 +1674,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 168--168
 
 ]
 Overfull \hbox (2.8396pt too wide) in paragraph at lines 188--188
-\T1/cmr/m/n/12 (-20) manoid: a com-bi-na-tion of per-for-mance and af-ford-abil-ity^^Q. In: \T1/cmr/m/it/12 (-20) arXiv preprint arXiv:0807.3223\T1/cmr/m/n/12 (-20) . 
+\T1/cmr/m/n/12 (-20) manoid: a com-bi-na-tion of per-for-mance and af-ford-abil-ity^^Q. In: \T1/cmr/m/it/12 (-20) arXiv preprint arXiv:0807.3223\T1/cmr/m/n/12 (-20) .
  []
 
 [63
@@ -1690,7 +1690,7 @@ Package rerunfilecheck Info: File `main.out' has not changed.
 Package logreq Info: Writing requests to 'main.run.xml'.
 \openout1 = `main.run.xml'.
 
- ) 
+ )
 Here is how much of TeX's memory you used:
  48997 strings out of 467525
  1090166 string characters out of 5408440
@@ -1706,4 +1706,3 @@ PDF statistics:
  1310 compressed objects within 14 object streams
  416 named destinations out of 1000 (max. 500000)
  62259 words of extra memory for PDF output out of 74296 (max. 10000000)
-

@@ -476,8 +476,32 @@ and TFM fake-skill validation sub-plans were moved to
 
 ## 10. Immediate Next Session Checklist
 
-1. Rebuild the response-first container and run the runtime-review main
-   questionnaire plus the architecture sweep.
+### 13 July runtime-closure implementation
+
+- Runtime-proven for focused fixtures: semantic fixture labels no longer
+  collapse `codex_*` ids; fixture validation requires robot and person
+  locations; simulator SVGs now implement the upstream ROS4HRI map schema.
+- Runtime-proven for work-table delivery: planner requests carry a bounded
+  `target_selection` contract. Group delivery expands only grounded members and
+  rejects support, location, or person targets as objects.
+- Runtime-proven for blocked delivery: the supervisor permits one retry after a
+  transient blocking failure, then rejects an unchanged plan after the same
+  blocking failure recurs.
+- Runtime-proven for blocked delivery: `place_object` cannot replace a required
+  person handoff with placement on another support. A person also cannot be a
+  support, and the report contract converts such evidence into failure rather
+  than user-facing success.
+- Focused runtime-proven: recovery scoring requires timestamped
+  speech after terminal evidence, and fixture groups are retracted and verified
+  between independent cases.
+- No chatbot or planner prompt text changed. A bounded SkillOpt mutation remains
+  conditional on structural holdouts failing after a clean rebuild.
+- Fail-once pick now survives `object_id`/`target` alias changes and succeeds on
+  the second attempt. The remaining replan defect is KB confirmation of the
+  subsequent placement support.
+
+1. Run the uninterrupted response-first main questionnaire plus architecture
+   sweep on the accepted clean image.
 2. Run `run_active_questionnaire.py --case-set environment` and archive the
    JSON artifact with the runtime review notes.
 3. Add location-group probes: “what is in the kitchen?”, “bring every object

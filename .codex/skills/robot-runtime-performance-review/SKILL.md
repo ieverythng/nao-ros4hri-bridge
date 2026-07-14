@@ -166,6 +166,24 @@ python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questi
   --out /tmp/nao_main_questionnaire.json
 ```
 
+After the source and case definitions are frozen, run the five-case robustness
+set three times with independent group-scoped voices. Do not adapt the runtime
+between repetitions:
+
+```bash
+python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
+  --container nao_ros2 \
+  --case-set robustness \
+  --speech-voice-scope group \
+  --expected-turn-pipeline-mode response_first \
+  --out /tmp/nao_robustness_r1.json
+```
+
+The set checks paraphrased grouped delivery, object/person/support role
+separation, missing-recipient clarification, dialogue-to-execution leakage, and
+multi-turn target carry-over. Preserve all three full-set artifacts; an isolated
+rerun may diagnose a non-pass but does not replace it.
+
 For deterministic preloaded-scene validation, use named KnowledgeCore fixtures
 before or during the questionnaire. These fixtures mirror the ROS4HRI
 interaction simulator semantics (`rdf:type`, `myself sees`, `isIn`, `isOn`,

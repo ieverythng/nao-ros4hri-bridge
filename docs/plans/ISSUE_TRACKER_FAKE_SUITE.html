@@ -181,12 +181,36 @@
     </tbody>
   </table>
 
+  <h2>13 July Source And Clean Runtime Checkpoint</h2>
+  <table>
+    <thead><tr><th>Seam</th><th>Status</th><th>Implemented behavior</th><th>Remaining proof</th></tr></thead>
+    <tbody>
+      <tr><td>Fixture isolation</td><td class="partial">Source complete</td><td>Independent conversation groups retract all current facts for prior fixture subjects and verify absence. Failed cleanup becomes <code>not_scored</code>.</td><td>Run the complete ladder and confirm no competing ALEX or location fixtures remain.</td></tr>
+      <tr><td>Grouped target selection</td><td class="pass">Runtime proven</td><td>A bounded <code>target_selection</code> expanded grounded work-table members and one person recipient without clarification.</td><td>Repeat the IIIA kitchen variant.</td></tr>
+      <tr><td>Repeated blocking replan</td><td class="pass">Runtime proven</td><td>Blocked delivery retried the grounded handoff once, then produced chatbot-authored help without claiming completion.</td><td>Keep as a regression holdout.</td></tr>
+      <tr><td>Recovery evidence</td><td class="pass">Runtime proven</td><td>Fresh speech-mode artifacts require and recorded user-facing closure after terminal evidence.</td><td>Extend the same correlation to every failure profile.</td></tr>
+      <tr><td>Fail-once pick</td><td class="partial">Second attempt proven</td><td>The counter now treats <code>object_id</code> and <code>target</code> as the same object. The second pick succeeded after the first failed.</td><td>Fix the subsequent replan placement-support KB confirmation.</td></tr>
+      <tr><td>Operator SVG</td><td class="partial">Schema corrected</td><td>Maps now use upstream <code>rqt_human_radar</code> groups, millimetre scale, and semantic object labels.</td><td>Select each installed map in rqt and capture one rendered scene.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>14 July Semantic Harness Closure</h2>
+  <table>
+    <thead><tr><th>Seam</th><th>Status</th><th>Source evidence</th><th>Runtime gate</th></tr></thead>
+    <tbody>
+      <tr><td>Selected-set admission</td><td class="pass">Source proven</td><td>Visit and delivery plans must exactly preserve selected object members and the grounded person recipient at planner and orchestrator boundaries.</td><td>Repeat ordered table walk, work-table delivery, and IIIA kitchen delivery.</td></tr>
+      <tr><td>Failure-policy scoring</td><td class="pass">Harness proven</td><td>Configured failures that do not fire are <code>not_scored</code>; recovery closure requires correlated speech after terminal evidence.</td><td>Run all-success, fail-once navigation, fail-once pick, and blocked delivery on clean containers.</td></tr>
+      <tr><td>Fixture isolation</td><td class="partial">Source strengthened</td><td>Cleanup retracts and verifies incoming and outgoing fixture relations instead of checking only fixture subjects.</td><td>Confirm no duplicate ALEX, inferred location, or cross-fixture <code>placeOf</code> residue remains.</td></tr>
+      <tr><td>KB post-effects</td><td class="partial">Type gate proven</td><td>Spatial projection recognizes containing places from KnowledgeCore type evidence and no longer infers a place from an identifier such as <code>Kitchen</code>.</td><td>Container ROS test plus grouped delivery location follow-up.</td></tr>
+    </tbody>
+  </table>
+
   <h2 id="artifacts">Artifact Contract</h2>
   <table>
     <thead><tr><th>Artifact</th><th>Required fields</th><th>Pass condition</th></tr></thead>
     <tbody>
       <tr><td>Questionnaire JSON</td><td><code>runtime_metadata.fake_policy_profile</code>, <code>environment_fixture_source</code>, case <code>setup_result.environment</code>, per-case logs, and speech/trace samples when enabled.</td><td>The artifact proves which scenario and fake policy were active for every case.</td></tr>
-      <tr><td>Phase observations</td><td>Per-case <code>phase_observations.turn_injected</code>, <code>route_observed</code>, <code>planner_request_observed</code>, <code>execution_feedback_observed</code>, <code>terminal_observed</code>, and <code>speech_observed</code>, refreshed during long waits. The runner only short-circuits a case after both terminal and speech evidence are present.</td><td>A failure can be assigned to ingress, route, planner handoff, execution, terminal policy, or speech instead of looking like a generic hang.</td></tr>
+      <tr><td>Phase observations</td><td>Per-case route, planner, execution, terminal, speech, and <code>post_terminal_speech_observed</code> evidence, refreshed during long waits.</td><td>A recovery pass requires closure after terminal evidence, not only an initial acknowledgement.</td></tr>
       <tr><td>Stale-world guard</td><td>Per-case <code>stale_world_guard.contaminated</code>, query patterns, row counts, and raw <code>/kb/query</code> evidence for absent-target cases.</td><td>Missing-object and missing-recipient tests are skipped as contaminated when stale KnowledgeCore facts already match the target before the user turn.</td></tr>
       <tr><td>Plan outcome summary</td><td><code>completed_targets</code>, <code>failed_targets</code>, <code>pending_targets</code>, <code>last_successful_step_id</code>, <code>terminal_step_id</code>, <code>terminal_reason</code>, and <code>all_required_steps_succeeded</code>.</td><td>Report-result wording has structured executor evidence and must not claim all required targets succeeded when pending or failed targets remain.</td></tr>
       <tr><td>KB evidence</td><td><code>/kb/revise</code> result, <code>/kb/query</code> confirmation, and post-action query for effects.</td><td>Post-conditions match the expected object, holder, location, or absence state.</td></tr>

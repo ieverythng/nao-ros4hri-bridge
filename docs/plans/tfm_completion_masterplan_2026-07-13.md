@@ -95,8 +95,8 @@ The TFM is closed only when all of the following are true:
 - A frozen detector-enabled profile for object-recognition evidence; the cool
   profile's disabled detector cannot be scored as a detector failure.
 - Final per-case CSV/JSON summaries generated from saved traces.
-- A declared policy for whether the direct-execution comparison promised in the
-  abstract is implemented, replaced with a static/no-replan baseline, or removed.
+- The direct path is retained as an atomic orchestrator safety control. It is
+  not used as a causal planner baseline, and the abstract comparison promise is removed.
 - Exact repetitions, seeds, timeout policy, and statistical treatment.
 
 ## 5. Chapter Closure Matrix
@@ -109,11 +109,11 @@ The TFM is closed only when all of the following are true:
 | 3 Architecture | Strong diagrams and requirements | Terminology and typo pass; ensure future components are visually marked | Architecture agrees with current contracts and grayscale output |
 | 4 Runtime Contracts | Detailed and largely complete | Repair formatting artifacts; verify examples and types against frozen source; add breakable long identifiers | Contract examples validate and no overfull critical text remains |
 | 5 Implementation | Expanded; hand edits in progress | Apply IIIAV3 precision corrections, add provenance/API inventory, supervisor invariants, truthful reporting mechanism, observability, and final configuration table | Every major claim points to source/config/interface evidence |
-| 6 Validation Methodology | Reproducible protocol with fixed unit, profiles, manifests, acceptance rules, reset policy, metrics, score, evidence bundle, and threats | Add the final holdout manifest and freeze the scored configuration tuple | Another researcher can repeat and score the suite |
-| 7 Results | Evidence-set chapter populated with F28, F08, F10, and F11 | Replace ledger-only provenance with stable run hashes; add aggregate graphics, latency/dispersion, and RQ-organised synthesis | Every number has a durable artifact and denominator |
-| 8 Discussion | Short preliminary interpretation | Expand by RQ, compare with literature, explain modularity/recovery/grounding trade-offs, separate findings from speculation | Claims do not exceed evidence |
-| 9 Limitations and Future Work | Very short | Separate observed limitations, scope limits, and future extensions; include detector, hardware, model, fixture, and evaluation threats | No thesis-blocking task is disguised as future work |
-| 10 Conclusion | Preliminary | Rewrite after Results/Discussion; answer each RQ and state contributions in past tense | Contains no new result or future-tense promise |
+| 6 Validation Methodology | Reproducible protocol with validation depths, twenty-one-case main manifest, five-case robustness set, semantic metrics, operational index, evidence bundle, and threats | Freeze the scored configuration tuple | Another researcher can repeat and score the suite |
+| 7 Results | F28/F08/F10/F11 plus F13 semantic re-audit and F14 focused hardening evidence | Add the final frozen aggregate and generated graphics | Every number has a durable artifact and denominator |
+| 8 Discussion | Reconciled with trajectory-versus-semantic evidence | Add final literature comparison after the frozen run | Claims do not exceed evidence |
+| 9 Limitations and Future Work | Observed and scope limitations separated from extensions | Reconcile with final detector and physical evidence | No thesis-blocking task is disguised as future work |
+| 10 Conclusion | Updated with qualified RQ findings | Recheck after the frozen aggregate | Contains no new result or future-tense promise |
 | Appendices | Minimal | Add frozen manifest, runtime/config table, interface inventory or generated registry table, commands, and artifact index | Main text stays readable while reproduction details remain available |
 
 ## 6. IIIAV3 Correction Register
@@ -125,9 +125,9 @@ The TFM is closed only when all of the following are true:
 - [x] **TFM-C02:** Keep internal registry decomposition terminology out of the
   TFM-facing vocabulary. Describe the reviewed skill registry, runtime
   availability, executor mappings, and skill contracts directly.
-- [ ] **TFM-C03:** Decide the direct-execution baseline. Implement a fair atomic
-  baseline, substitute an explicitly defined static/no-replan baseline, or
-  remove the comparison promise from the abstract.
+- [x] **TFM-C03:** Retain direct atomic execution as an orchestrator safety
+  control, remove the unsupported causal comparison promise, and exclude it
+  from planner performance scoring.
 - [x] **TFM-C04:** Freeze the experimental unit as one execution under a fixed
   tuple of utterance, profile, fixture, model, prompt revision, skill policy,
   seed, and source revision.
@@ -212,8 +212,8 @@ The TFM is closed only when all of the following are true:
   and timeout count; retain mean only as a supplementary statistic.
 - [x] **TFM-M08:** Define repetitions, seeds, exclusions, infrastructure retry
   policy, missing events, `degraded`, `fail`, and `not run` denominators.
-- [ ] **TFM-M09:** Add the final holdout prompt manifest. Threats to validity
-  are complete.
+- [x] **TFM-M09:** Add the frozen five-case robustness manifest and repetition
+  policy. Threats to validity are complete.
 
 ### P1: Chapter 7 evidence synthesis
 
@@ -223,11 +223,12 @@ The TFM is closed only when all of the following are true:
   strict-KB, and F11 alternate-model evidence tables with explicit denominators.
 - [x] **TFM-R03:** Add the ROS4HRI and runtime-contract preservation table.
 - [ ] **TFM-R04:** Move ledger-only run provenance into stable, hashed evidence
-  bundles and replace temporary artifact identifiers.
+  bundles and replace temporary artifact identifiers. F13 and F14 are bundled;
+  F28, F08, F10, F11, and the final run remain.
 - [ ] **TFM-R05:** Add final profile, policy-heatmap, latency, and phase-completion
   graphics from checked-in summaries.
-- [ ] **TFM-R06:** Complete the RQ-to-evidence matrix and reconcile Chapters
-  7--10 against the frozen canonical run.
+- [x] **TFM-R06:** Add the RQ-to-profile/metric map, qualified RQ result matrix,
+  and reconcile Chapters 7--10. Recheck values after the frozen canonical run.
 
 ### P2: Presentation and references
 
@@ -402,13 +403,14 @@ frozen experiment or be explicitly qualified.
 
 1. Preserve the current Chapter 5 hand-edit diff and review its ownership
    wording against the architectural guardrails.
-2. Decide whether the direct-execution comparison remains in scope.
-3. Complete the RQ-to-metric and RQ-to-evidence map.
-4. Convert the June/July ledger records selected in Chapter 7 into stable,
+2. Freeze the final source, container, model, prompt, registry, and fixture tuple.
+3. Run the twenty-one-case main, environment, deterministic-policy, and
+   three-repeat robustness profiles.
+4. Convert the remaining June/July ledger records selected in Chapter 7 into stable,
    hashed evidence bundles; mark each artifact `reuse`, `rerun`, or `exclude`.
-5. Freeze the holdout manifest and the scored configuration tuple.
-6. Generate Chapter 7 graphics from checked-in aggregate tables, then reconcile
-   Chapters 8--10 with the final evidence set.
+5. Run the separately scored detector profile.
+6. Generate Chapter 7 graphics from checked-in final aggregates and recheck
+   Chapters 8--10.
 
 ## 13. Progress Log
 
@@ -420,3 +422,4 @@ frozen experiment or be explicitly qualified.
 | 2026-07-13 | Reconciled Contracts 1--9, added the complete runtime-skill table, expanded direct and planner orchestrator ingress, grounded the custom YOLO and KB-effect paths, and documented the simulator and robot/RViz profiles | `TFM-I19`, `TFM-I20`, `TFM-I21`, `04_runtime_contracts.tex`, `05_implementation.tex`, `11_appendix.tex` |
 | 2026-07-13 | Registry verification identified generated-projection drift in `walk_to` and `wave_greet`; retained canonical entries as the thesis authority and opened a final-source synchronization gate | `TFM-I22`, `check_skill_registry_consistency.py`, `sync_skill_registry_views.py --check` |
 | 2026-07-13 | Rebuilt Chapter 6 as a fixed evaluation protocol and replaced Chapter 7's status narrative with evidence-set results, explicit denominators, the 1--10 run score, and ROS4HRI contract checks | `TFM-C04`, `TFM-C05`, `TFM-M01`--`TFM-M08`, `TFM-R01`--`TFM-R03`, `06_validation_methodology.tex`, `07_results.tex`, `build/main.pdf` |
+| 2026-07-14 | Added validation-depth boundaries, exact target-selection grading, the twenty-one-case main and five-case robustness manifests, hash-addressed F13/F14 bundles, trajectory-versus-semantic results, and qualified RQ synthesis | `TFM-C03`, `TFM-M09`, `TFM-R06`, `docs/evaluation/runs/F13_semantic_audit`, `docs/evaluation/runs/F14_targeted_hardening` |
