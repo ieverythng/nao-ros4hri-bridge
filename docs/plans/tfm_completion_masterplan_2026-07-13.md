@@ -147,18 +147,19 @@ The TFM is closed only when all of the following are true:
   schema version only if it is consistently versioned in source and artifacts.
 - [x] **TFM-I05:** Define `response_first` and `intent_first`: stage order,
   route authority, shared prompt context, and baseline/ablation role.
-- [ ] **TFM-I06:** Add planner output admission pseudocode: prompt, extraction,
-  normalization, deterministic validation, bounded repair, publish/fail.
-- [ ] **TFM-I07:** Expand supervisor invariants and state transitions for
+- [x] **TFM-I06:** Document the planner output-admission sequence: prompt,
+  extraction, normalization, deterministic validation, bounded repair, and
+  publish/fail outcomes.
+- [x] **TFM-I07:** Expand planning-state helper invariants and transitions for
   `goal_id`, `plan_id`, `plan_version`, stable `step_id`, waiting, cancellation,
   supersede, stale feedback, and replan join.
-- [ ] **TFM-I08:** Describe planner-time summary stripping/rejection for
+- [x] **TFM-I08:** Describe planner-time summary stripping/rejection for
   `report_result` and executor-side construction from live result payloads.
-- [ ] **TFM-I09:** Describe planner-gate admission, dialogue-act deduplication,
+- [x] **TFM-I09:** Describe planner-gate admission, dialogue-act deduplication,
   execution report accumulation, and the orchestrator's non-planning boundary.
-- [ ] **TFM-I10:** Replace “stabilises object identities” with the implemented
+- [x] **TFM-I10:** Replace “stabilises object identities” with the implemented
   matching/recency behaviour and define `visible`/freshness semantics.
-- [ ] **TFM-I11:** Document fake-policy precedence and metadata. Retain KB guards
+- [x] **TFM-I11:** Document fake-policy precedence and metadata. Retain KB guards
   and post-effects only where final source and tests prove them.
 - [ ] **TFM-I12:** Add final runtime configuration and SkillOpt definition.
 - [x] **TFM-I13:** Ground the `dialogue_manager` subsection in its ROS4HRI
@@ -420,3 +421,4 @@ frozen experiment or be explicitly qualified.
 | 2026-07-13 | Reconciled Contracts 1--9, added the complete runtime-skill table, expanded direct and planner orchestrator ingress, grounded the custom YOLO and KB-effect paths, and documented the simulator and robot/RViz profiles | `TFM-I19`, `TFM-I20`, `TFM-I21`, `04_runtime_contracts.tex`, `05_implementation.tex`, `11_appendix.tex` |
 | 2026-07-13 | Registry verification identified generated-projection drift in `walk_to` and `wave_greet`; retained canonical entries as the thesis authority and opened a final-source synchronization gate | `TFM-I22`, `check_skill_registry_consistency.py`, `sync_skill_registry_views.py --check` |
 | 2026-07-13 | Rebuilt Chapter 6 as a fixed evaluation protocol and replaced Chapter 7's status narrative with evidence-set results, explicit denominators, the 1--10 run score, and ROS4HRI contract checks | `TFM-C04`, `TFM-C05`, `TFM-M01`--`TFM-M08`, `TFM-R01`--`TFM-R03`, `06_validation_methodology.tex`, `07_results.tex`, `build/main.pdf` |
+| 2026-07-14 | Completed the remaining Chapter 5 precision slice, including planner admission and reporting guards, planning-state helper boundaries, orchestrator APIs, detector freshness semantics, fake-policy precedence, and caption-free vector exports for the full-stack, orchestrator, and grounding figures | `TFM-I06`--`TFM-I11`, `04_runtime_contracts.tex`, `05_implementation.tex`, `thesis_high_level_full_stack_diagram_2026-07-06.tex`, `thesis_node_level_diagrams_2026-07-06.tex`, `build/main.pdf` |

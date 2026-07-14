@@ -13,6 +13,12 @@
 \DeclareRobustCommand{\code}[1]{\texttt{\detokenize{#1}}}
 \captionsetup{font=small,labelfont=bf}
 \setlength{\emergencystretch}{4em}
+\newif\ifexportdiagrams
+\ifdefined\EXPORTDIAGRAMS
+  \exportdiagramstrue
+\else
+  \exportdiagramsfalse
+\fi
 
 % Matches the colour language already used by the thesis runtime section:
 % dialogue = blue, grounding/evidence = orange, planning = green,
@@ -82,6 +88,7 @@
 }
 
 \begin{document}
+\ifexportdiagrams\pagestyle{empty}\fi
 
 % Add \usepackage{pdflscape} to main.tex, then paste the landscape figure.
 
@@ -191,8 +198,10 @@
   };
 \end{tikzpicture}%
 }
-\caption{High-level full-stack architecture of the implemented NAO ROS4HRI bridge. The diagram complements the runtime sequence view by emphasizing subsystem ownership, deployment boundaries, ROS contract buses, validation seams, and the future World Model Enricher. The colour coding follows the thesis runtime section: dialogue components are blue, grounding and evidence are orange, planning is green, execution is purple, and skill/adaptor nodes are neutral grey.}
-\label{fig:full-stack-architecture-plate}
+\ifexportdiagrams\else
+  \caption{High-level full-stack architecture of the implemented NAO ROS4HRI bridge. The diagram complements the runtime sequence view by emphasizing subsystem ownership, deployment boundaries, ROS contract buses, validation seams, and the future World Model Enricher. The colour coding follows the thesis runtime section: dialogue components are blue, grounding and evidence are orange, planning is green, execution is purple, and skill/adaptor nodes are neutral grey.}
+  \label{fig:full-stack-architecture-plate}
+\fi
 \end{figure}
 \end{landscape}
 

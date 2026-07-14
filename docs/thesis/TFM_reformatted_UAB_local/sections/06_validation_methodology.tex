@@ -17,7 +17,7 @@ The independent variables are the turn-pipeline mode, case set, fixture, detecto
 
 \section{Validation Depth and Claim Boundaries}
 
-The runtime harness separates five evidence depths. A result at one depth does not imply the next. This distinction became necessary because a turn may traverse every expected ROS interface while preserving the wrong target set or an inconsistent symbolic post-state.
+The runtime harness separates five evidence depths. A result at one depth does not imply the next because a turn may traverse every expected ROS interface while preserving the wrong target set or an inconsistent symbolic post-state.
 
 \begin{table}[H]
 \centering
@@ -183,7 +183,7 @@ The deterministic policy ladder is \code{all_success}, \code{fail_once_navigatio
 
 \section{Robustness Set and Repetition}
 
-Five language variants are frozen after source hardening and are not used to select further implementation changes before the final run. They test a paraphrased grouped delivery, explicit exclusion of person and support targets, complete whole-chain reporting, a missing recipient, and a dialogue-only future instruction followed by an explicit execution turn. The compact set is repeated three times with independent dialogue groups. The exhaustive main, environment, and deterministic-policy profiles are run once; every degraded or failed case is repeated once in isolation. The full-sweep status remains primary, while the isolated result diagnoses case interaction or nondeterminism.
+Five language variants are frozen after source hardening and excluded from subsequent implementation selection. They test a paraphrased grouped delivery, explicit exclusion of person and support targets, complete whole-chain reporting, a missing recipient, and a dialogue-only future instruction followed by an explicit execution turn. The compact set is repeated three times with independent dialogue groups. The exhaustive main, environment, and deterministic-policy profiles are run once; every degraded or failed case is repeated once in isolation. The full-sweep status remains primary, while the isolated result diagnoses case interaction or nondeterminism.
 
 \begin{table}[H]
 \centering
