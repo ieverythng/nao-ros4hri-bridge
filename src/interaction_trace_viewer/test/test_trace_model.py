@@ -1,6 +1,11 @@
 from interaction_trace_viewer.trace_model import InteractionEvent
 from interaction_trace_viewer.trace_model import TraceRecorder
 
+try:
+    from interaction_trace_viewer.trace_node import _clip_trace_line
+except ModuleNotFoundError:  # pragma: no cover - rclpy is absent in plain host unit runs
+    _clip_trace_line = None
+
 
 def test_trace_recorder_starts_trace_on_user_utterance() -> None:
     recorder = TraceRecorder()
@@ -86,3 +91,10 @@ def test_trace_recorder_closes_trace_on_dialogue_act() -> None:
     assert one.trace_id is not None
     assert two.trace_id is not None
     assert two.trace_id != one.trace_id
+
+
+def test_clip_trace_line_keeps_short_lines_and_marks_truncation() -> None:
+    if _clip_trace_line is None:
+        return
+    assert _clip_trace_line('short trace', 20) == 'short trace'
+    assert _clip_trace_line('abcdef', 4) == 'a...'

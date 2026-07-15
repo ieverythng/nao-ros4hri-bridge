@@ -1,0 +1,11 @@
+trace_id,event_count,duration_sec,planner_output_count,feedback_count,dialogue_act_count,final_status,completed
+__default__:11,1,0.0,0,0,0,,False
+__default__:12,2,72.711,0,0,0,,False
+__default__:2,2,0.253,0,0,0,,False
+goal_default___10,8,4.927,0,8,0,completed,True
+goal_probe_01_success_default,12,6.152,2,8,2,failed,False
+goal_probe_04_spatial_near_object,12,6.166,2,8,2,failed,False
+goal_probe_05_spatial_far_object,1,0.0,0,0,0,,False
+goal_probe_06_random_seeded_stress,1,0.0,0,0,0,,False
+trace_0001,6,12.661,0,0,0,,False
+trace_0002,4,6.154,0,0,0,,False

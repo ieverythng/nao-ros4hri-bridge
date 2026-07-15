@@ -474,7 +474,9 @@ ros2 topic echo /planner/dialogue_act
 - `docs/current_workflow.md`: canonical architecture and diagrams.
 - `docs/contracts.md`: rich contract examples and interpretation notes.
 - `docs/launch_profiles.md`: launch matrix and operator commands.
-- `docs/planner_status.md`: current planner diagnosis, limitations, and next actions.
+- `docs/plans/nao_ros4hri_masterplan.md`: current planner diagnosis,
+  limitations, and next actions.
+- `docs/plans/ISSUE_TRACKER_FULL_SUITE.html`: runtime-readiness tracker.
 - `docs/artifacts/monday_demo.md`: archived demo checklist and observable topic path.
 - `docs/README.md`: docs governance, including the `.md` + `.html` pairing rule for plan docs.
 - `docs/artifacts/`: historical handoffs, integration notes, and old ledgers.

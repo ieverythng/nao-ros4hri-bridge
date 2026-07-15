@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deep Fake JSON-Only Review - 2026-07-07</title>
+  <style>
+    body { margin:0; background:#f7f8fb; color:#1f2430; font-family:Arial,sans-serif; line-height:1.5; }
+    main { max-width:1040px; margin:auto; padding:32px 22px 72px; }
+    h1 { margin:0 0 6px; }
+    h2 { margin-top:28px; padding-top:18px; border-top:1px solid #ccd3dd; }
+    .note { background:#fff; border-left:5px solid #235b8c; padding:12px 16px; }
+    table { width:100%; border-collapse:collapse; background:#fff; }
+    th, td { border:1px solid #ccd3dd; padding:9px 10px; text-align:left; vertical-align:top; }
+    th { background:#e9edf3; }
+    code { background:#e7ecf2; padding:1px 4px; }
+    pre { background:#1f2430; color:#f7f8fb; padding:14px 16px; overflow:auto; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Deep Fake JSON-Only Review</h1>
+  <p class="note">7 July 2026. This review separates the healthy response-first control from the stricter JSON-only fake-deep score and records the source fixes that still require a rebuilt runtime proof.</p>
+
+  <h2>Evaluation Rule</h2>
+  <p>Clarification is correct when information is missing. It is a regression when the preloaded fixture already provides the source location, recipient, and grounded member objects. The active questionnaire now records that distinction with <code>expected_outcome</code> and <code>all_required_context</code>.</p>
+  <p>The rule follows agent-evaluation practice: grade both final outcome and action trajectory, keep environment interfaces explicit, and avoid prompt churn when the failure is structural. See Anthropic's <a href="https://www.anthropic.com/engineering/building-effective-agents">Building effective agents</a> and <a href="https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents">Demystifying evals for AI agents</a>.</p>
+
+  <h2>Runtime Evidence</h2>
+  <table>
+    <thead><tr><th>Artifact</th><th>Finding</th></tr></thead>
+    <tbody>
+      <tr><td><code>/tmp/nao_fake_deep_questionnaire_20260707_digest_enabled_current.json</code></td><td>Digest-enabled response-first control passed 8/8 cases. Keep as control, not JSON-only verdict.</td></tr>
+      <tr><td><code>/tmp/nao_fake_deep_all_success_json_only_scored_20260707.json</code></td><td>Initial JSON-only strict run passed 4/8. Complete-context clarifications are now scored as failures.</td></tr>
+      <tr><td><code>/tmp/nao_fake_deep_grouped_delivery_json_only_resliced_20260707.json</code></td><td>Focused rerun confirmed the grouped work-table clarification was real before the planner metadata patch.</td></tr>
+      <tr><td><code>/tmp/nao_fake_deep_round2_all_success_shared_20260707.json</code></td><td>Rebuilt all-success proof passed behaviorally. The old scorer marked the BLAKE case failed, but the runtime clarified before planner handoff and emitted no execution feedback.</td></tr>
+      <tr><td><code>/tmp/nao_fake_deep_round3_fail_once_navigation_shared_20260707.json</code></td><td>Rebuilt fail-once navigation proof passed 8/8 with severe fallback classes at zero.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Source Fixes</h2>
+  <table>
+    <thead><tr><th>Seam</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td>Harness log slicing</td><td>Extract Unix-style timestamps from ROS log bodies instead of trusting the first whitespace token.</td></tr>
+      <tr><td>Location matching</td><td>Prefer specific grounded labels and aliases such as <code>work_table</code> over generic support labels such as <code>table</code>.</td></tr>
+      <tr><td>Location members</td><td>Keep movable user objects that also carry <code>cyc:SpatialThing-Localized</code> when RDF type facts identify a deliverable object.</td></tr>
+      <tr><td>Repeated people</td><td>Resolve repeated named people by relation scope first and stable fixture namespace only as a tie-breaker.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Source Gate</h2>
+  <pre>planner_llm: 40 passed
+planner_common: 35 passed
+runtime-review harness: 7 passed
+py_compile: passed</pre>
+
+  <h2>Next Runtime Gate</h2>
+  <pre>python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
+  --container nao_ros2 \
+  --case-set fake_deep \
+  --speech-voice-scope group \
+  --fake-policy-profile all_success \
+  --max-case-wait-sec 90 \
+  --global-timeout-sec 900 \
+  --out /tmp/nao_fake_deep_all_success_json_only_after_location_patch_20260707.json</pre>
+  <p>Confirmed proof: <code>grounded_context_digest_enabled=false</code>, grouped work-table and IIIA kitchen member expansion without the old clarification, missing-recipient clarification before planner handoff, and full fake-deep pass under <code>fail_once_navigation</code>. Remaining proof: <code>fail_once_pick</code>, <code>delivery_blocked</code>, and speech holdouts for subjective report wording.</p>
+</main>
+</body>
+</html>

@@ -42,6 +42,12 @@ class KnowledgeCoreQueryClient:
         """Expose the resolved service name for diagnostics."""
         return self._service_name
 
+    def close(self) -> None:
+        """Release the ROS service client owned by this wrapper."""
+        if self._node is not None and self._client is not None:
+            self._node.destroy_client(self._client)
+        self._client = None
+
     def query_rows(
         self,
         *,

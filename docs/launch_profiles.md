@@ -1,6 +1,6 @@
 # Launch Profiles
 
-Last updated: 2026-05-26
+Last updated: 2026-06-30
 
 This file is the active launch guide. Historical launch notes are under
 `docs/artifacts/`.
@@ -13,6 +13,19 @@ This file is the active launch guide. Historical launch notes are under
 | `nao_chatbot_robot.launch.py` | Real robot camera/RViz/HRI overlays | Planner mode on; robot TF and RViz in profile defaults |
 | `nao_chatbot_demo.launch.py` | Sim-only demo with mock scan and demo-oriented defaults | Extends sim profile with demo skills and grounding |
 | `nao_chatbot_asr_only.launch.py` | Isolated ASR | No dialogue/planner/executor |
+
+`perform_motion` uses the real motion adapter by default in every profile. Its
+head-motion branch publishes an honest open-loop command when no recent head
+joint state is available, while convergence-as-success remains disabled. The
+controlled fake perform-motion seam remains available for validation. `look_at`
+continues to default to its fake action server until its real adapter is
+introduced into the stack:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
+  perform_motion_execution_mode:=real \
+  look_at_execution_mode:=fake
+```
 
 ## Common Commands
 
@@ -38,6 +51,38 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   start_scene_grounding:=true \
   object_detection_backend:=emorobcare_cv
 ```
+
+Response-first cool-profile validation launch:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  posture_bridge_wake_up_on_connect:=true \
+  start_naoqi_driver:=true \
+  start_object_detection:=false \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv \
+  start_planner_llm:=true \
+  chatbot_planner_mode_enabled:=true \
+  chatbot_turn_pipeline_mode:=response_first \
+  chatbot_grounded_context_digest_enabled:=true \
+  start_fake_skills:=true \
+  start_interaction_trace_viewer:=true
+```
+
+Preloaded semantic environment:
+
+```bash
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  preloaded_environment_ids:=kitchen_delivery \
+  preloaded_environment_lifespan_sec:=3600 \
+  start_fake_skills:=true
+```
+
+The scoreable state is the KnowledgeCore fixture injected through `/kb/revise`.
+The SVG files are rqt-loader-compatible operator aids installed by
+`nao_chatbot`; use
+`ros2 run nao_chatbot preloaded_environment_viewer` to print the packaged
+HTML/SVG viewer path, or add `--open` inside a rebuilt container.
 
 Simulator with laptop-side TTS playback for robot utterances:
 
@@ -102,6 +147,16 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
 
 - `start_planner_llm`: starts `planner_llm`.
 - `chatbot_planner_mode_enabled`: makes `chatbot_llm` publish `/planner/request`.
+- `chatbot_turn_pipeline_mode`: `response_first` for the current demo and
+  validation baseline; `intent_first` remains an ablation until it passes the
+  same runtime-review holdouts.
+- `chatbot_grounded_context_digest_enabled`: defaults to `true` and prepends a
+  compact natural-language scene digest before the authoritative
+  `grounded_context` JSON. Set it to `false` for JSON-only grounding ablations
+  when testing whether lossy digest wording is affecting dialogue or planning.
+  After the 7 July launch patch, `grounded_context_digest_enabled` is accepted
+  as a compatibility alias. Either flag set to `false` disables the digest, but
+  the `chatbot_`-prefixed name remains the canonical demo-script argument.
 - `scan_result_mode`: deterministic scan skill result mode (`success` or
   `failure`) for no-robot validation.
 - `scan_summary`: success summary returned by the scan skill.
@@ -143,6 +198,13 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
 - `fake_skill_mode_overrides_json`: per-skill override map, e.g.
   `{"find_object":"always_fail"}`.
 - `start_interaction_trace_viewer`: launches `interaction_trace_viewer/trace_node`.
+- `preloaded_environment_ids`: comma-separated semantic environment fixtures to
+  inject into KnowledgeCore at startup.
+- `preloaded_environment_fixtures_path`: optional JSON fixture override. Empty
+  uses `nao_chatbot/config/preloaded_environments.json`.
+- `preloaded_environment_lifespan_sec`: KnowledgeCore lifespan for launch-time
+  preloaded facts.
+- `preloaded_environment_kb_models`: optional CSV model list for preloaded facts.
 - `interaction_trace_compact_mode`: compact terminal output (`true`) or verbose payload view (`false`, default in sim profile so full JSON payloads are visible).
 - `interaction_trace_write_jsonl`: writes JSONL traces under `interaction_trace_jsonl_output_dir`.
 - `interaction_trace_write_html_on_shutdown`: writes static HTML report on shutdown under `interaction_trace_html_output_dir`.

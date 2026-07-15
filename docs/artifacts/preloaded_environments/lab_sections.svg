@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="1000cm" height="700cm" viewBox="0 0 10000 7000">
+  <title>lab_sections</title>
+  <desc>ROS4HRI interaction simulator environment for grouped laboratory tasks.</desc>
+  <g inkscape:label="walls" transform="scale(10)">
+    <rect id="codex_lab_room" x="35" y="35" width="930" height="630" rx="18" fill="#f7f8fb" stroke="#4d5c68" stroke-width="8"/>
+    <rect id="codex_robot_station" x="80" y="420" width="205" height="145" rx="14" fill="#edf1fb" stroke="#315a9b" stroke-width="6"/>
+    <rect id="codex_desk_area" x="340" y="85" width="245" height="185" rx="14" fill="#e7eff7" stroke="#255d83" stroke-width="6"/>
+    <rect id="codex_work_table_area" x="650" y="85" width="255" height="230" rx="14" fill="#e7eff7" stroke="#255d83" stroke-width="6"/>
+    <rect id="codex_handoff_area" x="610" y="430" width="220" height="150" rx="14" fill="#fff4df" stroke="#9a6b22" stroke-width="6"/>
+    <rect id="codex_lab_desk" x="385" y="145" width="150" height="82" rx="8" fill="#c9b18a" stroke="#6c5630" stroke-width="6"/>
+    <rect id="codex_work_table" x="700" y="145" width="155" height="100" rx="8" fill="#d8c69f" stroke="#6c5630" stroke-width="6"/>
+    <circle id="codex_alex_person" cx="720" cy="505" r="34" fill="#efb35b" stroke="#8a5410" stroke-width="6"/>
+  </g>
+  <g inkscape:label="static_objects" transform="scale(10)">
+    <rect id="codex_lab_computer" inkscape:label="codex_lab_computer Computer" x="415" y="165" width="48" height="36" rx="4" fill="#333b45" stroke="#1f2937" stroke-width="5"/>
+    <rect id="codex_lab_keyboard" inkscape:label="codex_lab_keyboard Keyboard" x="478" y="195" width="50" height="22" rx="3" fill="#f2f2f2" stroke="#4b5563" stroke-width="5"/>
+    <circle id="codex_lab_cup" inkscape:label="codex_lab_cup Cup" cx="732" cy="198" r="22" fill="#cf4a43" stroke="#7d1f1a" stroke-width="5"/>
+    <rect id="codex_lab_manual" inkscape:label="codex_lab_manual Book" x="780" y="173" width="48" height="36" rx="4" fill="#4e9a55" stroke="#22543d" stroke-width="5"/>
+    <rect id="codex_lab_phone" inkscape:label="codex_lab_phone CellularTelephone" x="756" y="222" width="58" height="24" rx="5" fill="#9aa4ad" stroke="#45515d" stroke-width="5"/>
+  </g>
+  <g inkscape:label="zones"/>
+</svg>

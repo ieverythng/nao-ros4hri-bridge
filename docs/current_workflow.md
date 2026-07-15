@@ -1,6 +1,6 @@
 # Current Workflow
 
-Last updated: 2026-05-26
+Last updated: 2026-06-30
 
 This is the canonical workflow map for the active NAO ROS4HRI bridge. Historical
 handoffs and old integration notes live in `docs/artifacts/`.
@@ -65,7 +65,37 @@ flowchart LR
 
 `nao_scene_grounding` does not directly control planning. It turns detector
 observations into transient symbolic state and a compact summary. `chatbot_llm`
-and future world-model enrichment consume that state through explicit contracts.
+projects KnowledgeCore and scene data into the compact `grounded_context_v3`
+contract described in `docs/contracts.md`.
+
+Current-scene questions establish a turn-scoped context boundary. Their LLM
+requests use the current grounded projection without earlier dialogue scene
+claims, while reflective questions that compare with an earlier turn retain
+history. This keeps `grounded_context_v3` as the single live scene
+representation without introducing another context owner.
+
+Named-person clarification is a separate continuation seam. If admission
+rejects an execution request because the person reference is absent, the
+rejected action and target scope remain structured session state. A grounded
+correction replaces the recipient ID before planner handoff; it does not reduce
+the request to a correction sentence and rely on dialogue history to recover
+the task. Handoff admission reopens the preserved execution only after the
+correction resolves to a unique grounded person.
+
+The compact contract keeps roles separate:
+
+- `entities` is the bounded subject inventory.
+- `locations` is a derived grouping view for support/place relations.
+- Rooms, places, and containers use `kind: "location"`; physical supports such
+  as tables and benches use `kind: "object"` and may also form derived
+  `support_group` records. Spatial materialization types do not promote domain
+  objects into locations, and a support anchor is not repeated as its own group
+  member.
+- people remain recipients or human targets, not locations.
+- rooms, ontology/meta classes, and people are filtered out of deliverable
+  object lists. Physical supports remain objects in the entity inventory, but
+  grouped expansion treats them as anchors unless the user asks for the support
+  object itself.
 
 ## Planner Loop
 
@@ -111,7 +141,11 @@ The important runtime currencies are:
 - `/intents`: executable downstream intent/plan from `planner_llm` or direct mode.
 - `/planner/execution_feedback`: executor status back to the planner.
 - `/planner/dialogue_act`: planner communication request without direct execution.
+- `grounded_context`: compact symbolic context with `entities`, `locations`,
+  role-separated people, and filtered user-facing object groups.
 - `knowledge_snapshot`: chatbot prompt context from KnowledgeCore.
+- `plan_outcome_summary`: structured executor evidence inside execution
+  feedback for completed, failed, and pending targets.
 - `/scene/summary`: detector-grounded object summary for operators/future consumers.
 
 The full shapes are in `docs/contracts.md`.

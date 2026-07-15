@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLM Model Ablations</title>
+  <style>
+    :root { color-scheme: light; --ink:#1e293b; --muted:#64748b; --line:#d8dee8; --band:#f6f8fb; --ok:#0f766e; --warn:#b45309; --bad:#b91c1c; }
+    body { margin:0; font:15px/1.55 system-ui,-apple-system,Segoe UI,sans-serif; color:var(--ink); background:white; }
+    main { max-width:1100px; margin:0 auto; padding:32px 22px 48px; }
+    h1 { font-size:32px; margin:0 0 6px; letter-spacing:0; }
+    h2 { font-size:20px; margin:30px 0 10px; border-top:1px solid var(--line); padding-top:20px; }
+    p { max-width:82ch; }
+    .meta { color:var(--muted); margin-bottom:24px; }
+    table { width:100%; border-collapse:collapse; margin:14px 0 24px; font-size:14px; }
+    th, td { border:1px solid var(--line); padding:10px 12px; vertical-align:top; }
+    th { background:var(--band); text-align:left; }
+    code { background:#eef2f7; padding:2px 4px; border-radius:4px; }
+    pre { background:#0f172a; color:#e2e8f0; padding:14px 16px; overflow:auto; border-radius:6px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; }
+    .panel { border:1px solid var(--line); border-radius:6px; padding:14px; background:#fff; }
+    .panel strong { display:block; margin-bottom:4px; }
+    .ok { color:var(--ok); font-weight:700; }
+    .warn { color:var(--warn); font-weight:700; }
+    .bad { color:var(--bad); font-weight:700; }
+    ul { padding-left:22px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>LLM Model Ablations</h1>
+  <div class="meta">Runtime ledger, 2026-07-11</div>
+
+  <h2>Scope</h2>
+  <p>The ablations separate model capability from launch wiring, prompt compatibility, and runtime postconditions. The hard seams are KB mutation, <code>report_result</code>, human/object distinction, grouped location effects, fake-skill recovery, and final reporting.</p>
+
+  <h2>Ablation Matrix</h2>
+  <table>
+    <thead><tr><th>Run</th><th>Chatbot</th><th>Planner</th><th>Evidence</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Qwen personal stack</td><td><code>qwen36-turbo-hermes</code></td><td><code>qwen36-turbo-hermes</code></td><td><code>/tmp/nao_qwen_*_20260711.json</code></td><td><span class="warn">5.8/10</span>. Fluent wording, degraded fake-deep recovery and KB mutation.</td></tr>
+      <tr><td>Mixed Watson/lab attempt</td><td><code>qwen36-turbo-hermes</code></td><td>Intended lab Qwen3-VL</td><td><code>/tmp/nao_mixed_qwen_chat_lab_plan_*_20260711.json</code></td><td><span class="warn">Partial</span>. Planner JSON failures dropped to zero, but KB mutation and fake-deep handoff still failed. Dynamic params weaken model attribution.</td></tr>
+      <tr><td>Lab-only baseline attempt</td><td>Intended lab Qwen3-VL</td><td>Intended lab Qwen3-VL</td><td><code>/tmp/codex_lab_stack_relaunch.log</code></td><td><span class="bad">Blocked</span>. Endpoint <code>10.7.138.215:8004</code> unreachable from host and container.</td></tr>
+      <tr><td>Restored Watson stack</td><td><code>qwen36-turbo-hermes</code></td><td><code>qwen36-turbo-hermes</code></td><td><code>/tmp/codex_watson_stack_restore.log</code></td><td><span class="ok">Restored</span>. Reachable runtime restored, but not a scored baseline because cleanup left auxiliary duplicate-name warnings.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Mixed Run Evidence</h2>
+  <div class="grid">
+    <div class="panel"><strong>Planner schema</strong><span class="ok">No invalid JSON, no invalid executable plans, no planner gate rejections</span> in the post snapshot.</div>
+    <div class="panel"><strong>Route pressure</strong><span class="warn">Nine route repair events</span>, 81 planner requests, and 109 <code>report_result</code> references.</div>
+    <div class="panel"><strong>KB mutation</strong><span class="bad"><code>kb_revise</code> and <code>kb_remove</code> failed</span>. Green marker facts remained after expected revise/remove.</div>
+    <div class="panel"><strong>Fake-deep</strong><span class="bad">All-success and fail-once-navigation failed at ordered-walk report</span> with missing planner request and execution feedback.</div>
+  </div>
+
+  <h2>Grouped Delivery</h2>
+  <p>The preloaded grouped-delivery sweep still accumulates stale spatial facts. Cup and book entities retain kitchen predicates while gaining recipient predicates. The recipient also gains object-like inverse relations such as <code>placeOf</code>. This is a post-effect contract problem, not a wording-only issue.</p>
+
+  <h2>Launch Lesson</h2>
+  <p>Runtime parameter changes are not enough for scored model ablations. A later log still showed <code>LLM_REQUEST | stage=response model=qwen36-turbo-hermes</code> after chatbot params were changed to the lab model. Scored runs must launch with explicit role arguments.</p>
+  <pre><code>chatbot_model:=&lt;model&gt;
+chatbot_intent_model:=&lt;model&gt;
+chatbot_server_url:=&lt;chat-completions-url&gt;
+planner_llm_model:=&lt;model&gt;
+planner_llm_base_url:=&lt;base-url&gt;</code></pre>
+
+  <h2>Next Ablations</h2>
+  <ul>
+    <li>Clean lab-only baseline after endpoint reachability passes.</li>
+    <li>Fresh mixed relaunches for Watson chatbot plus lab planner, and lab chatbot plus Watson planner.</li>
+    <li>Intent-only split with Watson response and stricter intent model.</li>
+    <li>JSON-only grounded context versus compact digest.</li>
+    <li>Postcondition-heavy fake-deep run for grouped moves, recipients, humans, and partial-failure reporting.</li>
+  </ul>
+</main>
+</body>
+</html>

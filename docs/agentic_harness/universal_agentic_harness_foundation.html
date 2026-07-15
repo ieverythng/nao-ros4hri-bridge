@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Universal Agentic Harness: AB-Aware Foundation and Implementation Plan</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2.6cm 2.2cm 2.4cm 2.2cm;
+    }
+    :root {
+      --ink: #111;
+      --muted: #3a3a3a;
+      --line: #1f1f1f;
+      --soft: #f3f3f3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #fff;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 11.5pt;
+      line-height: 1.42;
+    }
+    .doc {
+      max-width: 172mm;
+      margin: 0 auto;
+      padding: 0;
+    }
+    .title-page {
+      min-height: 247mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+    }
+    .title-top {
+      text-align: center;
+      margin-top: 18mm;
+    }
+    .title-top h1 {
+      font-size: 20pt;
+      line-height: 1.28;
+      margin: 20mm 0 8mm;
+      font-weight: 700;
+    }
+    .title-top h2 {
+      font-size: 13pt;
+      margin: 0 0 3mm;
+      font-weight: 600;
+      border-bottom: 0;
+    }
+    .title-top p {
+      margin: 2mm 0;
+      color: var(--muted);
+    }
+    .title-meta {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 auto 20mm;
+      font-size: 11pt;
+    }
+    .title-meta td {
+      padding: 2.5mm 0;
+      vertical-align: top;
+      border: 0;
+    }
+    .title-meta td:first-child {
+      width: 38mm;
+      font-weight: 700;
+    }
+    .small { font-size: 10.3pt; color: #222; }
+    h1, h2, h3 {
+      margin: 0 0 3mm;
+      line-height: 1.28;
+      font-weight: 700;
+    }
+    h1 { font-size: 16.5pt; margin-top: 0; }
+    h2 {
+      font-size: 13pt;
+      margin-top: 9mm;
+      border-bottom: 0.5pt solid var(--line);
+      padding-bottom: 1.5mm;
+    }
+    h3 {
+      font-size: 11.8pt;
+      margin-top: 6mm;
+    }
+    p { margin: 2.2mm 0; }
+    ul, ol { margin: 2.5mm 0 2.5mm 6mm; padding: 0; }
+    li { margin: 1.4mm 0; }
+    pre {
+      margin: 2.5mm 0 4mm;
+      background: var(--soft);
+      border: 0.6pt solid #666;
+      padding: 2.6mm 2.8mm;
+      overflow-x: auto;
+      white-space: pre;
+      font-family: "Liberation Mono", "Courier New", monospace;
+      font-size: 9.2pt;
+      line-height: 1.3;
+    }
+    code {
+      font-family: "Liberation Mono", "Courier New", monospace;
+      background: #efefef;
+      padding: 0.2mm 1mm;
+      border: 0.4pt solid #d7d7d7;
+      border-radius: 2px;
+      font-size: 10.3pt;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      border: 0;
+      font-size: inherit;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 3mm 0 4mm;
+      font-size: 10.8pt;
+    }
+    th, td {
+      border: 0.6pt solid #333;
+      padding: 2.2mm 2.3mm;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+      hyphens: auto;
+    }
+    th {
+      background: #fafafa;
+      text-align: left;
+      font-weight: 700;
+    }
+    .diagram {
+      margin: 4mm 0 5mm;
+      border: 0.6pt solid #777;
+      padding: 2mm;
+      background: #fff;
+    }
+    .diagram pre {
+      margin: 0;
+      border: 0;
+      background: #fcfcfc;
+      font-size: 10.2pt;
+      white-space: pre-wrap;
+    }
+    .diagram svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .diagram-labels {
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 25px;
+      font-weight: 700;
+      fill: #111;
+    }
+    .lifelines {
+      stroke: #999;
+      stroke-dasharray: 4 4;
+    }
+    .messages {
+      stroke: #111;
+      stroke-width: 1.35;
+      fill: none;
+    }
+    .messages text {
+      stroke: none;
+      fill: #111;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 22px;
+    }
+    .caption {
+      margin-top: 2mm;
+      font-size: 10.5pt;
+      color: #222;
+      font-style: italic;
+      text-align: center;
+    }
+    blockquote {
+      border: 0.6pt solid #333;
+      background: #fcfcfc;
+      margin: 3mm 0;
+      padding: 2.6mm 3mm;
+      color: var(--muted);
+    }
+    a { color: #111; }
+  </style>
+  <link rel="stylesheet" href="assets/harness-theme.css" />
+  <script defer src="assets/harness-theme.js"></script>
+</head>
+<body>
+  <main class="doc">
+
+<h1>Universal Agentic Harness: AB-Aware Foundation and Implementation Plan</h1>
+<p><strong>Status:</strong> Architecture baseline; parent-repo H0 proof implemented</p>
+<p><strong>Date:</strong> 2026-07-13</p>
+<p><strong>Branch baseline:</strong> <code>refactor/deslop_repo</code> at <code>4604343</code></p>
+<p><strong>Seed artifact:</strong> <code>Universal Agentic Harness Blueprint.html</code> (user-provided,</p>
+<p>2026-07-12)</p>
+<p><strong>Primary reference subsystem:</strong> NAO ROS4HRI + Neural Workbench</p>
+<h2>1. Project Claim</h2>
+<p>For bounded domain work, the practical capability of an LLM depends as much on</p>
+<p>its interaction harness as on the model itself. The reusable system object is</p>
+<p>not a prompt and is not a global bag of tools. It is a typed, observable,</p>
+<p>permissioned, evaluated compiler from a task and an environment capability graph</p>
+<p>to the smallest interaction surface that lets a model act and be verified.</p>
+<p>The Neural Workbench supplies the missing semantic basis:</p>
+<pre><code class="language-text">AB0 = effect primitives, observations, validators, memory atoms, and transport seams
+AB1 = runtime abilities with declared effects and observable success
+AB2 = bounded composite abilities assembled from lower AB objects
+AB3 = task strategies, recovery policies, and role policies
+AB4 = subsystem operating profile over a capability graph</code></pre>
+<p>AB levels are relative to an environment contract. An HTTP call, ROS action,</p>
+<p>shell command, or GUI event can ground an AB0 interaction atom, but the endpoint</p>
+<p>name alone is not the semantic object. The semantic object describes the effect,</p>
+<p>evidence, risk, ownership, and composition constraints that matter to reasoning.</p>
+<p>The resulting thesis is:</p>
+<blockquote>
+<p>A universal agentic harness should compile per-task interaction modules from</p>
+<p>an AB capability graph. The model sees the capabilities, observations,</p>
+<p>constraints, and evidence paths required for the current task, rather than a</p>
+<p>globally exposed environment.</p>
+</blockquote>
+<p>The deeper adaptive path is specified in</p>
+<p><code>neural_workbench_adaptive_ab_harness.md</code>. It extends static task projection</p>
+<p>with frame-relative AB control bands, candidate pulse graphs, empirical</p>
+<p>capability profiles, maintained interaction skills, and reviewed</p>
+<p>trace-to-crystallization. The foundation remains the minimum portable kernel;</p>
+<p>the extension is staged behind it rather than required all at once.</p>
+<h2>2. Target Contract</h2>
+<h3>Required outcome</h3>
+<p>Define and stage a reusable harness architecture that can:</p>
+<ul>
+<li>load different local or remote model providers without changing domain code;</li>
+<li>expose a task-specific subset of tools, resources, prompts, memory, and</li>
+</ul>
+<p>validators;</p>
+<ul>
+<li>represent those interactions as AB objects and typed decomposition edges;</li>
+<li>preserve environment ownership and deterministic execution boundaries;</li>
+<li>trace every model decision, tool call, result, approval, and validation step;</li>
+<li>measure model capability and harness uplift independently;</li>
+<li>support NAO first, then iTrader, Gamma/RESEARCH-GLOBAL, WatsonOW, and other</li>
+</ul>
+<p>subsystems through adapters.</p>
+<ul>
+<li>permit a temporary reference port in the NAO repository without allowing ROS</li>
+</ul>
+<p>or NAO imports into the universal contracts or kernel.</p>
+<h3>Non-goals for the first implementation</h3>
+<ul>
+<li>Do not replace <code>chatbot_llm</code>, <code>planner_llm</code>, or <code>nao_orchestrator</code> with one</li>
+</ul>
+<p>global agent.</p>
+<ul>
+<li>Do not expose every available tool to every task.</li>
+<li>Do not make MCP the internal semantic model; MCP is one transport adapter.</li>
+<li>Do not auto-promote learned AB2+ objects into runtime-callable abilities.</li>
+<li>Do not move prompt policy before behavior parity and SkillOpt gates exist.</li>
+<li>Do not claim self-improvement from stored traces until an evaluation shows a</li>
+</ul>
+<p>measurable probability or energy change.</p>
+<h3>Protected ownership</h3>
+<table><thead><tr>
+<th>Seam</th>
+<th>Current owner</th>
+<th>Harness relationship</th>
+</tr></thead><tbody>
+<tr>
+<td>Dialogue lifecycle and speaking</td>
+<td><code>dialogue_manager</code></td>
+<td>Harness may request a dialogue act; it does not speak directly.</td>
+</tr>
+<tr>
+<td>User-facing dialogue and route declaration</td>
+<td><code>chatbot_llm</code></td>
+<td>Supplies a dialogue task adapter and structured output contract.</td>
+</tr>
+<tr>
+<td>Planning and supervision</td>
+<td><code>planner_llm</code></td>
+<td>Supplies a planning task adapter and owns retry/replan policy.</td>
+</tr>
+<tr>
+<td>Runtime payload normalization</td>
+<td><code>planner_common</code></td>
+<td>Supplies ROS-facing compatibility contracts.</td>
+</tr>
+<tr>
+<td>Canonical AB graph</td>
+<td>Neural Workbench <code>skill_common</code></td>
+<td>Becomes the capability substrate.</td>
+</tr>
+<tr>
+<td>Deterministic dispatch and feedback</td>
+<td><code>nao_orchestrator</code></td>
+<td>Remains the execution authority.</td>
+</tr>
+<tr>
+<td>Fresh action evidence</td>
+<td>AB1 skills</td>
+<td>Remains the proof of effects.</td>
+</tr>
+<tr>
+<td>KB transport</td>
+<td><code>kb_skills</code></td>
+<td>Remains the KnowledgeCore boundary.</td>
+</tr>
+</tbody></table>
+<h2>3. Formal Model</h2>
+<p>Let the complete environment capability graph be:</p>
+<pre><code class="language-text">G_AB = (V, E_d, E_g, E_e, E_p)
+
+V   = AB objects
+E_d = decomposition edges
+E_g = grounding edges to environment transports
+E_e = evidence edges from action to observable success/failure
+E_p = policy edges for permission, risk, ownership, and approval</code></pre>
+<p>For task <code>tau</code>, current state <code>x</code>, and policy profile <code>rho</code>, the harness compiler</p>
+<p>builds a task-specific interaction module:</p>
+<pre><code class="language-text">I_tau = Project(G_AB, tau, x, rho)</code></pre>
+<p><code>I_tau</code> is the smallest closed subgraph that contains:</p>
+<ol>
+<li>candidate abilities able to produce the requested effect;</li>
+<li>all lower-level objects required by their decomposition;</li>
+<li>observations needed to establish preconditions;</li>
+<li>validators and evidence surfaces needed to prove the result;</li>
+<li>recovery, escalation, and approval paths allowed by policy.</li>
+</ol>
+<p>The full agentic system is:</p>
+<pre><code class="language-text">S = (M, H, G_AB, I_tau, C, P, R, Phi)
+
+M     = model or model pool
+H     = harness kernel and task compiler
+G_AB  = environment capability graph
+I_tau = compiled per-task interaction module
+C     = context, state, and memory projection
+P     = policy, permissions, approvals, and budgets
+R     = runtime adapter and execution substrate
+Phi   = measured capability profile</code></pre>
+<p>This separates four things that many harnesses merge:</p>
+<ul>
+<li>capability graph: what the environment can do and observe;</li>
+<li>task interaction graph: what this model may use for this task;</li>
+<li>execution graph: what actually ran;</li>
+<li>evidence graph: what proves or disproves the claimed effect.</li>
+</ul>
+<h2>4. Core Architecture</h2>
+<div class="diagram"><pre><code class="language-mermaid">flowchart TB
+    Task[&quot;Task request + acceptance contract&quot;] --&gt; Compiler[&quot;Task compiler&quot;]
+    State[&quot;Current state + memory + traces&quot;] --&gt; Compiler
+    AB[&quot;Canonical AB capability graph&quot;] --&gt; Compiler
+    Policy[&quot;Risk, scope, permissions, approvals&quot;] --&gt; Compiler
+
+    Compiler --&gt; Module[&quot;InteractionModuleSpec: task-scoped AB subgraph&quot;]
+    Module --&gt; Context[&quot;Context and visibility projection&quot;]
+    Module --&gt; Tools[&quot;Tool/resource/validator projection&quot;]
+    Module --&gt; ModelRouter[&quot;Model capability router&quot;]
+
+    ModelRouter --&gt; Model[&quot;Local or remote LLM&quot;]
+    Context --&gt; Model
+    Tools --&gt; Model
+    Model --&gt; Candidate[&quot;Structured candidate action/plan&quot;]
+
+    Candidate --&gt; Verifier[&quot;Schema + AB + policy verifier&quot;]
+    Verifier --&gt; Runtime[&quot;Environment adapter&quot;]
+    Runtime --&gt; Evidence[&quot;Typed result + observations&quot;]
+    Evidence --&gt; Trace[&quot;Append-only trace and eval bus&quot;]
+    Trace --&gt; State
+    Trace --&gt; Profile[&quot;Capability and entropy profile&quot;]</code></pre></div>
+<h3>Kernel planes</h3>
+<table><thead><tr>
+<th>Plane</th>
+<th>Responsibility</th>
+<th>Must remain replaceable</th>
+</tr></thead><tbody>
+<tr>
+<td>Task contract</td>
+<td>Objective, non-goals, acceptance, budgets, stop conditions</td>
+<td>Task author and subsystem adapter</td>
+</tr>
+<tr>
+<td>Capability</td>
+<td>AB objects, decomposition, effects, evidence, risk</td>
+<td>Registry backend</td>
+</tr>
+<tr>
+<td>Interaction</td>
+<td>Per-task tool/resource/prompt/validator projection</td>
+<td>Compiler strategy</td>
+</tr>
+<tr>
+<td>Model</td>
+<td>Provider, model, structured output, context limits</td>
+<td>Local/remote model backend</td>
+</tr>
+<tr>
+<td>Context</td>
+<td>Bounded state, memory, traces, source authority, freshness</td>
+<td>Retrieval/context adapter</td>
+</tr>
+<tr>
+<td>Policy</td>
+<td>Scope, approvals, side effects, secrets, escalation</td>
+<td>Deployment policy</td>
+</tr>
+<tr>
+<td>Runtime</td>
+<td>Shell, ROS, browser, API, MCP, sandbox, worker</td>
+<td>Execution adapter</td>
+</tr>
+<tr>
+<td>Trace/eval</td>
+<td>Events, lineage, artifacts, scores, regression gates</td>
+<td>Storage and evaluator</td>
+</tr>
+</tbody></table>
+<h2>5. Proposed Contract Grammar</h2>
+<h3>HarnessSpec</h3>
+<pre><code class="language-yaml">schema_version: ab_harness/v0
+name: nao_research_harness
+subsystem: nao_ros4hri
+capability_registry:
+  provider: skill_common
+  source: defaults/ab_registry.json
+model_policy:
+  allowed_profiles: [dialogue_fast, planner_structured, reviewer_deep]
+  fallback_requires_capability_equivalence: true
+context_policy:
+  max_input_tokens: 24000
+  source_precedence: [runtime, contracts, active_docs, traces, history]
+  freshness_required_for: [perception, execution_result, kb_state]
+execution_policy:
+  default_scope: task_projection
+  side_effects_require_verification: true
+  approval_by_risk: true
+trace_policy:
+  append_only: true
+  record_prompt_hash: true
+  record_capability_projection: true</code></pre>
+<h3>TaskSpec</h3>
+<pre><code class="language-yaml">task_id: turn_123
+task_kind: execute_and_report
+goal: find the red cup and report what is observed
+requested_effects: [target_observed, grounded_report_available]
+constraints:
+  max_ab_level: 2
+  allowed_side_effects: [robot_motion, perception_refresh]
+  denied_side_effects: [direct_kb_write, direct_speech]
+acceptance:
+  required_evidence: [fresh_scene_summary, target_entity_id]
+  failure_paths: [target_absent, backend_unavailable, unsafe_motion]
+budgets:
+  wall_time_sec: 90
+  model_calls: 3
+  tool_calls: 12</code></pre>
+<h3>InteractionModuleSpec</h3>
+<pre><code class="language-yaml">task_id: turn_123
+selected_ab_objects:
+  - scan
+  - find_object
+  - select_scan_pattern
+  - dispatch_scan_motion
+  - wait_for_perception
+  - read_scene_summary
+  - confirm_target_visibility
+  - verify_evidence_payload
+exposed_actions: [scan, find_object]
+exposed_resources: [scene_summary, target_reference, recent_relevant_traces]
+required_validators: [registry_validation, evidence_payload_validation]
+approval_points: [robot_motion]
+completion_evidence: [fresh_scene_summary, target_entity_id]</code></pre>
+<h3>ModelProfile</h3>
+<pre><code class="language-yaml">profile_id: planner_structured
+provider: openai_compatible
+endpoint_ref: local_vllm_primary
+model_ref: qwen_planner
+capabilities:
+  tool_calling: true
+  structured_output: json_schema
+  reasoning_control: optional
+  max_context_tokens: 65536
+service_objectives:
+  first_token_p95_ms: 2500
+  completion_p95_ms: 12000
+  max_concurrency: 8
+routing:
+  fallback_profiles: [planner_structured_backup]
+  require_same_output_schema: true</code></pre>
+<h3>TraceEvent</h3>
+<pre><code class="language-json">{
+  &quot;trace_id&quot;: &quot;trace_123&quot;,
+  &quot;task_id&quot;: &quot;turn_123&quot;,
+  &quot;event_id&quot;: &quot;evt_009&quot;,
+  &quot;parent_event_id&quot;: &quot;evt_008&quot;,
+  &quot;stage&quot;: &quot;runtime_result&quot;,
+  &quot;ab_object_id&quot;: &quot;find_object&quot;,
+  &quot;model_profile&quot;: &quot;planner_structured&quot;,
+  &quot;capability_projection_hash&quot;: &quot;sha256:...&quot;,
+  &quot;status&quot;: &quot;succeeded&quot;,
+  &quot;input_ref&quot;: &quot;artifact://...&quot;,
+  &quot;output_ref&quot;: &quot;artifact://...&quot;,
+  &quot;evidence&quot;: {&quot;entity_id&quot;: &quot;cup_1&quot;, &quot;captured_at_sec&quot;: 1783900000.0},
+  &quot;risk&quot;: {&quot;class&quot;: &quot;robot_motion&quot;, &quot;approved&quot;: true},
+  &quot;timing&quot;: {&quot;started_ms&quot;: 0, &quot;finished_ms&quot;: 1840}
+}</code></pre>
+<h2>6. Current Stack: Reusable Harness Mechanisms Already Implemented</h2>
+<p>The current NAO stack has already paid for substantial harness engineering. The</p>
+<p>correct first implementation is extraction and consolidation, not a parallel</p>
+<p>rewrite.</p>
+<table><thead><tr>
+<th>Existing implementation</th>
+<th>Reusable mechanism</th>
+<th>Keep domain-local</th>
+<th>Proposed destination</th>
+</tr></thead><tbody>
+<tr>
+<td><code>planner_llm/providers.py</code></td>
+<td>Provider interface, Ollama/OpenAI-compatible transport, timeout/error normalization, reasoning suppression</td>
+<td>Planner-specific config defaults</td>
+<td><code>ab_harness.providers</code></td>
+</tr>
+<tr>
+<td><code>chatbot_llm/ollama_transport.py</code></td>
+<td>Provider-shape detection, structured response format, preflight, model inventory, token/context controls</td>
+<td>Speech-latency defaults</td>
+<td><code>ab_harness.providers</code> + chatbot adapter</td>
+</tr>
+<tr>
+<td>Both <code>prompt_pack.py</code> files</td>
+<td>Versioned YAML loading, packaged default resolution, validation, controlled overrides</td>
+<td>Actual planner/chatbot policy text</td>
+<td><code>ab_harness.prompt_packs</code></td>
+</tr>
+<tr>
+<td><code>chatbot_llm/response_parser.py</code> and planner JSON parsing</td>
+<td>Structured output schema, extraction, parse failure handling</td>
+<td>Chatbot/plan schemas</td>
+<td><code>ab_harness.structured_output</code></td>
+</tr>
+<tr>
+<td><code>skill_common.ABRegistry</code></td>
+<td>Canonical capability lookup and planner/chatbot/workbench/dashboard projections</td>
+<td>Canonical registry ownership</td>
+<td>Extend in <code>skill_common</code>; do not copy</td>
+</tr>
+<tr>
+<td><code>planner_llm/skill_registry.py</code> and chatbot skill catalog</td>
+<td>Bounded model-facing capability projection</td>
+<td>Role-specific wording</td>
+<td><code>InteractionModuleCompiler</code> adapters</td>
+</tr>
+<tr>
+<td><code>chatbot_llm/knowledge_snapshot.py</code> and planner request projection</td>
+<td>Bounded context, source shaping, freshness/role distinctions</td>
+<td>NAO KB and scene semantics</td>
+<td><code>ContextAdapter</code> interface</td>
+</tr>
+<tr>
+<td><code>chatbot_llm/turn_engine.py</code></td>
+<td>Route consistency, fallback ladder, output sanitization, trace stages</td>
+<td>Dialogue policy and speech constraints</td>
+<td>Keep local; extract only generic validators</td>
+</tr>
+<tr>
+<td><code>planner_llm/planner_engine.py</code></td>
+<td>Generate, parse, validate, one repair, deterministic fallback</td>
+<td>Planning heuristics and plan semantics</td>
+<td>Keep local; use kernel provider/output APIs</td>
+</tr>
+<tr>
+<td><code>planner_llm/supervisor.py</code></td>
+<td>Goal/plan lineage, retry, cancellation, supersede, dialogue-act decisions</td>
+<td>Planner ownership</td>
+<td>Keep local; expose trace/state adapter</td>
+</tr>
+<tr>
+<td><code>interaction_trace_viewer</code> and Workbench trace memory</td>
+<td>Structured timeline plus append-only trace storage</td>
+<td>ROS subscription wiring</td>
+<td><code>TraceEvent</code> adapter and storage backend</td>
+</tr>
+</tbody></table>
+<h3>Concrete duplication evidence</h3>
+<ul>
+<li>Both LLM packages independently resolve YAML prompt packs and package-share</li>
+</ul>
+<p>defaults.</p>
+<ul>
+<li>Both implement Ollama/OpenAI-compatible response handling and Qwen</li>
+</ul>
+<p>no-thinking behavior.</p>
+<ul>
+<li>Both build bounded model messages and parse JSON under provider failure.</li>
+<li>Both project the canonical skill registry into model-facing text or JSON.</li>
+<li>Both implement fallback behavior after invalid or unavailable model output.</li>
+<li>Both emit trace stages but lack one shared event contract.</li>
+</ul>
+<p>These are appropriate extraction candidates. The hundreds of tests around</p>
+<p>route semantics, grounding, report wording, planner retry, lineage, and</p>
+<p>duplicate speech are evidence that those policies are domain contracts, not</p>
+<p>generic kernel code.</p>
+<p>The migration target is cooperation, not replacement. <code>chatbot_llm</code> and</p>
+<p><code>planner_llm</code> remain domain agents while progressively delegating provider</p>
+<p>probing, structured-output transport, prompt-pack mechanics, task capability</p>
+<p>projection, and trace emission to the harness. This lets the current node</p>
+<p>behavior serve as the oracle for each extraction slice.</p>
+<h2>7. Primary-Source Harness Survey</h2>
+<table><thead><tr>
+<th>Harness</th>
+<th>Clear win</th>
+<th>Adopt</th>
+<th>Avoid copying blindly</th>
+</tr></thead><tbody>
+<tr>
+<td>Codex</td>
+<td>Hierarchical <code>AGENTS.md</code>, progressively loaded skills, configurable providers/MCP permissions, sandbox and approval boundaries</td>
+<td>Scoped instructions, skill discovery, provider/tool approval metadata</td>
+<td>Treating repository instructions as the capability graph</td>
+</tr>
+<tr>
+<td>Cursor</td>
+<td>Scoped rules, dynamic skills and subagents, hooks, visible review, sandbox-aware tool errors, isolated background work</td>
+<td>Task-local context, independent worker contexts, before/after hooks, explicit sandbox diagnostics</td>
+<td>Global auto-approval or IDE-specific policy in the kernel</td>
+</tr>
+<tr>
+<td>Pi</td>
+<td>Minimal stable loop, four core tools, JSONL session tree, SDK/RPC modes, hot-reloadable extensions, tool overrides</td>
+<td>Small kernel, event interception, explicit active-tool set, embeddable worker API</td>
+<td>Assuming containers/permissions/plan mode are someone else&#x27;s problem</td>
+</tr>
+<tr>
+<td>OpenHands</td>
+<td>Client/server sandbox runtime, action-to-observation interface, reproducible runtime images, evaluation controller</td>
+<td>Runtime adapter contract, isolated workspaces, artifacted environment identity</td>
+<td>Binding the universal kernel to Docker or software engineering only</td>
+</tr>
+<tr>
+<td>SWE-agent</td>
+<td>Agent-Computer Interface as a measurable design axis; exact thought/action/observation trajectories and replayable config</td>
+<td>Evaluate interaction design independently from model choice</td>
+<td>Benchmark-specific commands as universal tools</td>
+</tr>
+<tr>
+<td>Hermes Agent</td>
+<td>Provider independence, task/platform toolsets, persistent skills/memory, isolated delegates, multiple terminal backends</td>
+<td>Toolset profiles, learned procedure proposals, backend adapters</td>
+<td>Exposing a very large default tool surface or auto-writing trusted skills</td>
+</tr>
+<tr>
+<td>AutoGen</td>
+<td>Runtime manages identity/lifecycle/message delivery; same agent API across standalone and distributed runtimes</td>
+<td>Separate agent definition from runtime placement</td>
+<td>Making conversation topology the primary capability ontology</td>
+</tr>
+<tr>
+<td>Pydantic AI</td>
+<td>Typed contracts, durable execution integrations, streaming/MCP compatibility</td>
+<td>Typed schemas and pluggable durability</td>
+<td>Adopting a workflow engine before task/effect contracts stabilize</td>
+</tr>
+<tr>
+<td>MCP</td>
+<td>Dynamic discovery, capability negotiation, tools/resources/prompts, standard local/remote transports</td>
+<td>Transport adapter and external capability discovery</td>
+<td>Assuming MCP decides context policy, authorization, or effect truth</td>
+</tr>
+</tbody></table>
+<h3>Survey conclusions</h3>
+<ol>
+<li>Interface design is a first-class performance variable. SWE-agent&#x27;s ACI</li>
+</ol>
+<p>result supports measuring the harness separately from model quality.</p>
+<ol>
+<li>Small kernels age better. Pi&#x27;s minimal loop and extension system are more</li>
+</ol>
+<p>reusable than a global fixed agent graph.</p>
+<ol>
+<li>The runtime must be replaceable. OpenHands and AutoGen both separate agent</li>
+</ol>
+<p>logic from execution placement.</p>
+<ol>
+<li>Context should be progressively disclosed. Codex skills and Cursor skills</li>
+</ol>
+<p>reduce always-on prompt load.</p>
+<ol>
+<li>Sandbox state must be visible to the model. Cursor reports better recovery</li>
+</ol>
+<p>after surfacing the exact permission constraint in tool results.</p>
+<ol>
+<li>Exact trajectories are essential. SWE-agent, OpenHands, Pi, and Hermes all</li>
+</ol>
+<p>retain enough state to replay or inspect runs.</p>
+<ol>
+<li>MCP is necessary but insufficient. Its own architecture explicitly leaves</li>
+</ol>
+<p>model/context use to the host application.</p>
+<ol>
+<li>Toolsets are too coarse unless grounded in effects and evidence. The AB graph</li>
+</ol>
+<p>supplies the semantic closure and verification path that named tool bundles</p>
+<p>lack.</p>
+<h2>8. Hypothesis Registry</h2>
+<table><thead><tr>
+<th>ID</th>
+<th>Architecture family</th>
+<th>Mechanism</th>
+<th>Discriminating probe</th>
+<th>Status</th>
+<th>Exact gap or reopen condition</th>
+</tr></thead><tbody>
+<tr>
+<td>H-01</td>
+<td>Shared utilities inside NAO repo</td>
+<td>Extract duplicated provider/prompt/parser code into <code>planner_common</code> or another parent package</td>
+<td>Import from both nodes and run existing suites unchanged</td>
+<td>Rejected as universal boundary</td>
+<td><code>planner_common</code> is intentionally planner/ROS contract focused and would couple non-ROS consumers to NAO structure.</td>
+</tr>
+<tr>
+<td>H-02</td>
+<td>Neural Workbench <code>ab_harness</code> kernel</td>
+<td>Build a pure-Python package beside <code>skill_common</code>; compile task interaction modules from AB graph</td>
+<td>Same NAO task produces minimal closed AB projection and behavior parity</td>
+<td>Accepted for P0 design</td>
+<td>Implementation waits on schema review and parity tests.</td>
+</tr>
+<tr>
+<td>H-03</td>
+<td>Pi or OpenHands as the kernel</td>
+<td>Embed an existing harness and add AB tools/resources around it</td>
+<td>Run identical task through Pi/OpenHands adapters and compare trace/eval coverage</td>
+<td>Active adapter hypothesis</td>
+<td>Reopen as kernel only if it can enforce AB closure and evidence without invasive forks.</td>
+</tr>
+<tr>
+<td>H-04</td>
+<td>MCP-first universal harness</td>
+<td>Represent every ability as MCP tools/resources/prompts</td>
+<td>Test whether effect, ownership, freshness, and evidence closure are expressible and enforceable</td>
+<td>Rejected as semantic core</td>
+<td>MCP standardizes exchange but deliberately does not define host context or agent policy.</td>
+</tr>
+<tr>
+<td>H-05</td>
+<td>Node-specific harnesses only</td>
+<td>Continue evolving chatbot and planner independently</td>
+<td>Measure duplication growth and inconsistent provider behavior over another iteration</td>
+<td>Blocked</td>
+<td>Already duplicates provider, prompt, parsing, projection, and trace mechanisms.</td>
+</tr>
+<tr>
+<td>H-06</td>
+<td>Global all-tools agent</td>
+<td>Give one agent every tool and rely on prompt policy</td>
+<td>Compare tool precision, context load, unsafe-call rate, and recovery against task projection</td>
+<td>Rejected</td>
+<td>Violates least capability, increases prompt/tool entropy, and weakens ownership.</td>
+</tr>
+</tbody></table>
+<h3>Decision</h3>
+<p>Proceed with H-02 as the architecture baseline, H-03 as a runtime-adapter track,</p>
+<p>and a narrow extraction slice from H-01. Reject H-04 and H-06 as the semantic</p>
+<p>core. Keep current nodes operational while the compatibility layer is proven.</p>
+<h2>9. Proposed Package Boundary</h2>
+<p>The first package should live in the Neural Workbench repository because the AB</p>
+<p>registry is its substrate and the package must remain independent of ROS.</p>
+<pre><code class="language-text">src/Neural-Wokbench/src/ab_harness/
+  package.xml                  # optional ROS packaging wrapper, no ROS imports in core
+  setup.py
+  ab_harness/
+    contracts.py               # HarnessSpec, TaskSpec, InteractionModuleSpec
+    capability_projection.py   # AB graph closure and task projection
+    structured_output.py       # schema-aware parse/repair result types
+    prompt_packs.py             # versioned pack loading, no domain prompt text
+    providers/
+      base.py
+      ollama.py
+      openai_compatible.py
+      capability_probe.py
+    policy/
+      risk.py
+      approvals.py
+      budgets.py
+    runtime/
+      adapter.py
+      result.py
+    trace/
+      events.py
+      store.py
+    evals/
+      runner.py
+      metrics.py</code></pre>
+<p>Adapters remain outside the core:</p>
+<pre><code class="language-text">adapters/
+  nao_ros4hri/
+  codex/
+  pi/
+  openhands/
+  mcp/
+  shell_sandbox/</code></pre>
+<p><code>ab_harness</code> depends on <code>skill_common</code>. It must not own or duplicate</p>
+<p><code>ab_registry.json</code>.</p>
+<h3>Reference-port rule</h3>
+<p>The first implementation may be staged directly in the NAO repository when</p>
+<p>that makes parity testing and review easier. A core module qualifies for later</p>
+<p>promotion into Neural Workbench only if:</p>
+<ol>
+<li>it imports no ROS, NAO, dialogue, planner, or orchestrator package;</li>
+<li>its public schemas contain no NAO-specific field names;</li>
+<li>both LLM nodes can consume it through thin compatibility adapters;</li>
+<li>at least one synthetic non-NAO adapter can use the same API; and</li>
+<li>moving the module changes only package metadata and imports, not semantics.</li>
+</ol>
+<p>This reverses the dependency direction that created the current SWE cost:</p>
+<p>domain nodes configure and consume the harness; the harness does not import or</p>
+<p>coordinate domain nodes.</p>
+<h2>10. Model Serving and Fast Provider Management</h2>
+<p>Provider management should be driven by measured capability profiles, not model</p>
+<p>name conditionals spread across nodes.</p>
+<h3>Startup handshake</h3>
+<p>Every served endpoint should be probed for:</p>
+<ul>
+<li>protocol shape: Ollama, OpenAI-compatible Responses/Chat, or custom;</li>
+<li>model inventory and exact model identifier;</li>
+<li>structured JSON/schema support;</li>
+<li>tool-calling support and tool schema limits;</li>
+<li>context window and effective output limit;</li>
+<li>reasoning/thinking controls;</li>
+<li>streaming shape and timeout behavior;</li>
+<li>image/audio support where relevant;</li>
+<li>warmup latency, first-token latency, decode rate, and concurrency.</li>
+</ul>
+<p>The probe produces a versioned <code>ProviderCapabilityRecord</code>. Runtime code selects</p>
+<p>features from that record instead of checking whether the model name starts with</p>
+<p><code>qwen</code>, <code>gemma</code>, or another family.</p>
+<h3>Routing policy</h3>
+<pre><code class="language-text">TaskSpec required model capabilities
+  -&gt; eligible ModelProfiles
+  -&gt; filter by context, schema, tool, privacy, and locality
+  -&gt; rank by measured latency, reliability, cost, and task score
+  -&gt; dispatch
+  -&gt; fallback only to a capability-equivalent profile</code></pre>
+<p>Use separate workload pools:</p>
+<table><thead><tr>
+<th>Workload</th>
+<th>Priority</th>
+<th>Typical profile</th>
+</tr></thead><tbody>
+<tr>
+<td>Spoken dialogue</td>
+<td>First-token latency and concise output</td>
+<td>Small warm local model</td>
+</tr>
+<tr>
+<td>Intent/route decision</td>
+<td>Schema reliability and low token count</td>
+<td>Fast structured model</td>
+</tr>
+<tr>
+<td>Planner generation</td>
+<td>Tool/registry adherence and longer context</td>
+<td>Strong structured model</td>
+</tr>
+<tr>
+<td>Review/research</td>
+<td>Reasoning depth and source handling</td>
+<td>Larger remote or local model</td>
+</tr>
+<tr>
+<td>Trace summarization</td>
+<td>Throughput and low cost</td>
+<td>Batch local model</td>
+</tr>
+</tbody></table>
+<h3>Serving optimizations</h3>
+<ul>
+<li>Keep stable harness instructions and schemas at the beginning of prompts so</li>
+</ul>
+<p>vLLM-style automatic prefix caching can reuse prefill computation.</p>
+<ul>
+<li>Place volatile task state and fresh evidence late in the context.</li>
+<li>Use bounded projections rather than transmitting the complete AB registry.</li>
+<li>Warm the active model profiles with representative schema calls.</li>
+<li>Track first-token latency, total latency, input/output tokens, cache-hit</li>
+</ul>
+<p>behavior, retries, fallbacks, and schema failures per profile.</p>
+<ul>
+<li>Route high concurrency using least-busy or latency-aware policies only after</li>
+</ul>
+<p>measuring queue behavior.</p>
+<ul>
+<li>Treat retries, context-window fallbacks, and provider fallbacks as separate</li>
+</ul>
+<p>events with separate budgets.</p>
+<ul>
+<li>Tune local serving memory for the actual concurrency/context mix; SGLang and</li>
+</ul>
+<p>similar servers expose KV-cache and static-memory controls that should be</p>
+<p>benchmarked rather than guessed.</p>
+<p>Prefix caching reduces shared-prefix prefill cost, not token generation time.</p>
+<p>It therefore benefits stable harness/schema prefixes and repeated task classes,</p>
+<p>but it does not excuse verbose output or unbounded context.</p>
+<h2>11. Control Loop</h2>
+<pre><code class="language-text">compile(task, subsystem):
+    harness_spec = load_harness_spec(subsystem)
+    task_spec = normalize_task(task, harness_spec)
+    state = context_adapter.snapshot(task_spec)
+
+    interaction = project_ab_subgraph(
+        registry=canonical_ab_registry,
+        requested_effects=task_spec.requested_effects,
+        state=state,
+        policy=harness_spec.execution_policy,
+    )
+
+    model_profile = model_router.select(task_spec, interaction)
+    context = context_router.build(task_spec, interaction, state)
+    candidate = model.generate(context, interaction.schemas)
+
+    verified = verifier.check(candidate, interaction, task_spec)
+    if verified.requires_approval:
+        approval = policy_engine.request(verified.risk)
+    result = runtime_adapter.execute(verified)
+    evidence = verifier.check_result(result, task_spec.acceptance)
+
+    trace_bus.append(task_spec, interaction, candidate, result, evidence)
+    eval_runner.score(task_spec, trace_bus.current_trace())
+    return evidence</code></pre>
+<p>The model never receives direct execution authority. The runtime adapter accepts</p>
+<p>only verified operations represented in the compiled interaction module.</p>
+<h2>12. Evaluation and Ablation Protocol</h2>
+<h3>Core metrics</h3>
+<table><thead><tr>
+<th>Metric</th>
+<th>Meaning</th>
+</tr></thead><tbody>
+<tr>
+<td>Harness uplift</td>
+<td>Same model and task set, AB-aware harness score minus generic harness score</td>
+</tr>
+<tr>
+<td>Task projection precision</td>
+<td>Exposed AB objects actually useful for the task divided by all exposed objects</td>
+</tr>
+<tr>
+<td>Task projection recall</td>
+<td>Required successful-path and recovery objects present in the projection</td>
+</tr>
+<tr>
+<td>Tool precision</td>
+<td>Correct action with valid arguments</td>
+</tr>
+<tr>
+<td>Evidence completeness</td>
+<td>Claimed effects backed by required observations/results</td>
+</tr>
+<tr>
+<td>Scope discipline</td>
+<td>Writes and calls remain inside declared task scope</td>
+</tr>
+<tr>
+<td>Context efficiency</td>
+<td>Useful task/context tokens divided by total input tokens</td>
+</tr>
+<tr>
+<td>Recovery quality</td>
+<td>Failures move to a valid retry, replan, clarification, or terminal state</td>
+</tr>
+<tr>
+<td>Trace completeness</td>
+<td>Run can be reconstructed from versioned events and artifacts</td>
+</tr>
+<tr>
+<td>Portability</td>
+<td>Same task contract runs through another model/runtime adapter</td>
+</tr>
+<tr>
+<td>Regression rate</td>
+<td>Previously passing golden tasks remain passing</td>
+</tr>
+</tbody></table>
+<h3>Required ablations</h3>
+<ol>
+<li>Same model, generic all-tools harness versus AB task projection.</li>
+<li>Same model and tools, full registry versus bounded capability projection.</li>
+<li>Same task, local served model versus remote model under the same harness.</li>
+<li>Same task, prompt-only guard versus deterministic schema/policy verifier.</li>
+<li>Same task, no trace retrieval versus trace-derived priors.</li>
+<li>Same task, symbolic energy only versus measured entropy/failure profile.</li>
+<li>Existing standalone node internals versus cooperative harness adapters,</li>
+</ol>
+<p>first one mechanism at a time and then as a combined path.</p>
+<p>No harness improvement is accepted from a single anecdotal run. Prompt or</p>
+<p>tool-description changes use a train/holdout ledger. Provider changes must run</p>
+<p>the same task set and preserve trace schema.</p>
+<h2>13. Implementation Phases</h2>
+<table><thead><tr>
+<th>Phase</th>
+<th>Goal</th>
+<th>Deliverable</th>
+<th>Acceptance gate</th>
+</tr></thead><tbody>
+<tr>
+<td>P0</td>
+<td>Freeze grammar and ownership</td>
+<td>This foundation, schemas, hypothesis registry</td>
+<td>Review accepts package boundary and non-goals</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>Extract provider-neutral substrate</td>
+<td><code>ab_harness</code> contracts, prompt loader, provider interface, structured-output result types</td>
+<td>Existing planner/chatbot suites pass through adapters</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>Compile per-task interaction modules</td>
+<td>AB closure, policy filtering, evidence closure</td>
+<td>Golden NAO tasks expose minimal sufficient graphs</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>NAO cooperative migration</td>
+<td>Planner/chatbot provider adapters and trace bridge, optionally staged in this repo</td>
+<td>No ROS ownership movement; standalone-versus-harness ablations and fake/live tests preserve behavior</td>
+</tr>
+<tr>
+<td>P4</td>
+<td>Served-model control plane</td>
+<td>Capability probe, profiles, router, warmup, metrics</td>
+<td>Local/remote failover is schema- and capability-safe</td>
+</tr>
+<tr>
+<td>P5</td>
+<td>External workers</td>
+<td>Codex, Pi, OpenHands, and MCP adapters</td>
+<td>Same TaskSpec produces comparable traces</td>
+</tr>
+<tr>
+<td>P6</td>
+<td>Cross-domain proof</td>
+<td>iTrader and Gamma subsystem profiles</td>
+<td>Same kernel, different AB registry/profile, measured uplift</td>
+</tr>
+<tr>
+<td>P7</td>
+<td>Learning loop</td>
+<td>Trace-derived priors and human-reviewed AB2 proposals</td>
+<td>Holdout improves; no automatic runtime promotion</td>
+</tr>
+</tbody></table>
+<p>Implementation follows the simpler release ladder defined by the adaptive</p>
+<p>extension:</p>
+<pre><code class="language-text">H0 AB-grounded role and output gate + complete trace
+H1 candidate and recovery Workbench
+H2 trace-adaptive capability profiles and reviewed heuristics
+H3 counterfactual crystallization and promotion quarantine
+H4 non-NAO AB4 system proof and learned deltas</code></pre>
+<p>H0 is the first engineering target. It wraps the current good chatbot/planner</p>
+<p>behavior and constrains the AB3 model-agent inside the NAO AB4 system without</p>
+<p>adding another reasoning layer.</p>
+<h2>14. Immediate Work Queue</h2>
+<ol>
+<li>Review and name the five core schemas.</li>
+<li>Add <code>ABRegistry.task_projection(...)</code> or a separate compiler prototype with</li>
+</ol>
+<p>no runtime behavior change.</p>
+<ol>
+<li>Build golden projection cases for dialogue, knowledge query, scan/find,</li>
+</ol>
+<p>navigation failure, and grouped delivery.</p>
+<ol>
+<li>Define the shared provider capability record from the union of current</li>
+</ol>
+<p>chatbot and planner transport behavior.</p>
+<ol>
+<li>Extract a generic prompt-pack loader behind compatibility wrappers.</li>
+<li>Define one append-only trace event schema and adapters from</li>
+</ol>
+<p><code>chatbot_turn_trace</code>, planner decisions, orchestrator feedback, and Workbench</p>
+<p>traces.</p>
+<ol>
+<li>Run current chatbot/planner tests as the behavior baseline.</li>
+<li>Add same-model generic-versus-AB-projected harness ablations.</li>
+<li>Run standalone-versus-cooperative ablations for each migrated chatbot and</li>
+</ol>
+<p>planner mechanism; reject slices that change domain behavior.</p>
+<ol>
+<li>Prototype Pi RPC and OpenHands sandbox adapters only after the kernel schemas</li>
+</ol>
+<p>stabilize.</p>
+<ol>
+<li>Decide whether <code>ab_harness</code> remains a package in Neural Workbench or becomes</li>
+</ol>
+<p>a standalone repository after the first non-NAO adapter succeeds.</p>
+<h2>15. Adversarial Audit</h2>
+<ul>
+<li>[x] The design preserves dialogue, planner, orchestrator, KB, grounding, and</li>
+</ul>
+<p>skill ownership.</p>
+<ul>
+<li>[x] The universal kernel is ROS-independent and model-independent.</li>
+<li>[x] MCP is treated as transport/discovery, not effect truth or authorization.</li>
+<li>[x] Per-task capability projection replaces a global tool bag.</li>
+<li>[x] Action claims require explicit evidence closure.</li>
+<li>[x] Provider fallback requires capability and schema compatibility.</li>
+<li>[x] Current node-specific tests are retained as parity gates.</li>
+<li>[x] Learned composites remain proposal-only until reviewed.</li>
+<li>[ ] Package schemas have not yet been implemented or reviewed.</li>
+<li>[ ] No same-model harness ablation has yet measured uplift.</li>
+<li>[ ] No external Pi/OpenHands adapter has yet been prototyped.</li>
+<li>[ ] Live ROS and robot behavior remain outside this documentation-only pass.</li>
+</ul>
+<p><strong>Decision:</strong> accept the architecture as a P0 foundation; implementation remains</p>
+<p>gated by schema review, behavior-parity tests, and same-model ablations.</p>
+<h2>16. Primary Sources</h2>
+<ul>
+<li>OpenAI Codex: <a href="https://developers.openai.com/codex/guides/agents-md">AGENTS.md discovery</a>,</li>
+</ul>
+<p><a href="https://developers.openai.com/codex/skills">skills and progressive disclosure</a>,</p>
+<p><a href="https://developers.openai.com/codex/security">security</a>, and</p>
+<p><a href="https://developers.openai.com/codex/config-reference">configuration reference</a>.</p>
+<ul>
+<li>Cursor: <a href="https://docs.cursor.com/context/rules-for-ai">rules</a>,</li>
+</ul>
+<p><a href="https://docs.cursor.com/en/cli/using">CLI and command approval</a>,</p>
+<p><a href="https://cursor.com/changelog/2-4">subagents and skills</a>, and</p>
+<p><a href="https://cursor.com/blog/agent-sandboxing">sandbox implementation</a>.</p>
+<ul>
+<li>Pi: <a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/README.md">coding-agent README</a></li>
+</ul>
+<p>and <a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md">extension API</a>.</p>
+<ul>
+<li>OpenHands: <a href="https://docs.openhands.dev/openhands/usage/architecture/runtime">runtime architecture</a></li>
+</ul>
+<p>and <a href="https://docs.openhands.dev/openhands/usage/developers/evaluation-harness">evaluation harness</a>.</p>
+<ul>
+<li>SWE-agent: <a href="https://arxiv.org/abs/2405.15793">Agent-Computer Interface paper</a></li>
+</ul>
+<p>and <a href="https://github.com/SWE-agent/SWE-agent/blob/main/docs/usage/trajectories.md">trajectory format</a>.</p>
+<ul>
+<li>Hermes Agent: <a href="https://github.com/NousResearch/hermes-agent">repository</a> and</li>
+</ul>
+<p><a href="https://github.com/NousResearch/hermes-agent/blob/main/website/docs/reference/toolsets-reference.md">toolset registry</a>.</p>
+<ul>
+<li>AutoGen: <a href="https://microsoft.github.io/autogen/stable/user-guide/core-user-guide/core-concepts/architecture.html">agent runtime architecture</a>.</li>
+<li>Pydantic AI: <a href="https://pydantic.dev/docs/ai/integrations/durable_execution/overview/">durable execution</a>.</li>
+<li>MCP: <a href="https://modelcontextprotocol.io/docs/learn/architecture">architecture and primitives</a>.</li>
+<li>vLLM: <a href="https://docs.vllm.ai/en/latest/features/automatic_prefix_caching/">automatic prefix caching</a>.</li>
+<li>LiteLLM: <a href="https://docs.litellm.ai/docs/proxy/load_balancing">load balancing</a></li>
+</ul>
+<p>and <a href="https://docs.litellm.ai/docs/proxy/reliability">provider fallbacks</a>.</p>
+<ul>
+<li>SGLang: <a href="https://docs.sglang.ai/advanced_features/hyperparameter_tuning.html">serving memory and concurrency tuning</a>.</li>
+</ul>
+  </main>
+</body>
+</html>

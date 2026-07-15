@@ -1,0 +1,11 @@
+{
+  "case_count": 7,
+  "classification": "diagnostic",
+  "note": "This aggregate preserves recorded harness assessments. It does not upgrade trajectory evidence to semantic or physical proof.",
+  "run_id": "F14_targeted_hardening",
+  "status_counts": {
+    "fail": 1,
+    "pass": 6
+  },
+  "weighted_case_rate": 0.8571428571428571
+}

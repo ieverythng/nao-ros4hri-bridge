@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CRITIC Runtime Hardening Session</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2.6cm 2.2cm 2.4cm 2.2cm;
+    }
+    :root {
+      --ink: #111;
+      --muted: #3a3a3a;
+      --line: #1f1f1f;
+      --soft: #f3f3f3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #fff;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 11.5pt;
+      line-height: 1.42;
+    }
+    .doc {
+      max-width: 172mm;
+      margin: 0 auto;
+      padding: 0;
+    }
+    .title-page {
+      min-height: 247mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+    }
+    .title-top {
+      text-align: center;
+      margin-top: 18mm;
+    }
+    .title-top h1 {
+      font-size: 20pt;
+      line-height: 1.28;
+      margin: 20mm 0 8mm;
+      font-weight: 700;
+    }
+    .title-top h2 {
+      font-size: 13pt;
+      margin: 0 0 3mm;
+      font-weight: 600;
+      border-bottom: 0;
+    }
+    .title-top p {
+      margin: 2mm 0;
+      color: var(--muted);
+    }
+    .title-meta {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 auto 20mm;
+      font-size: 11pt;
+    }
+    .title-meta td {
+      padding: 2.5mm 0;
+      vertical-align: top;
+      border: 0;
+    }
+    .title-meta td:first-child {
+      width: 38mm;
+      font-weight: 700;
+    }
+    .small { font-size: 10.3pt; color: #222; }
+    h1, h2, h3 {
+      margin: 0 0 3mm;
+      line-height: 1.28;
+      font-weight: 700;
+    }
+    h1 { font-size: 16.5pt; margin-top: 0; }
+    h2 {
+      font-size: 13pt;
+      margin-top: 9mm;
+      border-bottom: 0.5pt solid var(--line);
+      padding-bottom: 1.5mm;
+    }
+    h3 {
+      font-size: 11.8pt;
+      margin-top: 6mm;
+    }
+    p { margin: 2.2mm 0; }
+    ul, ol { margin: 2.5mm 0 2.5mm 6mm; padding: 0; }
+    li { margin: 1.4mm 0; }
+    pre {
+      margin: 2.5mm 0 4mm;
+      background: var(--soft);
+      border: 0.6pt solid #666;
+      padding: 2.6mm 2.8mm;
+      overflow-x: auto;
+      white-space: pre;
+      font-family: "Liberation Mono", "Courier New", monospace;
+      font-size: 9.2pt;
+      line-height: 1.3;
+    }
+    code {
+      font-family: "Liberation Mono", "Courier New", monospace;
+      background: #efefef;
+      padding: 0.2mm 1mm;
+      border: 0.4pt solid #d7d7d7;
+      border-radius: 2px;
+      font-size: 10.3pt;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      border: 0;
+      font-size: inherit;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 3mm 0 4mm;
+      font-size: 10.8pt;
+    }
+    th, td {
+      border: 0.6pt solid #333;
+      padding: 2.2mm 2.3mm;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+      hyphens: auto;
+    }
+    th {
+      background: #fafafa;
+      text-align: left;
+      font-weight: 700;
+    }
+    .diagram {
+      margin: 4mm 0 5mm;
+      border: 0.6pt solid #777;
+      padding: 2mm;
+      background: #fff;
+    }
+    .diagram pre {
+      margin: 0;
+      border: 0;
+      background: #fcfcfc;
+      font-size: 10.2pt;
+      white-space: pre-wrap;
+    }
+    .diagram svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .diagram-labels {
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 25px;
+      font-weight: 700;
+      fill: #111;
+    }
+    .lifelines {
+      stroke: #999;
+      stroke-dasharray: 4 4;
+    }
+    .messages {
+      stroke: #111;
+      stroke-width: 1.35;
+      fill: none;
+    }
+    .messages text {
+      stroke: none;
+      fill: #111;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 22px;
+    }
+    .caption {
+      margin-top: 2mm;
+      font-size: 10.5pt;
+      color: #222;
+      font-style: italic;
+      text-align: center;
+    }
+    blockquote {
+      border: 0.6pt solid #333;
+      background: #fcfcfc;
+      margin: 3mm 0;
+      padding: 2.6mm 3mm;
+      color: var(--muted);
+    }
+    a { color: #111; }
+  </style>
+</head>
+<body>
+  <main class="doc">
+
+<h1>CRITIC Runtime Hardening Session</h1>
+<p>Date: 30 June 2026</p>
+<p>This handoff records the CRITIC runtime hardening pass that followed the</p>
+<p>response-first 8.7 baseline and the harder deep fake/replan run. The work</p>
+<p>focuses on keeping the healthy response-first stack intact while closing the</p>
+<p>validation gaps that appeared in preloaded environments, fake-skill failures,</p>
+<p>location-scoped delivery, and active-goal lifecycle management.</p>
+<h2>Session Objective</h2>
+<p>The target is not to raise the score by adding deterministic shortcuts. The</p>
+<p>target is to make the runtime evidence clearer and more truthful:</p>
+<ul>
+<li>missing targets must not be hidden by stale KnowledgeCore fixtures</li>
+<li>grouped locations must resolve to deliverable objects, not support surfaces</li>
+</ul>
+<p>or people</p>
+<ul>
+<li>terminal planner dialogue acts must release the planner gate</li>
+<li>report-result wording must be driven by structured execution evidence</li>
+<li>the runtime questionnaire must show where each case failed</li>
+</ul>
+<p>Prompt wording was deliberately left untouched in this pass. Any later prompt</p>
+<p>mutation must go through the SkillOpt ledger requirement in <code>AGENTS.md</code>.</p>
+<h2>What Changed</h2>
+<table><thead><tr>
+<th>Area</th>
+<th>Action</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr></thead><tbody>
+<tr>
+<td>Active planner goal lifecycle</td>
+<td>Updated the planner gate so terminal planner dialogue acts clear the active goal. Clarifications that wait for the user still keep lineage.</td>
+<td>Source-patched</td>
+<td><code>src/nao_orchestrator/nao_orchestrator/planner_gate.py</code>; <code>src/nao_orchestrator/test/test_planner_gate.py</code></td>
+</tr>
+<tr>
+<td>Runtime questionnaire observability</td>
+<td>Added per-case phase breadcrumbs for turn injection, route, planner request, execution feedback, terminal outcome, and speech. Artifacts are written immediately after injection, then updated during long waits. The runner only short-circuits after terminal and speech evidence are both present.</td>
+<td>Source-patched</td>
+<td><code>.codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py</code>; <code>test_run_active_questionnaire.py</code></td>
+</tr>
+<tr>
+<td>Stale-world guard</td>
+<td>Added absence preflights for missing-object and missing-recipient cases. Contaminated cases are skipped before speech injection.</td>
+<td>Source-patched</td>
+<td>Questionnaire <code>stale_world_guard</code> fields</td>
+</tr>
+<tr>
+<td>Grounded context object filtering</td>
+<td>Filtered ontology, support, place, and person entries from user-facing location members while preserving raw RDF facts for trace/debug.</td>
+<td>Source-patched</td>
+<td><code>src/planner_common/planner_common/contracts.py</code>; <code>src/planner_common/test/test_contracts.py</code></td>
+</tr>
+<tr>
+<td>Chatbot scene digest filtering</td>
+<td>Applied the same user-facing ontology filter to chatbot scene digests, including compact location groups.</td>
+<td>Source-patched</td>
+<td><code>src/chatbot_llm/chatbot_llm/knowledge_snapshot.py</code>; <code>src/chatbot_llm/test/test_knowledge_snapshot.py</code></td>
+</tr>
+<tr>
+<td>Grouped delivery fallback</td>
+<td>Ensured the grouped-delivery fallback iterates only concrete object members from a matched location group.</td>
+<td>Source-patched</td>
+<td><code>src/planner_llm/planner_llm/planner_engine.py</code>; <code>src/planner_llm/test/test_planner_engine.py</code></td>
+</tr>
+<tr>
+<td>Missing named recipient</td>
+<td>Added grouped-delivery and chatbot admission holdouts where BLAKE is requested while only ALEX is grounded. Response-first and intent-first admission now clarify before planner handoff when a named person is absent from grounded context.</td>
+<td>Source-patched; live proof pending</td>
+<td><code>src/planner_llm/test/test_planner_engine.py</code>; <code>src/chatbot_llm/test/test_turn_engine.py</code></td>
+</tr>
+<tr>
+<td>Execution outcome summaries</td>
+<td>Added structured <code>plan_outcome_summary</code> data to execution feedback so later report and replan analysis can separate completed, failed, and pending targets.</td>
+<td>Source-patched</td>
+<td><code>src/nao_orchestrator/nao_orchestrator/orchestrator.py</code>; <code>src/planner_common/planner_common/contracts.py</code></td>
+</tr>
+<tr>
+<td>SVG fixture availability</td>
+<td>Packaged preloaded environment SVGs into the <code>nao_chatbot</code> install share so rqt can select them after a rebuild.</td>
+<td>Source-patched</td>
+<td><code>src/nao_chatbot/setup.py</code>; <code>src/nao_chatbot/config/preloaded_environment_svgs/</code></td>
+</tr>
+<tr>
+<td>7 Jul strict fake-deep scoring</td>
+<td>Complete-context clarifications are now scored as failures, fallback pressure is recorded per case, and the log slicer now extracts timestamps from ROS log bodies instead of accepting stale <code>[INFO]</code> lines.</td>
+<td>Source-patched</td>
+<td><code>.codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py</code>; <code>test_run_active_questionnaire.py</code></td>
+</tr>
+<tr>
+<td>7 Jul grouped-location resolution</td>
+<td>Planner matching now prefers specific grounded labels/aliases such as <code>work_table</code> over generic <code>table</code>, preserves spatially materialized user objects with explicit RDF types, and resolves repeated named people by relation scope or stable namespace before asking for clarification.</td>
+<td>Source-patched; rebuilt fake-deep pass</td>
+<td><code>src/planner_llm/planner_llm/planner_engine.py</code>; <code>src/planner_common/planner_common/contracts.py</code></td>
+</tr>
+</tbody></table>
+<h2>Validation Completed</h2>
+<p>Focused source validation was run before this handoff:</p>
+<ul>
+<li><code>90 passed</code> for planner contracts, planner gate, planner engine, and the</li>
+</ul>
+<p>runtime questionnaire helper tests</p>
+<ul>
+<li><code>64 passed</code> for orchestrator intent-rule and outcome-summary tests</li>
+<li><code>81 passed</code> for chatbot turn-engine route/admission tests, including the</li>
+</ul>
+<p>named-recipient grounding guard</p>
+<ul>
+<li><code>21 passed</code> for chatbot knowledge snapshot digest tests</li>
+<li><code>3 passed</code> for interaction trace viewer tests</li>
+<li><code>py_compile</code> passed for the touched Python entrypoints</li>
+<li><code>git diff --check</code> passed</li>
+<li><code>scripts/ros4hri_change_audit.py --mode working</code> passed</li>
+</ul>
+<p>On 7 July, an additional strict JSON-only source gate passed: <code>42 passed</code> for <code>planner_llm</code>, <code>35 passed</code> for <code>planner_common</code>, <code>9 passed</code> for the runtime-review questionnaire harness, and <code>py_compile</code> passed for the touched planner, contract, and harness files.</p>
+<p>The clean rebuilt fake-deep proof then passed the all-success ladder behaviorally and passed the full <code>fail_once_navigation</code> ladder. The remaining pressure marker was <code>route_repair</code>; severe fallback classes stayed at zero: no duplicate active goal, invalid planner JSON, invalid executable plan, backend-unreachable speech, or rules-response fallback.</p>
+<h2>Remaining Live Proof</h2>
+<p>The later 30 June real-image pass rebuilt <code>iiia:nao</code>, removed the temporary critic image, and launched a clean <code>nao_ros2</code> response-first stack. The graph contained <code>/chatbot_llm</code>, <code>/dialogue_manager</code>, <code>/planner_llm</code>, <code>/nao_orchestrator</code>, <code>/kb/knowledge_core</code>, <code>/fake_skill_server</code>, <code>/report_result_skill_server</code>, <code>/scan_skill_server</code>, <code>/interaction_trace_viewer</code>, and the HRI person/visualization nodes. <code>/chatbot_llm turn_pipeline_mode</code> matched <code>response_first</code>, <code>mirror_trace_lines_to_rosout</code> was enabled, and <code>nao_chatbot</code> exposed <code>preloaded_environment_viewer</code>.</p>
+<p>The rebuilt pass used the patched harness and produced these artifacts:</p>
+<pre><code>/tmp/nao_fake_deep_all_success_real_20260630.json
+/tmp/nao_fake_deep_grouped_delivery_real_20260630.json
+/tmp/nao_fake_deep_fail_once_navigation_real_20260630.json</code></pre>
+<p>The duplicate active-goal rejection did not recur. Independent speech dialogues now produce runtime goal ids instead of reusing <code>goal_default___1</code>. Isolated grouped work-table delivery passed with route, planner request, three <code>bring_object</code> successes, <code>report_result</code>, final speech, and <code>plan_completed</code>. The <code>fail_once_navigation</code> kitchen case produced the desired recovery lineage: <code>plan_version=1</code> failed <code>navigate_to(codex_iiia_kitchen)</code>, then <code>plan_version=2</code> executed and resolved a final report. The final spoken result reported that <code>codex_iiia_cup</code> was brought to <code>codex_iiia_alex</code>.</p>
+<p>Keep the score qualified until the rebuilt stack proves the revised harness under the same fake-deep cases. Source now records terminal evidence separately from speech and keeps observing until both have appeared or the configured wait expires.</p>
+<h2>Current Risk Register</h2>
+<table><thead><tr>
+<th>Risk</th>
+<th>Why it matters</th>
+<th>Next action</th>
+</tr></thead><tbody>
+<tr>
+<td>Harness late-phase accounting can underreport success</td>
+<td>The <code>fail_once_navigation</code> artifact marked route/planner/speech false because the case wrote <code>wait_sec=0.0</code>, while launch logs showed replan and final report.</td>
+<td>Source now keeps observing until the configured wait or terminal plus speech evidence. Rerun the same case after a clean rebuild and compare the JSON to launch logs.</td>
+</tr>
+<tr>
+<td>Missing-recipient speech guard needs live proof</td>
+<td>Source now blocks named-person execution admission when the grounded context cannot confirm that recipient.</td>
+<td>Rerun the BLAKE case in isolation; expected result is clarification before planner request, no invented recipient, and no duplicate active planner goal.</td>
+</tr>
+<tr>
+<td>Grounded-context digest count mismatch</td>
+<td>One fail-once run logged <code>Objects (0): none currently grounded</code> while the JSON contained visible cups, books, and tables.</td>
+<td>The scored JSON-only path now disables the compact digest. Keep digest disabled for strict fake-deep scoring until it is rebuilt from the same location-group contract and revalidated against the JSON.</td>
+</tr>
+<tr>
+<td>Grouped-location clarification despite complete fixture context</td>
+<td>The 7 Jul JSON-only run proved the planner could still ask which location to collect from even though the fixture exposed <code>codex_lab_table_section</code> with <code>dbp:name work_table</code>.</td>
+<td>Source now replays that grounded context into a valid member-expanded plan, and the rebuilt fake-deep run proved grouped work-table delivery without the old clarification. Keep <code>fail_once_pick</code> and <code>delivery_blocked</code> as the next recovery gates.</td>
+</tr>
+<tr>
+<td>Ordered walk/report completed a support location</td>
+<td>A 7 Jul shared-voice trace showed <code>report_result</code> saying it completed the base table and table. The trace showed no execution-report fallback; the planner fallback had exported support locations in <code>scene_targets</code>.</td>
+<td>Source now exports concrete member object ids for grouped delivery and ordered walk fallback metadata. The rebuilt fake-deep run passed ordered walk/report and grouped delivery; keep a separate speech holdout for subjective report phrasing.</td>
+</tr>
+<tr>
+<td>Manual vague KB add remains unsafe</td>
+<td>“Add one cup” can still become an invalid mutation instead of asking for structured facts.</td>
+<td>Add a clarification gate for under-specified KB mutations in a later pass.</td>
+</tr>
+<tr>
+<td>Intent-first remains an ablation</td>
+<td>It improves some route locks but regresses ordinary dialogue wording.</td>
+<td>Keep response-first as the demo profile until intent-first passes the same holdouts.</td>
+</tr>
+<tr>
+<td>Spatial/proximity proof is pending</td>
+<td>The thesis needs a clear boundary between symbolic facts and metric spatial evidence.</td>
+<td>Run a trusted simulator pose overlay and verify scene summary, KB, grounded context, and answer.</td>
+</tr>
+</tbody></table>
+<h2>Actionable Next Steps</h2>
+<ol>
+<li>Patch harness late-phase accounting, then rerun the same isolated grouped delivery and fail-once navigation cases to confirm the artifact matches the launch logs.</li>
+<li>Run missing-recipient, absent-object, delivery-blocked, and fail-once-pick speech cases in isolation before returning to the full ladder.</li>
+<li>Fix the grounded-context digest count mismatch and add a contract holdout that compares summary counts against the JSON entity list.</li>
+<li>Keep the deep fake/replan score at <code>7.4/10 qualified</code> until the harness and missing-recipient proof are clean.</li>
+</ol>
+  </main>
+</body>
+</html>

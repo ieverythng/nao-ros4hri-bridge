@@ -14,8 +14,11 @@ layout, formal title page, compact tables, and explicit runtime contracts.
 | `tfm_architecture_and_implementation_reference_2026-06-03` | Architecture, package ownership, runtime flow, and chapter integration material. |
 | `tfm_runtime_contracts_and_semantics_2026-06-03` | Planner request/output, grounding, feedback, and dialogue-act contract reference. |
 | `tfm_validation_protocol_2026-06-03` | Scenario matrix, metrics, ablations, validation gates, and experiment log template. |
+| `tfm_validation_execution_plan_2026-06-11.md` | Concrete commands, fake-skill scenarios, spatial-overlay procedure, metrics artifacts, and acceptance gates. |
 
-Each artifact is generated as `.md`, `.html`, and `.pdf`.
+The three dated 2026-06-03 reference artifacts are generated as `.md`, `.html`,
+and `.pdf`. The execution plan is maintained as an operational Markdown
+companion because its commands and scenario inventory change with the runtime.
 
 ## Regeneration
 

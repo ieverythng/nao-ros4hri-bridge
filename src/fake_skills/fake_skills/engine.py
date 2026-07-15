@@ -21,7 +21,11 @@ SUCCESS_MODE_BY_SKILL = {
     'perform_motion': 'success',
     'wave_greet': 'success',
     'inspect_area': 'clear',
+    'look_at': 'success',
     'walk_to': 'success',
+    'pick_object': 'success',
+    'place_object': 'success',
+    'bring_object': 'success',
 }
 
 FAILURE_MODE_BY_SKILL = {
@@ -30,8 +34,14 @@ FAILURE_MODE_BY_SKILL = {
     'perform_motion': 'motion_unavailable',
     'wave_greet': 'motion_unavailable',
     'inspect_area': 'backend_unavailable',
+    'look_at': 'target_unavailable',
     'walk_to': 'path_blocked',
+    'pick_object': 'object_unavailable',
+    'place_object': 'no_held_object',
+    'bring_object': 'acquisition_failure',
 }
+
+_POSTURE_MOTIONS = {'stand', 'standinit', 'sit', 'kneel', 'crouch'}
 
 
 class FakeSkillEngine:
@@ -51,6 +61,7 @@ class FakeSkillEngine:
         self._default_delay_sec = max(0.0, float(default_delay_sec))
         self._deterministic_seed = int(deterministic_seed)
         self._call_counters: dict[str, int] = {}
+        self._posture_state = 'unknown'
         self.update_policy(
             global_mode=global_mode,
             random_failure_prob=random_failure_prob,
@@ -60,6 +71,11 @@ class FakeSkillEngine:
     @property
     def supported_skills(self) -> tuple[str, ...]:
         return tuple(sorted(SKILL_EXECUTORS.keys()))
+
+    @property
+    def posture_state(self) -> str:
+        """Return the last successfully simulated body posture."""
+        return self._posture_state
 
     def execute(
         self,
@@ -90,8 +106,21 @@ class FakeSkillEngine:
 
         merged_args = dict(merged_config)
         merged_args.update(request_args)
+        posture_motion = self._posture_motion(clean_skill, merged_args)
+        if posture_motion:
+            merged_args['previous_posture_state'] = self._posture_state
 
-        call_key = self._call_key(skill=clean_skill, args=merged_args, mode='policy')
+        policy_fail_once = (
+            not _normalize_mode_value(request_scenario_override.get('result_mode', ''))
+            and not _normalize_mode_value(request_args.get('result_mode', ''))
+            and _normalize_mode_value(self._mode_overrides.get(clean_skill, ''))
+            == 'fail_once'
+        )
+        call_key = self._call_key(
+            skill=clean_skill,
+            args={} if policy_fail_once else merged_args,
+            mode='policy',
+        )
         call_count = self._call_counters.get(call_key, 0)
         self._call_counters[call_key] = call_count + 1
 
@@ -123,9 +152,20 @@ class FakeSkillEngine:
             metadata=metadata,
             fail_once_active=call_count > 0,
         )
+        if posture_motion and payload.get('status') == 'succeeded':
+            self._posture_state = posture_motion
         payload['metadata'] = dict(metadata, **dict(payload.get('metadata', {})))
 
         return payload, delay_sec
+
+    @staticmethod
+    def _posture_motion(skill: str, args: dict) -> str:
+        if skill != 'perform_motion':
+            return ''
+        motion = str(
+            args.get('object', args.get('motion', args.get('target', '')))
+        ).strip().lower()
+        return motion if motion in _POSTURE_MOTIONS else ''
 
     def _resolve_delay(self, merged_args: dict) -> float:
         if 'delay_sec' in merged_args:
@@ -139,7 +179,10 @@ class FakeSkillEngine:
         signature = {
             'skill': skill,
             'mode': mode,
-            'target': args.get('target', args.get('object', args.get('location', ''))),
+            'target': args.get(
+                'object_id',
+                args.get('target', args.get('object', args.get('location', ''))),
+            ),
             'target_kind': args.get('target_kind', ''),
         }
         text = repr(signature).encode('utf-8')
@@ -153,9 +196,24 @@ class FakeSkillEngine:
         random_failure_prob: float,
         mode_overrides: dict[str, str] | None,
     ) -> None:
-        self._global_mode = self._normalize_global_mode(global_mode)
-        self._random_failure_prob = self._coerce_probability(random_failure_prob)
-        self._mode_overrides = self._normalize_mode_overrides(mode_overrides)
+        next_global_mode = self._normalize_global_mode(global_mode)
+        next_random_failure_prob = self._coerce_probability(random_failure_prob)
+        next_mode_overrides = self._normalize_mode_overrides(mode_overrides)
+        previous_policy = (
+            getattr(self, '_global_mode', None),
+            getattr(self, '_random_failure_prob', None),
+            getattr(self, '_mode_overrides', None),
+        )
+        next_policy = (
+            next_global_mode,
+            next_random_failure_prob,
+            next_mode_overrides,
+        )
+        if previous_policy != next_policy:
+            self._call_counters.clear()
+        self._global_mode = next_global_mode
+        self._random_failure_prob = next_random_failure_prob
+        self._mode_overrides = next_mode_overrides
 
     def _resolve_result_mode(
         self,

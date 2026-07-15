@@ -124,7 +124,20 @@ cases:
       global_mode: always_success
     expected:
       plan_contains: [&quot;scan&quot;, &quot;report_result&quot;]
-      report_result_uses_live_payload: true</code></pre>
+      report_result_uses_live_payload: true
+
+  - id: navigate_all_objects_report_each
+    utterance: &quot;Now walk to every object, let me know when you are there and then walk to the next!&quot;
+    route_mode: user_turn
+    goal_text: &quot;walk to every grounded object, report each arrival, and then continue to the next object&quot;
+    normalized_intents: [&quot;navigate_to&quot;, &quot;report_result&quot;]
+    scene_targets: [&quot;apple&quot;, &quot;book&quot;, &quot;phone&quot;]
+    fake_policy:
+      global_mode: always_success
+    expected:
+      plan_contains: [&quot;navigate_to&quot;, &quot;report_result&quot;]
+      report_after_each_navigation: true
+      final_report_mentions_all_targets: true</code></pre>
 <p>Keep <code>route_mode=planner_request</code> for fast stability. Add true user-speech injection later.</p>
 <p>---</p>
 <h2>5. Two execution modes</h2>
@@ -166,6 +179,7 @@ social_wave_unavailable</code></pre>
 <table><thead><tr><th>Case family</th><th>Modes</th></tr></thead><tbody>
 <tr><td>find_object</td><td>success, ambiguous, always_fail</td></tr>
 <tr><td>navigate_to</td><td>success, path_blocked</td></tr>
+<tr><td>navigate_to plus report_result</td><td>all objects success, one target missing, path_blocked</td></tr>
 <tr><td>scan/report_result</td><td>always_success, always_fail</td></tr>
 <tr><td>wave_greet</td><td>success, social_wave_unavailable</td></tr>
 <tr><td>inspect_area</td><td>clear, area_person_found</td></tr>

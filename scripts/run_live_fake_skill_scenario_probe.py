@@ -59,6 +59,22 @@ CASES: tuple[ProbeCase, ...] = (
         scene_targets=("cup",),
     ),
     ProbeCase(
+        case_id="spatial_near_object",
+        mode="scenario",
+        scenario_id="object_near_robot",
+        goal_text="find the cup and report how far away it is",
+        normalized_intents=("find_object", "report_result"),
+        scene_targets=("cup",),
+    ),
+    ProbeCase(
+        case_id="spatial_far_object",
+        mode="scenario",
+        scenario_id="object_far_from_robot",
+        goal_text="find the cup and report how far away it is",
+        normalized_intents=("find_object", "report_result"),
+        scene_targets=("cup",),
+    ),
+    ProbeCase(
         case_id="random_seeded_stress",
         mode="random_seeded",
         scenario_id="",
@@ -166,8 +182,52 @@ def _sync_files_to_container(container: str) -> None:
             "/home/ubuntu/ws/src/nao_orchestrator/nao_orchestrator/orchestrator.py",
         ),
         (
+            REPO_ROOT / "src" / "nao_orchestrator" / "nao_orchestrator" / "intent_rules.py",
+            "/home/ubuntu/ws/src/nao_orchestrator/nao_orchestrator/intent_rules.py",
+        ),
+        (
             REPO_ROOT / "src" / "nao_chatbot" / "nao_chatbot" / "stack_launch.py",
             "/home/ubuntu/ws/src/nao_chatbot/nao_chatbot/stack_launch.py",
+        ),
+        (
+            REPO_ROOT / "src" / "nao_scene_grounding" / "nao_scene_grounding" / "scene_grounding_node.py",
+            "/home/ubuntu/ws/src/nao_scene_grounding/nao_scene_grounding/scene_grounding_node.py",
+        ),
+        (
+            REPO_ROOT / "src" / "nao_scene_grounding" / "config" / "00-defaults.yml",
+            "/home/ubuntu/ws/src/nao_scene_grounding/config/00-defaults.yml",
+        ),
+        (
+            REPO_ROOT / "src" / "kb_skills" / "kb_skills" / "mutation_client.py",
+            "/home/ubuntu/ws/src/kb_skills/kb_skills/mutation_client.py",
+        ),
+        (
+            REPO_ROOT / "src" / "planner_common" / "planner_common" / "contracts.py",
+            "/home/ubuntu/ws/src/planner_common/planner_common/contracts.py",
+        ),
+        (
+            REPO_ROOT / "src" / "planner_llm" / "config" / "skill_registry.json",
+            "/home/ubuntu/ws/src/planner_llm/config/skill_registry.json",
+        ),
+        (
+            REPO_ROOT / "src" / "planner_llm" / "config" / "planner_prompt_pack.yaml",
+            "/home/ubuntu/ws/src/planner_llm/config/planner_prompt_pack.yaml",
+        ),
+        (
+            REPO_ROOT / "src" / "planner_llm" / "planner_llm" / "prompt_pack.py",
+            "/home/ubuntu/ws/src/planner_llm/planner_llm/prompt_pack.py",
+        ),
+        (
+            REPO_ROOT / "src" / "chatbot_llm" / "config" / "chat_prompt_pack.yaml",
+            "/home/ubuntu/ws/src/chatbot_llm/config/chat_prompt_pack.yaml",
+        ),
+        (
+            REPO_ROOT / "src" / "chatbot_llm" / "chatbot_llm" / "planner_handoff.py",
+            "/home/ubuntu/ws/src/chatbot_llm/chatbot_llm/planner_handoff.py",
+        ),
+        (
+            REPO_ROOT / "src" / "chatbot_llm" / "chatbot_llm" / "prompt_pack.py",
+            "/home/ubuntu/ws/src/chatbot_llm/chatbot_llm/prompt_pack.py",
         ),
         (
             REPO_ROOT / "src" / "interaction_trace_viewer" / "interaction_trace_viewer" / "payload_normalizer.py",
@@ -180,6 +240,10 @@ def _sync_files_to_container(container: str) -> None:
         (
             REPO_ROOT / "src" / "fake_skills" / "config" / "fake_skill_scenarios.yaml",
             "/home/ubuntu/ws/src/fake_skills/config/fake_skill_scenarios.yaml",
+        ),
+        (
+            REPO_ROOT / "src" / "fake_skills" / "fake_skills" / "skills" / "find_object.py",
+            "/home/ubuntu/ws/src/fake_skills/fake_skills/skills/find_object.py",
         ),
         (
             REPO_ROOT / "scripts" / "fake_skill_scenario_menu.sh",
@@ -197,7 +261,9 @@ def _sync_files_to_container(container: str) -> None:
 def _build_container_workspace(container: str) -> None:
     build_cmd = (
         f"{_ros_preamble()} && cd /home/ubuntu/ws && "
-        "colcon build --packages-select nao_orchestrator interaction_trace_viewer fake_skills nao_chatbot"
+        "colcon build --packages-select planner_common kb_skills nao_scene_grounding "
+        "nao_orchestrator planner_llm chatbot_llm interaction_trace_viewer fake_skills "
+        "nao_chatbot"
     )
     _docker_exec(container, build_cmd)
 
@@ -259,26 +325,24 @@ def _publish_planner_request(
 ) -> tuple[str, str]:
     turn_id = f"probe_turn_{sequence:02d}_{case.case_id}"
     goal_id = f"goal_probe_{sequence:02d}_{case.case_id}"
-    goal_token = f"{goal_id}:{turn_id}"
     payload = {
         "request_id": turn_id,
         "goal_id": goal_id,
-        "goal_token": goal_token,
         "request_kind": "new_goal",
         "goal_text": case.goal_text,
         "normalized_intents": list(case.normalized_intents),
-        "ack_text": f"I will {case.goal_text}.",
-        "ack_mode": "say",
         "scene_targets": list(case.scene_targets),
         "dialogue_context": [f"probe case: {case.case_id}"],
         "grounded_context": {
-            "knowledge_snapshot": {"summary_text": "probe context"},
+            "knowledge_snapshot": {"references": []},
             "scene_summary": {},
-            "world_model_snapshot": {},
-            "world_model_text": "",
+            "state_t0": {
+                "observer": "myself",
+                "backend": "fake_skills",
+                "captured_at_sec": time.time(),
+            },
         },
         "planner_mode": "default",
-        "interaction_mode": "speech",
         "dialogue_turn_id": turn_id,
     }
     intent_publish_cmd = (
@@ -497,8 +561,19 @@ def main() -> int:
         cases=started_cases,
         all_events=events,
     )
+    metrics_prefix = ARTIFACTS_DIR / f"fake_skill_validation_metrics_{stamp}"
+    _run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "scripts" / "summarize_validation_traces.py"),
+            str(trace_jsonl_path),
+            "--output-prefix",
+            str(metrics_prefix),
+        ]
+    )
 
     print(str(report_path))
+    print(str(metrics_prefix.with_suffix(".html")))
     return 0
 
 

@@ -58,6 +58,7 @@ _LAB_VLLM_DEFAULTS = {
     "chatbot_request_timeout_sec": "60.0",
     "chatbot_first_request_timeout_sec": "75.0",
     "chatbot_response_max_tokens": "192",
+    "chatbot_turn_pipeline_mode": "response_first",
     "chatbot_preflight_timeout_sec": "60.0",
     "chatbot_preflight_attempts": "3",
     "chatbot_preflight_realistic_enabled": "true",
@@ -101,9 +102,12 @@ _SIM_CAMERA_DEFAULTS = {
     "fake_skill_global_mode": "scenario",
     "fake_skill_random_failure_prob": "0.50",
     "fake_skill_mode_overrides_json": "{}",
+    "preloaded_environment_ids": "",
+    "preloaded_environment_lifespan_sec": "1800.0",
     "head_motion_allow_open_loop_without_joint_state": "true",
     "head_motion_assume_success_on_convergence_timeout": "false",
     "perform_motion_execution_mode": "real",
+    "look_at_execution_mode": "fake",
 }
 _ROBOT_CAMERA_DEFAULTS = {
     "nao_ip": "172.26.112.25",
@@ -122,6 +126,7 @@ _ROBOT_CAMERA_DEFAULTS = {
     "head_motion_allow_open_loop_without_joint_state": "true",
     "head_motion_assume_success_on_convergence_timeout": "false",
     "perform_motion_execution_mode": "real",
+    "look_at_execution_mode": "fake",
     "start_interaction_sim": "false",
     "start_interaction_sim_perception": "false",
     "start_interaction_sim_tools": "true",
@@ -185,7 +190,7 @@ _DEMO_LOG_NODES = ",".join(
     )
 )
 _GROUNDING_DEFAULTS = {
-    "object_detection_threshold": "0.40",
+    "object_detection_threshold": "0.70",
     "scene_grounding_knowledge_lifespan_sec": "8.0",
     "scene_grounding_knowledge_refresh_interval_sec": "0.75",
     "scene_grounding_local_stale_after_sec": "10.0",
@@ -364,6 +369,8 @@ def _lifecycle_bootstrap_script(node_name: str, timeout_sec: int = 120) -> str:
     normalized_name = f"/{str(node_name).lstrip('/')}"
     return f"""
 node_name="{normalized_name}"
+exec 9>"/tmp/nao_chatbot_lifecycle_${{node_name#/}}.lock"
+flock 9
 deadline=$((SECONDS + {max(1, int(timeout_sec))}))
 while true; do
   state="$(ros2 lifecycle get "$node_name" 2>/dev/null | \
@@ -397,6 +404,8 @@ def _lifecycle_recovery_script(node_name: str, timeout_sec: int = 240) -> str:
     normalized_name = f"/{str(node_name).lstrip('/')}"
     return f"""
 node_name="{normalized_name}"
+exec 9>"/tmp/nao_chatbot_lifecycle_${{node_name#/}}.lock"
+flock 9
 deadline=$((SECONDS + {max(1, int(timeout_sec))}))
 while true; do
   state="$(ros2 lifecycle get "$node_name" 2>/dev/null | \
@@ -472,6 +481,14 @@ def _activate_lifecycle_node_on_inactive(node, *, condition=None):
             handle_once=True,
         ),
         condition=condition,
+    )
+
+
+def _configure_and_activate_lifecycle_node(node, *, condition=None):
+    """Return launch actions that configure a lifecycle node, then activate it."""
+    return (
+        _configure_lifecycle_node(node, condition=condition),
+        _activate_lifecycle_node_on_inactive(node, condition=condition),
     )
 
 
@@ -902,7 +919,11 @@ def generate_profile_launch_description(
     )
     object_detection_threshold_arg = DeclareLaunchArgument(
         "object_detection_threshold",
-        default_value="0.35",
+        default_value=_profile_default(
+            profile_defaults,
+            "object_detection_threshold",
+            "0.70",
+        ),
         description="Detector threshold forwarded to yolo_ros and mirrored into scene grounding defaults.",
     )
     object_detection_input_image_topic_arg = DeclareLaunchArgument(
@@ -928,6 +949,14 @@ def generate_profile_launch_description(
         "scene_grounding_summary_topic",
         default_value="/scene/summary",
         description="JSON summary topic published by nao_scene_grounding.",
+    )
+    scene_grounding_spatial_overlay_topic_arg = DeclareLaunchArgument(
+        "scene_grounding_spatial_overlay_topic",
+        default_value="",
+        description=(
+            "Optional JSON topic providing frame-qualified object positions keyed "
+            "by grounded entity id."
+        ),
     )
     planner_request_topic_arg = DeclareLaunchArgument(
         "planner_request_topic",
@@ -1158,6 +1187,37 @@ def generate_profile_launch_description(
         default_value=_profile_default(profile_defaults, "start_fake_skills", "true"),
         description="Launch deterministic fake skill action servers (/skill/fake/*).",
     )
+    preloaded_environment_ids_arg = DeclareLaunchArgument(
+        "preloaded_environment_ids",
+        default_value=_profile_default(profile_defaults, "preloaded_environment_ids", ""),
+        description=(
+            "Comma-separated KnowledgeCore environment fixtures to preload at "
+            "startup, for example baseline_table,kitchen_delivery. Empty disables "
+            "the launch-time preload."
+        ),
+    )
+    preloaded_environment_fixtures_path_arg = DeclareLaunchArgument(
+        "preloaded_environment_fixtures_path",
+        default_value=_profile_default(profile_defaults, "preloaded_environment_fixtures_path", ""),
+        description=(
+            "Optional absolute fixture JSON path. Empty uses the packaged "
+            "nao_chatbot/config/preloaded_environments.json."
+        ),
+    )
+    preloaded_environment_lifespan_sec_arg = DeclareLaunchArgument(
+        "preloaded_environment_lifespan_sec",
+        default_value=_profile_default(
+            profile_defaults,
+            "preloaded_environment_lifespan_sec",
+            "1800.0",
+        ),
+        description="KnowledgeCore lifespan for launch-preloaded environment facts.",
+    )
+    preloaded_environment_kb_models_arg = DeclareLaunchArgument(
+        "preloaded_environment_kb_models",
+        default_value=_profile_default(profile_defaults, "preloaded_environment_kb_models", ""),
+        description="Optional CSV KnowledgeCore model list for launch-preloaded fixtures.",
+    )
     fake_skill_scenario_file_arg = DeclareLaunchArgument(
         "fake_skill_scenario_file",
         default_value=_profile_default(profile_defaults, "fake_skill_scenario_file", ""),
@@ -1189,7 +1249,12 @@ def generate_profile_launch_description(
     perform_motion_execution_mode_arg = DeclareLaunchArgument(
         "perform_motion_execution_mode",
         default_value=_profile_default(profile_defaults, "perform_motion_execution_mode", "real"),
-        description="perform_motion dispatch mode: real|fake.",
+        description="perform_motion dispatch mode: real by default; fake is an explicit validation opt-in.",
+    )
+    look_at_execution_mode_arg = DeclareLaunchArgument(
+        "look_at_execution_mode",
+        default_value=_profile_default(profile_defaults, "look_at_execution_mode", "fake"),
+        description="look_at dispatch mode: fake by default; real is an explicit opt-in.",
     )
     start_nao_say_skill_arg = DeclareLaunchArgument(
         "start_nao_say_skill",
@@ -1581,13 +1646,50 @@ def generate_profile_launch_description(
     )
     chatbot_intent_max_tokens_arg = DeclareLaunchArgument(
         "chatbot_intent_max_tokens",
-        default_value=_profile_default(profile_defaults, "chatbot_intent_max_tokens", "64"),
+        default_value=_profile_default(profile_defaults, "chatbot_intent_max_tokens", "256"),
         description="Maximum intent tokens requested from chatbot_llm Ollama calls.",
     )
     chatbot_intent_model_arg = DeclareLaunchArgument(
         "chatbot_intent_model",
         default_value="",
         description="Optional dedicated model used by chatbot_llm for intent extraction.",
+    )
+    chatbot_turn_pipeline_mode_arg = DeclareLaunchArgument(
+        "chatbot_turn_pipeline_mode",
+        default_value=_profile_default(
+            profile_defaults,
+            "chatbot_turn_pipeline_mode",
+            "response_first",
+        ),
+        description=(
+            "Chatbot turn pipeline: response_first for the current path or "
+            "intent_first for route-locked runtime-review ablations."
+        ),
+    )
+    chatbot_grounded_context_digest_enabled_arg = DeclareLaunchArgument(
+        "chatbot_grounded_context_digest_enabled",
+        default_value=_profile_default(
+            profile_defaults,
+            "chatbot_grounded_context_digest_enabled",
+            "true",
+        ),
+        description=(
+            "Enable the compact natural-language scene digest before the "
+            "authoritative grounded_context JSON. Set false for JSON-only "
+            "runtime-review ablations."
+        ),
+    )
+    grounded_context_digest_enabled_arg = DeclareLaunchArgument(
+        "grounded_context_digest_enabled",
+        default_value=_profile_default(
+            profile_defaults,
+            "grounded_context_digest_enabled",
+            "true",
+        ),
+        description=(
+            "Compatibility alias for chatbot_grounded_context_digest_enabled. "
+            "Either flag set to false disables the compact scene digest."
+        ),
     )
     ollama_intent_model_arg = DeclareLaunchArgument(
         "ollama_intent_model",
@@ -1827,6 +1929,26 @@ def generate_profile_launch_description(
                 )
             },
             {
+                "turn_pipeline_mode": ParameterValue(
+                    LaunchConfiguration("chatbot_turn_pipeline_mode"),
+                    value_type=str,
+                )
+            },
+            {
+                "grounded_context_digest_enabled": ParameterValue(
+                    PythonExpression(
+                        [
+                            '"',
+                            LaunchConfiguration("chatbot_grounded_context_digest_enabled"),
+                            '".lower() == "true" and "',
+                            LaunchConfiguration("grounded_context_digest_enabled"),
+                            '".lower() == "true"',
+                        ]
+                    ),
+                    value_type=bool,
+                )
+            },
+            {
                 "preflight_required": ParameterValue(
                     LaunchConfiguration("chatbot_preflight_required"),
                     value_type=bool,
@@ -1954,6 +2076,12 @@ def generate_profile_launch_description(
             {
                 "perform_motion_execution_mode": ParameterValue(
                     LaunchConfiguration("perform_motion_execution_mode"),
+                    value_type=str,
+                )
+            },
+            {
+                "look_at_execution_mode": ParameterValue(
+                    LaunchConfiguration("look_at_execution_mode"),
                     value_type=str,
                 )
             },
@@ -2229,6 +2357,39 @@ def generate_profile_launch_description(
             "started by start_interaction_sim_perception:=true, not by start_naoqi_driver."
         ),
     )
+    preloaded_environment = TimerAction(
+        period=8.0,
+        actions=[
+            ExecuteProcess(
+                cmd=[
+                    "bash",
+                    "-lc",
+                    [
+                        _service_wait_script("/kb/revise", timeout_sec=45),
+                        " && exec preload_environment --environment-ids '",
+                        LaunchConfiguration("preloaded_environment_ids"),
+                        "' --fixture-path '",
+                        LaunchConfiguration("preloaded_environment_fixtures_path"),
+                        "' --kb-lifespan-sec '",
+                        LaunchConfiguration("preloaded_environment_lifespan_sec"),
+                        "' --kb-models '",
+                        LaunchConfiguration("preloaded_environment_kb_models"),
+                        "'",
+                    ],
+                ],
+                output="screen",
+                condition=IfCondition(
+                    PythonExpression(
+                        [
+                            '"',
+                            LaunchConfiguration("preloaded_environment_ids"),
+                            '" != ""',
+                        ]
+                    )
+                ),
+            )
+        ],
+    )
 
     nao_look_at_bundle = _make_lifecycle_bundle(
         package_name="nao_look_at",
@@ -2261,6 +2422,12 @@ def generate_profile_launch_description(
             {
                 "summary_topic": ParameterValue(
                     LaunchConfiguration("scene_grounding_summary_topic"),
+                    value_type=str,
+                )
+            },
+            {
+                "spatial_overlay_topic": ParameterValue(
+                    LaunchConfiguration("scene_grounding_spatial_overlay_topic"),
                     value_type=str,
                 )
             },
@@ -2719,15 +2886,39 @@ def generate_profile_launch_description(
         dialogue_manager_node,
         condition=IfCondition(LaunchConfiguration("start_dialogue_manager")),
     )
+    nao_orchestrator_node = nao_orchestrator_bundle[0]
+    start_nao_orchestrator_condition = IfCondition(
+        LaunchConfiguration("start_nao_orchestrator")
+    )
+    (
+        nao_orchestrator_configure,
+        nao_orchestrator_activate,
+    ) = _configure_and_activate_lifecycle_node(
+        nao_orchestrator_node,
+        condition=start_nao_orchestrator_condition,
+    )
+    scan_skill_node = scan_skill_bundle[0]
+    start_scan_skill_condition = IfCondition(LaunchConfiguration("start_scan_skill"))
+    scan_skill_configure, scan_skill_activate = _configure_and_activate_lifecycle_node(
+        scan_skill_node,
+        condition=start_scan_skill_condition,
+    )
+    report_result_skill_node = report_result_skill_bundle[0]
+    start_report_result_skill_condition = IfCondition(
+        LaunchConfiguration("start_report_result_skill")
+    )
+    (
+        report_result_skill_configure,
+        report_result_skill_activate,
+    ) = _configure_and_activate_lifecycle_node(
+        report_result_skill_node,
+        condition=start_report_result_skill_condition,
+    )
     nao_say_skill_node = nao_say_skill_bundle[0]
     start_nao_say_skill_condition = IfCondition(
         LaunchConfiguration("start_nao_say_skill")
     )
-    nao_say_skill_configure = _configure_lifecycle_node(
-        nao_say_skill_node,
-        condition=start_nao_say_skill_condition,
-    )
-    nao_say_skill_activate = _activate_lifecycle_node_on_inactive(
+    nao_say_skill_configure, nao_say_skill_activate = _configure_and_activate_lifecycle_node(
         nao_say_skill_node,
         condition=start_nao_say_skill_condition,
     )
@@ -2784,6 +2975,8 @@ def generate_profile_launch_description(
                         LaunchConfiguration("start_planner_llm"),
                         " planner_mode=",
                         LaunchConfiguration("chatbot_planner_mode_enabled"),
+                        " turn_pipeline=",
+                        LaunchConfiguration("chatbot_turn_pipeline_mode"),
                         " dialogue_manager=/dialogue_manager",
                     ]
                 )
@@ -2817,12 +3010,17 @@ def generate_profile_launch_description(
             start_scan_skill_arg,
             start_report_result_skill_arg,
             start_fake_skills_arg,
+            preloaded_environment_ids_arg,
+            preloaded_environment_fixtures_path_arg,
+            preloaded_environment_lifespan_sec_arg,
+            preloaded_environment_kb_models_arg,
             fake_skill_scenario_file_arg,
             fake_skill_active_scenario_id_arg,
             fake_skill_global_mode_arg,
             fake_skill_random_failure_prob_arg,
             fake_skill_mode_overrides_json_arg,
             perform_motion_execution_mode_arg,
+            look_at_execution_mode_arg,
             start_nao_say_skill_arg,
             start_nao_replay_motion_arg,
             head_motion_allow_open_loop_without_joint_state_arg,
@@ -2882,6 +3080,9 @@ def generate_profile_launch_description(
             chatbot_response_max_tokens_arg,
             chatbot_intent_max_tokens_arg,
             chatbot_intent_model_arg,
+            chatbot_turn_pipeline_mode_arg,
+            chatbot_grounded_context_digest_enabled_arg,
+            grounded_context_digest_enabled_arg,
             ollama_intent_model_arg,
             chatbot_server_url_arg,
             chatbot_request_timeout_sec_arg,
@@ -2931,6 +3132,7 @@ def generate_profile_launch_description(
             object_detection_image_reliability_arg,
             scene_grounding_detector_topic_arg,
             scene_grounding_summary_topic_arg,
+            scene_grounding_spatial_overlay_topic_arg,
             scene_grounding_allowed_labels_arg,
             scene_grounding_knowledge_lifespan_sec_arg,
             scene_grounding_knowledge_refresh_interval_sec_arg,
@@ -2971,6 +3173,8 @@ def generate_profile_launch_description(
                     LaunchConfiguration("start_fake_skills"),
                     " scene_grounding=",
                     LaunchConfiguration("start_scene_grounding"),
+                    " preloaded_environment=",
+                    LaunchConfiguration("preloaded_environment_ids"),
                     " object_detection=",
                     LaunchConfiguration("start_object_detection"),
                     " trace_viewer=",
@@ -2995,6 +3199,19 @@ def generate_profile_launch_description(
                     "dialogue_manager; planner_llm and executor seams start independently"
                 )
             ),
+            LogInfo(
+                msg=[
+                    "[STACK] preloaded environment viewer | file://",
+                    PathJoinSubstitution(
+                        [
+                            FindPackageShare("nao_chatbot"),
+                            "config",
+                            "preloaded_environment_viewer.html",
+                        ]
+                    ),
+                    " or run: ros2 run nao_chatbot preloaded_environment_viewer --open",
+                ]
+            ),
             naoqi_driver_launch,
             nao_robot_note,
             robot_perception_note,
@@ -3003,6 +3220,7 @@ def generate_profile_launch_description(
             laptop_tts_robot_note,
             posture_wakeup_note,
             object_detection_camera_note,
+            preloaded_environment,
             rqt_console,
             interaction_sim_rqt,
             interaction_sim_rqt_dialogues,
@@ -3093,6 +3311,12 @@ def generate_profile_launch_description(
             dialogue_manager_configure_immediate,
             dialogue_manager_configure_after_chatbot,
             dialogue_manager_activate,
+            nao_orchestrator_configure,
+            nao_orchestrator_activate,
+            scan_skill_configure,
+            scan_skill_activate,
+            report_result_skill_configure,
+            report_result_skill_activate,
             nao_say_skill_configure,
             nao_say_skill_activate,
             nao_orchestrator_recovery,

@@ -4,6 +4,10 @@ Date: 2026-06-03
 Audience: TFM writing, supervisor review, implementation handoff
 Scope: Validation methodology, experiment design, metrics, ablations, and evidence capture.
 
+Concrete commands, scenario IDs, spatial-overlay procedure, and artifact
+generation are defined in
+[`tfm_validation_execution_plan_2026-06-11.md`](tfm_validation_execution_plan_2026-06-11.md).
+
 ---
 
 ## Purpose

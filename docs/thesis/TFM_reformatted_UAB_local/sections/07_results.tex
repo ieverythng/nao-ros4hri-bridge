@@ -1,0 +1,205 @@
+\chapter{Results}
+\label{chap:results}
+
+\section{Evidence Selection}
+
+Each evidence set fixes its launch mode, model or source configuration, case set, artifact, and evidential standing. Scores from different tuples are not averaged because a model can produce fluent dialogue while reducing planner-schema validity or recovery reliability. Case metrics are the primary results; the runtime-review index is retained as a secondary operational summary.
+
+The recovered evidence contains four historical sets and two later diagnostic sets. The 28 June response-first run supplies the broad full-stack baseline. The 8 July response-first run supplies the deterministic fake/replan matrix under JSON-only grounded context. The 10 July audit applies stricter KB-effect and report-result checks. The 11 July run is an alternate-model ablation. The 13 July evidence is reported under both its original trajectory rubric and a later semantic audit. The 14 July artifacts are focused post-hardening probes and do not form a complete run tuple. None of these sets satisfies the clean-source fingerprint gate. Consequently, no cross-run aggregate is inferred from them.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.15}
+\caption{Run-level and diagnostic evidence sets.}
+\label{tab:run-level-evidence}
+\begin{tabularx}{\textwidth}{@{}p{0.10\textwidth}p{0.18\textwidth}p{0.16\textwidth}X p{0.12\textwidth}@{}}
+\toprule
+\textbf{Run} & \textbf{Profile} & \textbf{Scope} & \textbf{Evidence summary} & \textbf{Standing}\\
+\midrule
+F28 & \code{response_first} & Full runtime & Speech ingress, KB add/revise/remove, simple and composite skills, grouped delivery, direct fake guards, and KB post-effects. & Historical, 8.7\\
+F08 & \code{response_first}, JSON-only grounding & Fake/replan & Four eight-case deterministic policy sweeps through ROS4HRI speech ingress, with isolated confirmation probes. & Historical, 8.6\\
+F10 & Strict seam audit & KB/report holdout & Natural KB mutation, grouped delivery effects, follow-up state, and replan/report checks. & Qualified, 6.7\\
+F11 & Alternate-model ablation & Main plus fake/replan & Fluent main questionnaire output, followed by planner-schema and deterministic-recovery regressions. & Ablation, 5.8\\
+F13 & Semantic re-audit & Full and focused suites & The main harness reported 20/20 trajectories; adversarial review found wrong target roles, incomplete closure, stale effects, and dialogue-to-execution leakage. & Diagnostic, cap 6.0\\
+F14 & JSON-only targeted hardening & Ordered and grouped cases & Exact target selection and whole-chain reporting passed focused cases; gold-apple handoff retained an incomplete-selection failure. & Diagnostic, no score\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+F28 and F08 are recorded in the full-suite and deterministic-fake-suite validation ledgers, including the source artifact identifiers and case-level assessments. F10 and F11 are preserved as the repository reports \path{runtime_review_2026-07-10_sv_seams.md} and \path{runtime_review_2026-07-11_qwen_personal_stack.md}. F13 and F14 are preserved under \path{docs/evaluation/runs} with source and bundled hashes. Their manifests mark both sets as diagnostic because their dirty-source or multi-image provenance prevents final-run status. The scores in Table~\ref{tab:run-level-evidence} are the operational summaries recorded with the corresponding evidence; case counts and seam-level observations remain primary.
+
+The packaged F13 diagnostic aggregate contains 54 case assessments: 39 pass, 5 degraded, 4 fail, and 6 not scored. The packaged F14 aggregate contains seven focused assessments: six pass and one fail. These totals preserve the recorded harness classifications. They do not promote a trajectory-level pass to semantic or embodied proof.
+
+\section{Trajectory and Semantic Contract Results}
+
+The 13 July main questionnaire reported 20/20 trajectory passes. Turns entered through ROS4HRI speech, routes and planner requests appeared, execution feedback was observed, and speech closed the cases. A later manual audit evaluated the same runtime family against exact entity roles, selected members, KB postconditions, and whole-chain reports. Table~\ref{tab:trajectory-semantic-results} shows why the two assessments are not interchangeable.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.14}
+\caption{Trajectory and semantic findings from evidence set F13.}
+\label{tab:trajectory-semantic-results}
+\begin{tabularx}{\textwidth}{@{}p{0.24\textwidth}p{0.16\textwidth}X@{}}
+\toprule
+\textbf{Evidence depth} & \textbf{Result} & \textbf{Observation}\\
+\midrule
+Runtime readiness & Pass & Both model preflights passed, required lifecycle nodes were active, and focused tests passed inside the runtime image.\\
+Main ROS trajectory & 20/20 pass & The original harness observed route, execution, terminal, and speech breadcrumbs for every declared case.\\
+Target-set semantics & Fail & An ordered-object request navigated to a kitchen, a table, and people, then reported completion.\\
+Grouped report coverage & Fail & A multi-object delivery executed several skill steps but the final report described only the last object.\\
+KB postconditions & Fail & Follow-up queries retained stale source-location relations after apparent delivery success.\\
+Semantic-decision uniqueness & Fail & One explicit non-action turn produced a dialogue acknowledgement followed by unintended KB execution.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The earlier 8.2 operational assessment measured broad runtime availability under the trajectory rubric. The semantic audit imposed a 6.0 safety cap because the system could report completion for the wrong task. This is a correction in acceptance strength, not evidence that every ROS seam regressed. The result motivated exact target-selection checks, selected-set validation at final admission, report-coverage checks, stronger fixture isolation, and lineage-aware case assessment.
+
+\section{Focused Post-Hardening Results}
+
+Evidence set F14 contains seven targeted assessments across three successive rebuilt images, of which six passed and one failed. It is not assigned a run-level score because the artifacts do not share one complete configuration tuple. The ordered-object probe carried the exact apple, book, and phone identifiers with sequential ordering and per-target reporting. It produced three navigation results and corresponding user-facing reports without visiting the table, a location, or a person. The work-table delivery carried the cup, manual, and phone identifiers with ALEX as recipient and reported all three delivered object classes. A later kitchen probe selected the single kitchen cup, executed delivery and report steps, and answered the post-effect follow-up. The explicit non-action recipient-memory case remained dialogue-only.
+
+The gold-apple handoff remained a negative result. The planner request exposed the apple and recipient as scene targets but carried an empty authoritative selection. The planner therefore asked for clarification rather than executing an unsafe placement. The failure is truthful, but the complete fixture should have allowed a valid handoff selection. This case remains a grounding-to-admission limitation rather than a successful recovery result.
+
+\section{Full ROS4HRI Runtime Results}
+
+F28 exercised the response-first speech path from tracked voice and \code{LiveSpeech} through dialogue, planning, deterministic execution, feedback, and final speech. Table~\ref{tab:full-runtime-results} reports the principal seams retained from that run.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.14}
+\caption{Full-runtime results for evidence set F28.}
+\label{tab:full-runtime-results}
+\begin{tabularx}{\textwidth}{@{}p{0.24\textwidth}p{0.13\textwidth}X@{}}
+\toprule
+\textbf{Validation seam} & \textbf{Result} & \textbf{Observed evidence}\\
+\midrule
+Dialogue routing & Pass & Simple dialogue and informational turns remained outside planner execution and produced one user-facing response.\\
+Stable KB query & Pass & Injected cup name, colour, and support relation were available through KB query, grounded context, and dialogue.\\
+Explicit KB mutation & Pass & Structured add, revise, query, and remove traversed the planner/orchestrator KB boundary; the post-remove query was empty.\\
+Simple skill & Pass & Head motion and wave cases reached registered execution paths and evidence-derived reporting.\\
+Composite skill & Pass & Head-motion plus wave and ordered multi-object navigation/report produced ordered plans and terminal reports.\\
+Grouped task trajectory & Pass at trajectory depth & Kitchen objects and the named recipient appeared in planner work without fabricated detector evidence; exact selected-set and post-state semantics were not established by this rubric.\\
+Fake skill guards & Pass & Canonical targets succeeded and absent or non-canonical targets returned typed failures.\\
+Exactly-once speech & Pass & The retained speech traces contained no duplicated acknowledgement or terminal semantic event.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The run score of 8.7 reflects broad success across dialogue, grounding, execution, and KB transport while keeping detector object recognition outside the semantic-stack score. The score does not combine detector variability with KB-authored object grounding.
+
+\section{Deterministic Fake-Skill and Replan Results}
+
+Evidence set F08 used \code{response_first}, disabled the compact grounded-context digest, and exercised the same ROS4HRI speech ingress under four deterministic fake policies. Table~\ref{tab:fake-policy-results} reports the full-ladder result and the isolated confirmation result separately.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.14}
+\caption{Deterministic fake-skill policy results for evidence set F08.}
+\label{tab:fake-policy-results}
+\begin{tabularx}{\textwidth}{@{}p{0.23\textwidth}p{0.16\textwidth}p{0.18\textwidth}X@{}}
+\toprule
+\textbf{Policy} & \textbf{Full ladder} & \textbf{Isolated probe} & \textbf{Interpretation}\\
+\midrule
+\path{all_success} & 8/8 pass & Not required & Inventory, ordered reports, grouped delivery, maximal delivery, and multi-turn follow-up completed.\\
+\path{fail_once_navigation} & 8/8 pass & Not required & Failed navigation produced a newer plan version or truthful recovery without duplicate active goals.\\
+\path{fail_once_pick} & 7/8 pass & Failed ordered-report case passed in isolation & Recovery was correct outside the full-ladder context; the full-ladder result remains 7/8.\\
+\path{delivery_blocked} & 6/8 pass & Gold-apple case passed; ordered report remained failed & Delivery failure was generally truthful, but case interaction affected ordered-target extraction.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The four full sweeps produced 29 passes from 32 cases. Severe fallback markers remained zero: no duplicate active goal, invalid planner JSON, invalid executable plan, backend-unreachable speech, execution-report fallback, or rules-response fallback was recorded in the selected run. The run-level reviewer score was 8.6. Isolated passes are retained as diagnostic evidence and do not replace the corresponding full-ladder failures.
+
+The F08 ledger records one artifact for each policy sweep and separate artifacts for the isolated ordered-report and blocked-delivery probes. Keeping the full-sweep and isolated records distinct prevents a diagnostic pass from replacing the primary 29/32 result.
+
+\section{Strict KB-Effect and Reporting Audit}
+
+F10 applied stricter post-condition checks than the broad success-path run. The focused ordered-walk, grouped work-table delivery, missing-object recovery, and missing-recipient clarification cases passed under \code{all_success}; \code{fail_once_navigation} also showed failed navigation, replanning, and completed recovery. The run score was reduced to 6.7 because grouped kitchen delivery reported only one delivered object, a follow-up answer retained the cup in the kitchen, and direct KB queries exposed stale source-location facts and recipient-side object-like spatial predicates.
+
+This result distinguishes execution completion from state correctness. A successful action result is insufficient when the verified post-state still contains mutually inconsistent location relations. The finding supports the use of Contract~6 KB effects, post-query verification, and a separate state-freshness metric.
+
+\section{Alternate-Model Ablation}
+
+F11 evaluated \code{qwen36-turbo-hermes} with response-first routing and JSON-only grounded context. The twenty-case main questionnaire was marked 20/20 pass and produced fluent dialogue. The deterministic fake/replan artifacts contained 38 scored case records: 22 pass, 7 degraded, and 9 fail. The post-run snapshot recorded nine deduplicated planner-invalid-JSON events, nine invalid executable-plan events, six planner-gate rejections, and 53 route-repair events.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Alternate-model ablation results for evidence set F11.}
+\label{tab:model-ablation-results}
+\begin{tabularx}{\textwidth}{@{}p{0.25\textwidth}p{0.18\textwidth}X@{}}
+\toprule
+\textbf{Measure} & \textbf{Result} & \textbf{Interpretation}\\
+\midrule
+Main questionnaire & 20/20 trajectory pass & Response fluency and broad route behaviour were strong under the original trajectory rubric.\\
+Fake/replan records & 22 pass, 7 degraded, 9 fail & Structured planning and recovery reliability regressed under deterministic policies.\\
+Planner invalid JSON & 9 events & Fluent acknowledgement did not imply a valid executable plan.\\
+Invalid executable plan & 9 events & Deterministic validation prevented malformed work from reaching skill dispatch.\\
+Planner-gate rejection & 6 events & Admission guards remained observable under model pressure.\\
+Route repair & 53 events & The turn engine frequently reconciled model route inconsistencies.\\
+Reviewer score & 5.8/10 & Critical structured-output and recovery failures outweighed the fluent main-suite surface.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The ablation demonstrates why the 1--10 score and the fake/replan matrix are reported alongside questionnaire pass counts. A model that answers well at the dialogue surface may still impose substantial planner repair and validation pressure.
+
+\section{ROS4HRI Contract Preservation}
+
+Table~\ref{tab:ros4hri-results} summarises the architecture checks applied across the response-first evidence.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.14}
+\caption{ROS4HRI and runtime-contract results.}
+\label{tab:ros4hri-results}
+\begin{tabularx}{\textwidth}{@{}p{0.27\textwidth}p{0.14\textwidth}X@{}}
+\toprule
+\textbf{Contract check} & \textbf{Result} & \textbf{Evidence}\\
+\midrule
+Tracked voice and speech ingress & Pass & Scored speech cases entered through tracked voice and per-voice \code{LiveSpeech} with the dialogue manager active.\\
+Dialogue and speech ownership & Pass & Planner dialogue crossed the orchestrator relay; no selected run contained duplicate semantic speech or raw planner text.\\
+Planner admission ownership & Pass & Execution requests crossed the orchestrator planner gate before planner consumption.\\
+Deterministic execution boundary & Pass & Invalid plans were observable as validation or gate events rather than direct robot dispatch.\\
+Skill actions and feedback lineage & Pass & Fake/replan traces retained goal, plan version, step results, terminal evidence, and speech evidence.\\
+KB transport ownership & Pass & Explicit mutations traversed \code{kb_skills}; ordinary questions did not mutate the KB.\\
+Post-skill KB consistency & Degraded in F10 & Stale and recipient-side spatial predicates remained after one grouped-delivery configuration.\\
+Detector profile separation & Pass & Detector object recognition was excluded from the semantic-stack score and retained as a separate profile.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Research-Question Synthesis}
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.14}
+\caption{Qualified answers to the research questions from the recovered evidence.}
+\label{tab:rq-result-synthesis}
+\begin{tabularx}{\textwidth}{@{}p{0.08\textwidth}p{0.18\textwidth}X@{}}
+\toprule
+\textbf{RQ} & \textbf{Standing} & \textbf{Evidence-based answer}\\
+\midrule
+RQ1 & Supported with limits & The planner generated ordered multi-step plans for motion, navigation, reporting, and grouped delivery. F14 showed exact selected-member preservation for ordered and grouped cases, while the gold-apple case showed that this behaviour is not complete across all grounded references.\\
+RQ2 & Mixed & Stable KB insertion, name, colour, support, and count queries passed in the broad runs. F10 and F13 exposed stale or contradictory post-effects, so compact grounding supported next-turn reference but did not by itself guarantee state consistency.\\
+RQ3 & Supported within enforced contracts & Registry and deterministic validation prevented schema-invalid, registry-invalid, or lineage-invalid plans from reaching dispatch. F11 showed nine invalid JSON and nine invalid executable-plan events while the gate remained observable. The F13 counterexamples show that admission does not detect every target-selection or post-state semantic error.\\
+RQ4 & Partially supported & F08 established navigation replan lineage and truthful failure handling under deterministic policies. Pick failure, blocked delivery, and missing-recipient cases were less stable in full sweeps, and several F13 cases lacked complete post-terminal closure.\\
+RQ5 & Supported within the evaluated seams & Speech ingress, planner admission, deterministic dispatch, typed feedback, and planner-dialogue relay remained inspectable. The F13 semantic counterexamples show that ownership separation must be combined with exact target, postcondition, and closure validation.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Surface fluency was not a reliable proxy for planner correctness. The alternate-model run passed the main questionnaire while producing substantially more invalid planner output and recovery failures. Likewise, Contract~6 success and a terminal speech event could coexist with stale KB relations or incomplete reporting. The evaluation therefore treats trajectory completeness, semantic target preservation, state correctness, and exactly-once speech as independent dimensions.
+
+\section{Stateful KB Stress Diagnostic}
+
+Evidence set F15 evaluated the Ollama \code{qwen3-coder:480b-cloud} backend with response-first routing. The run inserted two named objects, revised a support relation, exercised grounded delivery, and queried postconditions. TITAS and MIDAS were available with their names, colours, and supports. The revised TITAS support was used on the next turn. Both delivery cases selected the expected object and ALEX, and direct post-execution queries observed the declared recipient relation.
+
+The diagnostic also exposed two pre-limit semantic counterexamples. One quantified delivery reached planner handoff with an empty selected-member set. A separate request to bring a kitchen cup to the user selected the kitchen as recipient and reported delivery to the kitchen. This user-visible false completion applies the 6/10 critical-failure cap. The first explicit provider HTTP 429 occurred at 03:01:31 CEST. Later model-dependent cases and the unstarted deep-fake matrix are marked not scored rather than treated as semantic regressions. The focused artifact is retained as qualified evidence because the provider cutoff prevented a complete single-tuple run.

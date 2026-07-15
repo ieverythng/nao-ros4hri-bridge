@@ -1,0 +1,4 @@
+interface:
+  display_name: "Seam Hypothesis Audit"
+  short_description: "Audit hard problems with evidence and competing routes."
+  default_prompt: "Use $seam-hypothesis-audit to investigate this difficult cross-seam problem with an explicit hypothesis registry and adversarial validation."

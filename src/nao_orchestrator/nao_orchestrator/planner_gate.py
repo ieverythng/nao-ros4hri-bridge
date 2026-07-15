@@ -164,13 +164,19 @@ class PlannerGate:
         if goal_id and goal_id != self._active_goal_id:
             return
         act = str(dialogue_act.get('act', '')).strip().lower()
-        if act in ('explain_failure', 'notify_cancellation'):
+        if act in ('explain_failure', 'notify_cancellation', 'notify_completion'):
             self._active_goal_id = ''
             self._active_plan_id = ''
             self._active_plan_version = 0
             self._active_status = ''
             return
         if act in ('ask_clarification', 'ask_for_help'):
+            if _is_terminal_dialogue_act(dialogue_act):
+                self._active_goal_id = ''
+                self._active_plan_id = ''
+                self._active_plan_version = 0
+                self._active_status = ''
+                return
             self._active_status = 'waiting_user'
 
     def _matches_active_goal(self, request: PlannerRequest) -> bool:
@@ -217,4 +223,26 @@ def _is_dialogue_only_capability_question(text: str) -> bool:
             'do you have any fake skills',
             'tell me about your skills',
         )
+    )
+
+
+def _is_terminal_dialogue_act(dialogue_act: dict) -> bool:
+    """Return true when a planner act ends the goal instead of awaiting repair."""
+    if bool(dialogue_act.get('await_user_response', False)):
+        return False
+    context = dialogue_act.get('context', {})
+    if not isinstance(context, dict):
+        context = {}
+    status = str(
+        dialogue_act.get('status', context.get('status', ''))
+    ).strip().lower()
+    terminal_reason = str(
+        dialogue_act.get('terminal_reason', context.get('terminal_reason', ''))
+    ).strip()
+    return bool(terminal_reason) or status in (
+        'completed',
+        'cancelled',
+        'failed',
+        'invalid',
+        'terminal',
     )

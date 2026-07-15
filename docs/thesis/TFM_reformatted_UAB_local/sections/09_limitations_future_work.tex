@@ -1,0 +1,14 @@
+\chapter{Limitations and Future Work}
+\label{chap:limitations-future-work}
+
+\section{Current Limitations}
+
+The current system has several limitations. The physical implementation is centred on NAO, so cross-robot portability is architectural rather than fully proven. LLM planning remains sensitive to prompt design, model availability, token limits, and JSON schema adherence. The validation strategy is scenario-based and cannot prove exhaustive safety. Perception and grounding quality also constrain planner performance because a correct planner cannot reliably act on objects that are missing, stale, or ambiguously represented in the world state.
+
+The recovered evidence is qualified by mutable or multi-image runtime provenance, so it does not yet define one final frozen aggregate. The semantic audit also found incomplete target selection for the gold-apple handoff, stale KB postconditions after some grouped deliveries, and incomplete closure in selected failure profiles. Deterministic fake skills validate supervision and symbolic effects but do not establish physical navigation or manipulation performance. Detector-enabled grounding remains separate because the principal semantic profile intentionally disables detector scoring.
+
+\section{Future Work}
+
+Future validation should freeze one clean source revision, nested revision, container digest, model configuration, prompt and registry hashes, fixtures, and questionnaires before running the complete profile matrix. The deterministic policy ladder should be followed by repeated compact robustness cases and a separately scored detector profile. Cross-run comparison should use the hash-addressed bundles and semantic metrics defined in Chapter~\ref{chap:validation-methodology}.
+
+Architectural extensions include richer grounding through a persistent world model, broader skill-registry generation from reviewed contracts, safer composite execution, and cross-platform validation on another ROS-compatible robot or simulator. A longer-term extension would track uncertainty, object identity, and temporal freshness explicitly while preserving the compact planner-facing projection.

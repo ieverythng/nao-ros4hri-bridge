@@ -1,0 +1,4 @@
+interface:
+  display_name: "Robot Stack Iteration Loop"
+  short_description: "Run evidence-gated ROS stack iterations"
+  default_prompt: "Use $robot-stack-iteration-loop to diagnose, patch, rebuild, and validate the live robot stack through bounded evidence-driven rounds."
