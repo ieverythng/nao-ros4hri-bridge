@@ -30,7 +30,7 @@ RQT_DISPLAY_CAPTIONS_TOPIC = "/dialogue_manager/closed_captions"
 RQT_DISPLAY_ROSOUT_QOS = "--qos-reliability reliable --qos-durability transient_local"
 TOPIC_SAMPLE_TIMEOUT_SEC = 1.5
 TOPIC_SAMPLE_KILL_AFTER_SEC = 1.0
-DEFAULT_GLOBAL_TIMEOUT_SEC = 420
+DEFAULT_GLOBAL_TIMEOUT_SEC = 1200
 DEFAULT_KB_LIFESPAN_SEC = 300
 KB_FIXTURE_READY_TIMEOUT_SEC = 12.0
 KB_FIXTURE_READY_POLL_SEC = 0.5
@@ -62,6 +62,18 @@ class KbInjection:
     statements: tuple[str, ...]
     query_patterns: tuple[str, ...]
     query_vars: tuple[str, ...]
+    retract_statements: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class KbPostcondition:
+    """KnowledgeCore query that must hold after the user turn."""
+
+    name: str
+    query_patterns: tuple[str, ...]
+    query_vars: tuple[str, ...] = ("?subject",)
+    min_rows: int = 1
+    expected_values: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -91,6 +103,8 @@ class ProbeCase:
     expected_member_ids: tuple[str, ...] = ()
     expected_recipient_id: str = ""
     expected_report_policy: str = ""
+    postcondition: KbPostcondition | None = None
+    expected_speech_terms: tuple[str, ...] = ()
 
 
 SMOKE_CASES = (
@@ -480,6 +494,149 @@ MAIN_QUESTIONNAIRE_CASES = (
     ),
 )
 
+
+KB_STRESS_CASES = (
+    ProbeCase(
+        "kb_stress_seed_inventory",
+        "kb_stress_dialogue",
+        "What are the names, colors, and current locations of the two objects in the test area?",
+        18.0,
+        setup=KbInjection(
+            object_id="codex_stress_scene",
+            statements=(
+                "codex_stress_table rdf:type Table",
+                "codex_stress_table dbp:name work_table",
+                "codex_stress_shelf rdf:type Shelf",
+                "codex_stress_shelf dbp:name storage_shelf",
+                "codex_stress_cup rdf:type Cup",
+                "codex_stress_cup dbp:name TITAS",
+                "codex_stress_cup dbp:color gold",
+                "codex_stress_cup oro:isOn codex_stress_table",
+                "codex_stress_book rdf:type Book",
+                "codex_stress_book dbp:name MIDAS",
+                "codex_stress_book dbp:color blue",
+                "codex_stress_book oro:isOn codex_stress_table",
+                "myself sees codex_stress_table",
+                "myself sees codex_stress_shelf",
+                "myself sees codex_stress_cup",
+                "myself sees codex_stress_book",
+                "myself canReach codex_stress_cup",
+                "myself canReach codex_stress_book",
+            ),
+            query_patterns=(
+                "codex_stress_cup ?predicate ?object",
+                "codex_stress_book ?predicate ?object",
+            ),
+            query_vars=("?predicate", "?object"),
+        ),
+        conversation_group="kb_stress_chain",
+        expected_outcome="dialogue_only",
+        expected_speech_terms=("TITAS", "MIDAS", "gold", "blue", "work table"),
+    ),
+    ProbeCase(
+        "kb_stress_revise_support",
+        "kb_stress_relation_revision",
+        "The cup has been moved. Which surface is TITAS on now, and where is MIDAS?",
+        18.0,
+        setup=KbInjection(
+            object_id="codex_stress_support_revision",
+            statements=("codex_stress_cup oro:isOn codex_stress_shelf",),
+            retract_statements=("codex_stress_cup oro:isOn codex_stress_table",),
+            query_patterns=("codex_stress_cup oro:isOn ?support",),
+            query_vars=("?support",),
+        ),
+        conversation_group="kb_stress_chain",
+        expected_outcome="dialogue_only",
+        expected_speech_terms=("TITAS", "storage shelf", "MIDAS", "work table"),
+    ),
+    ProbeCase(
+        "kb_stress_revised_relation_query",
+        "kb_stress_dialogue",
+        "Which object is on the storage shelf, and which object remains on the work table?",
+        18.0,
+        conversation_group="kb_stress_chain",
+        expected_outcome="dialogue_only",
+        expected_speech_terms=("TITAS", "storage shelf", "MIDAS", "work table"),
+    ),
+    ProbeCase(
+        "kb_stress_grounded_delivery",
+        "kb_stress_execution",
+        "Bring TITAS from the storage shelf to the person named ALEX and report what happened.",
+        150.0,
+        setup=KbInjection(
+            object_id="codex_stress_recipient",
+            statements=(
+                "codex_stress_alex rdf:type Human",
+                "codex_stress_alex dbp:name ALEX",
+                "codex_stress_alex dbp:frameId codex_stress_alex",
+                "codex_stress_alex dbp:poseSource semantic_fixture",
+                "myself sees codex_stress_alex",
+            ),
+            query_patterns=("codex_stress_alex ?predicate ?object",),
+            query_vars=("?predicate", "?object"),
+        ),
+        conversation_group="kb_stress_chain",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=("codex_stress_cup",),
+        expected_recipient_id="codex_stress_alex",
+        expected_report_policy="final",
+        expected_speech_terms=("TITAS", "ALEX"),
+        postcondition=KbPostcondition(
+            "titas_delivered_to_alex",
+            ("codex_stress_cup oro:isAt ?recipient",),
+            ("?recipient",),
+            expected_values=("codex_stress_alex",),
+        ),
+    ),
+    ProbeCase(
+        "kb_stress_delivery_postcondition",
+        "kb_stress_dialogue",
+        "Where are TITAS and MIDAS now?",
+        18.0,
+        conversation_group="kb_stress_chain",
+        expected_outcome="dialogue_only",
+        expected_speech_terms=("TITAS", "ALEX", "MIDAS", "work table"),
+    ),
+    ProbeCase(
+        "kb_stress_move_remaining_object",
+        "kb_stress_execution",
+        "MIDAS is now on the storage shelf. Bring every object on that shelf to ALEX and summarize the overall result.",
+        150.0,
+        setup=KbInjection(
+            object_id="codex_stress_book_revision",
+            statements=("codex_stress_book oro:isOn codex_stress_shelf",),
+            retract_statements=("codex_stress_book oro:isOn codex_stress_table",),
+            query_patterns=("codex_stress_book oro:isOn ?support",),
+            query_vars=("?support",),
+        ),
+        conversation_group="kb_stress_chain",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=("codex_stress_book",),
+        expected_recipient_id="codex_stress_alex",
+        expected_report_policy="final",
+        expected_speech_terms=("MIDAS", "ALEX"),
+        postcondition=KbPostcondition(
+            "midas_delivered_to_alex",
+            ("codex_stress_book oro:isAt ?recipient",),
+            ("?recipient",),
+            expected_values=("codex_stress_alex",),
+        ),
+    ),
+    ProbeCase(
+        "kb_stress_mixed_final_query",
+        "kb_stress_dialogue",
+        "Summarize the names, colors, and current locations of TITAS and MIDAS after those changes.",
+        20.0,
+        conversation_group="kb_stress_chain",
+        expected_outcome="dialogue_only",
+        expected_speech_terms=("TITAS", "MIDAS", "gold", "blue", "ALEX"),
+    ),
+)
+
 COMPOSITE_CASES = (
     ProbeCase("kb_visible_baseline", "kb_query_dialogue", "What can you see?", 10.0),
     ProbeCase(
@@ -538,6 +695,15 @@ COMPOSITE_CASES = (
             ),
             query_vars=("?predicate", "?object"),
         ),
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=(
+            "codex_probe_apple",
+            "codex_probe_book",
+            "codex_probe_phone",
+        ),
+        expected_report_policy="per_target",
     ),
     ProbeCase(
         "composite_look_at_probe_report",
@@ -1273,6 +1439,7 @@ def main() -> int:
             "intent_ablation",
             "posture_ablation",
             "environment",
+            "kb_stress",
             "fake_deep",
             "robustness",
         ),
@@ -1383,6 +1550,7 @@ def main() -> int:
         "intent_ablation": INTENT_ABLATION_CASES,
         "posture_ablation": POSTURE_ABLATION_CASES,
         "environment": ENVIRONMENT_CASES,
+        "kb_stress": KB_STRESS_CASES,
         "fake_deep": FAKE_DEEP_CASES,
         "robustness": ROBUSTNESS_CASES,
     }
@@ -1674,6 +1842,15 @@ def main() -> int:
             topic_samples=topic_samples,
             voice_id=voice_id,
         )
+        if case.postcondition is not None:
+            postcondition_result = evaluate_kb_postcondition(
+                args.container,
+                case.postcondition,
+            )
+            result_entry["postcondition_result"] = postcondition_result
+            result_entry["phase_observations"]["kb_postcondition_passed"] = bool(
+                postcondition_result.get("passed")
+            )
         result_entry["case_assessment"] = assess_case(
             case,
             observations=result_entry["phase_observations"],
@@ -2163,6 +2340,15 @@ def phase_observations(
     if mode == "speech":
         injected = injected and "ERROR: dialogue_manager speech subscription" not in combined
     target_selections = extract_target_selections(combined)
+    spoken_texts = extract_robot_speech_texts(
+        "\n".join(
+            [
+                str(turn_result or ""),
+                str(log_excerpt or ""),
+                "\n".join(str(value or "") for value in topic_samples.values()),
+            ]
+        )
+    )
     return {
         "turn_injected": injected,
         "route_observed": _contains_any(combined, ("ROUTE_RESOLVED", "chatbot_turn_trace")),
@@ -2190,6 +2376,7 @@ def phase_observations(
             combined,
             ("ROBOT OUTPUT", "DEBUG_SPEECH", "/debug/nao_say/speech", "Robot saying"),
         ),
+        "spoken_texts": spoken_texts,
         "terminal_observed": terminal_observed(combined),
         "post_terminal_speech_observed": post_terminal_speech_observed(combined),
         "post_failure_speech_observed": post_failure_speech_observed(combined),
@@ -2199,6 +2386,26 @@ def phase_observations(
             "phase booleans are trace breadcrumbs, not pass/fail scoring"
         ),
     }
+
+
+def extract_robot_speech_texts(value: str) -> list[str]:
+    """Extract deduplicated robot utterances without user-input mirrors."""
+    texts: list[str] = []
+    for line in str(value or "").splitlines():
+        candidates = []
+        output_match = re.search(r'\[ROBOT OUTPUT\].*?"([^"]+)"', line)
+        if output_match:
+            candidates.append(output_match.group(1))
+        for encoded in re.findall(r'\{"text":"((?:\\.|[^"\\])*)"\}', line):
+            try:
+                candidates.append(json.loads('"%s"' % encoded))
+            except json.JSONDecodeError:
+                continue
+        for candidate in candidates:
+            clean = str(candidate).strip()
+            if clean and clean not in texts:
+                texts.append(clean)
+    return texts
 
 
 def extract_target_selections(value: str) -> list[dict[str, object]]:
@@ -2547,6 +2754,26 @@ def assess_case(
         if not speech:
             status = max_status(status, "degraded")
             reasons.append("speech evidence missing")
+
+    if case.postcondition is not None and not observations.get(
+        "kb_postcondition_passed"
+    ):
+        status = max_status(status, "fail")
+        reasons.append("declared KB postcondition was not observed")
+
+    if case.expected_speech_terms:
+        spoken_text = " ".join(observations.get("spoken_texts") or []).lower()
+        missing_terms = [
+            term
+            for term in case.expected_speech_terms
+            if str(term).lower() not in spoken_text
+        ]
+        if missing_terms:
+            status = max_status(status, "fail")
+            reasons.append(
+                "robot speech omitted grounded terms: %s"
+                % ", ".join(missing_terms)
+            )
 
     if not reasons:
         reasons.append("matched expected trajectory")
@@ -2921,6 +3148,27 @@ lifespan:
   sec: {max(1, int(lifespan_sec))}
   nanosec: 0
 """
+    retract_output = ""
+    if injection.retract_statements:
+        retract_yaml = "\n".join(
+            "  - '%s'" % item for item in injection.retract_statements
+        )
+        retract_output = call_ros_service(
+            container,
+            "/kb/revise",
+            "kb_msgs/srv/Revise",
+            f"""
+method: retract
+statements:
+{retract_yaml}
+models:
+  - default
+lifespan:
+  sec: 1
+  nanosec: 0
+""",
+            timeout_sec=20,
+        )
     service_probe = run(
         [
             "docker",
@@ -2950,9 +3198,41 @@ lifespan:
     return {
         "object_id": injection.object_id,
         "service_probe": service_probe,
+        "retract_output": retract_output,
         "revise_output": revise_output,
         "query_output": query_result["raw_output"],
         "fixture_readiness": query_result["readiness"],
+    }
+
+
+def evaluate_kb_postcondition(
+    container: str,
+    postcondition: KbPostcondition,
+) -> dict[str, object]:
+    """Query one declared symbolic postcondition after a user turn."""
+    result = query_kb_rows(
+        container,
+        patterns=postcondition.query_patterns,
+        query_vars=postcondition.query_vars,
+        timeout_sec=20,
+    )
+    rows = result.get("rows", [])
+    observed_values = {
+        str(value).strip()
+        for row in rows
+        if isinstance(row, dict)
+        for value in row.values()
+        if str(value).strip()
+    }
+    missing_values = sorted(set(postcondition.expected_values) - observed_values)
+    passed = len(rows) >= max(0, postcondition.min_rows) and not missing_values
+    return {
+        "name": postcondition.name,
+        "passed": passed,
+        "row_count": len(rows),
+        "rows": rows,
+        "missing_values": missing_values,
+        "raw_output": result.get("raw_output", ""),
     }
 
 

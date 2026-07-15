@@ -197,3 +197,9 @@ RQ5 & Supported within the evaluated seams & Speech ingress, planner admission, 
 \end{table}
 
 Surface fluency was not a reliable proxy for planner correctness. The alternate-model run passed the main questionnaire while producing substantially more invalid planner output and recovery failures. Likewise, Contract~6 success and a terminal speech event could coexist with stale KB relations or incomplete reporting. The evaluation therefore treats trajectory completeness, semantic target preservation, state correctness, and exactly-once speech as independent dimensions.
+
+\section{Stateful KB Stress Diagnostic}
+
+Evidence set F15 evaluated the Ollama \code{qwen3-coder:480b-cloud} backend with response-first routing. The run inserted two named objects, revised a support relation, exercised grounded delivery, and queried postconditions. TITAS and MIDAS were available with their names, colours, and supports. The revised TITAS support was used on the next turn. Both delivery cases selected the expected object and ALEX, and direct post-execution queries observed the declared recipient relation.
+
+The diagnostic also exposed two pre-limit semantic counterexamples. One quantified delivery reached planner handoff with an empty selected-member set. A separate request to bring a kitchen cup to the user selected the kitchen as recipient and reported delivery to the kitchen. This user-visible false completion applies the 6/10 critical-failure cap. The first explicit provider HTTP 429 occurred at 03:01:31 CEST. Later model-dependent cases and the unstarted deep-fake matrix are marked not scored rather than treated as semantic regressions. The focused artifact is retained as qualified evidence because the provider cutoff prevented a complete single-tuple run.

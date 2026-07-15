@@ -200,6 +200,229 @@ def test_posture_ablation_covers_body_postures_without_head_motion():
     assert "head" not in combined_text
 
 
+def test_kb_stress_manifest_covers_relation_revision_execution_and_postconditions():
+    module = _load_questionnaire_module()
+
+    cases = module.KB_STRESS_CASES
+    names = {case.name for case in cases}
+
+    assert names == {
+        "kb_stress_seed_inventory",
+        "kb_stress_revise_support",
+        "kb_stress_revised_relation_query",
+        "kb_stress_grounded_delivery",
+        "kb_stress_delivery_postcondition",
+        "kb_stress_move_remaining_object",
+        "kb_stress_mixed_final_query",
+    }
+    assert len({case.conversation_group for case in cases}) == 1
+    assert any(case.setup and case.setup.retract_statements for case in cases)
+    assert any(case.expected_member_ids for case in cases)
+    assert any(case.postcondition is not None for case in cases)
+
+
+def test_formal_main_suite_has_a_full_run_timeout_budget():
+    module = _load_questionnaire_module()
+
+    assert module.DEFAULT_GLOBAL_TIMEOUT_SEC >= 1200
+
+
+def test_composite_walk_every_object_case_requires_semantic_selection():
+    module = _load_questionnaire_module()
+    case = next(
+        case
+        for case in module.COMPOSITE_CASES
+        if case.name == "composite_walk_every_object_reports"
+    )
+
+    assert case.requires_target_selection is True
+    assert case.expected_member_ids == (
+        "codex_probe_apple",
+        "codex_probe_book",
+        "codex_probe_phone",
+    )
+    assert case.expected_report_policy == "per_target"
+
+
+def test_kb_probe_retracts_replaced_relations_before_updating(monkeypatch):
+    module = _load_questionnaire_module()
+    requests = []
+
+    monkeypatch.setattr(module, "run", lambda *_args, **_kwargs: "services ready")
+    monkeypatch.setattr(module.time, "sleep", lambda _seconds: None)
+    monkeypatch.setattr(
+        module,
+        "call_ros_service",
+        lambda _container, _service, _type, request, **_kwargs: requests.append(request)
+        or "success",
+    )
+    monkeypatch.setattr(
+        module,
+        "_wait_for_fixture_type_rows",
+        lambda *_args, **_kwargs: {
+            "raw_output": "ready",
+            "readiness": {"ready": True},
+        },
+    )
+
+    result = module.inject_kb_probe(
+        "nao_ros2",
+        module.KbInjection(
+            object_id="support_revision",
+            statements=("cup oro:isOn shelf",),
+            retract_statements=("cup oro:isOn table",),
+            query_patterns=("cup oro:isOn ?support",),
+            query_vars=("?support",),
+        ),
+        lifespan_sec=300,
+    )
+
+    assert requests[0].lstrip().startswith("method: retract")
+    assert "cup oro:isOn table" in requests[0]
+    assert requests[1].lstrip().startswith("method: update")
+    assert "cup oro:isOn shelf" in requests[1]
+    assert result["retract_output"] == "success"
+
+
+def test_kb_postcondition_requires_rows_and_declared_values(monkeypatch):
+    module = _load_questionnaire_module()
+
+    monkeypatch.setattr(
+        module,
+        "query_kb_rows",
+        lambda *_args, **_kwargs: {
+            "raw_output": "query complete",
+            "rows": [{"recipient": "codex_stress_alex"}],
+        },
+    )
+    check = module.KbPostcondition(
+        "cup_delivered",
+        ("codex_stress_cup oro:isAt ?recipient",),
+        ("?recipient",),
+        min_rows=1,
+        expected_values=("codex_stress_alex",),
+    )
+
+    passed = module.evaluate_kb_postcondition("nao_ros2", check)
+
+    assert passed["passed"] is True
+    assert passed["row_count"] == 1
+    assert passed["missing_values"] == []
+
+    monkeypatch.setattr(
+        module,
+        "query_kb_rows",
+        lambda *_args, **_kwargs: {"raw_output": "empty", "rows": []},
+    )
+    failed = module.evaluate_kb_postcondition("nao_ros2", check)
+
+    assert failed["passed"] is False
+    assert failed["missing_values"] == ["codex_stress_alex"]
+
+
+def test_execution_case_fails_when_declared_kb_postcondition_is_missing():
+    module = _load_questionnaire_module()
+    case = module.ProbeCase(
+        "deliver_cup",
+        "kb_stress_execution",
+        "Bring the cup to ALEX.",
+        expected_outcome="execute_no_clarification",
+        postcondition=module.KbPostcondition(
+            "cup_delivered",
+            ("cup oro:isAt alex",),
+        ),
+    )
+    observations = {
+        "turn_injected": True,
+        "planner_request_observed": True,
+        "execution_feedback_observed": True,
+        "terminal_observed": True,
+        "speech_observed": True,
+        "clarification_observed": False,
+        "kb_postcondition_passed": False,
+        "fallback_markers": {"total": 0},
+    }
+
+    result = module.assess_case(
+        case,
+        observations=observations,
+        stale_world_guard=None,
+    )
+
+    assert result["status"] == "fail"
+    assert "KB postcondition" in " ".join(result["reasons"])
+
+
+def test_grounded_dialogue_requires_declared_terms_in_robot_speech():
+    module = _load_questionnaire_module()
+    case = module.ProbeCase(
+        "grounded_query",
+        "kb_stress_dialogue",
+        "Where is the cup?",
+        expected_outcome="dialogue_only",
+        expected_speech_terms=("TITAS", "storage shelf"),
+    )
+    observations = {
+        "turn_injected": True,
+        "route_observed": True,
+        "speech_observed": True,
+        "spoken_texts": ["TITAS is on the storage shelf."],
+        "planner_request_observed": False,
+        "execution_feedback_observed": False,
+        "fallback_markers": {"total": 0},
+    }
+
+    passed = module.assess_case(
+        case,
+        observations=observations,
+        stale_world_guard=None,
+    )
+    assert passed["status"] == "pass"
+
+    observations["spoken_texts"] = ["I can see a cup."]
+    failed = module.assess_case(
+        case,
+        observations=observations,
+        stale_world_guard=None,
+    )
+    assert failed["status"] == "fail"
+    assert "TITAS" in " ".join(failed["reasons"])
+
+
+def test_extract_robot_speech_texts_ignores_user_turn_mirrors():
+    module = _load_questionnaire_module()
+    logs = "\n".join(
+        (
+            'runtime_review_rqt_input: Where is TITAS?',
+            '\x1b[0m[INFO] [robot_speech_debug]: [ROBOT OUTPUT] '
+            '(closed_caption) "TITAS is on the storage shelf."\x1b[0m',
+        )
+    )
+
+    assert module.extract_robot_speech_texts(logs) == [
+        "TITAS is on the storage shelf."
+    ]
+
+
+def test_phase_observations_keeps_robot_speech_without_voice_id():
+    module = _load_questionnaire_module()
+
+    observations = module.phase_observations(
+        mode="speech",
+        turn_result="published",
+        log_excerpt=(
+            '[ROBOT OUTPUT] (closed_caption) '
+            '"TITAS is on the storage shelf."'
+        ),
+        topic_samples={},
+        voice_id="kb_stress_chain",
+    )
+
+    assert observations["spoken_texts"] == [
+        "TITAS is on the storage shelf."
+    ]
+
+
 def test_complete_context_execution_fails_on_clarification():
     module = _load_questionnaire_module()
     case = module.ProbeCase(

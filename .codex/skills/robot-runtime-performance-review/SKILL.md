@@ -234,6 +234,25 @@ python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questi
   --out /tmp/nao_environment_questionnaire.json
 ```
 
+For the stateful KB stress chain, run insertion, relation revision, grounded
+delivery, direct postcondition, and mixed follow-up cases in one conversation
+group:
+
+```bash
+python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questionnaire.py \
+  --container nao_ros2 \
+  --case-set kb_stress \
+  --speech-voice-scope group \
+  --out /tmp/nao_kb_stress_questionnaire.json
+```
+
+Score state and wording independently. A passing `/kb/query` postcondition is
+state evidence even when speech capture is absent. Fluent speech does not
+establish a postcondition. If the provider returns an explicit quota,
+authentication, or connectivity error, freeze the first-error timestamp and
+mark later model-dependent cases not scored rather than attributing them to a
+robot seam.
+
 For the full-stack runtime score, prefer `--case-set main` plus targeted
 `composite` cases. For the deeper fake-skill/replan score, switch explicitly to
 `--case-set fake_deep`; do not mix it into the basic score unless the base
