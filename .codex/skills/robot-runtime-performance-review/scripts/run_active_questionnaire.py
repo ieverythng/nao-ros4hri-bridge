@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import random
 import re
 import shlex
 import subprocess
@@ -636,6 +637,174 @@ KB_STRESS_CASES = (
         expected_speech_terms=("TITAS", "MIDAS", "gold", "blue", "ALEX"),
     ),
 )
+
+
+CAPABILITY_EXTREME_SEED = 20260716
+
+
+def _build_capability_extreme_cases(seed: int) -> tuple[ProbeCase, ...]:
+    """Build reproducible long-horizon cases without fixed lexical phrasing."""
+    rng = random.Random(seed)
+    report_phrase = rng.choice(
+        ("tell me what happened", "summarize the result", "report the outcome")
+    )
+    return_phrase = rng.choice(("return to", "go back to", "come back to"))
+    all_objects_phrase = rng.choice(
+        ("each visible object", "all objects in view", "every object you can see")
+    )
+    scene = KbInjection(
+        object_id="codex_extreme_scene",
+        statements=(
+            "codex_extreme_table rdf:type Table",
+            "codex_extreme_table dbp:name work_table",
+            "codex_extreme_shelf rdf:type Shelf",
+            "codex_extreme_shelf dbp:name storage_shelf",
+            "codex_extreme_cup rdf:type Cup",
+            "codex_extreme_cup dbp:name TITAS",
+            "codex_extreme_cup dbp:color gold",
+            "codex_extreme_cup oro:isOn codex_extreme_table",
+            "codex_extreme_book rdf:type Book",
+            "codex_extreme_book dbp:name MIDAS",
+            "codex_extreme_book dbp:color blue",
+            "codex_extreme_book oro:isOn codex_extreme_table",
+            "codex_extreme_book dbp:locationHint under_table",
+            "codex_extreme_apple rdf:type Apple",
+            "codex_extreme_apple dbp:name ATLAS",
+            "codex_extreme_apple dbp:color red",
+            "codex_extreme_apple oro:isOn codex_extreme_table",
+            "codex_extreme_alex rdf:type Human",
+            "codex_extreme_alex dbp:name ALEX",
+            "codex_extreme_alex dbp:frameId codex_extreme_alex",
+            "codex_extreme_alex dbp:poseSource semantic_fixture",
+            "myself sees codex_extreme_table",
+            "myself sees codex_extreme_shelf",
+            "myself sees codex_extreme_cup",
+            "myself sees codex_extreme_book",
+            "myself sees codex_extreme_apple",
+            "myself sees codex_extreme_alex",
+            "myself canReach codex_extreme_cup",
+            "myself canReach codex_extreme_book",
+            "myself canReach codex_extreme_apple",
+        ),
+        query_patterns=(
+            "codex_extreme_cup ?predicate ?object",
+            "codex_extreme_book ?predicate ?object",
+            "codex_extreme_apple ?predicate ?object",
+            "codex_extreme_alex ?predicate ?object",
+        ),
+        query_vars=("?predicate", "?object"),
+    )
+    return (
+        ProbeCase(
+            "extreme_walk_pick_sit_report",
+            "capability_extreme_execution",
+            f"Walk to TITAS, pick it up, sit down, and {report_phrase}.",
+            180.0,
+            setup=scene,
+            expected_outcome="execute_no_clarification",
+            all_required_context=True,
+            expected_member_ids=("codex_extreme_cup",),
+            expected_report_policy="final",
+        ),
+        ProbeCase(
+            "extreme_kneel_under_table_pick_report",
+            "capability_extreme_execution",
+            f"Kneel down, pick up MIDAS from under the work table, stand, and {report_phrase}.",
+            180.0,
+            setup=scene,
+            expected_outcome="execute_no_clarification",
+            all_required_context=True,
+            expected_member_ids=("codex_extreme_book",),
+            expected_report_policy="final",
+        ),
+        ProbeCase(
+            "extreme_dialogue_inventory",
+            "capability_extreme_dialogue",
+            "Before we do anything, tell me which named objects and people are in the test area.",
+            20.0,
+            setup=scene,
+            conversation_group="extreme_dialogue_chain",
+            expected_outcome="dialogue_only",
+            expected_speech_terms=("TITAS", "MIDAS", "ATLAS", "ALEX"),
+        ),
+        ProbeCase(
+            "extreme_dialogue_sit_stand_grab_return",
+            "capability_extreme_execution",
+            f"Now sit, stand again, pick up MIDAS, {return_phrase} ALEX, and {report_phrase}.",
+            200.0,
+            conversation_group="extreme_dialogue_chain",
+            expected_outcome="execute_no_clarification",
+            all_required_context=True,
+            expected_member_ids=("codex_extreme_book",),
+            expected_recipient_id="codex_extreme_alex",
+            expected_report_policy="final",
+        ),
+        ProbeCase(
+            "extreme_all_objects_visit_look_wave_sit",
+            "capability_extreme_execution",
+            f"Stand up, walk to {all_objects_phrase} on the work table, look at each one, wave to ALEX, sit down, and give one final summary.",
+            240.0,
+            setup=scene,
+            expected_outcome="execute_no_clarification",
+            all_required_context=True,
+            requires_target_selection=True,
+            expected_member_ids=(
+                "codex_extreme_cup",
+                "codex_extreme_book",
+                "codex_extreme_apple",
+            ),
+            expected_report_policy="final",
+        ),
+        ProbeCase(
+            "extreme_pick_place_kneel_report",
+            "capability_extreme_execution",
+            f"Pick up ATLAS, place it on the storage shelf, kneel, and {report_phrase}.",
+            200.0,
+            setup=scene,
+            expected_outcome="execute_no_clarification",
+            all_required_context=True,
+            expected_member_ids=("codex_extreme_apple",),
+            expected_report_policy="final",
+            postcondition=KbPostcondition(
+                "atlas_on_storage_shelf",
+                ("codex_extreme_apple oro:isOn ?support",),
+                ("?support",),
+                expected_values=("codex_extreme_shelf",),
+            ),
+        ),
+        ProbeCase(
+            "extreme_unreachable_object_recovery",
+            "capability_extreme_recovery",
+            f"Kneel and try to pick up the heavy box under the table. If you cannot, recover safely and {report_phrase}.",
+            200.0,
+            setup=KbInjection(
+                object_id="codex_extreme_heavy_box",
+                statements=(
+                    "codex_extreme_heavy_box rdf:type Box",
+                    "codex_extreme_heavy_box dbp:name heavy_box",
+                    "codex_extreme_heavy_box dbp:locationHint under_table",
+                    "codex_extreme_heavy_box oro:isOn codex_extreme_table",
+                    "myself sees codex_extreme_heavy_box",
+                ),
+                query_patterns=("codex_extreme_heavy_box ?predicate ?object",),
+                query_vars=("?predicate", "?object"),
+            ),
+            absence_guards=(
+                KbAbsenceGuard(
+                    "no_reachability_claim",
+                    ("myself canReach codex_extreme_heavy_box",),
+                    ("?subject",),
+                ),
+            ),
+            expected_outcome="execute_no_clarification",
+            all_required_context=True,
+            requires_replan=True,
+            expected_report_policy="final",
+        ),
+    )
+
+
+CAPABILITY_EXTREME_CASES = _build_capability_extreme_cases(CAPABILITY_EXTREME_SEED)
 
 COMPOSITE_CASES = (
     ProbeCase("kb_visible_baseline", "kb_query_dialogue", "What can you see?", 10.0),
@@ -1440,6 +1609,7 @@ def main() -> int:
             "posture_ablation",
             "environment",
             "kb_stress",
+            "capability_extreme",
             "fake_deep",
             "robustness",
         ),
@@ -1551,6 +1721,7 @@ def main() -> int:
         "posture_ablation": POSTURE_ABLATION_CASES,
         "environment": ENVIRONMENT_CASES,
         "kb_stress": KB_STRESS_CASES,
+        "capability_extreme": CAPABILITY_EXTREME_CASES,
         "fake_deep": FAKE_DEEP_CASES,
         "robustness": ROBUSTNESS_CASES,
     }

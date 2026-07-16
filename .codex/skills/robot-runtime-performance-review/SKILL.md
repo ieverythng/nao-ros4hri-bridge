@@ -636,6 +636,19 @@ skills when the target is deterministic execution, replanning, or failure policy
    - Expected: preloaded RDF facts are confirmed before the first turn,
      failed steps either replan, clarify, or fail truthfully, and successful fake
      post-effects are visible through `/kb/query` and later chatbot answers.
+8. Capability-extreme composition:
+   - Run `--case-set capability_extreme` to combine posture, navigation,
+     manipulation, quantified targets, dialogue carry-over, reporting, and
+     failure recovery over one seeded symbolic fixture.
+   - Run the full set under `all_success`, then rerun the recovery case under
+     `fail_once_pick` or another deterministic failure profile.
+   - Compare the complete user objective with emitted planner steps. Correct
+     `target_selection` and terminal speech do not constitute a pass when a
+     recovery/compiler path silently drops another requested capability.
+   - Require `target_selection` for quantified selection, not every singular
+     named target. Manually adjudicate apparent failures against planner
+     requests, plan steps, execution feedback, speech, and declared KB
+     postconditions before scoring.
 
 Questionnaire scoring:
 

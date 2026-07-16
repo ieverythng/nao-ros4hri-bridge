@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Seam Hypothesis Audit: Capability-Extreme Objective Preservation</title>
+  <style>
+    :root{--bg:#f4f6fa;--panel:#fff;--ink:#172033;--muted:#5d6879;--line:#d6deea;--red:#b42318;--amber:#a15c00;--green:#067647;--blue:#175cd3;--violet:#6941c6}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,sans-serif}main{max-width:1180px;margin:auto;padding:32px 22px 64px}h1{font-size:30px;margin:0 0 4px;letter-spacing:0}h2{font-size:20px;margin:28px 0 10px;letter-spacing:0}h3{font-size:16px;margin:18px 0 6px}.meta{color:var(--muted)}.decision,.contract,.warning{background:var(--panel);border:1px solid var(--line);padding:16px 18px;margin:14px 0}.decision{border-left:5px solid var(--amber)}.contract{border-left:5px solid var(--blue)}.warning{border-left:5px solid var(--red)}code{background:#eef2f7;padding:1px 4px;border-radius:3px}table{width:100%;border-collapse:collapse;background:var(--panel);font-size:14px}th,td{border:1px solid var(--line);padding:9px;vertical-align:top;text-align:left}th{background:#edf1f7}.accepted{color:var(--red);font-weight:700}.rejected{color:var(--green);font-weight:700}.active{color:var(--blue);font-weight:700}.blocked{color:var(--violet);font-weight:700}li{margin:5px 0}.gate li{padding-left:3px}.small{font-size:13px;color:var(--muted)}
+  </style>
+</head>
+<body><main>
+  <h1>Seam Hypothesis Audit</h1>
+  <p class="meta">Capability-extreme objective preservation · 16 July 2026</p>
+  <div class="decision"><strong>Decision: bounded handoff</strong><br>Verify current staged planner source through a clean rebuild before patching. The launched runtime scored 8.4/10 and exposed one deterministic objective-loss path.</div>
+
+  <h2>1. Target contract</h2>
+  <div class="contract"><p>A quantified composite request must preserve every admitted capability from chatbot handoff through planner, orchestrator, AB=1 evidence, and final speech. Recovery may fail or clarify, but it may not silently execute a successful subset.</p><p><strong>Protected:</strong> chatbot routing and handoff ownership, planner plan ownership, deterministic orchestrator dispatch, dialogue-manager speech ownership, existing ROS interfaces, and AB semantics.</p></div>
+
+  <h2>2. Baseline</h2>
+  <table><tr><th>Seam</th><th>Observed result</th></tr><tr><td>KB and grounding</td><td>All three objects, ALEX, and support relations were present and used immediately.</td></tr><tr><td>Chatbot handoff</td><td>Preserved stand, navigate, look, wave, sit, report and exact member ids.</td></tr><tr><td>Planner decision</td><td><code>validated_target_selection_recovery</code> emitted navigate ×3 plus report.</td></tr><tr><td>Replan</td><td>Fail-once pick reached plan version 2 and coherent closure.</td></tr><tr><td>Runtime provenance</td><td>Running process used a recovery method no longer present in currently mounted source.</td></tr></table>
+
+  <h2>3. Approach registry</h2>
+  <table><tr><th>ID</th><th>Mechanism</th><th>Status</th><th>Evidence or gap</th></tr>
+  <tr><td>H-01</td><td>Grounding omitted an object</td><td class="rejected">Rejected</td><td>All three ids appeared and were selected.</td></tr>
+  <tr><td>H-02</td><td>Chatbot reduced the objective</td><td class="rejected">Rejected</td><td>Complete goal and capability hints reached planner.</td></tr>
+  <tr><td>H-03</td><td>Planner model emitted an invalid partial plan</td><td class="active">Candidate</td><td>Raw invalid attempts need preservation in the clean rerun.</td></tr>
+  <tr><td>H-04</td><td>Target-selection recovery is lossy</td><td class="accepted">Accepted for launched runtime</td><td>Six capability families became navigation and report only.</td></tr>
+  <tr><td>H-05</td><td>Orchestrator filtered steps</td><td class="rejected">Rejected</td><td>Planner payload was already reduced.</td></tr>
+  <tr><td>H-06</td><td>Registry lacked capabilities</td><td class="rejected">Rejected</td><td>Adjacent cases executed the same skills.</td></tr>
+  <tr><td>H-07</td><td>Harness semantic oracle is incomplete</td><td class="accepted">Accepted</td><td>Four false negatives and one false positive.</td></tr>
+  <tr><td>H-08</td><td>Report fabricated omitted actions</td><td class="blocked">Blocked</td><td>Complete maximal final speech was not retained.</td></tr>
+  <tr><td>H-09</td><td>Loaded runtime differs from mounted source</td><td class="active">Active</td><td>Clean rebuild required.</td></tr></table>
+
+  <h2>4. Discriminating results</h2>
+  <ol><li>KB-to-grounding probe rejected upstream fact loss.</li><li>Handoff comparison rejected chatbot objective reduction.</li><li>Plan-versus-feedback comparison localized loss before orchestrator dispatch.</li><li>Registry comparison rejected capability unavailability.</li><li>Fail-once pick rejected a global replan failure.</li><li>Manual trace adjudication established harness false positives and negatives.</li><li>Source inspection established runtime/source drift.</li></ol>
+
+  <h2>5. Adversarial audit</h2>
+  <p>Ownership, ROS interfaces, lineage, speech authority, people/object distinction, grounded evidence, and AB semantics remain protected. Cancellation/supersede coverage, clean-source runtime proof, and semantic plan-coverage scoring remain open.</p>
+  <div class="warning"><strong>Do not expand the fallback into a second deterministic planner.</strong> The smallest safe runtime correction is an eligibility guard: compile quantified recovery only for objectives containing that operation and its report policy. Otherwise return structured failure or clarification after model retries.</div>
+
+  <h2>6. Bounded handoff</h2>
+  <ol class="gate"><li>Identify and hash the exact staged planner source.</li><li>Clean rebuild and full-stack relaunch.</li><li>Rerun the exact seeded maximal case.</li><li>If reproduced, write the planner-engine regression test first and add the narrow eligibility guard.</li><li>Add independent requested-capability versus planned-step scoring to the harness.</li><li>Rerun success, KB postcondition, fail-once, cancellation, and supersede holdouts.</li></ol>
+
+  <h2>7. Next probe</h2>
+  <p>Run only <code>extreme_all_objects_visit_look_wave_sit</code> under <code>all_success</code> after the clean rebuild. Accept only a plan covering stand, three visits, three looks, wave, sit, and report, or a truthful non-execution outcome.</p>
+  <p class="small">Full evidence, commands, residual risks, and artifact references are in the paired Markdown report.</p>
+</main></body></html>

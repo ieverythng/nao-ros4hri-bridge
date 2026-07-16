@@ -221,6 +221,43 @@ def test_kb_stress_manifest_covers_relation_revision_execution_and_postcondition
     assert any(case.postcondition is not None for case in cases)
 
 
+def test_capability_extreme_manifest_is_seeded_and_compositional():
+    module = _load_questionnaire_module()
+
+    cases = module.CAPABILITY_EXTREME_CASES
+    names = {case.name for case in cases}
+
+    assert module.CAPABILITY_EXTREME_SEED == 20260716
+    assert len(cases) == 7
+    assert names == {
+        "extreme_walk_pick_sit_report",
+        "extreme_kneel_under_table_pick_report",
+        "extreme_dialogue_inventory",
+        "extreme_dialogue_sit_stand_grab_return",
+        "extreme_all_objects_visit_look_wave_sit",
+        "extreme_pick_place_kneel_report",
+        "extreme_unreachable_object_recovery",
+    }
+    combined = " ".join(case.text.lower() for case in cases)
+    for action in ("walk", "pick", "sit", "stand", "kneel", "look"):
+        assert action in combined
+    assert any(term in combined for term in ("report", "summarize", "tell me"))
+    assert any(case.requires_target_selection for case in cases)
+    assert any(case.absence_guards for case in cases)
+    assert len({case.conversation_group for case in cases if case.conversation_group}) < len(cases)
+
+
+def test_capability_extreme_generation_is_reproducible():
+    module = _load_questionnaire_module()
+
+    first = module._build_capability_extreme_cases(module.CAPABILITY_EXTREME_SEED)
+    second = module._build_capability_extreme_cases(module.CAPABILITY_EXTREME_SEED)
+    different = module._build_capability_extreme_cases(module.CAPABILITY_EXTREME_SEED + 1)
+
+    assert [case.text for case in first] == [case.text for case in second]
+    assert [case.text for case in first] != [case.text for case in different]
+
+
 def test_formal_main_suite_has_a_full_run_timeout_budget():
     module = _load_questionnaire_module()
 

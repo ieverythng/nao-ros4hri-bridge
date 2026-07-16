@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Runtime Capability-Extreme Review, 16 July 2026</title>
+  <style>
+    :root { color-scheme: light; --ink:#172033; --muted:#596579; --line:#d7deea; --bg:#f5f7fb; --panel:#fff; --red:#b42318; --amber:#a15c00; --violet:#6941c6; --blue:#175cd3; --green:#067647; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.55 system-ui,sans-serif; }
+    main { max-width:1100px; margin:0 auto; padding:32px 22px 64px; }
+    h1 { margin:0 0 6px; font-size:30px; letter-spacing:0; }
+    h2 { margin:30px 0 10px; font-size:20px; letter-spacing:0; }
+    p { margin:8px 0; }
+    code { background:#eef2f7; padding:1px 4px; border-radius:3px; }
+    .meta { color:var(--muted); }
+    .score { display:flex; align-items:baseline; gap:14px; margin:22px 0; padding:18px; background:var(--panel); border:1px solid var(--line); border-left:5px solid var(--amber); }
+    .score strong { font-size:32px; }
+    .band { background:var(--panel); border:1px solid var(--line); border-left:5px solid; padding:14px 18px; margin:12px 0; }
+    .critical { border-left-color:var(--red); } .route { border-left-color:var(--amber); } .observe { border-left-color:var(--violet); } .pressure { border-left-color:var(--blue); }
+    .critical h2 { color:var(--red); } .route h2 { color:var(--amber); } .observe h2 { color:var(--violet); } .pressure h2 { color:var(--blue); }
+    .band h2 { margin:0 0 8px; }
+    li { margin:6px 0; }
+    table { width:100%; border-collapse:collapse; background:var(--panel); }
+    th,td { border:1px solid var(--line); padding:9px 10px; text-align:left; vertical-align:top; }
+    th { background:#eef2f7; }
+    .pass { color:var(--green); font-weight:700; } .fail { color:var(--red); font-weight:700; } .degraded { color:var(--amber); font-weight:700; }
+    .note { padding:12px 16px; background:#fff8e7; border:1px solid #f2d58a; }
+  </style>
+</head>
+<body><main>
+  <h1>Runtime Capability-Extreme Review</h1>
+  <p class="meta">16 July 2026 · <code>nao_ros2</code> · response-first · seeded capability set 20260716</p>
+  <div class="score"><strong>8.4/10</strong><span>Valid run. Close, but not ready to freeze.</span></div>
+  <p class="note">The live container contains newer planner source than the <code>feat/eval_suite</code> checkout. Patch the branch used to build the container, then merge the correction into this evaluation branch.</p>
+
+  <section class="band critical"><h2>🔴 Critical</h2><p><strong>Quantified target recovery loses the rest of a composite objective.</strong> The chatbot selected ATLAS, MIDAS, and TITAS correctly and requested stand, navigate, look, wave, sit, and report. Planner mode <code>validated_target_selection_recovery</code> emitted only three navigation steps and a report. The acknowledgement promised actions that were never dispatched.</p></section>
+  <section class="band route"><h2>🟡 Route and planning ambiguity</h2><p>Two successful composite turns used route repair at confidence 0.00. Complete <code>goal_text</code> allowed the planner to recover the intended chain, while <code>normalized_intents</code> was incomplete in one case.</p></section>
+  <section class="band observe"><h2>🟣 Observability</h2><p>The harness produced four false negatives by requiring quantified <code>target_selection</code> for singular named targets, and one false positive by checking selected members without checking preservation of every requested capability. Raw traces were manually adjudicated.</p></section>
+  <section class="band pressure"><h2>🔵 Runtime pressure</h2><p>The face detector skipped about 100 frames every 5-6 seconds. Symbolic KB fixtures remained stable, so this did not invalidate the scored cases.</p></section>
+
+  <h2>Questionnaire</h2>
+  <table><thead><tr><th>Seam</th><th>Result</th><th>Evidence</th></tr></thead><tbody>
+    <tr><td>Grounded inventory</td><td class="pass">Pass</td><td>Named ATLAS, MIDAS, TITAS, and ALEX plus the table support relation on the first turn.</td></tr>
+    <tr><td>Walk, pick, sit, report</td><td class="pass">Pass</td><td>Four ordered steps and coherent chatbot-authored closure.</td></tr>
+    <tr><td>Kneel, under-table pick, stand, report</td><td class="pass">Pass</td><td>Complete plan and truthful summary.</td></tr>
+    <tr><td>Dialogue, sit, stand, pick, return</td><td class="pass">Pass</td><td>Prior entity context retained; six-step plan completed.</td></tr>
+    <tr><td>All objects plus look, wave, posture</td><td class="fail">Fail</td><td>All three objects selected, but deterministic recovery dropped look, wave, stand, and sit.</td></tr>
+    <tr><td>Pick, place, kneel, report</td><td class="pass">Pass</td><td>Natural report and KB postcondition confirmed ATLAS on the storage shelf.</td></tr>
+    <tr><td>Fail-once pick and replan</td><td class="pass">Pass</td><td>Failure observed, plan version 2 executed, then one natural terminal report.</td></tr>
+  </tbody></table>
+
+  <h2>Hypothesis audit</h2>
+  <table><thead><tr><th>ID</th><th>Hypothesis</th><th>Status</th><th>Evidence</th></tr></thead><tbody>
+    <tr><td>H1</td><td>Chatbot under-selected “all objects”</td><td class="pass">Rejected</td><td>All three canonical ids were selected.</td></tr>
+    <tr><td>H2</td><td>Grounded context omitted fixtures</td><td class="pass">Rejected</td><td>Entities and relations appeared and were used immediately.</td></tr>
+    <tr><td>H3</td><td>Target-selection recovery is lossy</td><td class="fail">Accepted</td><td>Six intents collapsed to navigate ×3 plus report.</td></tr>
+    <tr><td>H4</td><td>Report result remains unnatural</td><td class="pass">Rejected</td><td>All reports were contextual natural language.</td></tr>
+    <tr><td>H5</td><td>Failure feedback cannot replan</td><td class="pass">Rejected</td><td>Fail-once pick reached planner version 2 and closure.</td></tr>
+    <tr><td>H6</td><td>Harness verdicts are reliable</td><td class="fail">Rejected</td><td>Four false negatives and one false positive.</td></tr>
+  </tbody></table>
+
+  <h2>Freeze gates</h2>
+  <ol><li>Correct <code>_validated_target_selection_recovery</code> in the newer planner branch.</li><li>Add requested-capability versus emitted-step coverage to the harness.</li><li>Repeat success, fail-once, and deterministic alternating/random profiles with isolated dialogue ids.</li><li>Require two consecutive runs without semantic objective loss, duplicate speech, or false completion.</li></ol>
+  <p class="meta">Method references: τ-bench, AgentBoard, TEACh, BEHAVIOR-1K, and VLMbench. Full citations and artifact paths are in the paired Markdown report.</p>
+</main></body></html>
