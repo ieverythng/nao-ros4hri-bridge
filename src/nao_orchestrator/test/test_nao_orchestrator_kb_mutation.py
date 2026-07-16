@@ -218,6 +218,7 @@ def test_successful_skill_kb_effects_replace_stale_spatial_values():
             'book_1 oro:isAt Lab',
             'book_1 oro:isOn lab_table',
             'book_1 dbp:name Manual',
+            'Kitchen rdf:type Room',
         ]
     )
 
@@ -252,6 +253,7 @@ def test_successful_skill_kb_effects_replace_stale_spatial_values():
     ]
     assert query.facts == [
         'book_1 dbp:name Manual',
+        'Kitchen rdf:type Room',
         'book_1 oro:isAt Kitchen',
     ]
     assert summary['calls'][0]['operation'] == 'remove_stale_spatial_values'
@@ -263,11 +265,50 @@ def test_successful_skill_kb_effects_replace_stale_spatial_values():
     assert node._stats.dispatch_failures == 0
 
 
+def test_successful_skill_kb_effects_remove_local_name_predicates_from_knowledgecore():
+    node, query, mutation = _orchestrator_with_kb(
+        [
+            'person_1 rdf:type Human',
+            'cup_1 isAt lab_table',
+            'cup_1 isOn lab_table',
+            'cup_1 placeOf lab_table',
+            'lab_table contains cup_1',
+            'cup_1 dbp:color red',
+        ]
+    )
+
+    summary = node._apply_success_kb_effects(
+        {
+            'skill': 'bring_object',
+            'status': 'succeeded',
+            'evidence': {
+                'kb_effects': [
+                    {'action': 'add', 'statement': 'cup_1 oro:isAt person_1'},
+                ]
+            },
+        }
+    )
+
+    assert summary['applied'] is True
+    assert set(mutation.calls[0]['statements']) == {
+        'cup_1 isAt lab_table',
+        'cup_1 isOn lab_table',
+        'cup_1 placeOf lab_table',
+        'lab_table contains cup_1',
+    }
+    assert query.facts == [
+        'person_1 rdf:type Human',
+        'cup_1 dbp:color red',
+        'cup_1 oro:isAt person_1',
+    ]
+
+
 def test_successful_skill_kb_effects_remove_spatial_aliases_and_reciprocals():
     node, query, mutation = _orchestrator_with_kb(
         [
             'book_1 dbp:name Manual',
             'book_1 oro:isAt Park',
+            'Park rdf:type Place',
             'book_1 oro:isAt cup_1',
             'book_1 oro:contains cup_1',
             'book_1 oro:isUnder cup_1',
@@ -285,7 +326,7 @@ def test_successful_skill_kb_effects_remove_spatial_aliases_and_reciprocals():
             'status': 'succeeded',
             'evidence': {
                 'kb_effects': [
-                    {'action': 'add', 'statement': 'cup_1 oro:isAt book_1'},
+                    {'action': 'add', 'statement': 'cup_1 oro:isAt Park'},
                 ]
             },
         }
@@ -305,6 +346,7 @@ def test_successful_skill_kb_effects_remove_spatial_aliases_and_reciprocals():
     assert query.facts == [
         'book_1 dbp:name Manual',
         'book_1 oro:isAt Park',
+        'Park rdf:type Place',
         'cup_1 dbp:color Black',
         'cup_1 oro:isAt Park',
     ]
@@ -343,7 +385,7 @@ def test_successful_skill_kb_effects_preserve_person_recipient_location():
     ]
 
 
-def test_successful_skill_kb_effects_do_not_invent_place_from_movable_target():
+def test_successful_skill_kb_effects_reject_movable_object_as_destination():
     node, query, mutation = _orchestrator_with_kb(
         [
             'book_1 oro:isAt cup_2',
@@ -364,13 +406,42 @@ def test_successful_skill_kb_effects_do_not_invent_place_from_movable_target():
         }
     )
 
-    assert summary['applied'] is True
-    assert mutation.calls[-1]['operation'] == 'add'
-    assert mutation.calls[-1]['statements'] == ['cup_1 oro:isAt book_1']
+    assert summary['applied'] is False
+    assert summary['invalid_statements'] == ['cup_1 oro:isAt book_1']
+    assert mutation.calls == []
     assert query.facts == [
         'book_1 oro:isAt cup_2',
+        'cup_1 oro:isOn table_1',
         'cup_2 dbp:color red',
-        'cup_1 oro:isAt book_1',
+    ]
+
+
+def test_successful_skill_kb_effects_reject_untyped_place_identifier():
+    node, query, mutation = _orchestrator_with_kb(
+        [
+            'book_1 oro:isAt Kitchen',
+            'cup_1 oro:isOn table_1',
+        ]
+    )
+
+    summary = node._apply_success_kb_effects(
+        {
+            'skill': 'bring_object',
+            'status': 'succeeded',
+            'evidence': {
+                'kb_effects': [
+                    {'action': 'add', 'statement': 'cup_1 oro:isAt book_1'},
+                ]
+            },
+        }
+    )
+
+    assert summary['applied'] is False
+    assert summary['invalid_statements'] == ['cup_1 oro:isAt book_1']
+    assert mutation.calls == []
+    assert query.facts == [
+        'book_1 oro:isAt Kitchen',
+        'cup_1 oro:isOn table_1',
     ]
 
 

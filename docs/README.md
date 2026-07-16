@@ -30,6 +30,9 @@ This top-level docs surface is intentionally small and operational.
   Watson/Qwen, lab Qwen3-VL, mixed-role runs, and launch-wiring lessons.
 - `plans/AGENT_HARNESS_RESEARCH_2026-07-11.md` (+ HTML) — research plan for a
   Watson/Hermes-style applied harness around ROS4HRI and future agent systems.
+- `plans/runtime_seam_deslop_2026-07-14.md` (+ HTML) — active, evidence-gated
+  implementation plan for fallback visibility, chatbot/planner authority,
+  report-result ownership, strict KB effects, and controlled deslop.
 - `plans/CRITIC_RUNTIME_HARDENING_2026-06-30.md` (+ HTML) — current
   source-hardening and live-proof handoff for the CRITIC pass.
 - `plans/deep_fake_replan_stabilization_2026-07-01.md` (+ HTML) — current
@@ -61,6 +64,9 @@ This top-level docs surface is intentionally small and operational.
   metrics, and provenance manifests. Historical and diagnostic bundles remain
   separate from the pending final frozen run.
 - `artifacts/` — archived handoffs, historical plans, and research notes.
+- `artifacts/runtime_seam_deslop_review_2026-07-14.md` — qualified runtime
+  review for the final deslop batch, accepted main seams, image provenance, and
+  the endpoint-blocked deep-fake gate.
 - `artifacts/runtime_review_2026-07-10_sv_seams.md` — latest evidence-backed
   runtime review for KB mutation, grouped delivery, fake-deep recovery, and
   report-result seams.

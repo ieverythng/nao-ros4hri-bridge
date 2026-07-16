@@ -68,13 +68,34 @@ observations into transient symbolic state and a compact summary. `chatbot_llm`
 projects KnowledgeCore and scene data into the compact `grounded_context_v3`
 contract described in `docs/contracts.md`.
 
+Current-scene questions establish a turn-scoped context boundary. Their LLM
+requests use the current grounded projection without earlier dialogue scene
+claims, while reflective questions that compare with an earlier turn retain
+history. This keeps `grounded_context_v3` as the single live scene
+representation without introducing another context owner.
+
+Named-person clarification is a separate continuation seam. If admission
+rejects an execution request because the person reference is absent, the
+rejected action and target scope remain structured session state. A grounded
+correction replaces the recipient ID before planner handoff; it does not reduce
+the request to a correction sentence and rely on dialogue history to recover
+the task. Handoff admission reopens the preserved execution only after the
+correction resolves to a unique grounded person.
+
 The compact contract keeps roles separate:
 
 - `entities` is the bounded subject inventory.
 - `locations` is a derived grouping view for support/place relations.
+- Rooms, places, and containers use `kind: "location"`; physical supports such
+  as tables and benches use `kind: "object"` and may also form derived
+  `support_group` records. Spatial materialization types do not promote domain
+  objects into locations, and a support anchor is not repeated as its own group
+  member.
 - people remain recipients or human targets, not locations.
-- support surfaces, rooms, ontology/meta classes, and people are filtered out
-  of deliverable object lists unless the user asks about those categories.
+- rooms, ontology/meta classes, and people are filtered out of deliverable
+  object lists. Physical supports remain objects in the entity inventory, but
+  grouped expansion treats them as anchors unless the user asks for the support
+  object itself.
 
 ## Planner Loop
 

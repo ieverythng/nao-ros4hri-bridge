@@ -17,6 +17,21 @@ DEFAULT_PARAM_NODES = (
     '/hri_person_manager',
 )
 
+REQUIRED_NODES = (
+    '/chatbot_llm',
+    '/planner_llm',
+    '/nao_orchestrator',
+    '/dialogue_manager',
+    '/kb/knowledge_core',
+    '/fake_skill_server',
+)
+
+LIFECYCLE_NODES = (
+    '/chatbot_llm',
+    '/dialogue_manager',
+    '/nao_orchestrator',
+)
+
 DEFAULT_TOPICS = (
     '/scene/summary',
     '/humans/persons/tracked',
@@ -56,6 +71,10 @@ def main() -> int:
 
     snapshot['ros']['nodes'] = _docker_ros(args.container, 'ros2 node list')
     snapshot['ros']['topics'] = _docker_ros(args.container, 'ros2 topic list')
+    snapshot['ros']['lifecycle'] = {
+        node: _docker_ros(args.container, f'ros2 lifecycle get {node}')
+        for node in LIFECYCLE_NODES
+    }
     snapshot['ros']['param_dumps'] = {
         node: _docker_ros(args.container, f'ros2 param dump {node}', timeout=6.0)
         for node in DEFAULT_PARAM_NODES
@@ -74,6 +93,7 @@ def main() -> int:
         )
 
     _add_derived_metrics(snapshot)
+    snapshot['derived']['preflight'] = _preflight_status(snapshot)
     payload = json.dumps(snapshot, indent=2, sort_keys=True)
     if args.out:
         Path(args.out).write_text(payload + '\n', encoding='utf-8')
@@ -138,6 +158,65 @@ def _add_derived_metrics(snapshot: dict) -> None:
         'fallback_total_count': fallback_metrics.get('total', 0),
         'fallback_event_metrics': fallback_event_metrics,
         'fallback_event_total_count': fallback_event_metrics.get('total', 0),
+    }
+
+
+def _preflight_status(snapshot: dict) -> dict:
+    """Summarize whether semantic questionnaire scoring is admissible."""
+    logs = snapshot.get('logs', {}).get('stdout', '') + snapshot.get('logs', {}).get('stderr', '')
+    node_result = snapshot.get('ros', {}).get('nodes', {})
+    node_output = str(node_result.get('stdout', ''))
+    missing_nodes = [node for node in REQUIRED_NODES if node not in node_output.splitlines()]
+    lifecycle = snapshot.get('ros', {}).get('lifecycle', {})
+    lifecycle_states = {
+        node: str(result.get('stdout', '')).strip()
+        for node, result in lifecycle.items()
+    }
+    non_active_lifecycle = {
+        node: state
+        for node, state in lifecycle_states.items()
+        if state and not state.startswith('active ')
+    }
+    lifecycle_probe_failures = [
+        node for node, state in lifecycle_states.items() if not state
+    ]
+    llm_preflight_failures = {
+        'chatbot_llm': len(
+            re.findall(
+                r'\[LLM PREFLIGHT\].*chatbot required preflight failed',
+                logs,
+                flags=re.IGNORECASE,
+            )
+        ),
+        'planner_llm': len(
+            re.findall(
+                r'\[LLM PREFLIGHT\].*planner tiny probe failed|'
+                r'\[LLM PREFLIGHT\].*planner provider preflight failed',
+                logs,
+                flags=re.IGNORECASE,
+            )
+        ),
+    }
+    knowledge_core_ready = bool(re.search('KnowledgeCore ready', logs, flags=re.IGNORECASE))
+    status = 'ready_for_semantic_scoring'
+    if (
+        not node_result.get('ok', False)
+        or missing_nodes
+        or non_active_lifecycle
+        or lifecycle_probe_failures
+        or any(llm_preflight_failures.values())
+        or not knowledge_core_ready
+    ):
+        status = 'preflight_not_scored'
+    return {
+        'status': status,
+        'required_nodes': list(REQUIRED_NODES),
+        'missing_nodes': missing_nodes,
+        'lifecycle_states': lifecycle_states,
+        'non_active_lifecycle': non_active_lifecycle,
+        'lifecycle_probe_failures': lifecycle_probe_failures,
+        'llm_preflight_failures': llm_preflight_failures,
+        'knowledge_core_ready': knowledge_core_ready,
     }
 
 

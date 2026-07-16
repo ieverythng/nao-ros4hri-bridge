@@ -89,6 +89,17 @@ package structure, and upstream-sensitive edits.
 - Call out anything that could only be fully validated inside the real ROS or
   robot environment.
 
+### Operator-owned observability nodes
+
+- `interaction_trace_viewer` is an operator-owned observability node and may be
+  launched manually alongside the integrated profile.
+- Do not classify an additional trace viewer as a stack duplicate, semantic
+  failure, or source defect. Do not modify its launch or runtime seam during
+  planner, grounding, or execution investigations.
+- Core-node uniqueness checks exclude the trace viewer and cover only
+  stack-owned nodes, KnowledgeCore readiness, lifecycle state, and port
+  ownership.
+
 ## Stop Conditions
 
 - Do not broaden changes into vendored or unrelated packages just because they

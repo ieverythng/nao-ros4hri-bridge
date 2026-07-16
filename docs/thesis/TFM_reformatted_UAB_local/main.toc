@@ -77,21 +77,22 @@
 \contentsline {section}{\numberline {7.7}Alternate-Model Ablation}{60}{section.7.7}%
 \contentsline {section}{\numberline {7.8}Interaction and Runtime-Contract Preservation}{60}{section.7.8}%
 \contentsline {section}{\numberline {7.9}Research-Question Synthesis}{61}{section.7.9}%
-\contentsline {chapter}{\numberline {8}Discussion}{63}{chapter.8}%
-\contentsline {section}{\numberline {8.1}Architectural Findings}{63}{section.8.1}%
-\contentsline {section}{\numberline {8.2}Harness Engineering and Failure Attribution}{63}{section.8.2}%
-\contentsline {section}{\numberline {8.3}Prompt Packs and Skill Contracts as Runtime Policy}{65}{section.8.3}%
-\contentsline {section}{\numberline {8.4}Planner Behaviour and Feedback}{65}{section.8.4}%
-\contentsline {section}{\numberline {8.5}Grounding, Identity, and World State}{66}{section.8.5}%
-\contentsline {section}{\numberline {8.6}Execution Evidence and Truthful Closure}{67}{section.8.6}%
-\contentsline {section}{\numberline {8.7}ROS 2 and HRI Modularity}{67}{section.8.7}%
-\contentsline {section}{\numberline {8.8}Validation Implications}{68}{section.8.8}%
-\contentsline {chapter}{\numberline {9}Limitations and Future Work}{69}{chapter.9}%
-\contentsline {section}{\numberline {9.1}Current Limitations}{69}{section.9.1}%
-\contentsline {section}{\numberline {9.2}Future Work}{69}{section.9.2}%
-\contentsline {chapter}{\numberline {10}Conclusion}{70}{chapter.10}%
-\contentsline {chapter}{\numberline {A}Full Runtime Contracts}{72}{appendix.A}%
-\contentsline {section}{\numberline {A.1}Runtime Skill Inventory}{72}{section.A.1}%
-\contentsline {chapter}{\numberline {B}Launch Commands}{75}{appendix.B}%
-\contentsline {chapter}{\numberline {C}Validation Log Template}{76}{appendix.C}%
-\contentsline {chapter}{Bibliography}{77}{section*.44}%
+\contentsline {section}{\numberline {7.10}Stateful KB Stress Diagnostic}{62}{section.7.10}%
+\contentsline {chapter}{\numberline {8}Discussion}{64}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Architectural Findings}{64}{section.8.1}%
+\contentsline {section}{\numberline {8.2}Harness Engineering and Failure Attribution}{64}{section.8.2}%
+\contentsline {section}{\numberline {8.3}Prompt Packs and Skill Contracts as Runtime Policy}{66}{section.8.3}%
+\contentsline {section}{\numberline {8.4}Planner Behaviour and Feedback}{66}{section.8.4}%
+\contentsline {section}{\numberline {8.5}Grounding, Identity, and World State}{67}{section.8.5}%
+\contentsline {section}{\numberline {8.6}Execution Evidence and Truthful Closure}{68}{section.8.6}%
+\contentsline {section}{\numberline {8.7}ROS 2 and HRI Modularity}{68}{section.8.7}%
+\contentsline {section}{\numberline {8.8}Validation Implications}{69}{section.8.8}%
+\contentsline {chapter}{\numberline {9}Limitations and Future Work}{70}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Current Limitations}{70}{section.9.1}%
+\contentsline {section}{\numberline {9.2}Future Work}{70}{section.9.2}%
+\contentsline {chapter}{\numberline {10}Conclusion}{71}{chapter.10}%
+\contentsline {chapter}{\numberline {A}Full Runtime Contracts}{73}{appendix.A}%
+\contentsline {section}{\numberline {A.1}Runtime Skill Inventory}{73}{section.A.1}%
+\contentsline {chapter}{\numberline {B}Launch Commands}{76}{appendix.B}%
+\contentsline {chapter}{\numberline {C}Validation Log Template}{77}{appendix.C}%
+\contentsline {chapter}{Bibliography}{78}{section*.44}%

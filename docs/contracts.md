@@ -1,6 +1,6 @@
 # Runtime Contracts
 
-Last updated: 2026-07-09
+Last updated: 2026-07-14
 
 This document is the richer reference for the JSON payloads that move task,
 scene, and execution state between nodes. The root README contains compact
@@ -75,6 +75,15 @@ Runtime presentation:
 - When the digest is disabled, the `GROUNDED_CONTEXT` trace should show only the
   JSON block. Use this mode to diagnose whether a user-visible wording error
   came from lossy digest compression or from the structured facts.
+- For non-mutating current-scene inventory and attribute questions,
+  `chatbot_llm` starts a fresh scene context boundary. The response and intent
+  requests receive the current grounded JSON without the previous dialogue
+  window, and the returned history begins with the current scene query. This
+  prevents earlier scene claims from being treated as current facts.
+- Reflective scene-change questions, such as comparisons with an earlier
+  person or object, retain dialogue history because temporal comparison is part
+  of their meaning. This is a context-selection rule, not a second world-model
+  representation.
 
 Current compact shape:
 
@@ -159,6 +168,12 @@ Role policy:
 
 - `entities` is the stable subject inventory. Each entity keeps its type,
   label, visibility flag, and bounded relations.
+- Entity `kind` is semantic, not a synonym for physical RDF materialization.
+  Real rooms, places, and containers use `kind: "location"`. Physical support
+  entities such as tables, benches, desks, counters, and shelves use
+  `kind: "object"`, while their relations can still create a derived
+  `support_group`. A domain object remains an object even when KnowledgeCore
+  also assigns `cyc:SpatialThing-Localized` or `Location` types.
 - Generated people keep their stable HRI identifier as the public label, for
   example `anonymous_person_fcdai`, unless a real semantic name such as `ALEX`
   is available through `dbp:name` or an explicit label.
@@ -179,10 +194,18 @@ Role policy:
   may form `navigation_target` or `location_group` entries.
 - People remain `person` entities and recipients. A person is not treated as a
   location or deliverable object, even if a pose or room relation is available.
-- User-facing object lists filter ontology and support/meta entries. Do not
-  expose `owl:Thing`, `cyc:SpatialThing*`, `Location`, `Place`, support
-  surfaces, rooms, or tables as deliverable objects unless the user explicitly
-  asks about those categories.
+- Location entities are not deliverable objects. Their object membership is
+  represented through `locations[*].contains`, with `object_count` derived from
+  those members rather than from the location record itself. Physical support
+  objects remain in `entities` and in the top-level object count, but the
+  support anchor itself is excluded from its own `contains` members. The
+  top-level `counts.locations` value includes every normalized location entity,
+  including locations without members in the compact relation view.
+- User-facing object lists filter ontology and meta entries. Do not expose
+  `owl:Thing`, `cyc:SpatialThing*`, `Location`, or `Place` as deliverable
+  objects. Support objects such as tables remain physical objects, but grouped
+  expansion treats them as anchors unless the user explicitly asks for the
+  support object itself.
 - Domain object types take precedence over KnowledgeCore spatial materialization
   types. A `Cup` or `Book` that also carries `cyc:SpatialThing-Localized`
   remains a user-facing object in the digest and location group.
@@ -196,6 +219,14 @@ Admission policy:
 - If the request names a person that is not present in `entities`, chatbot
   routing must ask for clarification instead of handing an executable request to
   the planner.
+- A named-person clarification must preserve the rejected execution contract.
+  When the user supplies a grounded correction, the next planner request
+  reuses the original action and object scope, replaces only the recipient,
+  and derives concrete IDs from the current `grounded_context`. A correction
+  is not published as a new free-text goal with empty `normalized_intents`.
+  Handoff admission may reopen this preserved execution only when the
+  correction resolves to one grounded person; it must not promote ordinary
+  dialogue corrections.
 - Stale or absent facts should produce a truthful clarification, help request,
   replan, or failure. They must not be hidden behind generic object names.
 
@@ -792,3 +823,43 @@ Example:
   ]
 }
 ```
+
+## Authoritative Target Selection
+
+Grouped object requests may carry a bounded `target_selection` object in the
+planner request. This object records a selection that has already been resolved
+against the current `grounded_context`; it is not an executable plan.
+
+```json
+{
+  "target_selection": {
+    "selection_kind": "location_members",
+    "operation": "deliver",
+    "source_location_id": "work_table",
+    "member_ids": ["book_1", "cup_1"],
+    "recipient_id": "person_1",
+    "ordering": "none",
+    "report_policy": "final"
+  }
+}
+```
+
+The chatbot handoff may derive this contract only from structured intent fields
+and unambiguous grounded records. The planner verifies that every member is a
+grounded object, that location members belong to the stated location, and that a
+delivery recipient is a grounded person. Locations, support surfaces, and people
+remain anchors or recipients rather than deliverable objects.
+
+## Environment Fixture Contract
+
+Questionnaire fixtures must state an explicit robot location and an explicit
+location for every preloaded person, including the reciprocal
+`location oro:contains person` fact. The runtime harness retracts all current
+facts for the previous fixture's subjects when the conversation group changes.
+If absence cannot be verified, the following case is `not_scored` rather than
+being evaluated against a contaminated world.
+
+Operator SVGs follow the upstream `rqt_human_radar` loader contract. They use
+Inkscape-labelled `walls`, `zones`, and `static_objects` groups, millimetre-scale
+view boxes, and `name class` labels on every simulated static object. Selecting
+an SVG therefore loads both the visual map and its static simulated objects.

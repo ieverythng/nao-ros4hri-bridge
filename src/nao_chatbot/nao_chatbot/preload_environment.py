@@ -12,6 +12,7 @@ import rclpy
 from ament_index_python.packages import PackageNotFoundError
 from ament_index_python.packages import get_package_share_directory
 from kb_skills.mutation_client import KnowledgeCoreMutationClient
+from nao_chatbot.environment_fixtures import validate_environment_fixture
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -59,6 +60,12 @@ class EnvironmentPreloader(Node):
             fixture = fixtures.get(environment_id)
             if fixture is None:
                 failures.append("unknown fixture '%s'" % environment_id)
+                continue
+            validation_errors = validate_environment_fixture(environment_id, fixture)
+            if validation_errors:
+                failures.append(
+                    "%s: %s" % (environment_id, '; '.join(validation_errors))
+                )
                 continue
             statements = [
                 str(item).strip()

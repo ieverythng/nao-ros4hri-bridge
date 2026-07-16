@@ -1577,6 +1577,50 @@ def normalize_communication_policy(value) -> dict:
     return policy
 
 
+def normalize_target_selection(value) -> dict:
+    """Normalize an optional grounded target-selection contract."""
+    if not isinstance(value, dict):
+        return {}
+
+    selection = {}
+    for key in (
+        'selection_kind',
+        'operation',
+        'source_location_id',
+        'recipient_id',
+        'ordering',
+        'report_policy',
+    ):
+        normalized = str(value.get(key, '') or '').strip()
+        if normalized:
+            selection[key] = normalized.lower() if key in {
+                'selection_kind',
+                'operation',
+                'ordering',
+                'report_policy',
+            } else normalized
+
+    member_ids = []
+    seen_member_ids = set()
+    for member_id in coerce_str_list(value.get('member_ids', [])):
+        if member_id in seen_member_ids:
+            continue
+        seen_member_ids.add(member_id)
+        member_ids.append(member_id)
+    if member_ids:
+        selection['member_ids'] = member_ids
+    return selection
+
+
+def is_explicit_knowledge_statement(value) -> bool:
+    """Return whether a KB mutation is an explicit RDF-style triple."""
+    parts = str(value or '').strip().split(maxsplit=2)
+    if len(parts) != 3 or not all(part.strip() for part in parts):
+        return False
+    predicate = parts[1].strip()
+    return ':' in predicate or predicate in {'rdf:type', 'dbp:name'}
+
+
 def resolve_effective_communication_policy(value, steps) -> dict:
     """Resolve communication flags against the validated executable plan shape."""
     policy = normalize_communication_policy(value)

@@ -11,6 +11,10 @@ The manuscript, final evidence synthesis, and submission closure track lives in
 `docs/plans/tfm_completion_masterplan_2026-07-13.md` (+ `.html`). This
 integration masterplan remains authoritative for runtime implementation status.
 
+The active 14 July fallback, report-result, planner-retry, and KB-effect cleanup
+is specified in `docs/plans/runtime_seam_deslop_2026-07-14.md` (+ `.html`). It
+is an implementation tranche under this masterplan, not a competing authority.
+
 ## 1. Consolidation Policy (What This File Replaces)
 
 This file is now the canonical integration plan and absorbs execution tracking from:
@@ -476,8 +480,40 @@ and TFM fake-skill validation sub-plans were moved to
 
 ## 10. Immediate Next Session Checklist
 
-1. Rebuild the response-first container and run the runtime-review main
-   questionnaire plus the architecture sweep.
+### 13 July runtime-closure implementation
+
+- **14 July source gate:** the active seam-deslop tranche is source-green for
+  chatbot-owned target selection, one chatbot validation retry, conditional
+  planner retry two, evidence-specific report fallback, and strict typed KB
+  spatial effects. A clean overlay (`iiia:nao-deslop-20260714-v1`) contains
+  byte-matching source. Runtime acceptance is `preflight_not_scored` because
+  `10.7.138.215:8004` refused connections; chatbot/dialogue did not activate and
+  planner exited before semantic cases could run.
+
+- Runtime-proven for focused fixtures: semantic fixture labels no longer
+  collapse `codex_*` ids; fixture validation requires robot and person
+  locations; simulator SVGs now implement the upstream ROS4HRI map schema.
+- Runtime-proven for work-table delivery: planner requests carry a bounded
+  `target_selection` contract. Group delivery expands only grounded members and
+  rejects support, location, or person targets as objects.
+- Runtime-proven for blocked delivery: the supervisor permits one retry after a
+  transient blocking failure, then rejects an unchanged plan after the same
+  blocking failure recurs.
+- Runtime-proven for blocked delivery: `place_object` cannot replace a required
+  person handoff with placement on another support. A person also cannot be a
+  support, and the report contract converts such evidence into failure rather
+  than user-facing success.
+- Focused runtime-proven: recovery scoring requires timestamped
+  speech after terminal evidence, and fixture groups are retracted and verified
+  between independent cases.
+- No chatbot or planner prompt text changed. A bounded SkillOpt mutation remains
+  conditional on structural holdouts failing after a clean rebuild.
+- Fail-once pick now survives `object_id`/`target` alias changes and succeeds on
+  the second attempt. The remaining replan defect is KB confirmation of the
+  subsequent placement support.
+
+1. Run the uninterrupted response-first main questionnaire plus architecture
+   sweep on the accepted clean image.
 2. Run `run_active_questionnaire.py --case-set environment` and archive the
    JSON artifact with the runtime review notes.
 3. Add location-group probes: “what is in the kitchen?”, “bring every object

@@ -72,6 +72,7 @@ def _assert_lab_vllm_defaults(defaults: dict[str, str]) -> None:
     assert defaults["chatbot_server_url"] == LAB_VLLM_CHAT_URL
     assert defaults["planner_llm_base_url"] == LAB_VLLM_BASE_URL
     assert defaults["chatbot_response_max_tokens"] == "192"
+    assert defaults["chatbot_intent_max_tokens"] == "256"
     assert defaults["chatbot_turn_pipeline_mode"] == "response_first"
     assert defaults["start_managed_ollama"] == "false"
     assert defaults["chatbot_preflight_required"] == "true"

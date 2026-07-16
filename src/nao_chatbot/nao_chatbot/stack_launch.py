@@ -1646,7 +1646,7 @@ def generate_profile_launch_description(
     )
     chatbot_intent_max_tokens_arg = DeclareLaunchArgument(
         "chatbot_intent_max_tokens",
-        default_value=_profile_default(profile_defaults, "chatbot_intent_max_tokens", "64"),
+        default_value=_profile_default(profile_defaults, "chatbot_intent_max_tokens", "256"),
         description="Maximum intent tokens requested from chatbot_llm Ollama calls.",
     )
     chatbot_intent_model_arg = DeclareLaunchArgument(

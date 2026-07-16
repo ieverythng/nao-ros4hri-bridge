@@ -26,6 +26,127 @@ _LOCATION_KIND_MARKERS = ('location', 'room', 'place', 'area', 'station')
 _PERSON_MARKERS = ('person', 'human')
 
 
+def plan_semantic_errors(
+    plan_steps: list[dict] | tuple[dict, ...] | None,
+    grounded_context: dict | None,
+    target_selection: dict | None,
+) -> list[str]:
+    """Validate selected members against grounding and executable plan targets."""
+    selection = target_selection if isinstance(target_selection, dict) else {}
+    member_ids = _unique_strings(selection.get('member_ids', []))
+    if not selection or not member_ids:
+        return []
+
+    context = grounded_context if isinstance(grounded_context, dict) else {}
+    entities = _entity_index(context)
+    locations = _location_index(context)
+    errors: list[str] = []
+
+    invalid_members = [
+        member_id
+        for member_id in member_ids
+        if member_id not in entities
+        or _target_is_person(member_id, entities)
+        or _target_is_location_or_support(member_id, entities, locations)
+    ]
+    if invalid_members:
+        errors.append(
+            'target_selection members must be grounded objects: %s'
+            % ', '.join(invalid_members)
+        )
+
+    operation = str(selection.get('operation', '')).strip().lower()
+    steps = [dict(step) for step in plan_steps or [] if isinstance(step, dict)]
+    if operation == 'visit':
+        visited = _ordered_step_targets(
+            steps,
+            skills={'navigate_to', 'walk_to', 'move_to_location'},
+            keys=('target', 'target_frame', 'object_id', 'object', 'location'),
+        )
+        unexpected = [target for target in visited if target not in member_ids]
+        missing = [member_id for member_id in member_ids if member_id not in visited]
+        if unexpected or missing:
+            details = []
+            if missing:
+                details.append('missing %s' % ', '.join(missing))
+            if unexpected:
+                details.append('unexpected %s' % ', '.join(unexpected))
+            errors.append('visit targets do not match target_selection (%s)' % '; '.join(details))
+
+    if operation == 'deliver':
+        deliveries = _delivery_step_targets(steps)
+        delivered_members = [object_id for object_id, _ in deliveries]
+        missing = [member_id for member_id in member_ids if member_id not in delivered_members]
+        unexpected = [object_id for object_id in delivered_members if object_id not in member_ids]
+        if missing or unexpected:
+            details = []
+            if missing:
+                details.append('missing %s' % ', '.join(missing))
+            if unexpected:
+                details.append('unexpected %s' % ', '.join(unexpected))
+            errors.append('delivery targets do not match target_selection (%s)' % '; '.join(details))
+
+        recipient_id = str(selection.get('recipient_id', '')).strip()
+        if recipient_id:
+            if recipient_id not in entities or not _target_is_person(recipient_id, entities):
+                errors.append('delivery recipient is not a grounded person: %s' % recipient_id)
+            mismatched = [
+                recipient
+                for _, recipient in deliveries
+                if recipient and recipient != recipient_id
+            ]
+            if mismatched:
+                errors.append(
+                    'delivery recipient does not match target_selection: %s'
+                    % ', '.join(_unique_strings(mismatched))
+                )
+    return errors
+
+
+def _unique_strings(values) -> list[str]:
+    if not isinstance(values, (list, tuple, set)):
+        return []
+    result = []
+    seen = set()
+    for value in values:
+        normalized = str(value or '').strip()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        result.append(normalized)
+    return result
+
+
+def _ordered_step_targets(
+    steps: list[dict],
+    *,
+    skills: set[str],
+    keys: tuple[str, ...],
+) -> list[str]:
+    targets = []
+    for step in steps:
+        if _step_name(step) not in skills:
+            continue
+        for source in _step_sources(step):
+            target = next(
+                (str(source.get(key, '')).strip() for key in keys if str(source.get(key, '')).strip()),
+                '',
+            )
+            if target:
+                targets.append(target)
+                break
+    return targets
+
+
+def _delivery_step_targets(steps: list[dict]) -> list[tuple[str, str]]:
+    deliveries = []
+    for step in steps:
+        if _step_name(step) not in _DELIVERY_SKILLS:
+            continue
+        deliveries.append((_step_object_id(step), _step_recipient_id(step)))
+    return [(object_id, recipient) for object_id, recipient in deliveries if object_id]
+
+
 def build_report_outcome(
     *,
     plan_steps: list[dict] | tuple[dict, ...] | None = None,
