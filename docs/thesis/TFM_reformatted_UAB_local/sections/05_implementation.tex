@@ -1,10 +1,10 @@
-\chapter{Implementation: ROS Nodes and APIs}
+\chapter{Implementation: ROS 2 Nodes and APIs}
 \label{chap:implementation}
 \label{sec:implementation}
 
 This chapter describes how the architecture introduced in Chapter~\ref{chap:architecture-requirements} and the contracts defined in Chapter~\ref{chap:runtime-contracts} are realised in the ROS~2 workspace. The implementation deliberately separates semantic interpretation, planning, deterministic execution, perception grounding, symbolic knowledge, and skills. LLM components can therefore interpret or propose actions, but physical effects remain mediated by typed ROS interfaces and validated skill contracts.
 
-The workspace combines locally developed integration packages with upstream-aligned ROS4HRI components. In particular, \code{dialogue_manager} provides a bridge between robot and user interaction, while the \code{chatbot_llm} package supplies intent extraction, response generation, and the turn-processing interface extended for this system. The planner-facing contracts, orchestrator, perception pipeline, fake-skill infrastructure, skill registry and NAO adapters are integrated in the main \code{nao-ros4hri-bridge} workspace. This distinction matters: the contribution is not a replacement dialogue framework, but a planner-mediated execution architecture fitted to existing ROS4HRI seams.
+The workspace combines locally developed integration packages with upstream-aligned HRI components. In particular, \code{dialogue_manager} provides a bridge between robot and user interaction, while the \code{chatbot_llm} package supplies intent extraction, response generation, and the turn-processing interface extended for this system. The planner-facing contracts, orchestrator, perception pipeline, fake-skill infrastructure, skill registry, and NAO adapters are integrated in the \code{nao-ros4hri-bridge} workspace. The contribution is therefore the complete interaction and execution integration rather than a replacement dialogue package or an isolated planner.
 
 \section{Runtime Flow}
 
@@ -14,13 +14,13 @@ Candidate requests are published to the planner-admission endpoint defined by Co
 
 This flow enforces three runtime constraints from the requirements in Table~\ref{tab:functional-requirements}. First, a dialogue-only turn cannot reach robot execution unless the chatbot selects the execution route and the orchestrator admits the resulting request (FR2--FR3). Second, planner output remains a candidate plan until its schema, skill names, arguments, failure policies, and lineage fields pass deterministic validation (FR5). Third, KB facts supplied with a planner request describe what the system knows when planning begins. They can support target selection, but they cannot prove that a later action succeeded or that the world remained unchanged; the responsible skill must provide fresh execution evidence before completion is reported.
 
-Figure~\ref{fig:full-stack-architecture-plate} presents the resulting node graph, python packages, ROS buses, external backends, validation seams, and extension points.
+Figure~\ref{fig:full-stack-architecture-plate} shows how the nodes, Python packages, ROS interfaces, external backends, validation inputs, and future extensions fit together.
 
 \begin{landscape}
 \begin{figure}[p]
   \centering
   \includegraphics[width=0.98\linewidth]{figures/chapter5_full_stack.pdf}
-  \caption{Full-stack implementation of the NAO ROS4HRI bridge. Dialogue components are blue, grounding and evidence components orange, planning components green, execution components purple, and skills or adapters neutral grey. The \code{interaction_sim} and KB-fixture paths provide controlled validation inputs. The dashed red World Model Enricher box denotes future work rather than an implemented runtime component.}
+  \caption{Full-stack implementation of the modular NAO interaction and execution system. Dialogue components are blue, grounding and evidence components orange, planning components green, execution components purple, and skills or adapters neutral grey. The \code{interaction_sim} and KB-fixture paths provide controlled validation inputs. The dashed red World Model Enricher box denotes future work rather than an implemented runtime component.}
   \label{fig:full-stack-architecture-plate}
 \end{figure}
 \end{landscape}
@@ -29,7 +29,7 @@ Figure~\ref{fig:full-stack-architecture-plate} presents the resulting node graph
 
 \subsection{\code{dialogue_manager}}
 
-\code{dialogue_manager} is the ROS~2 lifecycle component responsible for multi-modal communication between the robot and its interlocutors. Following the ROS4HRI package design\footnote{Package source: \url{https://github.com/ieverythng/dialogue_manager}.}, it tracks concurrent conversations per person and per interaction group, preserves chronological utterance histories, and associates incoming \code{hri_msgs/LiveSpeech} streams with the relevant dialogue. Group utterances are fanned out to the corresponding personal and group histories, while prior summaries can be restored when a known interlocutor begins a new session. The node invokes the chatbot through \code{DialogueInteraction}, exposes the high-level \code{/skill/chat}, \code{/skill/ask}, and \code{/skill/say} interfaces, and realises final user-facing expressions through the configured Say sub-skill. The planner integration therefore extends an existing multi-user dialogue lifecycle rather than replacing it.
+\code{dialogue_manager} is the ROS~2 lifecycle component responsible for multi-modal communication between the robot and its interlocutors. Following the upstream package design\footnote{Package source: \url{https://github.com/ieverythng/dialogue_manager}.}, it tracks concurrent conversations per person and per interaction group, preserves chronological utterance histories, and associates incoming \code{hri_msgs/LiveSpeech} streams with the relevant dialogue. Group utterances are fanned out to the corresponding personal and group histories, while prior summaries can be restored when a known interlocutor begins a new session. The node invokes the chatbot through \code{DialogueInteraction}, exposes the high-level \code{/skill/chat}, \code{/skill/ask}, and \code{/skill/say} interfaces, and realises final user-facing expressions through the configured Say sub-skill. The planner integration therefore extends an existing multi-user dialogue lifecycle rather than replacing it.
 
 This ownership boundary is also a runtime constraint: planning and execution packages may publish structured communication requests, but they do not call the speech backend directly merely because they have produced status information. This preserves the separation between dialogue and execution introduced by FR2 and the ownership map in Table~\ref{tab:contract-map}.
 
@@ -51,6 +51,8 @@ The canonical behavioural policy resides in \path{src/chatbot_llm/config/chat_pr
 
 Every completed turn emits \path{/chatbot_llm/turn_trace}. The trace records the final route, intent source and confidence, grounded-context visibility, spoken acknowledgement, and whether a planner handoff was published. It therefore provides the observable link between Contract~1, Contract~2 admission, and the route-consistency evaluation in Chapter~\ref{chap:validation-methodology}.
 
+Figure~\ref{fig:chatbot-llm-node} shows the turn stages, grounded-context input, route decision, user-facing response, trace output, and planner handoff.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{figures/chapter5_chatbot_llm.pdf}
@@ -70,6 +72,8 @@ Evidence-producing plans receive an additional reporting check. When \code{repor
 
 The node also subscribes to \code{/planner/execution_feedback}. The embedded planning-state helper associates relevant events with the active goal and asks the planning path to respond when the orchestrator reports completion, failure, a recoverable condition, or a need for user input. That response may be a revised plan or a structured dialogue act; it is not robot control. The planner never invokes a robot adapter and never speaks directly. Its user-facing output must cross the orchestrator relay and dialogue owner.
 
+Figure~\ref{fig:planner-llm-node} shows the planner model call together with its validation, retry, feedback, and publication paths.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{figures/chapter5_planner_llm.pdf}
@@ -87,7 +91,7 @@ The helper distinguishes planning, replanning, waiting-for-user, completed, and 
 
 The planner-facing capability model is derived from the canonical skill registry maintained by \code{skill_common}. Contract~4 and Table~\ref{tab:skill-entry-contract} define the shared entry shape: canonical name and aliases, typed parameters, preconditions, expected effects, observable success evidence, failure modes, result schema, safety flags, runtime availability, and executor mapping. The planner receives a bounded projection of these fields when it selects and orders skills. The orchestrator uses the same names, argument requirements, and availability information when it validates Contract~5 plans and dispatches Contract~6 calls. This arrangement provides a machine-checkable guard against prompt and executor drift. The final scored source revision is accepted only when the generated planner and documentation projections pass the registry consistency checks against the canonical entries.
 
-The registry also separates semantic availability from the adapter selected by a launch profile. A skill may be implemented by a first-party robot action, a deterministic fake server, or both. The profile must still prove that the selected endpoint is running before execution. Table~\ref{tab:runtime-skill-surface} presents the complete planner-visible surface in a compact form; the per-skill argument, effect, failure, and executor fields are expanded in Appendix~\ref{sec:runtime-skill-inventory}.
+The registry also separates semantic availability from the adapter selected by a launch profile. A skill may be implemented by a first-party robot action, a deterministic fake server, or both. The profile must still prove that the selected endpoint is running before execution. Table~\ref{tab:runtime-skill-surface} lists the complete planner-visible skill set in compact form; Appendix~\ref{sec:runtime-skill-inventory} gives the argument, effect, failure, and executor fields for each skill.
 
 \begin{table}[H]
 \centering
@@ -128,6 +132,8 @@ Accepted plans have their steps dispatched in order through the ROS action or sk
 
 On failure, the orchestrator reports the typed skill result (Contract~6) and stops, continues, or waits according to the validated policy. It does not ask an LLM for an unregistered action, create a replacement plan, or fabricate success. Planner communication arrives on \code{/planner/dialogue_act} and is relayed on \code{/nao_orchestrator/planner_dialogue_act} (Contract~8), after which wording and speech remain under the dialogue layer. The registered \code{report_result} path is the explicit execution-speech case: the orchestrator derives its content from Contract~6 evidence and dispatches it through the report and say skill servers. These restrictions implement FR2, FR3, FR5, FR6, and FR7 by keeping route ownership, planning, execution, evidence, and speech authority at their declared seams.
 
+Figure~\ref{fig:nao-orchestrator-node} shows the two ingress paths and the subsequent skill dispatch, KB-effect application, execution feedback, and dialogue-act relay.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{figures/chapter5_nao_orchestrator.pdf}
@@ -148,24 +154,26 @@ At the execution boundary, \code{nao_orchestrator} resolves aliases through the 
 
 \section{World State and Scene Grounding}
 
-The perception path has parallel people and object branches. The ROS4HRI branch uses \code{hri_face_detect_yunet} to detect faces and \code{hri_person_manager} to maintain person identities, tracked-person topics, and frame-qualified person state. The object branch uses \code{nao_scene_grounding} to convert detector output into a provider-independent scene representation. A custom YOLO detector was trained for a restricted proof-of-concept object set and integrated with the NAO camera stream through ROS. Its strongest demonstration classes are blueberry, corn, pear, tomato, and zucchini. Detector backends are normalised into one internal observation shape, so downstream nodes do not depend on the detector message type.
+The perception path has parallel people and object branches. The person-perception branch uses \code{hri_face_detect_yunet} to detect faces and \code{hri_person_manager} to maintain person identities, tracked-person topics, and frame-qualified person state. The object branch uses \code{nao_scene_grounding} to convert detector output into a provider-independent scene representation. A custom YOLO detector was trained for a restricted proof-of-concept object set and integrated with the NAO camera stream through ROS. Its strongest demonstration classes are blueberry, corn, pear, tomato, and zucchini. Detector backends are normalised into one internal observation shape, so downstream nodes do not depend on the detector message type.
 
-The grounding node filters object detections by confidence and an explicit label allowlist, maps labels to KB classes, and maintains local identifiers using tracker IDs or bounded image-plane matching. Without a tracker ID, the default matcher requires the same label, KB class, and detector source, a displacement of at most 64 pixels, and an observation age of at most two seconds. It publishes \code{/scene/summary} and writes accepted observations as transient KnowledgeCore statements through \code{/kb/revise}. Under the default profile, KB observations have a four-second lifespan and are refreshed no more often than once per second; a local object is removed from the current scene summary after 4.5 seconds without a new detection. Therefore, an object marked visible in \code{grounded_context} is present in this bounded current-scene window, not merely stored indefinitely in the KB. People remain owned by the ROS4HRI person pipeline and are merged only when the compact symbolic context is assembled. This implements the RDF and evidence ownership in Contract~9, while Contract~3 exposes the bounded \code{grounded_context} projection used by the LLM nodes.
+The grounding node filters object detections by confidence and an explicit label allowlist, maps labels to KB classes, and maintains local identifiers using tracker IDs or bounded image-plane matching. Without a tracker ID, the default matcher requires the same label, KB class, and detector source, a displacement of at most 64 pixels, and an observation age of at most two seconds. It publishes \code{/scene/summary} and writes accepted observations as transient KnowledgeCore statements through \code{/kb/revise}. Under the default profile, KB observations have a four-second lifespan and are refreshed no more often than once per second; a local object is removed from the current scene summary after 4.5 seconds without a new detection. Therefore, an object marked visible in \code{grounded_context} is present in this bounded current-scene window, not merely stored indefinitely in the KB. People remain owned by the tracked-person pipeline and are merged only when the compact symbolic context is assembled. This implements the RDF and evidence ownership in Contract~9, while Contract~3 exposes the bounded \code{grounded_context} projection used by the LLM nodes.
 
-\code{kb_skills} is the transport boundary for \code{/kb/query} and \code{/kb/revise}. The chatbot first formats the bounded query result as an internal knowledge snapshot, combines it with the current scene summary and ROS4HRI person state, and emits \code{grounded_context} (Contract~3). This is the only compact spatial-symbolic contract passed to the LLM stakeholders. It keeps entities, locations, and bounded relations while omitting unrestricted raw rows and detector payloads. ROS4HRI people may already expose frame-qualified transforms through \code{hri_person_manager}, which supports relative person visualisation in \code{interaction_sim}. Object \code{center_x} and \code{center_y} remain image-plane evidence and are not interpreted as metric distance. Metric object position requires an RGB-D, stereo, simulator, or other pose source to publish a timestamped 3D observation with camera calibration, frame identity, transform, and uncertainty on the spatial-overlay seam.
+\code{kb_skills} is the transport boundary for \code{/kb/query} and \code{/kb/revise}. The chatbot first formats the bounded query result as an internal knowledge snapshot, combines it with the current scene summary and tracked-person state, and emits \code{grounded_context} (Contract~3). This is the only compact spatial-symbolic contract passed to the LLM stakeholders. It keeps entities, locations, and bounded relations while omitting unrestricted raw rows and detector payloads. Tracked people may already expose frame-qualified transforms through \code{hri_person_manager}, which supports relative person visualisation in \code{interaction_sim}. Object \code{center_x} and \code{center_y} remain image-plane evidence and are not interpreted as metric distance. Metric object position requires an RGB-D, stereo, simulator, or other pose source to publish a timestamped 3D observation with camera calibration, frame identity, transform, and uncertainty on the spatial-overlay seam.
 
 Planning context and execution evidence consequently have different roles. Current symbolic state is sufficient for a non-mutating knowledge answer and useful for selecting a plan. It is not sufficient to claim that an object was found after a scan, that a path remains clear, or that a manipulation succeeded. A skill therefore returns a Contract~6 payload containing the evidence it observed and, when it materially changes the relations of a KB entity, explicit \code{evidence.kb_effects}. Successful fake \code{pick_object}, \code{place_object}, and \code{bring_object} results remove stale holding or source-location relations and add the new support, destination, or recipient relation through the same interface. The orchestrator applies those effects through \code{kb_skills} and verifies the skill post-conditions through \code{/kb/query} when available. Failure to update or verify \code{kb_effects} fails the step rather than allowing later dialogue to report the intended effect as current state.
+
+Figure~\ref{fig:perception-grounding-pipeline} shows how the object and person perception branches feed KnowledgeCore, scene summaries, and grounded context. It also marks the future spatial-overlay boundary.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{figures/chapter5_perception_grounding.pdf}
-  \caption{Combined perception and symbolic-grounding pipeline. Compact projections serve dialogue and planning, while raw and fresh evidence remains at its owning seam.}
+  \caption{Combined perception and symbolic-grounding pipeline. Compact projections serve dialogue and planning, while raw and fresh evidence remains at its source interface.}
   \label{fig:perception-grounding-pipeline}
 \end{figure}
 
-\section{Fake Skills and Simulation Seams}
+\section{Fake Skills and Simulation}
 
-The \code{fake_skills} package supplies deterministic action servers for the validation routes identified in Table~\ref{tab:runtime-skill-surface}. It preserves the Contract~6 result shape while replacing hardware execution with an explicit policy. Table~\ref{tab:fake-policy-resolution} gives the resolution order implemented by the server. The first non-empty source wins, so a case can override one call without changing the launch-wide policy. Each result records \code{metadata.fake=true}, the scenario and result mode, its policy source, deterministic seed, and simulated duration. Dispatch and outcome events are also published on \code{/fake_skills/events}.
+The \code{fake_skills} package supplies deterministic action servers for the validation routes identified in Table~\ref{tab:runtime-skill-surface}. It preserves the Contract~6 result shape while replacing hardware execution with an explicit policy. Table~\ref{tab:fake-policy-resolution} lists the order in which the server selects that policy. The first non-empty source wins, so a case can override one call without changing the launch-wide policy. Each result records \code{metadata.fake=true}, the scenario and result mode, its policy source, deterministic seed, and simulated duration. Dispatch and outcome events are also published on \code{/fake_skills/events}.
 
 \begin{table}[H]
 \centering
@@ -199,7 +207,7 @@ The fake skill servers can therefore be used for stack-level validation. A fake-
 
 \section{Models and Runtime Configuration}
 
-The integrated stack runtime is exposed through two principal \code{nao_chatbot} launch profiles. Both compose dialogue, chatbot, planner, orchestration, grounding, skill servers, and observability arguments through the same launch builder, but they select different perception and embodiment sources.
+The \code{nao_chatbot} package provides two main launch profiles for the integrated stack. Both start the dialogue, chatbot, planner, orchestration, grounding, skill, and observability components through the same launch builder, but select different perception and robot interfaces.
 
 \begin{table}[H]
 \centering

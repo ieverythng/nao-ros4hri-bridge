@@ -153,7 +153,7 @@
       <li>Stable or explicitly qualified <code>fail_once_pick</code> and <code>delivery_blocked</code> evidence.</li>
       <li>Separate detector-enabled profile.</li>
       <li>Final per-case summaries, repetitions, seeds, exclusions, and statistical policy.</li>
-      <li>Decision on the direct-execution comparison promised by the abstract.</li>
+      <li>Any optional direct-execution or no-replan baseline remains auxiliary and must use an explicitly bounded case scope.</li>
     </ul>
   </section>
 
@@ -162,15 +162,15 @@
     <table>
       <thead><tr><th>Chapter</th><th>Current state</th><th>Required closure</th><th>Exit gate</th></tr></thead>
       <tbody>
-        <tr><td>Abstract/front matter</td><td>Formatted; future tense and baseline promise remain</td><td>Rewrite last</td><td>Matches Chapters 6--10</td></tr>
-        <tr><td>1 Introduction</td><td>Substantive</td><td>Language and RQ alignment</td><td>Every RQ has result and conclusion answer</td></tr>
-        <tr><td>2 Background</td><td>Substantive</td><td>Citation audit; KnowledgeCore, vLLM, prompt optimization</td><td>No uncited literature claim</td></tr>
-        <tr><td>3 Architecture</td><td>Strong</td><td>Terminology, typos, grayscale future labels</td><td>Agrees with frozen contracts</td></tr>
+        <tr><td>Abstract/front matter</td><td>Reframed around the complete NAO interaction and execution stack; direct-comparison promise removed</td><td>Reconcile final result language after the evidence freeze</td><td>Matches Chapters 6--10</td></tr>
+        <tr><td>1 Introduction</td><td>Stack-wide problem, RQs before objectives, and document structure are in place</td><td>Reconcile each RQ with final metrics and contributions</td><td>Every RQ has result and conclusion answer</td></tr>
+        <tr><td>2 Background</td><td>ROS and HRI separated; reusable HRI interfaces and the abstraction cascade defined</td><td>Citation audit for KnowledgeCore, vLLM, prompt optimization, and recent work</td><td>No uncited literature claim</td></tr>
+        <tr><td>3 Architecture</td><td>Concrete package names introduced after abstract roles; artifacts have narrative introductions</td><td>Terminology, typos, grayscale future labels</td><td>Agrees with frozen contracts</td></tr>
         <tr><td>4 Contracts</td><td>Detailed</td><td>Formatting and source/type verification</td><td>Examples validate; critical overflow removed</td></tr>
         <tr><td>5 Implementation</td><td>Expanded; hand edits active</td><td>Provenance, APIs, supervisor, reporting, observability, config</td><td>Claims point to source and interfaces</td></tr>
         <tr><td>6 Methodology</td><td>Reproducible protocol</td><td>Add final holdout manifest and freeze scored tuple</td><td>Independently repeatable</td></tr>
         <tr><td>7 Results</td><td>F28/F08/F10/F11 evidence sets populated</td><td>Add stable run hashes, aggregate graphics, latency/dispersion, and RQ synthesis</td><td>Every number has durable artifact and denominator</td></tr>
-        <tr><td>8 Discussion</td><td>Short preliminary draft</td><td>Expand by RQ and literature</td><td>Claims do not exceed evidence</td></tr>
+        <tr><td>8 Discussion</td><td>Expanded with RQ-scoped interpretation, literature comparison, harness engineering, and ROS 2/HRI integration trade-offs</td><td>Reconcile final rates, artifact IDs, and RQ wording after the frozen run</td><td>Claims do not exceed evidence</td></tr>
         <tr><td>9 Limitations</td><td>Very short</td><td>Observed, scope, and future categories</td><td>No blocker disguised as future work</td></tr>
         <tr><td>10 Conclusion</td><td>Preliminary</td><td>Rewrite last in past tense</td><td>No new results</td></tr>
         <tr><td>Appendices</td><td>Minimal</td><td>Manifest, config, interfaces, commands, artifact index</td><td>Reproduction details complete</td></tr>
@@ -184,10 +184,19 @@
     <ul class="tasks">
       <li class="done"><span class="task-id">TFM-C01</span> Replace guarantees with enforced constraints or evidenced behaviour.</li>
       <li class="done"><span class="task-id">TFM-C02</span> Keep internal decomposition terminology out of the TFM; describe reviewed skills and runtime mappings directly.</li>
-      <li><span class="task-id">TFM-C03</span> Implement, substitute, or remove the direct-execution baseline promise.</li>
+      <li class="done"><span class="task-id">TFM-C03</span> Remove the unsupported direct-execution comparison promise; keep any later baseline auxiliary and explicitly bounded.</li>
       <li class="done"><span class="task-id">TFM-C04</span> Freeze the unit of analysis and configuration tuple.</li>
       <li class="done"><span class="task-id">TFM-C05</span> Add pass rules and denominators; timeouts and inferred events are not silent successes.</li>
       <li class="done"><span class="task-id">TFM-C06</span> Rename deep fake-skill to multi-step deterministic fake-skill.</li>
+    </ul>
+
+    <h3><span class="tag p0">P0</span> Thesis Framing And Presentation</h3>
+    <ul class="tasks">
+      <li class="done"><span class="task-id">TFM-F01</span> Reframe the title, abstract, problem, RQs, and objectives around the complete NAO interaction and execution stack.</li>
+      <li class="done"><span class="task-id">TFM-F02</span> Reserve ROS4HRI terminology for the cited interface proposal, aligned packages, and literal repository identifiers.</li>
+      <li class="done"><span class="task-id">TFM-F03</span> Use abstract component roles through Chapters 1 and 2 and introduce package/node names in Chapter 3.</li>
+      <li class="done"><span class="task-id">TFM-F04</span> Place research questions before objectives and add the document-structure section.</li>
+      <li class="done"><span class="task-id">TFM-F05</span> Normalize parenthetical citations and introduce every section-level list, table, and figure in prose.</li>
     </ul>
 
     <h3><span class="tag p1">P1</span> Chapter 5 Precision</h3>
@@ -233,10 +242,16 @@
     <ul class="tasks">
       <li class="done"><span class="task-id">TFM-R01</span> Remove development-status framing and organise results by fixed evidence tuple.</li>
       <li class="done"><span class="task-id">TFM-R02</span> Populate F28, F08, F10, and F11 evidence tables with explicit denominators.</li>
-      <li class="done"><span class="task-id">TFM-R03</span> Add ROS4HRI and runtime-contract preservation results.</li>
+      <li class="done"><span class="task-id">TFM-R03</span> Add interaction-interface and runtime-contract preservation results.</li>
       <li><span class="task-id">TFM-R04</span> Move ledger-only provenance into stable, hashed evidence bundles.</li>
       <li><span class="task-id">TFM-R05</span> Add final profile, policy, latency, and phase-completion graphics.</li>
       <li><span class="task-id">TFM-R06</span> Complete the RQ evidence matrix and reconcile Chapters 7--10.</li>
+    </ul>
+
+    <h3><span class="tag p1">P1</span> Chapter 8 Discussion</h3>
+    <ul class="tasks">
+      <li class="done"><span class="task-id">TFM-D01</span> Expand Chapter 8 around harness-based failure attribution, prompt packs and skill contracts as runtime policy, planner feedback, grounding and identity, execution evidence, ROS 2/HRI modularity, and RQ-scoped validation implications.</li>
+      <li><span class="task-id">TFM-D02</span> Reconcile Chapter 8 case identifiers, final rates, and RQ conclusions with the frozen evidence bundle after <code>TFM-R06</code>.</li>
     </ul>
 
     <h3><span class="tag p2">P2</span> Presentation And References</h3>
@@ -322,7 +337,7 @@
       <tbody>
         <tr><td>A · Freeze contract</td><td>Baseline decision, RQs, units, profiles, manifest, metrics, resets, artifact naming</td><td>Methodology contract approved before scoring</td></tr>
         <tr><td>B · Collect evidence</td><td>Freeze build; run E2E, environment, fake, detector, bounded ablation; preserve artifacts</td><td>Complete artifact index and summaries</td></tr>
-        <tr><td>C · Evidence chapters</td><td>Finalize Chapter 6; rebuild 7; expand 8--9; rewrite 10 and abstract</td><td>Every RQ answered with qualified evidence</td></tr>
+        <tr><td>C · Evidence chapters</td><td>Finalize Chapter 6; rebuild 7; Chapter 8 expanded; expand 9; rewrite 10 and abstract</td><td>Every RQ answered with qualified evidence</td></tr>
         <tr><td>D · Reconcile implementation</td><td>Apply Chapter 5 corrections; recheck 3--4; generate appendices</td><td>Frozen source and prose agree</td></tr>
         <tr><td>E · Submission QA</td><td>Clean compile, page inspection, references, formatting, archive</td><td>Reproducible final PDF and source/evidence package</td></tr>
       </tbody>
@@ -330,7 +345,7 @@
     <h3>Immediate next session</h3>
     <ol>
       <li>Preserve and review Chapter 5 hand edits against ownership rules.</li>
-      <li>Decide the direct-execution comparison.</li>
+      <li>Keep any direct-execution comparison auxiliary and explicitly bounded.</li>
       <li>Complete the RQ-to-metric and RQ-to-evidence map.</li>
       <li>Convert selected June/July ledger records into stable, hashed evidence bundles.</li>
       <li>Freeze the holdout manifest and scored configuration tuple.</li>
@@ -344,8 +359,11 @@
     <p>2026-07-13 · Completed <code>TFM-I15</code>, <code>TFM-I16</code>, <code>TFM-I17</code>, and <code>TFM-I18</code>: deterministic guards, shared skill-entry contract, appendix inventory, schema-label cleanup, regenerated figures, and visual PDF QA.</p>
     <p>2026-07-13 · Completed <code>TFM-I19</code>, <code>TFM-I20</code>, and <code>TFM-I21</code>: Contracts 1--9 reconciled, complete runtime-skill table added, orchestrator and verified KB-effect paths expanded, and simulator/robot profiles documented.</p>
     <p>2026-07-13 · Opened <code>TFM-I22</code> after registry checks found stale generated <code>walk_to</code> and <code>wave_greet</code> planner projections; the thesis inventory remains anchored to the canonical registry.</p>
-    <p>2026-07-13 · Completed <code>TFM-C04</code>, <code>TFM-C05</code>, <code>TFM-M01</code>--<code>TFM-M08</code>, and <code>TFM-R01</code>--<code>TFM-R03</code>: fixed the evaluation protocol, populated evidence-set results, added the 1--10 score, and verified ROS4HRI contract reporting.</p>
+    <p>2026-07-13 · Completed <code>TFM-C04</code>, <code>TFM-C05</code>, <code>TFM-M01</code>--<code>TFM-M08</code>, and <code>TFM-R01</code>--<code>TFM-R03</code>: fixed the evaluation protocol, populated evidence-set results, added the 1--10 score, and verified interaction-interface contract reporting.</p>
     <p>2026-07-14 · Completed <code>TFM-I06</code>--<code>TFM-I11</code>: closed planner admission and reporting guards, planning-state helper boundaries, orchestrator API descriptions, detector freshness semantics, fake-policy precedence, and caption-free visual exports.</p>
+    <p>2026-07-14 · Completed <code>TFM-D01</code>: expanded Chapter 8 with harness-based failure attribution, prompt-pack and skill-contract policy, grounding and postcondition analysis, truthful closure, ROS 2/HRI modularity, and qualified RQ interpretations. Final numerical reconciliation remains under <code>TFM-D02</code> and <code>TFM-R06</code>.</p>
+    <p>2026-07-14 · Completed <code>TFM-C03</code> and <code>TFM-F01</code>--<code>TFM-F05</code>: reframed the thesis around the complete NAO stack, separated ROS and HRI background, reordered RQs and objectives, delayed package names until Chapter 3, normalized citations, and introduced section-level artifacts in prose.</p>
+    <p>2026-07-14 · Refined <code>TFM-F05</code> with direct technical headings and introductions across the ROS 2 background, runtime contracts, fake-skill implementation, validation levels, results evidence sets, discussion table, and appendix.</p>
     <p>Markdown authority: <a href="tfm_completion_masterplan_2026-07-13.md"><code>tfm_completion_masterplan_2026-07-13.md</code></a></p>
   </footer>
 </main>

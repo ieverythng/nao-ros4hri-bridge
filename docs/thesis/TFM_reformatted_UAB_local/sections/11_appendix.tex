@@ -145,6 +145,8 @@ primary scored launch profile.
 
 \chapter{Launch Commands}
 
+The command below starts the compact planner-enabled simulator profile. Scored validation bundles record the complete launch argument tuple described in Chapter~\ref{chap:validation-methodology}.
+
 \begin{lstlisting}[style=sharedCode]
 ros2 launch nao_chatbot nao_chatbot_sim_demo.launch.py \
   start_planner_llm:=true \
@@ -153,6 +155,8 @@ ros2 launch nao_chatbot nao_chatbot_sim_demo.launch.py \
 \end{lstlisting}
 
 \chapter{Validation Log Template}
+
+Table~\ref{tab:validation-log-template} shows the fields used to index one validation case. Machine-readable traces and run manifests remain the authoritative evidence for aggregate results.
 
 \begin{table}[H]
 \centering
@@ -172,4 +176,5 @@ Notes & \textit{Observations}\\
 \bottomrule
 \end{tabular}
 \caption{Validation log template.}
+\label{tab:validation-log-template}
 \end{table}

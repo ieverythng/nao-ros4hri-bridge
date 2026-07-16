@@ -1,9 +1,9 @@
 \chapter{Results}
 \label{chap:results}
 
-\section{Evidence Selection}
+\section{Selected Evidence Sets}
 
-Each evidence set fixes its launch mode, model or source configuration, case set, artifact, and evidential standing. Scores from different tuples are not averaged because a model can produce fluent dialogue while reducing planner-schema validity or recovery reliability. Case metrics are the primary results; the runtime-review index is retained as a secondary operational summary.
+Each evidence set fixes its launch mode, model or source configuration, case set, artifact, and validation status. Scores from different tuples are not averaged because a model can produce fluent dialogue while reducing planner schema validity or recovery reliability. Case metrics are the primary results; the runtime-review score is retained as a secondary run summary.
 
 The recovered evidence contains four historical sets and two later diagnostic sets. The 28 June response-first run supplies the broad full-stack baseline. The 8 July response-first run supplies the deterministic fake/replan matrix under JSON-only grounded context. The 10 July audit applies stricter KB-effect and report-result checks. The 11 July run is an alternate-model ablation. The 13 July evidence is reported under both its original trajectory rubric and a later semantic audit. The 14 July artifacts are focused post-hardening probes and do not form a complete run tuple. None of these sets satisfies the clean-source fingerprint gate. Consequently, no cross-run aggregate is inferred from them.
 
@@ -18,7 +18,7 @@ The recovered evidence contains four historical sets and two later diagnostic se
 \textbf{Run} & \textbf{Profile} & \textbf{Scope} & \textbf{Evidence summary} & \textbf{Standing}\\
 \midrule
 F28 & \code{response_first} & Full runtime & Speech ingress, KB add/revise/remove, simple and composite skills, grouped delivery, direct fake guards, and KB post-effects. & Historical, 8.7\\
-F08 & \code{response_first}, JSON-only grounding & Fake/replan & Four eight-case deterministic policy sweeps through ROS4HRI speech ingress, with isolated confirmation probes. & Historical, 8.6\\
+F08 & \code{response_first}, JSON-only grounding & Fake/replan & Four eight-case deterministic policy sweeps through tracked-voice and \code{LiveSpeech} ingress, with isolated confirmation probes. & Historical, 8.6\\
 F10 & Strict seam audit & KB/report holdout & Natural KB mutation, grouped delivery effects, follow-up state, and replan/report checks. & Qualified, 6.7\\
 F11 & Alternate-model ablation & Main plus fake/replan & Fluent main questionnaire output, followed by planner-schema and deterministic-recovery regressions. & Ablation, 5.8\\
 F13 & Semantic re-audit & Full and focused suites & The main harness reported 20/20 trajectories; adversarial review found wrong target roles, incomplete closure, stale effects, and dialogue-to-execution leakage. & Diagnostic, cap 6.0\\
@@ -33,7 +33,7 @@ The packaged F13 diagnostic aggregate contains 54 case assessments: 39 pass, 5 d
 
 \section{Trajectory and Semantic Contract Results}
 
-The 13 July main questionnaire reported 20/20 trajectory passes. Turns entered through ROS4HRI speech, routes and planner requests appeared, execution feedback was observed, and speech closed the cases. A later manual audit evaluated the same runtime family against exact entity roles, selected members, KB postconditions, and whole-chain reports. Table~\ref{tab:trajectory-semantic-results} shows why the two assessments are not interchangeable.
+The 13 July main questionnaire reported 20/20 trajectory passes. Turns entered through the public speech path, routes and planner requests appeared, execution feedback was observed, and speech closed the cases. A later manual audit evaluated the same runtime family against exact entity roles, selected members, KB postconditions, and whole-chain reports. Table~\ref{tab:trajectory-semantic-results} shows why the two assessments are not interchangeable.
 
 \begin{table}[H]
 \centering
@@ -63,9 +63,9 @@ Evidence set F14 contains seven targeted assessments across three successive reb
 
 The gold-apple handoff remained a negative result. The planner request exposed the apple and recipient as scene targets but carried an empty authoritative selection. The planner therefore asked for clarification rather than executing an unsafe placement. The failure is truthful, but the complete fixture should have allowed a valid handoff selection. This case remains a grounding-to-admission limitation rather than a successful recovery result.
 
-\section{Full ROS4HRI Runtime Results}
+\section{Full Integrated Runtime Results}
 
-F28 exercised the response-first speech path from tracked voice and \code{LiveSpeech} through dialogue, planning, deterministic execution, feedback, and final speech. Table~\ref{tab:full-runtime-results} reports the principal seams retained from that run.
+F28 exercised the response-first speech path from tracked voice and \code{LiveSpeech} through dialogue, planning, deterministic execution, feedback, and final speech. Table~\ref{tab:full-runtime-results} reports the main runtime boundaries checked in that run.
 
 \begin{table}[H]
 \centering
@@ -93,7 +93,7 @@ The run score of 8.7 reflects broad success across dialogue, grounding, executio
 
 \section{Deterministic Fake-Skill and Replan Results}
 
-Evidence set F08 used \code{response_first}, disabled the compact grounded-context digest, and exercised the same ROS4HRI speech ingress under four deterministic fake policies. Table~\ref{tab:fake-policy-results} reports the full-ladder result and the isolated confirmation result separately.
+Evidence set F08 used \code{response_first}, disabled the compact grounded-context digest, and exercised the same tracked-voice and \code{LiveSpeech} ingress under four deterministic fake policies. Table~\ref{tab:fake-policy-results} reports the full-ladder result and the isolated confirmation result separately.
 
 \begin{table}[H]
 \centering
@@ -125,7 +125,7 @@ This result distinguishes execution completion from state correctness. A success
 
 \section{Alternate-Model Ablation}
 
-F11 evaluated \code{qwen36-turbo-hermes} with response-first routing and JSON-only grounded context. The twenty-case main questionnaire was marked 20/20 pass and produced fluent dialogue. The deterministic fake/replan artifacts contained 38 scored case records: 22 pass, 7 degraded, and 9 fail. The post-run snapshot recorded nine deduplicated planner-invalid-JSON events, nine invalid executable-plan events, six planner-gate rejections, and 53 route-repair events.
+F11 evaluated \code{Qwen3.6:27B_Q3_K_M} with response-first routing and JSON-only grounded context. The twenty-case main questionnaire was marked 20/20 pass and produced fluent dialogue. The deterministic fake/replan artifacts contained 38 scored case records: 22 pass, 7 degraded, and 9 fail. The post-run snapshot recorded nine deduplicated planner-invalid-JSON events, nine invalid executable-plan events, six planner-gate rejections, and 53 route-repair events.
 
 \begin{table}[H]
 \centering
@@ -149,16 +149,16 @@ Reviewer score & 5.8/10 & Critical structured-output and recovery failures outwe
 
 The ablation demonstrates why the 1--10 score and the fake/replan matrix are reported alongside questionnaire pass counts. A model that answers well at the dialogue surface may still impose substantial planner repair and validation pressure.
 
-\section{ROS4HRI Contract Preservation}
+\section{Interaction and Runtime-Contract Preservation}
 
-Table~\ref{tab:ros4hri-results} summarises the architecture checks applied across the response-first evidence.
+Table~\ref{tab:interaction-contract-results} summarises the interaction and architecture checks applied across the response-first evidence.
 
 \begin{table}[H]
 \centering
 \small
 \renewcommand{\arraystretch}{1.14}
-\caption{ROS4HRI and runtime-contract results.}
-\label{tab:ros4hri-results}
+\caption{Interaction-interface and runtime-contract results.}
+\label{tab:interaction-contract-results}
 \begin{tabularx}{\textwidth}{@{}p{0.27\textwidth}p{0.14\textwidth}X@{}}
 \toprule
 \textbf{Contract check} & \textbf{Result} & \textbf{Evidence}\\
@@ -176,6 +176,8 @@ Detector profile separation & Pass & Detector object recognition was excluded fr
 \end{table}
 
 \section{Research-Question Synthesis}
+
+Table~\ref{tab:rq-result-synthesis} gives a qualified answer to each research question. Each row includes both the positive results and the failure cases that limit generalisation.
 
 \begin{table}[H]
 \centering
