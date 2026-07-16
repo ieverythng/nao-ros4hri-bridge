@@ -4,7 +4,7 @@
 
 \section{Functional Requirements}
 
-This section defines the requirements and design principles that guide the proposed planner stack. The aim is to establish the architectural boundaries that the implementation must satisfy: natural-language interaction should remain separate from executable robot control, LLM-generated plans should be validated before dispatch, and live execution feedback should be returned to the planner when the world state or task status changes. Section 5 has detailed node implementation
+Table~\ref{tab:functional-requirements} lists the functional requirements for the complete interaction and execution stack. They cover natural-language ingress, dialogue routing, symbolic grounding, planning, deterministic execution, feedback, and observability. Their implementation owners are introduced in Section~\ref{sec:high-level-ros-architecture} and detailed in Chapter~\ref{chap:implementation}.
 
 \begin{table}[H] \centering \small \begin{tabular}{p{0.14\linewidth}p{0.78\linewidth}} \toprule \textbf{ID} & \textbf{Requirement}\\ \midrule FR1 & The system shall accept natural-language user input through the dialogue stack.\\
 FR2 & The system shall distinguish dialogue-only turns from execution-eligible turns.\\
@@ -14,22 +14,27 @@ FR5 & The orchestrator shall validate planner outputs before any robot skill is 
 FR6 & The system shall publish execution feedback after relevant plan and step/skill events.\\
 FR7 & The planner shall support asking for clarification, replanning and plan failure when execution feedback indicates that the current plan cannot continue safely.\\
 FR8 & The system shall expose traces, logs, or runtime messages suitable for validation of the stack.\\
-\bottomrule \end{tabular} \caption{Functional requirements for the proposed ROS4HRI planner stack.} \label{tab:functional-requirements} \end{table}
+\bottomrule \end{tabular} \caption{Functional requirements for the proposed NAO interaction and execution stack.} \label{tab:functional-requirements} \end{table}
 
 \section{Design Principles}
 
+Four responsibility principles guide the implementation of Table~\ref{tab:functional-requirements}. They define the component roles before the corresponding ROS~2 package names are introduced.
+
 \begin{enumerate}
-  \item \textbf{Dialogue must remain distinct from execution.} Dialogue-based turns such as greetings, conversation and queries about the robot's world state should be remain as dialogue and must not be routed to execution unless the user explicitly requests an action.
-  \item \textbf{Planner doesn't execute, it proposes structued skill plans:} \code{planner_llm} selects skills from the allowed registry and produces a structured plan based on the grounded scene context. It does not execute skills, speak directly, or call robot-specific APIs.
-  \item \textbf{The orchestrator remains the execution gate:} all robot execution is validated and dispatched downstream by \code{nao_orchestrator}. It admits planner requests, validates plans, dispatches skills, and publishes execution feedback.
-  \item \textbf{Skills own live evidence.} Perception and execution skills should query the Knowledge Base (KB), or robot state when needed. Final execution evidence remains skill-local.
+  \item \textbf{Dialogue remains distinct from execution.} Greetings, conversation, and questions about the robot's known state remain non-executable unless the user explicitly requests an action.
+  \item \textbf{The planner proposes structured skill plans.} It selects from the reviewed registry and uses grounded scene context, but does not execute skills, speak directly, or call robot-specific APIs.
+  \item \textbf{The orchestrator remains the execution gate.} It admits execution requests, validates plans, dispatches skills, and publishes typed execution feedback.
+  \item \textbf{Skills own fresh execution evidence.} Perception and execution skills query the knowledge base (KB) or robot state when required. Planning-time context cannot establish that a later action succeeded.
 \end{enumerate}
 
 % ============================================================
-\section{High-Level ROS Architecture}
+\section{High-Level ROS 2 Architecture}
+\label{sec:high-level-ros-architecture}
 % ============================================================
 
-The proposed architecture separates the HRI stack into interpretation, planning, grounding, execution, and feedback responsibilities, enabling a clear distinction between conversational reasoning, task-level decision making, deterministic execution, and environment-aware adaptation.
+The responsibilities above are implemented by concrete ROS~2 packages. This section introduces the node names used in later chapters for contracts, source ownership, and runtime evidence. The architecture keeps dialogue, semantic routing, grounding, planning, deterministic execution, and feedback in separate components.
+
+The main nodes and shared representations are:
 
 \begin{itemize}
 \item \code{dialogue_manager} acts as the central dialogue ownership component, maintaining conversational state, coordinating turn-taking, managing interaction flow, and serving as the integration point between user-facing dialogue and downstream planning services.
@@ -40,13 +45,13 @@ The proposed architecture separates the HRI stack into interpretation, planning,
 
 \item \code{nao_orchestrator} provides deterministic plan validation and skill execution management. It verifies planner outputs against available skills and execution constraints, coordinates skill invocation, monitors execution progress, and emits structured execution feedback that can be consumed by both the dialogue and planning layers.
 
-\item \code{grounded_context} represents a detector-to-KB JSON object by linking perception outputs to semantically meaningful entities within the robot knowledge base. This grounding layer provides a shared representation of objects, locations, and contextual information that is consumed across the chatbot, planner and execution components.
+\item \code{grounded_context} is the compact KB-to-language JSON projection defined by Contract~3. It combines selected knowledge statements, the current scene summary, and tracked-person state into role-separated entities and bounded relations for the chatbot and planner.
 
-\item \code{skill_servers} provide the execution interface that call lower-level ROS components and robot capabilities. These servers encapsulate perception, navigation, manipulation, and interaction robot actions. Skill servers allow the planner to invoke complex robot actions with structured plans. They consume raw knowledge-base updates originating from perception pipelines and execution feedback, ensuring that newly observed entities, spatial data, state changes, and environmental information for subsequent task execution.
+\item Skill servers expose typed execution interfaces over lower-level ROS components and robot capabilities. They encapsulate perception, navigation, manipulation, motion, and communication actions. The orchestrator invokes these interfaces after plan validation, and their results provide fresh evidence for feedback, reporting, and verified KB effects.
 
 \end{itemize}
 
-The interaction between these packages establishes a layered architecture in which conversational understanding produces structured intents, planning generates task-level strategies, grounding enriches decisions with environmental knowledge, orchestration ensures safe and deterministic execution, and feedback mechanisms continuously update the system state for subsequent reasoning cycles.
+Figure~\ref{fig:layered-architecture} shows how the packages are grouped into dialogue, grounding, planning, and execution layers. It also shows the intent, context, plan, and feedback paths that connect them.
 
 % ============================================================
 % High-level layered architecture
@@ -141,6 +146,8 @@ symbolic state, scene summaries, entity grounding};
 % ============================================================
 
 \subsection{Runtime Flow}
+
+Figure~\ref{fig:runtime-sequence} expands the layered view into the normal execution sequence. The numbered stages distinguish user-turn ownership, planner admission, candidate plan generation, deterministic dispatch, fresh skill evidence, and the return path for replanning or user communication.
 
 \begin{figure}[H]
 \centering

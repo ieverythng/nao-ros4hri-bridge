@@ -1,9 +1,9 @@
 \chapter{Validation Methodology}
 \label{chap:validation-methodology}
 
-\section{Evaluation Claims and Unit of Analysis}
+\section{Validation Scope and Unit of Analysis}
 
-The evaluation tests whether planner-mediated interaction preserves the runtime contracts defined in Chapter~\ref{chap:runtime-contracts}. A successful case must route the user turn correctly, use the declared grounded evidence, produce an admissible plan when execution is required, dispatch only registered skills, retain execution lineage, and report the observed outcome through the designated dialogue and speech seams. Task completion alone is insufficient when it is accompanied by duplicate speech, unsupported world-state claims, invalid planner output, or missing trace evidence.
+The evaluation tests whether planner-mediated interaction preserves the runtime contracts defined in Chapter~\ref{chap:runtime-contracts}. A successful case must route the user turn correctly, use the declared grounded evidence, produce an admissible plan when execution is required, dispatch only registered skills, retain execution lineage, and report the observed outcome through the designated dialogue and speech interfaces. Task completion alone is insufficient when it is accompanied by duplicate speech, unsupported world-state claims, invalid planner output, or missing trace evidence.
 
 The unit of analysis is one case execution under a fixed configuration tuple:
 
@@ -15,15 +15,15 @@ where \(u\) is the user utterance, \(p\) the launch profile, \(e\) the environme
 
 The independent variables are the turn-pipeline mode, case set, fixture, detector state, skill-adapter profile, injected failure policy, seed, and model configuration. The dependent variables are route correctness, plan validity, required-skill coverage, order correctness, safe failure, clarification behaviour, phase completeness, speech multiplicity, state freshness, latency, and the run-level score defined in Section~\ref{sec:runtime-score}.
 
-\section{Validation Depth and Claim Boundaries}
+\section{Validation Levels and Supported Claims}
 
-The runtime harness separates five evidence depths. A result at one depth does not imply the next because a turn may traverse every expected ROS interface while preserving the wrong target set or an inconsistent symbolic post-state.
+The runtime harness evaluates five levels of evidence. Passing one level does not imply the next: a turn may traverse every expected ROS interface while preserving the wrong target set or an inconsistent symbolic post-state. Table~\ref{tab:validation-depth} defines the evidence required at each level and the claim it can support.
 
 \begin{table}[H]
 \centering
 \small
 \renewcommand{\arraystretch}{1.14}
-\caption{Validation depth and permitted claims.}
+\caption{Validation levels and supported claims.}
 \label{tab:validation-depth}
 \begin{tabularx}{\textwidth}{@{}p{0.21\textwidth}p{0.42\textwidth}X@{}}
 \toprule
@@ -42,13 +42,13 @@ Deterministic fake skills can support readiness, trajectory, semantic-contract, 
 
 \section{Execution Profiles}
 
-Table~\ref{tab:evaluation-profiles} separates the scored full-stack profile from diagnostic and ablation profiles. This prevents planner-isolated success or detector variability from being reported as full ROS4HRI performance.
+Table~\ref{tab:evaluation-profiles} distinguishes the scored full-stack profile from diagnostic and ablation profiles. This prevents planner-isolated success or detector variability from being reported as integrated-stack performance.
 
 \begin{table}[H]
 \centering
 \small
 \renewcommand{\arraystretch}{1.14}
-\caption{Evaluation profiles and their evidential scope.}
+\caption{Evaluation profiles and their validation scope.}
 \label{tab:evaluation-profiles}
 \begin{tabularx}{\textwidth}{@{}p{0.16\textwidth}p{0.22\textwidth}p{0.33\textwidth}X@{}}
 \toprule
@@ -66,7 +66,7 @@ Source verification & Focused unit, contract, and launch tests & Schema normaliz
 \end{tabularx}
 \end{table}
 
-The primary E2E profile uses \code{response_first}, group-scoped synthetic voices, and the ROS4HRI speech ingress. Unrelated cases receive separate conversation groups, while intentional follow-ups share a declared group. The detector is disabled in the principal semantic-stack score and enabled only for the detector profile. Stable KB-authored objects are therefore not confused with object-recognition performance.
+The primary E2E profile uses \code{response_first}, group-scoped synthetic voices, and the tracked-voice plus \code{LiveSpeech} ingress. Unrelated cases receive separate conversation groups, while intentional follow-ups share a declared group. The detector is disabled in the principal semantic-stack score and enabled only for the detector profile. Stable KB-authored objects are therefore not confused with object-recognition performance.
 
 \section{Validation Goals and Acceptance Rules}
 
@@ -98,7 +98,7 @@ Exactly-once speech & Each expected semantic stage produces one speech event. Ac
 Report coverage & Every selected member with execution evidence appears in the structured outcome with the correct status; the spoken closure must not claim completion when evidence is incomplete. & Contract~6 results, report outcome, report-result event, and final speech.\\
 Trace completeness & All mandatory phases contain timestamps, identifiers, and payload evidence sufficient to reconstruct the case. & Per-case \code{phase_observations}, JSONL trace, report bundle.\\
 State freshness & The pre-case fixture is verified, undeclared earlier entities are absent, and successful material effects are visible in a post-case KB query. & Fixture manifest, stale-world guard, \code{/kb/query}, skill KB effects.\\
-ROS4HRI compliance & Public interaction follows the tracked-voice and \code{LiveSpeech} contracts; dialogue ownership, lifecycle readiness, and planner-dialogue relay remain intact. & ROS graph, lifecycle state, QoS/subscription preflight, relay topics.\\
+Interaction-interface compliance & Public interaction follows the tracked-voice and \code{LiveSpeech} contracts; dialogue ownership, lifecycle readiness, and planner-dialogue relay remain intact. & ROS graph, lifecycle state, QoS/subscription preflight, relay topics.\\
 \end{longtable}
 
 \section{Full Runtime Questionnaire}
@@ -148,7 +148,7 @@ The principal questionnaire contains twenty-one cases. The original twenty cases
 
 \section{Multi-Step Deterministic Fake-Skill Matrix}
 
-The fake-skill matrix reuses the full ROS4HRI ingress and replaces hardware-dependent outcomes with named, typed policies. The canonical manifest contains the nine cases in Table~\ref{tab:fake-deep-manifest}. Each policy sweep retains the same prompts and fixtures, allowing differences to be attributed to injected outcomes rather than changed language.
+The fake-skill matrix reuses the full tracked-voice and \code{LiveSpeech} ingress and replaces hardware-dependent outcomes with named, typed policies. The canonical manifest contains the nine cases in Table~\ref{tab:fake-deep-manifest}. Each policy sweep retains the same prompts and fixtures, allowing differences to be attributed to injected outcomes rather than changed language.
 
 \begingroup
 \scriptsize
@@ -204,7 +204,7 @@ Five language variants are frozen after source hardening and excluded from subse
 \end{tabularx}
 \end{table}
 
-\section{ROS4HRI and Architecture Compliance Gates}
+\section{Interface and Architecture Checks}
 
 The following preflight checks are mandatory before any speech-mode case is scored:
 
@@ -218,7 +218,7 @@ The following preflight checks are mandatory before any speech-mode case is scor
   \item no duplicate nodes, stale container imports, or unconfigured required lifecycle skill servers are present.
 \end{enumerate}
 
-A preflight failure marks the run as \emph{not scored}; it is not attributed to chatbot, planner, or model behaviour. NAO-specific transport remains behind adapters, people and objects remain semantically distinct, and planner or orchestrator code must not bypass the public ROS4HRI dialogue path.
+A preflight failure marks the run as \emph{not scored}; it is not attributed to chatbot, planner, or model behaviour. NAO-specific transport remains behind adapters, people and objects remain semantically distinct, and planner or orchestrator code must not bypass the public tracked-voice, dialogue, and speech path.
 
 \section{Reset, Repetition, and Isolation}
 
@@ -260,7 +260,7 @@ Case status uses four values. \emph{Pass} means that all mandatory observations 
 
 cases marked not scored remain in \(N\), so incomplete coverage cannot increase the rate.
 
-\section{Operational Review Index}
+\section{Runtime Review Score}
 \label{sec:runtime-score}
 
 The thesis reports the runtime-review 1--10 score as a secondary operational index. Reproducible case, semantic, state, speech, and latency metrics remain the primary results. Table~\ref{tab:runtime-score-components} defines eight weighted dimensions. For dimension \(j\), the compliant fraction \(r_j\) is calculated from its declared cases or mandatory observations and lies in \([0,1]\). Every published index includes the eight component values and their denominators.
@@ -298,6 +298,8 @@ where the weights \(w_j\) sum to 10 and \(C_r\) is the critical-failure cap. Com
 
 \section{Research-Question Evidence Map}
 
+Table~\ref{tab:rq-evidence-map} links each research question to its primary profile and metrics, and states how far the resulting evidence can support the claim. A diagnostic probe or software-only fake-skill result cannot therefore be reported as broader embodied evidence.
+
 \begin{table}[H]
 \centering
 \small
@@ -312,7 +314,7 @@ RQ1 & E2E-main and fake-multistep & Valid-plan rate, skill coverage, order accur
 RQ2 & E2E-main and environment & Grounding use, role integrity, state freshness, and postcondition rate & Consistency with injected or observed state within the declared fixture lifetime.\\
 RQ3 & Planner admission and architecture sweep & Invalid-plan rejection, registered-skill coverage, and unsupported-dispatch count & Deterministic rejection and bounded repair, not proof that the model never proposes invalid output.\\
 RQ4 & Deterministic failure policies & Safe-failure rate, plan-version lineage, clarification precision/recall, and truthful closure & Recovery under the injected policies and available skills.\\
-RQ5 & E2E-main and direct atomic control & Route accuracy, decision uniqueness, trace completeness, exactly-once speech, and ownership checks & Inspectability and separation within the evaluated ROS4HRI stack.\\
+RQ5 & E2E-main and direct atomic control & Route accuracy, decision uniqueness, trace completeness, exactly-once speech, and ownership checks & Inspectability and separation within the evaluated NAO stack.\\
 \bottomrule
 \end{tabularx}
 \end{table}

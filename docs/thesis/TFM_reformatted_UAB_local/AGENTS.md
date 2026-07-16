@@ -8,8 +8,9 @@ thesis-facing plan artifacts.
 
 - Preserve the user's working-tree edits. Inspect `git diff` before touching a
   file and make the smallest requested change.
-- Treat the thesis as a description of the evaluated NAO ROS4HRI stack, not as a
-  catalogue of every internal research tool in the repository.
+- Treat the thesis as a description of the complete evaluated NAO interaction
+  and execution stack, not as a planner study or a catalogue of every internal
+  research tool in the repository.
 - Keep implementation claims tied to current source, tests, launch profiles,
   contracts, and dated runtime evidence.
 - Do not change ROS package code while editing this folder unless the user asks
@@ -18,6 +19,13 @@ thesis-facing plan artifacts.
 
 ## TFM Vocabulary
 
+- Use **NAO interaction and execution stack**, **integrated NAO stack**, or a
+  more specific component boundary. Do not present ROS4HRI as the system or as
+  a framework. The term is reserved for direct discussion of the cited
+  interface proposal, aligned packages, or literal repository/package names.
+- Use abstract roles such as **dialogue manager**, **chatbot**, **planner**, and
+  **orchestrator** through Chapters 1 and 2. Introduce concrete package/node
+  names in Chapter 3 before using them in later implementation chapters.
 - Use **skill** or **skill registry** for the thesis-facing capability model.
 - Do not use internal registry decomposition labels or internal workbench names
   in thesis prose, captions, tables, or thesis-facing diagrams.
@@ -31,14 +39,23 @@ thesis-facing plan artifacts.
   “future work”. Do not turn an architectural constraint into an empirical
   guarantee without a corresponding evidence artifact.
 - Avoid em dashes, marketing language, bare “first” claims, meta-commentary,
-  and unexplained generic terms. Prefer precise academic sentences.
+  and unexplained generic terms. Prefer direct technical sentences that match
+  the surrounding thesis prose. Do not use abstract labels such as
+  “substrate”, “evidential role”, or “operationalise” when communication,
+  ownership, validation, or execution describes the point more clearly.
+- Use `\parencite{...}` for parenthetical references. Use
+  `\textcite{...}` only when the cited author is the grammatical subject.
+- Introduce the purpose of every section before an enumeration, table, or
+  figure. Name the artifact in the preceding prose and state what the reader
+  should obtain from it.
 
 ## Ownership And Contracts
 
 Preserve these boundaries in every chapter and figure:
 
-- `dialogue_manager` owns ROS4HRI dialogue lifecycle, per-person and group
-  conversation state, history, turn coordination, and final speech realization.
+- `dialogue_manager` owns the tracked-person dialogue lifecycle, per-person and
+  group conversation state, history, turn coordination, and final speech
+  realization through its reusable HRI interfaces.
 - `chatbot_llm` owns user-facing language generation, route selection, grounded
   context construction, and candidate planner ingress. It does not create
   executable plans.
@@ -175,7 +192,7 @@ agents.
 
 1. Add a TFM vocabulary section with explicit forbidden/internal terms.
 2. Add ownership, fallback, skill-contract, and diagram guardrails tied to the
-   current ROS4HRI contracts.
+   current runtime contracts.
 3. Add a compact baseline, train set, holdout set, and acceptance gate.
 
 **Train result:** accepted by inspection. The requested Chapter 5 seams are

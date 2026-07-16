@@ -95,23 +95,23 @@ The TFM is closed only when all of the following are true:
 - A frozen detector-enabled profile for object-recognition evidence; the cool
   profile's disabled detector cannot be scored as a detector failure.
 - Final per-case CSV/JSON summaries generated from saved traces.
-- A declared policy for whether the direct-execution comparison promised in the
-  abstract is implemented, replaced with a static/no-replan baseline, or removed.
+- Any optional direct-execution or no-replan baseline must be reported as an
+  auxiliary comparison; it is no longer promised by the thesis abstract.
 - Exact repetitions, seeds, timeout policy, and statistical treatment.
 
 ## 5. Chapter Closure Matrix
 
 | Chapter | Current state | Required closure work | Gate |
 |---|---|---|---|
-| Front matter and abstract | Formatted; abstract still uses future tense and promises direct comparison | Rewrite last, after the evidence and baseline decision are frozen | Claims match Chapters 6--10 exactly |
-| 1 Introduction | Substantive draft present | Correct language, align objectives and RQs with final metrics and contributions | Every RQ has a result and conclusion answer |
-| 2 Background | Substantive draft present | Citation audit; define/cite KnowledgeCore, vLLM, prompt optimization, and recent related work | No unsupported implementation claim in literature review |
-| 3 Architecture | Strong diagrams and requirements | Terminology and typo pass; ensure future components are visually marked | Architecture agrees with current contracts and grayscale output |
+| Front matter and abstract | Reframed around the complete NAO interaction and execution stack; direct-comparison promise removed | Reconcile final result language after the evidence set is frozen | Claims match Chapters 6--10 exactly |
+| 1 Introduction | Stack-wide problem, RQs before objectives, and document structure are in place | Reconcile each RQ with final metrics and contributions | Every RQ has a result and conclusion answer |
+| 2 Background | ROS and HRI are separated; reusable HRI interfaces and the abstraction cascade are defined | Complete citation audit for KnowledgeCore, vLLM, prompt optimization, and recent related work | No unsupported implementation claim in literature review |
+| 3 Architecture | Concrete package names are introduced after abstract roles; diagrams and requirements have narrative introductions | Terminology and typo pass; ensure future components are visually marked | Architecture agrees with current contracts and grayscale output |
 | 4 Runtime Contracts | Detailed and largely complete | Repair formatting artifacts; verify examples and types against frozen source; add breakable long identifiers | Contract examples validate and no overfull critical text remains |
 | 5 Implementation | Expanded; hand edits in progress | Apply IIIAV3 precision corrections, add provenance/API inventory, supervisor invariants, truthful reporting mechanism, observability, and final configuration table | Every major claim points to source/config/interface evidence |
 | 6 Validation Methodology | Reproducible protocol with fixed unit, profiles, manifests, acceptance rules, reset policy, metrics, score, evidence bundle, and threats | Add the final holdout manifest and freeze the scored configuration tuple | Another researcher can repeat and score the suite |
 | 7 Results | Evidence-set chapter populated with F28, F08, F10, and F11 | Replace ledger-only provenance with stable run hashes; add aggregate graphics, latency/dispersion, and RQ-organised synthesis | Every number has a durable artifact and denominator |
-| 8 Discussion | Short preliminary interpretation | Expand by RQ, compare with literature, explain modularity/recovery/grounding trade-offs, separate findings from speculation | Claims do not exceed evidence |
+| 8 Discussion | Expanded discussion with RQ-scoped interpretation, literature comparison, harness-engineering findings, and ROS 2/HRI integration trade-offs | Reconcile final rates, artifact identifiers, and RQ wording against the frozen canonical run under `TFM-R06` | Claims do not exceed evidence |
 | 9 Limitations and Future Work | Very short | Separate observed limitations, scope limits, and future extensions; include detector, hardware, model, fixture, and evaluation threats | No thesis-blocking task is disguised as future work |
 | 10 Conclusion | Preliminary | Rewrite after Results/Discussion; answer each RQ and state contributions in past tense | Contains no new result or future-tense promise |
 | Appendices | Minimal | Add frozen manifest, runtime/config table, interface inventory or generated registry table, commands, and artifact index | Main text stays readable while reproduction details remain available |
@@ -125,9 +125,9 @@ The TFM is closed only when all of the following are true:
 - [x] **TFM-C02:** Keep internal registry decomposition terminology out of the
   TFM-facing vocabulary. Describe the reviewed skill registry, runtime
   availability, executor mappings, and skill contracts directly.
-- [ ] **TFM-C03:** Decide the direct-execution baseline. Implement a fair atomic
-  baseline, substitute an explicitly defined static/no-replan baseline, or
-  remove the comparison promise from the abstract.
+- [x] **TFM-C03:** Remove the unsupported direct-execution comparison promise
+  from the abstract. Treat any later atomic or no-replan baseline as an
+  auxiliary comparison with an explicit case scope.
 - [x] **TFM-C04:** Freeze the experimental unit as one execution under a fixed
   tuple of utterance, profile, fixture, model, prompt revision, skill policy,
   seed, and source revision.
@@ -135,6 +135,22 @@ The TFM is closed only when all of the following are true:
   metric. A timeout or log-derived inference cannot silently count as success.
 - [x] **TFM-C06:** Rename “Deep Fake-Skill” to “Multi-Step Deterministic
   Fake-Skill” throughout manuscript-facing text.
+
+### P0: Thesis framing and presentation
+
+- [x] **TFM-F01:** Reframe the title, abstract, problem statement, research
+  questions, and objectives around the complete NAO interaction and execution
+  stack rather than an isolated planner contribution.
+- [x] **TFM-F02:** Reserve ROS4HRI terminology for the cited interface proposal,
+  aligned packages, and literal repository identifiers. Use ROS 2, HRI,
+  tracked-person interfaces, or the integrated NAO stack for thesis claims.
+- [x] **TFM-F03:** Use abstract component roles through Chapters 1 and 2, then
+  introduce concrete package and node names in Chapter 3 before later use.
+- [x] **TFM-F04:** Place research questions before objectives and add an
+  explicit document-structure section that accounts for every chapter.
+- [x] **TFM-F05:** Use parenthetical citations unless the author is the
+  grammatical subject, and introduce each section-level list, table, and figure
+  with prose that names its purpose.
 
 ### P1: Chapter 5 implementation precision
 
@@ -162,7 +178,7 @@ The TFM is closed only when all of the following are true:
 - [x] **TFM-I11:** Document fake-policy precedence and metadata. Retain KB guards
   and post-effects only where final source and tests prove them.
 - [ ] **TFM-I12:** Add final runtime configuration and SkillOpt definition.
-- [x] **TFM-I13:** Ground the `dialogue_manager` subsection in its ROS4HRI
+- [x] **TFM-I13:** Ground the `dialogue_manager` subsection in its tracked-person
   multi-person/group dialogue lifecycle, history, chatbot, and chat/ask/say
   interfaces without moving planning ownership into the package.
 - [x] **TFM-I14:** Cross-link implementation statements to functional
@@ -222,13 +238,23 @@ The TFM is closed only when all of the following are true:
   fixed evidence tuple.
 - [x] **TFM-R02:** Populate the F28 full-runtime, F08 deterministic-policy, F10
   strict-KB, and F11 alternate-model evidence tables with explicit denominators.
-- [x] **TFM-R03:** Add the ROS4HRI and runtime-contract preservation table.
+- [x] **TFM-R03:** Add the interaction-interface and runtime-contract
+  preservation table.
 - [ ] **TFM-R04:** Move ledger-only run provenance into stable, hashed evidence
   bundles and replace temporary artifact identifiers.
 - [ ] **TFM-R05:** Add final profile, policy-heatmap, latency, and phase-completion
   graphics from checked-in summaries.
 - [ ] **TFM-R06:** Complete the RQ-to-evidence matrix and reconcile Chapters
   7--10 against the frozen canonical run.
+
+### P1: Chapter 8 discussion
+
+- [x] **TFM-D01:** Expand Chapter 8 around harness-based failure attribution,
+  prompt packs and skill contracts as runtime policy, planner feedback,
+  grounding and identity, execution evidence, ROS 2/HRI modularity, and
+  RQ-scoped validation implications.
+- [ ] **TFM-D02:** Reconcile Chapter 8 case identifiers, final rates, and RQ
+  conclusions with the frozen evidence bundle after `TFM-R06` is complete.
 
 ### P2: Presentation and references
 
@@ -261,7 +287,7 @@ The TFM is closed only when all of the following are true:
 
 | Profile ID | Entry point | Required evidence | Thesis use |
 |---|---|---|---|
-| `E2E-RF` | ROS4HRI tracked voice + `LiveSpeech`, `response_first` | Turn trace, admitted request when eligible, plan, feedback, terminal state, speech | Primary full-stack score |
+| `E2E-RF` | Tracked voice + `LiveSpeech`, `response_first` | Turn trace, admitted request when eligible, plan, feedback, terminal state, speech | Primary full-stack score |
 | `PLAN-ISO` | Orchestrator planner gate | Request, plan validation, dispatch, feedback | Diagnostic plan/schema score |
 | `FAKE-MULTI` | Speech or declared planner gate with fake actions | Policy, seed, fake events, plan lineage, recovery, speech | Controlled recovery score |
 | `DET-E2E` | Detector-enabled launch + speech | Detector provenance, scene summary, compact projection, answer/plan | Perception-grounding result |
@@ -377,7 +403,8 @@ frozen experiment or be explicitly qualified.
 - [x] Finalize the Chapter 6 evaluation protocol.
 - [ ] Finalize Chapter 7 with stable evidence hashes and generated graphics;
   the evidence-set prose and accepted run tables are in place.
-- [ ] Expand Chapter 8 by RQ and literature comparison.
+- [x] Expand Chapter 8 by RQ and literature comparison; final evidence
+  reconciliation remains under `TFM-D02` and `TFM-R06`.
 - [ ] Separate Chapter 9 limitations from future implementations.
 - [ ] Rewrite Chapter 10 and abstract in past tense.
 
@@ -403,7 +430,8 @@ frozen experiment or be explicitly qualified.
 
 1. Preserve the current Chapter 5 hand-edit diff and review its ownership
    wording against the architectural guardrails.
-2. Decide whether the direct-execution comparison remains in scope.
+2. Keep any direct-execution comparison auxiliary and bounded; it is not a
+   thesis-abstract commitment.
 3. Complete the RQ-to-metric and RQ-to-evidence map.
 4. Convert the June/July ledger records selected in Chapter 7 into stable,
    hashed evidence bundles; mark each artifact `reuse`, `rerun`, or `exclude`.
@@ -420,5 +448,8 @@ frozen experiment or be explicitly qualified.
 | 2026-07-13 | Completed the implementation-depth slice: deterministic guards and bounded fallbacks, shared skill-entry Contract 4, canonical runtime skill inventory, schema-label cleanup, regenerated vector figures, and visual PDF QA | `TFM-I15`, `TFM-I16`, `TFM-I17`, `TFM-I18`, `build/main.pdf` |
 | 2026-07-13 | Reconciled Contracts 1--9, added the complete runtime-skill table, expanded direct and planner orchestrator ingress, grounded the custom YOLO and KB-effect paths, and documented the simulator and robot/RViz profiles | `TFM-I19`, `TFM-I20`, `TFM-I21`, `04_runtime_contracts.tex`, `05_implementation.tex`, `11_appendix.tex` |
 | 2026-07-13 | Registry verification identified generated-projection drift in `walk_to` and `wave_greet`; retained canonical entries as the thesis authority and opened a final-source synchronization gate | `TFM-I22`, `check_skill_registry_consistency.py`, `sync_skill_registry_views.py --check` |
-| 2026-07-13 | Rebuilt Chapter 6 as a fixed evaluation protocol and replaced Chapter 7's status narrative with evidence-set results, explicit denominators, the 1--10 run score, and ROS4HRI contract checks | `TFM-C04`, `TFM-C05`, `TFM-M01`--`TFM-M08`, `TFM-R01`--`TFM-R03`, `06_validation_methodology.tex`, `07_results.tex`, `build/main.pdf` |
+| 2026-07-13 | Rebuilt Chapter 6 as a fixed evaluation protocol and replaced Chapter 7's status narrative with evidence-set results, explicit denominators, the 1--10 run score, and interaction-interface contract checks | `TFM-C04`, `TFM-C05`, `TFM-M01`--`TFM-M08`, `TFM-R01`--`TFM-R03`, `06_validation_methodology.tex`, `07_results.tex`, `build/main.pdf` |
 | 2026-07-14 | Completed the remaining Chapter 5 precision slice, including planner admission and reporting guards, planning-state helper boundaries, orchestrator APIs, detector freshness semantics, fake-policy precedence, and caption-free vector exports for the full-stack, orchestrator, and grounding figures | `TFM-I06`--`TFM-I11`, `04_runtime_contracts.tex`, `05_implementation.tex`, `thesis_high_level_full_stack_diagram_2026-07-06.tex`, `thesis_node_level_diagrams_2026-07-06.tex`, `build/main.pdf` |
+| 2026-07-14 | Expanded Chapter 8 with harness-based failure attribution, prompt-pack and skill-contract policy, grounding and postcondition analysis, truthful closure, ROS 2/HRI modularity, and qualified RQ interpretations; retained final numerical reconciliation as a frozen-run task | `TFM-D01`, `TFM-D02`, `TFM-R06`, `08_discussion.tex`, `build/main.pdf` |
+| 2026-07-14 | Reframed the title and Chapters 0--3 around the complete NAO interaction and execution stack, separated ROS from HRI background, moved RQs before objectives, introduced implementation names in Chapter 3, normalized citation form, and added narrative introductions for section-level artifacts | `TFM-C03`, `TFM-F01`--`TFM-F05`, `main.tex`, `00_abstract.tex`--`03_architecture_requirements.tex` |
+| 2026-07-14 | Reworked the new headings and artifact introductions into direct technical language, including the ROS 2 background, runtime contracts, fake-skill implementation, validation levels, results evidence sets, and discussion table | `TFM-F05`, `01_introduction.tex`--`08_discussion.tex`, `11_appendix.tex`, `build/main.pdf` |
