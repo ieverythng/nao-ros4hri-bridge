@@ -152,6 +152,64 @@ def test_kb_add_rejects_vague_non_rdf_statement_before_dispatch():
     assert node._stats.dispatch_failures == 1
 
 
+def test_kb_revise_replaces_stale_spatial_relation_families_before_update():
+    node, query, mutation = _orchestrator_with_kb(
+        [
+            'book_1 dbp:name ATLAS',
+            'book_1 isAt shelf_1',
+            'book_1 isOn shelf_1',
+            'book_1 placeOf shelf_1',
+            'shelf_1 contains book_1',
+            'cup_1 dbp:color red',
+            'cup_1 isAt table_1',
+            'cup_1 isOn table_1',
+            'phone_1 dbp:color black',
+            'phone_1 isAt lab_1',
+            'phone_1 isIn lab_1',
+        ]
+    )
+
+    success, reason, payload = node._execute_kb_mutation_step(
+        'kb_revise',
+        {
+            'statements': [
+                'book_1 oro:isAt park_1',
+                'cup_1 oro:isAt park_1',
+                'phone_1 oro:isAt park_1',
+            ]
+        },
+    )
+
+    assert success is True
+    assert reason == 'KnowledgeCore mutation completed'
+    assert mutation.calls[0]['operation'] == 'remove'
+    assert mutation.calls[0]['statements'] == [
+        'book_1 isOn shelf_1',
+        'book_1 isAt shelf_1',
+        'book_1 placeOf shelf_1',
+        'shelf_1 contains book_1',
+        'cup_1 isOn table_1',
+        'cup_1 isAt table_1',
+        'phone_1 isAt lab_1',
+        'phone_1 isIn lab_1',
+    ]
+    assert mutation.calls[1]['operation'] == 'update'
+    assert mutation.calls[1]['statements'] == [
+        'book_1 oro:isAt park_1',
+        'cup_1 oro:isAt park_1',
+        'phone_1 oro:isAt park_1',
+    ]
+    assert query.facts == [
+        'book_1 dbp:name ATLAS',
+        'cup_1 dbp:color red',
+        'phone_1 dbp:color black',
+        'book_1 oro:isAt park_1',
+        'cup_1 oro:isAt park_1',
+        'phone_1 oro:isAt park_1',
+    ]
+    assert payload['success'] is True
+
+
 def test_success_kb_effect_helpers_group_valid_statements():
     payload = {
         'evidence': {

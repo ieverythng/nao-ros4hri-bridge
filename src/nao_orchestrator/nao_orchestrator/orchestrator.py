@@ -54,6 +54,7 @@ from nao_orchestrator.intent_rules import (
 from nao_orchestrator.kb_effects import SPATIAL_EFFECT_CLEANUP_PREDICATES
 from nao_orchestrator.kb_effects import SPATIAL_EFFECT_PREDICATES
 from nao_orchestrator.kb_effects import SPATIAL_EFFECT_SKILLS
+from nao_orchestrator.kb_effects import canonical_spatial_predicate
 from nao_orchestrator.kb_effects import remove_stale_spatial_effect_values
 from nao_orchestrator.kb_effects import validate_spatial_effect_statements
 from nao_orchestrator.planner_gate import PlannerGate
@@ -642,7 +643,7 @@ class NaoOrchestrator(Node):
         self.declare_parameter('execution_report_chatbot_wait_sec', 0.2)
         self.declare_parameter('execution_report_chatbot_timeout_sec', 12.0)
         self.declare_parameter('kb_revise_service_name', '/kb/revise')
-        self.declare_parameter('kb_mutation_timeout_sec', 1.0)
+        self.declare_parameter('kb_mutation_timeout_sec', 5.0)
         self.declare_parameter('kb_query_service_name', '/kb/query')
         self.declare_parameter('kb_query_timeout_sec', 1.0)
         self.declare_parameter('apply_success_kb_effects', True)
@@ -1951,11 +1952,25 @@ class NaoOrchestrator(Node):
         """Retract existing subject/predicate values before a KB revise update."""
         if self._kb_query_client is None or self._kb_mutation_client is None:
             return [], ''
+        spatial_statements = [
+            statement
+            for statement in statements
+            if canonical_spatial_predicate(_statement_parts(statement)[1])
+            in SPATIAL_EFFECT_PREDICATES
+        ]
+        spatial_removals, error_msg = self._remove_stale_spatial_effect_values(
+            spatial_statements,
+            models,
+        )
+        if error_msg:
+            return spatial_removals, error_msg
         removals: list[str] = []
         query_models = models if isinstance(models, list) and models else ['default']
         for statement in statements:
             subject, predicate, new_object = _statement_parts(statement)
             if not subject or not predicate or not new_object:
+                continue
+            if canonical_spatial_predicate(predicate) in SPATIAL_EFFECT_PREDICATES:
                 continue
             rows = self._kb_query_client.query_rows(
                 patterns=['%s %s ?object' % (subject, predicate)],
@@ -1969,7 +1984,7 @@ class NaoOrchestrator(Node):
             )
         removals = _dedupe_statements(removals)
         if not removals:
-            return [], ''
+            return spatial_removals, ''
         result = self._kb_mutation_client.mutate(
             operation='remove',
             statements=removals,
@@ -1977,8 +1992,11 @@ class NaoOrchestrator(Node):
             wait_for_result=True,
         )
         if result.success:
-            return removals, ''
-        return removals, result.error_msg or 'KnowledgeCore previous-value removal failed'
+            return _dedupe_statements(spatial_removals + removals), ''
+        return (
+            _dedupe_statements(spatial_removals + removals),
+            result.error_msg or 'KnowledgeCore previous-value removal failed',
+        )
 
     def _remove_stale_spatial_effect_values(
         self,

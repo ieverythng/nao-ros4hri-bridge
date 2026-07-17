@@ -59,7 +59,6 @@ def execute(*, args: dict, mode: str, metadata: dict, fail_once_active: bool) ->
         kb_effects = _delivery_kb_effects(
             target=target,
             recipient=recipient,
-            source=source,
         )
         return build_skill_result(
             skill='bring_object',
@@ -111,11 +110,8 @@ def execute(*, args: dict, mode: str, metadata: dict, fail_once_active: bool) ->
     ).to_dict()
 
 
-def _delivery_kb_effects(*, target: str, recipient: str, source: str) -> list[dict]:
-    effects = []
-    if source and source != 'unknown_support':
-        for predicate in ('oro:isOn', 'oro:isAt', 'oro:isIn'):
-            effects.append(kb_effect('remove', '%s %s %s' % (target, predicate, source)))
-    effects.append(kb_effect('add', '%s oro:isAt %s' % (target, recipient)))
-    effects.append(kb_effect('remove', 'robot oro:holds %s' % target))
-    return effects
+def _delivery_kb_effects(*, target: str, recipient: str) -> list[dict]:
+    return [
+        kb_effect('add', '%s oro:isAt %s' % (target, recipient)),
+        kb_effect('remove', 'robot oro:holds %s' % target),
+    ]
