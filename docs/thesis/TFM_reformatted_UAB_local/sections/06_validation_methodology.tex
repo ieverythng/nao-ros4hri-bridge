@@ -3,15 +3,15 @@
 
 \section{Validation Scope and Unit of Analysis}
 
-The evaluation tests whether planner-mediated interaction preserves the runtime contracts defined in Chapter~\ref{chap:runtime-contracts}. A successful case must route the user turn correctly, use the declared grounded evidence, produce an admissible plan when execution is required, dispatch only registered skills, retain execution lineage, and report the observed outcome through the designated dialogue and speech interfaces. Task completion alone is insufficient when it is accompanied by duplicate speech, unsupported world-state claims, invalid planner output, or missing trace evidence.
+The evaluation tests whether the complete NAO interaction and execution stack preserves the runtime contracts defined in Chapter~\ref{chap:runtime-contracts}. The planner is only one component of this claim: the scored system also includes tracked speech ingress, dialogue ownership, symbolic grounding, planner admission, orchestrator validation, skill dispatch, KB effects, execution feedback, and spoken closure. This chapter therefore defines the unit of analysis, evidence depths, execution profiles, frozen case sets, reset rules, metrics, and final-run acceptance gate before any results are reported. A successful case must route the user turn correctly, use the declared grounded evidence, produce an admissible plan when execution is required, dispatch only registered skills, retain execution lineage, and report the observed outcome through the designated dialogue and speech interfaces. Task completion alone is insufficient when it is accompanied by duplicate speech, unsupported world-state claims, invalid planner output, or missing trace evidence.
 
 The unit of analysis is one case execution under a fixed configuration tuple:
 
 \[
-\mathcal{C} = (u, p, e, m_c, m_p, h_c, h_p, f, s),
+\mathcal{C} = (u, p, e, a, m_c, m_p, h_c, h_p, f, s),
 \]
 
-where \(u\) is the user utterance, \(p\) the launch profile, \(e\) the environment fixture, \(m_c\) and \(m_p\) the chatbot and planner models, \(h_c\) and \(h_p\) the corresponding prompt-pack revisions, \(f\) the real or fake execution policy, and \(s\) the deterministic seed when one is used. A run is one complete case-set execution under a shared tuple. Results from different tuples are reported as separate evidence sets rather than merged into one aggregate.
+where \(u\) is the user utterance, \(p\) the launch profile, \(e\) the environment fixture, \(a\) the source, container, registry, and prompt artifact fingerprint, \(m_c\) and \(m_p\) the chatbot and planner models, \(h_c\) and \(h_p\) the corresponding prompt-pack revisions, \(f\) the real or fake execution policy, and \(s\) the deterministic seed when one is used. A run is one complete case-set execution under a shared tuple. Results from different tuples are reported as separate evidence sets rather than merged into one aggregate.
 
 The independent variables are the turn-pipeline mode, case set, fixture, detector state, skill-adapter profile, injected failure policy, seed, and model configuration. The dependent variables are route correctness, plan validity, required-skill coverage, order correctness, safe failure, clarification behaviour, phase completeness, speech multiplicity, state freshness, latency, and the run-level score defined in Section~\ref{sec:runtime-score}.
 
@@ -38,11 +38,11 @@ Embodied outcome & Robot, scene, or sensor evidence proves the physical effect u
 \end{tabularx}
 \end{table}
 
-Deterministic fake skills can support readiness, trajectory, semantic-contract, and symbolic post-state claims. They do not establish physical navigation or manipulation accuracy. The principal semantic-stack score therefore stops at state and closure. Detector-enabled and physical-robot evidence are reported separately.
+Deterministic fake skills can support readiness, trajectory, semantic-contract, and symbolic post-state claims. They do not establish physical navigation or manipulation accuracy. The principal semantic-stack score therefore stops at state and closure. Detector-enabled and physical-robot evidence are reported separately, and neither planner-only nor detector-only success is promoted to a claim about the entire NAO stack.
 
 \section{Execution Profiles}
 
-Table~\ref{tab:evaluation-profiles} distinguishes the scored full-stack profile from diagnostic and ablation profiles. This prevents planner-isolated success or detector variability from being reported as integrated-stack performance.
+Table~\ref{tab:evaluation-profiles} distinguishes the scored full-stack profile from diagnostic and ablation profiles. This prevents planner-isolated success, direct skill success, or detector variability from being reported as integrated-stack performance.
 
 \begin{table}[H]
 \centering
@@ -66,11 +66,11 @@ Source verification & Focused unit, contract, and launch tests & Schema normaliz
 \end{tabularx}
 \end{table}
 
-The primary E2E profile uses \code{response_first}, group-scoped synthetic voices, and the tracked-voice plus \code{LiveSpeech} ingress. Unrelated cases receive separate conversation groups, while intentional follow-ups share a declared group. The detector is disabled in the principal semantic-stack score and enabled only for the detector profile. Stable KB-authored objects are therefore not confused with object-recognition performance.
+The primary E2E profile uses \code{response_first}, group-scoped synthetic voices, and the tracked-voice plus \code{LiveSpeech} ingress. Unrelated cases receive separate conversation groups, while intentional follow-ups share a declared group. The detector is disabled in the principal semantic-stack score and enabled only for the detector profile. Stable KB-authored objects are therefore not confused with object-recognition performance. The final frozen run must report the E2E-main, fake-multistep, robustness, and source-verification evidence as separate rows under one manifest rather than merging them into an undocumented aggregate.
 
 \section{Validation Goals and Acceptance Rules}
 
-Each goal in Table~\ref{tab:validation-goals-expanded} has an explicit pass rule. Evidence inferred only from a timeout, a console summary, or a topic that was not observed does not satisfy the corresponding rule.
+Each goal in Table~\ref{tab:validation-goals-expanded} has an explicit pass rule. The goals are grouped around routing, grounding, target preservation, execution supervision, failure handling, speech ownership, traceability, state freshness, and interaction-interface compliance. Evidence inferred only from a timeout, a console summary, or a topic that was not observed does not satisfy the corresponding rule.
 
 \begin{longtable}{p{0.20\linewidth}p{0.36\linewidth}p{0.34\linewidth}}
 \caption{Validation goals, acceptance rules, and evidence sources.}
@@ -103,7 +103,7 @@ Interaction-interface compliance & Public interaction follows the tracked-voice 
 
 \section{Full Runtime Questionnaire}
 
-The principal questionnaire contains twenty-one cases. The original twenty cases retain five dialogue, five knowledge, five simple execution, and five composite execution cases. A route-safety holdout adds one explicit non-action turn. Table~\ref{tab:main-questionnaire-manifest} records the exact utterances used by the runtime harness. Dialogue and KB-query cases forbid planner activity. Execution cases admit planner work but still require grounded arguments, registered skills, truthful evidence, and the speech policy declared for the case.
+The principal questionnaire contains twenty-one cases. The original twenty cases retain five dialogue, five knowledge, five simple execution, and five composite execution cases. A route-safety holdout adds one explicit non-action turn. Table~\ref{tab:main-questionnaire-manifest} records the exact utterances used by the runtime harness and is the E2E-main component of the final frozen run. Dialogue and KB-query cases forbid planner activity. Execution cases admit planner work but still require grounded arguments, registered skills, truthful evidence, and the speech policy declared for the case.
 
 \begingroup
 \scriptsize
