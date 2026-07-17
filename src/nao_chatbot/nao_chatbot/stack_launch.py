@@ -105,6 +105,7 @@ _SIM_CAMERA_DEFAULTS = {
     "preloaded_environment_ids": "",
     "preloaded_environment_lifespan_sec": "1800.0",
     "head_motion_allow_open_loop_without_joint_state": "true",
+    "posture_allow_open_loop_without_naoqi": "true",
     "head_motion_assume_success_on_convergence_timeout": "false",
     "perform_motion_execution_mode": "real",
     "look_at_execution_mode": "fake",
@@ -124,6 +125,7 @@ _ROBOT_CAMERA_DEFAULTS = {
     "posture_bridge_disable_autonomous_life_on_connect": "false",
     "posture_bridge_wake_up_on_connect": "true",
     "head_motion_allow_open_loop_without_joint_state": "true",
+    "posture_allow_open_loop_without_naoqi": "true",
     "head_motion_assume_success_on_convergence_timeout": "false",
     "perform_motion_execution_mode": "real",
     "look_at_execution_mode": "fake",
@@ -1275,6 +1277,15 @@ def generate_profile_launch_description(
         ),
         description="Allow absolute head-motion goals to publish even before a head JointState arrives.",
     )
+    posture_allow_open_loop_without_naoqi_arg = DeclareLaunchArgument(
+        "posture_allow_open_loop_without_naoqi",
+        default_value=_profile_default(
+            profile_defaults,
+            "posture_allow_open_loop_without_naoqi",
+            "false",
+        ),
+        description="Acknowledge posture goals in open loop when NAOqi is unavailable.",
+    )
     head_motion_assume_success_on_convergence_timeout_arg = DeclareLaunchArgument(
         "head_motion_assume_success_on_convergence_timeout",
         default_value=_profile_default(
@@ -2190,6 +2201,9 @@ def generate_profile_launch_description(
             "head_motion_allow_open_loop_without_joint_state": LaunchConfiguration(
                 "head_motion_allow_open_loop_without_joint_state"
             ),
+            "posture_allow_open_loop_without_naoqi": LaunchConfiguration(
+                "posture_allow_open_loop_without_naoqi"
+            ),
             "head_motion_assume_success_on_convergence_timeout": LaunchConfiguration(
                 "head_motion_assume_success_on_convergence_timeout"
             ),
@@ -3024,6 +3038,7 @@ def generate_profile_launch_description(
             start_nao_say_skill_arg,
             start_nao_replay_motion_arg,
             head_motion_allow_open_loop_without_joint_state_arg,
+            posture_allow_open_loop_without_naoqi_arg,
             head_motion_assume_success_on_convergence_timeout_arg,
             start_nao_look_at_arg,
             start_rqt_console_arg,

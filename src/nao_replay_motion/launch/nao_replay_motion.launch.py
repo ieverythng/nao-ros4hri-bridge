@@ -32,6 +32,10 @@ def generate_launch_description():
         "posture_bridge_wake_up_on_connect",
         default_value="false",
     )
+    posture_allow_open_loop_without_naoqi_arg = DeclareLaunchArgument(
+        "posture_allow_open_loop_without_naoqi",
+        default_value="false",
+    )
     head_motion_retry_on_convergence_timeout_arg = DeclareLaunchArgument(
         "head_motion_retry_on_convergence_timeout",
         default_value="true",
@@ -61,6 +65,9 @@ def generate_launch_description():
                 "nao_port": LaunchConfiguration("nao_port"),
                 "posture_command_topic": LaunchConfiguration("posture_command_topic"),
                 "posture_result_topic": LaunchConfiguration("posture_result_topic"),
+                "allow_open_loop_without_naoqi": _bool_launch_config(
+                    "posture_allow_open_loop_without_naoqi"
+                ),
             }
         ],
     )
@@ -123,6 +130,7 @@ def generate_launch_description():
             posture_bridge_connect_on_startup_arg,
             posture_bridge_disable_autonomous_life_on_connect_arg,
             posture_bridge_wake_up_on_connect_arg,
+            posture_allow_open_loop_without_naoqi_arg,
             head_motion_retry_on_convergence_timeout_arg,
             head_motion_retry_convergence_timeout_sec_arg,
             head_motion_allow_open_loop_without_joint_state_arg,

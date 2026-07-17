@@ -84,9 +84,10 @@ class ReplayMotionSkillServer(Node):
         self.declare_parameter("default_speed", 0.8)
         self.declare_parameter("reconnect_on_failure", True)
         self.declare_parameter("fallback_to_posture_topic", True)
+        self.declare_parameter("allow_open_loop_without_naoqi", False)
         self.declare_parameter("posture_command_topic", "/chatbot/posture_command")
         self.declare_parameter("posture_result_topic", "/chatbot/posture_command_result")
-        self.declare_parameter("posture_result_timeout_sec", 20.0)
+        self.declare_parameter("posture_result_timeout_sec", 5.0)
 
         self.nao_ip = str(self.get_parameter("nao_ip").value)
         self.nao_port = int(self.get_parameter("nao_port").value)
@@ -100,6 +101,9 @@ class ReplayMotionSkillServer(Node):
         )
         self.fallback_to_posture_topic = bool(
             self.get_parameter("fallback_to_posture_topic").value
+        )
+        self.allow_open_loop_without_naoqi = bool(
+            self.get_parameter("allow_open_loop_without_naoqi").value
         )
         self.posture_command_topic = str(
             self.get_parameter("posture_command_topic").value
@@ -241,7 +245,11 @@ class ReplayMotionSkillServer(Node):
             return False
         if self._resolve_speed(requested_speed) is None:
             return False
-        if not self._ensure_connection() and not self.fallback_to_posture_topic:
+        if (
+            not self._ensure_connection()
+            and not self.fallback_to_posture_topic
+            and not self.allow_open_loop_without_naoqi
+        ):
             return False
         return True
 
@@ -309,9 +317,18 @@ class ReplayMotionSkillServer(Node):
             execution_note = ""
             if self._ensure_connection():
                 self._execute_posture_with_retry(posture_name, speed)
+            elif self.fallback_to_posture_topic and self._posture_bridge_available():
+                try:
+                    execution_note = self._execute_posture_via_topic_fallback(posture_name)
+                    execution_mode = "topic_fallback"
+                except RuntimeError:
+                    if not self.allow_open_loop_without_naoqi:
+                        raise
+                    execution_mode = "open_loop"
+            elif self.allow_open_loop_without_naoqi:
+                execution_mode = "open_loop"
             else:
-                execution_note = self._execute_posture_via_topic_fallback(posture_name)
-                execution_mode = "topic_fallback"
+                raise RuntimeError("No NAOqi or posture bridge execution path is available")
         except Exception as exc:  # pragma: no cover - runtime bound
             duration = time.monotonic() - start_time
             goal_handle.abort()
@@ -392,6 +409,9 @@ class ReplayMotionSkillServer(Node):
         raise RuntimeError(
             f"Timed out waiting for posture bridge result on '{self.posture_result_topic}'"
         )
+
+    def _posture_bridge_available(self) -> bool:
+        return self._posture_command_publisher.get_subscription_count() > 0
 
     def _on_posture_result(self, msg: String) -> None:
         payload = _parse_posture_result_message(msg.data)
