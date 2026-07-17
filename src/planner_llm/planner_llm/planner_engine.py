@@ -11,11 +11,13 @@ from planner_common import IntentLabels
 from planner_common import PlannerRequest
 from planner_common import build_plan_payload
 from planner_common import extract_json_object
+from planner_common import is_explicit_knowledge_statement
 from planner_common import missing_requested_report_error
 from planner_common import normalize_communication_policy
 from planner_common import normalize_plan_steps
-from planner_common import request_requests_report
+from planner_common import plan_semantic_errors
 from planner_common import strip_live_result_report_summary_text
+from planner_common import validate_target_selection
 
 from planner_llm.providers import BasePlannerProvider
 from planner_llm.providers import PlannerProviderError
@@ -24,280 +26,65 @@ from planner_llm.prompt_pack import default_prompt_pack
 from planner_llm.skill_registry import SkillRegistry
 
 
-_RULE_BASED_MOTIONS = {
-    'head_center': 'head_center',
-    'head_look_left': 'head_look_left',
-    'head_look_right': 'head_look_right',
-    'head_look_up': 'head_look_up',
-    'head_look_down': 'head_look_down',
-    'posture_stand': 'stand',
-    'posture_sit': 'sit',
-    'posture_kneel': 'kneel',
-}
+_DELIVERY_SELECTION_INTENTS = frozenset({'bring_object', 'deliver_object'})
+_NAVIGATION_SELECTION_INTENTS = frozenset({'navigate_to', 'walk_to'})
 
 
-def _looks_like_simple_rule_request(request: PlannerRequest) -> bool:
-    """Allow deterministic fallback only for one obvious primitive motion/posture."""
-    if request_requests_report(request):
-        return False
-    if request.scene_targets:
-        return False
-    goal_text = ' %s ' % ' '.join(str(request.goal_text or '').lower().split())
-    if not goal_text.strip():
-        return True
-    if any(
-        marker in goal_text
-        for marker in (
-            ' all ',
-            ' every ',
-            ' each ',
-            ' and ',
-            ' then ',
-            ' after ',
-            ' before ',
-            ' report ',
-            ' tell me ',
-            ' let me know ',
-        )
-    ):
-        return False
-    return True
-
-
-def _looks_like_location_group_delivery(goal_text: str) -> bool:
-    clean = _normalized_text(goal_text)
-    if not clean:
-        return False
-    if not any(marker in clean for marker in (' all object', ' every object', ' each object')):
-        return False
-    if not any(marker in clean for marker in (' bring ', ' deliver ', ' take ', ' carry ')):
-        return False
-    return any(marker in clean for marker in (' from ', ' in ', ' on '))
-
-
-def _looks_like_ordered_location_walk(goal_text: str) -> bool:
-    clean = _normalized_text(goal_text)
-    if not clean:
-        return False
-    if not any(marker in clean for marker in (' all object', ' every object', ' each object')):
-        return False
-    if not any(marker in clean for marker in (' walk ', ' navigate ', ' go ', ' move ')):
-        return False
-    if not any(marker in clean for marker in (' tell me ', ' let me know ', ' report ')):
-        return False
-    return any(marker in clean for marker in (' from ', ' in ', ' on '))
-
-
-def _looks_like_grounded_look_at(goal_text: str) -> bool:
-    clean = _normalized_text(goal_text)
-    return any(marker in clean for marker in (' look at ', ' gaze at ', ' face '))
-
-
-def _goal_text_requests_report(goal_text: str) -> bool:
-    clean = _normalized_text(goal_text)
-    return any(
-        marker in clean
-        for marker in (
-            ' report ',
-            ' tell me ',
-            ' let me know ',
-            ' what you did ',
-            ' what happened ',
-        )
-    )
-
-
-def _matched_location_group(grounded_context: dict, goal_text: str) -> dict:
-    groups = grounded_context.get('locations', []) if isinstance(grounded_context, dict) else []
-    if not isinstance(groups, list):
-        return {}
-    matches = []
-    for group in groups:
-        if not isinstance(group, dict):
+def _scene_targets_from_steps(steps) -> list[str]:
+    targets: list[str] = []
+    target_keys_by_skill = {
+        'bring_object': ('target', 'object_id', 'object', 'recipient', 'recipient_id'),
+        'deliver_object': ('target', 'object_id', 'object', 'recipient', 'recipient_id'),
+        'find_object': ('target', 'object_id', 'object'),
+        'look_at': ('target', 'target_frame'),
+        'navigate_to': ('target', 'location'),
+        'pick_object': ('target', 'object_id', 'object'),
+        'place_object': ('target', 'object_id', 'object', 'destination'),
+        'walk_to': ('target', 'location'),
+        'wave_greet': ('target', 'target_frame'),
+    }
+    for step in steps if isinstance(steps, (list, tuple)) else ():
+        if not isinstance(step, dict):
             continue
-        score = _entity_goal_match_score(group, goal_text)
-        if score > 0:
-            matches.append((score, group))
-    if matches:
-        best_score = max(score for score, _group in matches)
-        best_matches = [group for score, group in matches if score == best_score]
-        if len(best_matches) == 1:
-            return best_matches[0]
-    if not matches and len(groups) == 1 and _mentions_location_collection(goal_text):
-        group = groups[0]
-        return group if isinstance(group, dict) else {}
-    return {}
-
-
-def _location_group_object_members(location_group: dict) -> list[dict]:
-    """Return concrete object members of a matched location group."""
-    members = []
-    if not isinstance(location_group, dict):
-        return members
-    for item in location_group.get('contains', []):
-        if not isinstance(item, dict):
-            continue
-        item_id = str(item.get('id', '')).strip()
-        kind = str(item.get('kind', 'object')).strip().lower()
-        if item_id and kind == 'object':
-            members.append(item)
-    return members
-
-
-def _member_ids(members: list[dict]) -> list[str]:
-    ids = []
-    for member in members:
-        member_id = str(member.get('id', '')).strip()
-        if member_id and member_id not in ids:
-            ids.append(member_id)
-    return ids
-
-
-def _matched_recipient_entity(
-    grounded_context: dict,
-    goal_text: str,
-    *,
-    exclude_id: str = '',
-    source_location_group: dict | None = None,
-) -> str:
-    if not isinstance(grounded_context, dict):
-        return ''
-    if ' to ' not in _normalized_text(goal_text):
-        return ''
-    excluded = str(exclude_id or '').strip()
-    entity_index = _entity_index(grounded_context)
-    candidates = []
-    for entity in grounded_context.get('entities', []):
-        if not isinstance(entity, dict):
-            continue
-        entity_id = str(entity.get('id', '')).strip()
-        if entity_id == excluded:
-            continue
-        kind = str(entity.get('kind', '')).strip().lower()
-        entity_class = str(entity.get('class', '')).strip().lower()
-        if kind != 'person' and 'human' not in entity_class and 'person' not in entity_class:
-            continue
-        if _entity_mentioned(entity, goal_text):
-            candidates.append((entity_id, entity))
-    if len(candidates) == 1:
-        return candidates[0][0]
-    if len(candidates) > 1 and excluded:
-        source_entity = entity_index.get(excluded, {})
-        source_scope = _entity_location_scope(source_entity, entity_index)
-        if isinstance(source_location_group, dict):
-            source_scope.update(_entity_location_scope(source_location_group, entity_index))
-        scoped_matches = [
-            entity_id for entity_id, entity in candidates
-            if source_scope and source_scope.intersection(_entity_location_scope(entity, entity_index))
-        ]
-        if len(scoped_matches) == 1:
-            return scoped_matches[0]
-        namespace_matches = _unique_best_namespace_matches(excluded, candidates)
-        if len(namespace_matches) == 1:
-            return namespace_matches[0]
-        return ''
-    for group in grounded_context.get('locations', []):
-        if (
-            isinstance(group, dict)
-            and str(group.get('id', '')).strip() != excluded
-            and _entity_mentioned(group, goal_text)
-        ):
-            return str(group.get('id', '')).strip()
-    return ''
-
-
-def _entity_index(grounded_context: dict) -> dict[str, dict]:
-    if not isinstance(grounded_context, dict):
-        return {}
-    indexed: dict[str, dict] = {}
-    for entity in grounded_context.get('entities', []):
-        if not isinstance(entity, dict):
-            continue
-        entity_id = str(entity.get('id', '')).strip()
-        if entity_id and entity_id not in indexed:
-            indexed[entity_id] = entity
-    return indexed
-
-
-def _entity_location_scope(entity: dict, entity_index: dict[str, dict]) -> set[str]:
-    if not isinstance(entity, dict):
-        return set()
-    scope: set[str] = set()
-    for target_id in _entity_location_targets(entity):
-        scope.add(target_id)
-        parent = entity_index.get(target_id, {})
-        scope.update(_entity_location_targets(parent))
-    return scope
-
-
-def _entity_location_targets(entity: dict) -> set[str]:
-    targets: set[str] = set()
-    if not isinstance(entity, dict):
-        return targets
-    for relation in entity.get('relations', []):
-        if not isinstance(relation, dict):
-            continue
-        predicate = str(relation.get('predicate', '')).strip()
-        if predicate not in {'oro:isAt', 'oro:isIn', 'oro:isOn'}:
-            continue
-        target_id = str(relation.get('object', '')).strip()
-        if target_id:
-            targets.add(target_id)
+        skill = str(step.get('name', '')).strip().lower()
+        args = step.get('args', {}) if isinstance(step.get('args'), dict) else {}
+        for key in target_keys_by_skill.get(skill, ()):
+            target = str(args.get(key, '')).strip()
+            if target and target not in targets:
+                targets.append(target)
     return targets
 
 
-def _unique_best_namespace_matches(source_id: str, candidates: list[tuple[str, dict]]) -> list[str]:
-    source_tokens = _namespace_tokens(source_id)
-    if len(source_tokens) < 2:
-        return []
-    scored = []
-    for entity_id, _entity in candidates:
-        candidate_tokens = _namespace_tokens(entity_id)
-        score = 0
-        for source_token, candidate_token in zip(source_tokens, candidate_tokens):
-            if source_token != candidate_token:
-                break
-            score += 1
-        if score >= 2:
-            scored.append((score, entity_id))
-    if not scored:
-        return []
-    best_score = max(score for score, _entity_id in scored)
-    return sorted(entity_id for score, entity_id in scored if score == best_score)
+def _request_requires_target_selection(request: PlannerRequest) -> bool:
+    intents = {
+        str(intent or '').strip().lower()
+        for intent in request.normalized_intents
+    }
+    if intents.intersection(_DELIVERY_SELECTION_INTENTS):
+        return not _has_single_grounded_delivery_target(request)
+    return bool(
+        intents.intersection(_NAVIGATION_SELECTION_INTENTS)
+        and len(request.scene_targets) > 1
+    )
 
 
-def _namespace_tokens(value: str) -> list[str]:
-    return [
-        token for token in str(value or '').strip().lower().split('_')
-        if token and token not in {'person', 'recipient'}
-    ]
-
-
-def _matched_action_target_entity(grounded_context: dict, goal_text: str) -> str:
-    """Return one grounded entity that is clearly referenced by the goal text."""
-    if not isinstance(grounded_context, dict):
-        return ''
-    matches: list[tuple[int, str]] = []
-    for entity in grounded_context.get('entities', []):
+def _has_single_grounded_delivery_target(request: PlannerRequest) -> bool:
+    """Let the planner resolve one unambiguous grounded object."""
+    if len(request.scene_targets) != 1:
+        return False
+    target = str(request.scene_targets[0] or '').strip()
+    if not target:
+        return False
+    matches = []
+    entities = request.grounded_context.get('entities', [])
+    for entity in entities if isinstance(entities, list) else ():
         if not isinstance(entity, dict):
             continue
-        entity_id = str(entity.get('id', '')).strip()
-        if not entity_id:
+        if str(entity.get('kind', '')).strip().lower() != 'object':
             continue
-        score = _entity_goal_match_score(entity, goal_text)
-        if score > 0:
-            matches.append((score, entity_id))
-    if not matches:
-        return ''
-    best_score = max(score for score, _entity_id in matches)
-    best_matches = sorted(entity_id for score, entity_id in matches if score == best_score)
-    if len(best_matches) == 1:
-        return best_matches[0]
-    return ''
-
-
-def _entity_mentioned(entity: dict, goal_text: str) -> bool:
-    return _entity_goal_match_score(entity, goal_text) > 0
+        if _entity_goal_match_score(entity, target) > 0:
+            matches.append(entity)
+    return len(matches) == 1
 
 
 def _entity_goal_match_score(entity: dict, goal_text: str) -> int:
@@ -337,13 +124,29 @@ def _entity_goal_match_score(entity: dict, goal_text: str) -> int:
     return best_score
 
 
-def _mentions_location_collection(goal_text: str) -> bool:
-    clean = _normalized_text(goal_text)
-    return any(marker in clean for marker in (' from ', ' in ', ' on '))
-
-
 def _normalized_text(value: str) -> str:
     return ' %s ' % ' '.join(str(value or '').strip().lower().replace('_', ' ').split())
+
+
+def _validation_retry_made_progress(
+    previous_output: str,
+    previous_errors: list[str],
+    retry_output: str,
+    retry_errors: list[str],
+) -> bool:
+    """Allow retry two only after a distinct, better validation result."""
+    previous_fingerprint = ' '.join(str(previous_output or '').split())
+    retry_fingerprint = ' '.join(str(retry_output or '').split())
+    if not retry_fingerprint or retry_fingerprint == previous_fingerprint:
+        return False
+
+    previous_error_set = tuple(sorted(set(previous_errors)))
+    retry_error_set = tuple(sorted(set(retry_errors)))
+    if not retry_error_set or retry_error_set == previous_error_set:
+        return False
+    if not extract_json_object(previous_output) and extract_json_object(retry_output):
+        return True
+    return len(retry_error_set) < len(previous_error_set)
 
 
 @dataclass(frozen=True)
@@ -388,6 +191,48 @@ class PlannerEngine:
         resolved_plan_version = max(1, int(plan_version or 1))
         resolved_policy = normalize_communication_policy(communication_policy)
         _next_budget, retry_exhausted = self._next_retry_budget({}, feedback)
+
+        if _request_requires_target_selection(request) and not request.target_selection:
+            return self._clarification_decision(
+                request,
+                feedback=feedback,
+                reason='I need a complete grounded target selection before I can plan that task.',
+                mode='clarify',
+                goal_id=resolved_goal_id,
+                plan_version=resolved_plan_version,
+                status='waiting_user',
+                communication_policy=resolved_policy,
+            )
+
+        expected_operation = ''
+        request_intents = {
+            str(intent or '').strip().lower()
+            for intent in request.normalized_intents
+        }
+        if request_intents.intersection(_DELIVERY_SELECTION_INTENTS):
+            expected_operation = 'deliver'
+        elif request_intents.intersection(_NAVIGATION_SELECTION_INTENTS):
+            expected_operation = 'visit'
+        selection_validation = (
+            validate_target_selection(
+                request.target_selection,
+                request.grounded_context,
+                expected_operation=expected_operation,
+            )
+            if request.target_selection
+            else None
+        )
+        if selection_validation is not None and not selection_validation.valid:
+            return self._clarification_decision(
+                request,
+                feedback=feedback,
+                reason='; '.join(selection_validation.errors),
+                mode='clarify',
+                goal_id=resolved_goal_id,
+                plan_version=resolved_plan_version,
+                status='waiting_user',
+                communication_policy=resolved_policy,
+            )
 
         if retry_exhausted:
             return self._clarification_decision(
@@ -434,24 +279,29 @@ class PlannerEngine:
             return decision
 
         if validation_errors:
-            try:
-                retry_raw_model_output = self._provider.generate(
-                    self._build_messages(
-                        request,
-                        state_t0=state_t0 or {},
-                        feedback=feedback,
-                        goal_id=resolved_goal_id,
-                        plan_version=resolved_plan_version,
-                        validation_errors=validation_errors,
-                        previous_model_output=raw_model_output,
+            invalid_outputs = [raw_model_output]
+            previous_output = raw_model_output
+            previous_errors = list(validation_errors)
+            for retry_index in range(2):
+                try:
+                    retry_output = self._provider.generate(
+                        self._build_messages(
+                            request,
+                            state_t0=state_t0 or {},
+                            feedback=feedback,
+                            goal_id=resolved_goal_id,
+                            plan_version=resolved_plan_version,
+                            validation_errors=previous_errors,
+                            previous_model_output=previous_output,
+                        )
                     )
-                )
-            except PlannerProviderError as err:
-                retry_raw_model_output = 'planner backend unavailable during validation retry: %s' % err
-            else:
-                retry_decision, retry_validation_errors = self._decision_from_model_output_with_errors(
+                except PlannerProviderError:
+                    break
+
+                invalid_outputs.append(retry_output)
+                retry_decision, retry_errors = self._decision_from_model_output_with_errors(
                     request,
-                    retry_raw_model_output,
+                    retry_output,
                     feedback=feedback,
                     goal_id=resolved_goal_id,
                     plan_version=resolved_plan_version,
@@ -460,25 +310,29 @@ class PlannerEngine:
                 )
                 if retry_decision is not None:
                     return retry_decision
-                validation_errors = retry_validation_errors or validation_errors
-                raw_model_output = '%s\n\n--- invalid retry output ---\n%s' % (
-                    raw_model_output,
-                    retry_raw_model_output,
+
+                retry_errors = retry_errors or previous_errors
+                validation_errors = retry_errors
+                if retry_index == 0 and _validation_retry_made_progress(
+                    previous_output,
+                    previous_errors,
+                    retry_output,
+                    retry_errors,
+                ):
+                    previous_output = retry_output
+                    previous_errors = retry_errors
+                    continue
+                break
+
+            raw_model_output = invalid_outputs[0]
+            for retry_index, retry_output in enumerate(invalid_outputs[1:], start=1):
+                suffix = '' if retry_index == 1 else ' %d' % retry_index
+                raw_model_output += '\n\n--- invalid retry output%s ---\n%s' % (
+                    suffix,
+                    retry_output,
                 )
 
-        rule_fallback_decision = self._rule_based_decision(
-            request,
-            feedback=feedback,
-            goal_id=resolved_goal_id,
-            plan_version=resolved_plan_version,
-            status=status,
-            communication_policy=resolved_policy,
-            mode='rule_fallback',
-        )
-        if rule_fallback_decision is not None:
-            return rule_fallback_decision
-
-        location_group_decision = self._location_group_delivery_decision(
+        target_selection_recovery = self._validated_target_selection_recovery(
             request,
             feedback=feedback,
             raw_model_output=raw_model_output,
@@ -487,10 +341,10 @@ class PlannerEngine:
             status=status,
             communication_policy=resolved_policy,
         )
-        if location_group_decision is not None:
-            return location_group_decision
+        if target_selection_recovery is not None:
+            return target_selection_recovery
 
-        ordered_walk_decision = self._ordered_location_walk_decision(
+        motion_sequence_recovery = self._validated_motion_sequence_recovery(
             request,
             feedback=feedback,
             raw_model_output=raw_model_output,
@@ -499,20 +353,19 @@ class PlannerEngine:
             status=status,
             communication_policy=resolved_policy,
         )
-        if ordered_walk_decision is not None:
-            return ordered_walk_decision
+        if motion_sequence_recovery is not None:
+            return motion_sequence_recovery
 
-        grounded_look_decision = self._grounded_look_decision(
-            request,
-            feedback=feedback,
-            raw_model_output=raw_model_output,
-            goal_id=resolved_goal_id,
-            plan_version=resolved_plan_version,
-            status=status,
-            communication_policy=resolved_policy,
-        )
-        if grounded_look_decision is not None:
-            return grounded_look_decision
+        if request.target_selection:
+            return self._invalid_model_output_decision(
+                request,
+                feedback=feedback,
+                reason='authoritative target selection was not executable',
+                raw_model_output=raw_model_output,
+                goal_id=resolved_goal_id,
+                plan_version=resolved_plan_version,
+                communication_policy=resolved_policy,
+            )
 
         return self._invalid_model_output_decision(
             request,
@@ -608,6 +461,13 @@ class PlannerEngine:
             return None, validation_errors
         if not steps:
             return None, ['model output did not contain executable steps']
+        semantic_errors = plan_semantic_errors(
+            steps,
+            request.grounded_context,
+            request.target_selection,
+        )
+        if semantic_errors:
+            return None, semantic_errors
         missing_report_error = missing_requested_report_error(request, steps)
         if missing_report_error:
             return None, [missing_report_error]
@@ -621,7 +481,12 @@ class PlannerEngine:
             user_facing_reason=str(parsed.get('user_facing_reason', '')).strip(),
             replan_hint=str(parsed.get('replan_hint', '')).strip(),
             retry_budget=self._next_retry_budget(parsed, feedback)[0],
-            scene_targets=self._scene_targets_for_decision(request, feedback, parsed),
+            scene_targets=self._scene_targets_for_decision(
+                request,
+                feedback,
+                parsed,
+                steps=steps,
+            ),
             plan_id=str(parsed.get('plan_id', parsed.get('id', ''))).strip(),
             raw_model_output=raw_model_output,
             mode='replan' if feedback is not None else 'plan',
@@ -700,7 +565,12 @@ class PlannerEngine:
             user_facing_reason=str(parsed.get('user_facing_reason', '')).strip(),
             replan_hint=str(parsed.get('replan_hint', '')).strip(),
             retry_budget=self._next_retry_budget(parsed, feedback)[0],
-            scene_targets=self._scene_targets_for_decision(request, feedback, parsed),
+            scene_targets=self._scene_targets_for_decision(
+                request,
+                feedback,
+                parsed,
+                steps=steps,
+            ),
             plan_id=str(parsed.get('plan_id', parsed.get('id', ''))).strip(),
             raw_model_output=raw_model_output,
             mode='replan' if feedback is not None else 'plan',
@@ -727,13 +597,7 @@ class PlannerEngine:
         return self._build_decision(
             request=request,
             feedback=feedback,
-            steps=[
-                self._step(
-                    step_type='say',
-                    name='say',
-                    args={'text': clean_reason},
-                )
-            ],
+            steps=[],
             validation_status='draft',
             failure_reason=clean_reason if mode == 'fail' else '',
             user_facing_reason=clean_reason,
@@ -762,13 +626,7 @@ class PlannerEngine:
         return self._build_decision(
             request=request,
             feedback=feedback,
-            steps=[
-                self._step(
-                    step_type='say',
-                    name='say',
-                    args={'text': reason},
-                )
-            ],
+            steps=[],
             validation_status='failed',
             failure_reason=reason,
             user_facing_reason=reason,
@@ -798,13 +656,7 @@ class PlannerEngine:
         return self._build_decision(
             request=request,
             feedback=feedback,
-            steps=[
-                self._step(
-                    step_type='say',
-                    name='say',
-                    args={'text': clean_reason},
-                )
-            ],
+            steps=[],
             validation_status='invalid',
             failure_reason=clean_reason,
             user_facing_reason=clean_reason,
@@ -819,345 +671,6 @@ class PlannerEngine:
             communication_policy=communication_policy,
         )
 
-    def _rule_based_decision(
-        self,
-        request: PlannerRequest,
-        *,
-        feedback: ExecutionFeedback | None,
-        goal_id: str,
-        plan_version: int,
-        status: str,
-        communication_policy: dict,
-        mode: str = 'rule',
-    ) -> PlannerDecision | None:
-        if str(request.planner_mode or '').strip().lower() in (
-            'multi_step',
-            'multistep',
-            'composite',
-            'sequenced',
-        ):
-            return None
-        if len(request.normalized_intents) > 1:
-            return None
-        if not _looks_like_simple_rule_request(request):
-            return None
-
-        retry_budget = self._next_retry_budget({}, feedback)[0]
-        scene_targets = self._scene_targets_for_decision(request, feedback, {})
-        motion_skill_name = self._first_supported_skill_name('perform_motion', 'motion')
-
-        for normalized_intent in request.normalized_intents:
-            motion_name = _RULE_BASED_MOTIONS.get(normalized_intent)
-            if motion_name and motion_skill_name:
-                if request_requests_report(request):
-                    return None
-                return self._build_decision(
-                    request=request,
-                    feedback=feedback,
-                    steps=[
-                        self._step(
-                            step_type='skill',
-                            name=motion_skill_name,
-                            args={'object': motion_name},
-                            on_failure='replan',
-                        )
-                    ],
-                    validation_status='draft',
-                    retry_budget=retry_budget,
-                    scene_targets=scene_targets,
-                    mode=mode,
-                    goal_id=goal_id,
-                    plan_version=plan_version,
-                    status=status,
-                    communication_policy=communication_policy,
-                )
-
-        return None
-
-    def _location_group_delivery_decision(
-        self,
-        request: PlannerRequest,
-        *,
-        feedback: ExecutionFeedback | None,
-        raw_model_output: str,
-        goal_id: str,
-        plan_version: int,
-        status: str,
-        communication_policy: dict,
-    ) -> PlannerDecision | None:
-        """Fallback for grounded "bring every object from X to Y" requests."""
-        goal_text = str(request.goal_text or '').strip()
-        if not _looks_like_location_group_delivery(goal_text):
-            return None
-        bring_skill_name = self._first_supported_skill_name('bring_object', 'deliver_object')
-        if not bring_skill_name:
-            return None
-        location_group = _matched_location_group(
-            request.grounded_context,
-            goal_text,
-        )
-        if not location_group:
-            return self._clarification_decision(
-                request,
-                feedback=feedback,
-                reason='Which location should I collect the objects from?',
-                raw_model_output=raw_model_output,
-                mode='clarify',
-                goal_id=goal_id,
-                plan_version=plan_version,
-                status='waiting_user',
-                communication_policy=communication_policy,
-            )
-        recipient = _matched_recipient_entity(
-            request.grounded_context,
-            goal_text,
-            exclude_id=str(location_group.get('id', '')).strip(),
-            source_location_group=location_group,
-        )
-        if not recipient:
-            return self._clarification_decision(
-                request,
-                feedback=feedback,
-                reason='Who or where should I bring those objects to?',
-                raw_model_output=raw_model_output,
-                mode='clarify',
-                goal_id=goal_id,
-                plan_version=plan_version,
-                status='waiting_user',
-                communication_policy=communication_policy,
-            )
-        members = _location_group_object_members(location_group)
-        if not members:
-            return self._clarification_decision(
-                request,
-                feedback=feedback,
-                reason='I do not have any current objects grounded in that location.',
-                raw_model_output=raw_model_output,
-                mode='clarify',
-                goal_id=goal_id,
-                plan_version=plan_version,
-                status='waiting_user',
-                communication_policy=communication_policy,
-            )
-
-        steps = []
-        for member in members:
-            args = {
-                'target': str(member.get('id', '')).strip(),
-                'recipient': recipient,
-                'source': str(location_group.get('id', '')).strip(),
-            }
-            steps.append(
-                self._step(
-                    step_type='skill',
-                    name=bring_skill_name,
-                    args=args,
-                    on_failure='replan',
-                )
-            )
-        if request_requests_report(request):
-            steps.append(
-                self._step(
-                    step_type='skill',
-                    name='report_result',
-                    args={},
-                    on_failure='fail',
-                )
-            )
-        steps = normalize_plan_steps(steps)
-        supported_steps, rejected_steps = (
-            self._skill_registry.filter_supported_steps_with_rejections(steps)
-        )
-        if rejected_steps:
-            return None
-        return self._build_decision(
-            request=request,
-            feedback=feedback,
-            steps=supported_steps,
-            validation_status='draft',
-            retry_budget=self._next_retry_budget({}, feedback)[0],
-            scene_targets=_member_ids(members) + [recipient],
-            raw_model_output=raw_model_output,
-            mode='grounded_location_group_fallback',
-            goal_id=goal_id,
-            plan_version=plan_version,
-            status=status,
-            communication_policy=communication_policy,
-        )
-
-    def _ordered_location_walk_decision(
-        self,
-        request: PlannerRequest,
-        *,
-        feedback: ExecutionFeedback | None,
-        raw_model_output: str,
-        goal_id: str,
-        plan_version: int,
-        status: str,
-        communication_policy: dict,
-    ) -> PlannerDecision | None:
-        """Fallback for grounded ordered walk/report after invalid model output."""
-        goal_text = str(request.goal_text or '').strip()
-        if not _looks_like_ordered_location_walk(goal_text):
-            return None
-        navigate_skill_name = self._first_supported_skill_name('navigate_to', 'walk_to')
-        if not navigate_skill_name or 'report_result' not in self._skill_registry.allowed_skill_names:
-            return None
-        location_group = _matched_location_group(
-            request.grounded_context,
-            goal_text,
-        )
-        if not location_group:
-            return self._clarification_decision(
-                request,
-                feedback=feedback,
-                reason='Which location should I use for the object sequence?',
-                raw_model_output=raw_model_output,
-                mode='clarify',
-                goal_id=goal_id,
-                plan_version=plan_version,
-                status='waiting_user',
-                communication_policy=communication_policy,
-            )
-        members = _location_group_object_members(location_group)
-        if not members:
-            return self._clarification_decision(
-                request,
-                feedback=feedback,
-                reason='I do not have any current objects grounded in that location.',
-                raw_model_output=raw_model_output,
-                mode='clarify',
-                goal_id=goal_id,
-                plan_version=plan_version,
-                status='waiting_user',
-                communication_policy=communication_policy,
-            )
-
-        steps = []
-        previous_report_id = ''
-        step_index = 1
-        for member in members:
-            member_id = str(member.get('id', '')).strip()
-            navigate_id = 'step_%d' % step_index
-            step_index += 1
-            navigate_step = self._step(
-                step_type='skill',
-                name=navigate_skill_name,
-                args={'target': member_id},
-                on_failure='replan',
-            )
-            navigate_step['id'] = navigate_id
-            if previous_report_id:
-                navigate_step['requires'] = [previous_report_id]
-            steps.append(navigate_step)
-
-            report_id = 'step_%d' % step_index
-            step_index += 1
-            report_step = self._step(
-                step_type='skill',
-                name='report_result',
-                args={},
-                on_failure='fail',
-            )
-            report_step['id'] = report_id
-            report_step['requires'] = [navigate_id]
-            steps.append(report_step)
-            previous_report_id = report_id
-
-        steps = normalize_plan_steps(steps)
-        supported_steps, rejected_steps = (
-            self._skill_registry.filter_supported_steps_with_rejections(steps)
-        )
-        if rejected_steps:
-            return None
-        return self._build_decision(
-            request=request,
-            feedback=feedback,
-            steps=supported_steps,
-            validation_status='draft',
-            retry_budget=self._next_retry_budget({}, feedback)[0],
-            scene_targets=_member_ids(members),
-            raw_model_output=raw_model_output,
-            mode='grounded_ordered_walk_fallback',
-            goal_id=goal_id,
-            plan_version=plan_version,
-            status=status,
-            communication_policy=communication_policy,
-        )
-
-    def _grounded_look_decision(
-        self,
-        request: PlannerRequest,
-        *,
-        feedback: ExecutionFeedback | None,
-        raw_model_output: str,
-        goal_id: str,
-        plan_version: int,
-        status: str,
-        communication_policy: dict,
-    ) -> PlannerDecision | None:
-        """Fallback for grounded look-at requests after invalid model output."""
-        goal_text = str(request.goal_text or '').strip()
-        if not _looks_like_grounded_look_at(goal_text):
-            return None
-        look_skill_name = self._first_supported_skill_name('look_at')
-        if not look_skill_name:
-            return None
-        target = self._first_scene_target(request) or _matched_action_target_entity(
-            request.grounded_context,
-            goal_text,
-        )
-        if not target:
-            return self._clarification_decision(
-                request,
-                feedback=feedback,
-                reason='Which object or person should I look at?',
-                raw_model_output=raw_model_output,
-                mode='clarify',
-                goal_id=goal_id,
-                plan_version=plan_version,
-                status='waiting_user',
-                communication_policy=communication_policy,
-            )
-
-        steps = [
-            self._step(
-                step_type='skill',
-                name=look_skill_name,
-                args={'target_frame': target},
-                on_failure='replan',
-            )
-        ]
-        if request_requests_report(request) or _goal_text_requests_report(goal_text):
-            steps.append(
-                self._step(
-                    step_type='skill',
-                    name='report_result',
-                    args={},
-                    on_failure='fail',
-                )
-            )
-        steps = normalize_plan_steps(steps)
-        supported_steps, rejected_steps = (
-            self._skill_registry.filter_supported_steps_with_rejections(steps)
-        )
-        if rejected_steps:
-            return None
-        return self._build_decision(
-            request=request,
-            feedback=feedback,
-            steps=supported_steps,
-            validation_status='draft',
-            retry_budget=self._next_retry_budget({}, feedback)[0],
-            scene_targets=[target],
-            raw_model_output=raw_model_output,
-            mode='grounded_look_fallback',
-            goal_id=goal_id,
-            plan_version=plan_version,
-            status=status,
-            communication_policy=communication_policy,
-        )
-
     @staticmethod
     def _request_payload(request: PlannerRequest) -> dict:
         return {
@@ -1169,6 +682,7 @@ class PlannerEngine:
             'goal_text': request.goal_text,
             'normalized_intents': list(request.normalized_intents),
             'scene_targets': list(request.scene_targets),
+            'target_selection': request.target_selection,
             'dialogue_context': list(request.dialogue_context),
             'grounded_context': request.grounded_context,
             'planner_mode': request.planner_mode,
@@ -1228,11 +742,38 @@ class PlannerEngine:
             return [], argument_errors
         return strip_live_result_report_summary_text(supported_steps), []
 
-    @staticmethod
-    def _step_argument_errors(steps: list[dict]) -> list[str]:
+    def _step_argument_errors(self, steps: list[dict]) -> list[str]:
         errors: list[str] = []
         for step in steps:
-            if str(step.get('name', '')).strip().lower() != 'perform_motion':
+            errors.extend(self._skill_registry.required_argument_errors(step))
+            step_name = str(step.get('name', '')).strip().lower()
+            if step_name in {'kb_add', 'kb_revise'}:
+                args = step.get('args', {})
+                statements = (
+                    args.get('statements', args.get('statement', []))
+                    if isinstance(args, dict)
+                    else []
+                )
+                if isinstance(statements, str):
+                    statements = [statements]
+                invalid_statements = (
+                    [
+                        str(statement).strip()
+                        for statement in statements
+                        if not is_explicit_knowledge_statement(statement)
+                    ]
+                    if isinstance(statements, list)
+                    else [str(statements)]
+                )
+                if invalid_statements:
+                    errors.append(
+                        '%s statements must use explicit "subject predicate object" '
+                        'KnowledgeCore form with subject first and a namespace-qualified '
+                        'predicate second (for example "cup_1 rdf:type Cup" or '
+                        '"cup_1 dbp:color red"); invalid=%s'
+                        % (step_name, json.dumps(invalid_statements, sort_keys=True))
+                    )
+            if step_name != 'perform_motion':
                 continue
             args = step.get('args', {})
             motion_object = (
@@ -1305,6 +846,187 @@ class PlannerEngine:
             'retry_budget': retry_budget,
         }
 
+    def _validated_target_selection_recovery(
+        self,
+        request: PlannerRequest,
+        *,
+        feedback: ExecutionFeedback | None,
+        raw_model_output: str,
+        goal_id: str,
+        plan_version: int,
+        status: str,
+        communication_policy: dict,
+    ) -> PlannerDecision | None:
+        """Compile an already validated target selection after model retries fail."""
+        selection = request.target_selection
+        if not selection:
+            return None
+
+        operation = str(selection.get('operation', '')).strip().lower()
+        member_ids = [
+            str(member_id).strip()
+            for member_id in selection.get('member_ids', [])
+            if str(member_id).strip()
+        ]
+        report_policy = str(selection.get('report_policy', 'none')).strip().lower()
+        steps: list[dict] = []
+
+        if operation == 'deliver':
+            skill_name = self._first_supported_skill_name('bring_object', 'deliver_object')
+            recipient_id = str(selection.get('recipient_id', '')).strip()
+            source_id = str(selection.get('source_location_id', '')).strip()
+            if not skill_name or not recipient_id:
+                return None
+            for member_id in member_ids:
+                args = {'target': member_id, 'recipient': recipient_id}
+                if source_id:
+                    args['source'] = source_id
+                steps.append(self._step(step_type='skill', name=skill_name, args=args))
+                if report_policy == 'per_target':
+                    report_name = self._first_supported_skill_name('report_result')
+                    if not report_name:
+                        return None
+                    report = self._step(step_type='skill', name=report_name, args={})
+                    report['requires'] = ['step_%d' % len(steps)]
+                    steps.append(report)
+            if report_policy == 'final':
+                report_name = self._first_supported_skill_name('report_result')
+                if not report_name:
+                    return None
+                report_step = self._step(step_type='skill', name=report_name, args={})
+                report_step['requires'] = [
+                    'step_%d' % index
+                    for index, step in enumerate(steps, start=1)
+                    if step.get('name') != 'report_result'
+                ]
+                steps.append(report_step)
+            scene_targets = member_ids + [recipient_id]
+        elif operation == 'visit':
+            skill_name = self._first_supported_skill_name('navigate_to', 'walk_to')
+            report_name = self._first_supported_skill_name('report_result')
+            if not skill_name or (report_policy in {'per_target', 'final'} and not report_name):
+                return None
+            previous_step_id = ''
+            for member_id in member_ids:
+                navigation = self._step(
+                    step_type='skill',
+                    name=skill_name,
+                    args={'target': member_id},
+                )
+                if previous_step_id:
+                    navigation['requires'] = [previous_step_id]
+                steps.append(navigation)
+                previous_step_id = 'step_%d' % len(steps)
+                if report_policy == 'per_target':
+                    report = self._step(step_type='skill', name=report_name, args={})
+                    report['requires'] = [previous_step_id]
+                    steps.append(report)
+                    previous_step_id = 'step_%d' % len(steps)
+            if report_policy == 'final':
+                report = self._step(step_type='skill', name=report_name, args={})
+                if previous_step_id:
+                    report['requires'] = [previous_step_id]
+                steps.append(report)
+            scene_targets = member_ids
+        else:
+            return None
+
+        steps = normalize_plan_steps(steps)
+        if not steps or any(not self._skill_registry.supports_step(step) for step in steps):
+            return None
+        if self._step_argument_errors(steps):
+            return None
+        if plan_semantic_errors(steps, request.grounded_context, selection):
+            return None
+
+        return self._build_decision(
+            request=request,
+            feedback=feedback,
+            steps=steps,
+            validation_status='valid',
+            scene_targets=list(dict.fromkeys(scene_targets)),
+            raw_model_output=raw_model_output,
+            mode='validated_target_selection_recovery',
+            goal_id=goal_id,
+            plan_version=plan_version,
+            status=status,
+            communication_policy=communication_policy,
+        )
+
+    def _validated_motion_sequence_recovery(
+        self,
+        request: PlannerRequest,
+        *,
+        feedback: ExecutionFeedback | None,
+        raw_model_output: str,
+        goal_id: str,
+        plan_version: int,
+        status: str,
+        communication_policy: dict,
+    ) -> PlannerDecision | None:
+        """Compile an explicit composite motion sequence after model retries fail."""
+        if feedback is not None or request.target_selection:
+            return None
+        if str(request.planner_mode or '').strip().lower() != 'multi_step':
+            return None
+
+        motion_names = [
+            str(intent).strip().lower()
+            for intent in request.normalized_intents
+            if str(intent).strip()
+        ]
+        if len(motion_names) < 2 or any(
+            name not in DEFAULT_PERFORM_MOTION_OBJECT_LABELS for name in motion_names
+        ):
+            return None
+
+        steps = [
+            self._step(
+                step_type='skill',
+                name='perform_motion',
+                args={'object': motion_name},
+                on_failure='replan',
+                retry_budget=1,
+            )
+            for motion_name in motion_names
+        ]
+        report_name = self._first_supported_skill_name('report_result')
+        if not report_name:
+            return None
+        report = self._step(step_type='skill', name=report_name, args={})
+        report['requires'] = [
+            'step_%d' % index for index in range(1, len(steps) + 1)
+        ]
+        steps.append(report)
+        steps = normalize_plan_steps(steps)
+        if not steps or any(not self._skill_registry.supports_step(step) for step in steps):
+            return None
+        if self._step_argument_errors(steps):
+            return None
+        if plan_semantic_errors(steps, request.grounded_context, request.target_selection):
+            return None
+
+        return self._build_decision(
+            request=request,
+            feedback=feedback,
+            steps=steps,
+            validation_status='valid',
+            scene_targets=[],
+            raw_model_output=raw_model_output,
+            mode='validated_motion_sequence_recovery',
+            goal_id=goal_id,
+            plan_version=plan_version,
+            status=status,
+            communication_policy=communication_policy,
+        )
+
+    def _first_supported_skill_name(self, *names: str) -> str:
+        for name in names:
+            canonical_name = self._skill_registry.resolve_skill_name(name)
+            if canonical_name:
+                return canonical_name
+        return ''
+
     def _build_decision(
         self,
         *,
@@ -1332,7 +1054,11 @@ class PlannerEngine:
             user_facing_reason=user_facing_reason,
             replan_hint=replan_hint,
             retry_budget=retry_budget,
-            scene_targets=scene_targets or self._scene_targets_for_decision(request, feedback, {}),
+            scene_targets=(
+                scene_targets
+                if scene_targets is not None
+                else self._scene_targets_for_decision(request, feedback, {})
+            ),
             steps=steps,
             plan_id=plan_id,
             goal_id=goal_id,
@@ -1395,7 +1121,21 @@ class PlannerEngine:
         request: PlannerRequest,
         feedback: ExecutionFeedback | None,
         parsed: dict,
+        *,
+        steps: list[dict] | None = None,
     ) -> list[str]:
+        request_targets = list(request.scene_targets)
+        if steps is not None:
+            step_targets = _scene_targets_from_steps(steps)
+            admitted_targets = [
+                target for target in step_targets if target in request_targets
+            ]
+            if admitted_targets:
+                return admitted_targets
+            if len(step_targets) == 1 and len(request_targets) == 1:
+                return request_targets
+            return []
+
         parsed_targets = parsed.get('scene_targets', [])
         if isinstance(parsed_targets, list) and parsed_targets:
             return [str(item).strip() for item in parsed_targets if str(item).strip()]
@@ -1405,28 +1145,4 @@ class PlannerEngine:
             return [str(item).strip() for item in nested_targets if str(item).strip()]
         if feedback is not None and feedback.scene_targets:
             return list(feedback.scene_targets)
-        return list(request.scene_targets)
-
-    @staticmethod
-    def _first_scene_target(request: PlannerRequest) -> str:
-        for target in request.scene_targets:
-            clean = str(target or '').strip()
-            if not clean:
-                continue
-            try:
-                parsed = json.loads(clean.replace("'", '"'))
-            except json.JSONDecodeError:
-                parsed = {}
-            if isinstance(parsed, dict):
-                candidate = str(parsed.get('id', parsed.get('target', ''))).strip()
-                if candidate:
-                    return candidate
-            return clean
-        return ''
-
-    def _first_supported_skill_name(self, *names: str) -> str:
-        for name in names:
-            clean_name = str(name or '').strip().lower()
-            if clean_name and clean_name in self._skill_registry.allowed_skill_names:
-                return clean_name
-        return ''
+        return request_targets

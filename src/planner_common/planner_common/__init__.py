@@ -28,7 +28,6 @@ from planner_common.contracts import missing_requested_report_error
 from planner_common.contracts import normalize_communication_policy
 from planner_common.contracts import normalize_grounded_context
 from planner_common.contracts import normalize_plan_steps
-from planner_common.contracts import normalize_target_selection
 from planner_common.contracts import parse_json_object
 from planner_common.contracts import project_llm_grounded_context
 from planner_common.contracts import request_requests_report
@@ -48,6 +47,9 @@ from planner_common.skill_registry_bridge import names_from_manifest
 from planner_common.contracts import truncate_text
 from planner_common.report_outcome import build_report_outcome
 from planner_common.report_outcome import plan_semantic_errors
+from planner_common.target_selection import normalize_target_selection
+from planner_common.target_selection import TargetSelectionValidation
+from planner_common.target_selection import validate_target_selection
 
 __all__ = [
     'DEFAULT_PERFORM_MOTION_OBJECT_LABELS',
@@ -88,6 +90,8 @@ __all__ = [
     'normalize_grounded_context',
     'normalize_plan_steps',
     'normalize_target_selection',
+    'TargetSelectionValidation',
+    'validate_target_selection',
     'names_from_manifest',
     'parse_json_object',
     'project_llm_grounded_context',
