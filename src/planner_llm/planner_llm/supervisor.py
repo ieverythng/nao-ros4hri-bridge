@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import json
 
 from planner_common import ExecutionFeedback
 from planner_common import PlannerDialogueAct
@@ -31,6 +32,60 @@ _MOTION_DIALOGUE_COPY: dict[str, tuple[str, str]] = {
 }
 
 
+def _plan_fingerprint(steps) -> tuple[str, ...]:
+    """Describe executable semantics while ignoring generated step identifiers."""
+    fingerprint = []
+    for step in steps if isinstance(steps, (list, tuple)) else ():
+        if not isinstance(step, dict):
+            continue
+        fingerprint.append(
+            json.dumps(
+                {
+                    'type': str(step.get('type', '')).strip().lower(),
+                    'name': str(step.get('name', '')).strip().lower(),
+                    'args': step.get('args', {}) if isinstance(step.get('args'), dict) else {},
+                    'on_failure': str(step.get('on_failure', '')).strip().lower(),
+                },
+                sort_keys=True,
+                separators=(',', ':'),
+            )
+        )
+    return tuple(fingerprint)
+
+
+def _failure_fingerprint(feedback: ExecutionFeedback) -> str:
+    return json.dumps(
+        {
+            'step_id': feedback.step_id,
+            'step_name': feedback.step_name,
+            'reason': ' '.join(str(feedback.reason or '').lower().split()),
+            'unmet_preconditions': sorted(feedback.unmet_preconditions),
+        },
+        sort_keys=True,
+        separators=(',', ':'),
+    )
+
+
+def _failure_requires_user_input(feedback: ExecutionFeedback) -> bool:
+    failure = feedback.result_payload.get('failure', {})
+    if not isinstance(failure, dict):
+        return False
+    failure_code = str(failure.get('code', '')).strip().lower()
+    if failure_code in {
+        'delivery_blocked',
+        'destination_unavailable',
+        'recipient_unavailable',
+    }:
+        return True
+    suggested_recovery = str(failure.get('suggested_recovery', '')).strip().lower()
+    if not suggested_recovery.startswith(('ask_user', 'request_user')):
+        return False
+    return str(feedback.step_on_failure or '').strip().lower() not in (
+        'replan',
+        'retry',
+    )
+
+
 @dataclass
 class SupervisorState:
     """Supervisor-owned state for one goal."""
@@ -51,6 +106,8 @@ class SupervisorState:
     last_request: PlannerRequest | None = None
     latest_result_summary: str = ''
     latest_result_payload: dict = field(default_factory=dict)
+    latest_plan_outcome_summary: dict = field(default_factory=dict)
+    last_blocking_failure_fingerprint: str = ''
 
 
 @dataclass(frozen=True)
@@ -110,6 +167,8 @@ class PlannerSupervisor:
             state.latest_result_summary = feedback.result_summary
         if feedback.result_payload:
             state.latest_result_payload = dict(feedback.result_payload)
+        if feedback.plan_outcome_summary:
+            state.latest_plan_outcome_summary = dict(feedback.plan_outcome_summary)
         if feedback.timestamp_sec > 0:
             state.latest_world_timestamp_sec = feedback.timestamp_sec
 
@@ -186,6 +245,7 @@ class PlannerSupervisor:
         state.active_plan_steps = ()
         state.latest_result_summary = ''
         state.latest_result_payload = {}
+        state.latest_plan_outcome_summary = {}
         state.last_request = request
         if not state.communication_policy:
             state.communication_policy = {}
@@ -272,6 +332,21 @@ class PlannerSupervisor:
                 ),)
             )
 
+        if _failure_requires_user_input(feedback):
+            state.current_status = 'waiting_user'
+            state.awaiting_user_response = True
+            self._forget_plan(feedback.plan_id)
+            return SupervisorOutcome(
+                dialogue_acts=(self._dialogue_act(
+                    state,
+                    act='ask_for_help',
+                    reason=feedback.reason or 'execution requires user input',
+                    text_hint=feedback.reason or 'I need help to continue this task.',
+                    await_user_response=True,
+                    slots_needed=list(feedback.unmet_preconditions or feedback.step_requires),
+                ),)
+            )
+
         if (
             self._auto_replan
             and state.last_request is not None
@@ -312,6 +387,7 @@ class PlannerSupervisor:
             )
 
         state.current_status = 'replanning'
+        previous_fingerprint = _plan_fingerprint(state.active_plan_steps)
         decision = self._engine.plan_request(
             state.last_request,
             state_t0=dict(state.last_request.grounded_context.get('state_t0', {})),
@@ -321,6 +397,28 @@ class PlannerSupervisor:
             status='replanning',
             communication_policy=state.communication_policy,
         )
+        candidate_steps = decision.payload.get('plan', {}).get('steps', [])
+        failure_fingerprint = _failure_fingerprint(feedback)
+        repeated_block = (
+            feedback.blocking
+            and failure_fingerprint
+            and failure_fingerprint == state.last_blocking_failure_fingerprint
+        )
+        if repeated_block and previous_fingerprint == _plan_fingerprint(candidate_steps):
+            state.current_status = 'waiting_user'
+            state.awaiting_user_response = True
+            self._forget_plan(feedback.plan_id)
+            return SupervisorOutcome(
+                dialogue_acts=(self._dialogue_act(
+                    state,
+                    act='ask_for_help',
+                    reason='blocking failure produced an unchanged replan',
+                    text_hint='The same plan is still blocked. I need help or new scene information to continue.',
+                    await_user_response=True,
+                    slots_needed=list(feedback.unmet_preconditions or feedback.step_requires),
+                ),)
+            )
+        state.last_blocking_failure_fingerprint = failure_fingerprint if feedback.blocking else ''
         return self._finalize_plan(state, request=state.last_request, decision=decision)
 
     def _cancel_goal(
@@ -397,6 +495,7 @@ class PlannerSupervisor:
                 'goal_text': state.last_request.goal_text if state.last_request is not None else '',
                 'result_summary': state.latest_result_summary,
                 'result_payload': dict(state.latest_result_payload),
+                'plan_outcome_summary': dict(state.latest_plan_outcome_summary),
                 'status': state.current_status,
             },
         )
