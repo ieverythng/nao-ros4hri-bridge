@@ -64,3 +64,22 @@ def test_merge_fake_skill_aliases_accepts_is_fake_registry_records() -> None:
     )
     assert aliases['navigate_to'] == 'navigate_to'
     assert aliases['go_to'] == 'navigate_to'
+
+
+def test_merge_fake_skill_aliases_keeps_name_for_descriptive_hybrid_mapping() -> None:
+    aliases = merge_fake_skill_aliases(
+        fallback_aliases={},
+        manifest=[
+            {
+                'name': 'walk_to',
+                'aliases': ['step_to'],
+                'robot_adapter_mapping': (
+                    'nao_orchestrator.walk_to(mode=fake|real); '
+                    'real=/skill/move_to; fake=/skill/fake/walk_to'
+                ),
+                'is_fake': True,
+            }
+        ],
+    )
+
+    assert aliases == {'walk_to': 'walk_to', 'step_to': 'walk_to'}

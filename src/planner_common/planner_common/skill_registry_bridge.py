@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+import re
 
 try:  # pragma: no cover - optional nested dependency
     from skill_common import load_default_registry as _load_default_registry
@@ -104,7 +105,7 @@ def _is_fake_skill_payload(skill_payload: dict) -> bool:
 
 def _fake_skill_canonical_name(skill_payload: dict) -> str:
     mapping = str(skill_payload.get('robot_adapter_mapping', '')).strip().lower()
-    if mapping and '.' in mapping:
+    if re.fullmatch(r'[a-z0-9_]+\.[a-z0-9_]+', mapping):
         canonical_from_mapping = mapping.rsplit('.', 1)[-1].strip().lower()
         if canonical_from_mapping:
             return canonical_from_mapping
