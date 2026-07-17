@@ -15,7 +15,8 @@
     head_motion_wait_sec: 0.2
     look_at_action: "/skill/look_at"
     look_at_wait_sec: 0.2
-    look_at_execution_mode: "real"
+    perform_motion_execution_mode: "real"
+    look_at_execution_mode: "fake"
     posture_command_topic: "/chatbot/posture_command"
     posture_command_result_topic: "/chatbot/posture_command_result"
     posture_command_result_timeout_sec: 20.0

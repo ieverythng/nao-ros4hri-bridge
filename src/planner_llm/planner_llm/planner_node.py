@@ -286,13 +286,15 @@ class PlannerNode(Node):
 
         planner_request = PlannerRequest.from_payload(msg.data)
         self.get_logger().info(
-            'planner_llm request received | goal_id=%s request_id=%s kind=%s intents=%s scene_targets=%s source=%s'
+            'planner_llm request received | goal_id=%s request_id=%s kind=%s '
+            'intents=%s scene_targets=%s target_selection=%s source=%s'
             % (
                 planner_request.goal_id,
                 planner_request.request_id,
                 planner_request.request_kind,
                 list(planner_request.normalized_intents),
                 list(planner_request.scene_targets),
+                dict(planner_request.target_selection),
                 str(getattr(msg, 'source', '') or 'unknown'),
             )
         )

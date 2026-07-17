@@ -1,0 +1,13 @@
+{
+  "case_count": 54,
+  "classification": "diagnostic",
+  "note": "This aggregate preserves recorded harness assessments. It does not upgrade trajectory evidence to semantic or physical proof.",
+  "run_id": "F13_semantic_audit",
+  "status_counts": {
+    "degraded": 5,
+    "fail": 4,
+    "not_scored": 6,
+    "pass": 39
+  },
+  "weighted_case_rate": 0.7685185185185185
+}

@@ -20,6 +20,7 @@ from planner_common.contracts import coerce_optional_float
 from planner_common.contracts import coerce_str_list
 from planner_common.contracts import extract_json_object
 from planner_common.contracts import grounded_context_to_context_ref
+from planner_common.contracts import is_explicit_knowledge_statement
 from planner_common.contracts import live_result_report_summary_error
 from planner_common.contracts import make_goal_id
 from planner_common.contracts import make_plan_id
@@ -44,6 +45,11 @@ from planner_common.skill_registry_bridge import merge_scan_skill_names
 from planner_common.skill_registry_bridge import merge_supported_skill_names
 from planner_common.skill_registry_bridge import names_from_manifest
 from planner_common.contracts import truncate_text
+from planner_common.report_outcome import build_report_outcome
+from planner_common.report_outcome import plan_semantic_errors
+from planner_common.target_selection import normalize_target_selection
+from planner_common.target_selection import TargetSelectionValidation
+from planner_common.target_selection import validate_target_selection
 
 __all__ = [
     'DEFAULT_PERFORM_MOTION_OBJECT_LABELS',
@@ -64,11 +70,14 @@ __all__ = [
     'build_dialogue_act_payload',
     'build_execution_feedback_payload',
     'build_plan_payload',
+    'build_report_outcome',
+    'plan_semantic_errors',
     'coerce_bool',
     'coerce_optional_float',
     'coerce_str_list',
     'extract_json_object',
     'grounded_context_to_context_ref',
+    'is_explicit_knowledge_statement',
     'load_exported_skill_manifests',
     'live_result_report_summary_error',
     'make_goal_id',
@@ -80,6 +89,9 @@ __all__ = [
     'normalize_communication_policy',
     'normalize_grounded_context',
     'normalize_plan_steps',
+    'normalize_target_selection',
+    'TargetSelectionValidation',
+    'validate_target_selection',
     'names_from_manifest',
     'parse_json_object',
     'project_llm_grounded_context',

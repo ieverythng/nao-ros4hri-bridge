@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Runtime Review, 15 July 2026</title>
+  <style>
+    :root { color-scheme: light; --ink:#17202a; --line:#d9dee5; --red:#b42318; --orange:#b54708; --yellow:#9a6700; --blue:#175cd3; --violet:#6938ef; --green:#067647; }
+    body { margin:0; font:15px/1.55 system-ui,sans-serif; color:var(--ink); background:#f6f7f9; }
+    main { max-width:1080px; margin:auto; padding:32px 24px 64px; }
+    h1,h2 { letter-spacing:0; } h1 { margin-bottom:4px; } h2 { margin-top:30px; border-bottom:1px solid var(--line); padding-bottom:6px; }
+    .summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:10px; margin:22px 0; }
+    .metric { background:white; border:1px solid var(--line); border-radius:6px; padding:14px; }
+    .metric strong { display:block; font-size:24px; }
+    .blocked { color:var(--blue); } .critical { color:var(--red); } .pass { color:var(--green); }
+    table { width:100%; border-collapse:collapse; background:white; } th,td { padding:10px; border:1px solid var(--line); text-align:left; vertical-align:top; } th { background:#eef1f4; }
+    li { margin:7px 0; } code { background:#edf0f3; padding:1px 4px; border-radius:3px; }
+    .band { border-left:5px solid; background:white; padding:2px 18px 10px; margin:14px 0; } .red{border-color:var(--red)} .orange{border-color:var(--orange)} .yellow{border-color:var(--yellow)} .blue{border-color:var(--blue)} .violet{border-color:var(--violet)}
+    footer { margin-top:32px; color:#5d6670; }
+  </style>
+</head>
+<body><main>
+  <h1>Runtime Review: Ollama Qwen3-Coder</h1>
+  <p>15 July 2026, response-first ROS4HRI runtime</p>
+  <div class="summary">
+    <div class="metric"><span>Reported score</span><strong class="critical">6.0/10</strong><small>Critical-failure cap</small></div>
+    <div class="metric"><span>Run standing</span><strong class="blocked">Blocked</strong><small>Provider quota after useful evidence</small></div>
+    <div class="metric"><span>Harness tests</span><strong class="pass">46/46</strong><small>Passed after oracle fixes</small></div>
+    <div class="metric"><span>First HTTP 429</span><strong>03:01:31</strong><small>Europe/Madrid</small></div>
+  </div>
+  <div class="band red"><h2>🔴 Critical</h2><ol>
+    <li><strong>Wrong recipient and false completion.</strong> The kitchen request selected <code>codex_kitchen</code> as recipient and reported “I brought the cup to the kitchen.”</li>
+    <li><strong>Empty quantified selection.</strong> A delivery to ALEX crossed the handoff with <code>member_ids=[]</code>, then produced no execution feedback.</li>
+  </ol></div>
+  <div class="band orange"><h2>🟠 Grounding and KB</h2><ul>
+    <li>TITAS and MIDAS were inserted with names, colours, and supports. The TITAS support revision was visible on the next turn.</li>
+    <li>Both delivery selections used the expected object and ALEX; direct KB postcondition queries passed.</li>
+    <li>One immediate revision answer stopped at “Let me check...”; the following answer used the revised facts correctly.</li>
+  </ul></div>
+  <div class="band yellow"><h2>🟡 Route and admission</h2><p>Dialogue, KB facts, simple motion, head-and-wave, look-at/report, navigation/report, and several environment tasks passed before the cutoff. Semantic role validation remains incomplete at the chatbot handoff and planner admission boundary.</p></div>
+  <div class="band blue"><h2>🔵 Runtime pressure</h2><p>Ollama returned repeated HTTP 429 responses stating that the session usage limit had been reached. Model-dependent cases after 03:01:31 and the unstarted current-tuple deep-fake matrix are not scored.</p></div>
+  <div class="band violet"><h2>🟣 Harness findings</h2><ul>
+    <li>Raw robot speech could be lost by voice correlation.</li>
+    <li>The formal suite's 420-second timeout truncated the main run.</li>
+    <li>The ordered multi-object composite lacked a mandatory target-selection oracle.</li>
+  </ul></div>
+  <h2>E2E questionnaire</h2>
+  <table><thead><tr><th>Seam</th><th>Result</th><th>Qualification</th></tr></thead><tbody>
+    <tr><td>Simple dialogue</td><td class="pass">Pass</td><td>Before provider cutoff</td></tr>
+    <tr><td>KB query and relation revision</td><td class="pass">Pass</td><td>One incomplete immediate answer</td></tr>
+    <tr><td>Simple skill</td><td class="pass">Pass</td><td>Sampled cases</td></tr>
+    <tr><td>Composite skill</td><td class="critical">Fail</td><td>Empty selection and wrong recipient counterexamples</td></tr>
+    <tr><td>Environment</td><td>Degraded</td><td>9 pass, 1 degraded, 1 unresolved fail</td></tr>
+    <tr><td>KB postconditions</td><td class="pass">Pass</td><td>Two direct post-execution queries</td></tr>
+    <tr><td>Deep fake</td><td class="blocked">Not run</td><td>Blocked by provider quota</td></tr>
+  </tbody></table>
+  <h2>Decision</h2>
+  <p>Accept the KB stress and questionnaire-oracle improvements. Do not accept a complete-stack pass. The next implementation target is an operation-aware target-selection validator, without keyword routing or executor-side target invention.</p>
+  <h2>Source disposition after consolidation</h2>
+  <p>The two critical counterexamples now have focused source regressions. Chatbot validation retries person-denoting deliveries whose selected recipient is a location, and planner admission stops empty authoritative member sets before model planning. The deslop merge also restored the ordered-location fallback method and helpers that had been separated from their call site.</p>
+  <p><strong>Source gate:</strong> 62 planner-common, 94 planner, 273 chatbot, 117 orchestrator, and 358 dialogue-manager functional tests passed. This does not revise the historical 6.0 runtime score; clean rebuilt runtime proof remains required.</p>
+  <footer>Full evidence and next probes: <a href="runtime_review_2026-07-15_ollama_qwen3_coder.md">Markdown review</a> and <a href="runtime_seam_hypothesis_ledger_2026-07-15.html">seam hypothesis ledger</a>.</footer>
+</main></body></html>

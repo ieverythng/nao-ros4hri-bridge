@@ -16,6 +16,8 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.lifecycle import Node, State, TransitionCallbackReturn
 from std_skills.msg import Result as SkillResult
 
+from nao_orchestrator.action_timing import ActionDeadline
+
 
 @dataclass(slots=True)
 class _ForwardResult:
@@ -249,11 +251,11 @@ class ReportResultSkillServer(Node):
             finally:
                 result_event.set()
 
+        deadline = ActionDeadline.start(self.say_action_result_timeout_sec)
         goal_future = client.send_goal_async(goal)
         goal_future.add_done_callback(_goal_response_callback)
 
-        goal_response_timeout = max(float(self.say_action_wait_sec), 1.0)
-        if not acceptance_event.wait(timeout=goal_response_timeout):
+        if not acceptance_event.wait(timeout=deadline.remaining()):
             return _ForwardResult(
                 accepted=False,
                 success=False,
@@ -269,7 +271,7 @@ class ReportResultSkillServer(Node):
                 error_msg=str(outcome['error_msg']).strip(),
                 reason=str(outcome['reason']).strip(),
             )
-        if not result_event.wait(timeout=max(float(self.say_action_result_timeout_sec), 0.1)):
+        if not result_event.wait(timeout=deadline.remaining()):
             goal_handle = active_goal_handle.get('value')
             if goal_handle is not None:
                 try:

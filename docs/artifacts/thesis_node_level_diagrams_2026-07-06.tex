@@ -12,6 +12,12 @@
 \DeclareRobustCommand{\code}[1]{\texttt{\detokenize{#1}}}
 \captionsetup{font=small,labelfont=bf}
 \setlength{\emergencystretch}{4em}
+\newif\ifexportdiagrams
+\ifdefined\EXPORTDIAGRAMS
+  \exportdiagramstrue
+\else
+  \exportdiagramsfalse
+\fi
 
 \definecolor{dialogueFill}{RGB}{232,242,255}
 \definecolor{groundFill}{RGB}{255,245,230}
@@ -73,6 +79,7 @@
 }
 
 \begin{document}
+\ifexportdiagrams\pagestyle{empty}\fi
 
 % ---------------------------------------------------------------------------
 % Node diagram 1: chatbot_llm.
@@ -106,9 +113,12 @@
   \draw[evidence] (context) -- (trace);
 \end{tikzpicture}%
 }
-\caption{\code{chatbot_llm} node-level view. The node owns semantic turn interpretation and planner ingress metadata, but it does not create executable plans or dispatch robot skills.}
-\label{fig:chatbot-llm-node}
+\ifexportdiagrams\else
+  \caption{\code{chatbot_llm} node-level view. The node owns semantic turn interpretation and planner ingress metadata, but it does not create executable plans or dispatch robot skills.}
+  \label{fig:chatbot-llm-node}
+\fi
 \end{figure}
+\clearpage
 
 % ---------------------------------------------------------------------------
 % Node diagram 2: planner_llm.
@@ -126,7 +136,7 @@
   \node[plannerNode, right=of model, minimum width=32mm] (validate) {Extract + validate\\schema repair\\failure payload};
 
   \node[execNode, below=of validate, minimum width=32mm] (intent) {Executable output\\\code{/intents}\\nested \code{plan}};
-  \node[plannerNode, below=of prompt, minimum width=32mm] (supervisor) {Goal-state helper\\active goal\\replan / clarify};
+  \node[plannerNode, below=of prompt, minimum width=32mm] (statehelper) {Goal-state helper\\active goal\\replan / clarify};
   \node[input, below=of normalize, minimum width=34mm] (feedback) {Execution feedback\\\code{/planner/execution_feedback}\\step outcomes};
   \node[dialogueNode, below=of model, minimum width=32mm] (act) {Planner dialogue act\\\code{/planner/dialogue_act}\\clarify/fail/complete};
 
@@ -136,15 +146,18 @@
   \draw[adapter] (prompt) -- (model);
   \draw[control] (model) -- (validate);
   \draw[control] (validate) -- (intent);
-  \draw[feedback] (feedback) -- (supervisor);
-  \draw[feedback] (supervisor) -- (prompt);
-  \draw[control] (supervisor) -- (act);
-  \draw[feedback] (validate) -- (supervisor);
+  \draw[feedback] (feedback) -- (statehelper);
+  \draw[feedback] (statehelper) -- (prompt);
+  \draw[control] (statehelper) -- (act);
+  \draw[feedback] (validate) -- (statehelper);
 \end{tikzpicture}%
 }
-\caption{\code{planner_llm} node-level view. The planner generates structured plan envelopes and maintains feedback-driven goal state; execution and speech remain downstream responsibilities.}
-\label{fig:planner-llm-node}
+\ifexportdiagrams\else
+  \caption{\code{planner_llm} node-level view. The planner generates structured plan envelopes and maintains feedback-driven goal state; execution and speech remain downstream responsibilities.}
+  \label{fig:planner-llm-node}
+\fi
 \end{figure}
+\clearpage
 
 % ---------------------------------------------------------------------------
 % Node diagram 3: nao_orchestrator.
@@ -152,35 +165,41 @@
 \begin{figure}[H]
 \centering
 \resizebox{\linewidth}{!}{%
-\begin{tikzpicture}[node distance=9mm and 12mm]
-  \node[input, minimum width=37mm] (ingress) {Planner ingress\\\code{/nao_orchestrator/planner_request}};
-  \node[execNode, right=of ingress, minimum width=31mm] (gate) {Planner gate\\admission\\normalization};
-  \node[plannerNode, right=of gate, minimum width=33mm] (publishReq) {Admitted request\\\code{/planner/request}};
+\begin{tikzpicture}[node distance=8mm and 11mm]
+  \node[input, minimum width=39mm] (candidate) {Candidate planner request\\\code{/nao_orchestrator/planner_request}\\Contract 2};
+  \node[execNode, right=of candidate, minimum width=31mm] (gate) {Planner gate\\admission + lineage\\normalization};
+  \node[plannerNode, right=of gate, minimum width=34mm] (admitted) {Admitted planner request\\\code{/planner/request}\\Contract 2};
 
-  \node[input, below=15mm of ingress, minimum width=37mm] (intent) {Executable intent\\\code{/intents}\\planner or direct};
-  \node[execNode, right=of intent, minimum width=31mm] (validator) {Plan validator\\registry check\\step schema};
-  \node[execNode, right=of validator, minimum width=32mm] (dispatcher) {Ordered dispatcher\\step state\\dedupe};
-  \node[skillNode, right=of dispatcher, minimum width=31mm] (skills) {Skill/adaptor calls\\runtime actions\\fake profiles};
-  \node[groundNode, right=of skills, minimum width=31mm] (kbmut) {KB mutation seam\\\code{kb_skills}\\explicit effects only};
+  \node[input, below=14mm of candidate, minimum width=35mm] (direct) {Direct intent ingress\\\code{/intents}\\action / speech request};
+  \node[input, below=7mm of direct, minimum width=35mm] (plan) {Planner-plan ingress\\\code{/intents}\\nested plan, Contract 5};
+  \node[execNode, right=16mm of direct, yshift=-7mm, minimum width=32mm] (validator) {Deterministic validator\\registry + arguments\\lineage + policy};
+  \node[execNode, right=of validator, minimum width=32mm] (dispatcher) {Ordered dispatcher\\step state\\deduplication};
+  \node[skillNode, right=of dispatcher, minimum width=31mm] (skills) {Skill / adapter calls\\real or fake actions\\typed results};
+  \node[groundNode, right=of skills, minimum width=31mm] (kbmut) {Verified KB effects\\\code{/kb/revise}\\through \code{kb_skills}};
 
-  \node[bus, below=15mm of dispatcher, minimum width=58mm] (feedback) {\code{/planner/execution_feedback}\\accepted, started, succeeded, failed, completed};
-  \node[dialogueNode, right=14mm of feedback, minimum width=34mm] (relay) {Dialogue-act relay\\\code{/planner/dialogue_act}\\to speech owner};
+  \node[bus, below=18mm of dispatcher, xshift=-12mm, minimum width=70mm] (feedback) {Execution feedback, Contract 7\\\code{/planner/execution_feedback}\\accepted, started, succeeded, failed, completed};
+  \node[input, below=18mm of skills, xshift=17mm, minimum width=32mm] (act) {Planner communication\\\code{/planner/dialogue_act}\\Contract 8};
+  \node[dialogueNode, right=of act, minimum width=36mm] (relay) {Dialogue-act relay\\\code{/nao_orchestrator/planner_dialogue_act}\\to \code{dialogue_manager}};
 
-  \draw[control] (ingress) -- (gate);
-  \draw[control] (gate) -- (publishReq);
-  \draw[control] (intent) -- (validator);
+  \draw[control] (candidate) -- (gate);
+  \draw[control] (gate) -- (admitted);
+  \draw[control] (direct.east) -- ++(6mm,0) |- ([yshift=2.5mm]validator.west);
+  \draw[control] (plan.east) -- ++(6mm,0) |- ([yshift=-2.5mm]validator.west);
   \draw[control] (validator) -- (dispatcher);
   \draw[adapter] (dispatcher) -- (skills);
   \draw[evidence] (skills) -- (kbmut);
-  \draw[feedback] (validator) -- (feedback);
-  \draw[feedback] (dispatcher) -- (feedback);
-  \draw[feedback] (skills) |- (feedback);
-  \draw[control] (feedback) -- (relay);
+  \draw[feedback] (validator.south east) -- ([xshift=9mm]feedback.north west);
+  \draw[feedback] (dispatcher.south) -- (feedback.north);
+  \draw[feedback] (skills.south west) -- ([xshift=-9mm]feedback.north east);
+  \draw[control] (act) -- (relay);
 \end{tikzpicture}%
 }
-\caption{\code{nao_orchestrator} node-level view. The orchestrator is the deterministic boundary for admission, validation, dispatch, feedback, and explicit KB mutation routing. It does not plan or produce LLM dialogue policy.}
-\label{fig:nao-orchestrator-node}
+\ifexportdiagrams\else
+  \caption{\code{nao_orchestrator} node-level view. Candidate planner admission, direct intents, planner plans, execution feedback, and planner communication remain distinct APIs. Every robot or simulated effect crosses deterministic validation and a registered skill mapping.}
+  \label{fig:nao-orchestrator-node}
+\fi
 \end{figure}
+\clearpage
 
 % ---------------------------------------------------------------------------
 % Node diagram 4: perception / grounding pipeline.
@@ -188,34 +207,46 @@
 \begin{figure}[H]
 \centering
 \resizebox{\linewidth}{!}{%
-\begin{tikzpicture}[node distance=8mm and 10mm]
-  \node[input, minimum width=28mm] (camera) {Camera / simulator\\\code{/camera/image_raw}\\fixtures};
-  \node[groundNode, right=of camera, minimum width=28mm] (detector) {Detector backend\\\code{emorobcare_cv}\\or future provider};
-  \node[groundNode, right=of detector, minimum width=30mm] (grounding) {\code{nao_scene_grounding}\\normalize labels\\track recency};
-  \node[groundNode, right=of grounding, minimum width=30mm] (summary) {\code{/scene/summary}\\objects vs people\\scores + centers};
+\begin{tikzpicture}[node distance=7mm and 9mm]
+  \node[input, minimum width=28mm] (camera) {RGB camera / simulator\\\code{/camera/image_raw}\\camera calibration};
 
-  \node[groundNode, below=of grounding, minimum width=30mm] (kb) {KnowledgeCore update\\via \code{/kb/revise}\\transient facts};
-  \node[groundNode, right=of kb, minimum width=30mm] (kbskills) {\code{kb_skills}\\\code{/kb/query}\\transport boundary};
-  \node[dialogueNode, right=of kbskills, minimum width=32mm] (projection) {Chatbot projection\\\code{knowledge_snapshot}\\\code{grounded_context}};
+  \node[groundNode, right=of camera, minimum width=29mm] (detector) {Object detector\\custom YOLO backend\\labels + confidence};
+  \node[groundNode, right=of detector, minimum width=31mm] (grounding) {\code{nao_scene_grounding}\\normalize + identify\\object recency};
+  \node[groundNode, right=of grounding, minimum width=31mm] (summary) {Object scene state\\\code{/scene/summary}\\scores + image centers};
 
-  \node[plannerNode, above=of projection, minimum width=32mm] (plannerContext) {Planner-facing T0\\entities, locations,\\role-separated people};
-  \node[futureNode, below=of kb, minimum width=34mm] (overlay) {Future spatial overlay\\metric frame\\distance evidence};
-  \node[futureNode, below=of projection, minimum width=34mm] (wme) {Future WME / VLM\\persistent context\\uncertainty};
+  \node[dialogueNode, below=11mm of detector, minimum width=29mm] (face) {ROS4HRI face detector\\\code{hri_face_detect_yunet}\\face observations};
+  \node[dialogueNode, right=of face, minimum width=31mm] (person) {\code{hri_person_manager}\\person identity + TF\\tracking state};
+  \node[dialogueNode, right=of person, minimum width=31mm] (people) {ROS4HRI person state\\tracked-person topics\\relative pose when known};
+
+  \node[groundNode, below=12mm of person, minimum width=33mm] (kb) {KnowledgeCore RDF graph\\object + person facts\\updates via \code{/kb/revise}};
+  \node[groundNode, right=of kb, minimum width=32mm] (kbskills) {\code{kb_skills} query seam\\\code{/kb/query}\\bounded snapshot};
+  \node[dialogueNode, right=of kbskills, minimum width=34mm] (context) {\code{grounded_context}\\Contract 3\\entities + bounded relations};
+  \node[plannerNode, above=of context, minimum width=34mm] (consumers) {LLM consumers\\\code{chatbot_llm} + \code{planner_llm}\\planning-time state};
+
+  \node[futureNode, below=of face, xshift=-13mm, minimum width=39mm] (overlay) {Future metric object overlay\\RGB-D / stereo / simulator pose\\intrinsics + TF + covariance};
+  \node[futureNode, below=of context, minimum width=37mm] (wme) {Future World Model Enricher\\persistent graph + temporal state\\source uncertainty};
 
   \draw[evidence] (camera) -- (detector);
   \draw[evidence] (detector) -- (grounding);
   \draw[evidence] (grounding) -- (summary);
-  \draw[evidence] (grounding) -- (kb);
+  \draw[evidence] (camera.south) |- (face.west);
+  \draw[evidence] (face) -- (person);
+  \draw[evidence] (person) -- (people);
+  \draw[evidence] (grounding.south) -- (kb.north west);
+  \draw[evidence] (person.south) -- (kb.north);
   \draw[evidence] (kb) -- (kbskills);
-  \draw[evidence] (kbskills) -- (projection);
-  \draw[evidence] (summary) -- (projection);
-  \draw[evidence] (projection) -- (plannerContext);
-  \draw[future] (overlay) -- (grounding);
-  \draw[future] (wme) -- (projection);
+  \draw[evidence] (kbskills) -- (context);
+  \draw[evidence] (summary.east) -- ++(5mm,0) |- (context.north);
+  \draw[evidence] (people.east) -- ++(4mm,0) |- (context.west);
+  \draw[evidence] (context) -- (consumers);
+  \draw[future] (overlay.east) -- ++(4mm,0) |- (grounding.south west);
+  \draw[future] (wme) -- (context);
 \end{tikzpicture}%
 }
-\caption{Combined perception and grounding pipeline. Raw detector and KB evidence stays at its owning seams; chatbot and planner consume compact symbolic projections instead of raw perception streams.}
-\label{fig:perception-grounding-pipeline}
+\ifexportdiagrams\else
+  \caption{Combined people, object-perception, and symbolic-grounding pipeline. ROS4HRI person tracking and object grounding remain separate evidence owners; both contribute to the bounded \code{grounded_context} consumed by the LLM nodes.}
+  \label{fig:perception-grounding-pipeline}
+\fi
 \end{figure}
 
 \end{document}

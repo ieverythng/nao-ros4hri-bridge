@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Runtime Seam Regression Audit, 13-14 July 2026</title>
+  <style>
+    :root {
+      --ink: #17212b;
+      --muted: #5b6773;
+      --line: #d7dde3;
+      --paper: #ffffff;
+      --canvas: #eef1f4;
+      --nav: #152735;
+      --blue: #176b87;
+      --blue-soft: #e6f2f6;
+      --green: #1f7346;
+      --green-soft: #e8f4ed;
+      --amber: #9a5b00;
+      --amber-soft: #fff4dc;
+      --red: #a12b2b;
+      --red-soft: #fbeaea;
+      --violet: #644895;
+      --violet-soft: #f0ebf8;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--canvas);
+      color: var(--ink);
+      font: 15px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+    a { color: var(--blue); }
+    code, pre {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+    }
+    code {
+      padding: 0.12rem 0.28rem;
+      border: 1px solid #d9e0e5;
+      background: #f4f6f8;
+      border-radius: 3px;
+    }
+    pre {
+      margin: 0;
+      padding: 1rem;
+      overflow: auto;
+      color: #e8f1f5;
+      background: #172a38;
+      border-radius: 4px;
+      white-space: pre-wrap;
+    }
+    h1, h2, h3 { line-height: 1.2; letter-spacing: 0; }
+    h1 { margin: 0; font-size: clamp(1.8rem, 3vw, 2.65rem); }
+    h2 {
+      margin: 2.3rem 0 0.8rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--line);
+      font-size: 1.45rem;
+    }
+    h3 { margin: 1.5rem 0 0.5rem; font-size: 1.08rem; }
+    p { margin: 0.55rem 0 0.9rem; }
+    ul, ol { padding-left: 1.35rem; }
+    li { margin: 0.28rem 0; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 48px;
+      padding: 0.55rem max(1rem, calc((100vw - 1240px) / 2));
+      color: #f5f8fa;
+      background: var(--nav);
+      border-bottom: 3px solid #2d829c;
+    }
+    .topbar strong { font-size: 0.9rem; }
+    .topbar nav { display: flex; flex-wrap: wrap; gap: 0.9rem; }
+    .topbar a { color: #d8edf3; text-decoration: none; font-size: 0.82rem; }
+    .page { max-width: 1240px; margin: 0 auto; background: var(--paper); min-height: 100vh; }
+    .hero {
+      padding: 3rem clamp(1.25rem, 4vw, 4rem) 2.2rem;
+      color: #f7fafb;
+      background: #203b4b;
+      border-bottom: 6px solid #2d829c;
+    }
+    .hero p { max-width: 860px; color: #d9e5ea; font-size: 1.03rem; }
+    .eyebrow { margin-bottom: 0.6rem; color: #a9d5e2; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; }
+    .meta { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.4rem; }
+    .meta span { padding: 0.3rem 0.55rem; border: 1px solid #587484; background: #1a3140; font-size: 0.78rem; }
+    main { padding: 1.8rem clamp(1.25rem, 4vw, 4rem) 4rem; }
+    .score-grid, .summary-grid, .priority-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 0.8rem;
+      margin: 1rem 0 1.5rem;
+    }
+    .score, .panel {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+    }
+    .score { grid-column: span 4; min-height: 150px; padding: 1rem; }
+    .score strong { display: block; font-size: 2rem; line-height: 1; }
+    .score small { color: var(--muted); }
+    .score.previous { border-top: 5px solid var(--blue); }
+    .score.current { border-top: 5px solid var(--red); }
+    .score.tests { border-top: 5px solid var(--green); }
+    .panel { grid-column: span 6; padding: 1rem; }
+    .panel.full { grid-column: 1 / -1; }
+    .callout {
+      margin: 1rem 0;
+      padding: 0.85rem 1rem;
+      border-left: 5px solid var(--blue);
+      background: var(--blue-soft);
+    }
+    .callout.critical { border-color: var(--red); background: var(--red-soft); }
+    .callout.warning { border-color: var(--amber); background: var(--amber-soft); }
+    .callout.success { border-color: var(--green); background: var(--green-soft); }
+    .callout h3 { margin-top: 0; }
+    .badge {
+      display: inline-block;
+      padding: 0.18rem 0.45rem;
+      border-radius: 3px;
+      font-size: 0.75rem;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+    .proven { color: var(--green); background: var(--green-soft); }
+    .partial { color: var(--amber); background: var(--amber-soft); }
+    .blocked { color: var(--violet); background: var(--violet-soft); }
+    .rejected, .critical-badge { color: var(--red); background: var(--red-soft); }
+    .neutral { color: #3c5668; background: #e8eef2; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); margin: 0.8rem 0 1.4rem; }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td { padding: 0.65rem 0.7rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+    th { color: #243947; background: #edf2f5; font-size: 0.78rem; text-transform: uppercase; }
+    tr:last-child td { border-bottom: 0; }
+    tbody tr:hover td { background: #f8fafb; }
+    blockquote { margin: 1rem 0; padding: 0.4rem 1rem; color: #354652; border-left: 4px solid #8ca3b1; background: #f5f7f8; }
+    details { margin: 0.7rem 0; border: 1px solid var(--line); border-radius: 5px; background: #fff; }
+    summary { cursor: pointer; padding: 0.75rem 0.9rem; font-weight: 700; background: #f5f7f8; }
+    details > div { padding: 0.1rem 1rem 1rem; }
+    .priority { grid-column: span 4; border-top: 5px solid var(--red); }
+    .priority.p1 { border-top-color: var(--amber); }
+    .priority h3 { margin-top: 0; }
+    .checklist { list-style: none; padding-left: 0; }
+    .checklist li { position: relative; padding-left: 1.65rem; }
+    .checklist li::before { content: "□"; position: absolute; left: 0; color: var(--blue); font-weight: 800; }
+    .footer { margin-top: 2rem; padding: 1.2rem; color: #53636e; background: #edf2f5; border-top: 1px solid var(--line); }
+    @media (max-width: 820px) {
+      .topbar { position: static; align-items: flex-start; flex-direction: column; }
+      .score, .panel, .priority { grid-column: 1 / -1; }
+      .hero { padding-top: 2rem; }
+    }
+    @media print {
+      .topbar { display: none; }
+      body { background: #fff; }
+      .page { max-width: none; }
+      details > div { display: block; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <strong>Runtime Seam Audit</strong>
+    <nav aria-label="Report sections">
+      <a href="#finding">Finding</a>
+      <a href="#baseline">Baseline</a>
+      <a href="#changes">Change map</a>
+      <a href="#hypotheses">Hypotheses</a>
+      <a href="#seams">Remaining seams</a>
+      <a href="#repairs">Repair order</a>
+    </nav>
+  </header>
+
+  <div class="page">
+    <section class="hero">
+      <div class="eyebrow">Seam Hypothesis Audit · Evidence captured 13 July · Synthesized 14 July 2026</div>
+      <h1>Runtime Seam Regression Audit</h1>
+      <p>A source-grounded explanation of why a broadly healthy 8.2/10 run can coexist with a later 6/10 semantic safety cap, and which recent changes remain incomplete at the execution boundary.</p>
+      <div class="meta">
+        <span>Branch: refactor/deslop_repo</span>
+        <span>Runtime image: iiia:nao</span>
+        <span>Profile: response_first</span>
+        <span>Decision: bounded handoff</span>
+      </div>
+    </section>
+
+    <main>
+      <section id="finding">
+        <h2>Executive Finding</h2>
+        <div class="score-grid">
+          <article class="score previous">
+            <small>Earlier runtime score</small>
+            <strong>8.2/10</strong>
+            <p>Valid evidence of ROS trajectory availability under the previous rubric.</p>
+          </article>
+          <article class="score current">
+            <small>Latest semantic safety cap</small>
+            <strong>6/10</strong>
+            <p>Required after wrong-role targets were executed and reported as complete.</p>
+          </article>
+          <article class="score tests">
+            <small>Focused tests in runtime image</small>
+            <strong>156/156</strong>
+            <p>Evidence that live bypass shapes are missing from the current test suite.</p>
+          </article>
+        </div>
+
+        <div class="callout">
+          <h3>There is no whole-stack contradiction</h3>
+          <p>The 8.2 review asked whether turns crossed the expected ROS seams and closed. The later audit compared grounded entity roles, selected targets, KB postconditions, and report coverage. A complete transport trajectory can still perform the wrong semantic task.</p>
+        </div>
+        <div class="callout critical">
+          <h3>Acceptance-blocking counterexample</h3>
+          <p>For “Walk to every object and let me know when you get to each one,” the system reported visits to a kitchen, a table, a recipient person, and an anonymous person, then claimed completion. The questionnaire marked the trajectory pass.</p>
+        </div>
+        <div class="callout success">
+          <h3>Recent hardening did work</h3>
+          <p>The person-as-placement validator rejected an unsafe gold-apple plan, the unchanged-replan guard stopped a repeated blocked plan, fixture cleanup detected contamination, and fail-once pick remained stable across argument aliases.</p>
+        </div>
+      </section>
+
+      <section id="baseline">
+        <h2>Target Contract And Baseline</h2>
+        <div class="summary-grid">
+          <div class="panel">
+            <h3>Required invariant</h3>
+            <p>A grounded multi-object request must preserve operation, exact member IDs, source, recipient, ordering, report policy, per-member results, and whole-chain closure.</p>
+          </div>
+          <div class="panel">
+            <h3>Protected ownership</h3>
+            <p>Chatbot selects route and wording. Planner creates plans. Orchestrator verifies and dispatches. AB=1 skills produce evidence. Dialogue manager speaks.</p>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Provenance</th><th>Frozen value</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td>Main checkout</td><td><code>/home/juanbeck/nao-ros4hri-bridge</code></td><td>Source corresponding to the scored image</td></tr>
+              <tr><td>Main branch</td><td><code>refactor/deslop_repo</code> at <code>540dfd5</code></td><td>32 modified tracked files and untracked artifacts/helpers</td></tr>
+              <tr><td>Git index</td><td>No index-staged changes</td><td>The runtime work is dirty working-tree state</td></tr>
+              <tr><td>Remote delta</td><td>Behind by two commits</td><td>Remote-only changes affect thesis and completion-plan documentation, not runtime source</td></tr>
+              <tr><td>Nested chatbot</td><td><code>feat/planner_llm_hooks</code> at <code>96ecc34</code></td><td>Dirty planner adapter, response fallback, and tests</td></tr>
+              <tr><td>Runtime image</td><td><code>sha256:1a37fc2936af...</code></td><td>Runtime-critical imports matched host working files</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Suite</th><th>Harness result</th><th>Semantic interpretation</th></tr></thead>
+            <tbody>
+              <tr><td>Canonical main</td><td><span class="badge proven">20/20 pass</span></td><td>Basic dialogue, fresh KB, and simple execution healthy; ordered generic request was false success</td></tr>
+              <tr><td>Environment</td><td><span class="badge partial">10 pass, 1 not scored</span></td><td>Role leakage, partial reports, and failed fixture isolation</td></tr>
+              <tr><td>Fake all-success</td><td><span class="badge partial">8 pass, 1 fail</span></td><td>Safety rejection worked; valid handoff recovery missing</td></tr>
+              <tr><td>Fail-once navigation</td><td><span class="badge partial">2 degraded</span></td><td>Failure path lacked reliable post-terminal closure</td></tr>
+              <tr><td>Fail-once pick</td><td><span class="badge proven">1 harness pass</span></td><td>Failure and version-2 replan proved; full closure was not required by expectation</td></tr>
+              <tr><td>Blocked delivery</td><td><span class="badge partial">2 degraded</span></td><td>Loop bounded, but complete recovery closure absent</td></tr>
+              <tr><td>Every-other/random</td><td><span class="badge rejected">2 fail</span></td><td>Duplicate ALEX identities prevented meaningful policy exercise</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="changes">
+        <h2>Recent Change Coverage</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Change</th><th>What worked</th><th>Where it stops</th><th>Verdict</th></tr></thead>
+            <tbody>
+              <tr><td><code>PlannerRequest.target_selection</code></td><td>Normalizes an authoritative member set</td><td>Optional for grouped/quantified execution</td><td><span class="badge partial">Partial</span></td></tr>
+              <tr><td>Chatbot selection derivation</td><td>Ideal structured fields produce location-member selection</td><td>Route repair often omits source, recipient, or report intent</td><td><span class="badge partial">Partial</span></td></tr>
+              <tr><td>Planner selected fallback</td><td>Builds bounded object-only plans when selection exists</td><td>Falls through to model and lexical paths when absent</td><td><span class="badge partial">Partial</span></td></tr>
+              <tr><td>Person placement validation</td><td>Blocked <code>place_object(..., ALEX)</code></td><td>Does not validate selected visit set</td><td><span class="badge proven">Proven narrow guard</span></td></tr>
+              <tr><td>Delivery member coverage</td><td>Planner test catches missing selected handoffs</td><td>Orchestrator omits <code>target_selection</code> in final check</td><td><span class="badge critical-badge">Incomplete final gate</span></td></tr>
+              <tr><td>Unchanged-replan fingerprint</td><td>Stops repeated blocked plan and asks for help</td><td>Does not synthesize a new recovery strategy</td><td><span class="badge proven">Proven bounded loop</span></td></tr>
+              <tr><td>Fake <code>object_id</code> signature</td><td>Fail-once pick fires reliably</td><td>No per-member KB postcondition proof</td><td><span class="badge proven">Policy proven</span></td></tr>
+              <tr><td>Fixture retraction</td><td>Detects remaining stale facts</td><td>Cannot remove all inferred and cross-fixture causes</td><td><span class="badge partial">Detection only</span></td></tr>
+              <tr><td>Post-terminal scoring</td><td>Exposes missing recovery closure</td><td>Some expectations bypass it; no goal-lineage match</td><td><span class="badge partial">Partial</span></td></tr>
+              <tr><td>Compact semantic names</td><td>Names remain readable</td><td>Duplicate-name disambiguation is untested</td><td><span class="badge blocked">Unproven</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout critical">
+          <h3>Final admission gap</h3>
+          <p>The planner calls <code>plan_semantic_errors(steps, grounded_context, target_selection)</code>. The orchestrator calls <code>plan_semantic_errors(steps, grounded_context)</code>. Selected-member coverage is therefore not re-established at dispatch. The orchestrator should verify the chatbot-owned selection, not derive it.</p>
+        </div>
+
+        <h3>Failure topology</h3>
+        <pre>chatbot route
+  └─ optional structured slots
+       └─ planner adapter
+            ├─ target_selection present → bounded object set
+            └─ target_selection absent  → broad grounded inventory
+                         ↓
+                 planner validation
+                 (selection-aware only when present)
+                         ↓
+                orchestrator validation
+                (currently selection-unaware)
+                         ↓
+                    AB=1 skills
+                         ↓
+             report_result or completion
+             (can collapse to latest result)
+                         ↓
+             trajectory scorer can pass</pre>
+      </section>
+
+      <section id="hypotheses">
+        <h2>Approach Registry</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Hypothesis</th><th>Evidence</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>H1</td><td>Stale runtime image</td><td>Seven critical source hashes matched</td><td><span class="badge rejected">Rejected</span></td></tr>
+              <tr><td>H2</td><td>General LLM connectivity failure</td><td>Both preflights and ordinary turns passed</td><td><span class="badge rejected">Rejected</span></td></tr>
+              <tr><td>H3</td><td>General KB ingestion delay</td><td>Fresh insertion and predicate queries passed next-turn</td><td><span class="badge rejected">Rejected generally</span></td></tr>
+              <tr><td>H4</td><td>Structured target selection is missing</td><td>Complete grounded groups arrived without selection</td><td><span class="badge proven">Supported</span></td></tr>
+              <tr><td>H5</td><td>Planner ignores valid selection</td><td>Explicit-selection unit paths build bounded plans</td><td><span class="badge rejected">Rejected when valid</span></td></tr>
+              <tr><td>H6</td><td>Final validator protects selection</td><td>Orchestrator omits selection argument</td><td><span class="badge rejected">Rejected</span></td></tr>
+              <tr><td>H7</td><td>Report skill itself loses the chain</td><td>Several failing plans omitted report_result upstream</td><td><span class="badge neutral">Not primary</span></td></tr>
+              <tr><td>H8</td><td>Report intent is lost before planning</td><td>Goal asked for report while normalized intent and plan omitted it</td><td><span class="badge proven">Supported</span></td></tr>
+              <tr><td>H9</td><td>Fake server unavailable</td><td>All-success and fail-once feedback observed</td><td><span class="badge rejected">Rejected generally</span></td></tr>
+              <tr><td>H10</td><td>Fake success effects are atomic</td><td>Kitchen cup remained at source after apparent completion</td><td><span class="badge rejected">Rejected</span></td></tr>
+              <tr><td>H11</td><td>Fixture cleanup restores isolation</td><td>Residual placeOf and inferred facts remained</td><td><span class="badge rejected">Rejected</span></td></tr>
+              <tr><td>H12</td><td>Long context alone causes KB loss</td><td>Clean main context passed; failures tracked duplicate identities</td><td><span class="badge rejected">Rejected as sole cause</span></td></tr>
+              <tr><td>H13</td><td>Prompt drift is the root cause</td><td>Structural gaps explain strongest failures independently</td><td><span class="badge blocked">Blocked first intervention</span></td></tr>
+              <tr><td>H14</td><td>Existing route repair is sufficient</td><td>“Do not act yet” produced dialogue then kb_add execution</td><td><span class="badge rejected">Rejected</span></td></tr>
+              <tr><td>H15</td><td>Questionnaire pass proves semantic success</td><td>Wrong targets and partial reports passed</td><td><span class="badge rejected">Rejected</span></td></tr>
+              <tr><td>H16</td><td>Person/object projection is consistently safe</td><td>People appeared as table members and navigation targets</td><td><span class="badge rejected">Rejected</span></td></tr>
+              <tr><td>H17</td><td>Semantic-name change caused regression</td><td>No paired projection evidence</td><td><span class="badge blocked">Blocked</span></td></tr>
+              <tr><td>H18</td><td>Replan transport is generally broken</td><td>Version 2 and truthful terminal help observed</td><td><span class="badge rejected">Rejected generally</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="seams">
+        <h2>Remaining Seams</h2>
+        <details open><summary>1. Chatbot execution-admission completeness</summary><div><p>The adapter preserves or derives selection, but grouped execution can still be handed off without source, recipient, selected members, ordering, or report policy. A selection-required response must retry or clarify before its acknowledgement is spoken.</p></div></details>
+        <details open><summary>2. Planner absent-selection policy</summary><div><p>Missing selection currently permits broad model and legacy fallback planning. Missing selection for a selection-required operation must be an explicit validation state, not silent permission.</p></div></details>
+        <details open><summary>3. Final orchestrator semantic validation</summary><div><p>Propagate the normalized selection with plan metadata. Validate exact target coverage, roles, recipient identity, and forbidden extras without moving selection ownership into the orchestrator.</p></div></details>
+        <details><summary>4. Report policy and whole-chain closure</summary><div><p>Report policy is inferred from an exact normalized intent label and can disappear even when goal text asks for reporting. Carry the policy structurally and compare report evidence with every selected member.</p></div></details>
+        <details><summary>5. Fake skill effect verification</summary><div><p>Journal intended and applied effects by goal and step. Query every selected member after completion. Fake mode does not permit fabricated symbolic success.</p></div></details>
+        <details><summary>6. KnowledgeCore fixture isolation</summary><div><p>Use run-unique fixture namespaces and an asserted-effect journal. Remove causal assertions, wait for rematerialization, and prove incoming and outgoing fixture relations are absent.</p></div></details>
+        <details><summary>7. Questionnaire semantic oracle</summary><div><p>Add expected target IDs or role selectors, forbidden kinds, sequence shape, report coverage, and KB postconditions. Correlate by goal, plan, version, step, and timestamp.</p></div></details>
+        <details><summary>8. Natural-chat KB mutation schema</summary><div><p>Make subject, predicate, and object explicit before planner execution. Keep <code>kb_skills</code> as the mutation transport boundary.</p></div></details>
+        <details><summary>9. Route repair and acknowledgement consistency</summary><div><p>Require a valid explicit route and admission payload. On contradiction, retry once or return chatbot-authored clarification. Do not add lexical markers.</p></div></details>
+        <details><summary>10. Compact naming and duplicate identities</summary><div><p>Run a paired projection fixture with duplicate semantic names and distinct stable IDs before changing naming code.</p></div></details>
+      </section>
+
+      <section>
+        <h2>Adversarial Evidence</h2>
+        <div class="summary-grid">
+          <article class="panel">
+            <h3>Ordered objects</h3>
+            <p>Wrong-kind locations and people were visited and reported as complete. This proves missing set and role validation.</p>
+          </article>
+          <article class="panel">
+            <h3>Grouped work table</h3>
+            <p>Three bring steps executed, report_result was absent, and completion described only the phone.</p>
+          </article>
+          <article class="panel">
+            <h3>Gold apple</h3>
+            <p>Unsafe person placement was rejected correctly. Recovery to a handoff skill did not occur.</p>
+          </article>
+          <article class="panel">
+            <h3>Non-action memory turn</h3>
+            <p>A correct dialogue acknowledgement was followed by unintended kb_add execution and a second failure utterance.</p>
+          </article>
+          <article class="panel">
+            <h3>Kitchen post-effect</h3>
+            <p>The report covered only the book, and the cup remained queryable at its original table.</p>
+          </article>
+          <article class="panel">
+            <h3>Fixture identity</h3>
+            <p>Three ALEX entities accumulated, making later recipient selection and fake policy tests ambiguous.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="repairs">
+        <h2>Test-First Repair Order</h2>
+        <div class="priority-grid">
+          <article class="panel priority"><h3>P0-A Selection totality</h3><p>Require complete structured selection for grouped execution. Missing fields retry or clarify before handoff.</p></article>
+          <article class="panel priority"><h3>P0-B Final admission</h3><p>Propagate selection and reject missing, extra, wrong-kind, or wrong-recipient plan steps.</p></article>
+          <article class="panel priority"><h3>P0-C Report closure</h3><p>Carry report policy structurally and generate wording from the full selected outcome.</p></article>
+          <article class="panel priority"><h3>P0-D KB isolation</h3><p>Use unique namespaces, effect journals, and per-member postcondition queries.</p></article>
+          <article class="panel priority"><h3>P0-E Semantic scorer</h3><p>Grade target equality, effects, report coverage, and same-goal lineage.</p></article>
+          <article class="panel priority"><h3>P0-F Route leakage</h3><p>Replace contradiction inference with schema retry or safe clarification. Add no markers.</p></article>
+          <article class="panel priority p1"><h3>P1 Mutation schema</h3><p>Require explicit RDF subject, predicate, and object in planner-visible mutation payloads.</p></article>
+          <article class="panel priority p1"><h3>P1 Naming probe</h3><p>Compare duplicate-name projections before accepting any naming refactor.</p></article>
+        </div>
+
+        <div class="callout warning">
+          <h3>Prompt gate</h3>
+          <p>No prompt edit is accepted by this audit. Structural contracts explain the strongest failures. Any later wording change requires SkillOpt baseline, bounded mutation, train cases, holdouts, and an accept or reject record.</p>
+        </div>
+
+        <h3>Clean live acceptance probe</h3>
+        <ol>
+          <li>Create a run-unique fixture with one selected table, one unrelated table, three selected objects, and a named recipient.</li>
+          <li>Visit every selected object with per-target reporting.</li>
+          <li>Deliver every selected object with a final whole-chain report.</li>
+          <li>Query every final object location.</li>
+          <li>Exercise one fail-once member and one blocked member.</li>
+          <li>Run one dialogue-only future or memory turn, then an explicit execution follow-up.</li>
+          <li>Score exact IDs, kinds, lineage, effects, and report coverage.</li>
+        </ol>
+
+        <h3>Handoff checklist</h3>
+        <ul class="checklist">
+          <li>Preserve person-placement and unchanged-replan guards.</li>
+          <li>Make target selection total where operation semantics require it.</li>
+          <li>Propagate selection to final orchestrator admission.</li>
+          <li>Validate exact visit and delivery member sets.</li>
+          <li>Carry report policy independently of normalized intent loss.</li>
+          <li>Verify every fake skill KB effect.</li>
+          <li>Isolate fixtures and correlate evidence by lineage.</li>
+          <li>Replace route inconsistency inference with retry or clarification.</li>
+          <li>Run SkillOpt before any prompt mutation.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Decision</h2>
+        <div class="callout critical">
+          <h3>Bounded handoff</h3>
+          <p>The current dirty runtime set should not be frozen as the final validation baseline. It is safer than the earlier state in person-placement and repeated-block handling, but grouped selection and truthful closure remain optional. Preserve the working hardening and implement the six P0 batches before rescoring.</p>
+        </div>
+        <p>The score cap may be raised only after the false-success ordered trace and explicit non-action leakage are represented by failing tests and pass from a clean KnowledgeCore state.</p>
+      </section>
+
+      <div class="footer">
+        Full technical source: <a href="runtime_seam_regression_audit_2026-07-13_heavy.md">runtime_seam_regression_audit_2026-07-13_heavy.md</a>. This report changes no runtime source, prompt, registry, launch profile, or fake policy.
+      </div>
+    </main>
+  </div>
+</body>
+</html>

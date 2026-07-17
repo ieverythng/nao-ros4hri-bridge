@@ -305,6 +305,34 @@ class SkillRegistry:
                 normalized['name'] = canonical_name
         return normalized
 
+    def required_argument_errors(self, step: dict) -> list[str]:
+        """Return registry-derived errors for missing required skill arguments."""
+        if not isinstance(step, dict):
+            return []
+        if str(step.get('type', '')).strip().lower() != 'skill':
+            return []
+        canonical_name = self.resolve_skill_name(step.get('name', ''))
+        skill = next((item for item in self._skills if item.name == canonical_name), None)
+        if skill is None:
+            return []
+        args = step.get('args', {})
+        clean_args = args if isinstance(args, dict) else {}
+        missing = [
+            name
+            for name in skill.required_params
+            if not str(clean_args.get(name, '')).strip()
+        ]
+        if not missing:
+            return []
+        return [
+            '%s requires %s; missing=%s'
+            % (
+                canonical_name,
+                ' and '.join(skill.required_params),
+                ','.join(missing),
+            )
+        ]
+
 
 def _build_derived_skills(
     exported_skills: dict[str, ExportedSkillManifest],

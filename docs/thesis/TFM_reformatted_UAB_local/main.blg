@@ -1,17 +1,17 @@
 [0] Config.pm:328> INFO - This is Biber 2.21
-[0] Config.pm:331> INFO - Logfile is 'main.blg'
-[34] biber:342> INFO - === Mon Jul 13, 2026, 03:04:49
-[62] Biber.pm:421> INFO - Reading 'main.bcf'
-[99] Biber.pm:999> INFO - Using all citekeys in bib section 0
-[107] Biber.pm:4487> INFO - Processing section 0
-[120] Biber.pm:4678> INFO - Looking for bibtex file 'bibliography.bib' for section 0
-[131] bibtex.pm:1713> INFO - LaTeX decoding ...
-[146] bibtex.pm:1519> INFO - Found BibTeX data source 'bibliography.bib'
-[334] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
-[334] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
-[334] Biber.pm:4307> INFO - Sorting list 'nyt/global//global/global/global' of type 'entry' with template 'nyt' and locale 'en-US'
-[334] Biber.pm:4313> INFO - No sort tailoring available for locale 'en-US'
-[352] bbl.pm:676> INFO - Writing 'main.bbl' with encoding 'UTF-8'
-[364] bbl.pm:779> INFO - Output to main.bbl
-[364] Biber.pm:132> WARN - BibTeX subsystem: /var/folders/br/hnys0bvj1tb72rh6s3_ymwk00000gn/T/biber_tmp_sZgW/f4d088b3f9f145b5c3058da33afd57d4_19292.utf8, line 66, warning: 9 characters of junk seen at toplevel
-[364] Biber.pm:134> INFO - WARNINGS: 1
+[0] Config.pm:331> INFO - Logfile is 'build/main.blg'
+[29] biber:342> INFO - === Tue Jul 14, 2026, 12:04:50
+[42] Biber.pm:421> INFO - Reading 'build/main.bcf'
+[80] Biber.pm:999> INFO - Using all citekeys in bib section 0
+[87] Biber.pm:4487> INFO - Processing section 0
+[93] Biber.pm:4678> INFO - Looking for bibtex file 'bibliography.bib' for section 0
+[99] bibtex.pm:1713> INFO - LaTeX decoding ...
+[113] bibtex.pm:1519> INFO - Found BibTeX data source 'bibliography.bib'
+[251] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[251] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
+[251] Biber.pm:4307> INFO - Sorting list 'nyt/global//global/global/global' of type 'entry' with template 'nyt' and locale 'en-US'
+[251] Biber.pm:4313> INFO - No sort tailoring available for locale 'en-US'
+[269] bbl.pm:676> INFO - Writing 'build/main.bbl' with encoding 'UTF-8'
+[281] bbl.pm:779> INFO - Output to build/main.bbl
+[281] Biber.pm:132> WARN - BibTeX subsystem: /var/folders/br/hnys0bvj1tb72rh6s3_ymwk00000gn/T/biber_tmp_TJM7/f4d088b3f9f145b5c3058da33afd57d4_94924.utf8, line 66, warning: 9 characters of junk seen at toplevel
+[281] Biber.pm:134> INFO - WARNINGS: 1

@@ -72,6 +72,7 @@ def _assert_lab_vllm_defaults(defaults: dict[str, str]) -> None:
     assert defaults["chatbot_server_url"] == LAB_VLLM_CHAT_URL
     assert defaults["planner_llm_base_url"] == LAB_VLLM_BASE_URL
     assert defaults["chatbot_response_max_tokens"] == "192"
+    assert defaults["chatbot_intent_max_tokens"] == "256"
     assert defaults["chatbot_turn_pipeline_mode"] == "response_first"
     assert defaults["start_managed_ollama"] == "false"
     assert defaults["chatbot_preflight_required"] == "true"
@@ -125,8 +126,10 @@ def test_sim_profile_provides_gscam_camera_and_rqt_with_planner():
     assert defaults["chatbot_planner_mode_enabled"] == "true"
     assert defaults["enable_orchestrator_planner_gate"] == "true"
     assert defaults["start_fake_skills"] == "true"
+    assert defaults["head_motion_allow_open_loop_without_joint_state"] == "true"
     assert defaults["head_motion_assume_success_on_convergence_timeout"] == "false"
     assert defaults["perform_motion_execution_mode"] == "real"
+    assert defaults["look_at_execution_mode"] == "fake"
     _assert_stable_grounding_defaults(defaults)
     assert defaults["chatbot_planner_request_topic"] == "/nao_orchestrator/planner_request"
     _assert_planner_dialogue_seam_defaults(defaults)
@@ -149,8 +152,10 @@ def test_robot_profile_uses_robot_camera_and_planner_mode_by_default():
     assert defaults["chatbot_planner_mode_enabled"] == "true"
     assert defaults["enable_orchestrator_planner_gate"] == "true"
     assert defaults["start_fake_skills"] == "true"
+    assert defaults["head_motion_allow_open_loop_without_joint_state"] == "true"
     assert defaults["head_motion_assume_success_on_convergence_timeout"] == "false"
     assert defaults["perform_motion_execution_mode"] == "real"
+    assert defaults["look_at_execution_mode"] == "fake"
     _assert_stable_grounding_defaults(defaults)
     _assert_planner_dialogue_seam_defaults(defaults)
     _assert_lab_vllm_defaults(defaults)
@@ -175,8 +180,10 @@ def test_demo_profile_is_sim_only_with_mock_scan_and_planner_enabled():
     assert defaults["fake_skill_global_mode"] == "scenario"
     assert defaults["fake_skill_random_failure_prob"] == "0.50"
     assert defaults["fake_skill_mode_overrides_json"] == "{}"
+    assert defaults["head_motion_allow_open_loop_without_joint_state"] == "true"
     assert defaults["head_motion_assume_success_on_convergence_timeout"] == "false"
     assert defaults["perform_motion_execution_mode"] == "real"
+    assert defaults["look_at_execution_mode"] == "fake"
     _assert_stable_grounding_defaults(defaults)
     assert defaults["scan_result_mode"] == "success"
     assert "current scene summary" in defaults["scan_summary"]

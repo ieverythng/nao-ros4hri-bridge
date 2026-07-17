@@ -47,6 +47,23 @@ def execute(*, args: dict, mode: str, metadata: dict, fail_once_active: bool) ->
         ).to_dict()
 
     if mode in {'success', 'dry_run'}:
+        evidence = {
+            'motion': motion,
+            'yaw': args.get('yaw', ''),
+            'pitch': args.get('pitch', ''),
+            'relative': bool(args.get('relative', False)),
+            'simulated': True,
+            'dry_run': mode == 'dry_run',
+        }
+        if 'previous_posture_state' in args:
+            previous_state = str(args.get('previous_posture_state', 'unknown')).strip() or 'unknown'
+            evidence.update(
+                {
+                    'previous_posture_state': previous_state,
+                    'current_posture_state': motion,
+                    'state_changed': previous_state != motion,
+                }
+            )
         return build_skill_result(
             skill='perform_motion',
             status='succeeded',
@@ -54,14 +71,7 @@ def execute(*, args: dict, mode: str, metadata: dict, fail_once_active: bool) ->
             target_kind='motion',
             target_found=True,
             summary_text=_success_summary(motion, dry_run=(mode == 'dry_run')),
-            evidence={
-                'motion': motion,
-                'yaw': args.get('yaw', ''),
-                'pitch': args.get('pitch', ''),
-                'relative': bool(args.get('relative', False)),
-                'simulated': True,
-                'dry_run': mode == 'dry_run',
-            },
+            evidence=evidence,
             metadata=metadata,
         ).to_dict()
 

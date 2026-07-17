@@ -32,6 +32,126 @@ def test_replay_motion_aliases_are_stable():
     assert server._resolve_motion("unknown") is None
 
 
+def test_replay_motion_open_loop_succeeds_when_naoqi_is_unavailable():
+    server = ReplayMotionSkillServer.__new__(ReplayMotionSkillServer)
+    server.default_speed = 0.8
+    server.allow_open_loop_without_naoqi = True
+    server.fallback_to_posture_topic = False
+    server._ensure_connection = lambda: False
+    server._publish_replay_feedback = ReplayMotionSkillServer._publish_replay_feedback
+
+    goal_handle = _FakeGoalHandle()
+    result = server._execute_motion(
+        goal_handle=goal_handle,
+        requested_name="standinit",
+        requested_speed=0.8,
+        feedback_builder=lambda handle, status, _progress: handle.feedback.append(status),
+        result_builder=lambda success, message, duration: {
+            "success": success,
+            "message": message,
+            "duration": duration,
+        },
+    )
+
+    assert goal_handle.succeeded is True
+    assert goal_handle.aborted is False
+    assert result["success"] is True
+    assert result["message"] == "Executed motion 'standinit' via open_loop"
+    assert goal_handle.feedback == ["preparing", "executing", "completing"]
+
+
+def test_replay_motion_prefers_confirmed_posture_bridge_over_open_loop():
+    server = ReplayMotionSkillServer.__new__(ReplayMotionSkillServer)
+    server.default_speed = 0.8
+    server.allow_open_loop_without_naoqi = True
+    server.fallback_to_posture_topic = True
+    server._ensure_connection = lambda: False
+    server._posture_bridge_available = lambda: True
+    bridge_calls = []
+    server._execute_posture_via_topic_fallback = (
+        lambda posture_name: bridge_calls.append(posture_name) or "bridge confirmed"
+    )
+
+    goal_handle = _FakeGoalHandle()
+    result = server._execute_motion(
+        goal_handle=goal_handle,
+        requested_name="stand",
+        requested_speed=0.8,
+        feedback_builder=lambda handle, status, _progress: handle.feedback.append(status),
+        result_builder=lambda success, message, duration: {
+            "success": success,
+            "message": message,
+            "duration": duration,
+        },
+    )
+
+    assert bridge_calls == ["Stand"]
+    assert result["success"] is True
+    assert result["message"] == (
+        "Executed motion 'stand' via topic_fallback (bridge confirmed)"
+    )
+
+
+def test_replay_motion_uses_open_loop_when_posture_bridge_reports_failure():
+    server = ReplayMotionSkillServer.__new__(ReplayMotionSkillServer)
+    server.default_speed = 0.8
+    server.allow_open_loop_without_naoqi = True
+    server.fallback_to_posture_topic = True
+    server._ensure_connection = lambda: False
+    server._posture_bridge_available = lambda: True
+    server._execute_posture_via_topic_fallback = lambda _posture_name: (_ for _ in ()).throw(
+        RuntimeError("Failed to execute posture command")
+    )
+
+    goal_handle = _FakeGoalHandle()
+    result = server._execute_motion(
+        goal_handle=goal_handle,
+        requested_name="stand",
+        requested_speed=0.8,
+        feedback_builder=lambda handle, status, _progress: handle.feedback.append(status),
+        result_builder=lambda success, message, duration: {
+            "success": success,
+            "message": message,
+            "duration": duration,
+        },
+    )
+
+    assert goal_handle.succeeded is True
+    assert goal_handle.aborted is False
+    assert result["success"] is True
+    assert result["message"] == "Executed motion 'stand' via open_loop"
+
+
+def test_replay_motion_uses_open_loop_when_posture_bridge_is_not_ready():
+    server = ReplayMotionSkillServer.__new__(ReplayMotionSkillServer)
+    server.default_speed = 0.8
+    server.allow_open_loop_without_naoqi = True
+    server.fallback_to_posture_topic = True
+    server._ensure_connection = lambda: False
+    server._posture_bridge_available = lambda: False
+    server._execute_posture_via_topic_fallback = lambda _posture_name: (_ for _ in ()).throw(
+        AssertionError("unavailable bridge must not receive a posture command")
+    )
+
+    goal_handle = _FakeGoalHandle()
+    result = server._execute_motion(
+        goal_handle=goal_handle,
+        requested_name="stand",
+        requested_speed=0.8,
+        feedback_builder=lambda handle, status, _progress: handle.feedback.append(status),
+        result_builder=lambda success, message, duration: {
+            "success": success,
+            "message": message,
+            "duration": duration,
+        },
+    )
+
+    assert goal_handle.succeeded is True
+    assert goal_handle.aborted is False
+    assert result["success"] is True
+    assert result["message"] == "Executed motion 'stand' via open_loop"
+
+
 def test_head_motion_validation_rejects_out_of_range_absolute_motion():
     server = HeadMotionSkillServer.__new__(HeadMotionSkillServer)
     server.yaw_min = -1.0

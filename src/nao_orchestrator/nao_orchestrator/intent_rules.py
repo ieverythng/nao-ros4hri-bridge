@@ -10,6 +10,8 @@ from planner_common.contracts import PLAN_FAILURE_POLICIES
 from planner_common.contracts import PLAN_STEP_TYPES
 from planner_common.contracts import IntentLabels as Intent
 from planner_common.contracts import optional_float_fields
+from planner_common.contracts import normalize_target_selection
+from planner_common.report_outcome import plan_semantic_errors
 from planner_common.skill_registry_bridge import merge_fake_skill_aliases
 from planner_common.skill_registry_bridge import merge_scan_skill_names
 from planner_common.skill_registry_bridge import load_shared_skill_manifest
@@ -647,6 +649,9 @@ def parse_plan_envelope(data: dict) -> dict:
                 'expected_scene_targets',
             )
         ),
+        'target_selection': normalize_target_selection(
+            _plan_metadata_value(data, parsed_plan_dict, 'target_selection')
+        ),
         'communication_policy': _normalize_communication_policy(
             _plan_metadata_value(data, parsed_plan_dict, 'communication_policy')
         ),
@@ -680,6 +685,14 @@ def validate_execution_plan(intent_name: str, data: dict) -> dict:
         validated_steps.append(step)
 
     envelope['steps'] = validated_steps
+    semantic_errors = plan_semantic_errors(
+        validated_steps,
+        data.get('grounded_context', {}),
+        envelope.get('target_selection', {}),
+    )
+    errors.extend(semantic_errors)
+    if semantic_errors:
+        envelope['steps'] = []
     envelope['errors'] = errors
     return envelope
 
@@ -799,6 +812,7 @@ def _empty_plan_envelope() -> dict:
         'replan_hint': '',
         'retry_budget': 0,
         'scene_targets': [],
+        'target_selection': {},
         'communication_policy': _normalize_communication_policy({}),
         'steps': [],
         'has_explicit_plan': False,

@@ -364,6 +364,193 @@ def test_supervisor_replans_blocking_retryable_failure_without_unmet_preconditio
     assert outcome.decision.payload['plan']['plan_version'] == 2
 
 
+def test_supervisor_asks_for_help_when_skill_recovery_requires_user_input() -> None:
+    engine = _StubEngine()
+    supervisor = PlannerSupervisor(engine, auto_replan=True)
+    request = PlannerRequest.from_payload(
+        {
+            'goal_id': 'goal_delivery_blocked',
+            'request_id': 'turn_1',
+            'user_text': 'bring the cup to Alex',
+        }
+    )
+    first_outcome = supervisor.handle_request(request)
+    feedback = ExecutionFeedback.from_payload(
+        {
+            'goal_id': request.goal_id,
+            'plan_id': first_outcome.decision.plan_id,
+            'plan_version': 1,
+            'event_type': 'step_failed',
+            'status': 'failed',
+            'reason': 'The delivery destination is blocked.',
+            'retry_budget': 1,
+            'blocking': True,
+            'result_payload': {
+                'failure': {
+                    'code': 'delivery_blocked',
+                    'recoverable': True,
+                    'suggested_recovery': 'ask_user_for_delivery_alternative',
+                }
+            },
+            'step': {
+                'id': 'step_1',
+                'type': 'skill',
+                'name': 'bring_object',
+                'on_failure': 'replan',
+                'retry_budget': 1,
+            },
+        }
+    )
+
+    outcome = supervisor.handle_feedback(feedback)
+
+    assert outcome.decision is None
+    assert len(outcome.dialogue_acts) == 1
+    assert outcome.dialogue_acts[0].act == 'ask_for_help'
+    assert outcome.dialogue_acts[0].await_user_response is True
+    assert len(engine.calls) == 1
+
+
+def test_supervisor_replans_when_skill_recovery_is_autonomous() -> None:
+    engine = _StubEngine()
+    supervisor = PlannerSupervisor(engine, auto_replan=True)
+    request = PlannerRequest.from_payload(
+        {'goal_id': 'goal_retry_pick', 'request_id': 'turn_1', 'user_text': 'pick up the cup'}
+    )
+    first_outcome = supervisor.handle_request(request)
+    feedback = ExecutionFeedback.from_payload(
+        {
+            'goal_id': request.goal_id,
+            'plan_id': first_outcome.decision.plan_id,
+            'plan_version': 1,
+            'event_type': 'step_failed',
+            'status': 'failed',
+            'reason': 'The robot could not acquire the requested object.',
+            'retry_budget': 1,
+            'blocking': True,
+            'result_payload': {
+                'failure': {
+                    'code': 'acquisition_failure',
+                    'recoverable': True,
+                    'suggested_recovery': 'retry_pick_or_ask_user',
+                }
+            },
+            'step': {
+                'id': 'step_1',
+                'type': 'skill',
+                'name': 'pick_object',
+                'on_failure': 'replan',
+                'retry_budget': 1,
+            },
+        }
+    )
+
+    outcome = supervisor.handle_feedback(feedback)
+
+    assert outcome.decision is not None
+    assert outcome.decision.payload['plan']['plan_version'] == 2
+
+
+def test_supervisor_honors_replan_policy_over_skill_help_suggestion() -> None:
+    engine = _StubEngine()
+    supervisor = PlannerSupervisor(engine, auto_replan=True)
+    request = PlannerRequest.from_payload(
+        {
+            'goal_id': 'goal_retry_navigation',
+            'request_id': 'turn_1',
+            'user_text': 'walk to every object on the table',
+        }
+    )
+    first_outcome = supervisor.handle_request(request)
+    feedback = ExecutionFeedback.from_payload(
+        {
+            'goal_id': request.goal_id,
+            'plan_id': first_outcome.decision.plan_id,
+            'plan_version': 1,
+            'event_type': 'step_failed',
+            'status': 'failed',
+            'reason': 'The simulated path is blocked for this attempt.',
+            'retry_budget': 1,
+            'blocking': True,
+            'result_payload': {
+                'failure': {
+                    'code': 'path_blocked',
+                    'recoverable': True,
+                    'suggested_recovery': 'ask_user_for_alternative_route',
+                }
+            },
+            'step': {
+                'id': 'step_1',
+                'type': 'skill',
+                'name': 'navigate_to',
+                'on_failure': 'replan',
+                'retry_budget': 1,
+            },
+        }
+    )
+
+    outcome = supervisor.handle_feedback(feedback)
+
+    assert outcome.decision is not None
+    assert outcome.decision.payload['plan']['plan_version'] == 2
+
+
+def test_supervisor_rejects_unchanged_replan_after_blocking_failure() -> None:
+    engine = _StubEngine()
+    supervisor = PlannerSupervisor(engine, auto_replan=True)
+    request = PlannerRequest.from_payload(
+        {'goal_id': 'goal_blocked_delivery', 'request_id': 'turn_1', 'user_text': 'bring the cup'}
+    )
+    first_outcome = supervisor.handle_request(request)
+    feedback = ExecutionFeedback.from_payload(
+        {
+            'goal_id': request.goal_id,
+            'plan_id': first_outcome.decision.plan_id,
+            'plan_version': 1,
+            'event_type': 'step_failed',
+            'status': 'failed',
+            'reason': 'delivery path blocked',
+            'retry_budget': 1,
+            'blocking': True,
+            'step': {
+                'id': 'step_1',
+                'type': 'skill',
+                'name': 'find_object',
+                'on_failure': 'replan',
+                'retry_budget': 1,
+            },
+        }
+    )
+
+    retry_outcome = supervisor.handle_feedback(feedback)
+    assert retry_outcome.decision is not None
+    repeated_feedback = ExecutionFeedback.from_payload(
+        {
+            'goal_id': request.goal_id,
+            'plan_id': retry_outcome.decision.plan_id,
+            'plan_version': 2,
+            'event_type': 'step_failed',
+            'status': 'failed',
+            'reason': 'delivery path blocked',
+            'retry_budget': 1,
+            'blocking': True,
+            'step': {
+                'id': 'step_1',
+                'type': 'skill',
+                'name': 'find_object',
+                'on_failure': 'replan',
+                'retry_budget': 1,
+            },
+        }
+    )
+    outcome = supervisor.handle_feedback(repeated_feedback)
+
+    assert outcome.decision is None
+    assert len(outcome.dialogue_acts) == 1
+    assert outcome.dialogue_acts[0].act == 'ask_for_help'
+    assert 'unchanged' in outcome.dialogue_acts[0].reason
+
+
 def test_supervisor_asks_for_help_when_retry_budget_exhausted_for_retryable_failure() -> None:
     engine = _StubEngine()
     supervisor = PlannerSupervisor(engine, auto_replan=True)
@@ -583,6 +770,52 @@ def test_supervisor_emits_one_completion_with_latest_result_summary() -> None:
     assert len(outcome.dialogue_acts) == 1
     assert outcome.dialogue_acts[0].act == 'notify_completion'
     assert outcome.dialogue_acts[0].context['result_summary'] == 'I found one person.'
+
+
+def test_supervisor_preserves_aggregate_plan_outcome_for_completion_wording() -> None:
+    supervisor = PlannerSupervisor(_StubEngine(), auto_replan=True)
+    request = PlannerRequest.from_payload(
+        {
+            'goal_id': 'goal_multi_visit',
+            'request_id': 'turn_multi_visit',
+            'user_text': 'walk to every visible object',
+        }
+    )
+    first_outcome = supervisor.handle_request(request)
+
+    outcome = supervisor.handle_feedback(
+        ExecutionFeedback.from_payload(
+            {
+                'goal_id': 'goal_multi_visit',
+                'plan_id': first_outcome.decision.plan_id,
+                'plan_version': 1,
+                'event_type': 'plan_completed',
+                'status': 'completed',
+                'result_summary': 'I completed destination navigation to phone_1.',
+                'result_payload': {
+                    'skill': 'navigate_to',
+                    'target': 'phone_1',
+                    'summary_text': 'I completed destination navigation to phone_1.',
+                },
+                'plan_outcome_summary': {
+                    'completed_targets': ['apple_1', 'pear_1', 'phone_1'],
+                    'failed_targets': [],
+                    'pending_targets': [],
+                    'all_required_steps_succeeded': True,
+                },
+            }
+        )
+    )
+
+    assert len(outcome.dialogue_acts) == 1
+    assert outcome.dialogue_acts[0].act == 'notify_completion'
+    assert outcome.dialogue_acts[0].context['result_summary'].endswith('phone_1.')
+    assert outcome.dialogue_acts[0].context['plan_outcome_summary'] == {
+        'completed_targets': ['apple_1', 'pear_1', 'phone_1'],
+        'failed_targets': [],
+        'pending_targets': [],
+        'all_required_steps_succeeded': True,
+    }
 
 
 def test_supervisor_emits_one_scan_result_completion_dialogue_act() -> None:

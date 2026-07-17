@@ -43,7 +43,43 @@ def _engine_for_response(response_text: str, *, retry_budget: int = 1) -> Planne
     )
 
 
-def test_planner_engine_builds_rule_plan_for_motion_intent() -> None:
+def _assert_invalid_planner_failure(decision) -> None:
+    plan = decision.payload['plan']
+    assert decision.mode == 'fail'
+    assert plan['status'] == 'failed'
+    assert plan['validation_status'] == 'invalid'
+    assert plan['steps'] == []
+    assert plan['replan_hint'] == 'planner_invalid_output'
+
+
+def _assert_structured_clarification(decision, reason_fragment: str = '') -> None:
+    plan = decision.payload['plan']
+    assert decision.mode == 'clarify'
+    assert plan['status'] == 'waiting_user'
+    assert plan['steps'] == []
+    assert plan['replan_hint'] == 'clarify_user'
+    if reason_fragment:
+        assert reason_fragment in plan['user_facing_reason']
+
+
+def _assert_target_selection_recovery(
+    decision,
+    *,
+    skill_names: list[str],
+    scene_targets: list[str],
+) -> None:
+    plan = decision.payload['plan']
+    assert decision.mode == 'validated_target_selection_recovery'
+    assert plan['validation_status'] == 'valid'
+    assert [step['name'] for step in plan['steps']] == skill_names
+    assert plan['scene_targets'] == scene_targets
+
+
+def _step_requirements(decision) -> list[list[str]]:
+    return [step['requires'] for step in decision.payload['plan']['steps']]
+
+
+def test_planner_engine_fails_when_model_cannot_plan_motion() -> None:
     provider = _FakeProvider('{}')
     engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=2)
     request = PlannerRequest.from_payload(
@@ -56,11 +92,12 @@ def test_planner_engine_builds_rule_plan_for_motion_intent() -> None:
         )
 
     decision = engine.plan_request(request, goal_id='goal_1', plan_version=1)
-    assert decision.mode == 'rule_fallback'
+    assert decision.mode == 'fail'
     assert decision.payload['plan']['goal_id'] == 'goal_1'
     assert decision.payload['plan']['plan_version'] == 1
-    assert decision.payload['plan']['steps'][0]['args']['object'] == 'head_look_left'
-    assert decision.payload['plan']['retry_budget'] == 2
+    assert decision.payload['plan']['steps'] == []
+    assert decision.payload['plan']['status'] == 'failed'
+    assert 'valid executable plan' in decision.payload['plan']['failure_reason']
     assert provider.messages
 
 
@@ -104,6 +141,103 @@ def test_planner_engine_prefers_provider_over_rule_for_simple_motion_intent() ->
     assert decision.mode == 'plan'
     assert decision.payload['plan']['steps'][0]['args']['object'] == 'head_look_up'
     assert provider.messages[0]['role'] == 'system'
+
+
+def test_planner_engine_uses_second_retry_after_validation_progress() -> None:
+    provider = _SequenceProvider(
+        [
+            'not json',
+            '{"steps":[{"type":"skill","name":"perform_motion","args":{}}]}',
+            (
+                '{"steps":[{"type":"skill","name":"perform_motion",'
+                '"args":{"object":"head_look_up"},"requires":[],"on_failure":"fail"}]}'
+            ),
+        ]
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_progressive_validation_retry',
+            'goal_id': 'goal_progressive_validation_retry',
+            'goal_text': 'look up',
+            'normalized_intents': ['head_look_up'],
+        }
+    )
+
+    decision = engine.plan_request(request)
+
+    assert len(provider.messages) == 3
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['steps'][0]['args']['object'] == 'head_look_up'
+    second_retry_prompt = provider.messages[2][1]['content']
+    assert 'validation_retry' in second_retry_prompt
+    assert 'previous_model_output' in second_retry_prompt
+    assert '\\"name\\":\\"perform_motion\\"' in second_retry_prompt
+
+
+def test_planner_engine_stops_retrying_repeated_invalid_output() -> None:
+    provider = _SequenceProvider(
+        [
+            'not json',
+            'not json',
+            (
+                '{"steps":[{"type":"skill","name":"perform_motion",'
+                '"args":{"object":"head_look_up"}}]}'
+            ),
+        ]
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_repeated_validation_retry',
+            'goal_id': 'goal_repeated_validation_retry',
+            'goal_text': 'look up',
+            'normalized_intents': ['head_look_up'],
+        }
+    )
+
+    decision = engine.plan_request(request)
+
+    assert len(provider.messages) == 2
+    _assert_invalid_planner_failure(decision)
+
+
+def test_planner_engine_retries_function_style_kb_statements_before_execution() -> None:
+    provider = _SequenceProvider(
+        [
+            (
+                '{"steps":[{"type":"skill","name":"kb_add",'
+                '"args":{"statements":["rdf:type(cup, dbp:RedCup)"]},'
+                '"requires":[],"on_failure":"replan"}]}'
+            ),
+            (
+                '{"steps":[{"type":"skill","name":"kb_add",'
+                '"args":{"statements":["red_cup rdf:type Cup",'
+                '"red_cup dbp:color red"]},"requires":[],"on_failure":"replan"}]}'
+            ),
+        ]
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_kb_statement_retry',
+            'goal_id': 'goal_kb_statement_retry',
+            'goal_text': 'Add a red cup to your KB.',
+            'normalized_intents': ['kb_add'],
+        }
+    )
+
+    decision = engine.plan_request(request)
+
+    assert len(provider.messages) == 2
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['steps'][0]['args']['statements'] == [
+        'red_cup rdf:type Cup',
+        'red_cup dbp:color red',
+    ]
+    assert 'subject predicate object' in provider.messages[1][1]['content']
+    assert 'namespace-qualified predicate' in provider.messages[1][1]['content']
+    assert 'subject first' in provider.messages[1][1]['content']
 
 
 def test_planner_engine_does_not_rule_fallback_composite_motion_goal_text() -> None:
@@ -260,6 +394,66 @@ def test_planner_engine_canonicalizes_look_at_target_alias_from_model() -> None:
     assert decision.payload['plan']['steps'][0]['args']['target_frame'] == 'anonymous person bcbhb'
 
 
+def test_planner_engine_limits_scene_targets_to_executable_step_scope() -> None:
+    provider = _FakeProvider(
+        '{"steps":['
+        '{"type":"skill","name":"perform_motion","args":{"object":"standinit"}},'
+        '{"type":"skill","name":"wave_greet",'
+        '"args":{"target_frame":"anonymous_person_current"}}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_bounded_person_scope',
+            'goal_id': 'goal_bounded_person_scope',
+            'goal_text': 'stand up and wave at the nearest person',
+            'normalized_intents': ['posture_stand', 'wave_greet'],
+            'scene_targets': [
+                'anonymous_person_stale_1',
+                'anonymous_person_stale_2',
+                'anonymous_person_current',
+            ],
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id=request.goal_id, plan_version=1)
+
+    assert decision.payload['plan']['scene_targets'] == ['anonymous_person_current']
+
+
+def test_planner_engine_rejects_model_scene_target_for_targetless_motion() -> None:
+    provider = _FakeProvider(
+        '{"plan":{"scene_targets":["anonymous_person_visible"]},'
+        '"steps":['
+        '{"type":"skill","name":"perform_motion","args":{"object":"sit"}},'
+        '{"type":"skill","name":"report_result","args":{}}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_targetless_motion',
+            'goal_id': 'goal_targetless_motion',
+            'goal_text': 'sit down and report when sitting',
+            'normalized_intents': ['posture_sit', 'report_result'],
+            'scene_targets': [],
+            'grounded_context': {
+                'entities': [
+                    {
+                        'id': 'anonymous_person_visible',
+                        'kind': 'person',
+                        'class': 'Human',
+                    }
+                ]
+            },
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id=request.goal_id, plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['scene_targets'] == []
+
+
 def test_planner_engine_reports_invalid_model_output_as_failure() -> None:
     provider = _FakeProvider(
         '{"ack_text":"Trying a custom action.","steps":[{"type":"skill","name":"dance","args":{"style":"wave"},"requires":[],"on_failure":"fail","retry_budget":0}]}'
@@ -313,6 +507,64 @@ def test_planner_engine_retries_invalid_model_plan_with_validation_feedback() ->
     ]
 
 
+def test_planner_engine_retries_place_object_without_manipulated_object() -> None:
+    provider = _SequenceProvider(
+        [
+            '{"steps":[{"type":"skill","name":"place_object",'
+            '"args":{"target":"table_1"},"on_failure":"replan"}]}',
+            '{"steps":[{"type":"skill","name":"place_object",'
+            '"args":{"object":"apple_1","target":"table_1"},"on_failure":"replan"}]}',
+        ]
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_place',
+            'goal_id': 'goal_place',
+            'goal_text': 'place the apple on the table',
+            'normalized_intents': ['place_object'],
+            'scene_targets': ['apple_1', 'table_1'],
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_place', plan_version=1)
+
+    assert len(provider.messages) == 2
+    assert 'place_object requires target and destination' in provider.messages[1][1]['content']
+    assert decision.payload['plan']['steps'][0]['args'] == {
+        'target': 'apple_1',
+        'destination': 'table_1',
+    }
+
+
+def test_planner_engine_rejects_place_object_without_destination() -> None:
+    provider = _FakeProvider(
+        '{"steps":[{"type":"skill","name":"place_object",'
+        '"args":{"object_id":"apple_1"},"on_failure":"replan"}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_place_missing_destination',
+            'goal_id': 'goal_place_missing_destination',
+            'goal_text': 'place the apple',
+            'normalized_intents': ['place_object'],
+            'scene_targets': ['apple_1'],
+        }
+    )
+
+    decision = engine.plan_request(
+        request,
+        goal_id='goal_place_missing_destination',
+        plan_version=1,
+    )
+
+    assert decision.mode == 'fail'
+    assert 'place_object requires target and destination' in (
+        decision.payload['plan']['failure_reason']
+    )
+
+
 def test_planner_engine_rejects_mixed_say_and_executable_steps() -> None:
     provider = _FakeProvider(
         '{"ack_text":"Sure, I will move my head up and down for you.",'
@@ -357,6 +609,53 @@ def test_planner_engine_marks_provider_timeout_as_backend_unavailable() -> None:
     assert 'timed out' in decision.raw_model_output
 
 
+def test_planner_engine_allows_one_grounded_delivery_target_without_selection() -> None:
+    provider = _FakeProvider(
+        '{"steps":[{"type":"skill","name":"bring_object",'
+        '"args":{"target":"pear_xiuwe","recipient":"myself","source":"Lab"}}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_single_grounded_delivery',
+            'goal_id': 'goal_single_grounded_delivery',
+            'goal_text': 'bring the pear with ID xiuwe',
+            'normalized_intents': ['bring_object'],
+            'scene_targets': ['pear xiuwe'],
+            'grounded_context': {
+                'entities': [
+                    {
+                        'id': 'pear_xiuwe',
+                        'label': 'pear',
+                        'kind': 'object',
+                        'class': 'Fruit',
+                        'relations': [{'predicate': 'oro:isAt', 'object': 'Lab'}],
+                    },
+                    {
+                        'id': 'Lab',
+                        'label': 'Lab',
+                        'kind': 'location',
+                        'class': 'Room',
+                    },
+                ],
+                'locations': [
+                    {'id': 'Lab', 'label': 'Lab', 'role': 'navigation_target'}
+                ],
+            },
+        }
+    )
+
+    decision = engine.plan_request(
+        request,
+        goal_id='goal_single_grounded_delivery',
+        plan_version=1,
+    )
+
+    assert provider.messages
+    assert decision.mode == 'plan'
+    assert decision.payload['plan']['steps'][0]['args']['target'] == 'pear_xiuwe'
+
+
 def test_planner_engine_rejects_partial_model_plans_when_one_step_is_unsupported() -> None:
     provider = _FakeProvider(
         '{"ack_text":"Trying two actions.","steps":[{"type":"skill","name":"perform_motion","args":{"object":"stand"},"requires":[],"on_failure":"fail","retry_budget":0},{"type":"skill","name":"dance","args":{"style":"wave"},"requires":[],"on_failure":"fail","retry_budget":0}]}'
@@ -374,11 +673,10 @@ def test_planner_engine_rejects_partial_model_plans_when_one_step_is_unsupported
 
     decision = engine.plan_request(request, goal_id='goal_partial', plan_version=1)
 
-    assert decision.mode == 'fail'
-    assert decision.payload['plan']['steps'][0]['type'] == 'say'
+    _assert_invalid_planner_failure(decision)
 
 
-def test_planner_engine_falls_back_to_grounded_location_group_delivery() -> None:
+def test_planner_engine_recovers_validated_grounded_location_group_delivery() -> None:
     provider = _FakeProvider('{}')
     engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
     request = PlannerRequest.from_payload(
@@ -388,6 +686,14 @@ def test_planner_engine_falls_back_to_grounded_location_group_delivery() -> None
             'goal_text': 'bring every object from the kitchen to ALEX and report what happened',
             'normalized_intents': ['bring_object', 'report_result'],
             'planner_mode': 'multi_step',
+            'target_selection': {
+                'selection_kind': 'location_members',
+                'operation': 'deliver',
+                'source_location_id': 'codex_kitchen',
+                'member_ids': ['book_1', 'cup_1'],
+                'recipient_id': 'person_1',
+                'report_policy': 'final',
+            },
             'grounded_context': {
                 'entities': [
                     {
@@ -435,27 +741,51 @@ def test_planner_engine_falls_back_to_grounded_location_group_delivery() -> None
 
     decision = engine.plan_request(request, goal_id='goal_kitchen_delivery', plan_version=1)
 
-    steps = decision.payload['plan']['steps']
-    assert decision.mode == 'grounded_location_group_fallback'
-    assert [step['name'] for step in steps] == [
-        'bring_object',
-        'bring_object',
-        'report_result',
-    ]
-    assert steps[0]['args'] == {
-        'target': 'book_1',
-        'recipient': 'person_1',
-        'source': 'codex_kitchen',
-    }
-    assert steps[1]['args'] == {
-        'target': 'cup_1',
-        'recipient': 'person_1',
-        'source': 'codex_kitchen',
-    }
-    assert decision.payload['plan']['scene_targets'] == ['book_1', 'cup_1', 'person_1']
+    _assert_target_selection_recovery(
+        decision,
+        skill_names=['bring_object', 'bring_object', 'report_result'],
+        scene_targets=['book_1', 'cup_1', 'person_1'],
+    )
+    assert _step_requirements(decision) == [[], [], ['step_1', 'step_2']]
 
 
-def test_planner_engine_matches_location_group_delivery_by_alias() -> None:
+def test_planner_engine_rejects_container_as_delivery_recipient() -> None:
+    provider = _FakeProvider('{}')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_apple_house',
+            'goal_id': 'goal_apple_house',
+            'goal_text': 'bring the apple to the house',
+            'normalized_intents': ['bring_object'],
+            'target_selection': {
+                'selection_kind': 'explicit_members',
+                'operation': 'deliver',
+                'member_ids': ['apple_1'],
+                'recipient_id': 'house_1',
+            },
+            'grounded_context': {
+                'entities': [
+                    {'id': 'apple_1', 'label': 'apple', 'kind': 'object', 'class': 'Apple'},
+                    {
+                        'id': 'house_1',
+                        'label': 'house',
+                        'kind': 'object',
+                        'class': 'cyc:SpatialThing-Localized',
+                        'relations': [{'predicate': 'oro:contains', 'object': 'phone_1'}],
+                    },
+                ],
+            },
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_apple_house', plan_version=1)
+
+    _assert_structured_clarification(decision, 'grounded person')
+    assert provider.messages == []
+
+
+def test_planner_engine_recovers_validated_location_group_alias_after_invalid_output() -> None:
     provider = _FakeProvider('{}')
     engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
     request = PlannerRequest.from_payload(
@@ -465,6 +795,14 @@ def test_planner_engine_matches_location_group_delivery_by_alias() -> None:
             'goal_text': 'Bring every object from the work table to ALEX and report what happened.',
             'normalized_intents': ['bring_object', 'report_result'],
             'planner_mode': 'multi_step',
+            'target_selection': {
+                'selection_kind': 'location_members',
+                'operation': 'deliver',
+                'source_location_id': 'codex_lab_table_section',
+                'member_ids': ['cup_1'],
+                'recipient_id': 'codex_lab_alex',
+                'report_policy': 'final',
+            },
             'grounded_context': {
                 'entities': [
                     {'id': 'cup_1', 'label': 'cup', 'kind': 'object', 'class': 'Cup'},
@@ -528,16 +866,229 @@ def test_planner_engine_matches_location_group_delivery_by_alias() -> None:
 
     decision = engine.plan_request(request, goal_id='goal_work_table_delivery', plan_version=1)
 
-    assert decision.mode == 'grounded_location_group_fallback'
-    assert decision.payload['plan']['steps'][0]['args'] == {
-        'target': 'cup_1',
-        'recipient': 'codex_lab_alex',
-        'source': 'codex_lab_table_section',
-    }
-    assert decision.payload['plan']['scene_targets'] == ['cup_1', 'codex_lab_alex']
+    _assert_target_selection_recovery(
+        decision,
+        skill_names=['bring_object', 'report_result'],
+        scene_targets=['cup_1', 'codex_lab_alex'],
+    )
 
 
-def test_planner_engine_matches_compact_room_id_without_named_alias() -> None:
+def test_planner_engine_recovers_validated_grouped_delivery_after_invalid_output() -> None:
+    provider = _FakeProvider('{}')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_structured_delivery',
+            'goal_id': 'goal_structured_delivery',
+            'goal_text': 'handle the requested collection',
+            'normalized_intents': ['bring_object', 'report_result'],
+            'planner_mode': 'multi_step',
+            'target_selection': {
+                'selection_kind': 'location_members',
+                'operation': 'deliver',
+                'source_location_id': 'work_table',
+                'member_ids': ['book_1', 'cup_1'],
+                'recipient_id': 'person_1',
+                'ordering': 'none',
+                'report_policy': 'final',
+            },
+            'grounded_context': {
+                'entities': [
+                    {'id': 'book_1', 'label': 'book', 'kind': 'object', 'class': 'Book'},
+                    {'id': 'cup_1', 'label': 'cup', 'kind': 'object', 'class': 'Cup'},
+                    {'id': 'person_1', 'label': 'ALEX', 'kind': 'person', 'class': 'Human'},
+                ],
+                'locations': [
+                    {
+                        'id': 'work_table',
+                        'label': 'work table',
+                        'role': 'support_group',
+                        'contains': [
+                            {'id': 'book_1', 'label': 'book', 'kind': 'object'},
+                            {'id': 'cup_1', 'label': 'cup', 'kind': 'object'},
+                        ],
+                    }
+                ],
+            },
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id=request.goal_id, plan_version=1)
+
+    _assert_target_selection_recovery(
+        decision,
+        skill_names=['bring_object', 'bring_object', 'report_result'],
+        scene_targets=['book_1', 'cup_1', 'person_1'],
+    )
+
+
+def test_planner_engine_does_not_bypass_invalid_selection_with_phrase_fallback() -> None:
+    provider = _FakeProvider('{}')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_invalid_structured_delivery',
+            'goal_id': 'goal_invalid_structured_delivery',
+            'goal_text': 'bring every object from the kitchen to ALEX',
+            'normalized_intents': ['bring_object'],
+            'target_selection': {
+                'selection_kind': 'location_members',
+                'operation': 'deliver',
+                'source_location_id': 'kitchen',
+                'member_ids': ['cup_1', 'person_1'],
+                'recipient_id': 'person_1',
+            },
+            'grounded_context': {
+                'entities': [
+                    {'id': 'cup_1', 'kind': 'object', 'class': 'Cup'},
+                    {'id': 'person_1', 'label': 'ALEX', 'kind': 'person', 'class': 'Human'},
+                ],
+                'locations': [
+                    {
+                        'id': 'kitchen',
+                        'label': 'kitchen',
+                        'contains': [{'id': 'cup_1', 'kind': 'object'}],
+                    }
+                ],
+            },
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id=request.goal_id, plan_version=1)
+
+    assert decision.mode == 'clarify'
+    assert all(
+        step.get('name') != 'bring_object'
+        for step in decision.payload['plan']['steps']
+    )
+    assert provider.messages == []
+
+
+def test_planner_engine_rejects_empty_delivery_selection_before_model() -> None:
+    provider = _FakeProvider(
+        '{"steps":[{"type":"skill","name":"bring_object",'
+        '"args":{"target":"cup_1","recipient":"kitchen"}}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_empty_delivery_selection',
+            'goal_id': 'goal_empty_delivery_selection',
+            'goal_text': 'bring every visible object to ALEX',
+            'normalized_intents': ['bring_object'],
+            'target_selection': {
+                'selection_kind': 'visible_objects',
+                'operation': 'deliver',
+                'member_ids': [],
+                'recipient_id': 'person_1',
+            },
+            'grounded_context': {
+                'entities': [
+                    {'id': 'person_1', 'label': 'ALEX', 'kind': 'person'},
+                ],
+                'locations': [
+                    {'id': 'kitchen', 'label': 'kitchen', 'kind': 'location'},
+                ],
+            },
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id=request.goal_id, plan_version=1)
+
+    assert decision.mode == 'clarify'
+    assert provider.messages == []
+
+
+def test_planner_engine_stops_selection_required_request_before_model_without_selection() -> None:
+    provider = _FakeProvider('{}')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_unbounded_visit',
+            'goal_id': 'goal_unbounded_visit',
+            'goal_text': 'perform the requested object sequence',
+            'normalized_intents': ['navigate_to'],
+            'scene_targets': ['cup_1', 'person_1'],
+            'grounded_context': {
+                'entities': [
+                    {'id': 'cup_1', 'kind': 'object', 'class': 'Cup'},
+                    {'id': 'person_1', 'kind': 'person', 'class': 'Human'},
+                ]
+            },
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id=request.goal_id, plan_version=1)
+
+    _assert_structured_clarification(decision, 'complete grounded target selection')
+    assert provider.messages == []
+
+
+def test_planner_engine_does_not_require_object_selection_for_person_navigation() -> None:
+    provider = _FakeProvider(
+        '{"steps":['
+        '{"type":"skill","name":"navigate_to","args":{"target":"person_1"}},'
+        '{"type":"skill","name":"wave_greet","args":{"target":"person_1"}},'
+        '{"type":"skill","name":"report_result","args":{}}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_person_wave',
+            'goal_id': 'goal_person_wave',
+            'goal_text': 'go to ALEX, wave, and report',
+            'normalized_intents': ['navigate_to', 'wave_greet', 'report_result'],
+            'scene_targets': ['person_1'],
+            'grounded_context': {
+                'entities': [
+                    {'id': 'person_1', 'label': 'ALEX', 'kind': 'person', 'class': 'Human'},
+                ]
+            },
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id=request.goal_id, plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert provider.messages
+
+
+def test_planner_engine_recovers_validated_ordered_visit_after_invalid_output() -> None:
+    provider = _FakeProvider('{}')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_structured_visit',
+            'goal_id': 'goal_structured_visit',
+            'goal_text': 'perform the requested sequence',
+            'normalized_intents': ['navigate_to', 'report_result'],
+            'planner_mode': 'multi_step',
+            'target_selection': {
+                'selection_kind': 'visible_objects',
+                'operation': 'visit',
+                'member_ids': ['apple_1', 'book_1'],
+                'ordering': 'sequential',
+                'report_policy': 'per_target',
+            },
+            'grounded_context': {
+                'entities': [
+                    {'id': 'apple_1', 'label': 'apple', 'kind': 'object', 'class': 'Apple'},
+                    {'id': 'book_1', 'label': 'book', 'kind': 'object', 'class': 'Book'},
+                ]
+            },
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id=request.goal_id, plan_version=1)
+
+    _assert_target_selection_recovery(
+        decision,
+        skill_names=['navigate_to', 'report_result', 'navigate_to', 'report_result'],
+        scene_targets=['apple_1', 'book_1'],
+    )
+
+
+def test_planner_engine_recovers_validated_compact_room_after_invalid_output() -> None:
     provider = _FakeProvider('{}')
     engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
     request = PlannerRequest.from_payload(
@@ -547,6 +1098,14 @@ def test_planner_engine_matches_compact_room_id_without_named_alias() -> None:
             'goal_text': 'Bring every object from the kitchen to ALEX and report what happened.',
             'normalized_intents': ['bring_object', 'report_result'],
             'planner_mode': 'multi_step',
+            'target_selection': {
+                'selection_kind': 'location_members',
+                'operation': 'deliver',
+                'source_location_id': 'codex_iiia_kitchen',
+                'member_ids': ['codex_iiia_cup'],
+                'recipient_id': 'codex_iiia_alex',
+                'report_policy': 'final',
+            },
             'grounded_context': {
                 'entities': [
                     {'id': 'codex_iiia_cup', 'label': 'IIIA_CUP', 'kind': 'object', 'class': 'Cup'},
@@ -588,16 +1147,14 @@ def test_planner_engine_matches_compact_room_id_without_named_alias() -> None:
 
     decision = engine.plan_request(request, goal_id='goal_iiia_kitchen_delivery', plan_version=1)
 
-    assert decision.mode == 'grounded_location_group_fallback'
-    assert decision.payload['plan']['steps'][0]['args'] == {
-        'target': 'codex_iiia_cup',
-        'recipient': 'codex_iiia_alex',
-        'source': 'codex_iiia_kitchen',
-    }
-    assert decision.payload['plan']['scene_targets'] == ['codex_iiia_cup', 'codex_iiia_alex']
+    _assert_target_selection_recovery(
+        decision,
+        skill_names=['bring_object', 'report_result'],
+        scene_targets=['codex_iiia_cup', 'codex_iiia_alex'],
+    )
 
 
-def test_planner_engine_prefers_grounded_group_members_over_model_container_plan() -> None:
+def test_planner_engine_recovers_members_after_model_targets_container() -> None:
     provider = _FakeProvider(
         '{"steps":[{"type":"skill","name":"bring_object","args":{"target":"codex_lab_table_section","recipient":"person_1","source":"codex_lab_table_section"}}]}'
     )
@@ -609,6 +1166,14 @@ def test_planner_engine_prefers_grounded_group_members_over_model_container_plan
             'goal_text': 'Bring every object from the work table to ALEX and report what happened.',
             'normalized_intents': ['bring_object', 'report_result'],
             'planner_mode': 'multi_step',
+            'target_selection': {
+                'selection_kind': 'location_members',
+                'operation': 'deliver',
+                'source_location_id': 'codex_lab_table_section',
+                'member_ids': ['codex_lab_cup', 'codex_lab_phone'],
+                'recipient_id': 'person_1',
+                'report_policy': 'final',
+            },
             'grounded_context': {
                 'entities': [
                     {'id': 'codex_lab_cup', 'label': 'cup', 'kind': 'object', 'class': 'Cup'},
@@ -643,26 +1208,14 @@ def test_planner_engine_prefers_grounded_group_members_over_model_container_plan
         plan_version=1,
     )
 
-    steps = decision.payload['plan']['steps']
-    assert decision.mode == 'grounded_location_group_fallback'
-    assert [step['args']['target'] for step in steps[:2]] == [
-        'codex_lab_cup',
-        'codex_lab_phone',
-    ]
-    assert all(
-        step['args']['target'] != 'codex_lab_table_section'
-        for step in steps
-        if step['type'] == 'skill' and step['name'] == 'bring_object'
+    _assert_target_selection_recovery(
+        decision,
+        skill_names=['bring_object', 'bring_object', 'report_result'],
+        scene_targets=['codex_lab_cup', 'codex_lab_phone', 'person_1'],
     )
-    assert decision.payload['plan']['scene_targets'] == [
-        'codex_lab_cup',
-        'codex_lab_phone',
-        'person_1',
-    ]
-    assert provider.messages == []
 
 
-def test_planner_engine_falls_back_to_ordered_location_walk_after_invalid_json() -> None:
+def test_planner_engine_recovers_validated_ordered_walk_after_invalid_json() -> None:
     provider = _FakeProvider('I cannot format a plan right now.')
     engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
     request = PlannerRequest.from_payload(
@@ -672,6 +1225,14 @@ def test_planner_engine_falls_back_to_ordered_location_walk_after_invalid_json()
             'goal_text': 'Walk to every object on the table and let me know when you get to each one.',
             'normalized_intents': ['navigate_to', 'report_result'],
             'planner_mode': 'multi_step',
+            'target_selection': {
+                'selection_kind': 'location_members',
+                'operation': 'visit',
+                'source_location_id': 'table_1',
+                'member_ids': ['apple_1', 'book_1'],
+                'ordering': 'sequential',
+                'report_policy': 'per_target',
+            },
             'grounded_context': {
                 'entities': [
                     {'id': 'apple_1', 'label': 'apple', 'kind': 'object', 'class': 'Apple'},
@@ -694,22 +1255,14 @@ def test_planner_engine_falls_back_to_ordered_location_walk_after_invalid_json()
 
     decision = engine.plan_request(request, goal_id='goal_ordered_walk', plan_version=1)
 
-    steps = decision.payload['plan']['steps']
-    assert decision.mode == 'grounded_ordered_walk_fallback'
-    assert [step['name'] for step in steps] == [
-        'navigate_to',
-        'report_result',
-        'navigate_to',
-        'report_result',
-    ]
-    assert steps[0]['args'] == {'target': 'apple_1'}
-    assert steps[1]['requires'] == ['step_1']
-    assert steps[2]['requires'] == ['step_2']
-    assert steps[3]['requires'] == ['step_3']
-    assert decision.payload['plan']['scene_targets'] == ['apple_1', 'book_1']
+    _assert_target_selection_recovery(
+        decision,
+        skill_names=['navigate_to', 'report_result', 'navigate_to', 'report_result'],
+        scene_targets=['apple_1', 'book_1'],
+    )
 
 
-def test_ordered_location_walk_scene_targets_do_not_include_support_locations() -> None:
+def test_ordered_walk_recovery_publishes_members_without_support_locations() -> None:
     provider = _FakeProvider('not json')
     engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
     request = PlannerRequest.from_payload(
@@ -721,6 +1274,18 @@ def test_ordered_location_walk_scene_targets_do_not_include_support_locations() 
             ),
             'normalized_intents': ['navigate_to', 'report_result'],
             'planner_mode': 'multi_step',
+            'target_selection': {
+                'selection_kind': 'location_members',
+                'operation': 'visit',
+                'source_location_id': 'codex_base_table',
+                'member_ids': [
+                    'codex_probe_book',
+                    'codex_probe_cup',
+                    'codex_probe_phone',
+                ],
+                'ordering': 'sequential',
+                'report_policy': 'per_target',
+            },
             'grounded_context': {
                 'entities': [
                     {'id': 'codex_base_table', 'label': 'table', 'kind': 'object', 'class': 'Table'},
@@ -774,18 +1339,18 @@ def test_ordered_location_walk_scene_targets_do_not_include_support_locations() 
         plan_version=1,
     )
 
-    steps = decision.payload['plan']['steps']
-    assert decision.mode == 'grounded_ordered_walk_fallback'
-    assert [step['args']['target'] for step in steps if step['name'] == 'navigate_to'] == [
-        'codex_probe_book',
-        'codex_probe_cup',
-        'codex_probe_phone',
-    ]
-    assert decision.payload['plan']['scene_targets'] == [
-        'codex_probe_book',
-        'codex_probe_cup',
-        'codex_probe_phone',
-    ]
+    _assert_target_selection_recovery(
+        decision,
+        skill_names=[
+            'navigate_to',
+            'report_result',
+            'navigate_to',
+            'report_result',
+            'navigate_to',
+            'report_result',
+        ],
+        scene_targets=['codex_probe_book', 'codex_probe_cup', 'codex_probe_phone'],
+    )
 
 
 def test_planner_engine_clarifies_location_group_delivery_without_recipient() -> None:
@@ -816,10 +1381,7 @@ def test_planner_engine_clarifies_location_group_delivery_without_recipient() ->
         plan_version=1,
     )
 
-    assert decision.mode == 'clarify'
-    assert decision.payload['plan']['steps'][0]['args']['text'] == (
-        'Who or where should I bring those objects to?'
-    )
+    _assert_structured_clarification(decision, 'complete grounded target selection')
 
 
 def test_planner_engine_clarifies_location_group_delivery_when_named_person_is_absent() -> None:
@@ -874,13 +1436,10 @@ def test_planner_engine_clarifies_location_group_delivery_when_named_person_is_a
         plan_version=1,
     )
 
-    assert decision.mode == 'clarify'
-    assert decision.payload['plan']['steps'][0]['args']['text'] == (
-        'Who or where should I bring those objects to?'
-    )
+    _assert_structured_clarification(decision, 'complete grounded target selection')
 
 
-def test_planner_engine_falls_back_to_grounded_look_report_after_invalid_output() -> None:
+def test_planner_engine_does_not_compile_grounded_look_after_invalid_output() -> None:
     engine = _engine_for_response('{}', retry_budget=1)
     request = PlannerRequest.from_payload(
         {
@@ -908,11 +1467,7 @@ def test_planner_engine_falls_back_to_grounded_look_report_after_invalid_output(
 
     decision = engine.plan_request(request, goal_id='goal_look_report', plan_version=1)
 
-    assert decision.mode == 'grounded_look_fallback'
-    steps = decision.payload['plan']['steps']
-    assert [step['name'] for step in steps] == ['look_at', 'report_result']
-    assert steps[0]['args'] == {'target_frame': 'codex_probe_cup'}
-    assert decision.payload['plan']['scene_targets'] == ['codex_probe_cup']
+    _assert_invalid_planner_failure(decision)
 
 
 def test_planner_engine_clarifies_grounded_look_when_target_is_ambiguous() -> None:
@@ -939,10 +1494,7 @@ def test_planner_engine_clarifies_grounded_look_when_target_is_ambiguous() -> No
         plan_version=1,
     )
 
-    assert decision.mode == 'clarify'
-    assert decision.payload['plan']['steps'][0]['args']['text'] == (
-        'Which object or person should I look at?'
-    )
+    _assert_invalid_planner_failure(decision)
 
 
 def test_planner_engine_repairs_unsupported_composite_motion_object() -> None:
@@ -984,6 +1536,60 @@ def test_planner_engine_repairs_unsupported_composite_motion_object() -> None:
         'head_look_right',
         'head_look_up',
         'head_look_down',
+    ]
+
+
+def test_planner_engine_recovers_normalized_motion_sequence_after_retry_exhaustion() -> None:
+    invalid_output = (
+        '{"steps":[{"type":"skill","name":"perform_motion",'
+        '"args":{"object":"head_look_all"}}]}'
+    )
+    provider = _SequenceProvider([invalid_output, invalid_output, invalid_output])
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_all_directions_recovery',
+            'goal_id': 'goal_all_directions_recovery',
+            'goal_text': 'move your head in all directions',
+            'normalized_intents': [
+                'head_look_left',
+                'head_look_right',
+                'head_look_up',
+                'head_look_down',
+            ],
+            'planner_mode': 'multi_step',
+        }
+    )
+
+    decision = engine.plan_request(
+        request,
+        goal_id='goal_all_directions_recovery',
+        plan_version=1,
+    )
+
+    assert decision.mode == 'validated_motion_sequence_recovery'
+    assert len(provider.messages) == 2
+    assert [step['name'] for step in decision.payload['plan']['steps']] == [
+        'perform_motion',
+        'perform_motion',
+        'perform_motion',
+        'perform_motion',
+        'report_result',
+    ]
+    assert [
+        step['args'].get('object')
+        for step in decision.payload['plan']['steps'][:4]
+    ] == [
+        'head_look_left',
+        'head_look_right',
+        'head_look_up',
+        'head_look_down',
+    ]
+    assert decision.payload['plan']['steps'][-1]['requires'] == [
+        'step_1',
+        'step_2',
+        'step_3',
+        'step_4',
     ]
 
 
@@ -1041,6 +1647,18 @@ def test_planner_engine_strips_prefilled_report_summary_after_navigation() -> No
             'goal_text': 'navigate to the apple and report when done',
             'normalized_intents': ['navigate_to', 'report_result'],
             'planner_mode': 'multi_step',
+            'target_selection': {
+                'selection_kind': 'explicit_members',
+                'operation': 'visit',
+                'member_ids': ['apple_1'],
+                'ordering': 'sequential',
+                'report_policy': 'final',
+            },
+            'grounded_context': {
+                'entities': [
+                    {'id': 'apple_1', 'label': 'apple', 'kind': 'object', 'class': 'Apple'},
+                ],
+            },
         }
     )
 
@@ -1143,9 +1761,7 @@ def test_planner_engine_clarifies_when_retry_budget_is_exhausted() -> None:
     )
 
     decision = engine.plan_request(request, feedback=feedback, goal_id='goal_3', plan_version=2)
-    assert decision.mode == 'clarify'
-    assert decision.payload['plan']['steps'][0]['type'] == 'say'
-    assert decision.payload['plan']['replan_hint'] == 'clarify_user'
+    _assert_structured_clarification(decision)
 
 
 def test_planner_engine_caps_model_retry_budget_to_remaining_feedback_budget() -> None:
@@ -1354,3 +1970,83 @@ def test_planner_engine_retries_scan_result_wording_outside_plan() -> None:
         'scan',
         'report_result',
     ]
+
+
+def test_invalid_model_recovers_validated_navigation_to_person() -> None:
+    provider = _FakeProvider('not json')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_nav_person',
+            'goal_id': 'goal_nav_person',
+            'goal_text': 'walk to person edcca',
+            'normalized_intents': ['navigate_to'],
+            'planner_mode': 'multi_step',
+            'target_selection': {
+                'selection_kind': 'explicit_members',
+                'operation': 'visit',
+                'member_ids': ['anonymous_person_edcca'],
+                'ordering': 'sequential',
+                'report_policy': 'none',
+            },
+            'grounded_context': {
+                'entities': [
+                    {
+                        'id': 'anonymous_person_edcca',
+                        'label': 'anonymous_person_edcca',
+                        'kind': 'person',
+                        'class': 'Human',
+                    }
+                ]
+            },
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_nav_person', plan_version=1)
+
+    _assert_target_selection_recovery(
+        decision,
+        skill_names=['navigate_to'],
+        scene_targets=['anonymous_person_edcca'],
+    )
+
+
+def test_invalid_model_recovers_validated_navigation_to_location() -> None:
+    provider = _FakeProvider('not json')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_nav_location',
+            'goal_id': 'goal_nav_location',
+            'goal_text': 'walk to the kitchen',
+            'normalized_intents': ['navigate_to'],
+            'planner_mode': 'multi_step',
+            'target_selection': {
+                'selection_kind': 'explicit_members',
+                'operation': 'visit',
+                'member_ids': ['kitchen'],
+                'ordering': 'sequential',
+                'report_policy': 'none',
+            },
+            'grounded_context': {
+                'entities': [],
+                'locations': [
+                    {
+                        'id': 'kitchen',
+                        'label': 'kitchen',
+                        'contains': [
+                            {'id': 'cup_1', 'kind': 'object', 'class': 'Cup'},
+                        ],
+                    },
+                ],
+            },
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id='goal_nav_location', plan_version=1)
+
+    _assert_target_selection_recovery(
+        decision,
+        skill_names=['navigate_to'],
+        scene_targets=['kitchen'],
+    )

@@ -4,9 +4,9 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime
-from datetime import timezone
+import ast
 import json
+import random
 import re
 import shlex
 import subprocess
@@ -18,9 +18,12 @@ from pathlib import Path
 DEFAULT_CONTAINER = "nao_ros2"
 VOICE_ID = "anonymous_speaker"
 VOICE_TRACKED_TOPIC = "/nao_chatbot/humans/voices/tracked"
-# dialogue_manager remaps its tracked-voice input topic, then subscribes to the
-# raw per-voice speech topic it constructs internally.
-VOICE_SPEECH_TOPIC = "/humans/voices/anonymous_speaker/speech"
+# dialogue_manager receives the tracked voice through the integrated remap, then
+# subscribes to the per-voice HRI speech topic it constructs internally. The
+# launch profile remaps the shared rqt speaker explicitly; synthetic ids remain
+# on the raw dynamic namespace.
+VOICE_SPEECH_PREFIX = "/humans/voices"
+VOICE_SPEECH_TOPIC = f"/nao_chatbot{VOICE_SPEECH_PREFIX}/{VOICE_ID}/speech"
 VOICE_TRACKED_QOS = "--qos-reliability reliable --qos-durability transient_local"
 VOICE_SPEECH_QOS = "--qos-reliability reliable --qos-durability volatile"
 RQT_DISPLAY_ROSOUT_TOPIC = "/rosout"
@@ -28,8 +31,10 @@ RQT_DISPLAY_CAPTIONS_TOPIC = "/dialogue_manager/closed_captions"
 RQT_DISPLAY_ROSOUT_QOS = "--qos-reliability reliable --qos-durability transient_local"
 TOPIC_SAMPLE_TIMEOUT_SEC = 1.5
 TOPIC_SAMPLE_KILL_AFTER_SEC = 1.0
-DEFAULT_GLOBAL_TIMEOUT_SEC = 420
+DEFAULT_GLOBAL_TIMEOUT_SEC = 1200
 DEFAULT_KB_LIFESPAN_SEC = 300
+KB_FIXTURE_READY_TIMEOUT_SEC = 12.0
+KB_FIXTURE_READY_POLL_SEC = 0.5
 DEFAULT_ENVIRONMENT_FIXTURE_PATH = (
     Path(__file__).resolve().parents[4]
     / "src"
@@ -58,6 +63,18 @@ class KbInjection:
     statements: tuple[str, ...]
     query_patterns: tuple[str, ...]
     query_vars: tuple[str, ...]
+    retract_statements: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class KbPostcondition:
+    """KnowledgeCore query that must hold after the user turn."""
+
+    name: str
+    query_patterns: tuple[str, ...]
+    query_vars: tuple[str, ...] = ("?subject",)
+    min_rows: int = 1
+    expected_values: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -80,6 +97,16 @@ class ProbeCase:
     conversation_group: str | None = None
     environment_ids: tuple[str, ...] = ()
     absence_guards: tuple[KbAbsenceGuard, ...] = ()
+    expected_outcome: str = "observe"
+    all_required_context: bool = False
+    requires_target_selection: bool = False
+    requires_replan: bool = False
+    expected_member_ids: tuple[str, ...] = ()
+    expected_recipient_id: str = ""
+    expected_report_policy: str = ""
+    postcondition: KbPostcondition | None = None
+    expected_speech_terms: tuple[str, ...] = ()
+    fake_mode_overrides: tuple[tuple[str, str], ...] = ()
 
 
 SMOKE_CASES = (
@@ -120,13 +147,14 @@ SMOKE_CASES = (
 )
 
 MAIN_QUESTIONNAIRE_CASES = (
-    ProbeCase("dialogue_greeting", "simple_dialogue", "Hey, how are you?", 8.0, conversation_group="dialogue_basic"),
+    ProbeCase("dialogue_greeting", "simple_dialogue", "Hey, how are you?", 8.0, conversation_group="dialogue_basic", expected_outcome="dialogue_only"),
     ProbeCase(
         "dialogue_favorite_movie",
         "simple_dialogue",
         "What is your favourite movie?",
         8.0,
         conversation_group="dialogue_basic",
+        expected_outcome="dialogue_only",
     ),
     ProbeCase(
         "dialogue_movie_followup",
@@ -134,6 +162,7 @@ MAIN_QUESTIONNAIRE_CASES = (
         "My favourite movie is Back to the Future!",
         8.0,
         conversation_group="dialogue_basic",
+        expected_outcome="dialogue_only",
     ),
     ProbeCase(
         "dialogue_weekend_plans",
@@ -141,6 +170,7 @@ MAIN_QUESTIONNAIRE_CASES = (
         "Any ideas for plans this weekend?",
         8.0,
         conversation_group="dialogue_basic",
+        expected_outcome="dialogue_only",
     ),
     ProbeCase(
         "dialogue_speed_of_light",
@@ -148,8 +178,9 @@ MAIN_QUESTIONNAIRE_CASES = (
         "What is the speed of light?",
         8.0,
         conversation_group="dialogue_basic",
+        expected_outcome="dialogue_only",
     ),
-    ProbeCase("kb_visible_now_baseline", "kb_query_dialogue", "What can you see now?", 10.0),
+    ProbeCase("kb_visible_now_baseline", "kb_query_dialogue", "What can you see now?", 10.0, expected_outcome="dialogue_only"),
     ProbeCase(
         "kb_probe_scene_update",
         "kb_query_dialogue",
@@ -173,6 +204,7 @@ MAIN_QUESTIONNAIRE_CASES = (
             ),
             query_vars=("?predicate", "?object"),
         ),
+        expected_outcome="dialogue_only",
     ),
     ProbeCase(
         "kb_object_on_table",
@@ -197,6 +229,7 @@ MAIN_QUESTIONNAIRE_CASES = (
             ),
             query_vars=("?predicate", "?object"),
         ),
+        expected_outcome="dialogue_only",
     ),
     ProbeCase(
         "kb_cup_name",
@@ -215,6 +248,7 @@ MAIN_QUESTIONNAIRE_CASES = (
             query_patterns=(f"{KB_PROBE_OBJECT_ID} ?predicate ?object",),
             query_vars=("?predicate", "?object"),
         ),
+        expected_outcome="dialogue_only",
     ),
     ProbeCase(
         "kb_multi_object_count",
@@ -244,8 +278,9 @@ MAIN_QUESTIONNAIRE_CASES = (
             ),
             query_vars=("?predicate", "?object"),
         ),
+        expected_outcome="dialogue_only",
     ),
-    ProbeCase("skill_head_up", "simple_skill_execution", "Move your head up.", 80.0),
+    ProbeCase("skill_head_up", "simple_skill_execution", "Move your head up.", 80.0, expected_outcome="execute_no_clarification"),
     ProbeCase(
         "skill_pick_phone_generic",
         "simple_fake_skill_execution",
@@ -264,6 +299,8 @@ MAIN_QUESTIONNAIRE_CASES = (
             query_patterns=("codex_skill_phone ?predicate ?object",),
             query_vars=("?predicate", "?object"),
         ),
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
     ),
     ProbeCase(
         "skill_pick_object_on_table",
@@ -288,6 +325,8 @@ MAIN_QUESTIONNAIRE_CASES = (
             ),
             query_vars=("?predicate", "?object"),
         ),
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
     ),
     ProbeCase(
         "skill_look_at_person",
@@ -306,18 +345,22 @@ MAIN_QUESTIONNAIRE_CASES = (
             query_patterns=(f"{KB_MAXIMAL_PERSON_ID} ?predicate ?object",),
             query_vars=("?predicate", "?object"),
         ),
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
     ),
     ProbeCase(
         "kb_mutation_add_red_cup",
         "kb_mutation_dialogue",
         "Add a red cup to your KB.",
         20.0,
+        expected_outcome="execute_no_clarification",
     ),
     ProbeCase(
         "composite_head_all_directions",
         "composite_skill_execution",
         "Can you move your head in all directions?",
         95.0,
+        expected_outcome="execute_no_clarification",
     ),
     ProbeCase(
         "composite_bring_every_object_to_person",
@@ -349,6 +392,8 @@ MAIN_QUESTIONNAIRE_CASES = (
             ),
             query_vars=("?predicate", "?object"),
         ),
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
     ),
     ProbeCase(
         "maximal_kitchen_cup_to_operator",
@@ -377,6 +422,7 @@ MAIN_QUESTIONNAIRE_CASES = (
             ),
             query_vars=("?predicate", "?object"),
         ),
+        expected_outcome="clarification_expected",
     ),
     ProbeCase(
         "composite_go_to_person_wave_report",
@@ -397,6 +443,8 @@ MAIN_QUESTIONNAIRE_CASES = (
             query_patterns=(f"{KB_MAXIMAL_PERSON_ID} ?predicate ?object",),
             query_vars=("?predicate", "?object"),
         ),
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
     ),
     ProbeCase(
         "composite_walk_every_object_reports_main",
@@ -429,6 +477,370 @@ MAIN_QUESTIONNAIRE_CASES = (
             ),
             query_vars=("?predicate", "?object"),
         ),
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=(
+            "codex_probe_apple",
+            "codex_probe_book",
+            "codex_probe_phone",
+        ),
+        expected_report_policy="per_target",
+    ),
+    ProbeCase(
+        "dialogue_non_action_recipient_memory",
+        "route_safety",
+        "Remember that ALEX is the recipient, but do not act yet.",
+        12.0,
+        expected_outcome="dialogue_only",
+    ),
+)
+
+
+KB_STRESS_CASES = (
+    ProbeCase(
+        "kb_stress_seed_inventory",
+        "kb_stress_dialogue",
+        "What are the names, colors, and current locations of the two objects in the test area?",
+        18.0,
+        setup=KbInjection(
+            object_id="codex_stress_scene",
+            statements=(
+                "codex_stress_table rdf:type Table",
+                "codex_stress_table dbp:name work_table",
+                "codex_stress_shelf rdf:type Shelf",
+                "codex_stress_shelf dbp:name storage_shelf",
+                "codex_stress_cup rdf:type Cup",
+                "codex_stress_cup dbp:name TITAS",
+                "codex_stress_cup dbp:color gold",
+                "codex_stress_cup oro:isOn codex_stress_table",
+                "codex_stress_book rdf:type Book",
+                "codex_stress_book dbp:name MIDAS",
+                "codex_stress_book dbp:color blue",
+                "codex_stress_book oro:isOn codex_stress_table",
+                "myself sees codex_stress_table",
+                "myself sees codex_stress_shelf",
+                "myself sees codex_stress_cup",
+                "myself sees codex_stress_book",
+                "myself canReach codex_stress_cup",
+                "myself canReach codex_stress_book",
+            ),
+            query_patterns=(
+                "codex_stress_cup ?predicate ?object",
+                "codex_stress_book ?predicate ?object",
+            ),
+            query_vars=("?predicate", "?object"),
+        ),
+        conversation_group="kb_stress_chain",
+        expected_outcome="dialogue_only",
+        expected_speech_terms=("TITAS", "MIDAS", "gold", "blue", "work table"),
+    ),
+    ProbeCase(
+        "kb_stress_revise_support",
+        "kb_stress_relation_revision",
+        "The cup has been moved. Which surface is TITAS on now, and where is MIDAS?",
+        18.0,
+        setup=KbInjection(
+            object_id="codex_stress_support_revision",
+            statements=("codex_stress_cup oro:isOn codex_stress_shelf",),
+            retract_statements=("codex_stress_cup oro:isOn codex_stress_table",),
+            query_patterns=("codex_stress_cup oro:isOn ?support",),
+            query_vars=("?support",),
+        ),
+        conversation_group="kb_stress_chain",
+        expected_outcome="dialogue_only",
+        expected_speech_terms=("TITAS", "storage shelf", "MIDAS", "work table"),
+    ),
+    ProbeCase(
+        "kb_stress_revised_relation_query",
+        "kb_stress_dialogue",
+        "Which object is on the storage shelf, and which object remains on the work table?",
+        18.0,
+        conversation_group="kb_stress_chain",
+        expected_outcome="dialogue_only",
+        expected_speech_terms=("TITAS", "storage shelf", "MIDAS", "work table"),
+    ),
+    ProbeCase(
+        "kb_stress_grounded_delivery",
+        "kb_stress_execution",
+        "Bring TITAS from the storage shelf to the person named ALEX and report what happened.",
+        150.0,
+        setup=KbInjection(
+            object_id="codex_stress_recipient",
+            statements=(
+                "codex_stress_alex rdf:type Human",
+                "codex_stress_alex dbp:name ALEX",
+                "codex_stress_alex dbp:frameId codex_stress_alex",
+                "codex_stress_alex dbp:poseSource semantic_fixture",
+                "myself sees codex_stress_alex",
+            ),
+            query_patterns=("codex_stress_alex ?predicate ?object",),
+            query_vars=("?predicate", "?object"),
+        ),
+        conversation_group="kb_stress_chain",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=("codex_stress_cup",),
+        expected_recipient_id="codex_stress_alex",
+        expected_report_policy="final",
+        expected_speech_terms=("TITAS", "ALEX"),
+        postcondition=KbPostcondition(
+            "titas_delivered_to_alex",
+            ("codex_stress_cup oro:isAt ?recipient",),
+            ("?recipient",),
+            expected_values=("codex_stress_alex",),
+        ),
+    ),
+    ProbeCase(
+        "kb_stress_delivery_postcondition",
+        "kb_stress_dialogue",
+        "Where are TITAS and MIDAS now?",
+        18.0,
+        conversation_group="kb_stress_chain",
+        expected_outcome="dialogue_only",
+        expected_speech_terms=("TITAS", "ALEX", "MIDAS", "work table"),
+    ),
+    ProbeCase(
+        "kb_stress_move_remaining_object",
+        "kb_stress_execution",
+        "MIDAS is now on the storage shelf. Bring every object on that shelf to ALEX and summarize the overall result.",
+        150.0,
+        setup=KbInjection(
+            object_id="codex_stress_book_revision",
+            statements=("codex_stress_book oro:isOn codex_stress_shelf",),
+            retract_statements=("codex_stress_book oro:isOn codex_stress_table",),
+            query_patterns=("codex_stress_book oro:isOn ?support",),
+            query_vars=("?support",),
+        ),
+        conversation_group="kb_stress_chain",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=("codex_stress_book",),
+        expected_recipient_id="codex_stress_alex",
+        expected_report_policy="final",
+        expected_speech_terms=("MIDAS", "ALEX"),
+        postcondition=KbPostcondition(
+            "midas_delivered_to_alex",
+            ("codex_stress_book oro:isAt ?recipient",),
+            ("?recipient",),
+            expected_values=("codex_stress_alex",),
+        ),
+    ),
+    ProbeCase(
+        "kb_stress_mixed_final_query",
+        "kb_stress_dialogue",
+        "Summarize the names, colors, and current locations of TITAS and MIDAS after those changes.",
+        20.0,
+        conversation_group="kb_stress_chain",
+        expected_outcome="dialogue_only",
+        expected_speech_terms=("TITAS", "MIDAS", "gold", "blue", "ALEX"),
+    ),
+)
+
+CAPABILITY_EXTREME_SEED = 20260716
+
+
+def _build_capability_extreme_cases(seed: int) -> tuple[ProbeCase, ...]:
+    """Build reproducible long-horizon cases without fixed lexical phrasing."""
+    rng = random.Random(seed)
+    report_phrase = rng.choice(
+        ("tell me what happened", "summarize the result", "report the outcome")
+    )
+    return_phrase = rng.choice(("return to", "go back to", "come back to"))
+    all_objects_phrase = rng.choice(
+        ("each visible object", "all objects in view", "every object you can see")
+    )
+    scene = KbInjection(
+        object_id="codex_extreme_scene",
+        statements=(
+            "codex_extreme_table rdf:type Table",
+            "codex_extreme_table dbp:name work_table",
+            "codex_extreme_shelf rdf:type Shelf",
+            "codex_extreme_shelf dbp:name storage_shelf",
+            "codex_extreme_cup rdf:type Cup",
+            "codex_extreme_cup dbp:name TITAS",
+            "codex_extreme_cup dbp:color gold",
+            "codex_extreme_cup oro:isOn codex_extreme_table",
+            "codex_extreme_book rdf:type Book",
+            "codex_extreme_book dbp:name MIDAS",
+            "codex_extreme_book dbp:color blue",
+            "codex_extreme_book oro:isOn codex_extreme_table",
+            "codex_extreme_book dbp:locationHint under_table",
+            "codex_extreme_apple rdf:type Apple",
+            "codex_extreme_apple dbp:name ATLAS",
+            "codex_extreme_apple dbp:color red",
+            "codex_extreme_apple oro:isOn codex_extreme_table",
+            "codex_extreme_alex rdf:type Human",
+            "codex_extreme_alex dbp:name ALEX",
+            "codex_extreme_alex dbp:frameId codex_extreme_alex",
+            "codex_extreme_alex dbp:poseSource semantic_fixture",
+            "myself sees codex_extreme_table",
+            "myself sees codex_extreme_shelf",
+            "myself sees codex_extreme_cup",
+            "myself sees codex_extreme_book",
+            "myself sees codex_extreme_apple",
+            "myself sees codex_extreme_alex",
+            "myself canReach codex_extreme_cup",
+            "myself canReach codex_extreme_book",
+            "myself canReach codex_extreme_apple",
+        ),
+        query_patterns=(
+            "codex_extreme_cup ?predicate ?object",
+            "codex_extreme_book ?predicate ?object",
+            "codex_extreme_apple ?predicate ?object",
+            "codex_extreme_alex ?predicate ?object",
+        ),
+        query_vars=("?predicate", "?object"),
+    )
+    return (
+        ProbeCase(
+            "extreme_walk_pick_sit_report",
+            "capability_extreme_execution",
+            f"Walk to TITAS, pick it up, sit down, and {report_phrase}.",
+            180.0,
+            setup=scene,
+            expected_outcome="execute_no_clarification",
+            all_required_context=True,
+            expected_member_ids=("codex_extreme_cup",),
+            expected_report_policy="final",
+        ),
+        ProbeCase(
+            "extreme_kneel_under_table_pick_report",
+            "capability_extreme_execution",
+            f"Kneel down, pick up MIDAS from under the work table, stand, and {report_phrase}.",
+            180.0,
+            setup=scene,
+            expected_outcome="execute_no_clarification",
+            all_required_context=True,
+            expected_member_ids=("codex_extreme_book",),
+            expected_report_policy="final",
+        ),
+        ProbeCase(
+            "extreme_dialogue_inventory",
+            "capability_extreme_dialogue",
+            "Before we do anything, tell me which named objects and people are in the test area.",
+            20.0,
+            setup=scene,
+            conversation_group="extreme_dialogue_chain",
+            expected_outcome="dialogue_only",
+            expected_speech_terms=("TITAS", "MIDAS", "ATLAS", "ALEX"),
+        ),
+        ProbeCase(
+            "extreme_dialogue_sit_stand_grab_return",
+            "capability_extreme_execution",
+            f"Now sit, stand again, pick up MIDAS, {return_phrase} ALEX, and {report_phrase}.",
+            200.0,
+            conversation_group="extreme_dialogue_chain",
+            expected_outcome="execute_no_clarification",
+            all_required_context=True,
+            expected_member_ids=("codex_extreme_book",),
+            expected_recipient_id="codex_extreme_alex",
+            expected_report_policy="final",
+        ),
+        ProbeCase(
+            "extreme_all_objects_visit_look_wave_sit",
+            "capability_extreme_execution",
+            f"Stand up, walk to {all_objects_phrase} on the work table, look at each one, wave to ALEX, sit down, and give one final summary.",
+            240.0,
+            setup=scene,
+            expected_outcome="execute_no_clarification",
+            all_required_context=True,
+            requires_target_selection=True,
+            expected_member_ids=(
+                "codex_extreme_cup",
+                "codex_extreme_book",
+                "codex_extreme_apple",
+            ),
+            expected_report_policy="final",
+        ),
+        ProbeCase(
+            "extreme_pick_place_kneel_report",
+            "capability_extreme_execution",
+            f"Pick up ATLAS, place it on the storage shelf, kneel, and {report_phrase}.",
+            200.0,
+            setup=scene,
+            expected_outcome="execute_no_clarification",
+            all_required_context=True,
+            expected_member_ids=("codex_extreme_apple",),
+            expected_report_policy="final",
+            postcondition=KbPostcondition(
+                "atlas_on_storage_shelf",
+                ("codex_extreme_apple oro:isOn ?support",),
+                ("?support",),
+                expected_values=("codex_extreme_shelf",),
+            ),
+        ),
+        ProbeCase(
+            "extreme_unreachable_object_recovery",
+            "capability_extreme_recovery",
+            f"Kneel and try to pick up the heavy box under the table. If you cannot, recover safely and {report_phrase}.",
+            200.0,
+            setup=KbInjection(
+                object_id="codex_extreme_heavy_box",
+                statements=(
+                    "codex_extreme_heavy_box rdf:type Box",
+                    "codex_extreme_heavy_box dbp:name heavy_box",
+                    "codex_extreme_heavy_box dbp:locationHint under_table",
+                    "codex_extreme_heavy_box oro:isOn codex_extreme_table",
+                    "myself sees codex_extreme_heavy_box",
+                ),
+                query_patterns=("codex_extreme_heavy_box ?predicate ?object",),
+                query_vars=("?predicate", "?object"),
+            ),
+            absence_guards=(
+                KbAbsenceGuard(
+                    "no_reachability_claim",
+                    ("myself canReach codex_extreme_heavy_box",),
+                    ("?subject",),
+                ),
+            ),
+            expected_outcome="execute_no_clarification",
+            all_required_context=True,
+            requires_replan=True,
+            expected_report_policy="final",
+        ),
+    )
+
+
+CAPABILITY_EXTREME_CASES = _build_capability_extreme_cases(CAPABILITY_EXTREME_SEED)
+
+GROUNDING_PEOPLE_CASES = (
+    ProbeCase(
+        "grounding_people_stale_kb_rows",
+        "grounding_people_repeat",
+        "What people can you see right now?",
+        15.0,
+        setup=KbInjection(
+            object_id="codex_stale_people",
+            statements=(
+                "anonymous_person_stale rdf:type Human",
+                "myself sees anonymous_person_stale",
+                "sim_person_stale rdf:type Human",
+                "myself sees sim_person_stale",
+            ),
+            query_patterns=("?subject rdf:type Human",),
+            query_vars=("?subject",),
+        ),
+        conversation_group="grounding_people_stale_kb",
+        expected_outcome="dialogue_only",
+    ),
+    ProbeCase(
+        "grounding_people_current_scene",
+        "grounding_people_repeat",
+        "What people can you see right now?",
+        15.0,
+        conversation_group="grounding_people_repeat",
+        expected_outcome="dialogue_only",
+    ),
+    ProbeCase(
+        "grounding_people_repeated_scene",
+        "grounding_people_repeat",
+        "Please check again. What people can you see right now?",
+        15.0,
+        conversation_group="grounding_people_repeat",
+        expected_outcome="dialogue_only",
     ),
 )
 
@@ -490,6 +902,15 @@ COMPOSITE_CASES = (
             ),
             query_vars=("?predicate", "?object"),
         ),
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=(
+            "codex_probe_apple",
+            "codex_probe_book",
+            "codex_probe_phone",
+        ),
+        expected_report_policy="per_target",
     ),
     ProbeCase(
         "composite_look_at_probe_report",
@@ -572,6 +993,8 @@ COMPOSITE_CASES = (
             ),
             query_vars=("?predicate", "?object"),
         ),
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
     ),
     ProbeCase(
         "manipulation_multi_bring_report",
@@ -818,6 +1241,45 @@ INTENT_ABLATION_CASES = (
     ),
 )
 
+POSTURE_ABLATION_CASES = (
+    ProbeCase(
+        "posture_stand_report",
+        "posture_ablation",
+        "Stand up and tell me when you are standing.",
+        90.0,
+        conversation_group="posture_stand",
+        expected_outcome="execute_no_clarification",
+        expected_report_policy="final",
+    ),
+    ProbeCase(
+        "posture_sit_report",
+        "posture_ablation",
+        "Sit down and tell me when you are sitting.",
+        90.0,
+        conversation_group="posture_sit",
+        expected_outcome="execute_no_clarification",
+        expected_report_policy="final",
+    ),
+    ProbeCase(
+        "posture_kneel_report",
+        "posture_ablation",
+        "Kneel down and tell me when you are kneeling.",
+        90.0,
+        conversation_group="posture_kneel",
+        expected_outcome="execute_no_clarification",
+        expected_report_policy="final",
+    ),
+    ProbeCase(
+        "posture_sequence_final_state",
+        "posture_ablation",
+        "Sit down, then stand up again, and tell me your final posture.",
+        120.0,
+        conversation_group="posture_sequence",
+        expected_outcome="execute_no_clarification",
+        expected_report_policy="final",
+    ),
+)
+
 ENVIRONMENT_CASES = (
     ProbeCase(
         "environment_baseline_table_inventory",
@@ -850,6 +1312,12 @@ ENVIRONMENT_CASES = (
         180.0,
         environment_ids=("lab_sections",),
         conversation_group="preloaded_lab_sections",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=("codex_lab_cup", "codex_lab_manual", "codex_lab_phone"),
+        expected_recipient_id="codex_lab_alex",
+        expected_report_policy="final",
     ),
     ProbeCase(
         "environment_kitchen_inventory",
@@ -866,6 +1334,12 @@ ENVIRONMENT_CASES = (
         180.0,
         environment_ids=("kitchen_delivery",),
         conversation_group="preloaded_kitchen_delivery",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=("codex_kitchen_cup", "codex_kitchen_book"),
+        expected_recipient_id="codex_recipient_person",
+        expected_report_policy="final",
     ),
     ProbeCase(
         "environment_grouped_location_followup",
@@ -890,6 +1364,12 @@ ENVIRONMENT_CASES = (
         180.0,
         environment_ids=("iiia_floor",),
         conversation_group="preloaded_iiia_floor",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=("codex_iiia_cup",),
+        expected_recipient_id="codex_iiia_alex",
+        expected_report_policy="final",
     ),
     ProbeCase(
         "environment_gold_apple_handoff",
@@ -898,6 +1378,11 @@ ENVIRONMENT_CASES = (
         160.0,
         environment_ids=("gold_apple_handoff",),
         conversation_group="preloaded_gold_apple",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=("codex_gold_apple",),
+        expected_recipient_id="codex_gold_recipient",
     ),
     ProbeCase(
         "environment_gold_apple_followup",
@@ -925,6 +1410,17 @@ FAKE_DEEP_CASES = (
         180.0,
         environment_ids=("lab_table",),
         conversation_group="fake_deep_lab_table",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        requires_replan=True,
+        expected_member_ids=(
+            "codex_lab_apple",
+            "codex_lab_book",
+            "codex_lab_phone",
+            "codex_probe_cup",
+        ),
+        expected_report_policy="per_target",
     ),
     ProbeCase(
         "fake_deep_grouped_work_table_delivery",
@@ -933,6 +1429,12 @@ FAKE_DEEP_CASES = (
         180.0,
         environment_ids=("lab_sections",),
         conversation_group="fake_deep_lab_sections",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=("codex_lab_cup", "codex_lab_manual", "codex_lab_phone"),
+        expected_recipient_id="codex_lab_alex",
+        expected_report_policy="final",
     ),
     ProbeCase(
         "fake_deep_missing_object_recovery",
@@ -941,12 +1443,14 @@ FAKE_DEEP_CASES = (
         180.0,
         environment_ids=("baseline_table",),
         conversation_group="fake_deep_absent_target",
+        expected_outcome="recover_or_truthful_failure",
         absence_guards=(
             KbAbsenceGuard(
                 "missing_cup_subject_absent",
                 ("codex_missing_cup ?predicate ?object",),
             ),
         ),
+        fake_mode_overrides=(("find_object", "always_fail"),),
     ),
     ProbeCase(
         "fake_deep_missing_recipient_clarification",
@@ -955,6 +1459,7 @@ FAKE_DEEP_CASES = (
         150.0,
         environment_ids=("lab_sections",),
         conversation_group="fake_deep_missing_recipient",
+        expected_outcome="clarification_expected",
         absence_guards=(
             KbAbsenceGuard(
                 "blake_subject_absent",
@@ -974,6 +1479,19 @@ FAKE_DEEP_CASES = (
         220.0,
         environment_ids=("iiia_floor",),
         conversation_group="fake_deep_iiia_floor",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=("codex_iiia_cup",),
+        expected_recipient_id="codex_iiia_alex",
+        expected_report_policy="final",
+    ),
+    ProbeCase(
+        "fake_deep_iiia_floor_location_followup",
+        "fake_deep_post_effect_query",
+        "Where are the objects from the kitchen now?",
+        20.0,
+        conversation_group="fake_deep_iiia_floor",
     ),
     ProbeCase(
         "fake_deep_gold_apple_multiturn",
@@ -982,6 +1500,11 @@ FAKE_DEEP_CASES = (
         180.0,
         environment_ids=("gold_apple_handoff",),
         conversation_group="fake_deep_gold_apple",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=("codex_gold_apple",),
+        expected_recipient_id="codex_gold_recipient",
     ),
     ProbeCase(
         "fake_deep_gold_apple_followup",
@@ -990,6 +1513,114 @@ FAKE_DEEP_CASES = (
         16.0,
         environment_ids=("gold_apple_handoff",),
         conversation_group="fake_deep_gold_apple",
+    ),
+)
+
+ROBUSTNESS_CASES = (
+    ProbeCase(
+        "robust_paraphrased_group_delivery",
+        "robust_group_selection",
+        "Take everything resting on the work table over to ALEX. Once every item has reached them, summarize the whole delivery.",
+        180.0,
+        environment_ids=("lab_sections",),
+        conversation_group="robust_group_delivery",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=("codex_lab_cup", "codex_lab_manual", "codex_lab_phone"),
+        expected_recipient_id="codex_lab_alex",
+        expected_report_policy="final",
+    ),
+    ProbeCase(
+        "robust_object_role_exclusion",
+        "robust_role_integrity",
+        "Visit each movable item on the table in turn. Do not navigate to the table or to any person, and report each arrival.",
+        180.0,
+        environment_ids=("lab_table",),
+        conversation_group="robust_role_exclusion",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=(
+            "codex_lab_apple",
+            "codex_lab_book",
+            "codex_lab_phone",
+            "codex_probe_cup",
+        ),
+        expected_report_policy="per_target",
+    ),
+    ProbeCase(
+        "robust_missing_recipient",
+        "robust_clarification",
+        "Deliver every work-table object to MORGAN and explain what information is missing if MORGAN is not present.",
+        90.0,
+        environment_ids=("lab_sections",),
+        conversation_group="robust_missing_recipient",
+        expected_outcome="clarification_expected",
+        absence_guards=(
+            KbAbsenceGuard(
+                "morgan_named_person_absent",
+                ("?subject dbp:name MORGAN",),
+                ("?subject",),
+            ),
+        ),
+    ),
+    ProbeCase(
+        "robust_future_recipient_memory",
+        "robust_route_safety",
+        "ALEX will receive the work-table items later. For now, only acknowledge this and do not execute anything.",
+        12.0,
+        environment_ids=("lab_sections",),
+        conversation_group="robust_multiturn",
+        expected_outcome="dialogue_only",
+    ),
+    ProbeCase(
+        "robust_multiturn_execute_followup",
+        "robust_multiturn_grounding",
+        "Now deliver all of those objects to them and tell me the overall result.",
+        180.0,
+        conversation_group="robust_multiturn",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        requires_target_selection=True,
+        expected_member_ids=("codex_lab_cup", "codex_lab_manual", "codex_lab_phone"),
+        expected_recipient_id="codex_lab_alex",
+        expected_report_policy="final",
+    ),
+)
+
+ROUTE_ACK_CASES = (
+    ProbeCase(
+        "route_ack_capability_question",
+        "route_ack_pair",
+        "What can you do with your head?",
+        12.0,
+        conversation_group="route_ack_capability",
+        expected_outcome="dialogue_only",
+    ),
+    ProbeCase(
+        "route_ack_polite_execution",
+        "route_ack_pair",
+        "Can you move your head in all directions?",
+        95.0,
+        conversation_group="route_ack_polite_execution",
+        expected_outcome="execute_no_clarification",
+    ),
+    ProbeCase(
+        "route_ack_polite_followup",
+        "route_ack_pair",
+        "How many directions did you move your head?",
+        12.0,
+        conversation_group="route_ack_polite_execution",
+        expected_outcome="dialogue_only",
+    ),
+    ProbeCase(
+        "route_ack_explicit_execution",
+        "route_ack_pair",
+        "Please move your head in all directions now.",
+        95.0,
+        conversation_group="route_ack_explicit_execution",
+        expected_outcome="execute_no_clarification",
     ),
 )
 
@@ -1023,10 +1654,27 @@ FAKE_POLICY_PROFILES = {
         "global_mode": "scenario",
         "mode_overrides_json": '{"bring_object":"delivery_blocked"}',
     },
+    "fail_once_place": {
+        "global_mode": "scenario",
+        "mode_overrides_json": '{"place_object":"fail_once"}',
+    },
+    "destination_unavailable": {
+        "global_mode": "scenario",
+        "mode_overrides_json": '{"place_object":"destination_unavailable"}',
+    },
     "recipient_missing": {
         "global_mode": "scenario",
         "mode_overrides_json": '{"bring_object":"recipient_unavailable"}',
     },
+}
+
+FAKE_POLICY_EXPECTED_SKILLS = {
+    "fail_once_navigation": "navigate_to",
+    "fail_once_pick": "pick_object",
+    "delivery_blocked": "bring_object",
+    "fail_once_place": "place_object",
+    "destination_unavailable": "place_object",
+    "recipient_missing": "bring_object",
 }
 
 
@@ -1041,8 +1689,14 @@ def main() -> int:
             "main",
             "composite",
             "intent_ablation",
+            "posture_ablation",
             "environment",
+            "kb_stress",
+            "grounding_people",
+            "capability_extreme",
             "fake_deep",
+            "robustness",
+            "route_ack",
         ),
     )
     parser.add_argument(
@@ -1149,8 +1803,14 @@ def main() -> int:
         "main": MAIN_QUESTIONNAIRE_CASES,
         "composite": COMPOSITE_CASES,
         "intent_ablation": INTENT_ABLATION_CASES,
+        "posture_ablation": POSTURE_ABLATION_CASES,
         "environment": ENVIRONMENT_CASES,
+        "kb_stress": KB_STRESS_CASES,
+        "grounding_people": GROUNDING_PEOPLE_CASES,
+        "capability_extreme": CAPABILITY_EXTREME_CASES,
         "fake_deep": FAKE_DEEP_CASES,
+        "robustness": ROBUSTNESS_CASES,
+        "route_ack": ROUTE_ACK_CASES,
     }
     cases = list(case_sets[args.case_set])
     cases = filter_cases(
@@ -1167,10 +1827,28 @@ def main() -> int:
     )
     runtime_metadata["environment_fixture_source"] = str(environment_fixture_path)
     runtime_metadata["available_environment_fixtures"] = sorted(environment_fixtures.keys())
+    all_fixture_ids = tuple(sorted(environment_fixtures.keys()))
+    all_case_injections = tuple(
+        case.setup
+        for case_set in case_sets.values()
+        for case in case_set
+        if case.setup is not None
+    )
+    runtime_metadata["initial_fixture_cleanup"] = _merge_cleanup_results(
+        retract_kb_injections(args.container, all_case_injections),
+        retract_environment_fixtures(
+            args.container,
+            all_fixture_ids,
+            environment_fixtures=environment_fixtures,
+        ),
+    )
     runtime_metadata["fake_policy_profile"] = args.fake_policy_profile
     runtime_metadata["fake_policy_application"] = apply_fake_policy_profile(
         args.container,
         args.fake_policy_profile,
+    )
+    runtime_metadata["tracked_voice_cleanup_before_run"] = cleanup_tracked_voice_publishers(
+        args.container
     )
     preloaded_environment_ids = parse_csv_list(args.preload_environment)
     preloaded_environments = inject_environment_fixtures(
@@ -1181,8 +1859,26 @@ def main() -> int:
     )
     if preloaded_environments:
         runtime_metadata["preloaded_environments"] = preloaded_environments
+    active_fixture_ids: tuple[str, ...] = ()
+    active_fixture_group = ""
+    active_case_injections: list[KbInjection] = []
+    active_case_group = ""
     for index, case in enumerate(cases, start=1):
         if time.time() - started_at > max(30, args.global_timeout_sec):
+            runtime_metadata["final_fixture_cleanup"] = _merge_cleanup_results(
+                retract_kb_injections(args.container, tuple(active_case_injections)),
+                retract_environment_fixtures(
+                    args.container,
+                    all_fixture_ids,
+                    environment_fixtures=environment_fixtures,
+                ),
+            )
+            runtime_metadata["fake_policy_restore"] = restore_fake_policy_profile(
+                args.container
+            )
+            runtime_metadata["tracked_voice_cleanup"] = cleanup_tracked_voice_publishers(
+                args.container
+            )
             results.append(
                 {
                     "name": "global_timeout",
@@ -1204,25 +1900,58 @@ def main() -> int:
                 started_at,
                 results,
                 runtime_metadata=runtime_metadata,
+                run_status="timed_out",
             )
             return 2
 
         case_start = time.time()
         setup_result = {}
-        if case.environment_ids:
+        case_group = case.conversation_group or case.name
+        cleanup_guard = {}
+        case_policy_overrides = {}
+        if active_case_injections and case_group != active_case_group:
+            cleanup_guard = retract_kb_injections(
+                args.container,
+                tuple(active_case_injections),
+            )
+            active_case_injections = []
+        if active_fixture_ids and case_group != active_fixture_group:
+            environment_cleanup = retract_environment_fixtures(
+                args.container,
+                active_fixture_ids,
+                environment_fixtures=environment_fixtures,
+            )
+            cleanup_guard = _merge_cleanup_results(cleanup_guard, environment_cleanup)
+            active_fixture_ids = ()
+        requested_fixture_ids = tuple(case.environment_ids)
+        if requested_fixture_ids and requested_fixture_ids != active_fixture_ids:
             setup_result["environment"] = inject_environment_fixtures(
                 args.container,
-                list(case.environment_ids),
+                list(requested_fixture_ids),
                 environment_fixtures=environment_fixtures,
                 lifespan_sec=args.kb_lifespan_sec,
             )
+            active_fixture_ids = requested_fixture_ids
+            active_fixture_group = case_group
+        elif requested_fixture_ids:
+            setup_result["environment"] = {
+                "retained": list(requested_fixture_ids),
+                "reason": "same conversation group preserves post-effect world state",
+            }
         if case.setup is not None:
             setup_result["case"] = inject_kb_probe(
                 args.container,
                 case.setup,
                 lifespan_sec=args.kb_lifespan_sec,
             )
+            active_case_injections.append(case.setup)
+            active_case_group = case_group
         stale_world_guard = run_absence_guards(args.container, case.absence_guards)
+        if cleanup_guard.get("contaminated"):
+            stale_world_guard = {
+                "contaminated": True,
+                "fixture_cleanup": cleanup_guard,
+            }
         if stale_world_guard.get("contaminated"):
             result_entry = {
                 "name": case.name,
@@ -1248,12 +1977,20 @@ def main() -> int:
                     "planner_request_observed": False,
                     "execution_feedback_observed": False,
                     "speech_observed": False,
+                    "clarification_observed": False,
                     "observability_note": (
                         "case skipped before turn injection because fixture "
                         "isolation was contaminated"
                     ),
                 },
             }
+            result_entry["case_assessment"] = assess_case(
+                case,
+                observations=result_entry["phase_observations"],
+                stale_world_guard=stale_world_guard,
+                fake_policy_profile=args.fake_policy_profile,
+            )
+            result_entry["status"] = result_entry["case_assessment"]["status"]
             results.append(result_entry)
             write_payload(
                 args.out,
@@ -1265,6 +2002,20 @@ def main() -> int:
             )
             continue
 
+        case_policy_overrides = apply_case_fake_mode_overrides(
+            args.container,
+            args.fake_policy_profile,
+            case.fake_mode_overrides,
+        )
+        if case_policy_overrides:
+            setup_result["fake_policy_case"] = {
+                "overrides": dict(case.fake_mode_overrides),
+                "application": case_policy_overrides,
+            }
+        case_assessment_policy = _effective_fake_policy_profile(
+            args.fake_policy_profile,
+            case_policy_overrides,
+        )
         mode = args.mode or case.mode
         conversation_group = case.conversation_group or case.name or f"case_{index}"
         voice_id = _voice_id_for_case(
@@ -1274,6 +2025,7 @@ def main() -> int:
             index=index,
             speech_voice_scope=args.speech_voice_scope,
         )
+        turn_start = time.time()
         if mode == "speech":
             turn_result = publish_voice_turn(
                 args.container,
@@ -1304,6 +2056,7 @@ def main() -> int:
             "turn_result": turn_result,
             "stale_world_guard": stale_world_guard or None,
             "started_at_unix_sec": case_start,
+            "turn_started_at_unix_sec": turn_start,
             "wait_sec": 0.0,
             "configured_wait_sec": case.wait_sec,
             "injection_scope": injection_scope(mode),
@@ -1314,8 +2067,16 @@ def main() -> int:
                 turn_result=turn_result,
                 log_excerpt="",
                 topic_samples={},
+                voice_id=voice_id,
             ),
         }
+        result_entry["case_assessment"] = assess_case(
+            case,
+            observations=result_entry["phase_observations"],
+            stale_world_guard=stale_world_guard,
+            fake_policy_profile=case_assessment_policy,
+        )
+        result_entry["status"] = result_entry["case_assessment"]["status"]
         results.append(result_entry)
         write_payload(
             args.out,
@@ -1335,14 +2096,16 @@ def main() -> int:
             started_at,
             results,
             result_entry,
+            case=case,
             mode=mode,
             turn_result=turn_result,
-            case_start=case_start,
+            case_start=turn_start,
             wait_sec=wait_sec,
             runtime_metadata=runtime_metadata,
+            fake_policy_profile=case_assessment_policy,
         )
         topic_samples = sample_topics(args.container) if args.sample_topics else {}
-        log_excerpt = recent_logs_since(args.container, case_start)
+        log_excerpt = recent_logs_since(args.container, turn_start)
         result_entry["wait_sec"] = wait_sec
         result_entry["topic_samples"] = topic_samples
         result_entry["log_excerpt"] = log_excerpt
@@ -1351,7 +2114,24 @@ def main() -> int:
             turn_result=turn_result,
             log_excerpt=log_excerpt,
             topic_samples=topic_samples,
+            voice_id=voice_id,
         )
+        if case.postcondition is not None:
+            postcondition_result = evaluate_kb_postcondition(
+                args.container,
+                case.postcondition,
+            )
+            result_entry["postcondition_result"] = postcondition_result
+            result_entry["phase_observations"]["kb_postcondition_passed"] = bool(
+                postcondition_result.get("passed")
+            )
+        result_entry["case_assessment"] = assess_case(
+            case,
+            observations=result_entry["phase_observations"],
+            stale_world_guard=stale_world_guard,
+            fake_policy_profile=case_assessment_policy,
+        )
+        result_entry["status"] = result_entry["case_assessment"]["status"]
         write_payload(
             args.out,
             args.container,
@@ -1360,7 +2140,34 @@ def main() -> int:
             results,
             runtime_metadata=runtime_metadata,
         )
+        if case_policy_overrides:
+            runtime_metadata.setdefault("case_policy_restores", []).append(
+                {
+                    "case": case.name,
+                    "restore": apply_fake_policy_profile(
+                        args.container,
+                        args.fake_policy_profile,
+                    ),
+                }
+            )
 
+    final_case_cleanup = retract_kb_injections(
+        args.container,
+        tuple(active_case_injections),
+    )
+    final_environment_cleanup = retract_environment_fixtures(
+        args.container,
+        all_fixture_ids,
+        environment_fixtures=environment_fixtures,
+    )
+    runtime_metadata["final_fixture_cleanup"] = _merge_cleanup_results(
+        final_case_cleanup,
+        final_environment_cleanup,
+    )
+    runtime_metadata["fake_policy_restore"] = restore_fake_policy_profile(args.container)
+    runtime_metadata["tracked_voice_cleanup"] = cleanup_tracked_voice_publishers(
+        args.container
+    )
     write_payload(
         args.out,
         args.container,
@@ -1368,6 +2175,7 @@ def main() -> int:
         started_at,
         results,
         runtime_metadata=runtime_metadata,
+        run_status="completed",
     )
     print(args.out)
     return 0
@@ -1434,6 +2242,67 @@ def apply_fake_policy_profile(container: str, profile: str) -> dict[str, str]:
     return outputs
 
 
+def apply_case_fake_mode_overrides(
+    container: str,
+    profile: str,
+    overrides: tuple[tuple[str, str], ...],
+) -> dict[str, str]:
+    """Apply a case-local skill override while preserving the run profile."""
+    if not overrides:
+        return {}
+    settings = FAKE_POLICY_PROFILES.get(str(profile or "none").strip(), {})
+    raw_base = settings.get("mode_overrides_json", "{}")
+    try:
+        merged = json.loads(raw_base)
+    except (TypeError, json.JSONDecodeError):
+        merged = {}
+    if not isinstance(merged, dict):
+        merged = {}
+    for skill, mode in overrides:
+        clean_skill = str(skill or "").strip().lower()
+        clean_mode = str(mode or "").strip().lower()
+        if clean_skill and clean_mode:
+            merged[clean_skill] = clean_mode
+    if not merged:
+        return {}
+    return {
+        "mode_overrides_json": set_ros_param(
+            container,
+            "/fake_skill_server",
+            "mode_overrides_json",
+            json.dumps(merged, separators=(",", ":")),
+        )
+    }
+
+
+def _effective_fake_policy_profile(
+    profile: str,
+    case_policy_overrides: dict[str, str],
+) -> str:
+    """Make case-local failures use the recovery observation contract."""
+    clean_profile = str(profile or "none").strip() or "none"
+    if case_policy_overrides and clean_profile in {"none", "all_success"}:
+        return "case_local"
+    return clean_profile
+
+
+def restore_fake_policy_profile(container: str) -> dict[str, str]:
+    return {
+        "global_mode": set_ros_param(
+            container,
+            "/fake_skill_server",
+            "global_mode",
+            "scenario",
+        ),
+        "mode_overrides_json": set_ros_param(
+            container,
+            "/fake_skill_server",
+            "mode_overrides_json",
+            "{}",
+        ),
+    }
+
+
 def set_ros_param(container: str, node_name: str, param_name: str, value: str) -> str:
     parameter_value = str(value)
     if isinstance(value, str):
@@ -1480,6 +2349,137 @@ def inject_environment_fixtures(
             "injection": inject_kb_probe(container, injection, lifespan_sec=lifespan_sec),
         }
     return results
+
+
+def retract_environment_fixtures(
+    container: str,
+    fixture_ids: tuple[str, ...],
+    *,
+    environment_fixtures: dict[str, dict],
+) -> dict[str, object]:
+    """Retract current facts touching declared fixture subjects and verify absence."""
+    injections = []
+    for fixture_id in fixture_ids:
+        fixture = environment_fixtures.get(fixture_id, {})
+        if isinstance(fixture, dict):
+            injections.append(environment_fixture_to_injection(fixture_id, fixture))
+    return retract_kb_injections(container, tuple(injections))
+
+
+def retract_kb_injections(
+    container: str,
+    injections: tuple[KbInjection, ...],
+) -> dict[str, object]:
+    """Retract facts touching case-owned subjects and verify their absence."""
+    subjects = []
+    declared_statements = []
+    for injection in injections:
+        for statement in injection.statements:
+            clean_statement = str(statement).strip()
+            if clean_statement and clean_statement not in declared_statements:
+                declared_statements.append(clean_statement)
+            parts = clean_statement.split()
+            if parts and parts[0] not in {"myself", "nao_robot"} and parts[0] not in subjects:
+                subjects.append(parts[0])
+    fixture_subjects = set(subjects)
+    world_before = query_kb_rows(
+        container,
+        patterns=("?subject ?predicate ?object",),
+        query_vars=("?subject", "?predicate", "?object"),
+        timeout_sec=20,
+    )
+    current_statements = list(declared_statements)
+    for row in world_before.get("rows", []):
+        subject = str(row.get("subject", row.get("?subject", ""))).strip()
+        predicate = _canonical_kb_predicate(
+            row.get("predicate", row.get("?predicate", ""))
+        )
+        obj = str(row.get("object", row.get("?object", ""))).strip()
+        if (
+            subject
+            and predicate
+            and obj
+            and (subject in fixture_subjects or obj in fixture_subjects)
+        ):
+            current_statements.append(f"{subject} {predicate} {obj}")
+    current_statements = list(dict.fromkeys(current_statements))
+    retract_output = ""
+    if current_statements:
+        statements_yaml = "\n".join("  - '%s'" % item for item in current_statements)
+        retract_output = call_ros_service(
+            container,
+            "/kb/revise",
+            "kb_msgs/srv/Revise",
+            f"""
+method: retract
+statements:
+{statements_yaml}
+models:
+  - default
+lifespan:
+  sec: 1
+  nanosec: 0
+""",
+            timeout_sec=20,
+        )
+        time.sleep(0.5)
+    world_after = query_kb_rows(
+        container,
+        patterns=("?subject ?predicate ?object",),
+        query_vars=("?subject", "?predicate", "?object"),
+        timeout_sec=20,
+    )
+    remaining = [
+        row
+        for row in world_after.get("rows", [])
+        if str(row.get("subject", row.get("?subject", ""))).strip()
+        in fixture_subjects
+        or str(row.get("object", row.get("?object", ""))).strip()
+        in fixture_subjects
+    ]
+    return {
+        "contaminated": bool(remaining),
+        "subjects": subjects,
+        "retracted_statement_count": len(current_statements),
+        "remaining": remaining,
+        "retract_output": retract_output,
+    }
+
+
+def _merge_cleanup_results(*results: dict[str, object]) -> dict[str, object]:
+    clean_results = [item for item in results if item]
+    if not clean_results:
+        return {}
+    return {
+        "contaminated": any(bool(item.get("contaminated")) for item in clean_results),
+        "subjects": list(
+            dict.fromkeys(
+                subject
+                for item in clean_results
+                for subject in item.get("subjects", [])
+            )
+        ),
+        "retracted_statement_count": sum(
+            int(item.get("retracted_statement_count", 0)) for item in clean_results
+        ),
+        "remaining": [
+            row
+            for item in clean_results
+            for row in item.get("remaining", [])
+        ],
+        "parts": clean_results,
+    }
+
+
+def _canonical_kb_predicate(value) -> str:
+    predicate = str(value or "").strip()
+    if not predicate or ":" in predicate:
+        return predicate
+    if predicate == "type":
+        return "rdf:type"
+    if predicate in {"name", "color", "frameId", "poseSource", "poseX", "poseY"}:
+        return f"dbp:{predicate}"
+    return f"oro:{predicate}"
 
 
 def environment_fixture_to_injection(fixture_id: str, fixture: dict) -> KbInjection:
@@ -1632,15 +2632,23 @@ def write_payload(
     results: list[dict],
     *,
     runtime_metadata: dict[str, object] | None = None,
+    run_status: str = "running",
 ) -> None:
+    status = str(run_status or "running").strip().lower()
+    if status not in {"running", "completed", "timed_out"}:
+        raise ValueError("unsupported questionnaire run status: %s" % status)
+    now = time.time()
     payload = {
         "container": container,
         "case_set": case_set,
         "started_at_unix_sec": started_at,
-        "finished_at_unix_sec": time.time(),
+        "updated_at_unix_sec": now,
+        "run_status": status,
         "runtime_metadata": runtime_metadata or {},
         "cases": results,
     }
+    if status != "running":
+        payload["finished_at_unix_sec"] = now
     Path(out_path).write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
 
@@ -1650,39 +2658,256 @@ def phase_observations(
     turn_result: str,
     log_excerpt: str,
     topic_samples: dict[str, str],
+    voice_id: str = "",
 ) -> dict[str, object]:
     """Summarize runtime-review phase evidence without scoring the case."""
+    correlated_log = correlate_case_evidence(log_excerpt, voice_id=voice_id)
+    correlated_topics = [
+        correlate_case_evidence(value, voice_id=voice_id)
+        for value in topic_samples.values()
+    ]
     combined = "\n".join(
         [
             str(turn_result or ""),
-            str(log_excerpt or ""),
-            "\n".join(str(value or "") for value in topic_samples.values()),
+            correlated_log,
+            "\n".join(correlated_topics),
         ]
     )
     injected = bool(str(turn_result or "").strip())
     if mode == "speech":
         injected = injected and "ERROR: dialogue_manager speech subscription" not in combined
+    target_selections = extract_target_selections(combined)
+    spoken_texts = extract_robot_speech_texts(
+        "\n".join(
+            [
+                str(turn_result or ""),
+                str(log_excerpt or ""),
+                "\n".join(str(value or "") for value in topic_samples.values()),
+            ]
+        )
+    )
+    route_observed = _contains_any(combined, ("ROUTE_RESOLVED", "chatbot_turn_trace"))
+    planner_request_observed = _contains_any(
+        combined,
+        ("PLANNER_REQUEST", "/planner/request", "planner_request"),
+    )
+    execution_feedback_observed = _contains_any(
+        combined,
+        (
+            "execution_feedback",
+            "/planner/execution_feedback",
+            "step_succeeded",
+            "step_failed",
+            "plan_completed",
+        ),
+    )
+    evidence_inconsistencies = []
+    if execution_feedback_observed and not route_observed:
+        evidence_inconsistencies.append("execution feedback exists without a correlated route marker")
+    if execution_feedback_observed and not planner_request_observed:
+        evidence_inconsistencies.append(
+            "execution feedback exists without a correlated planner request marker"
+        )
+    executed_skills = _executed_skills(combined)
     return {
         "turn_injected": injected,
-        "route_observed": _contains_any(combined, ("ROUTE_RESOLVED", "chatbot_turn_trace")),
-        "planner_request_observed": _contains_any(
+        "route_observed": route_observed,
+        "planner_request_observed": planner_request_observed,
+        "route_intent_handoff_observed": _contains_any(
             combined,
-            ("PLANNER_REQUEST", "/planner/request", "planner_request"),
+            ("ROUTE_INTENT_HANDOFF",),
         ),
-        "execution_feedback_observed": _contains_any(
+        "route_intent_gap_count": _event_count(combined, "ROUTE_INTENT_GAP"),
+        "target_selection_observed": any(
+            selection.get("member_ids") for selection in target_selections
+        ),
+        "target_selections": target_selections,
+        "execution_feedback_observed": execution_feedback_observed,
+        "executed_skills": executed_skills,
+        "failure_observed": _contains_any(
             combined,
-            ("execution_feedback", "/planner/execution_feedback", "step_succeeded", "step_failed", "plan_completed"),
+            ("step_failed", "plan_failed", "Planned intent step failed"),
+        ),
+        "replan_observed": _contains_any(
+            combined,
+            ('"mode": "replan"', " mode=replan ", "plan_version=2", " version=2 "),
         ),
         "speech_observed": _contains_any(
             combined,
             ("ROBOT OUTPUT", "DEBUG_SPEECH", "/debug/nao_say/speech", "Robot saying"),
         ),
+        "spoken_texts": spoken_texts,
         "terminal_observed": terminal_observed(combined),
+        "post_terminal_speech_observed": post_terminal_speech_observed(combined),
+        "post_failure_speech_observed": post_failure_speech_observed(combined),
+        "clarification_observed": clarification_observed(combined),
         "fallback_markers": fallback_markers(combined),
+        "evidence_consistent": not evidence_inconsistencies,
+        "evidence_inconsistencies": evidence_inconsistencies,
         "observability_note": (
             "phase booleans are trace breadcrumbs, not pass/fail scoring"
         ),
     }
+
+
+def extract_robot_speech_texts(value: str) -> list[str]:
+    """Extract deduplicated robot utterances without user-input mirrors."""
+    texts: list[str] = []
+    for line in str(value or "").splitlines():
+        candidates = []
+        output_match = re.search(r'\[ROBOT OUTPUT\].*?"([^"]+)"', line)
+        if output_match:
+            candidates.append(output_match.group(1))
+        for encoded in re.findall(r'\{"text":"((?:\\.|[^"\\])*)"\}', line):
+            try:
+                candidates.append(json.loads('"%s"' % encoded))
+            except json.JSONDecodeError:
+                continue
+        for candidate in candidates:
+            clean = str(candidate).strip()
+            if clean and clean not in texts:
+                texts.append(clean)
+    return texts
+
+
+def extract_target_selections(value: str) -> list[dict[str, object]]:
+    """Extract normalized target selections from concise and JSON trace lines."""
+    text = str(value or "")
+    selections: list[dict[str, object]] = []
+    seen: set[str] = set()
+    decoder = json.JSONDecoder()
+
+    for line in text.splitlines():
+        marker = "target_selection="
+        if marker in line:
+            candidate = line.split(marker, 1)[1]
+            if " source=" in candidate:
+                candidate = candidate.split(" source=", 1)[0]
+            try:
+                parsed = ast.literal_eval(candidate.strip())
+            except (SyntaxError, ValueError):
+                parsed = None
+            _append_target_selection(selections, seen, parsed)
+
+        search_from = 0
+        json_marker = '"target_selection"'
+        while True:
+            marker_index = line.find(json_marker, search_from)
+            if marker_index < 0:
+                break
+            colon_index = line.find(":", marker_index + len(json_marker))
+            if colon_index < 0:
+                break
+            candidate = line[colon_index + 1 :].lstrip()
+            try:
+                parsed, consumed = decoder.raw_decode(candidate)
+            except json.JSONDecodeError:
+                search_from = marker_index + len(json_marker)
+                continue
+            _append_target_selection(selections, seen, parsed)
+            search_from = colon_index + 1 + consumed
+    return selections
+
+
+def _append_target_selection(
+    selections: list[dict[str, object]],
+    seen: set[str],
+    value: object,
+) -> None:
+    if not isinstance(value, dict) or not value:
+        return
+    normalized = {
+        "selection_kind": str(value.get("selection_kind", "")),
+        "operation": str(value.get("operation", "")),
+        "source_location_id": str(value.get("source_location_id", "")),
+        "member_ids": sorted(
+            {str(item) for item in value.get("member_ids", []) if str(item).strip()}
+        ),
+        "recipient_id": str(value.get("recipient_id", "")),
+        "ordering": str(value.get("ordering", "")),
+        "report_policy": str(value.get("report_policy", "")),
+    }
+    fingerprint = json.dumps(normalized, sort_keys=True)
+    if fingerprint in seen:
+        return
+    seen.add(fingerprint)
+    selections.append(normalized)
+
+
+def correlate_case_evidence(value: str, *, voice_id: str) -> str:
+    """Keep lines connected to one voice, dialogue, turn, or planner goal."""
+    text = str(value or "")
+    seed = str(voice_id or "").strip()
+    if not text or not seed:
+        return text
+    lines = text.splitlines()
+    identifiers = {seed}
+    identifier_patterns = (
+        re.compile(
+            r"\b(?:goal_id|dialogue_id|dialogue|turn_id|turn)="
+            r"[\"']?([A-Za-z0-9_.:\-]+)"
+        ),
+        re.compile(
+            r"[\"'](?:goal_id|dialogue_id|dialogue|turn_id|turn)[\"']\s*:\s*"
+            r"[\"']([A-Za-z0-9_.:\-]+)[\"']"
+        ),
+    )
+    for _pass in range(3):
+        changed = False
+        for line in lines:
+            if not any(identifier in line for identifier in identifiers):
+                continue
+            for pattern in identifier_patterns:
+                for match in pattern.finditer(line):
+                    identifier = match.group(1).strip()
+                    if identifier and identifier not in identifiers:
+                        identifiers.add(identifier)
+                        changed = True
+        if not changed:
+            break
+    scoped_indexes = {
+        index
+        for index, line in enumerate(lines)
+        if any(identifier in line for identifier in identifiers)
+    }
+    scoped_lines = [lines[index] for index in sorted(scoped_indexes)]
+    report_windows = _report_result_windows(scoped_lines)
+    for index, line in enumerate(lines):
+        if index in scoped_indexes or "robot output" not in line.lower():
+            continue
+        timestamp = _evidence_timestamp(line)
+        if timestamp is not None and any(
+            start <= timestamp <= end for start, end in report_windows
+        ):
+            scoped_indexes.add(index)
+    return "\n".join(lines[index] for index in sorted(scoped_indexes))
+
+
+def _report_result_windows(lines: list[str]) -> list[tuple[float, float]]:
+    starts = []
+    ends = []
+    for line in lines:
+        lowered = line.lower()
+        if "step=report_result" not in lowered:
+            continue
+        timestamp = _evidence_timestamp(line)
+        if timestamp is None:
+            continue
+        if "step_started" in lowered:
+            starts.append(timestamp)
+        elif "step_succeeded" in lowered or "step_failed" in lowered:
+            ends.append(timestamp)
+    windows = []
+    for start in starts:
+        end = next((candidate for candidate in ends if candidate >= start), None)
+        if end is not None:
+            windows.append((start, end))
+    return windows
+
+
+def _evidence_timestamp(line: str) -> float | None:
+    match = re.search(r"\[(\d{3,}(?:\.\d+)?)\]", str(line or ""))
+    return float(match.group(1)) if match else None
 
 
 def fallback_markers(value: str) -> dict[str, int]:
@@ -1697,15 +2922,388 @@ def fallback_markers(value: str) -> dict[str, int]:
         "planner_invalid_plan": r"valid executable plan|model output did not contain executable steps",
         "planner_gate_rejected": r"planner_gate_rejected",
         "duplicate_active_goal": r"duplicate active planner goal",
+        "planner_target_selection_recovery": r"validated_target_selection_recovery",
+        "kb_service_timeout": r"kb service timeout|KnowledgeCore .*timeout|service call timed out",
+        "report_result_fallback": r"report_result fallback|execution report chatbot returned error|execution report chatbot request failed",
         "route_repair": r"llm_response_route_repair|route_conflict",
+        "complete_context_clarification": r"asked for clarification despite complete fixture context",
         "language_model_unreachable_speech": r"having trouble reaching my language model",
     }
-    counts = {
-        name: len(re.findall(pattern, text, flags=re.IGNORECASE))
-        for name, pattern in patterns.items()
-    }
+    counts = {}
+    lines = text.splitlines()
+    for name, pattern in patterns.items():
+        matching_lines = [
+            line
+            for line in lines
+            if re.search(pattern, line, flags=re.IGNORECASE)
+        ]
+        counts[name] = len({_fallback_event_key(line) for line in matching_lines})
     counts["total"] = sum(counts.values())
     return counts
+
+
+def _event_count(value: str, marker: str) -> int:
+    """Count timestamp-correlated events without treating them as fallbacks."""
+    keys = set()
+    for line in str(value or "").splitlines():
+        if marker not in line:
+            continue
+        goal_match = re.search(r"goal_id[=:][\"']?([A-Za-z0-9_.:-]+)", line)
+        turn_match = re.search(
+            r"dialogue_turn_id[=:][\"']?([A-Za-z0-9_.:-]+)",
+            line,
+        )
+        if goal_match or turn_match:
+            keys.add(
+                (
+                    marker,
+                    goal_match.group(1) if goal_match else "",
+                    turn_match.group(1) if turn_match else "",
+                )
+            )
+        else:
+            keys.add(_fallback_event_key(line))
+    return len(keys)
+
+
+def _fallback_event_key(line: str) -> str:
+    timestamps = re.findall(r"\[(\d{3,}(?:\.\d+)?)\]", str(line or ""))
+    if timestamps:
+        return timestamps[-1]
+    return " ".join(str(line or "").lower().split())
+
+
+def clarification_observed(value: str) -> bool:
+    """Return true when evidence shows a user-facing clarification request."""
+    return _contains_any(
+        value,
+        (
+            "act=ask_clarification",
+            '"act": "ask_clarification"',
+            "ask_clarification",
+            "which location",
+            "which object",
+            "which person",
+            "please specify",
+            "could you clarify",
+            "cannot confirm that person",
+            "which person should i use",
+            "need you to clarify",
+            "need more information",
+            "need help identifying",
+        ),
+    )
+
+
+def assess_case(
+    case: ProbeCase,
+    *,
+    observations: dict[str, object],
+    stale_world_guard: dict | None,
+    fake_policy_profile: str = "none",
+) -> dict[str, object]:
+    """Grade case semantics from trajectory breadcrumbs, not final text alone."""
+    reasons: list[str] = []
+    status = "pass"
+    if stale_world_guard and stale_world_guard.get("contaminated"):
+        return {
+            "status": "not_scored",
+            "expected_outcome": case.expected_outcome,
+            "all_required_context": case.all_required_context,
+            "reasons": ["stale KnowledgeCore guard contaminated the fixture"],
+        }
+
+    if not observations.get("turn_injected"):
+        return {
+            "status": "fail",
+            "expected_outcome": case.expected_outcome,
+            "all_required_context": case.all_required_context,
+            "reasons": ["turn was not injected through the configured seam"],
+        }
+
+    if observations.get("evidence_consistent") is False:
+        return {
+            "status": "not_scored",
+            "expected_outcome": case.expected_outcome,
+            "all_required_context": case.all_required_context,
+            "reasons": [
+                "evidence correlation is internally inconsistent: %s"
+                % "; ".join(observations.get("evidence_inconsistencies") or [])
+            ],
+        }
+
+    fallback = observations.get("fallback_markers") or {}
+    severe_fallbacks = {
+        key: value
+        for key, value in fallback.items()
+        if key
+        in {
+            "duplicate_active_goal",
+            "language_model_unreachable_speech",
+            "llm_response_failed",
+            "kb_service_timeout",
+            "planner_invalid_json",
+            "planner_invalid_plan",
+            "report_result_fallback",
+            "rules_response_fallback",
+        }
+        and value
+    }
+    if severe_fallbacks:
+        status = "fail"
+        reasons.append("severe fallback markers: %s" % severe_fallbacks)
+
+    expected = str(case.expected_outcome or "observe")
+    clarified = bool(observations.get("clarification_observed"))
+    planner_seen = bool(observations.get("planner_request_observed"))
+    exec_seen = bool(observations.get("execution_feedback_observed"))
+    terminal = bool(observations.get("terminal_observed"))
+    speech = bool(observations.get("speech_observed"))
+    failure_seen = bool(observations.get("failure_observed"))
+    recovery_profile = str(fake_policy_profile or "none") not in {"none", "all_success"}
+    expected_failure_skill = FAKE_POLICY_EXPECTED_SKILLS.get(
+        str(fake_policy_profile or "none"),
+        "",
+    )
+
+    if expected == "execute_no_clarification":
+        if clarified:
+            status = "fail" if case.all_required_context else max_status(status, "degraded")
+            reasons.append("asked for clarification despite complete fixture context")
+        if not planner_seen or not exec_seen:
+            status = max_status(status, "fail")
+            reasons.append("expected planner request and execution feedback")
+        if case.requires_target_selection and not observations.get(
+            "target_selection_observed"
+        ):
+            status = max_status(status, "fail")
+            reasons.append("planner evidence did not carry target_selection")
+        selection = _most_complete_target_selection(observations)
+        if case.expected_member_ids and selection:
+            expected_members = set(case.expected_member_ids)
+            observed_members = set(selection.get("member_ids", []))
+            selection_kind = str(selection.get("selection_kind", ""))
+            members_match = (
+                expected_members.issubset(observed_members)
+                if selection_kind == "visible_objects"
+                else observed_members == expected_members
+            )
+            if not members_match:
+                status = max_status(status, "fail")
+                reasons.append(
+                    "selected members differed: expected=%s observed=%s"
+                    % (sorted(expected_members), sorted(observed_members))
+                )
+        if case.expected_recipient_id and selection:
+            observed_recipient = str(selection.get("recipient_id", ""))
+            if observed_recipient != case.expected_recipient_id:
+                status = max_status(status, "fail")
+                reasons.append(
+                    "selected recipient differed: expected=%s observed=%s"
+                    % (case.expected_recipient_id, observed_recipient or "<missing>")
+                )
+        if case.expected_report_policy and selection:
+            observed_policy = str(selection.get("report_policy", ""))
+            if observed_policy != case.expected_report_policy:
+                status = max_status(status, "fail")
+                reasons.append(
+                    "report policy differed: expected=%s observed=%s"
+                    % (case.expected_report_policy, observed_policy or "<missing>")
+                )
+        if not terminal or not speech:
+            status = max_status(status, "degraded")
+            reasons.append("missing terminal or speech evidence")
+        if (
+            recovery_profile
+            and expected_failure_skill
+            and expected_failure_skill not in set(observations.get("executed_skills") or [])
+        ):
+            status = max_status(status, "not_scored")
+            reasons.append(
+                "configured fake failure for %s was not applicable to dispatched skills"
+                % expected_failure_skill
+            )
+        elif recovery_profile and not failure_seen:
+            status = max_status(status, "not_scored")
+            reasons.append("configured fake failure was not exercised")
+        if recovery_profile and failure_seen and not recovery_closure_observed(
+            observations
+        ):
+            status = max_status(status, "degraded")
+            reasons.append("recovery closure was not spoken after failure evidence")
+        if recovery_profile and case.requires_replan and failure_seen and not observations.get(
+            "replan_observed"
+        ):
+            status = max_status(status, "fail")
+            reasons.append("configured recoverable failure did not produce a replan")
+    elif expected == "dialogue_only":
+        if planner_seen or exec_seen:
+            status = max_status(status, "fail")
+            reasons.append("dialogue-only turn leaked into planner execution")
+        if not observations.get("route_observed") or not speech:
+            status = max_status(status, "degraded")
+            reasons.append("dialogue route or speech evidence was not observed")
+    elif expected == "clarification_expected":
+        if not clarified:
+            status = max_status(status, "fail")
+            reasons.append("expected clarification for deliberately absent/ambiguous target")
+        if exec_seen:
+            status = max_status(status, "fail")
+            reasons.append("execution feedback appeared for a case that should clarify first")
+        if not speech:
+            status = max_status(status, "degraded")
+            reasons.append("clarification/failure was not visible in speech")
+    elif expected == "recover_or_truthful_failure":
+        if not terminal or not speech:
+            status = max_status(status, "degraded")
+            reasons.append("recovery/failure case lacked terminal or speech evidence")
+        elif not observations.get("post_terminal_speech_observed"):
+            status = max_status(status, "degraded")
+            reasons.append("recovery/failure speech was not observed after terminal evidence")
+        if severe_fallbacks:
+            status = max_status(status, "fail")
+    else:
+        if not speech:
+            status = max_status(status, "degraded")
+            reasons.append("speech evidence missing")
+
+    if case.postcondition is not None and not observations.get(
+        "kb_postcondition_passed"
+    ):
+        status = max_status(status, "fail")
+        reasons.append("declared KB postcondition was not observed")
+
+    if case.expected_speech_terms:
+        spoken_text = _normalize_speech_terms(
+            " ".join(observations.get("spoken_texts") or [])
+        )
+        missing_terms = [
+            term
+            for term in case.expected_speech_terms
+            if _normalize_speech_terms(term) not in spoken_text
+        ]
+        if missing_terms:
+            status = max_status(status, "fail")
+            reasons.append(
+                "robot speech omitted grounded terms: %s"
+                % ", ".join(missing_terms)
+            )
+
+    if not reasons:
+        reasons.append("matched expected trajectory")
+    return {
+        "status": status,
+        "expected_outcome": expected,
+        "all_required_context": case.all_required_context,
+        "reasons": reasons,
+    }
+
+
+def _normalize_speech_terms(value: str) -> str:
+    """Normalize symbolic separators only for semantic term comparison."""
+    return " ".join(re.findall(r"[a-z0-9]+", str(value or "").lower()))
+
+
+def _executed_skills(value: str) -> list[str]:
+    """Extract skills that reached execution feedback in correlated evidence."""
+    observed = []
+    known_skills = set(FAKE_POLICY_EXPECTED_SKILLS.values())
+    for line in str(value or "").splitlines():
+        lowered = line.lower()
+        if not any(
+            marker in lowered
+            for marker in ("step_started", "step_succeeded", "step_failed")
+        ):
+            continue
+        for skill in sorted(known_skills):
+            if re.search(r"\b%s\b" % re.escape(skill), lowered) and skill not in observed:
+                observed.append(skill)
+    return observed
+
+
+def _most_complete_target_selection(
+    observations: dict[str, object],
+) -> dict[str, object]:
+    selections = observations.get("target_selections") or []
+    if not isinstance(selections, list):
+        return {}
+    candidates = [selection for selection in selections if isinstance(selection, dict)]
+    if not candidates:
+        return {}
+    return max(
+        candidates,
+        key=lambda selection: (
+            len(selection.get("member_ids", [])),
+            bool(selection.get("recipient_id")),
+            bool(selection.get("report_policy")),
+        ),
+    )
+
+
+def max_status(current: str, candidate: str) -> str:
+    order = {"pass": 0, "degraded": 1, "fail": 2, "not_scored": 3}
+    return candidate if order.get(candidate, 0) > order.get(current, 0) else current
+
+
+def post_terminal_speech_observed(value: str) -> bool:
+    """Require timestamped user-facing speech after a terminal trace event."""
+    terminal_times = []
+    speech_times = []
+    timestamp_pattern = re.compile(r"\[(\d{9,}(?:\.\d+)?)\]")
+    for line in str(value or "").splitlines():
+        match = timestamp_pattern.search(line)
+        if not match:
+            continue
+        timestamp = float(match.group(1))
+        lowered = line.lower()
+        if any(
+            marker in lowered
+            for marker in (
+                "plan_completed",
+                "plan_failed",
+                "planner_gate_rejected",
+                "ask_for_help",
+                "ask_clarification",
+                "explain_failure",
+            )
+        ):
+            terminal_times.append(timestamp)
+        if any(
+            marker in lowered
+            for marker in ("robot output", "debug_speech", "robot saying", "/debug/nao_say/speech")
+        ):
+            speech_times.append(timestamp)
+    return bool(terminal_times and speech_times and max(speech_times) >= max(terminal_times))
+
+
+def post_failure_speech_observed(value: str) -> bool:
+    """Return true when user-facing speech follows the latest failed step."""
+    failure_times = []
+    speech_times = []
+    timestamp_pattern = re.compile(r"\[(\d{3,}(?:\.\d+)?)\]")
+    for line in str(value or "").splitlines():
+        match = timestamp_pattern.search(line)
+        if not match:
+            continue
+        timestamp = float(match.group(1))
+        lowered = line.lower()
+        if "step_failed" in lowered:
+            failure_times.append(timestamp)
+        if any(
+            marker in lowered
+            for marker in (
+                "robot output",
+                "debug_speech",
+                "robot saying",
+                "/debug/nao_say/speech",
+            )
+        ):
+            speech_times.append(timestamp)
+    return bool(
+        failure_times
+        and speech_times
+        and max(speech_times) >= max(failure_times)
+    )
 
 
 def terminal_observed(value: str) -> bool:
@@ -1744,11 +3342,13 @@ def _observe_case_during_wait(
     results: list[dict],
     result_entry: dict,
     *,
+    case: ProbeCase,
     mode: str,
     turn_result: str,
     case_start: float,
     wait_sec: float,
     runtime_metadata: dict[str, object],
+    fake_policy_profile: str,
 ) -> None:
     """Flush per-case phase breadcrumbs while long fake-deep waits run."""
     deadline = time.time() + max(0.0, float(wait_sec or 0.0))
@@ -1767,7 +3367,15 @@ def _observe_case_during_wait(
             turn_result=turn_result,
             log_excerpt=log_excerpt,
             topic_samples={},
+            voice_id=str(result_entry.get("voice_id", "")),
         )
+        result_entry["case_assessment"] = assess_case(
+            case,
+            observations=result_entry["phase_observations"],
+            stale_world_guard=result_entry.get("stale_world_guard"),
+            fake_policy_profile=fake_policy_profile,
+        )
+        result_entry["status"] = result_entry["case_assessment"]["status"]
         write_payload(
             out_path,
             container,
@@ -1777,8 +3385,30 @@ def _observe_case_during_wait(
             runtime_metadata=runtime_metadata,
         )
         observations = result_entry["phase_observations"]
-        if observations.get("terminal_observed") and observations.get("speech_observed"):
+        if case_wait_complete(observations, fake_policy_profile):
             break
+        if observations.get("clarification_observed") and observations.get("speech_observed"):
+            break
+
+
+def case_wait_complete(observations: dict, fake_policy_profile: str) -> bool:
+    if not (
+        observations.get("terminal_observed")
+        and observations.get("speech_observed")
+    ):
+        return False
+    recovery_profile = str(fake_policy_profile or "none") not in {
+        "none",
+        "all_success",
+    }
+    return not recovery_profile or recovery_closure_observed(observations)
+
+
+def recovery_closure_observed(observations: dict) -> bool:
+    return bool(
+        observations.get("post_terminal_speech_observed")
+        or observations.get("post_failure_speech_observed")
+    )
 
 
 def collect_questionnaire_metadata(
@@ -1847,6 +3477,8 @@ def publish_voice_turn(
     escaped_text = text.replace("\\", "\\\\").replace('"', '\\"')
     yaml_text = text.replace("'", "''")
     voice_topic = _voice_speech_topic(voice_id)
+    safe_voice_id = re.sub(r"[^A-Za-z0-9_.-]+", "_", voice_id)
+    tracked_pid_file = f"/tmp/nao_questionnaire_tracked_{safe_voice_id}.pid"
     mirror_script = ""
     if mirror_rqt_display:
         mirror_script = f"""
@@ -1886,8 +3518,21 @@ EOF
 	{mirror_script}
 	dialogue_state="$(ros2 lifecycle get /dialogue_manager 2>/dev/null || true)"
 	echo "  dialogue_manager_lifecycle=${{dialogue_state:-unavailable}}" >>/tmp/nao_questionnaire_qos_contract.log
-	timeout 18 ros2 topic pub -r 2 {VOICE_TRACKED_QOS} {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{voice_id}']}}" >/tmp/nao_questionnaire_voice.log 2>&1 &
-	tracked_pub_pid=$!
+	for prior_pid_file in /tmp/nao_questionnaire_tracked_*.pid; do
+	  [ -e "$prior_pid_file" ] || continue
+	  [ "$prior_pid_file" = "{tracked_pid_file}" ] && continue
+	  prior_pid="$(cat "$prior_pid_file" 2>/dev/null || true)"
+	  if [ -n "$prior_pid" ]; then
+	    kill "$prior_pid" >/dev/null 2>&1 || true
+	  fi
+	  rm -f "$prior_pid_file"
+	done
+	tracked_pub_pid="$(cat {tracked_pid_file} 2>/dev/null || true)"
+	if [ -z "$tracked_pub_pid" ] || ! kill -0 "$tracked_pub_pid" 2>/dev/null; then
+	  nohup ros2 topic pub -r 2 {VOICE_TRACKED_QOS} {VOICE_TRACKED_TOPIC} hri_msgs/msg/IdsList "{{ids: ['{voice_id}']}}" >/tmp/nao_questionnaire_voice_{safe_voice_id}.log 2>&1 &
+	  tracked_pub_pid=$!
+	  echo "$tracked_pub_pid" > {tracked_pid_file}
+	fi
 	subscription_visible=false
 	for _ in $(seq 1 30); do
 	  if timeout 2 ros2 topic info -v {voice_topic} 2>/dev/null | grep -q 'Node name: dialogue_manager'; then
@@ -1904,17 +3549,31 @@ done
 	  echo "[runtime-review] OK: dialogue_manager speech subscription visible before LiveSpeech publish for {voice_topic}." >>/tmp/nao_questionnaire_qos_contract.log
 	fi
 timeout 8 ros2 topic pub --once -w 1 {VOICE_SPEECH_QOS} {voice_topic} hri_msgs/msg/LiveSpeech "{{final: \\"{escaped_text}\\", confidence: 1.0, locale: \\"en_US\\"}}" >/tmp/nao_questionnaire_speech.log 2>&1 || true
-	kill "$tracked_pub_pid" >/dev/null 2>&1 || true
-	wait "$tracked_pub_pid" >/dev/null 2>&1 || true
 cat /tmp/nao_questionnaire_qos_contract.log /tmp/nao_questionnaire_rqt_rosout.log /tmp/nao_questionnaire_rqt_caption.log /tmp/nao_questionnaire_voice.log /tmp/nao_questionnaire_tracked_info.log /tmp/nao_questionnaire_speech_info.log /tmp/nao_questionnaire_speech.log 2>/dev/null || true
 """
     return run(["docker", "exec", container, "bash", "-lc", script], timeout=45, check=False)
 
 
-def inject_kb_probe(container: str, injection: KbInjection, *, lifespan_sec: int) -> dict[str, str]:
+def cleanup_tracked_voice_publishers(container: str) -> str:
+    script = """
+for pid_file in /tmp/nao_questionnaire_tracked_*.pid; do
+  [ -e "$pid_file" ] || continue
+  tracked_pid="$(cat "$pid_file" 2>/dev/null || true)"
+  if [ -n "$tracked_pid" ]; then
+    kill "$tracked_pid" >/dev/null 2>&1 || true
+  fi
+  rm -f "$pid_file"
+done
+"""
+    return run(
+        ["docker", "exec", container, "bash", "-lc", script],
+        timeout=12,
+        check=False,
+    )
+
+
+def inject_kb_probe(container: str, injection: KbInjection, *, lifespan_sec: int) -> dict[str, object]:
     statements_yaml = "\n".join("  - '%s'" % item for item in injection.statements)
-    patterns_yaml = "\n".join("  - '%s'" % item for item in injection.query_patterns)
-    vars_yaml = "\n".join("  - '%s'" % item for item in injection.query_vars)
     revise_request = f"""
 method: update
 statements:
@@ -1925,14 +3584,27 @@ lifespan:
   sec: {max(1, int(lifespan_sec))}
   nanosec: 0
 """
-    query_request = f"""
-patterns:
-{patterns_yaml}
-vars:
-{vars_yaml}
+    retract_output = ""
+    if injection.retract_statements:
+        retract_yaml = "\n".join(
+            "  - '%s'" % item for item in injection.retract_statements
+        )
+        retract_output = call_ros_service(
+            container,
+            "/kb/revise",
+            "kb_msgs/srv/Revise",
+            f"""
+method: retract
+statements:
+{retract_yaml}
 models:
   - default
-"""
+lifespan:
+  sec: 1
+  nanosec: 0
+""",
+            timeout_sec=20,
+        )
     service_probe = run(
         [
             "docker",
@@ -1958,19 +3630,132 @@ models:
         timeout_sec=20,
     )
     time.sleep(1.0)
-    query_output = call_ros_service(
-        container,
-        "/kb/query",
-        "kb_msgs/srv/Query",
-        query_request,
-        timeout_sec=20,
-    )
+    query_result = _wait_for_fixture_type_rows(container, injection)
     return {
         "object_id": injection.object_id,
         "service_probe": service_probe,
+        "retract_output": retract_output,
         "revise_output": revise_output,
-        "query_output": query_output,
+        "query_output": query_result["raw_output"],
+        "fixture_readiness": query_result["readiness"],
     }
+
+
+def evaluate_kb_postcondition(
+    container: str,
+    postcondition: KbPostcondition,
+) -> dict[str, object]:
+    """Query one declared symbolic postcondition after a user turn."""
+    result = query_kb_rows(
+        container,
+        patterns=postcondition.query_patterns,
+        query_vars=postcondition.query_vars,
+        timeout_sec=20,
+    )
+    rows = result.get("rows", [])
+    observed_values = {
+        str(value).strip()
+        for row in rows
+        if isinstance(row, dict)
+        for value in row.values()
+        if str(value).strip()
+    }
+    missing_values = sorted(set(postcondition.expected_values) - observed_values)
+    passed = len(rows) >= max(0, postcondition.min_rows) and not missing_values
+    return {
+        "name": postcondition.name,
+        "passed": passed,
+        "row_count": len(rows),
+        "rows": rows,
+        "missing_values": missing_values,
+        "raw_output": result.get("raw_output", ""),
+    }
+
+
+def _wait_for_fixture_type_rows(
+    container: str,
+    injection: KbInjection,
+) -> dict[str, object]:
+    """Wait for declared fixture RDF types before starting a dialogue case."""
+    required_types = _fixture_type_bindings(injection)
+    deadline = time.monotonic() + KB_FIXTURE_READY_TIMEOUT_SEC
+    latest_raw_output = ""
+    while True:
+        present, latest_raw_output = _query_fixture_type_bindings(
+            container,
+            required_types,
+        )
+        missing = sorted(required_types - present)
+        if not missing:
+            return {
+                "raw_output": latest_raw_output,
+                "readiness": {
+                    "ready": True,
+                    "required_type_count": len(required_types),
+                    "missing_type_bindings": [],
+                    "poll_timeout_sec": KB_FIXTURE_READY_TIMEOUT_SEC,
+                },
+            }
+        if time.monotonic() >= deadline:
+            return {
+                "raw_output": latest_raw_output,
+                "readiness": {
+                    "ready": False,
+                    "required_type_count": len(required_types),
+                    "missing_type_bindings": missing,
+                    "poll_timeout_sec": KB_FIXTURE_READY_TIMEOUT_SEC,
+                },
+            }
+        time.sleep(KB_FIXTURE_READY_POLL_SEC)
+
+
+def _query_fixture_type_bindings(
+    container: str,
+    required_types: set[tuple[str, str]],
+) -> tuple[set[tuple[str, str]], str]:
+    """Query each constant fixture subject so subject identity is preserved."""
+    present = set()
+    latest_raw_output = ""
+    subjects = sorted({subject for subject, _ in required_types})
+    for subject in subjects:
+        result = query_kb_rows(
+            container,
+            patterns=(f"{subject} rdf:type ?object",),
+            query_vars=("?object",),
+            timeout_sec=20,
+        )
+        latest_raw_output = str(result.get("raw_output", ""))
+        for row in result.get("rows", []):
+            if not isinstance(row, dict):
+                continue
+            obj = str(row.get("object", "")).strip()
+            if obj:
+                present.add((subject, obj))
+    return present, latest_raw_output
+
+
+def _fixture_type_bindings(injection: KbInjection) -> set[tuple[str, str]]:
+    bindings = set()
+    for statement in injection.statements:
+        parts = str(statement or "").split()
+        if len(parts) < 3 or parts[0] in {"myself", "nao_robot"}:
+            continue
+        if parts[1] == "rdf:type":
+            bindings.add((parts[0], " ".join(parts[2:])))
+    return bindings
+
+
+def _present_fixture_type_bindings(rows) -> set[tuple[str, str]]:
+    present = set()
+    for row in rows if isinstance(rows, list) else []:
+        if not isinstance(row, dict):
+            continue
+        predicate = str(row.get("predicate", "")).strip()
+        entity = str(row.get("entity", row.get("subject", ""))).strip()
+        obj = str(row.get("object", "")).strip()
+        if entity and predicate == "rdf:type" and obj:
+            present.add((entity, obj))
+    return present
 
 
 def call_ros_service(
@@ -2071,6 +3856,8 @@ def recent_logs(container: str, since_sec: int) -> str:
         "SPEECH INPUT",
         "CHATBOT",
         "ROUTE_RESOLVED",
+        "ROUTE_INTENT_HANDOFF",
+        "ROUTE_INTENT_GAP",
         "PLANNER_REQUEST",
         "planner_llm",
         "execution_feedback",
@@ -2103,12 +3890,14 @@ def recent_logs_since(container: str, since_unix_sec: float) -> str:
         "    except Exception:\n"
         "        continue\n"
         "    for line in lines:\n"
-        "        token=line.split(' ',1)[0].strip()\n"
-        "        try:\n"
-        "            if float(token) < since:\n"
-        "                continue\n"
-        "        except Exception:\n"
-        "            pass\n"
+        "        import re\n"
+        "        match = re.search(r'(?<![0-9])1[0-9]{9}\\.[0-9]+(?![0-9])', line)\n"
+        "        if match is not None:\n"
+        "            try:\n"
+        "                if float(match.group(0)) < since:\n"
+        "                    continue\n"
+        "            except Exception:\n"
+        "                pass\n"
         "        print(line)\n"
         "PY"
     )
@@ -2122,6 +3911,8 @@ def recent_logs_since(container: str, since_unix_sec: float) -> str:
         "SPEECH INPUT",
         "CHATBOT",
         "ROUTE_RESOLVED",
+        "ROUTE_INTENT_HANDOFF",
+        "ROUTE_INTENT_GAP",
         "PLANNER_REQUEST",
         "planner_llm",
         "execution_feedback",
@@ -2192,9 +3983,10 @@ def _voice_id_for_case(
 
 
 def _voice_speech_topic(voice_id: str) -> str:
-    if voice_id == VOICE_ID:
+    clean_voice = str(voice_id or VOICE_ID).strip() or VOICE_ID
+    if clean_voice == VOICE_ID:
         return VOICE_SPEECH_TOPIC
-    return f"/humans/voices/{voice_id}/speech"
+    return f"{VOICE_SPEECH_PREFIX}/{clean_voice}/speech"
 
 
 if __name__ == "__main__":

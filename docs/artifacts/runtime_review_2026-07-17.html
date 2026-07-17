@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Runtime Performance Review - 17 July 2026</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2.6cm 2.2cm 2.4cm 2.2cm;
+    }
+    :root {
+      --ink: #111;
+      --muted: #3a3a3a;
+      --line: #1f1f1f;
+      --soft: #f3f3f3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #fff;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 11.5pt;
+      line-height: 1.42;
+    }
+    .doc {
+      max-width: 172mm;
+      margin: 0 auto;
+      padding: 0;
+    }
+    .title-page {
+      min-height: 247mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+    }
+    .title-top {
+      text-align: center;
+      margin-top: 18mm;
+    }
+    .title-top h1 {
+      font-size: 20pt;
+      line-height: 1.28;
+      margin: 20mm 0 8mm;
+      font-weight: 700;
+    }
+    .title-top h2 {
+      font-size: 13pt;
+      margin: 0 0 3mm;
+      font-weight: 600;
+      border-bottom: 0;
+    }
+    .title-top p {
+      margin: 2mm 0;
+      color: var(--muted);
+    }
+    .title-meta {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 auto 20mm;
+      font-size: 11pt;
+    }
+    .title-meta td {
+      padding: 2.5mm 0;
+      vertical-align: top;
+      border: 0;
+    }
+    .title-meta td:first-child {
+      width: 38mm;
+      font-weight: 700;
+    }
+    .small { font-size: 10.3pt; color: #222; }
+    h1, h2, h3 {
+      margin: 0 0 3mm;
+      line-height: 1.28;
+      font-weight: 700;
+    }
+    h1 { font-size: 16.5pt; margin-top: 0; }
+    h2 {
+      font-size: 13pt;
+      margin-top: 9mm;
+      border-bottom: 0.5pt solid var(--line);
+      padding-bottom: 1.5mm;
+    }
+    h3 {
+      font-size: 11.8pt;
+      margin-top: 6mm;
+    }
+    p { margin: 2.2mm 0; }
+    ul, ol { margin: 2.5mm 0 2.5mm 6mm; padding: 0; }
+    li { margin: 1.4mm 0; }
+    pre {
+      margin: 2.5mm 0 4mm;
+      background: var(--soft);
+      border: 0.6pt solid #666;
+      padding: 2.6mm 2.8mm;
+      overflow-x: auto;
+      white-space: pre;
+      font-family: "Liberation Mono", "Courier New", monospace;
+      font-size: 9.2pt;
+      line-height: 1.3;
+    }
+    code {
+      font-family: "Liberation Mono", "Courier New", monospace;
+      background: #efefef;
+      padding: 0.2mm 1mm;
+      border: 0.4pt solid #d7d7d7;
+      border-radius: 2px;
+      font-size: 10.3pt;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      border: 0;
+      font-size: inherit;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 3mm 0 4mm;
+      font-size: 10.8pt;
+    }
+    th, td {
+      border: 0.6pt solid #333;
+      padding: 2.2mm 2.3mm;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+      hyphens: auto;
+    }
+    th {
+      background: #fafafa;
+      text-align: left;
+      font-weight: 700;
+    }
+    .diagram {
+      margin: 4mm 0 5mm;
+      border: 0.6pt solid #777;
+      padding: 2mm;
+      background: #fff;
+    }
+    .diagram pre {
+      margin: 0;
+      border: 0;
+      background: #fcfcfc;
+      font-size: 10.2pt;
+      white-space: pre-wrap;
+    }
+    .diagram svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .diagram-labels {
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 25px;
+      font-weight: 700;
+      fill: #111;
+    }
+    .lifelines {
+      stroke: #999;
+      stroke-dasharray: 4 4;
+    }
+    .messages {
+      stroke: #111;
+      stroke-width: 1.35;
+      fill: none;
+    }
+    .messages text {
+      stroke: none;
+      fill: #111;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 22px;
+    }
+    .caption {
+      margin-top: 2mm;
+      font-size: 10.5pt;
+      color: #222;
+      font-style: italic;
+      text-align: center;
+    }
+    blockquote {
+      border: 0.6pt solid #333;
+      background: #fcfcfc;
+      margin: 3mm 0;
+      padding: 2.6mm 3mm;
+      color: var(--muted);
+    }
+    a { color: #111; }
+  </style>
+</head>
+<body>
+  <main class="doc">
+
+<h1>Runtime Performance Review: Grounding-Strong Final Candidate</h1>
+<p>Date: 17 July 2026</p>
+<p>Runtime: <code>nao_ros2</code>, response-first pipeline, lab OpenAI-compatible endpoint</p>
+<p>Score: <strong>8.8/10</strong></p>
+<p>Standing: <strong>strong candidate, not yet frozen</strong></p>
+<p>The current stack is substantially stronger than the previous capability-extreme</p>
+<p>baseline. KnowledgeCore insertion, relation revision, grounded retrieval,</p>
+<p>person/object separation, skill target selection, and postcondition queries were</p>
+<p>all reliable under long context. Two execution-admission regressions and one</p>
+<p>lossy planner recovery path prevent a 9.0+ freeze.</p>
+<h2>🔴 Critical</h2>
+<ol>
+<li><strong>Quantified recovery can still discard requested capability families.</strong> The</li>
+</ol>
+<p>maximal request to stand, visit every object, look at each one, wave, sit,</p>
+<p>and report reached planner execution with only three <code>navigate_to</code> steps and</p>
+<p><code>report_result</code>. The terminal report omitted the dropped actions and used</p>
+<p>internal identifiers. A partial plan must not be accepted as full success.</p>
+<ol>
+<li><strong>Acknowledgement and admitted route can disagree.</strong> For “Can you move your</li>
+</ol>
+<p>head in all directions?”, the chatbot said, “Yes, I can move my head in all</p>
+<p>directions. How can I assist you?”, while route repair admitted execution and</p>
+<p>the robot moved its head. The physical execution and final report succeeded,</p>
+<p>but the acknowledgement was a capability answer rather than an execution</p>
+<p>commitment. Route repair must not publish stale wording.</p>
+<h2>🟠 Execution Admission And Recovery</h2>
+<ol>
+<li>The request to sit, stand, pick MIDAS, return to ALEX, and report was</li>
+</ol>
+<p>understood at the text and entity level, but chatbot handoff added</p>
+<p><code>bring_object</code> and omitted a compatible <code>target_selection</code>. Planner correctly</p>
+<p>refused the incomplete contract and chatbot unnecessarily asked which object</p>
+<p>was meant. “Return to ALEX” described robot motion, not object delivery.</p>
+<ol>
+<li>The all-success fake-deep missing-object case reached replan but did not</li>
+</ol>
+<p>produce a clear terminal closure in the captured trajectory. This remains a</p>
+<p>degraded recovery case.</p>
+<ol>
+<li><code>fail_once_navigation</code> was applied and direct logs show <code>step_failed</code> reaching</li>
+</ol>
+<p>planner feedback. The questionnaire artifact nevertheless marked the cases</p>
+<p><code>not_scored</code> and claimed the failure was not exercised. Failure/replan scoring</p>
+<p>from this artifact is invalid; the runtime path is partially evidenced but</p>
+<p>not accepted as a complete recovery result.</p>
+<h2>🟢 Knowledge And Grounding</h2>
+<p>The stateful KB stress chain passed <strong>7/7 semantic cases</strong>:</p>
+<ul>
+<li>Newly inserted TITAS and MIDAS facts were available on the first relevant turn.</li>
+<li>Names, colors, support locations, and ALEX remained visible after long context.</li>
+<li>Revising TITAS from <code>work_table</code> to <code>storage_shelf</code> was reflected immediately.</li>
+<li>Delivery selected the exact grounded object and person, then wrote a verified</li>
+</ul>
+<p>postcondition.</p>
+<ul>
+<li>Moving MIDAS to the shelf and delivering all shelf objects to ALEX preserved</li>
+</ul>
+<p>both objects and produced a correct final query: TITAS is a gold cup, MIDAS is</p>
+<p>a blue book, and both are with ALEX.</p>
+<ul>
+<li>ALEX stayed <code>kind=person</code>; object counts and quantified object selections did</li>
+</ul>
+<p>not absorb the person.</p>
+<p>The raw harness labels for <code>work_table</code> versus “work table” are lexical false</p>
+<p>negatives. The underlying RDF values, grounded-context projection, model answer,</p>
+<p>skill selection, and postconditions agree.</p>
+<h2>🟡 Dialogue And Reporting</h2>
+<ul>
+<li>Simple dialogue, visible-object questions, names, colors, counts, immediate</li>
+</ul>
+<p>object hydration, and reflective follow-up all passed.</p>
+<ul>
+<li>Ordered three-object navigation produced per-object arrival messages and a</li>
+</ul>
+<p>coherent final summary.</p>
+<ul>
+<li>Person look-at and person navigation/wave cases selected ALEX correctly.</li>
+<li>Normal report paths were natural in the kitchen delivery, walk/pick/sit,</li>
+</ul>
+<p>under-table pick, pick/place, and gold-apple cases.</p>
+<ul>
+<li>The lossy maximal recovery report was not natural: “I completed destination</li>
+</ul>
+<p>navigation to codex_extreme_book...” This is local to incomplete recovery</p>
+<p>evidence, not evidence that the normal report-result path is globally broken.</p>
+<h2>🟣 Runtime And Observability</h2>
+<ul>
+<li>Preflight status was <code>ready_for_semantic_scoring</code>; all required nodes were</li>
+</ul>
+<p>present, lifecycle nodes were active, KnowledgeCore was ready, and both LLM</p>
+<p>preflights passed.</p>
+<ul>
+<li>No LLM connectivity failure, duplicate active goal, invalid planner JSON,</li>
+</ul>
+<p>invalid executable plan, or execution-report fallback was observed.</p>
+<ul>
+<li>The final 75-minute snapshot counted <strong>83 route-repair events</strong> and five</li>
+</ul>
+<p>rules-intent fallbacks. Route repair is carrying too much semantic load even</p>
+<p>though most resulting trajectories succeed.</p>
+<ul>
+<li>The harness produced two important false negatives: ordered multi-object</li>
+</ul>
+<p>navigation completed despite missing correlated planner evidence, and the</p>
+<p>kitchen-to-operator case correctly resolved “you” rather than clarifying.</p>
+<p>Manual trace adjudication was required.</p>
+<h2>Questionnaire Summary</h2>
+<table><thead><tr>
+<th>Suite</th>
+<th>Semantic result</th>
+<th>Qualification</th>
+</tr></thead><tbody>
+<tr>
+<td>Main</td>
+<td>21/21 trajectories completed</td>
+<td>One acknowledgement/route mismatch is degraded</td>
+</tr>
+<tr>
+<td>Capability extreme</td>
+<td>5/7 pass</td>
+<td>Admission mismatch and lossy recovery are real failures</td>
+</tr>
+<tr>
+<td>KB stress</td>
+<td>7/7 pass</td>
+<td>Thesis-grade state, grounding, skill, and postcondition chain</td>
+</tr>
+<tr>
+<td>Fake deep, all success</td>
+<td>8/9 pass or useful</td>
+<td>Missing-object recovery lacks terminal closure</td>
+</tr>
+<tr>
+<td>Fake deep, fail once navigation</td>
+<td>Not scored</td>
+<td>Direct failure evidence contradicts harness phase extraction</td>
+</tr>
+</tbody></table>
+<h2>Acceptance Before Freeze</h2>
+<ol>
+<li>Make route repair transactional: validate route, acknowledgement, goal text,</li>
+</ol>
+<p>intent families, and target selection before any acknowledgement is spoken.</p>
+<p>Retry or clarify on mismatch; do not add phrase-specific routing markers.</p>
+<ol>
+<li>Reject deterministic planner recovery when it cannot preserve every admitted</li>
+</ol>
+<p>capability family. Structured failure is preferable to successful partial</p>
+<p>execution.</p>
+<ol>
+<li>Correct the robot-return versus object-delivery role model and require a</li>
+</ol>
+<p>compatible target selection only when delivery is actually requested.</p>
+<ol>
+<li>Repair failure-profile trace correlation, then rerun <code>fail_once_navigation</code></li>
+</ol>
+<p>and <code>fail_once_pick</code> from a clean runtime.</p>
+<ol>
+<li>Preserve the current KB/person behavior as mandatory holdouts for every fix.</li>
+</ol>
+<h2>Artifacts</h2>
+<p>The complete machine-readable evidence is under</p>
+<p><code>docs/artifacts/runtime_review_2026-07-17/</code>:</p>
+<ul>
+<li><code>preflight.json</code></li>
+<li><code>main.json</code></li>
+<li><code>capability_extreme.json</code></li>
+<li><code>kb_stress.json</code></li>
+<li><code>fake_deep_all_success.json</code></li>
+<li><code>fake_deep_fail_once_navigation.json</code></li>
+<li><code>final_snapshot.json</code></li>
+</ul>
+<p><strong>Finding count:</strong> 🔴 2 critical, 🟠 3 execution/recovery, 🟢 6 confirmed</p>
+<p>grounding strengths, 🟡 5 dialogue/report observations, 🟣 4 runtime and</p>
+<p>observability findings.</p>
+  </main>
+</body>
+</html>

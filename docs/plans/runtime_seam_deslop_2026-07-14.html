@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Runtime Seam Deslop And Stabilization Plan</title>
+  <style>
+    :root { --ink:#172033; --muted:#64748b; --line:#d6dee9; --soft:#f7f9fc; --accent:#0f766e; --warn:#b45309; --bad:#b91c1c; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:#fff; font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    main { max-width:1180px; margin:0 auto; padding:32px 22px 56px; }
+    h1 { margin:0; font-size:34px; letter-spacing:0; }
+    h2 { margin:30px 0 12px; padding-top:18px; border-top:1px solid var(--line); font-size:21px; }
+    h3 { margin:22px 0 8px; font-size:17px; }
+    p { max-width:92ch; }
+    .meta { margin:5px 0 22px; color:var(--muted); }
+    .callout { padding:13px 15px; border-left:4px solid var(--accent); background:var(--soft); }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:12px; }
+    .panel { padding:14px; border:1px solid var(--line); border-radius:6px; background:var(--soft); }
+    .panel strong { display:block; margin-bottom:5px; }
+    .flow { padding:17px; overflow:auto; border-radius:6px; color:#e5edf6; background:#111827; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { padding:9px 10px; border:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { background:#eef3f8; }
+    code { padding:1px 4px; border-radius:3px; background:#edf2f7; }
+    ul, ol { padding-left:22px; }
+    .accent { color:var(--accent); font-weight:700; }
+    .warn { color:var(--warn); font-weight:700; }
+    .bad { color:var(--bad); font-weight:700; }
+    @media (max-width:700px) { h1 { font-size:28px; } main { padding:24px 16px 42px; } table { font-size:13px; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Runtime Seam Deslop And Stabilization Plan</h1>
+  <div class="meta">Main implementation accepted, deep-fake runtime gate pending, 2026-07-14</div>
+  <p class="callout"><strong>Authority:</strong> this plan executes the current stabilization tranche under <code>nao_ros4hri_masterplan.md</code>. The masterplan remains the repository-wide integration authority.</p>
+
+  <h2>Objective</h2>
+  <p>Reduce cross-package churn while preserving grounded execution. Chatbot owns route, target selection, and wording. Planner owns planning and supervision. Orchestrator validates and executes. AB=1 skills provide fresh evidence, and KB transport remains in <code>kb_skills</code>. Deterministic code validates these contracts without replacing valid model output with a second policy.</p>
+
+  <h2>Frozen Problems</h2>
+  <div class="grid">
+    <div class="panel"><strong>Report ownership</strong>Several validators and renderers can replace otherwise natural <code>report_result</code> output.</div>
+    <div class="panel"><strong>Repeated inference</strong>Route, scope, recipient, and reporting policy can be reconstructed at multiple seams.</div>
+    <div class="panel"><strong>Early salvage</strong>Planner-invalid output can enter deterministic repair before bounded model retry is exhausted.</div>
+    <div class="panel"><strong>KB continuity</strong>Spatial moves can retain stale relations or accept incomplete post-effect evidence.</div>
+    <div class="panel"><strong>Fallback visibility</strong>Existing traces do not consistently state which owner changed semantics.</div>
+    <div class="panel"><strong>Attribution</strong>Contracts, fixtures, fake skills, and harness changes currently share one large work batch.</div>
+  </div>
+
+  <h2>Authority Flow</h2>
+  <pre class="flow">response stage -> natural acknowledgement + advisory route
+intent stage   -> authoritative route + intent + target_selection + report policy
+planner_common -> normalize and validate
+planner_llm    -> plan, validate, retry within budget
+orchestrator   -> admit, execute, verify effects, preserve lineage
+chatbot_llm    -> verbalize structured report_outcome</pre>
+
+  <h2>Fallback Budget</h2>
+  <table>
+    <thead><tr><th>Tier</th><th>Meaning</th><th>Examples</th><th>Healthy budget</th></tr></thead>
+    <tbody>
+      <tr><td>A</td><td>Changes turn semantics</td><td>Route repair, inferred target selection, plan synthesis, report replacement</td><td class="bad">Zero</td></tr>
+      <tr><td>B</td><td>Recovers declared execution failure</td><td>Retry, replan, action timeout, KB retry, fail-once policy</td><td>Only in matching failure cases</td></tr>
+      <tr><td>C</td><td>Static compatibility/default</td><td>Import shim, benign coercion, optional parameter default</td><td>Inventory only</td></tr>
+    </tbody>
+  </table>
+  <p>Tier A and B activations use the existing trace channel and identify owner, fallback id, trigger, input source, output effect, lineage, and whether semantics changed.</p>
+
+  <h2>Retry And Reporting</h2>
+  <ul>
+    <li>Chatbot receives one validation retry for the failed stage.</li>
+    <li>Planner receives one retry and a conditional second retry only after measurable progress.</li>
+    <li>Repeated output, repeated errors, missing user information, or unavailable backend stop retry.</li>
+    <li>Deterministic salvage occurs only after retry exhaustion and cannot broaden grounded scope.</li>
+    <li>Chatbot remains the report wording authority. Deterministic rendering is an emergency path for empty, unsafe, or factually invalid output.</li>
+    <li>Prompt changes require a complete SkillOpt ledger before acceptance.</li>
+  </ul>
+
+  <h2>Strict KB Effects</h2>
+  <ol>
+    <li>AB=1 results provide fresh effect evidence.</li>
+    <li>Orchestrator validates and delegates through <code>kb_skills</code>.</li>
+    <li>A move removes stale <code>isIn</code>, <code>isAt</code>, and <code>isOn</code> values before confirming the new relation.</li>
+    <li>Destination and predicate come from structured evidence, not identifier words.</li>
+    <li>Missing or contradictory evidence fails the postcondition.</li>
+    <li>People cannot become supports or deliverable objects.</li>
+  </ol>
+
+  <h2>Implementation Tranches</h2>
+  <div class="grid">
+    <div class="panel"><strong>T0 Baseline</strong>Freeze diffs, provenance, fallback inventory, and discriminating probes.</div>
+    <div class="panel"><strong>T1 Contract + Chatbot</strong>Make intent authoritative, narrow handoff assembly, trace semantic repairs, consolidate report validation.</div>
+    <div class="panel"><strong>T2 Planner</strong>Add exact-error retries, progress gating, fingerprint stop, and post-retry bounded salvage.</div>
+    <div class="panel"><strong>T3 Orchestrator + KB</strong>Keep reports structured, enforce fresh effects, remove stale spatial facts, preserve lineage.</div>
+    <div class="panel"><strong>T4 Skills + Fixtures</strong>Keep fake/real evidence equivalent, centralize fixture cleanup, preserve real motion with honest open loop.</div>
+    <div class="panel"><strong>T5 Harness + Docs</strong>Normalize provenance and fallback metrics, run clean full/deep suites, fold accepted status into masterplan.</div>
+  </div>
+
+  <h2>Validation Ladder</h2>
+  <ol>
+    <li>Establish a red test at the narrowest truthful layer.</li>
+    <li>Patch only the owning seam and run protected controls.</li>
+    <li>Run package suites, compilation, registry consistency, diff checks, and ROS4HRI audit.</li>
+    <li>Apply behavior-preserving deslop after green tests, then rerun them.</li>
+    <li>Build one clean overlay and replace the full stack once.</li>
+    <li>Run the former failure, a known-good control, focused variants, then full and deep fake suites.</li>
+  </ol>
+
+  <h2>Acceptance</h2>
+  <ul>
+    <li>Zero healthy-path Tier A fallbacks across dialogue, KB, grounded execution, and report wording.</li>
+    <li>Correct clarification for missing information, with no implicit replan.</li>
+    <li>No false completion, omitted required target, or duplicate speech.</li>
+    <li>Verified KB mutation removes stale relations and preserves human/object roles.</li>
+    <li>Runtime artifacts correlate turn, goal, plan, execution, report, KB, fallback, and latency evidence.</li>
+  </ul>
+
+  <h2>Accepted Runtime</h2>
+  <p><span class="accent">Main seams:</span> natural KB mutation, strict add/revise/query/remove isolation, grouped delivery, human/object separation, real-by-default motion, ordered visits, and chatbot-owned reports passed live probes. The rebuilt <code>iiia:nao</code> image matched all 56 changed runtime files and inspected colcon modules.</p>
+  <p><span class="accent">Harness:</span> tracked speech publishers are now isolated per active voice. Visible-object assertions accept additional live perception only for <code>visible_objects</code>; explicit and location-scoped selections remain exact.</p>
+
+  <h2>Implementation Status</h2>
+  <div class="grid">
+    <div class="panel"><strong>T1 Chatbot authority</strong><span class="accent">Source-green.</span> Intent owns target selection, receives one exact-error retry, and adapter derivation is fallback-only.</div>
+    <div class="panel"><strong>T2 Planner retry</strong><span class="accent">Source-green.</span> Retry two requires measurable progress; repeated invalid output stops.</div>
+    <div class="panel"><strong>T3 Report + KB</strong><span class="accent">Source-green.</span> No generic orchestrator delivery success, evidence-specific emergency reports, strict typed destinations, and stale spatial cleanup.</div>
+    <div class="panel"><strong>T4 Skills + fixtures</strong><span class="accent">Source-green.</span> Fake posture state, fail-once continuity, fixture locations, and real-motion ownership remain covered.</div>
+  </div>
+  <p><span class="accent">Source gates:</span> the final chatbot turn and adapter seam passes 156 tests; planner engine and prompt tests pass 65; harness tests pass 37; registry consistency, compilation, and pre-commit gates pass.</p>
+  <p><span class="warn">Remaining runtime gate:</span> the final retry-exhaustion provenance change is source-green, but the clean v7 launch was not scored because <code>10.7.138.215:8004</code> refused all planner preflight and host probes. Rerun ordered-walk, full <code>all_success</code>, and <code>fail_once_navigation</code> after endpoint recovery.</p>
+</main>
+</body>
+</html>

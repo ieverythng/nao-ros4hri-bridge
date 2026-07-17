@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Seam Hypothesis Audit - 17 July 2026</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2.6cm 2.2cm 2.4cm 2.2cm;
+    }
+    :root {
+      --ink: #111;
+      --muted: #3a3a3a;
+      --line: #1f1f1f;
+      --soft: #f3f3f3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #fff;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 11.5pt;
+      line-height: 1.42;
+    }
+    .doc {
+      max-width: 172mm;
+      margin: 0 auto;
+      padding: 0;
+    }
+    .title-page {
+      min-height: 247mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+    }
+    .title-top {
+      text-align: center;
+      margin-top: 18mm;
+    }
+    .title-top h1 {
+      font-size: 20pt;
+      line-height: 1.28;
+      margin: 20mm 0 8mm;
+      font-weight: 700;
+    }
+    .title-top h2 {
+      font-size: 13pt;
+      margin: 0 0 3mm;
+      font-weight: 600;
+      border-bottom: 0;
+    }
+    .title-top p {
+      margin: 2mm 0;
+      color: var(--muted);
+    }
+    .title-meta {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 auto 20mm;
+      font-size: 11pt;
+    }
+    .title-meta td {
+      padding: 2.5mm 0;
+      vertical-align: top;
+      border: 0;
+    }
+    .title-meta td:first-child {
+      width: 38mm;
+      font-weight: 700;
+    }
+    .small { font-size: 10.3pt; color: #222; }
+    h1, h2, h3 {
+      margin: 0 0 3mm;
+      line-height: 1.28;
+      font-weight: 700;
+    }
+    h1 { font-size: 16.5pt; margin-top: 0; }
+    h2 {
+      font-size: 13pt;
+      margin-top: 9mm;
+      border-bottom: 0.5pt solid var(--line);
+      padding-bottom: 1.5mm;
+    }
+    h3 {
+      font-size: 11.8pt;
+      margin-top: 6mm;
+    }
+    p { margin: 2.2mm 0; }
+    ul, ol { margin: 2.5mm 0 2.5mm 6mm; padding: 0; }
+    li { margin: 1.4mm 0; }
+    pre {
+      margin: 2.5mm 0 4mm;
+      background: var(--soft);
+      border: 0.6pt solid #666;
+      padding: 2.6mm 2.8mm;
+      overflow-x: auto;
+      white-space: pre;
+      font-family: "Liberation Mono", "Courier New", monospace;
+      font-size: 9.2pt;
+      line-height: 1.3;
+    }
+    code {
+      font-family: "Liberation Mono", "Courier New", monospace;
+      background: #efefef;
+      padding: 0.2mm 1mm;
+      border: 0.4pt solid #d7d7d7;
+      border-radius: 2px;
+      font-size: 10.3pt;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      border: 0;
+      font-size: inherit;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 3mm 0 4mm;
+      font-size: 10.8pt;
+    }
+    th, td {
+      border: 0.6pt solid #333;
+      padding: 2.2mm 2.3mm;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+      hyphens: auto;
+    }
+    th {
+      background: #fafafa;
+      text-align: left;
+      font-weight: 700;
+    }
+    .diagram {
+      margin: 4mm 0 5mm;
+      border: 0.6pt solid #777;
+      padding: 2mm;
+      background: #fff;
+    }
+    .diagram pre {
+      margin: 0;
+      border: 0;
+      background: #fcfcfc;
+      font-size: 10.2pt;
+      white-space: pre-wrap;
+    }
+    .diagram svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .diagram-labels {
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 25px;
+      font-weight: 700;
+      fill: #111;
+    }
+    .lifelines {
+      stroke: #999;
+      stroke-dasharray: 4 4;
+    }
+    .messages {
+      stroke: #111;
+      stroke-width: 1.35;
+      fill: none;
+    }
+    .messages text {
+      stroke: none;
+      fill: #111;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 22px;
+    }
+    .caption {
+      margin-top: 2mm;
+      font-size: 10.5pt;
+      color: #222;
+      font-style: italic;
+      text-align: center;
+    }
+    blockquote {
+      border: 0.6pt solid #333;
+      background: #fcfcfc;
+      margin: 3mm 0;
+      padding: 2.6mm 3mm;
+      color: var(--muted);
+    }
+    a { color: #111; }
+  </style>
+</head>
+<body>
+  <main class="doc">
+
+<h1>Seam Hypothesis Audit: Admission, Recovery, And Harness Correlation</h1>
+<p>Date: 17 July 2026</p>
+<p>Decision: <strong>bounded handoff</strong></p>
+<p>Related runtime score: <strong>8.8/10</strong></p>
+<h2>1. Target Contract</h2>
+<p>The stack must preserve one coherent user objective from chatbot route selection</p>
+<p>through planner handoff, execution, and final speech. An acknowledgement must</p>
+<p>describe the route that will actually run. Recovery may not silently remove</p>
+<p>requested actions. Grounded entities and predicate relations must remain usable</p>
+<p>under long context, with people and objects kept distinct. The review harness</p>
+<p>must distinguish runtime failures from missing or incorrectly correlated</p>
+<p>evidence.</p>
+<p>Non-goals are phrase-specific routing hints, moving planning into the</p>
+<p>orchestrator, introducing a second speech owner, or changing canonical prompts</p>
+<p>without a bounded SkillOpt baseline and holdout gate.</p>
+<p>Acceptance requires the two failing capability-extreme prompts to preserve all</p>
+<p>semantic actions or return truthful clarification/failure, plus clean</p>
+<p><code>fail_once_navigation</code> and <code>fail_once_pick</code> evidence. The 7/7 KB stress chain and</p>
+<p>person-grounding cases are protected holdouts.</p>
+<h2>2. Baseline Evidence</h2>
+<table><thead><tr>
+<th>Observation</th>
+<th>Evidence</th>
+<th>Classification</th>
+</tr></thead><tbody>
+<tr>
+<td>Fresh and revised KB facts were used immediately across seven stateful cases</td>
+<td><code>runtime_review_2026-07-17/kb_stress.json</code></td>
+<td>confirmed strength</td>
+</tr>
+<tr>
+<td>ALEX remained a person and was selected correctly for look-at, wave, navigation, and delivery</td>
+<td>main and KB artifacts</td>
+<td>confirmed strength</td>
+</tr>
+<tr>
+<td>Head-motion acknowledgement answered capability while repaired route executed motion</td>
+<td>main artifact and live UI</td>
+<td>real regression</td>
+</tr>
+<tr>
+<td>Maximal all-object request was reduced to navigation plus report</td>
+<td>capability-extreme artifact</td>
+<td>real regression</td>
+</tr>
+<tr>
+<td>Return-to-ALEX request was interpreted as object delivery, then lacked delivery selection</td>
+<td>capability-extreme artifact</td>
+<td>real regression</td>
+</tr>
+<tr>
+<td>Injected navigation failure appears in direct logs but not questionnaire phase fields</td>
+<td>fail-once artifact and container logs</td>
+<td>harness contradiction</td>
+</tr>
+</tbody></table>
+<h2>3. Approach Registry</h2>
+<table><thead><tr>
+<th>ID</th>
+<th>Family</th>
+<th>Hypothesis</th>
+<th>Probe</th>
+<th>Result</th>
+<th>Status</th>
+</tr></thead><tbody>
+<tr>
+<td>H-01</td>
+<td>KB/grounding</td>
+<td>Missing or stale facts cause the regressions</td>
+<td>Stateful insert, revise, query, execute, postcondition chain</td>
+<td>7/7 semantic pass</td>
+<td>rejected</td>
+</tr>
+<tr>
+<td>H-02</td>
+<td>Person/object roles</td>
+<td>ALEX is lost or treated as an object</td>
+<td>Inspect grounded kinds and skill selections</td>
+<td>Correct in main and KB suites</td>
+<td>rejected globally</td>
+</tr>
+<tr>
+<td>H-03</td>
+<td>Chatbot route transaction</td>
+<td>Route repair changes route after acknowledgement generation</td>
+<td>Compare spoken ack, explicit/inferred route, repair marker, planner handoff</td>
+<td>Capability ack followed by execution</td>
+<td>accepted</td>
+</tr>
+<tr>
+<td>H-04</td>
+<td>Chatbot semantic admission</td>
+<td>“Return to ALEX” is mapped to <code>bring_object</code> and demands the wrong selection contract</td>
+<td>Compare goal text, normalized intents, scene targets, and target selection</td>
+<td>Object MIDAS explicit; delivery intent added; selection absent</td>
+<td>accepted</td>
+</tr>
+<tr>
+<td>H-05</td>
+<td>Planner recovery</td>
+<td>Target-selection recovery compiles only quantified operation and report</td>
+<td>Compare admitted intents with recovered steps</td>
+<td>Stand/look/wave/sit dropped</td>
+<td>accepted</td>
+</tr>
+<tr>
+<td>H-06</td>
+<td>Orchestrator filtering</td>
+<td>Orchestrator drops valid planner steps</td>
+<td>Compare plan payload with dispatched feedback</td>
+<td>Reduced plan already emitted by planner</td>
+<td>rejected</td>
+</tr>
+<tr>
+<td>H-07</td>
+<td>Report-result global failure</td>
+<td>Chatbot cannot summarize multi-step evidence naturally</td>
+<td>Compare normal reports with recovery report</td>
+<td>Most normal paths natural; lossy path malformed</td>
+<td>rejected globally, active locally</td>
+</tr>
+<tr>
+<td>H-08</td>
+<td>Harness correlation</td>
+<td>Phase extraction and lexical oracles misclassify valid trajectories</td>
+<td>Compare raw logs, speech, RDF postconditions, and artifact flags</td>
+<td>Multiple false negatives and one missed injected failure</td>
+<td>accepted</td>
+</tr>
+<tr>
+<td>H-09</td>
+<td>Provider instability</td>
+<td>LLM connectivity explains the regressions</td>
+<td>Preflight and fallback inspection</td>
+<td>Zero connectivity failures</td>
+<td>rejected</td>
+</tr>
+</tbody></table>
+<h2>4. Discriminating Probes And Results</h2>
+<h3>P-01: Stateful grounding chain</h3>
+<p>Inserted TITAS and MIDAS, revised support relations, queried exact predicates,</p>
+<p>executed grounded deliveries, checked postconditions, and queried both objects</p>
+<p>after long context. Every semantic state assertion passed.</p>
+<p><strong>Result:</strong> H-01 is rejected. The visible regressions are downstream of grounded</p>
+<p>context creation.</p>
+<h3>P-02: Acknowledgement versus route</h3>
+<p>The head-motion prompt produced a capability-style acknowledgement. Route repair</p>
+<p>then admitted execution, and planner/skills completed the motion.</p>
+<p><strong>Result:</strong> H-03 is accepted. Route repair currently repairs routing without</p>
+<p>repairing already generated user-facing wording. The safe boundary is a</p>
+<p>pre-publication response transaction in chatbot, not a new orchestrator phrase</p>
+<p>guard.</p>
+<h3>P-03: Full objective versus recovered plan</h3>
+<p>The maximal prompt and acknowledgement contained stand, all-object navigation,</p>
+<p>look-at, wave, sit, and report. The accepted recovery contained only three</p>
+<p>navigations and report.</p>
+<p><strong>Result:</strong> H-05 is accepted and H-06 rejected. Planner recovery must prove</p>
+<p>semantic coverage before returning <code>planned</code>.</p>
+<h3>P-04: Return role semantics</h3>
+<p>MIDAS and ALEX were both grounded. The chatbot added <code>bring_object</code> for a request</p>
+<p>where the robot should return while holding the object. Planner rejected the</p>
+<p>missing delivery selection and chatbot asked which object despite MIDAS being</p>
+<p>explicit.</p>
+<p><strong>Result:</strong> H-04 is accepted. Admission needs a structured distinction between</p>
+<p>robot destination and object recipient. This must not be solved with utterance</p>
+<p>markers.</p>
+<h3>P-05: Failure injection correlation</h3>
+<p>The fake server changed to scenario mode with one override. Direct logs recorded</p>
+<p><code>step_failed</code> for <code>navigate_to</code> and planner feedback with retry budget one. The</p>
+<p>artifact simultaneously recorded <code>failure_observed=false</code>,</p>
+<p><code>execution_feedback_observed=false</code>, and “configured fake failure was not</p>
+<p>exercised.”</p>
+<p><strong>Result:</strong> H-08 is accepted. This run cannot score recovery completion. The</p>
+<p>phase collector must correlate goal/plan lineage from the direct trace instead</p>
+<p>of relying on its current case window alone.</p>
+<h2>5. Adversarial Audit</h2>
+<ul>
+<li>Ownership remains intact: chatbot validates its response transaction, planner</li>
+</ul>
+<p>validates semantic plan coverage, orchestrator continues deterministic</p>
+<p>dispatch, and dialogue manager remains the speech owner.</p>
+<ul>
+<li>No new ROS interface or hardcoded route phrase is required.</li>
+<li>Proposed validation must preserve goal, plan, version, and step lineage.</li>
+<li>A partial plan may not be represented as successful completion.</li>
+<li>Planning-time grounded context remains selection evidence, not proof of an</li>
+</ul>
+<p>AB=1 action result.</p>
+<ul>
+<li>People and objects remained semantically distinct in the accepted KB chain.</li>
+<li>No prompt change is accepted from this audit. Any prompt mutation requires</li>
+</ul>
+<p>SkillOpt train and holdout evidence.</p>
+<ul>
+<li>Failure, clarification, and replan coverage remains incomplete until harness</li>
+</ul>
+<p>correlation is corrected and rerun.</p>
+<h2>6. Decision: Bounded Handoff</h2>
+<p>Accept H-03, H-04, H-05, and H-08 as independent contributors. Reject a KB</p>
+<p>hydration explanation for these traces. The smallest safe implementation order</p>
+<p>is:</p>
+<ol>
+<li>Fix questionnaire goal/plan correlation so failure profiles can be trusted.</li>
+<li>Make chatbot response publication atomic across acknowledgement, route,</li>
+</ol>
+<p>confidence, goal text, intents, and target selection. Retry once or clarify</p>
+<p>on internal mismatch.</p>
+<ol>
+<li>Add planner semantic-coverage validation to any deterministic recovery. If</li>
+</ol>
+<p>recovery cannot preserve all requested capability families, fail or clarify</p>
+<p>rather than execute a subset.</p>
+<ol>
+<li>Represent robot destination separately from object recipient in admission</li>
+</ol>
+<p>checks, using existing structured contracts where possible.</p>
+<ol>
+<li>Rerun the exact failing prompts and failure profiles while holding the KB</li>
+</ol>
+<p>stress chain fixed as a regression gate.</p>
+<h2>7. Residual Risk And Next Probe</h2>
+<p>The final snapshot counted 83 route repairs. Most ended successfully, but that</p>
+<p>volume means the repaired path is effectively a normal policy path and deserves</p>
+<p>the same consistency validation as a direct model route. The next probe should</p>
+<p>capture the raw chatbot JSON, repaired response object, published</p>
+<p>acknowledgement, and planner request under one dialogue-turn id for ten route</p>
+<p>repairs. A mismatch rate above zero blocks freeze.</p>
+<p>After the harness fix, run one clean all-success maximal case, one</p>
+<p><code>fail_once_navigation</code>, and one <code>fail_once_pick</code>. Require full capability</p>
+<p>coverage, one coherent acknowledgement, one natural terminal utterance, and</p>
+<p>verified KB postconditions. Until those gates pass, the correct disposition is</p>
+<p>bounded handoff rather than acceptance.</p>
+  </main>
+</body>
+</html>

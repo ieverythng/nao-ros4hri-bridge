@@ -55,7 +55,10 @@ def test_skill_registry_derives_planner_skills_from_package_exports() -> None:
     assert report_result.params == ('summary_text',)
     assert ask_user.robot_adapter_mapping == 'nao_orchestrator.ask_user'
     assert 'ask_clarification' in ask_user.aliases
-    assert wave_greet.robot_adapter_mapping == 'fake_skills.wave_greet'
+    assert wave_greet.robot_adapter_mapping == (
+        'nao_orchestrator.wave_greet(mode=fake|real); '
+        'real=/skill/replay_motion:wave; fake=/skill/fake/wave_greet'
+    )
     assert pick_object.robot_adapter_mapping == 'fake_skills.pick_object'
     assert 'grab' in pick_object.aliases
 

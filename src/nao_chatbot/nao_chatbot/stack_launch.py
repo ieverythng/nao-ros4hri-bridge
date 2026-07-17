@@ -105,6 +105,7 @@ _SIM_CAMERA_DEFAULTS = {
     "preloaded_environment_ids": "",
     "preloaded_environment_lifespan_sec": "1800.0",
     "head_motion_allow_open_loop_without_joint_state": "true",
+    "posture_allow_open_loop_without_naoqi": "true",
     "head_motion_assume_success_on_convergence_timeout": "false",
     "perform_motion_execution_mode": "real",
     "look_at_execution_mode": "fake",
@@ -124,9 +125,10 @@ _ROBOT_CAMERA_DEFAULTS = {
     "posture_bridge_disable_autonomous_life_on_connect": "false",
     "posture_bridge_wake_up_on_connect": "true",
     "head_motion_allow_open_loop_without_joint_state": "true",
+    "posture_allow_open_loop_without_naoqi": "true",
     "head_motion_assume_success_on_convergence_timeout": "false",
     "perform_motion_execution_mode": "real",
-    "look_at_execution_mode": "real",
+    "look_at_execution_mode": "fake",
     "start_interaction_sim": "false",
     "start_interaction_sim_perception": "false",
     "start_interaction_sim_tools": "true",
@@ -1249,12 +1251,12 @@ def generate_profile_launch_description(
     perform_motion_execution_mode_arg = DeclareLaunchArgument(
         "perform_motion_execution_mode",
         default_value=_profile_default(profile_defaults, "perform_motion_execution_mode", "real"),
-        description="perform_motion dispatch mode: real|fake.",
+        description="perform_motion dispatch mode: real by default; fake is an explicit validation opt-in.",
     )
     look_at_execution_mode_arg = DeclareLaunchArgument(
         "look_at_execution_mode",
-        default_value=_profile_default(profile_defaults, "look_at_execution_mode", "real"),
-        description="look_at dispatch mode: real|fake.",
+        default_value=_profile_default(profile_defaults, "look_at_execution_mode", "fake"),
+        description="look_at dispatch mode: fake by default; real is an explicit opt-in.",
     )
     start_nao_say_skill_arg = DeclareLaunchArgument(
         "start_nao_say_skill",
@@ -1274,6 +1276,15 @@ def generate_profile_launch_description(
             "false",
         ),
         description="Allow absolute head-motion goals to publish even before a head JointState arrives.",
+    )
+    posture_allow_open_loop_without_naoqi_arg = DeclareLaunchArgument(
+        "posture_allow_open_loop_without_naoqi",
+        default_value=_profile_default(
+            profile_defaults,
+            "posture_allow_open_loop_without_naoqi",
+            "false",
+        ),
+        description="Acknowledge posture goals in open loop when NAOqi is unavailable.",
     )
     head_motion_assume_success_on_convergence_timeout_arg = DeclareLaunchArgument(
         "head_motion_assume_success_on_convergence_timeout",
@@ -1646,7 +1657,7 @@ def generate_profile_launch_description(
     )
     chatbot_intent_max_tokens_arg = DeclareLaunchArgument(
         "chatbot_intent_max_tokens",
-        default_value=_profile_default(profile_defaults, "chatbot_intent_max_tokens", "64"),
+        default_value=_profile_default(profile_defaults, "chatbot_intent_max_tokens", "256"),
         description="Maximum intent tokens requested from chatbot_llm Ollama calls.",
     )
     chatbot_intent_model_arg = DeclareLaunchArgument(
@@ -2189,6 +2200,9 @@ def generate_profile_launch_description(
             "posture_bridge_wake_up_on_connect": _effective_posture_bridge_wake_up_on_connect(),
             "head_motion_allow_open_loop_without_joint_state": LaunchConfiguration(
                 "head_motion_allow_open_loop_without_joint_state"
+            ),
+            "posture_allow_open_loop_without_naoqi": LaunchConfiguration(
+                "posture_allow_open_loop_without_naoqi"
             ),
             "head_motion_assume_success_on_convergence_timeout": LaunchConfiguration(
                 "head_motion_assume_success_on_convergence_timeout"
@@ -3024,6 +3038,7 @@ def generate_profile_launch_description(
             start_nao_say_skill_arg,
             start_nao_replay_motion_arg,
             head_motion_allow_open_loop_without_joint_state_arg,
+            posture_allow_open_loop_without_naoqi_arg,
             head_motion_assume_success_on_convergence_timeout_arg,
             start_nao_look_at_arg,
             start_rqt_console_arg,

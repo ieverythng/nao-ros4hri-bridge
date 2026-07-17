@@ -2,27 +2,29 @@
 \label{chap:runtime-contracts}
 % ============================================================
 
-The architecture relies on explicit runtime contracts between dialogue interpretation, planner admission, grounding, plan generation, execution, feedback, and speech realization. These contracts are used to keep the LLM-facing parts of the system inspectable while preserving deterministic control over robot execution. Each contract defines what is exchanged, which node produces it, which node consumes it, and where validation or ownership should occur. This is important because the planner does not control the robot directly: \code{chatbot_llm} interprets the user turn, \code{nao_orchestrator} admits and validates execution requests, \code{planner_llm} proposes structured skill plans, skills execute with live evidence, and \code{dialogue_manager} realizes user-facing speech. The table below gives the contract map used throughout the rest of this section. Later subsections describe the main payloads in more detail.
+Runtime contracts define the data exchanged between dialogue interpretation, planner admission, grounding, plan generation, execution, feedback, and speech realization. Each contract names the payload, its producer and consumer, and the component responsible for validation. This keeps the LLM-facing paths inspectable while robot execution remains under deterministic control. The chapter first states the ownership rules, then describes the interfaces and principal payload fields.
 
 \section{Runtime Ownership Rules}
+
+Five ownership rules determine how the contracts are used. Carrying a structured payload does not transfer execution, knowledge, or speech authority to that component.
 
 \begin{itemize}
 \item \code{dialogue_manager} owns the dialogue turn lifecycle and user-facing speech realization.
 \item \code{chatbot_llm} owns user-facing semantic interpretation: intent derivation, route selection (dialogue or execution) and goal text for planner.
-\item \code{nao_orchestrator} owns deterministic planner admission, request normalization, executable-step validation, dispatch, step status, and feedback publication.
+\item \code{nao_orchestrator} owns deterministic planner admission and request normalisation. It also owns executable-step validation, dispatch, step status, and feedback publication.
 \item \code{planner_llm} owns structured skill-plan generation, feedback-driven goal-state handling, replanning decisions, and dialogue-act intent.
 \item Skills own live interaction with the robot, scene, and KB evidence required to complete their operation truthfully.
 \end{itemize}
 
-\section{Contract Map and Field Presentation}
+\section{Runtime Contract Overview}
 
-Table~\ref{tab:contract-map} lists the active runtime contracts.
+Table~\ref{tab:contract-map} summarises each runtime contract, its interface or payload, and its owner.
 
 \begin{table}[H]
 \centering
 \scriptsize
 \renewcommand{\arraystretch}{1.18}
-\caption{Runtime contract map and ownership in the active planner stack.}
+\caption{Runtime contract map and ownership in the active dialogue, planning, and execution stack.}
 \label{tab:contract-map}
 
 \begin{tabularx}{\textwidth}{
@@ -48,35 +50,35 @@ Table~\ref{tab:contract-map} lists the active runtime contracts.
 & \code{grounded_context} inside Contract~2.
 & Scene and KB projection provide compact symbolic context for \code{chatbot_llm} and \code{planner_llm}.\\
 
-3A & Shared skill entry
-& Registry projection consumed by the planner, orchestrator, and skill servers.
-& \code{skill_common} defines the shared capability shape; \code{planner_llm} uses it for prompt construction and \code{nao_orchestrator} uses it for admission and dispatch.\\
+4 & Shared skill entry
+& Registry projection consumed by the planner and orchestrator; its adapter mapping identifies the receiving skill server.
+& \code{skill_common} defines the shared capability shape; \code{planner_llm} uses it for prompt construction and \code{nao_orchestrator} uses it for plan validation and dispatch.\\
 
-4 & Planner output
+5 & Planner output
 & Topic \code{/intents}. Structured plan payload in \code{Intent.data.plan}.
 & \code{planner_llm} produces the plan; \code{nao_orchestrator} validates and dispatches executable steps.\\
 
-5 & Skill execution
-& ROS skill actions or services.
-& \code{nao_orchestrator} dispatches skill calls; skill servers execute robot or simulated actions.\\
+6 & Skill execution result
+& ROS action result or service response with a typed skill-result payload.
+& \code{nao_orchestrator} dispatches the call; the skill server owns effects and fresh evidence; verified KB effects cross \code{kb_skills}.\\
 
-6 & Execution feedback
+7 & Execution feedback
 & Topic \code{/planner/execution_feedback}. Structured JSON feedback payload.
 & \code{nao_orchestrator} publishes feedback; a goal-keyed planning-state helper inside \code{planner_llm} uses it for replanning, clarification, or failure handling.\\
 
-7 & Planner dialogue act
+8 & Planner dialogue act
 & Topic \code{/planner/dialogue_act}. Structured communication request.
-& \code{planner_llm} emits dialogue-act intent; \code{dialogue_manager} realizes the final speech.\\
+& \code{planner_llm} emits dialogue-act intent; \code{nao_orchestrator} relays it; \code{dialogue_manager} realizes the final speech.\\
 
-8 & Raw evidence
-& Topics and sources include \code{/scene/summary}, \code{/kb/query}, knowledge snapshots, skill results, and action evidence.
-& Scene, KB, and skill nodes provide evidence for compact projection, skill-local checks, and later feedback.\\
+9 & RDF knowledge state and raw evidence
+& KnowledgeCore statements through \code{/kb/query} and \code{/kb/revise}; source evidence includes tracked-person state, \code{/scene/summary}, and skill results.
+& Source nodes own fact freshness; \code{kb_skills} owns KB transport; compact projections and feedback preserve provenance without replacing raw evidence.\\
 
 \bottomrule
 \end{tabularx}
 \end{table}
 
-The table above lists only the contract and its meaning. Compact planner-facing fields are kept in the tables, while additional runtime metadata is described in prose when it is relevant for orchestration, feedback-driven planning, tracing, or debugging.
+The overview keeps only the fields needed to identify each contract. Later sections add the runtime metadata needed for orchestration, feedback-driven planning, tracing, and debugging.
 
 \section{Contract 1: Chatbot Turn Output}
 
@@ -95,6 +97,8 @@ The intent in this contract is the user's goal as extracted by the chatbot. It i
   }
 }
 \end{lstlisting}
+
+Table~\ref{tab:chatbot-fields} identifies the fields that remain visible after the chatbot completes one semantic routing decision.
 
 \begin{table}[H]
 \centering
@@ -147,7 +151,7 @@ The intent in this contract is the user's goal as extracted by the chatbot. It i
 \clearpage
 \section{Contract 2: Planner Request}
 
-The planner request is the task description generated by the orchestrator from the chatbot output and consumed by the planner 
+The planner request is the task description generated by the orchestrator from the chatbot output and consumed by the planner.
 
 \begin{lstlisting}
 {
@@ -170,7 +174,8 @@ The planner request is the task description generated by the orchestrator from t
 }
 \end{lstlisting}
 
-```latex
+Table~\ref{tab:planner-request-fields} separates request identity, goal semantics, and grounded evidence before the planner is invoked.
+
 \begin{table}[H]
 \centering
 \footnotesize
@@ -205,7 +210,6 @@ The planner request is the task description generated by the orchestrator from t
 \bottomrule
 \end{tabularx}
 \end{table}
-```
 
 
 Implementation metadata can still exist on the ROS envelope or runtime trace. Examples include request identifiers, dialogue turn identifiers, planner mode, parent goal ID, or superseded goal ID. These fields are useful for tracing, debugging, and goal management, but they are not the core task description consumed by \code{planner_llm}.
@@ -243,6 +247,8 @@ The planner receives a compact, JSON-native view of relevant world state. This i
   }
 }
 \end{lstlisting}
+
+Table~\ref{tab:grounded-context-fields} defines the compact entity and relation fields used by dialogue and planning.
 
 \begin{table}[H]
 \centering
@@ -284,29 +290,35 @@ The planner receives a compact, JSON-native view of relevant world state. This i
 
 The compact view should omit detector score, image coordinates, backend, source, and recency by default. Those values are execution evidence, not planning semantics, unless a future skill explicitly needs them in its own action arguments.
 
-\section{Contract 3A: Shared Skill Entry}
+\section{Contract 4: Shared Skill Entry}
 
 The planner and orchestrator use one shared entry shape to describe a skill before it is placed in a prompt, admitted for execution, or mapped to an action server. This entry is a capability contract, not a claim that every listed adapter is available in every launch profile. It separates the information needed to select a skill from the information needed to verify its result.
 
 \begin{lstlisting}
 {
-  "name": "navigate_to",
+  "object_id": "navigate_to",
+  "kind": "skill",
   "category": "navigation",
-  "aliases": ["go_to"],
-  "params": {"target": "entity or location identifier"},
+  "aliases": ["go_to", "move_to_location"],
+  "params": ["target", "location"],
   "required_params": ["target"],
-  "preconditions": ["target is grounded or scenario-owned"],
+  "preconditions": ["navigation is enabled",
+                    "target is known or resolvable"],
   "expected_effects": ["robot arrives at the target location"],
-  "observable_success": ["status=success", "arrival evidence"],
-  "failure_modes": ["path_blocked", "unknown_location"],
-  "planner_guidance": ["use for a single destination"],
+  "observable_success": ["status"],
+  "failure_modes": ["path_blocked", "unknown_location",
+                    "safety_disabled"],
+  "planner_guidance": ["use for a semantic destination"],
   "result_schema": {"required": ["skill", "status", "summary_text"]},
   "safety_flags": ["navigation"],
-  "runtime_available": true,
   "implementation_status": "fake",
-  "executor": "fake_skills.navigate_to"
+  "robot_adapter_mapping": "fake_skills.navigate_to",
+  "supports_failure_injection": true,
+  "metadata": {"runtime_callable": true}
 }
 \end{lstlisting}
+
+Table~\ref{tab:skill-entry-contract} names the common capability fields consumed by prompt construction, admission, dispatch, and result interpretation.
 
 \begin{table}[H]
 \centering
@@ -322,7 +334,7 @@ The planner and orchestrator use one shared entry shape to describe a skill befo
 \toprule
 \textbf{Field} & \textbf{Runtime role}\\
 \midrule
-\code{name}, \code{category}, \code{aliases}
+\code{object_id}, \code{kind}, \code{category}, \code{aliases}
 & Canonical planner name, semantic group, and accepted compatibility names.\\
 \code{params}, \code{required_params}
 & Typed planner-facing arguments and the subset required before admission.\\
@@ -338,10 +350,16 @@ The planner and orchestrator use one shared entry shape to describe a skill befo
 & Bounded selection and ordering guidance inserted into the planner prompt.\\
 \code{result_schema}
 & Required and optional result fields, including the summary and evidence payload.\\
-\code{safety_flags}, \code{runtime_available}
-& Safety-relevant labels and profile-specific availability checks.\\
-\code{implementation_status}, \code{executor}
-& Whether the selected profile has an implementation and which adapter or skill server receives the call.\\
+\code{safety_flags}
+& Safety-relevant labels used during admission and dispatch.\\
+\path{metadata.runtime_callable}
+& Whether the registry permits planner-visible runtime use.\\
+\code{implementation_status}
+& Current implementation class, such as first-party, fake, or hybrid.\\
+\code{robot_adapter_mapping}
+& Adapter or skill server that receives the dispatched call.\\
+\code{supports_failure_}\newline\code{injection}
+& Whether controlled failure outcomes are available for validation. Launch-profile checks still establish whether the selected endpoint is active.\\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -350,7 +368,7 @@ The same shape is projected to the planner prompt, deterministic orchestrator ch
 
 \section{Grounded Context Pipeline}
 
-\texttt{JSON} object passed (along the system prompt and skills registry) to the chatbot and planner. Acts as LLM facing grounded context representing current entities in the KB.
+Contract~3 is produced by a multi-source projection rather than a direct detector-to-prompt copy. Figure~\ref{fig:grounded-context-pipeline} shows how camera and simulator observations, tracked people, and KnowledgeCore statements become bounded context for the chatbot and planner while raw evidence remains at its owning interface.
 
 \begin{figure}[H]
 \centering
@@ -457,7 +475,7 @@ The provider response is handled as an untrusted candidate. The planner extracts
 
 The planner prompt should not contain raw detector coordinates, full RDF dumps, or stale perceptual reports. Those belong to skills and execution evidence.
 
-\section{Contract 4: Planner Output}
+\section{Contract 5: Planner Output}
 
 The planner output is a plan: a sequence of skill steps to achieve the user goal. It should focus on executable content and minimal lineage. Communication policy and retry metadata are still valid runtime fields when used by the stack, but this controlled version foregrounds the ordered \code{steps} list because that is the essential planner output.
 
@@ -483,11 +501,13 @@ The planner output is a plan: a sequence of skill steps to achieve the user goal
 }
 \end{lstlisting}
 
+Table~\ref{tab:planner-output-fields} identifies the plan and step fields that must survive deterministic validation before dispatch.
+
 \begin{table}[H]
 \centering
 \footnotesize
 \renewcommand{\arraystretch}{1.18}
-\caption{Fields in Contract 4: planner output.}
+\caption{Fields in Contract 5: planner output.}
 \label{tab:planner-output-fields}
 
 \begin{tabularx}{\textwidth}{
@@ -537,13 +557,37 @@ The planner output is a plan: a sequence of skill steps to achieve the user goal
 \end{table}
 
 \paragraph{Runtime recovery metadata.}
-The current contract supports recovery metadata as skill failure may require controlled recovery. Each step may carry a \code{retry_budget}, and the plan envelope may also carry a plan-level \code{retry_budget}. This does not mean that \code{retry} is a separate \code{on_failure} value. Instead, retry behaviour is controlled by \code{nao_orchestrator} using the available retry budget together with the step's \code{on_failure} policy. The plan envelope may also carry \code{communication_policy}. This controls when the planner/dialogue path should communicate progress, completion, clarification needs, or failure. 
+The current contract supports recovery metadata as skill failure may require controlled recovery. Each step may carry a \code{retry_budget}, and the plan envelope may also carry a plan-level \code{retry_budget}. This does not mean that \code{retry} is a separate \code{on_failure} value. Instead, retry behaviour is controlled by \code{nao_orchestrator} using the available retry budget together with the step's \code{on_failure} policy. The plan envelope may also carry \code{communication_policy}. This controls when the planner/dialogue path should communicate progress, completion, clarification needs, or failure.
 
 When a step fails with \code{on_failure = replan}, \code{nao_orchestrator} halts or blocks continuation, publishes execution feedback to \code{planner_llm}, and waits for a revised validated plan before dispatching further actions. This keeps execution authority inside \code{nao_orchestrator}, while allowing recovery to be driven by feedback-driven planning rather than by hard-coded local replanning.
 
 These fields are included because they support runtime recovery, traceability, and human-robot interaction, but the essential planner output remains the ordered \code{steps} list. If the planner cannot produce a plan, the output should represent that as a planning result rather than filling the plan with ambiguous failure fields. For the simple version, \code{steps} is the most important field.
 
-\section{Contract 5: Execution Feedback}
+\section{Contract 6: Skill Execution Result}
+
+Every dispatched skill returns a typed result before the orchestrator can mark its step as completed. The result distinguishes the execution status from the evidence that supports it. For state-changing skills, the evidence may also contain explicit KB effects. These effects are proposed by the skill that observed or produced the change; they are not inferred from the planner's expected-effects text in Contract~4.
+
+\begin{lstlisting}
+{
+  "skill": "place_object",
+  "status": "succeeded",
+  "summary_text": "I placed cup_1 on table_1.",
+  "evidence": {
+    "object_id": "cup_1",
+    "destination_id": "table_1",
+    "kb_effects": [
+      {"operation": "remove", "statement": "robot oro:holds cup_1"},
+      {"operation": "add", "statement": "cup_1 oro:isOn table_1"}
+    ]
+  },
+  "failure": null,
+  "metadata": {"fake": true}
+}
+\end{lstlisting}
+
+The orchestrator applies \code{evidence.kb_effects} only after a successful result and routes the statements through \code{kb_skills}. Removal effects clear stale holding or location relations before replacement facts are added. When the query seam is available, the orchestrator verifies that removed statements no longer resolve and that added or revised statements do. A failed mutation or post-condition check converts the step into a failure and is propagated through Contract~7; later dialogue therefore cannot treat an unverified material change as current KB truth. Real and fake skills use the same result shape, although the physical evidence available to them differs.
+
+\section{Contract 7: Execution Feedback}
 
 For the simple version, execution feedback can be minimal. The planner needs to know which goal is affected, which step failed or succeeded, and a compact result if that result is useful for replanning or dialogue. A larger payload is justified only when the goal-state helper, orchestrator, traces, or debug tooling use the extra fields.
 
@@ -566,9 +610,9 @@ For the simple version, execution feedback can be minimal. The planner needs to 
 
 
 
-Runtime feedback may include additional fields used by \code{nao_orchestrator}, logging, and the goal-state helper. Examples include \code{plan_id}, \code{plan_version}, \code{event_type}, \code{validation_status}, \code{blocking}, \code{needs_user_input}, \code{timestamp_sec}, \code{result_summary}, and retry metadata. These fields are useful for execution control and debugging, but the minimal planner-facing feedback is the goal, step, status, reason, and result payload.
+Runtime feedback may include additional fields used by \code{nao_orchestrator}, logging, and the goal-state helper. Lineage uses \code{plan_id} and \code{plan_version}; event handling may add \code{event_type}, \code{validation_status}, \code{blocking}, and \path{needs_user_input}; observability may add \code{timestamp_sec}, \code{result_summary}, and retry metadata. These fields support execution control and debugging, while the minimal planner-facing feedback remains the goal, step, status, reason, and result payload.
 
-\section{Contract 6: Planner Dialogue Act}
+\section{Contract 8: Planner Dialogue Act}
 
 Planner dialogue acts represent planner intent to communicate, not direct speech execution. They are relayed through the orchestrator and realized by the dialogue layer.
 
@@ -584,5 +628,42 @@ Planner dialogue acts represent planner intent to communicate, not direct speech
 \end{lstlisting}
 
 Allowed dialogue acts are acknowledgement, progress update, clarification, help request, failure explanation, completion notification, and cancellation notification. The planner does not speak directly; it emits a structured communication request.
+
+\section{Contract 9: RDF Knowledge State and Raw Evidence}
+
+KnowledgeCore represents symbolic world state as an RDF-style graph. Each statement has a subject, predicate, and object. Stable subjects identify people, objects, places, supports, and the robot; predicates express class membership, attributes, visibility, containment, and spatial relations. The same statement shape is used by preloaded fixtures, detector-derived object facts, explicit user-authorised KB mutations, and verified post-skill effects. This allows a query pattern to match facts independently of which approved source produced them.
+
+\begin{lstlisting}
+codex_lab_cup rdf:type Cup
+codex_lab_cup dbp:color red
+codex_lab_cup oro:isOn codex_lab_table
+codex_lab_room oro:contains codex_lab_table
+person_alex rdf:type Human
+myself sees person_alex
+\end{lstlisting}
+
+The principal predicate families are shown in Table~\ref{tab:rdf-kb-predicates}. A class statement such as \code{rdf:type Human} also preserves the semantic distinction between a person and an object even when both can be action targets.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\caption{Principal RDF-style predicate families used by the runtime KB.}
+\label{tab:rdf-kb-predicates}
+\begin{tabularx}{\textwidth}{@{}p{0.24\textwidth}p{0.29\textwidth}X@{}}
+\toprule
+\textbf{Role} & \textbf{Representative predicates} & \textbf{Runtime meaning}\\
+\midrule
+Entity class & \code{rdf:type} & Distinguishes people, objects, supports, rooms, and other planner-relevant classes.\\
+Attributes & \code{dbp:name}, \code{dbp:color} & Provides stable semantic labels and disambiguating properties.\\
+Observation & \code{sees}, visual-centre, score, source, and last-seen predicates & Records who observed an entity and the bounded provenance/freshness of a detector observation.\\
+Spatial relations & \code{oro:isOn}, \code{oro:isAt}, \code{oro:isIn}, \code{oro:contains} & Represents support, destination, room membership, and containment used by grounding and skill effects.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+KB mutations use add, revise, and remove operations on this shared statement form through \code{/kb/revise}; reads use query patterns through \code{/kb/query}. Transient perception facts carry a finite lifespan, while explicit fixture and verified skill-effect facts follow the lifetime declared by their owner. \code{hri_face_detect_yunet} and \code{hri_person_manager} publish person identities and frame state through their public tracked-person interfaces. In the integrated simulator, corresponding person knowledge can be materialised in the same graph without assigning person tracking to \code{nao_scene_grounding}. Object detections remain owned by \code{nao_scene_grounding}, which publishes \code{/scene/summary} and detector-derived KB statements.
+
+Raw evidence remains an ownership boundary rather than one universal message. Tracked-person topics, detector observations, KnowledgeCore query rows, robot or simulated action results, and structured trace events stay at their owning interfaces. The internal knowledge snapshot is a bounded textual serialization of selected query rows; \code{grounded_context} in Contract~3 is the compact entity-and-relation projection consumed by \code{chatbot_llm} and \code{planner_llm}. Contract~6 skill results and Contract~7 planner feedback are separate projections for execution and recovery. None replaces the underlying source evidence.
 
 % ============================================================
