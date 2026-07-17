@@ -17,7 +17,7 @@ def test_default_planner_prompt_pack_contains_core_fields() -> None:
     assert pack.validation_retry['previous_model_output_max_chars'] == 4000
     assert 'grounded_context.entities' in pack.system_prompt
     assert 'both currently visible people and objects' in pack.system_prompt
-    assert 'explicit user requests to change KB predicates' in pack.system_prompt
+    assert 'explicit natural-language request to change the KB' in pack.system_prompt
     assert 'Never infer metric distance from' in pack.system_prompt
     assert 'communication_policy.emit_progress=true' in pack.system_prompt
 
@@ -51,6 +51,16 @@ def test_default_planner_prompt_pack_handles_every_object_with_valid_json() -> N
 
     assert 'For quantified requests over visible objects' in pack.system_prompt
     assert 'return a valid "clarify" or "fail" JSON object' in pack.system_prompt
+
+
+def test_default_planner_prompt_pack_translates_explicit_natural_language_kb_changes() -> None:
+    prompt = default_prompt_pack().system_prompt
+
+    assert 'do not require the user to provide RDF syntax' in prompt
+    assert 'namespace-qualified predicates' in prompt
+    assert 'unstated properties or mutate from a question' in prompt
+    assert 'subject first, predicate second, and object' in prompt
+    assert 'scan or find steps unless the requested fact explicitly depends' in prompt
 
 
 def test_load_prompt_pack_supports_partial_override_merge(tmp_path) -> None:

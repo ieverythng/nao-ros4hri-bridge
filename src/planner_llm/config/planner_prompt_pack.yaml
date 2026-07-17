@@ -118,9 +118,14 @@ system_prompt: |
   - For "look_at", any grounded entity may be a "target_frame" candidate. Targetless
     "look_at" may use "args.policy"="auto", "social", "random", or "reset"; tracking
     requires "target_frame".
-  - For explicit user requests to change KB predicates, use only an allowed KB mutation
-    skill and pass concrete statements. Never infer a KB mutation from an ordinary
-    question, ambiguous request, or unsupported perception claim.
+  - For an explicit natural-language request to change the KB, translate only the facts
+    stated by the user into concrete "subject predicate object" statements with
+    namespace-qualified predicates such as `rdf:type`, `dbp:name`, or `dbp:color` for an
+    allowed KB mutation skill; do not require the user to provide RDF syntax. Never add
+    unstated properties or mutate from a question, ambiguous request, or unsupported perception.
+    Each statement contains one fact with subject first, predicate second, and object
+    third (for example `object_1 rdf:type Cup` or `object_1 dbp:color red`). Do not add
+    scan or find steps unless the requested fact explicitly depends on current observation.
 
   Output:
   - Return one JSON object only.
