@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import random
 import re
 import shlex
 import subprocess
@@ -105,6 +106,7 @@ class ProbeCase:
     expected_report_policy: str = ""
     postcondition: KbPostcondition | None = None
     expected_speech_terms: tuple[str, ...] = ()
+    fake_mode_overrides: tuple[tuple[str, str], ...] = ()
 
 
 SMOKE_CASES = (
@@ -634,6 +636,211 @@ KB_STRESS_CASES = (
         conversation_group="kb_stress_chain",
         expected_outcome="dialogue_only",
         expected_speech_terms=("TITAS", "MIDAS", "gold", "blue", "ALEX"),
+    ),
+)
+
+CAPABILITY_EXTREME_SEED = 20260716
+
+
+def _build_capability_extreme_cases(seed: int) -> tuple[ProbeCase, ...]:
+    """Build reproducible long-horizon cases without fixed lexical phrasing."""
+    rng = random.Random(seed)
+    report_phrase = rng.choice(
+        ("tell me what happened", "summarize the result", "report the outcome")
+    )
+    return_phrase = rng.choice(("return to", "go back to", "come back to"))
+    all_objects_phrase = rng.choice(
+        ("each visible object", "all objects in view", "every object you can see")
+    )
+    scene = KbInjection(
+        object_id="codex_extreme_scene",
+        statements=(
+            "codex_extreme_table rdf:type Table",
+            "codex_extreme_table dbp:name work_table",
+            "codex_extreme_shelf rdf:type Shelf",
+            "codex_extreme_shelf dbp:name storage_shelf",
+            "codex_extreme_cup rdf:type Cup",
+            "codex_extreme_cup dbp:name TITAS",
+            "codex_extreme_cup dbp:color gold",
+            "codex_extreme_cup oro:isOn codex_extreme_table",
+            "codex_extreme_book rdf:type Book",
+            "codex_extreme_book dbp:name MIDAS",
+            "codex_extreme_book dbp:color blue",
+            "codex_extreme_book oro:isOn codex_extreme_table",
+            "codex_extreme_book dbp:locationHint under_table",
+            "codex_extreme_apple rdf:type Apple",
+            "codex_extreme_apple dbp:name ATLAS",
+            "codex_extreme_apple dbp:color red",
+            "codex_extreme_apple oro:isOn codex_extreme_table",
+            "codex_extreme_alex rdf:type Human",
+            "codex_extreme_alex dbp:name ALEX",
+            "codex_extreme_alex dbp:frameId codex_extreme_alex",
+            "codex_extreme_alex dbp:poseSource semantic_fixture",
+            "myself sees codex_extreme_table",
+            "myself sees codex_extreme_shelf",
+            "myself sees codex_extreme_cup",
+            "myself sees codex_extreme_book",
+            "myself sees codex_extreme_apple",
+            "myself sees codex_extreme_alex",
+            "myself canReach codex_extreme_cup",
+            "myself canReach codex_extreme_book",
+            "myself canReach codex_extreme_apple",
+        ),
+        query_patterns=(
+            "codex_extreme_cup ?predicate ?object",
+            "codex_extreme_book ?predicate ?object",
+            "codex_extreme_apple ?predicate ?object",
+            "codex_extreme_alex ?predicate ?object",
+        ),
+        query_vars=("?predicate", "?object"),
+    )
+    return (
+        ProbeCase(
+            "extreme_walk_pick_sit_report",
+            "capability_extreme_execution",
+            f"Walk to TITAS, pick it up, sit down, and {report_phrase}.",
+            180.0,
+            setup=scene,
+            expected_outcome="execute_no_clarification",
+            all_required_context=True,
+            expected_member_ids=("codex_extreme_cup",),
+            expected_report_policy="final",
+        ),
+        ProbeCase(
+            "extreme_kneel_under_table_pick_report",
+            "capability_extreme_execution",
+            f"Kneel down, pick up MIDAS from under the work table, stand, and {report_phrase}.",
+            180.0,
+            setup=scene,
+            expected_outcome="execute_no_clarification",
+            all_required_context=True,
+            expected_member_ids=("codex_extreme_book",),
+            expected_report_policy="final",
+        ),
+        ProbeCase(
+            "extreme_dialogue_inventory",
+            "capability_extreme_dialogue",
+            "Before we do anything, tell me which named objects and people are in the test area.",
+            20.0,
+            setup=scene,
+            conversation_group="extreme_dialogue_chain",
+            expected_outcome="dialogue_only",
+            expected_speech_terms=("TITAS", "MIDAS", "ATLAS", "ALEX"),
+        ),
+        ProbeCase(
+            "extreme_dialogue_sit_stand_grab_return",
+            "capability_extreme_execution",
+            f"Now sit, stand again, pick up MIDAS, {return_phrase} ALEX, and {report_phrase}.",
+            200.0,
+            conversation_group="extreme_dialogue_chain",
+            expected_outcome="execute_no_clarification",
+            all_required_context=True,
+            expected_member_ids=("codex_extreme_book",),
+            expected_recipient_id="codex_extreme_alex",
+            expected_report_policy="final",
+        ),
+        ProbeCase(
+            "extreme_all_objects_visit_look_wave_sit",
+            "capability_extreme_execution",
+            f"Stand up, walk to {all_objects_phrase} on the work table, look at each one, wave to ALEX, sit down, and give one final summary.",
+            240.0,
+            setup=scene,
+            expected_outcome="execute_no_clarification",
+            all_required_context=True,
+            requires_target_selection=True,
+            expected_member_ids=(
+                "codex_extreme_cup",
+                "codex_extreme_book",
+                "codex_extreme_apple",
+            ),
+            expected_report_policy="final",
+        ),
+        ProbeCase(
+            "extreme_pick_place_kneel_report",
+            "capability_extreme_execution",
+            f"Pick up ATLAS, place it on the storage shelf, kneel, and {report_phrase}.",
+            200.0,
+            setup=scene,
+            expected_outcome="execute_no_clarification",
+            all_required_context=True,
+            expected_member_ids=("codex_extreme_apple",),
+            expected_report_policy="final",
+            postcondition=KbPostcondition(
+                "atlas_on_storage_shelf",
+                ("codex_extreme_apple oro:isOn ?support",),
+                ("?support",),
+                expected_values=("codex_extreme_shelf",),
+            ),
+        ),
+        ProbeCase(
+            "extreme_unreachable_object_recovery",
+            "capability_extreme_recovery",
+            f"Kneel and try to pick up the heavy box under the table. If you cannot, recover safely and {report_phrase}.",
+            200.0,
+            setup=KbInjection(
+                object_id="codex_extreme_heavy_box",
+                statements=(
+                    "codex_extreme_heavy_box rdf:type Box",
+                    "codex_extreme_heavy_box dbp:name heavy_box",
+                    "codex_extreme_heavy_box dbp:locationHint under_table",
+                    "codex_extreme_heavy_box oro:isOn codex_extreme_table",
+                    "myself sees codex_extreme_heavy_box",
+                ),
+                query_patterns=("codex_extreme_heavy_box ?predicate ?object",),
+                query_vars=("?predicate", "?object"),
+            ),
+            absence_guards=(
+                KbAbsenceGuard(
+                    "no_reachability_claim",
+                    ("myself canReach codex_extreme_heavy_box",),
+                    ("?subject",),
+                ),
+            ),
+            expected_outcome="execute_no_clarification",
+            all_required_context=True,
+            requires_replan=True,
+            expected_report_policy="final",
+        ),
+    )
+
+
+CAPABILITY_EXTREME_CASES = _build_capability_extreme_cases(CAPABILITY_EXTREME_SEED)
+
+GROUNDING_PEOPLE_CASES = (
+    ProbeCase(
+        "grounding_people_stale_kb_rows",
+        "grounding_people_repeat",
+        "What people can you see right now?",
+        15.0,
+        setup=KbInjection(
+            object_id="codex_stale_people",
+            statements=(
+                "anonymous_person_stale rdf:type Human",
+                "myself sees anonymous_person_stale",
+                "sim_person_stale rdf:type Human",
+                "myself sees sim_person_stale",
+            ),
+            query_patterns=("?subject rdf:type Human",),
+            query_vars=("?subject",),
+        ),
+        conversation_group="grounding_people_stale_kb",
+        expected_outcome="dialogue_only",
+    ),
+    ProbeCase(
+        "grounding_people_current_scene",
+        "grounding_people_repeat",
+        "What people can you see right now?",
+        15.0,
+        conversation_group="grounding_people_repeat",
+        expected_outcome="dialogue_only",
+    ),
+    ProbeCase(
+        "grounding_people_repeated_scene",
+        "grounding_people_repeat",
+        "Please check again. What people can you see right now?",
+        15.0,
+        conversation_group="grounding_people_repeat",
+        expected_outcome="dialogue_only",
     ),
 )
 
@@ -1243,6 +1450,7 @@ FAKE_DEEP_CASES = (
                 ("codex_missing_cup ?predicate ?object",),
             ),
         ),
+        fake_mode_overrides=(("find_object", "always_fail"),),
     ),
     ProbeCase(
         "fake_deep_missing_recipient_clarification",
@@ -1381,6 +1589,41 @@ ROBUSTNESS_CASES = (
     ),
 )
 
+ROUTE_ACK_CASES = (
+    ProbeCase(
+        "route_ack_capability_question",
+        "route_ack_pair",
+        "What can you do with your head?",
+        12.0,
+        conversation_group="route_ack_capability",
+        expected_outcome="dialogue_only",
+    ),
+    ProbeCase(
+        "route_ack_polite_execution",
+        "route_ack_pair",
+        "Can you move your head in all directions?",
+        95.0,
+        conversation_group="route_ack_polite_execution",
+        expected_outcome="execute_no_clarification",
+    ),
+    ProbeCase(
+        "route_ack_polite_followup",
+        "route_ack_pair",
+        "How many directions did you move your head?",
+        12.0,
+        conversation_group="route_ack_polite_execution",
+        expected_outcome="dialogue_only",
+    ),
+    ProbeCase(
+        "route_ack_explicit_execution",
+        "route_ack_pair",
+        "Please move your head in all directions now.",
+        95.0,
+        conversation_group="route_ack_explicit_execution",
+        expected_outcome="execute_no_clarification",
+    ),
+)
+
 TOPICS_TO_SAMPLE = (
     "/chatbot_llm/turn_trace",
     "/planner/request",
@@ -1425,6 +1668,15 @@ FAKE_POLICY_PROFILES = {
     },
 }
 
+FAKE_POLICY_EXPECTED_SKILLS = {
+    "fail_once_navigation": "navigate_to",
+    "fail_once_pick": "pick_object",
+    "delivery_blocked": "bring_object",
+    "fail_once_place": "place_object",
+    "destination_unavailable": "place_object",
+    "recipient_missing": "bring_object",
+}
+
 
 def main() -> int:
     parser = argparse.ArgumentParser()
@@ -1440,8 +1692,11 @@ def main() -> int:
             "posture_ablation",
             "environment",
             "kb_stress",
+            "grounding_people",
+            "capability_extreme",
             "fake_deep",
             "robustness",
+            "route_ack",
         ),
     )
     parser.add_argument(
@@ -1551,8 +1806,11 @@ def main() -> int:
         "posture_ablation": POSTURE_ABLATION_CASES,
         "environment": ENVIRONMENT_CASES,
         "kb_stress": KB_STRESS_CASES,
+        "grounding_people": GROUNDING_PEOPLE_CASES,
+        "capability_extreme": CAPABILITY_EXTREME_CASES,
         "fake_deep": FAKE_DEEP_CASES,
         "robustness": ROBUSTNESS_CASES,
+        "route_ack": ROUTE_ACK_CASES,
     }
     cases = list(case_sets[args.case_set])
     cases = filter_cases(
@@ -1642,6 +1900,7 @@ def main() -> int:
                 started_at,
                 results,
                 runtime_metadata=runtime_metadata,
+                run_status="timed_out",
             )
             return 2
 
@@ -1649,6 +1908,7 @@ def main() -> int:
         setup_result = {}
         case_group = case.conversation_group or case.name
         cleanup_guard = {}
+        case_policy_overrides = {}
         if active_case_injections and case_group != active_case_group:
             cleanup_guard = retract_kb_injections(
                 args.container,
@@ -1742,6 +2002,20 @@ def main() -> int:
             )
             continue
 
+        case_policy_overrides = apply_case_fake_mode_overrides(
+            args.container,
+            args.fake_policy_profile,
+            case.fake_mode_overrides,
+        )
+        if case_policy_overrides:
+            setup_result["fake_policy_case"] = {
+                "overrides": dict(case.fake_mode_overrides),
+                "application": case_policy_overrides,
+            }
+        case_assessment_policy = _effective_fake_policy_profile(
+            args.fake_policy_profile,
+            case_policy_overrides,
+        )
         mode = args.mode or case.mode
         conversation_group = case.conversation_group or case.name or f"case_{index}"
         voice_id = _voice_id_for_case(
@@ -1800,7 +2074,7 @@ def main() -> int:
             case,
             observations=result_entry["phase_observations"],
             stale_world_guard=stale_world_guard,
-            fake_policy_profile=args.fake_policy_profile,
+            fake_policy_profile=case_assessment_policy,
         )
         result_entry["status"] = result_entry["case_assessment"]["status"]
         results.append(result_entry)
@@ -1828,7 +2102,7 @@ def main() -> int:
             case_start=turn_start,
             wait_sec=wait_sec,
             runtime_metadata=runtime_metadata,
-            fake_policy_profile=args.fake_policy_profile,
+            fake_policy_profile=case_assessment_policy,
         )
         topic_samples = sample_topics(args.container) if args.sample_topics else {}
         log_excerpt = recent_logs_since(args.container, turn_start)
@@ -1855,7 +2129,7 @@ def main() -> int:
             case,
             observations=result_entry["phase_observations"],
             stale_world_guard=stale_world_guard,
-            fake_policy_profile=args.fake_policy_profile,
+            fake_policy_profile=case_assessment_policy,
         )
         result_entry["status"] = result_entry["case_assessment"]["status"]
         write_payload(
@@ -1866,6 +2140,16 @@ def main() -> int:
             results,
             runtime_metadata=runtime_metadata,
         )
+        if case_policy_overrides:
+            runtime_metadata.setdefault("case_policy_restores", []).append(
+                {
+                    "case": case.name,
+                    "restore": apply_fake_policy_profile(
+                        args.container,
+                        args.fake_policy_profile,
+                    ),
+                }
+            )
 
     final_case_cleanup = retract_kb_injections(
         args.container,
@@ -1891,6 +2175,7 @@ def main() -> int:
         started_at,
         results,
         runtime_metadata=runtime_metadata,
+        run_status="completed",
     )
     print(args.out)
     return 0
@@ -1955,6 +2240,50 @@ def apply_fake_policy_profile(container: str, profile: str) -> dict[str, str]:
             value,
         )
     return outputs
+
+
+def apply_case_fake_mode_overrides(
+    container: str,
+    profile: str,
+    overrides: tuple[tuple[str, str], ...],
+) -> dict[str, str]:
+    """Apply a case-local skill override while preserving the run profile."""
+    if not overrides:
+        return {}
+    settings = FAKE_POLICY_PROFILES.get(str(profile or "none").strip(), {})
+    raw_base = settings.get("mode_overrides_json", "{}")
+    try:
+        merged = json.loads(raw_base)
+    except (TypeError, json.JSONDecodeError):
+        merged = {}
+    if not isinstance(merged, dict):
+        merged = {}
+    for skill, mode in overrides:
+        clean_skill = str(skill or "").strip().lower()
+        clean_mode = str(mode or "").strip().lower()
+        if clean_skill and clean_mode:
+            merged[clean_skill] = clean_mode
+    if not merged:
+        return {}
+    return {
+        "mode_overrides_json": set_ros_param(
+            container,
+            "/fake_skill_server",
+            "mode_overrides_json",
+            json.dumps(merged, separators=(",", ":")),
+        )
+    }
+
+
+def _effective_fake_policy_profile(
+    profile: str,
+    case_policy_overrides: dict[str, str],
+) -> str:
+    """Make case-local failures use the recovery observation contract."""
+    clean_profile = str(profile or "none").strip() or "none"
+    if case_policy_overrides and clean_profile in {"none", "all_success"}:
+        return "case_local"
+    return clean_profile
 
 
 def restore_fake_policy_profile(container: str) -> dict[str, str]:
@@ -2303,15 +2632,23 @@ def write_payload(
     results: list[dict],
     *,
     runtime_metadata: dict[str, object] | None = None,
+    run_status: str = "running",
 ) -> None:
+    status = str(run_status or "running").strip().lower()
+    if status not in {"running", "completed", "timed_out"}:
+        raise ValueError("unsupported questionnaire run status: %s" % status)
+    now = time.time()
     payload = {
         "container": container,
         "case_set": case_set,
         "started_at_unix_sec": started_at,
-        "finished_at_unix_sec": time.time(),
+        "updated_at_unix_sec": now,
+        "run_status": status,
         "runtime_metadata": runtime_metadata or {},
         "cases": results,
     }
+    if status != "running":
+        payload["finished_at_unix_sec"] = now
     Path(out_path).write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
 
@@ -2349,21 +2686,44 @@ def phase_observations(
             ]
         )
     )
+    route_observed = _contains_any(combined, ("ROUTE_RESOLVED", "chatbot_turn_trace"))
+    planner_request_observed = _contains_any(
+        combined,
+        ("PLANNER_REQUEST", "/planner/request", "planner_request"),
+    )
+    execution_feedback_observed = _contains_any(
+        combined,
+        (
+            "execution_feedback",
+            "/planner/execution_feedback",
+            "step_succeeded",
+            "step_failed",
+            "plan_completed",
+        ),
+    )
+    evidence_inconsistencies = []
+    if execution_feedback_observed and not route_observed:
+        evidence_inconsistencies.append("execution feedback exists without a correlated route marker")
+    if execution_feedback_observed and not planner_request_observed:
+        evidence_inconsistencies.append(
+            "execution feedback exists without a correlated planner request marker"
+        )
+    executed_skills = _executed_skills(combined)
     return {
         "turn_injected": injected,
-        "route_observed": _contains_any(combined, ("ROUTE_RESOLVED", "chatbot_turn_trace")),
-        "planner_request_observed": _contains_any(
+        "route_observed": route_observed,
+        "planner_request_observed": planner_request_observed,
+        "route_intent_handoff_observed": _contains_any(
             combined,
-            ("PLANNER_REQUEST", "/planner/request", "planner_request"),
+            ("ROUTE_INTENT_HANDOFF",),
         ),
+        "route_intent_gap_count": _event_count(combined, "ROUTE_INTENT_GAP"),
         "target_selection_observed": any(
             selection.get("member_ids") for selection in target_selections
         ),
         "target_selections": target_selections,
-        "execution_feedback_observed": _contains_any(
-            combined,
-            ("execution_feedback", "/planner/execution_feedback", "step_succeeded", "step_failed", "plan_completed"),
-        ),
+        "execution_feedback_observed": execution_feedback_observed,
+        "executed_skills": executed_skills,
         "failure_observed": _contains_any(
             combined,
             ("step_failed", "plan_failed", "Planned intent step failed"),
@@ -2382,6 +2742,8 @@ def phase_observations(
         "post_failure_speech_observed": post_failure_speech_observed(combined),
         "clarification_observed": clarification_observed(combined),
         "fallback_markers": fallback_markers(combined),
+        "evidence_consistent": not evidence_inconsistencies,
+        "evidence_inconsistencies": evidence_inconsistencies,
         "observability_note": (
             "phase booleans are trace breadcrumbs, not pass/fail scoring"
         ),
@@ -2560,6 +2922,7 @@ def fallback_markers(value: str) -> dict[str, int]:
         "planner_invalid_plan": r"valid executable plan|model output did not contain executable steps",
         "planner_gate_rejected": r"planner_gate_rejected",
         "duplicate_active_goal": r"duplicate active planner goal",
+        "planner_target_selection_recovery": r"validated_target_selection_recovery",
         "kb_service_timeout": r"kb service timeout|KnowledgeCore .*timeout|service call timed out",
         "report_result_fallback": r"report_result fallback|execution report chatbot returned error|execution report chatbot request failed",
         "route_repair": r"llm_response_route_repair|route_conflict",
@@ -2577,6 +2940,30 @@ def fallback_markers(value: str) -> dict[str, int]:
         counts[name] = len({_fallback_event_key(line) for line in matching_lines})
     counts["total"] = sum(counts.values())
     return counts
+
+
+def _event_count(value: str, marker: str) -> int:
+    """Count timestamp-correlated events without treating them as fallbacks."""
+    keys = set()
+    for line in str(value or "").splitlines():
+        if marker not in line:
+            continue
+        goal_match = re.search(r"goal_id[=:][\"']?([A-Za-z0-9_.:-]+)", line)
+        turn_match = re.search(
+            r"dialogue_turn_id[=:][\"']?([A-Za-z0-9_.:-]+)",
+            line,
+        )
+        if goal_match or turn_match:
+            keys.add(
+                (
+                    marker,
+                    goal_match.group(1) if goal_match else "",
+                    turn_match.group(1) if turn_match else "",
+                )
+            )
+        else:
+            keys.add(_fallback_event_key(line))
+    return len(keys)
 
 
 def _fallback_event_key(line: str) -> str:
@@ -2634,6 +3021,17 @@ def assess_case(
             "reasons": ["turn was not injected through the configured seam"],
         }
 
+    if observations.get("evidence_consistent") is False:
+        return {
+            "status": "not_scored",
+            "expected_outcome": case.expected_outcome,
+            "all_required_context": case.all_required_context,
+            "reasons": [
+                "evidence correlation is internally inconsistent: %s"
+                % "; ".join(observations.get("evidence_inconsistencies") or [])
+            ],
+        }
+
     fallback = observations.get("fallback_markers") or {}
     severe_fallbacks = {
         key: value
@@ -2663,6 +3061,10 @@ def assess_case(
     speech = bool(observations.get("speech_observed"))
     failure_seen = bool(observations.get("failure_observed"))
     recovery_profile = str(fake_policy_profile or "none") not in {"none", "all_success"}
+    expected_failure_skill = FAKE_POLICY_EXPECTED_SKILLS.get(
+        str(fake_policy_profile or "none"),
+        "",
+    )
 
     if expected == "execute_no_clarification":
         if clarified:
@@ -2711,7 +3113,17 @@ def assess_case(
         if not terminal or not speech:
             status = max_status(status, "degraded")
             reasons.append("missing terminal or speech evidence")
-        if recovery_profile and not failure_seen:
+        if (
+            recovery_profile
+            and expected_failure_skill
+            and expected_failure_skill not in set(observations.get("executed_skills") or [])
+        ):
+            status = max_status(status, "not_scored")
+            reasons.append(
+                "configured fake failure for %s was not applicable to dispatched skills"
+                % expected_failure_skill
+            )
+        elif recovery_profile and not failure_seen:
             status = max_status(status, "not_scored")
             reasons.append("configured fake failure was not exercised")
         if recovery_profile and failure_seen and not recovery_closure_observed(
@@ -2762,11 +3174,13 @@ def assess_case(
         reasons.append("declared KB postcondition was not observed")
 
     if case.expected_speech_terms:
-        spoken_text = " ".join(observations.get("spoken_texts") or []).lower()
+        spoken_text = _normalize_speech_terms(
+            " ".join(observations.get("spoken_texts") or [])
+        )
         missing_terms = [
             term
             for term in case.expected_speech_terms
-            if str(term).lower() not in spoken_text
+            if _normalize_speech_terms(term) not in spoken_text
         ]
         if missing_terms:
             status = max_status(status, "fail")
@@ -2783,6 +3197,28 @@ def assess_case(
         "all_required_context": case.all_required_context,
         "reasons": reasons,
     }
+
+
+def _normalize_speech_terms(value: str) -> str:
+    """Normalize symbolic separators only for semantic term comparison."""
+    return " ".join(re.findall(r"[a-z0-9]+", str(value or "").lower()))
+
+
+def _executed_skills(value: str) -> list[str]:
+    """Extract skills that reached execution feedback in correlated evidence."""
+    observed = []
+    known_skills = set(FAKE_POLICY_EXPECTED_SKILLS.values())
+    for line in str(value or "").splitlines():
+        lowered = line.lower()
+        if not any(
+            marker in lowered
+            for marker in ("step_started", "step_succeeded", "step_failed")
+        ):
+            continue
+        for skill in sorted(known_skills):
+            if re.search(r"\b%s\b" % re.escape(skill), lowered) and skill not in observed:
+                observed.append(skill)
+    return observed
 
 
 def _most_complete_target_selection(
@@ -3420,6 +3856,8 @@ def recent_logs(container: str, since_sec: int) -> str:
         "SPEECH INPUT",
         "CHATBOT",
         "ROUTE_RESOLVED",
+        "ROUTE_INTENT_HANDOFF",
+        "ROUTE_INTENT_GAP",
         "PLANNER_REQUEST",
         "planner_llm",
         "execution_feedback",
@@ -3473,6 +3911,8 @@ def recent_logs_since(container: str, since_unix_sec: float) -> str:
         "SPEECH INPUT",
         "CHATBOT",
         "ROUTE_RESOLVED",
+        "ROUTE_INTENT_HANDOFF",
+        "ROUTE_INTENT_GAP",
         "PLANNER_REQUEST",
         "planner_llm",
         "execution_feedback",

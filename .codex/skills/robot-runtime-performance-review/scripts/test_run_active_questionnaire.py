@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -221,10 +222,102 @@ def test_kb_stress_manifest_covers_relation_revision_execution_and_postcondition
     assert any(case.postcondition is not None for case in cases)
 
 
+def test_grounding_people_holdout_repeats_current_scene_query_in_one_dialogue():
+    module = _load_questionnaire_module()
+
+    cases = {case.name: case for case in module.GROUNDING_PEOPLE_CASES}
+    assert set(cases) == {
+        "grounding_people_stale_kb_rows",
+        "grounding_people_current_scene",
+        "grounding_people_repeated_scene",
+    }
+    assert all(case.expected_outcome == "dialogue_only" for case in cases.values())
+    assert {case.conversation_group for case in cases.values()} == {
+        "grounding_people_repeat",
+        "grounding_people_stale_kb",
+    }
+
+
+def test_capability_extreme_manifest_is_seeded_and_compositional():
+    module = _load_questionnaire_module()
+
+    cases = module.CAPABILITY_EXTREME_CASES
+    names = {case.name for case in cases}
+
+    assert module.CAPABILITY_EXTREME_SEED == 20260716
+    assert len(cases) == 7
+    assert names == {
+        "extreme_walk_pick_sit_report",
+        "extreme_kneel_under_table_pick_report",
+        "extreme_dialogue_inventory",
+        "extreme_dialogue_sit_stand_grab_return",
+        "extreme_all_objects_visit_look_wave_sit",
+        "extreme_pick_place_kneel_report",
+        "extreme_unreachable_object_recovery",
+    }
+    combined = " ".join(case.text.lower() for case in cases)
+    for action in ("walk", "pick", "sit", "stand", "kneel", "look"):
+        assert action in combined
+    assert any(term in combined for term in ("report", "summarize", "tell me"))
+    assert any(case.requires_target_selection for case in cases)
+    assert any(case.absence_guards for case in cases)
+    assert len({case.conversation_group for case in cases if case.conversation_group}) < len(cases)
+
+
+def test_capability_extreme_generation_is_reproducible():
+    module = _load_questionnaire_module()
+
+    first = module._build_capability_extreme_cases(module.CAPABILITY_EXTREME_SEED)
+    second = module._build_capability_extreme_cases(module.CAPABILITY_EXTREME_SEED)
+    different = module._build_capability_extreme_cases(module.CAPABILITY_EXTREME_SEED + 1)
+
+    assert [case.text for case in first] == [case.text for case in second]
+    assert [case.text for case in first] != [case.text for case in different]
+
+
 def test_formal_main_suite_has_a_full_run_timeout_budget():
     module = _load_questionnaire_module()
 
     assert module.DEFAULT_GLOBAL_TIMEOUT_SEC >= 1200
+
+
+def test_route_ack_pair_covers_capability_polite_explicit_and_followup_turns():
+    module = _load_questionnaire_module()
+
+    cases = {case.name: case for case in module.ROUTE_ACK_CASES}
+    assert set(cases) == {
+        "route_ack_capability_question",
+        "route_ack_polite_execution",
+        "route_ack_polite_followup",
+        "route_ack_explicit_execution",
+    }
+    assert cases["route_ack_capability_question"].expected_outcome == "dialogue_only"
+    assert cases["route_ack_polite_execution"].expected_outcome == "execute_no_clarification"
+    assert cases["route_ack_explicit_execution"].expected_outcome == "execute_no_clarification"
+    assert (
+        cases["route_ack_polite_execution"].conversation_group
+        == cases["route_ack_polite_followup"].conversation_group
+    )
+
+
+def test_phase_observations_reports_route_intent_gap_separately_from_fallbacks():
+    module = _load_questionnaire_module()
+    observations = module.phase_observations(
+        mode="speech",
+        turn_result="",
+        log_excerpt=(
+            "[1784164683.181] ROUTE_INTENT_HANDOFF route=execution "
+            "normalized_intents=[]\n"
+            "[1784164683.182] ROUTE_INTENT_GAP execution admitted without "
+            "normalized_intents"
+        ),
+        topic_samples={},
+        voice_id="",
+    )
+
+    assert observations["route_intent_handoff_observed"] is True
+    assert observations["route_intent_gap_count"] == 1
+    assert observations["fallback_markers"]["total"] == 0
 
 
 def test_composite_walk_every_object_case_requires_semantic_selection():
@@ -404,6 +497,54 @@ def test_extract_robot_speech_texts_ignores_user_turn_mirrors():
     ]
 
 
+def test_incremental_payload_is_not_marked_finished(tmp_path):
+    module = _load_questionnaire_module()
+    out_path = tmp_path / "questionnaire.json"
+
+    module.write_payload(
+        str(out_path),
+        "nao_ros2",
+        "fake_deep",
+        100.0,
+        [],
+        runtime_metadata={"profile": "all_success"},
+    )
+
+    payload = json.loads(out_path.read_text(encoding="utf-8"))
+    assert payload["run_status"] == "running"
+    assert "updated_at_unix_sec" in payload
+    assert "finished_at_unix_sec" not in payload
+
+
+def test_speech_term_comparison_normalizes_symbolic_separators():
+    module = _load_questionnaire_module()
+    case = module.ProbeCase(
+        "location_query",
+        "kb_stress",
+        "Where are TITAS and MIDAS?",
+        expected_outcome="dialogue_only",
+        expected_speech_terms=("TITAS", "storage shelf", "MIDAS", "work table"),
+    )
+
+    result = module.assess_case(
+        case,
+        observations={
+            "turn_injected": True,
+            "route_observed": True,
+            "planner_request_observed": False,
+            "execution_feedback_observed": False,
+            "speech_observed": True,
+            "spoken_texts": [
+                "TITAS is on storage_shelf and MIDAS is on work_table."
+            ],
+            "fallback_markers": {"total": 0},
+        },
+        stale_world_guard=None,
+    )
+
+    assert result["status"] == "pass"
+
+
 def test_phase_observations_keeps_robot_speech_without_voice_id():
     module = _load_questionnaire_module()
 
@@ -501,6 +642,17 @@ def test_fallback_markers_track_report_and_kb_failures():
     assert markers["total"] >= 2
 
 
+def test_fallback_markers_track_target_selection_recovery():
+    module = _load_questionnaire_module()
+
+    markers = module.fallback_markers(
+        "planner decision mode=validated_target_selection_recovery steps=3"
+    )
+
+    assert markers["planner_target_selection_recovery"] == 1
+    assert markers["total"] == 1
+
+
 def test_recovery_requires_speech_after_terminal_event():
     module = _load_questionnaire_module()
     case = module.ProbeCase(
@@ -523,6 +675,18 @@ def test_recovery_requires_speech_after_terminal_event():
     assert "after terminal" in " ".join(result["reasons"])
 
 
+def test_missing_object_case_uses_local_not_found_fake_policy():
+    module = _load_questionnaire_module()
+
+    case = next(
+        case
+        for case in module.FAKE_DEEP_CASES
+        if case.name == "fake_deep_missing_object_recovery"
+    )
+
+    assert case.fake_mode_overrides == (("find_object", "always_fail"),)
+
+
 def test_failure_profile_is_not_scored_when_configured_failure_did_not_fire():
     module = _load_questionnaire_module()
     case = module.ProbeCase(
@@ -541,6 +705,7 @@ def test_failure_profile_is_not_scored_when_configured_failure_did_not_fire():
         "post_terminal_speech_observed": True,
         "clarification_observed": False,
         "failure_observed": False,
+        "executed_skills": ["pick_object"],
         "fallback_markers": {"total": 0},
     }
 
@@ -553,6 +718,37 @@ def test_failure_profile_is_not_scored_when_configured_failure_did_not_fire():
 
     assert result["status"] == "not_scored"
     assert "not exercised" in " ".join(result["reasons"])
+
+
+def test_failure_profile_is_not_scored_when_different_skill_failed():
+    module = _load_questionnaire_module()
+    case = module.ProbeCase(
+        "grouped_delivery",
+        "fake_deep",
+        "Bring every object from the work table to ALEX.",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+    )
+
+    result = module.assess_case(
+        case,
+        observations={
+            "turn_injected": True,
+            "planner_request_observed": True,
+            "execution_feedback_observed": True,
+            "terminal_observed": True,
+            "speech_observed": True,
+            "post_terminal_speech_observed": True,
+            "failure_observed": True,
+            "executed_skills": ["bring_object"],
+            "fallback_markers": {"total": 0},
+        },
+        stale_world_guard=None,
+        fake_policy_profile="fail_once_pick",
+    )
+
+    assert result["status"] == "not_scored"
+    assert "pick_object" in " ".join(result["reasons"])
 
 
 def test_recoverable_failure_case_requires_replan_evidence_when_declared():
@@ -575,6 +771,7 @@ def test_recoverable_failure_case_requires_replan_evidence_when_declared():
             "speech_observed": True,
             "post_terminal_speech_observed": True,
             "failure_observed": True,
+            "executed_skills": ["navigate_to"],
             "replan_observed": False,
             "clarification_observed": False,
             "fallback_markers": {"total": 0},
@@ -599,6 +796,33 @@ def test_phase_observations_expose_failure_and_replan_evidence():
 
     assert observations["failure_observed"] is True
     assert observations["replan_observed"] is True
+
+
+def test_execution_feedback_without_upstream_markers_is_not_scored():
+    module = _load_questionnaire_module()
+    observations = module.phase_observations(
+        mode="speech",
+        turn_result="published",
+        log_excerpt="event_type=step_succeeded\nevent_type=plan_completed",
+        topic_samples={},
+    )
+    case = module.ProbeCase(
+        "grouped_delivery",
+        "fake_deep",
+        "Bring every object from the table to ALEX.",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+    )
+
+    result = module.assess_case(
+        case,
+        observations=observations,
+        stale_world_guard=None,
+    )
+
+    assert observations["evidence_consistent"] is False
+    assert result["status"] == "not_scored"
+    assert "correlation" in " ".join(result["reasons"])
 
 
 def test_case_evidence_excludes_unrelated_goal_lines():

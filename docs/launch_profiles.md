@@ -69,6 +69,34 @@ ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
   start_interaction_trace_viewer:=true
 ```
 
+Canonical supervisor-video launch (detector disabled):
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source /home/ubuntu/ws/install/setup.bash
+
+ros2 launch nao_chatbot nao_chatbot_sim.launch.py \
+  posture_bridge_wake_up_on_connect:=true \
+  start_naoqi_driver:=true \
+  start_object_detection:=false \
+  start_scene_grounding:=true \
+  object_detection_backend:=emorobcare_cv \
+  nao_ip:=172.26.112.143 \
+  network_interface:=wlp1s0 \
+  start_planner_llm:=true \
+  chatbot_planner_mode_enabled:=true \
+  chatbot_turn_pipeline_mode:=response_first \
+  chatbot_server_url:=http://10.7.138.215:8004/v1/chat/completions \
+  planner_llm_provider:=openai_compatible \
+  planner_llm_base_url:=http://10.7.138.215:8004 \
+  planner_llm_model:=QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ \
+  planner_llm_api_key_env:=VLLM_API_KEY \
+  start_fake_skills:=true \
+  start_interaction_trace_viewer:=true \
+  start_demo_log_window:=true \
+  chatbot_grounded_context_digest_enabled:=false
+```
+
 Preloaded semantic environment:
 
 ```bash
@@ -520,11 +548,24 @@ Use `--no-topics` if you only want the filtered `/rosout` stream.
 - `start_nao_orchestrator`: deterministic executor.
 - `start_nao_say_skill`: robot-side speech hook.
 - `start_nao_replay_motion`: replay/posture/head-motion skills.
+- `posture_allow_open_loop_without_naoqi`: keep real NAOqi posture execution as
+  the primary route, but acknowledge validated posture goals as `open_loop`
+  when no NAOqi connection exists. Demo profiles enable this so disconnected
+  posture requests behave consistently with disconnected absolute head motion.
+- `head_motion_allow_open_loop_without_joint_state`: allow validated absolute
+  head-motion commands before robot joint state is available.
 - `start_nao_look_at`: upstream-style look-at implementation.
 - `tts_backend_action_name`: explicit downstream robot TTS action name (empty keeps `/speech` topic fallback).
 - `sim_use_laptop_tts`: sim-only helper that reroutes `nao_say_skill` speech to `debug_tts_action_name` (default `false` for sim/robot/demo).
 
 ## Docker Demo Path
+
+The project Dockerfiles build `emorobcare_cv_msgs`,
+`emorobcare_cv_object_detection`, and `my_game_interface` whenever their source
+directories are present. Container startup does not compile these optional
+packages by default. Source-mounted development containers may opt in with
+`-e AUTO_BUILD_OPTIONAL_WS_PACKAGES=1`; normal demo containers should use the
+packages installed in the image.
 
 Preferred overlay image:
 

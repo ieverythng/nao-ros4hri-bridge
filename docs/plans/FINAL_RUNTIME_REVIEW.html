@@ -31,17 +31,32 @@
 <body>
 <main>
   <h1>NAO ROS4HRI Runtime Review</h1>
-  <p class="meta">Condensed supervisor-facing report from <code>ISSUE_TRACKER_FULL_SUITE.html</code>, <code>ISSUE_TRACKER_FAKE_SUITE.html</code>, and the latest rebuilt-stack checks. Last consolidated update 14 July 2026 after more than 31 rebuild/relaunch iterations and the v1-v7 deslop sequence.</p>
+  <p class="meta">Condensed supervisor-facing report from <code>ISSUE_TRACKER_FULL_SUITE.html</code>, <code>ISSUE_TRACKER_FAKE_SUITE.html</code>, and the latest rebuilt-stack checks. Last consolidated update 16 July 2026 after more than 31 rebuild/relaunch iterations and the v15-v19 runtime sequence.</p>
 
   <section class="score">
-    <div class="card"><div class="big">8.7 / 10</div><div>Fresh response-first targeted baseline. This is the recommended supervisor demo profile.</div></div>
-    <div class="card"><div class="big">8.6 / 10</div><div>Qualified deep fake/replan baseline. Fresh speech-mode runs passed all-success and fail-once-navigation 8/8, with manipulation and blocked-delivery recovery mostly passing.</div></div>
+    <div class="card"><div class="big">v19 main 21/21</div><div>Fresh response-first full suite. This is the recommended supervisor demo profile.</div></div>
+    <div class="card"><div class="big">v19 deep fake 9/9</div><div>Grouped delivery, ordered reporting, clarification, and absence recovery passed with chatbot-owned reporting.</div></div>
     <div class="card"><div class="big">6.7 / 10</div><div>10 July current-image baseline for SV-critical seams. Report wording and fake recovery improved, but KB mutation and grouped delivery post-effects remain blockers.</div></div>
     <div class="card"><div class="big">5.8 / 10</div><div>11 July Qwen personal-stack ablation. Main dialogue looked fluent, but KB mutation and deep fake/replan reliability regressed.</div></div>
     <div class="card"><div class="big">Intent-first WIP</div><div>Live ablation improves some route locks, but currently regresses ordinary dialogue wording and one action/report route.</div></div>
-    <div class="card"><div class="big">8.6 / 10</div><div>Current qualified conglomerated score. Main SV-facing seams are accepted; the final v7 deep-fake matrix remains endpoint-blocked.</div></div>
-    <div class="card"><div class="big">Not 9.0 Yet</div><div>The final v7 all-success and forced-navigation-failure profiles, physical-robot convergence, and one frame-qualified proximity proof remain open.</div></div>
+    <div class="card"><div class="big">v19 checkpoint</div><div>Canonical <code>iiia:nao</code> now points to the tested route-repair and target-selection overlay.</div></div>
+    <div class="card"><div class="big">Next stress</div><div>Failure-profile ladders, physical-robot convergence, and frame-qualified proximity remain separate follow-up gates.</div></div>
   </section>
+
+  <h2>16 July v19 Clean Runtime Acceptance</h2>
+  <p class="note">The current canonical checkpoint is <code>iiia:nao-deslop-20260716-v19-route-repair-target-selection</code>, also promoted to <code>iiia:nao</code>. Digest <code>sha256:41e682cdd9da48e92f072687e3c82a97e38d367a3aef08d63075ca684bf7d95e</code>. The canonical response-first launch used the Qwen3-VL vLLM endpoint, <code>start_object_detection:=false</code>, fake skills, JSON-only grounded context, and the requested disconnected-robot settings.</p>
+  <table>
+    <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th><th>Interpretation</th></tr></thead>
+    <tbody>
+      <tr><td>Preflight and source parity</td><td class="done">Pass</td><td>All required nodes unique and active, KnowledgeCore ready, zero chatbot/planner LLM preflight failures, and host/container hashes matched.</td><td>The image tested is the source intended for this round.</td></tr>
+      <tr><td>Route acknowledgement matrix</td><td class="done">4/4</td><td><code>/tmp/nao_v19_route_ack.json</code></td><td>Capability dialogue stayed dialogue-only. Polite and explicit actions executed once and produced chatbot-owned reports. No report-result fallback.</td></tr>
+      <tr><td>Environment and KB continuity</td><td class="done">11/11</td><td><code>/tmp/nao_v19_environment.json</code></td><td>Work-table, kitchen, IIIA kitchen, and gold-apple delivery selections preserved grounded member and recipient identity through mutation and follow-up.</td></tr>
+      <tr><td>Main full suite</td><td class="done">21/21</td><td><code>/tmp/nao_v19_main.json</code></td><td>Dialogue, KB queries, KB mutation, motion, grouped delivery, ordered reporting, clarification, and report-result paths passed.</td></tr>
+      <tr><td>Deep fake suite</td><td class="done">9/9</td><td><code>/tmp/nao_v19_fake_deep_v2.json</code></td><td>Grouped delivery, ordered reporting, missing-recipient clarification, and missing-object replan/recovery all passed. The absence case uses a case-local <code>find_object=always_fail</code> policy and waits for chatbot recovery speech.</td></tr>
+      <tr><td>Posture/open-loop</td><td class="done">4/4</td><td><code>/tmp/nao_v19_posture.json</code></td><td>Stand, sit, kneel, and sit-then-stand passed. Disconnected head/posture paths used open-loop dispatch; the NAOqi crash was isolated to the unavailable real driver.</td></tr>
+    </tbody>
+  </table>
+  <p class="note">The v19 image is the current working checkpoint. The frozen, base, and v8 spatial tags remain unchanged. Runtime evidence is recorded in <code>docs/artifacts/runtime_route_ack_hypothesis_audit_2026-07-16.md</code>; no commit or push is part of this checkpoint.</p>
 
   <p class="note">The score is deliberately conservative. The response-first stack remains the cleanest demonstration path. The separate deep fake/replan score is lower because it measures harder requirements: preloaded environments, location-group delivery, missing-target truthfulness, post-skill KB effects, and forced failure recovery.</p>
 
@@ -433,6 +448,20 @@
   <p class="note">A fresh overlay and full <code>response_first</code> launch proved ordered walk/report, grouped work-table delivery, fail-once navigation, and truthful blocked-delivery closure. The blocked path retried the grounded handoff once and then asked for help without claiming delivery or substituting table placement. Fail-once pick now succeeds on its second attempt across argument aliases, but the subsequent replan still failed to confirm the placement support in KnowledgeCore. Severe fallback markers were zero in the final pick probe; grouped cases still used route repair. Focused gates passed 106 planner/contract tests, 28 chatbot handoff tests, 14 harness tests, 22 fake-policy tests, and 4 fixture/SVG tests. SVG rendering remains visually unproven until an rqt screenshot confirms the selected map and static objects.</p>
   <h2>14 July Semantic Admission Checkpoint</h2>
   <p class="note">The semantic rubric is implemented and the main runtime has now been rescored. Grouped delivery and ordered navigation carry bounded target selections; selected members remain objects, people remain recipients, and supports remain anchors. Final report evidence is structured while chatbot wording remains authoritative. The final source gates pass 156 chatbot, 65 planner, and 37 harness tests. The displayed score is now 8.6/10 qualified. Only the final v7 deep-fake and forced-failure matrix remains blocked by the external endpoint outage.</p>
+  <h2>14 July Frozen Qwen Preliminary Acceptance</h2>
+  <p class="note"><code>iiia:naofrozen</code> now points to the exact runtime-tested image <code>b02fe04c12b9</code>. The active container has the same image id and zero restarts. The canonical <code>iiia:nao</code> tag was not changed. Superseded v7 and unreferenced temporary overlays were removed; no dangling images or stopped temporary containers remain.</p>
+  <table>
+    <thead><tr><th>Claim</th><th>Evidence</th><th>Decision</th></tr></thead>
+    <tbody>
+      <tr><td>Frozen preflight</td><td>KnowledgeCore ready, six required nodes present, three lifecycle owners active, and both Qwen preflights passed.</td><td class="done">Accepted</td></tr>
+      <tr><td>KB ingestion</td><td>The chatbot described object names, colors, and relations introduced during the live conversation.</td><td class="done">Accepted preliminary</td></tr>
+      <tr><td>KB mutation</td><td>Three successive plans moved one phone, then four objects, then the four table members to a named person. Every plan completed at version 1.</td><td class="done">Accepted preliminary</td></tr>
+      <tr><td>Final symbolic state</td><td>Apple, book, pear, and phone each resolved to <code>isAt anonymous_person_eecfi</code>; no prior kitchen or table location remained. Reciprocal person-side relations covered all four objects.</td><td class="done">Accepted</td></tr>
+      <tr><td>Severe fallback absence</td><td>Zero invalid planner JSON, invalid plan, duplicate goal, gate rejection, report fallback, rules fallback, or unreachable-model events.</td><td class="done">Accepted</td></tr>
+      <tr><td>Route repair</td><td>Successful turns still used route repair and bounded intent retry. Raw counts are duplicated by rosout and trace mirrors.</td><td class="partial">Track by unique turn</td></tr>
+    </tbody>
+  </table>
+  <p class="note">Artifacts: <code>/tmp/nao_sv_video_preliminary_snapshot.json</code>, <code>/tmp/nao_sv_video_clean.log</code>, and <code>/tmp/nao_sv_video_kb_excerpt.log</code>. These preliminary results do not change the qualified 8.6/10 score. The frozen full suite and deep-fake matrix remain scheduled for the final acceptance run.</p>
 </main>
 </body>
 </html>

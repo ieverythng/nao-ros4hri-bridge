@@ -13,7 +13,9 @@ else
 fi
 
 maybe_build_optional_detector_stack() {
-  if [ "${AUTO_BUILD_OPTIONAL_WS_PACKAGES:-1}" = "0" ]; then
+  # Optional packages are built into project images. Runtime compilation is an
+  # explicit escape hatch for source-mounted development containers only.
+  if [ "${AUTO_BUILD_OPTIONAL_WS_PACKAGES:-0}" != "1" ]; then
     return
   fi
 

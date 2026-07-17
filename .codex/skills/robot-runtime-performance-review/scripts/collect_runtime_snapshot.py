@@ -42,6 +42,8 @@ HEAVY_TOPICS = (
     '/detected_objects',
 )
 
+_ANSI_ESCAPE = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
+
 
 def main() -> int:
     parser = argparse.ArgumentParser()
@@ -79,6 +81,13 @@ def main() -> int:
         node: _docker_ros(args.container, f'ros2 param dump {node}', timeout=6.0)
         for node in DEFAULT_PARAM_NODES
     }
+    snapshot['ros']['knowledge_core_query'] = _docker_ros(
+        args.container,
+        "timeout 8 ros2 service call /kb/query kb_msgs/srv/Query "
+        "\"{patterns: ['?subject rdf:type ?type'], vars: ['?subject'], "
+        "models: ['default']}\"",
+        timeout=12.0,
+    )
     topics = []
     if args.sample_topics:
         topics = list(DEFAULT_TOPICS)
@@ -169,7 +178,7 @@ def _preflight_status(snapshot: dict) -> dict:
     missing_nodes = [node for node in REQUIRED_NODES if node not in node_output.splitlines()]
     lifecycle = snapshot.get('ros', {}).get('lifecycle', {})
     lifecycle_states = {
-        node: str(result.get('stdout', '')).strip()
+        node: _lifecycle_state(result.get('stdout', ''))
         for node, result in lifecycle.items()
     }
     non_active_lifecycle = {
@@ -197,7 +206,11 @@ def _preflight_status(snapshot: dict) -> dict:
             )
         ),
     }
-    knowledge_core_ready = bool(re.search('KnowledgeCore ready', logs, flags=re.IGNORECASE))
+    kb_query = snapshot.get('ros', {}).get('knowledge_core_query', {})
+    knowledge_core_ready = bool(
+        kb_query.get('ok', False)
+        and re.search(r'\bsuccess\s*[=:]\s*true\b', str(kb_query.get('stdout', '')), re.I)
+    ) or bool(re.search('KnowledgeCore ready', logs, flags=re.IGNORECASE))
     status = 'ready_for_semantic_scoring'
     if (
         not node_result.get('ok', False)
@@ -220,6 +233,13 @@ def _preflight_status(snapshot: dict) -> dict:
     }
 
 
+def _lifecycle_state(value: str) -> str:
+    """Extract the lifecycle state from output that may include ANSI warnings."""
+    clean = _ANSI_ESCAPE.sub('', str(value or ''))
+    matches = re.findall(r'\b(?:unknown|unconfigured|inactive|active|finalized|error)\s+\[\d+\]', clean)
+    return matches[-1] if matches else clean.strip()
+
+
 def _fallback_metrics(logs: str) -> dict[str, int]:
     """Count observable fallback and recovery markers without scoring behavior."""
     text = str(logs or '')
@@ -234,6 +254,7 @@ def _fallback_metrics(logs: str) -> dict[str, int]:
         'planner_gate_rejected': r'planner_gate_rejected',
         'planner_duplicate_active_goal': r'duplicate active planner goal',
         'planner_rule_fallback': r'rule_fallback',
+        'planner_target_selection_recovery': r'validated_target_selection_recovery',
         'execution_report_fallback': r'fallback_execution_report|execution report.*fallback',
         'route_repair': r'llm_response_route_repair|route_conflict',
         'language_model_unreachable_speech': r'having trouble reaching my language model',
@@ -260,6 +281,7 @@ def _fallback_event_metrics(logs: str) -> dict[str, int]:
         'planner_gate_rejected': r'planner_gate_rejected',
         'planner_duplicate_active_goal': r'duplicate active planner goal',
         'planner_rule_fallback': r'rule_fallback',
+        'planner_target_selection_recovery': r'validated_target_selection_recovery',
         'execution_report_fallback': r'fallback_execution_report|execution report.*fallback',
         'route_repair': r'llm_response_route_repair|route_conflict',
         'language_model_unreachable_speech': r'having trouble reaching my language model',

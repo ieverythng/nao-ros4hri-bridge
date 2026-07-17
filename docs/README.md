@@ -73,6 +73,9 @@ This top-level docs surface is intentionally small and operational.
 - `artifacts/runtime_review_2026-07-11_qwen_personal_stack.md` — Qwen personal
   stack model-ablation runtime review, including full main and deep fake-suite
   comparison.
+- `artifacts/runtime_multiperson_grounding_audit_2026-07-16.md` — v21
+  authoritative tracker filter audit for detector churn, stale people in
+  KnowledgeCore, and repeated current-scene queries.
 - `knowledge/` — GitNexus knowledge layer docs and generated wiki snapshots.
 
 ## Retention rule

@@ -69,3 +69,20 @@
 4. Correct ANSI stripping in runtime-snapshot lifecycle parsing.
 
 **Summary:** 7 findings: 🔴 2, 🟠 3, 🟡 1, 🔵 3, 🟣 3. The counts overlap where one observation affects more than one seam.
+
+## Source disposition after branch consolidation
+
+The CRITIC counterexamples now have focused source regressions. Chatbot intent
+validation requests one model correction when a person-denoting delivery uses a
+location as its recipient. Planner admission rejects an authoritative
+target-selection contract with an empty member set before calling the model.
+Valid delivery to a grounded container remains supported when the request
+denotes that container rather than a person.
+
+The deslop merge also exposed and repaired a structural regression in
+`PlannerEngine`: the ordered-location fallback call survived while its method
+and matching helpers did not. The widened source gates pass 62 planner-common,
+94 planner, 273 chatbot, 117 orchestrator, and 358 dialogue-manager functional
+tests. These are source results only. The 6.0 runtime score remains unchanged
+until a clean rebuilt image repeats the two counterexamples and the full
+deep-fake ladder.

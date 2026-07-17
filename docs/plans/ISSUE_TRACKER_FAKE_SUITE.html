@@ -221,6 +221,31 @@
   </table>
   <p class="note"><strong>Qualified deep score: 8.6 / 10.</strong> This preserves the last complete deep-fake baseline while recognizing the stronger accepted main seams. It does not promote the final v7 change until the endpoint-backed profiles finish. Consolidated report: <code>docs/artifacts/runtime_seam_deslop_review_2026-07-14.md</code>.</p>
 
+  <h2>14 July Frozen Qwen Preliminary Checkpoint</h2>
+  <p class="note">The manual SV session ran on <code>iiia:naofrozen</code>, image <code>b02fe04c12b9</code>, using Ollama <code>qwen3-coder:480b-cloud</code> for chatbot response, intent, and planner stages. This is preliminary success-path evidence, not the final fake-deep score. The exact running image is now tagged <code>iiia:naofrozen</code>; canonical <code>iiia:nao</code> remains intact.</p>
+  <table>
+    <thead><tr><th>Probe</th><th>Status</th><th>Runtime evidence</th><th>Formal follow-up</th></tr></thead>
+    <tbody>
+      <tr><td>Phone to kitchen</td><td class="done">Pass</td><td>The intent retry recovered a grounded phone member and kitchen destination. Planner version 1 completed, and the later KB snapshot reflected the changed scene.</td><td>Repeat in the frozen full suite.</td></tr>
+      <tr><td>All grounded objects to table</td><td class="done">Pass</td><td>The selected set contained four concrete object ids. The planner produced five valid steps and completed version 1 without a failed execution step.</td><td>Retain exact selected-set scoring.</td></tr>
+      <tr><td>Table members to named person</td><td class="done">Pass</td><td>The location-member selection preserved the same four objects, the table as source, and <code>anonymous_person_eecfi</code> as recipient. Sequential delivery completed in one plan.</td><td>Repeat with forced navigation and pick failures.</td></tr>
+      <tr><td>Post-effect KB state</td><td class="done">Pass</td><td>Direct queries found apple, book, pear, and phone only at <code>anonymous_person_eecfi</code>. The person carried reciprocal <code>placeOf</code> relations for all four.</td><td>Require the same direct postcondition in deep-fake cases.</td></tr>
+      <tr><td>Fallback pressure</td><td class="partial">Visible</td><td>No invalid planner JSON, invalid executable plan, duplicate goal, gate rejection, report fallback, rules fallback, or unreachable-model event occurred. Route repair and bounded intent validation retry remained visible.</td><td>Measure semantic route-repair incidence in the frozen matrices.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="runtime-v19-20260716">16 July v19 Deep-Fake Checkpoint</h2>
+  <p class="note">The v19 overlay passed 9/9 deep-fake cases strictly after the absence-recovery harness correction. Digest <code>sha256:41e682cdd9da48e92f072687e3c82a97e38d367a3aef08d63075ca684bf7d95e</code>.</p>
+  <table>
+    <thead><tr><th>Area</th><th>Result</th><th>Evidence</th><th>Remaining issue</th></tr></thead>
+    <tbody>
+      <tr><td>Grouped work-table delivery</td><td class="done">Pass</td><td><code>fake_deep_grouped_work_table_delivery</code> selected cup, manual, phone, and ALEX.</td><td>None in this run.</td></tr>
+      <tr><td>IIIA kitchen delivery</td><td class="done">Pass</td><td><code>fake_deep_iiia_kitchen_delivery</code> selected the kitchen cup and ALEX, then completed.</td><td>None in this run.</td></tr>
+      <tr><td>Missing-object recovery</td><td class="done">Pass</td><td><code>fake_deep_missing_object_recovery</code> used case-local <code>find_object=always_fail</code>, observed planner replan, and produced chatbot-owned recovery speech.</td><td>Retain the post-terminal speech wait in future failure-profile runs.</td></tr>
+      <tr><td>Report-result fallback</td><td class="done">0 observed</td><td>v19 route, environment, main, deep-fake, and posture artifacts.</td><td>Continue preserving chatbot ownership of normal report wording.</td></tr>
+    </tbody>
+  </table>
+
   <h2 id="artifacts">Artifact Contract</h2>
   <table>
     <thead><tr><th>Artifact</th><th>Required fields</th><th>Pass condition</th></tr></thead>

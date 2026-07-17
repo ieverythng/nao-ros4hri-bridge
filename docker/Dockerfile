@@ -142,8 +142,8 @@ RUN bash -lc 'source /opt/ros/jazzy/setup.bash && \
       simple_audio_capture \
     ); \
     for optional_pkg in emorobcare_cv_msgs emorobcare_cv_object_detection my_game_interface; do \
-      if [ -d \"/home/ubuntu/ws/src/${optional_pkg}\" ]; then \
-        rebuild_packages+=(\"${optional_pkg}\"); \
+      if [ -d "/home/ubuntu/ws/src/${optional_pkg}" ]; then \
+        rebuild_packages+=("${optional_pkg}"); \
       fi; \
     done; \
     for pkg in "${rebuild_packages[@]}"; do \

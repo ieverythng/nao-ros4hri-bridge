@@ -109,10 +109,19 @@ and then issued a truthful request for help. Retracting the two base `isOn`
 assertions removed all stale spatial closure, after which the unchanged model
 answered that all three objects were in the park.
 
-The accepted remediation target is canonical spatial replacement at the KB
-mutation boundary: resolve and retract existing base relations across the
-`isOn`, `isIn`, and `isAt` family before asserting the new location. Prompt
-wording or response fallback changes would not correct this state defect.
+The accepted remediation is canonical spatial replacement at the KB mutation
+boundary. Explicit `kb_revise` now resolves and retracts existing base and
+derived relations across the `isOn`, `isIn`, and `isAt` family before asserting
+the new location. This reuses the cleanup contract already applied to successful
+skill post-effects and does not add prompt wording or response fallbacks.
+
+The focused orchestrator gate passed 92 tests. A clean
+`iiia:nao-deslop-20260714-v8-kb-spatial` rebuild then replayed the former
+three-object failure against Qwen3-Coder Cloud. The planner admitted one
+version-1 `kb_revise` plan and completed it without a failed step, replan, or
+help request. Direct queries found one park relation for each object and no
+remaining shelf, table, lab, `isOn`, `isIn`, or derived `placeOf` relation. The
+follow-up answer was: "ATLAS, ORBIT, and PULSE are currently at the park."
 
 Supplemental artifacts:
 
@@ -122,6 +131,7 @@ Supplemental artifacts:
 - `/tmp/nao_qwen3_coder_kb_explicit_relocation.json`
 - `/tmp/nao_qwen3_coder_kb_base_relation_retract.json`
 - `/tmp/nao_qwen3_coder_post_kb_stress_snapshot.json`
+- `/tmp/nao_qwen3_coder_v8_spatial_relocation.json`
 
 ## Reopen Command
 
@@ -138,3 +148,46 @@ python3 .codex/skills/robot-runtime-performance-review/scripts/run_active_questi
 Repeat with `--fake-policy-profile fail_once_navigation`. Acceptance requires
 the ordered-walk target selection, failure/replan lineage, truthful closure,
 zero duplicate speech, and uncontaminated fixture cleanup.
+
+## 15 July Frozen-Image Completion Audit
+
+A newly spawned `nao_ros2` container was confirmed to use the exact frozen
+image id `b02fe04c12b9`. The v8 alias and `iiia:naofrozen` resolved to the same
+id, the container had zero
+restarts, one integrated launch owner, the expected Qwen/Ollama arguments, and
+matching critical source hashes. The observed behavior was therefore not stale
+or divergent container code.
+
+The turn "Walk to all the entities" exposed an aggregate completion regression.
+Three selected object-navigation steps succeeded and the final execution
+feedback contained a populated `plan_outcome_summary`. The `PlannerSupervisor`
+retained only the latest step summary and payload when constructing
+`notify_completion`. Its dialogue act consequently described only
+`phone_dzmgf`, and the chatbot naturally repeated that
+last-step evidence.
+
+Source now preserves `ExecutionFeedback.plan_outcome_summary` in
+goal-scoped supervisor state and includes it in planner dialogue-act context.
+The audit found two further losses in the same vertical path. The dialogue
+manager's planner-completion projection and the chatbot's system-turn extractor
+both omitted the aggregate field. Focused red-green tests now require the field
+to survive each relay. The resulting source change does not affect planning,
+execution, KnowledgeCore mutation, prompts, or fallback policy. The widened
+planner/common/dialogue/chatbot gate passes 192 tests. Live acceptance remains
+pending a clean rebuild; the running frozen container was not modified or
+restarted during diagnosis.
+
+The mounted-source validation also reproduced a stale-bytecode hazard. A test
+container initially imported an older cached function body despite resolving
+the module path to the mounted workspace. Running with an isolated
+`PYTHONPYCACHEPREFIX` loaded the current source and passed. This does not change
+the frozen image diagnosis, but overlay-based development runs should isolate
+or clear Python bytecode and verify imported module hashes before comparing
+runtime behavior.
+
+Fresh containers from the same image remain behaviorally variable because they
+start with new KnowledgeCore contents, regenerated HRI entity ids, new dialogue
+history, and stochastic remote-model responses. Image identity guarantees code
+and installed assets, not identical external state or model samples. Scored
+comparisons must freeze launch arguments, fixtures, model configuration, and
+case order in addition to the image digest.
