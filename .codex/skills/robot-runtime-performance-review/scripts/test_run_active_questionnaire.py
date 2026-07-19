@@ -107,15 +107,40 @@ def test_absence_guard_allows_clean_fixture(monkeypatch):
     assert result["guard_results"][0]["clean"] is True
 
 
-def test_questionnaire_metadata_records_grounded_context_digest(monkeypatch):
+def test_questionnaire_metadata_records_generation_and_timeout_configuration(monkeypatch):
     module = _load_questionnaire_module()
 
-    def fake_get_ros_param(_container, _node_name, param_name):
+    def fake_get_ros_param(_container, node_name, param_name):
         values = {
-            "turn_pipeline_mode": "response_first",
-            "grounded_context_digest_enabled": "Boolean value is: False",
+            ("/chatbot_llm", "turn_pipeline_mode"): "response_first",
+            ("/chatbot_llm", "grounded_context_digest_enabled"): False,
+            ("/chatbot_llm", "model"): "QuantTrio/Qwen3.6-35B-A3B-AWQ",
+            ("/chatbot_llm", "intent_model"): "QuantTrio/Qwen3.6-35B-A3B-AWQ",
+            ("/chatbot_llm", "temperature"): 0.7,
+            ("/chatbot_llm", "top_p"): 0.8,
+            ("/chatbot_llm", "top_k"): 20,
+            ("/chatbot_llm", "min_p"): 0.0,
+            ("/chatbot_llm", "presence_penalty"): 1.5,
+            ("/chatbot_llm", "repetition_penalty"): 1.0,
+            ("/chatbot_llm", "response_max_tokens"): 256,
+            ("/chatbot_llm", "intent_max_tokens"): 256,
+            ("/chatbot_llm", "request_timeout_sec"): 30.0,
+            ("/chatbot_llm", "first_request_timeout_sec"): 60.0,
+            ("/chatbot_llm", "intent_request_timeout_sec"): 20.0,
+            ("/chatbot_llm", "think"): False,
+            ("/planner_llm", "provider"): "openai_compatible",
+            ("/planner_llm", "model"): "QuantTrio/Qwen3.6-35B-A3B-AWQ",
+            ("/planner_llm", "temperature"): 0.7,
+            ("/planner_llm", "top_p"): 0.8,
+            ("/planner_llm", "top_k"): 20,
+            ("/planner_llm", "min_p"): 0.0,
+            ("/planner_llm", "presence_penalty"): 1.5,
+            ("/planner_llm", "repetition_penalty"): 1.0,
+            ("/planner_llm", "max_tokens"): 1024,
+            ("/planner_llm", "timeout_sec"): 45.0,
+            ("/planner_llm", "think"): False,
         }
-        return values[param_name]
+        return values[(node_name, param_name)]
 
     monkeypatch.setattr(module, "get_ros_param", fake_get_ros_param)
 
@@ -125,8 +150,55 @@ def test_questionnaire_metadata_records_grounded_context_digest(monkeypatch):
     )
 
     assert metadata["chatbot_turn_pipeline_mode"] == "response_first"
-    assert metadata["grounded_context_digest_enabled"] == "Boolean value is: False"
+    assert metadata["grounded_context_digest_enabled"] is False
     assert metadata["turn_pipeline_mode_matches_expected"] is True
+    assert metadata["chatbot_generation"] == {
+        "model": "QuantTrio/Qwen3.6-35B-A3B-AWQ",
+        "intent_model": "QuantTrio/Qwen3.6-35B-A3B-AWQ",
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "top_k": 20,
+        "min_p": 0.0,
+        "presence_penalty": 1.5,
+        "repetition_penalty": 1.0,
+        "response_max_tokens": 256,
+        "intent_max_tokens": 256,
+        "request_timeout_sec": 30.0,
+        "first_request_timeout_sec": 60.0,
+        "intent_request_timeout_sec": 20.0,
+        "think": False,
+    }
+    assert metadata["planner_generation"] == {
+        "provider": "openai_compatible",
+        "model": "QuantTrio/Qwen3.6-35B-A3B-AWQ",
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "top_k": 20,
+        "min_p": 0.0,
+        "presence_penalty": 1.5,
+        "repetition_penalty": 1.0,
+        "max_tokens": 1024,
+        "timeout_sec": 45.0,
+        "think": False,
+    }
+
+
+def test_get_ros_param_parses_typed_ros_cli_values(monkeypatch):
+    module = _load_questionnaire_module()
+    outputs = iter(
+        (
+            "String value is: qwen-model\n",
+            "Double value is: 0.7\n",
+            "Integer value is: 20\n",
+            "Boolean value is: False\n",
+        )
+    )
+    monkeypatch.setattr(module, "run", lambda *_args, **_kwargs: next(outputs))
+
+    assert module.get_ros_param("nao_ros2", "/chatbot_llm", "model") == "qwen-model"
+    assert module.get_ros_param("nao_ros2", "/chatbot_llm", "temperature") == 0.7
+    assert module.get_ros_param("nao_ros2", "/chatbot_llm", "top_k") == 20
+    assert module.get_ros_param("nao_ros2", "/chatbot_llm", "think") is False
 
 
 def test_voice_speech_topic_uses_integrated_remap_for_shared_speaker():

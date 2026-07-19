@@ -3799,9 +3799,46 @@ def collect_questionnaire_metadata(
         "/chatbot_llm",
         "grounded_context_digest_enabled",
     )
+    chatbot_generation = {
+        param_name: get_ros_param(container, "/chatbot_llm", param_name)
+        for param_name in (
+            "model",
+            "intent_model",
+            "temperature",
+            "top_p",
+            "top_k",
+            "min_p",
+            "presence_penalty",
+            "repetition_penalty",
+            "response_max_tokens",
+            "intent_max_tokens",
+            "request_timeout_sec",
+            "first_request_timeout_sec",
+            "intent_request_timeout_sec",
+            "think",
+        )
+    }
+    planner_generation = {
+        param_name: get_ros_param(container, "/planner_llm", param_name)
+        for param_name in (
+            "provider",
+            "model",
+            "temperature",
+            "top_p",
+            "top_k",
+            "min_p",
+            "presence_penalty",
+            "repetition_penalty",
+            "max_tokens",
+            "timeout_sec",
+            "think",
+        )
+    }
     return {
         "chatbot_turn_pipeline_mode": active_mode,
         "grounded_context_digest_enabled": grounded_context_digest_enabled,
+        "chatbot_generation": chatbot_generation,
+        "planner_generation": planner_generation,
         "expected_turn_pipeline_mode": expected,
         "turn_pipeline_mode_matches_expected": (
             True if not expected else active_mode == expected
@@ -3814,7 +3851,7 @@ def collect_questionnaire_metadata(
     }
 
 
-def get_ros_param(container: str, node_name: str, param_name: str) -> str:
+def get_ros_param(container: str, node_name: str, param_name: str) -> object:
     script = f"""
 {ROS_CLI_PREAMBLE}
 timeout 8 ros2 param get {node_name} {param_name} 2>/dev/null || true
@@ -3826,8 +3863,26 @@ timeout 8 ros2 param get {node_name} {param_name} 2>/dev/null || true
     )
     for line in reversed(output.splitlines()):
         text = line.strip()
-        if text.startswith("String value is:"):
-            return text.split(":", 1)[1].strip()
+        value_marker = " value is:"
+        if value_marker not in text:
+            continue
+        value_type, raw_value = text.split(value_marker, 1)
+        value = raw_value.strip()
+        if value_type == "String":
+            return value
+        if value_type == "Boolean":
+            return value.lower() == "true"
+        if value_type == "Integer":
+            try:
+                return int(value)
+            except ValueError:
+                return value
+        if value_type == "Double":
+            try:
+                return float(value)
+            except ValueError:
+                return value
+        return value
     return output.strip()
 
 

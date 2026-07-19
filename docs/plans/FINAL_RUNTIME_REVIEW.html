@@ -63,14 +63,14 @@
     <div class="decision-side">
       <small>Current decision</small>
       <div class="big">Not scored</div>
-      <p class="meta" style="font-size:.93rem;margin:8px 0 0">Reopen when <code>/v1/models</code> and completion responses both identify Qwen3.6 continuously for the complete matrix.</p>
+      <p class="meta" style="font-size:.93rem;margin:8px 0 0">Third audit at 11:14 CEST still exposed only Qwen3-VL. Reopen when <code>/v1/models</code> and a named completion both identify Qwen3.6.</p>
     </div>
   </section>
 
   <section class="score">
     <div class="card"><small>Target backend</small><div class="big">Qwen3.6 35B A3B</div><div>AWQ, OpenAI-compatible vLLM, thinking disabled.</div></div>
     <div class="card"><small>Candidate image</small><div class="big">v31</div><div><code>3859d1414627</code>, cleanly built from canonical <code>iiia:nao</code>.</div></div>
-    <div class="card"><small>Source gate</small><div class="big">290 + 101</div><div>Chatbot behavioral and planner tests; 7 launch tests; 25-package image build.</div></div>
+    <div class="card"><small>Source gate</small><div class="big">290 + 101</div><div>Chatbot behavioral and planner tests; 7 launch and 69 harness tests; 25-package image build.</div></div>
     <div class="card"><small>Known live defect</small><div class="big">System role</div><div>Sixth-turn identity reminder caused HTTP 400; fixed by folding instructions into one leading message.</div></div>
     <div class="card"><small>Runtime pressure</small><div class="big">Face backlog</div><div>100 images skipped every 5–7 s with person-ID churn; isolated from deterministic fixtures.</div></div>
   </section>
@@ -105,6 +105,7 @@
       <tr><td>Endpoint model changed during the run</td><td>Startup inventory listed Qwen3.6; current inventory lists only Qwen3-VL; named Qwen3.6 completion returns 404.</td><td>Freeze the first-error timestamp and mark later model cases unscored.</td><td class="pending">External blocker</td></tr>
       <tr><td>Periodic identity reminder violated the Qwen chat template</td><td>Live HTTP 400 on turns with long history; red test captured roles <code>system,user,assistant,system,user</code>.</td><td>One leading system message is now a provider-boundary invariant.</td><td class="done">Source fixed</td></tr>
       <tr><td>Preflight does not seed a conversation</td><td>Readiness probes are stateless transport calls and never mutate dialogue session history.</td><td>Keep preflight as model warm-up/readiness. Build grounded context independently on every real turn.</td><td class="done">Contract clarified</td></tr>
+      <tr><td>Ablation artifacts previously lacked full parameter provenance</td><td>The questionnaire now reads typed ROS parameters and writes chatbot/planner models, sampling, budgets, timeouts, and thinking flags under <code>runtime_metadata</code>; 69 harness tests pass.</td><td>Every future A0–A4 result can be audited against the configuration actually loaded by each node.</td><td class="done">Harness fixed</td></tr>
       <tr><td>Live person perception is unstable under load</td><td>YuNet skips frames and generated person IDs repeatedly enter and leave KnowledgeCore.</td><td>Score deterministic fixtures separately; use live-person cases as a perception stress profile.</td><td class="partial">Active risk</td></tr>
     </tbody>
   </table>

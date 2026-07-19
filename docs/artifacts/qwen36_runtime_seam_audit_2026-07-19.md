@@ -15,6 +15,7 @@
 | --- | --- | --- | --- | --- |
 | Qwen3.6 provenance at startup | chatbot/planner startup logs, 08:00 CEST | Requested model is served | Both realistic preflights passed; chatbot inventory listed only Qwen3.6 | `/tmp/nao_qwen36_valid_window.log` |
 | Endpoint provenance after 08:30 | `GET /v1/models` and direct completion | Qwen3.6 remains served | Endpoint advertises Qwen3-VL; Qwen3.6 returns HTTP 404 | `/tmp/nao_qwen36_baseline_snapshot.json` and direct probe output |
+| Third blocker audit, 11:14 CEST | `GET /v1/models`, container and image inventory | Qwen3.6 is restored and v31 can launch | Only Qwen3-VL is advertised; no stack container is running; v31 remains available at `sha256:3859d1414627` | terminal probe, 19 July 2026 |
 | Long-history transport | live turn 6 and later | One leading system role | HTTP 400: `System message must be at the beginning.` | container logs at 08:06:07, 08:19:44, 08:20:26 |
 | Preflight semantics | `node_impl.py` | Warm backend without mutating dialogue | Stateless readiness probes; no session history or grounded-context seeding | `src/chatbot_llm/chatbot_llm/node_impl.py` |
 | Runtime pressure | snapshot and rosout | Stable perception identities | face detector skips 100 images every 5 to 7 seconds and person IDs churn | `/tmp/nao_qwen36_baseline_snapshot.json` |
@@ -38,6 +39,7 @@
 3. `chat_history.trim_messages` now folds all system instruction content into exactly one leading system message. The red test failed with two system roles, then passed after the change. The focused chatbot suite reports 121 passing tests, and Python compilation succeeds.
 4. Preflight invokes isolated transport probes and never accesses or mutates `_DialogueSession.history`. It warms backend execution and validates readiness but does not seed a user's conversational context. Each real turn independently builds a fresh KnowledgeCore projection before its LLM request.
 5. Image `iiia:nao-runtime-v31-qwen36-sampling-ablation` (`3859d1414627`) was rebuilt cleanly from `iiia:nao`; 25 packages built successfully. It includes the system-role fix and launch-configurable temperature, top-p, top-k, min-p, presence penalty, and repetition penalty for chatbot and planner. It has not yet been scored because the target model is absent from the endpoint.
+6. The active questionnaire now captures typed runtime values for the chatbot and planner model, provider, sampling tuple, token budgets, timeouts, and thinking flag in every artifact's `runtime_metadata`. This closes the provenance gap between an ablation label and the configuration actually loaded by ROS. The full runtime-review script suite reports 69 passing tests.
 
 ## Parameter ablation contract
 
@@ -67,6 +69,6 @@ Each cell runs fixed dialogue, KB query, grounded execution, maximal composite, 
 ## Decision: bounded handoff
 
 - Chosen route: accept H-01 at source level and H-02 as the current external blocker; keep H-05 and H-06 active for the full run.
-- Evidence satisfying the source gate: failing then passing transport tests, 290 chatbot behavioral tests, 101 planner tests, 7 launch-profile tests, compilation, ROS4HRI ownership audit, and clean v31 image build.
+- Evidence satisfying the source gate: failing then passing transport tests, 290 chatbot behavioral tests, 101 planner tests, 7 launch-profile tests, 69 runtime-review harness tests, compilation, ROS4HRI ownership audit, and clean v31 image build.
 - Residual risk: no live proof that Qwen3.6 accepts the folded message, no parameter comparison, and no complete scored suite while the server advertises Qwen3-VL.
-- Next probe: once `/v1/models` again lists `QuantTrio/Qwen3.6-35B-A3B-AWQ`, replace v29 with v31, verify uniqueness/lifecycle/preflight, run A0 through A4, lock parameters, and execute the full runtime ladder.
+- Reopen condition and next probe: `/v1/models` must again list `QuantTrio/Qwen3.6-35B-A3B-AWQ` and a named completion must succeed. Then launch v31, verify uniqueness/lifecycle/preflight, run A0 through A4, lock parameters, and execute the full runtime ladder.
