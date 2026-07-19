@@ -3,45 +3,124 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>NAO ROS4HRI Runtime Review - Current Showing State</title>
+  <title>NAO ROS4HRI Runtime Review - Supervisor Decision Brief</title>
   <style>
-    :root { --bg:#f7f8fb; --ink:#20242b; --muted:#5d6675; --line:#cfd6e0; --card:#fff; --done:#236b3b; --partial:#9a5b13; --pending:#8a463d; --accent:#235b8c; }
-    body { margin:0; background:var(--bg); color:var(--ink); font-family:Arial, sans-serif; line-height:1.48; }
-    main { max-width:1180px; margin:auto; padding:32px 22px 72px; }
-    h1 { margin:0 0 6px; font-size:2rem; }
-    h2 { border-top:1px solid var(--line); margin-top:30px; padding-top:20px; }
+    :root { --bg:#07111d; --surface:#0d1a29; --surface-2:#122338; --ink:#eef6ff; --muted:#9fb1c6; --line:#28415d; --card:#101f31; --done:#55d98a; --partial:#f4bd62; --pending:#ff7e75; --accent:#64b5f6; --accent-2:#a78bfa; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:radial-gradient(circle at 12% -8%,#193c64 0,transparent 32rem),var(--bg); color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.55; }
+    main { max-width:1240px; margin:auto; padding:42px 24px 80px; }
+    h1 { margin:0 0 10px; font-size:clamp(2.2rem,5vw,4.5rem); line-height:.98; letter-spacing:-.055em; max-width:900px; }
+    h2 { border-top:1px solid var(--line); margin-top:40px; padding-top:24px; font-size:1.55rem; letter-spacing:-.02em; }
     h3 { margin-bottom:8px; }
-    .meta { color:var(--muted); margin:0 0 22px; }
-    .score { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin:18px 0 22px; }
-    .card { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--accent); padding:14px 16px; }
-    .big { font-size:1.65rem; font-weight:bold; }
-    table { width:100%; border-collapse:collapse; background:var(--card); margin:10px 0 18px; }
-    th,td { border:1px solid var(--line); padding:9px 10px; text-align:left; vertical-align:top; }
-    th { background:#e9edf3; }
-    code { background:#e8ecf1; padding:1px 4px; }
-    pre { background:#111827; color:#f4f7fb; border:1px solid #273244; padding:14px 16px; overflow-x:auto; line-height:1.36; }
+    a { color:var(--accent); }
+    .eyebrow { color:var(--accent); text-transform:uppercase; letter-spacing:.14em; font-size:.76rem; font-weight:800; margin-bottom:14px; }
+    .meta { color:var(--muted); margin:0 0 26px; max-width:900px; font-size:1.05rem; }
+    .decision { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(260px,.7fr); gap:18px; margin:28px 0; }
+    .decision-main { background:linear-gradient(135deg,rgba(100,181,246,.16),rgba(167,139,250,.08)); border:1px solid #3a5d82; border-radius:20px; padding:24px; }
+    .decision-side { background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:24px; }
+    .status-pill { display:inline-flex; align-items:center; gap:8px; color:var(--partial); background:rgba(244,189,98,.09); border:1px solid rgba(244,189,98,.38); border-radius:999px; padding:6px 11px; font-size:.8rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; }
+    .status-pill::before { content:""; width:8px; height:8px; border-radius:50%; background:currentColor; box-shadow:0 0 14px currentColor; }
+    .score { display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:14px; margin:20px 0 26px; }
+    .card { background:linear-gradient(180deg,rgba(255,255,255,.025),transparent),var(--card); border:1px solid var(--line); border-radius:15px; padding:17px 18px; min-height:126px; }
+    .card small { color:var(--muted); display:block; text-transform:uppercase; letter-spacing:.08em; font-weight:750; margin-bottom:10px; }
+    .big { font-size:1.75rem; line-height:1.1; font-weight:800; letter-spacing:-.025em; margin-bottom:8px; }
+    .flow { display:grid; grid-template-columns:repeat(6,minmax(120px,1fr)); gap:8px; margin:16px 0 24px; }
+    .flow div { position:relative; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:13px 12px; font-size:.88rem; }
+    .flow div:not(:last-child)::after { content:"→"; position:absolute; right:-9px; top:50%; transform:translate(50%,-50%); color:var(--accent); z-index:2; font-weight:900; }
+    table { width:100%; border-collapse:separate; border-spacing:0; background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin:12px 0 22px; }
+    th,td { border:0; border-bottom:1px solid var(--line); padding:11px 12px; text-align:left; vertical-align:top; }
+    tr:last-child td { border-bottom:0; }
+    th { background:var(--surface-2); color:#d7e8fa; font-size:.79rem; text-transform:uppercase; letter-spacing:.055em; }
+    code { background:#172a40; color:#cde9ff; border:1px solid #27445f; border-radius:5px; padding:1px 5px; }
+    pre { background:#050b12; color:#f4f7fb; border:1px solid var(--line); border-radius:12px; padding:14px 16px; overflow-x:auto; line-height:1.36; }
     pre code { background:transparent; color:inherit; padding:0; }
-    ul { background:var(--card); border:1px solid var(--line); padding:14px 24px; }
+    ul { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:15px 26px; }
     .done { color:var(--done); font-weight:bold; }
     .partial { color:var(--partial); font-weight:bold; }
     .pending { color:var(--pending); font-weight:bold; }
-    .note { background:var(--card); border-left:5px solid var(--accent); padding:12px 16px; }
+    .note { background:var(--surface); border:1px solid var(--line); border-left:5px solid var(--accent); border-radius:10px; padding:13px 16px; }
+    .archive { margin-top:44px; border:1px solid var(--line); border-radius:16px; background:rgba(8,18,30,.65); padding:0 20px 20px; }
+    .archive > summary { cursor:pointer; list-style:none; padding:20px 2px; font-weight:800; color:var(--muted); }
+    .archive > summary::-webkit-details-marker { display:none; }
+    .archive > summary::after { content:"Open dated evidence"; float:right; color:var(--accent); font-size:.8rem; font-weight:700; }
+    @media (max-width:900px) { .decision { grid-template-columns:1fr; } .flow { grid-template-columns:1fr 1fr; } .flow div::after { display:none; } }
+    @media print { :root { --bg:#fff; --surface:#fff; --surface-2:#f3f6f9; --ink:#111; --muted:#444; --line:#bbb; --card:#fff; } body { background:#fff; } main { max-width:none; padding:0; } .archive { display:block; } .archive > summary { display:none; } }
   </style>
 </head>
 <body>
 <main>
-  <h1>NAO ROS4HRI Runtime Review</h1>
-  <p class="meta">Condensed supervisor-facing report from <code>ISSUE_TRACKER_FULL_SUITE.html</code>, <code>ISSUE_TRACKER_FAKE_SUITE.html</code>, and the latest rebuilt-stack checks. Last consolidated update 16 July 2026 after more than 31 rebuild/relaunch iterations and the v15-v19 runtime sequence.</p>
+  <p class="eyebrow">Supervisor decision brief · 19 July 2026</p>
+  <h1>Grounded dialogue and execution, under evidence.</h1>
+  <p class="meta">Current qualification campaign for the NAO ROS4HRI stack. The report separates model capability, ROS runtime integrity, deterministic KnowledgeCore evidence, execution recovery, and observability so that infrastructure outages and harness gaps cannot become false semantic failures.</p>
+
+  <section class="decision">
+    <div class="decision-main">
+      <span class="status-pill">Qualification paused externally</span>
+      <h2 style="border:0;margin:18px 0 8px;padding:0">Qwen3.6 is promising, but not yet locked.</h2>
+      <p>The requested <code>QuantTrio/Qwen3.6-35B-A3B-AWQ</code> passed realistic chatbot and planner preflight at 08:00 CEST. The endpoint was replaced by Qwen3-VL around 08:30, so later 404s and keepalive failures are not model regressions and are not scored. A long-history system-role defect observed before the swap is source-fixed and rebuilt in v31.</p>
+    </div>
+    <div class="decision-side">
+      <small>Current decision</small>
+      <div class="big">Not scored</div>
+      <p class="meta" style="font-size:.93rem;margin:8px 0 0">Reopen when <code>/v1/models</code> and completion responses both identify Qwen3.6 continuously for the complete matrix.</p>
+    </div>
+  </section>
 
   <section class="score">
-    <div class="card"><div class="big">v19 main 21/21</div><div>Fresh response-first full suite. This is the recommended supervisor demo profile.</div></div>
-    <div class="card"><div class="big">v19 deep fake 9/9</div><div>Grouped delivery, ordered reporting, clarification, and absence recovery passed with chatbot-owned reporting.</div></div>
-    <div class="card"><div class="big">6.7 / 10</div><div>10 July current-image baseline for SV-critical seams. Report wording and fake recovery improved, but KB mutation and grouped delivery post-effects remain blockers.</div></div>
-    <div class="card"><div class="big">5.8 / 10</div><div>11 July Qwen personal-stack ablation. Main dialogue looked fluent, but KB mutation and deep fake/replan reliability regressed.</div></div>
-    <div class="card"><div class="big">Intent-first WIP</div><div>Live ablation improves some route locks, but currently regresses ordinary dialogue wording and one action/report route.</div></div>
-    <div class="card"><div class="big">v19 checkpoint</div><div>Canonical <code>iiia:nao</code> now points to the tested route-repair and target-selection overlay.</div></div>
-    <div class="card"><div class="big">Next stress</div><div>Failure-profile ladders, physical-robot convergence, and frame-qualified proximity remain separate follow-up gates.</div></div>
+    <div class="card"><small>Target backend</small><div class="big">Qwen3.6 35B A3B</div><div>AWQ, OpenAI-compatible vLLM, thinking disabled.</div></div>
+    <div class="card"><small>Candidate image</small><div class="big">v31</div><div><code>3859d1414627</code>, cleanly built from canonical <code>iiia:nao</code>.</div></div>
+    <div class="card"><small>Source gate</small><div class="big">290 + 101</div><div>Chatbot behavioral and planner tests; 7 launch tests; 25-package image build.</div></div>
+    <div class="card"><small>Known live defect</small><div class="big">System role</div><div>Sixth-turn identity reminder caused HTTP 400; fixed by folding instructions into one leading message.</div></div>
+    <div class="card"><small>Runtime pressure</small><div class="big">Face backlog</div><div>100 images skipped every 5–7 s with person-ID churn; isolated from deterministic fixtures.</div></div>
   </section>
+
+  <h2>Evidence chain</h2>
+  <div class="flow" aria-label="Runtime evidence chain">
+    <div><strong>Speech ingress</strong><br>ROS4HRI tracked voice</div>
+    <div><strong>Chatbot</strong><br>route + grounded context</div>
+    <div><strong>Planner gate</strong><br>admission + lineage</div>
+    <div><strong>Planner</strong><br>typed executable plan</div>
+    <div><strong>Executor</strong><br>fake/robot skill result</div>
+    <div><strong>Closure</strong><br>KB effect + one speech</div>
+  </div>
+
+  <h2>Parameter qualification plan</h2>
+  <table>
+    <thead><tr><th>Cell</th><th>Dialogue sampling</th><th>Token budgets</th><th>Timeout policy</th><th>Decision question</th></tr></thead>
+    <tbody>
+      <tr><td>A0 baseline</td><td><code>temperature=0.2</code>, <code>top_p=0.9</code>; planner <code>0.1</code></td><td>response 192, intent 256, planner 800</td><td>first 75 s, response 60 s, intent 10 s, planner 60 s</td><td>Reproduce current semantics and latency.</td></tr>
+      <tr><td>A1 Qwen baseline</td><td><code>temperature=0.7</code>, <code>top_p=0.8</code>, <code>top_k=20</code>, <code>min_p=0</code>, presence 1.5, repetition 1</td><td>unchanged</td><td>unchanged</td><td>Does the published non-thinking profile outperform application defaults?</td></tr>
+      <tr><td>A2 deterministic</td><td><code>temperature=0.0</code>, <code>top_p=1.0</code>, neutral penalties</td><td>unchanged</td><td>unchanged</td><td>Does lower variance improve route and JSON stability?</td></tr>
+      <tr><td>A3 budget</td><td>best of A0–A2</td><td>response 256, intent 256, planner 1024</td><td>unchanged</td><td>Do maximal reports or plans truncate at the baseline cap?</td></tr>
+      <tr><td>A4 timeout floor</td><td>locked sampling</td><td>locked budgets</td><td>first 60 s, response 30 s, intent 20 s, planner 45 s</td><td>Can waits shrink without transport fallback?</td></tr>
+    </tbody>
+  </table>
+  <p class="note">Each cell uses independent group-scoped voices and the same deterministic dialogue, KB query, grounded delivery, maximal composite, and planner-JSON cases. The selected cell must have valid model provenance, zero transport failure, complete semantic evidence, and lower or equal latency before the full suite starts.</p>
+
+  <h2>Current findings and implications</h2>
+  <table>
+    <thead><tr><th>Finding</th><th>Evidence</th><th>Implication</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Endpoint model changed during the run</td><td>Startup inventory listed Qwen3.6; current inventory lists only Qwen3-VL; named Qwen3.6 completion returns 404.</td><td>Freeze the first-error timestamp and mark later model cases unscored.</td><td class="pending">External blocker</td></tr>
+      <tr><td>Periodic identity reminder violated the Qwen chat template</td><td>Live HTTP 400 on turns with long history; red test captured roles <code>system,user,assistant,system,user</code>.</td><td>One leading system message is now a provider-boundary invariant.</td><td class="done">Source fixed</td></tr>
+      <tr><td>Preflight does not seed a conversation</td><td>Readiness probes are stateless transport calls and never mutate dialogue session history.</td><td>Keep preflight as model warm-up/readiness. Build grounded context independently on every real turn.</td><td class="done">Contract clarified</td></tr>
+      <tr><td>Live person perception is unstable under load</td><td>YuNet skips frames and generated person IDs repeatedly enter and leave KnowledgeCore.</td><td>Score deterministic fixtures separately; use live-person cases as a perception stress profile.</td><td class="partial">Active risk</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Recommendations</h2>
+  <ol>
+    <li>Restore Qwen3.6 at the endpoint and verify model identity before replacing v29.</li>
+    <li>Launch v31 once, confirm unique core nodes, lifecycle state, KnowledgeCore readiness, source hash, and both realistic preflights.</li>
+    <li>Run A0–A3 without prompt edits, lock the lowest-variance configuration that preserves complete objectives, then run the full review ladder.</li>
+    <li>Manually reconcile every non-pass against JSONL, raw logs, trace lineage, KB pre/postconditions, and visible speech before assigning a semantic result.</li>
+  </ol>
+
+  <p class="note">Current high-signal artifacts: <code>docs/artifacts/qwen36_runtime_seam_audit_2026-07-19.md</code>, <code>docs/artifacts/qwen36_vllm_parameter_research_2026-07-19.md</code>, <code>/tmp/nao_qwen36_baseline_snapshot.json</code>, and <code>/tmp/nao_qwen36_valid_window.log</code>.</p>
+
+  <details class="archive">
+  <summary>Historical acceptance record and dated evidence</summary>
 
   <h2>16 July v19 Clean Runtime Acceptance</h2>
   <p class="note">The current canonical checkpoint is <code>iiia:nao-deslop-20260716-v19-route-repair-target-selection</code>, also promoted to <code>iiia:nao</code>. Digest <code>sha256:41e682cdd9da48e92f072687e3c82a97e38d367a3aef08d63075ca684bf7d95e</code>. The canonical response-first launch used the Qwen3-VL vLLM endpoint, <code>start_object_detection:=false</code>, fake skills, JSON-only grounded context, and the requested disconnected-robot settings.</p>
@@ -462,6 +541,7 @@
     </tbody>
   </table>
   <p class="note">Artifacts: <code>/tmp/nao_sv_video_preliminary_snapshot.json</code>, <code>/tmp/nao_sv_video_clean.log</code>, and <code>/tmp/nao_sv_video_kb_excerpt.log</code>. These preliminary results do not change the qualified 8.6/10 score. The frozen full suite and deep-fake matrix remain scheduled for the final acceptance run.</p>
+  </details>
 </main>
 </body>
 </html>

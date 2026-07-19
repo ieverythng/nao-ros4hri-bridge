@@ -51,7 +51,19 @@ _LAB_VLLM_DEFAULTS = {
     "start_managed_ollama": "false",
     "start_demo_log_window": "true",
     "chatbot_think": "false",
+    "chatbot_temperature": "0.2",
+    "chatbot_top_p": "0.9",
+    "chatbot_top_k": "0",
+    "chatbot_min_p": "0.0",
+    "chatbot_presence_penalty": "0.0",
+    "chatbot_repetition_penalty": "1.0",
     "planner_llm_think": "false",
+    "planner_llm_temperature": "0.1",
+    "planner_llm_top_p": "1.0",
+    "planner_llm_top_k": "0",
+    "planner_llm_min_p": "0.0",
+    "planner_llm_presence_penalty": "0.0",
+    "planner_llm_repetition_penalty": "1.0",
     "chatbot_preflight_required": "true",
     "chatbot_preflight_keepalive_interval_sec": "180.0",
     "planner_llm_preflight_required": "true",
@@ -1650,6 +1662,36 @@ def generate_profile_launch_description(
         default_value=_profile_default(profile_defaults, "chatbot_think", "false"),
         description="Forward Ollama think=false/true for chatbot_llm response and intent calls.",
     )
+    chatbot_temperature_arg = DeclareLaunchArgument(
+        "chatbot_temperature",
+        default_value=_profile_default(profile_defaults, "chatbot_temperature", "0.2"),
+        description="Sampling temperature for chatbot response and intent requests.",
+    )
+    chatbot_top_p_arg = DeclareLaunchArgument(
+        "chatbot_top_p",
+        default_value=_profile_default(profile_defaults, "chatbot_top_p", "0.9"),
+        description="Nucleus-sampling probability for chatbot requests.",
+    )
+    chatbot_top_k_arg = DeclareLaunchArgument(
+        "chatbot_top_k",
+        default_value=_profile_default(profile_defaults, "chatbot_top_k", "0"),
+        description="Top-k sampling limit for chatbot requests; zero leaves it unrestricted.",
+    )
+    chatbot_min_p_arg = DeclareLaunchArgument(
+        "chatbot_min_p",
+        default_value=_profile_default(profile_defaults, "chatbot_min_p", "0.0"),
+        description="Minimum-token probability threshold for chatbot requests.",
+    )
+    chatbot_presence_penalty_arg = DeclareLaunchArgument(
+        "chatbot_presence_penalty",
+        default_value=_profile_default(profile_defaults, "chatbot_presence_penalty", "0.0"),
+        description="Presence penalty for chatbot requests.",
+    )
+    chatbot_repetition_penalty_arg = DeclareLaunchArgument(
+        "chatbot_repetition_penalty",
+        default_value=_profile_default(profile_defaults, "chatbot_repetition_penalty", "1.0"),
+        description="Repetition penalty for chatbot requests.",
+    )
     chatbot_response_max_tokens_arg = DeclareLaunchArgument(
         "chatbot_response_max_tokens",
         default_value=_profile_default(profile_defaults, "chatbot_response_max_tokens", "192"),
@@ -1798,8 +1840,33 @@ def generate_profile_launch_description(
     )
     planner_llm_temperature_arg = DeclareLaunchArgument(
         "planner_llm_temperature",
-        default_value="0.1",
+        default_value=_profile_default(profile_defaults, "planner_llm_temperature", "0.1"),
         description="Temperature forwarded to planner_llm.",
+    )
+    planner_llm_top_p_arg = DeclareLaunchArgument(
+        "planner_llm_top_p",
+        default_value=_profile_default(profile_defaults, "planner_llm_top_p", "1.0"),
+        description="Nucleus-sampling probability forwarded to planner_llm.",
+    )
+    planner_llm_top_k_arg = DeclareLaunchArgument(
+        "planner_llm_top_k",
+        default_value=_profile_default(profile_defaults, "planner_llm_top_k", "0"),
+        description="Top-k sampling limit forwarded to planner_llm.",
+    )
+    planner_llm_min_p_arg = DeclareLaunchArgument(
+        "planner_llm_min_p",
+        default_value=_profile_default(profile_defaults, "planner_llm_min_p", "0.0"),
+        description="Minimum-token probability threshold forwarded to planner_llm.",
+    )
+    planner_llm_presence_penalty_arg = DeclareLaunchArgument(
+        "planner_llm_presence_penalty",
+        default_value=_profile_default(profile_defaults, "planner_llm_presence_penalty", "0.0"),
+        description="Presence penalty forwarded to planner_llm.",
+    )
+    planner_llm_repetition_penalty_arg = DeclareLaunchArgument(
+        "planner_llm_repetition_penalty",
+        default_value=_profile_default(profile_defaults, "planner_llm_repetition_penalty", "1.0"),
+        description="Repetition penalty forwarded to planner_llm.",
     )
     planner_llm_max_tokens_arg = DeclareLaunchArgument(
         "planner_llm_max_tokens",
@@ -1916,6 +1983,30 @@ def generate_profile_launch_description(
                 "think": ParameterValue(
                     LaunchConfiguration("chatbot_think"),
                     value_type=bool,
+                )
+            },
+            {
+                "temperature": ParameterValue(
+                    LaunchConfiguration("chatbot_temperature"), value_type=float
+                )
+            },
+            {
+                "top_p": ParameterValue(LaunchConfiguration("chatbot_top_p"), value_type=float)
+            },
+            {
+                "top_k": ParameterValue(LaunchConfiguration("chatbot_top_k"), value_type=int)
+            },
+            {
+                "min_p": ParameterValue(LaunchConfiguration("chatbot_min_p"), value_type=float)
+            },
+            {
+                "presence_penalty": ParameterValue(
+                    LaunchConfiguration("chatbot_presence_penalty"), value_type=float
+                )
+            },
+            {
+                "repetition_penalty": ParameterValue(
+                    LaunchConfiguration("chatbot_repetition_penalty"), value_type=float
                 )
             },
             {
@@ -2570,6 +2661,31 @@ def generate_profile_launch_description(
                 )
             },
             {
+                "top_p": ParameterValue(
+                    LaunchConfiguration("planner_llm_top_p"), value_type=float
+                )
+            },
+            {
+                "top_k": ParameterValue(
+                    LaunchConfiguration("planner_llm_top_k"), value_type=int
+                )
+            },
+            {
+                "min_p": ParameterValue(
+                    LaunchConfiguration("planner_llm_min_p"), value_type=float
+                )
+            },
+            {
+                "presence_penalty": ParameterValue(
+                    LaunchConfiguration("planner_llm_presence_penalty"), value_type=float
+                )
+            },
+            {
+                "repetition_penalty": ParameterValue(
+                    LaunchConfiguration("planner_llm_repetition_penalty"), value_type=float
+                )
+            },
+            {
                 "max_tokens": ParameterValue(
                     LaunchConfiguration("planner_llm_max_tokens"),
                     value_type=int,
@@ -3107,6 +3223,12 @@ def generate_profile_launch_description(
             chatbot_model_arg,
             ollama_model_arg,
             chatbot_think_arg,
+            chatbot_temperature_arg,
+            chatbot_top_p_arg,
+            chatbot_top_k_arg,
+            chatbot_min_p_arg,
+            chatbot_presence_penalty_arg,
+            chatbot_repetition_penalty_arg,
             chatbot_response_max_tokens_arg,
             chatbot_intent_max_tokens_arg,
             chatbot_intent_model_arg,
@@ -3140,6 +3262,11 @@ def generate_profile_launch_description(
             planner_llm_base_url_arg,
             planner_llm_api_key_env_arg,
             planner_llm_temperature_arg,
+            planner_llm_top_p_arg,
+            planner_llm_top_k_arg,
+            planner_llm_min_p_arg,
+            planner_llm_presence_penalty_arg,
+            planner_llm_repetition_penalty_arg,
             planner_llm_max_tokens_arg,
             planner_llm_timeout_sec_arg,
             planner_llm_think_arg,

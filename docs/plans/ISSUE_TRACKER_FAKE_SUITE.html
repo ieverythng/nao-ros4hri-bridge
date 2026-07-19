@@ -32,7 +32,7 @@
 <body>
 <main>
   <h1>Fake Skill And Replan Validation Suite</h1>
-  <p class="meta">Canonical deep tracker for deterministic fake-skill execution, preloaded KnowledgeCore environments, multi-turn manipulation, and failure-induced replanning. Created 29 June 2026. Last consolidated update: 14 July 2026 after the runtime deslop sequence.</p>
+  <p class="meta">Canonical deep tracker for deterministic fake-skill execution, preloaded KnowledgeCore environments, multi-turn manipulation, and failure-induced replanning. Created 29 June 2026. Last consolidated update: 19 July 2026 for the Qwen3.6 qualification campaign.</p>
 
   <p class="note">Use <code>ISSUE_TRACKER_FULL_SUITE.html</code> for the full-stack health score. Use this page for the harder fake-skill and replan score once the base dialogue, KB, and simple execution seams are healthy. The scoreable state is the RDF fixture injected through <code>/kb/revise</code>, then verified through <code>/kb/query</code>, <code>grounded_context</code>, planner requests, fake-skill feedback, post-skill KB effects, and user-facing speech.</p>
 
@@ -48,6 +48,9 @@
   </nav>
 
   <section id="current-state" class="cards">
+    <div class="card"><strong>19 Jul Qwen3.6 gate</strong>The target model passed realistic chatbot and planner preflight at 08:00 CEST, but the endpoint switched to Qwen3-VL around 08:30. Deep fake cases after that timestamp are not scoreable as Qwen3.6 evidence.</div>
+    <div class="card"><strong>v31 candidate ready</strong><code>iiia:nao-runtime-v31-qwen36-sampling-ablation</code> was cleanly built from <code>iiia:nao</code>. It folds system instructions into one leading provider message and exposes the complete Qwen sampling tuple.</div>
+    <div class="card"><strong>Reopen condition</strong>Require Qwen3.6 in <code>/v1/models</code> and completion responses, then run all-success, fail-once navigation, fail-once pick, delivery blocked, and missing recipient with manual JSONL/log/speech reconciliation.</div>
     <div class="card"><strong>Rebuilt smoke pass</strong>Fresh <code>iiia:nao-critic</code> smoke proves response-first dialogue, KB query, simple wave, and composite head-wave with no duplicate active planner goal.</div>
     <div class="card"><strong>Primary goal</strong>Demonstrate truthful recovery: retry, replan, clarification, help request, or terminal failure. False success is a critical failure.</div>
     <div class="card"><strong>Scenario space</strong>Fixtures scale from one table to lab sections, kitchen delivery, gold-apple handoff, and an IIIA-style floor.</div>
@@ -76,6 +79,7 @@
   <table>
     <thead><tr><th>Date / run</th><th>Scope</th><th>Fixture / policy</th><th>Result</th><th>Score impact</th></tr></thead>
     <tbody>
+      <tr><td>19 Jul Qwen3.6 campaign</td><td>Model provenance, long-history transport, and deep-suite preparation</td><td>v29 early valid window; v31 clean source candidate; JSON-only grounded context.</td><td class="partial">Source-ready; runtime unscored</td><td>Startup preflights prove Qwen3.6 was genuinely served. The endpoint later changed models, so the fake ladder is paused. TDD cycles fixed the system-role violation and exposed the full sampling tuple; 290 chatbot behavioral tests, 101 planner tests, 7 launch tests, and a 25-package image build pass. Resume only after target-model provenance is restored.</td></tr>
       <tr><td>17 Jun direct manipulation matrix</td><td>Direct fake action goals</td><td>Canonical and absent targets across pick, place, bring, and look_at.</td><td class="done">Pass</td><td>Proves fake guards can reject noun phrases, missing targets, missing destinations, and blocked delivery. Does not prove speech-mode replan.</td></tr>
       <tr><td>28 Jun architecture sweep</td><td>Service/direct-action architecture proof</td><td><code>kitchen_delivery</code> style facts plus fake guard success/failure.</td><td class="partial">Partial pass</td><td>Raises confidence in KB guards and KB mutation postconditions, but speech-mode forced recovery is still missing.</td></tr>
       <tr><td>29 Jun source setup</td><td>Launch and questionnaire source</td><td><code>baseline_table</code>, <code>lab_sections</code>, <code>kitchen_delivery</code>, <code>gold_apple_handoff</code>, <code>iiia_floor</code>; policies <code>all_success</code>, <code>fail_once_navigation</code>, <code>fail_once_pick</code>, <code>delivery_blocked</code>, <code>recipient_missing</code>.</td><td class="done">Live smoke pass</td><td>SVG fixtures, preloaded KB injection, and the ordered walk/report path are usable. Deep recovery remains the score-limiting seam.</td></tr>

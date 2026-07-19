@@ -49,6 +49,11 @@ class PlannerNode(Node):
         self.declare_parameter('base_url', 'http://10.7.138.215:8004')
         self.declare_parameter('api_key_env', 'OPENAI_API_KEY')
         self.declare_parameter('temperature', 0.1)
+        self.declare_parameter('top_p', 1.0)
+        self.declare_parameter('top_k', 0)
+        self.declare_parameter('min_p', 0.0)
+        self.declare_parameter('presence_penalty', 0.0)
+        self.declare_parameter('repetition_penalty', 1.0)
         self.declare_parameter('max_tokens', 800)
         self.declare_parameter('timeout_sec', 20.0)
         self.declare_parameter('think', False)
@@ -151,6 +156,14 @@ class PlannerNode(Node):
             base_url=self._text_parameter('base_url', 'http://10.7.138.215:8004'),
             api_key_env=self._text_parameter('api_key_env', 'OPENAI_API_KEY'),
             temperature=float(self.get_parameter('temperature').value),
+            top_p=float(self.get_parameter('top_p').value),
+            top_k=max(0, int(self.get_parameter('top_k').value)),
+            min_p=max(0.0, float(self.get_parameter('min_p').value)),
+            presence_penalty=float(self.get_parameter('presence_penalty').value),
+            repetition_penalty=max(
+                0.0,
+                float(self.get_parameter('repetition_penalty').value),
+            ),
             max_tokens=int(self.get_parameter('max_tokens').value),
             timeout_sec=float(self.get_parameter('timeout_sec').value),
             think=bool(self.get_parameter('think').value),

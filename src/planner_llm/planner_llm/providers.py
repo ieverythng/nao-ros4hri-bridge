@@ -23,6 +23,11 @@ class PlannerProviderConfig:
     base_url: str = 'http://10.7.138.215:8004'
     api_key_env: str = 'OPENAI_API_KEY'
     temperature: float = 0.1
+    top_p: float = 1.0
+    top_k: int = 0
+    min_p: float = 0.0
+    presence_penalty: float = 0.0
+    repetition_penalty: float = 1.0
     max_tokens: int = 800
     timeout_sec: float = 20.0
     think: bool = False
@@ -55,6 +60,11 @@ class OllamaPlannerProvider(BasePlannerProvider):
             'think': bool(self.config.think),
             'options': {
                 'temperature': float(self.config.temperature),
+                'top_p': float(self.config.top_p),
+                'top_k': int(self.config.top_k),
+                'min_p': float(self.config.min_p),
+                'presence_penalty': float(self.config.presence_penalty),
+                'repeat_penalty': float(self.config.repetition_penalty),
                 'num_predict': int(self.config.max_tokens),
             },
         }
@@ -82,6 +92,11 @@ class OpenAICompatiblePlannerProvider(BasePlannerProvider):
             'model': self.config.model,
             'messages': messages,
             'temperature': float(self.config.temperature),
+            'top_p': float(self.config.top_p),
+            'top_k': int(self.config.top_k),
+            'min_p': float(self.config.min_p),
+            'presence_penalty': float(self.config.presence_penalty),
+            'repetition_penalty': float(self.config.repetition_penalty),
             'max_tokens': int(self.config.max_tokens),
         }
         template_kwargs = _openai_chat_template_kwargs(self.config.model)
