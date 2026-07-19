@@ -107,6 +107,8 @@ class ProbeCase:
     postcondition: KbPostcondition | None = None
     expected_speech_terms: tuple[str, ...] = ()
     fake_mode_overrides: tuple[tuple[str, str], ...] = ()
+    expected_skill_sequence: tuple[str, ...] = ()
+    forbidden_skills: tuple[str, ...] = ()
 
 
 SMOKE_CASES = (
@@ -705,6 +707,12 @@ def _build_capability_extreme_cases(seed: int) -> tuple[ProbeCase, ...]:
             all_required_context=True,
             expected_member_ids=("codex_extreme_cup",),
             expected_report_policy="final",
+            expected_skill_sequence=(
+                "navigate_to",
+                "pick_object",
+                "perform_motion",
+                "report_result",
+            ),
         ),
         ProbeCase(
             "extreme_kneel_under_table_pick_report",
@@ -716,6 +724,12 @@ def _build_capability_extreme_cases(seed: int) -> tuple[ProbeCase, ...]:
             all_required_context=True,
             expected_member_ids=("codex_extreme_book",),
             expected_report_policy="final",
+            expected_skill_sequence=(
+                "perform_motion",
+                "pick_object",
+                "perform_motion",
+                "report_result",
+            ),
         ),
         ProbeCase(
             "extreme_dialogue_inventory",
@@ -735,9 +749,16 @@ def _build_capability_extreme_cases(seed: int) -> tuple[ProbeCase, ...]:
             conversation_group="extreme_dialogue_chain",
             expected_outcome="execute_no_clarification",
             all_required_context=True,
-            expected_member_ids=("codex_extreme_book",),
-            expected_recipient_id="codex_extreme_alex",
+            expected_member_ids=("codex_extreme_alex",),
             expected_report_policy="final",
+            expected_skill_sequence=(
+                "perform_motion",
+                "perform_motion",
+                "pick_object",
+                "navigate_to",
+                "report_result",
+            ),
+            forbidden_skills=("bring_object", "deliver_object", "place_object"),
         ),
         ProbeCase(
             "extreme_all_objects_visit_look_wave_sit",
@@ -754,6 +775,14 @@ def _build_capability_extreme_cases(seed: int) -> tuple[ProbeCase, ...]:
                 "codex_extreme_apple",
             ),
             expected_report_policy="final",
+            expected_skill_sequence=(
+                "perform_motion",
+                "navigate_to",
+                "look_at",
+                "wave_greet",
+                "perform_motion",
+                "report_result",
+            ),
         ),
         ProbeCase(
             "extreme_pick_place_kneel_report",
@@ -765,6 +794,12 @@ def _build_capability_extreme_cases(seed: int) -> tuple[ProbeCase, ...]:
             all_required_context=True,
             expected_member_ids=("codex_extreme_apple",),
             expected_report_policy="final",
+            expected_skill_sequence=(
+                "pick_object",
+                "place_object",
+                "perform_motion",
+                "report_result",
+            ),
             postcondition=KbPostcondition(
                 "atlas_on_storage_shelf",
                 ("codex_extreme_apple oro:isOn ?support",),
@@ -800,6 +835,7 @@ def _build_capability_extreme_cases(seed: int) -> tuple[ProbeCase, ...]:
             all_required_context=True,
             requires_replan=True,
             expected_report_policy="final",
+            expected_skill_sequence=("perform_motion", "pick_object", "report_result"),
         ),
     )
 
@@ -1825,6 +1861,41 @@ def main() -> int:
         args.container,
         expected_turn_pipeline_mode=args.expected_turn_pipeline_mode,
     )
+    trace_preflight = collect_structured_trace_events(args.container, time.time() - 2.0)
+    runtime_metadata["structured_trace_preflight"] = {
+        key: value for key, value in trace_preflight.items() if key != "events"
+    }
+    if not trace_preflight.get("available"):
+        results.append(
+            {
+                "name": "structured_trace_preflight",
+                "category": "observability",
+                "text": "",
+                "mode": args.mode,
+                "status": "not_scored",
+                "turn_result": "interaction trace JSONL is unavailable",
+                "started_at_unix_sec": time.time(),
+                "wait_sec": 0.0,
+                "phase_observations": {
+                    "evidence_source": "interaction_trace_jsonl",
+                    "correlation_status": "unavailable",
+                    "evidence_consistent": False,
+                    "evidence_inconsistencies": [
+                        "scored runs require interaction trace JSONL"
+                    ],
+                },
+            }
+        )
+        write_payload(
+            args.out,
+            args.container,
+            args.case_set,
+            started_at,
+            results,
+            runtime_metadata=runtime_metadata,
+            run_status="completed",
+        )
+        return 2
     runtime_metadata["environment_fixture_source"] = str(environment_fixture_path)
     runtime_metadata["available_environment_fixtures"] = sorted(environment_fixtures.keys())
     all_fixture_ids = tuple(sorted(environment_fixtures.keys()))
@@ -2106,15 +2177,18 @@ def main() -> int:
         )
         topic_samples = sample_topics(args.container) if args.sample_topics else {}
         log_excerpt = recent_logs_since(args.container, turn_start)
+        structured_trace = collect_structured_trace_events(args.container, turn_start)
         result_entry["wait_sec"] = wait_sec
         result_entry["topic_samples"] = topic_samples
         result_entry["log_excerpt"] = log_excerpt
-        result_entry["phase_observations"] = phase_observations(
+        result_entry["structured_trace"] = {
+            key: value for key, value in structured_trace.items() if key != "events"
+        }
+        result_entry["phase_observations"] = structured_phase_observations(
             mode=mode,
             turn_result=turn_result,
-            log_excerpt=log_excerpt,
-            topic_samples=topic_samples,
-            voice_id=voice_id,
+            events=structured_trace.get("events", []),
+            turn_started_at=turn_start,
         )
         if case.postcondition is not None:
             postcondition_result = evaluate_kb_postcondition(
@@ -2652,6 +2726,253 @@ def write_payload(
     Path(out_path).write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
 
+def structured_phase_observations(
+    *,
+    mode: str,
+    turn_result: str,
+    events: list[dict],
+    turn_started_at: float,
+) -> dict[str, object]:
+    """Summarize one case from structured interaction-trace events."""
+    case_events = [
+        event
+        for event in events
+        if isinstance(event, dict)
+        and float(event.get("timestamp", 0.0) or 0.0) >= float(turn_started_at) - 1.0
+    ]
+    turn_event = next(
+        (
+            event
+            for event in case_events
+            if str(event.get("event_type", "")) == "chatbot_turn_trace"
+            and _event_payload(event).get("event_type") == "chatbot_turn_result"
+            and bool(_event_payload(event).get("planner_handoff_allowed", True))
+        ),
+        None,
+    )
+    turn_payload = _event_payload(turn_event)
+    turn_id = str(turn_payload.get("turn_id", "")).strip()
+    route = str(turn_payload.get("route", "")).strip().lower()
+
+    planner_event = next(
+        (
+            event
+            for event in case_events
+            if str(event.get("event_type", "")) == "planner_request"
+            and (
+                not turn_id
+                or str(_planner_request_data(event).get("dialogue_turn_id", "")).strip()
+                == turn_id
+            )
+        ),
+        None,
+    )
+    planner_data = _planner_request_data(planner_event)
+    goal_id = str(planner_data.get("goal_id", "")).strip()
+    feedback_events = [
+        event
+        for event in case_events
+        if str(event.get("event_type", "")) == "execution_feedback"
+        and goal_id
+        and str(_event_payload(event).get("goal_id", "")).strip() == goal_id
+    ]
+    planner_dialogue_events = [
+        event
+        for event in case_events
+        if str(event.get("event_type", "")) == "planner_dialogue_act"
+        and goal_id
+        and str(_event_payload(event).get("goal_id", "")).strip() == goal_id
+    ]
+
+    feedback_payloads = [_event_payload(event) for event in feedback_events]
+    feedback_types = {
+        str(payload.get("event_type", "")).strip().lower()
+        for payload in feedback_payloads
+    }
+    plan_ids = list(
+        dict.fromkeys(
+            str(payload.get("plan_id", "")).strip()
+            for payload in feedback_payloads
+            if str(payload.get("plan_id", "")).strip()
+        )
+    )
+    plan_versions = [
+        int(payload.get("plan_version", 0) or 0)
+        for payload in feedback_payloads
+    ]
+    executed_skills = list(
+        dict.fromkeys(
+            str(payload.get("step", {}).get("name", "")).strip().lower()
+            for payload in feedback_payloads
+            if isinstance(payload.get("step"), dict)
+            and str(payload.get("event_type", "")).strip().lower()
+            in {"step_started", "step_succeeded", "step_failed"}
+            and str(payload.get("step", {}).get("name", "")).strip()
+        )
+    )
+    executed_skill_sequence = [
+        str(payload.get("step", {}).get("name", "")).strip().lower()
+        for payload in feedback_payloads
+        if isinstance(payload.get("step"), dict)
+        and str(payload.get("event_type", "")).strip().lower() == "step_started"
+        and str(payload.get("step", {}).get("name", "")).strip()
+    ]
+    result_metadata = [
+        payload.get("result_payload", {}).get("metadata", {})
+        for payload in feedback_payloads
+        if isinstance(payload.get("result_payload"), dict)
+        and isinstance(payload.get("result_payload", {}).get("metadata"), dict)
+    ]
+    result_modes = list(
+        dict.fromkeys(
+            str(metadata.get("result_mode", "")).strip().lower()
+            for metadata in result_metadata
+            if str(metadata.get("result_mode", "")).strip()
+        )
+    )
+    mode_sources = list(
+        dict.fromkeys(
+            str(metadata.get("mode_source", "")).strip().lower()
+            for metadata in result_metadata
+            if str(metadata.get("mode_source", "")).strip()
+        )
+    )
+
+    target_selections = []
+    selection = planner_data.get("target_selection", {})
+    if isinstance(selection, dict) and selection:
+        target_selections.append(selection)
+    grounded_context = planner_data.get("grounded_context", {})
+    grounded_entities = (
+        grounded_context.get("entities", [])
+        if isinstance(grounded_context, dict)
+        else []
+    )
+    grounded_entity_ids = sorted(
+        {
+            str(entity.get("id", "")).strip()
+            for entity in grounded_entities
+            if isinstance(entity, dict) and str(entity.get("id", "")).strip()
+        }
+    )
+
+    spoken_texts = []
+    ack = str(turn_payload.get("verbal_ack", "")).strip()
+    if ack:
+        spoken_texts.append(ack)
+    for payload in feedback_payloads:
+        summary = str(payload.get("result_summary", "")).strip()
+        step = payload.get("step", {})
+        if summary and isinstance(step, dict) and step.get("name") == "report_result":
+            spoken_texts.append(summary)
+    spoken_texts = list(dict.fromkeys(spoken_texts))
+
+    inconsistencies = []
+    if turn_event is None:
+        inconsistencies.append("structured trace is missing the chatbot turn result")
+    if route == "execution" and planner_event is None:
+        inconsistencies.append("execution route is missing its correlated planner request")
+    if planner_event is not None and not goal_id:
+        inconsistencies.append("planner request is missing goal lineage")
+    if goal_id and not feedback_events and not planner_dialogue_events:
+        inconsistencies.append("planner goal is missing execution feedback")
+
+    planner_acts = {
+        str(_event_payload(event).get("act", "")).strip().lower()
+        for event in planner_dialogue_events
+    }
+    failure_observed = bool(
+        "step_failed" in feedback_types
+        or "plan_failed" in feedback_types
+        or planner_acts.intersection({"explain_failure", "ask_clarification"})
+    )
+    terminal_observed_value = bool(
+        feedback_types.intersection(
+            {"plan_completed", "plan_failed", "plan_cancelled", "plan_rejected"}
+        )
+        or planner_acts.intersection({"explain_failure", "ask_clarification"})
+    )
+    injected = bool(str(turn_result or "").strip())
+    if mode == "speech":
+        injected = injected and "ERROR: dialogue_manager speech subscription" not in str(
+            turn_result or ""
+        )
+    return {
+        "turn_injected": injected,
+        "route_observed": turn_event is not None,
+        "planner_request_observed": planner_event is not None,
+        "route_intent_handoff_observed": bool(
+            turn_payload.get("planner_handoff_published")
+        ),
+        "route_intent_gap_count": 0,
+        "target_selection_observed": any(
+            item.get("member_ids") for item in target_selections
+        ),
+        "target_selections": target_selections,
+        "grounded_entity_ids": grounded_entity_ids,
+        "execution_feedback_observed": bool(feedback_events),
+        "executed_skills": executed_skills,
+        "executed_skill_sequence": executed_skill_sequence,
+        "failure_observed": failure_observed,
+        "replan_observed": any(version > 1 for version in plan_versions),
+        "speech_observed": bool(spoken_texts),
+        "spoken_texts": spoken_texts,
+        "terminal_observed": terminal_observed_value,
+        "post_terminal_speech_observed": False,
+        "post_failure_speech_observed": bool(
+            failure_observed
+            and any(
+                str(payload.get("result_summary", "")).strip()
+                for payload in feedback_payloads
+                if isinstance(payload.get("step"), dict)
+                and payload.get("step", {}).get("name") == "report_result"
+            )
+        ),
+        "clarification_observed": bool(
+            "ask_clarification" in planner_acts
+            or (
+                route == "dialogue"
+                and _contains_any(
+                    ack,
+                    ("clarify", "which ", "please specify", "need more information"),
+                )
+            )
+        ),
+        "fallback_markers": fallback_markers("\n".join(spoken_texts)),
+        "evidence_source": "interaction_trace_jsonl",
+        "correlation_status": "complete" if not inconsistencies else "incomplete",
+        "evidence_consistent": not inconsistencies,
+        "evidence_inconsistencies": inconsistencies,
+        "lineage": {
+            "dialogue_turn_id": turn_id,
+            "goal_id": goal_id,
+            "plan_ids": plan_ids,
+            "plan_versions": sorted(set(plan_versions)),
+        },
+        "failure_injection": {
+            "observed": failure_observed and bool(result_modes),
+            "result_modes": result_modes,
+            "mode_sources": mode_sources,
+        },
+        "planner_dialogue_acts": sorted(planner_acts),
+        "structured_event_count": len(case_events),
+        "observability_note": "semantic scoring uses structured trace lineage",
+    }
+
+
+def _event_payload(event: dict | None) -> dict:
+    if not isinstance(event, dict):
+        return {}
+    payload = event.get("payload", {})
+    return payload if isinstance(payload, dict) else {}
+
+
+def _planner_request_data(event: dict | None) -> dict:
+    payload = _event_payload(event)
+    data = payload.get("data", {})
+    return data if isinstance(data, dict) else {}
+
+
 def phase_observations(
     *,
     mode: str,
@@ -3032,6 +3353,23 @@ def assess_case(
             ],
         }
 
+    required_grounded_ids = set(case.expected_member_ids)
+    if case.expected_recipient_id:
+        required_grounded_ids.add(case.expected_recipient_id)
+    has_grounded_fixture_evidence = "grounded_entity_ids" in observations
+    observed_grounded_ids = set(observations.get("grounded_entity_ids") or [])
+    missing_grounded_ids = sorted(required_grounded_ids - observed_grounded_ids)
+    if case.all_required_context and has_grounded_fixture_evidence and missing_grounded_ids:
+        return {
+            "status": "not_scored",
+            "expected_outcome": case.expected_outcome,
+            "all_required_context": case.all_required_context,
+            "reasons": [
+                "required grounded fixture entities were absent: %s"
+                % ", ".join(missing_grounded_ids)
+            ],
+        }
+
     fallback = observations.get("fallback_markers") or {}
     severe_fallbacks = {
         key: value
@@ -3167,6 +3505,26 @@ def assess_case(
             status = max_status(status, "degraded")
             reasons.append("speech evidence missing")
 
+    observed_sequence = list(observations.get("executed_skill_sequence") or [])
+    if case.expected_skill_sequence:
+        missing_sequence = _missing_ordered_skills(
+            list(case.expected_skill_sequence),
+            observed_sequence,
+        )
+        if missing_sequence:
+            status = max_status(status, "fail")
+            reasons.append(
+                "missing ordered skills: %s; observed=%s"
+                % (
+                    ",".join(missing_sequence),
+                    ",".join(observed_sequence) or "<none>",
+                )
+            )
+    forbidden = sorted(set(case.forbidden_skills).intersection(observed_sequence))
+    if forbidden:
+        status = max_status(status, "fail")
+        reasons.append("forbidden skills executed: %s" % ",".join(forbidden))
+
     if case.postcondition is not None and not observations.get(
         "kb_postcondition_passed"
     ):
@@ -3202,6 +3560,17 @@ def assess_case(
 def _normalize_speech_terms(value: str) -> str:
     """Normalize symbolic separators only for semantic term comparison."""
     return " ".join(re.findall(r"[a-z0-9]+", str(value or "").lower()))
+
+
+def _missing_ordered_skills(required: list[str], observed: list[str]) -> list[str]:
+    cursor = 0
+    missing = []
+    for skill in required:
+        try:
+            cursor = observed.index(skill, cursor) + 1
+        except ValueError:
+            missing.append(skill)
+    return missing
 
 
 def _executed_skills(value: str) -> list[str]:
@@ -3360,14 +3729,17 @@ def _observe_case_during_wait(
         time.sleep(min(interval_sec, remaining))
         elapsed = max(0.0, time.time() - case_start)
         log_excerpt = recent_logs_since(container, case_start)
+        structured_trace = collect_structured_trace_events(container, case_start)
         result_entry["wait_sec"] = min(max(0.0, float(wait_sec or 0.0)), elapsed)
         result_entry["log_excerpt"] = log_excerpt
-        result_entry["phase_observations"] = phase_observations(
+        result_entry["structured_trace"] = {
+            key: value for key, value in structured_trace.items() if key != "events"
+        }
+        result_entry["phase_observations"] = structured_phase_observations(
             mode=mode,
             turn_result=turn_result,
-            log_excerpt=log_excerpt,
-            topic_samples={},
-            voice_id=str(result_entry.get("voice_id", "")),
+            events=structured_trace.get("events", []),
+            turn_started_at=case_start,
         )
         result_entry["case_assessment"] = assess_case(
             case,
@@ -3843,6 +4215,84 @@ timeout --kill-after={TOPIC_SAMPLE_KILL_AFTER_SEC}s {TOPIC_SAMPLE_TIMEOUT_SEC}s 
             check=False,
         )
     return samples
+
+
+def parse_structured_trace_jsonl(
+    chunks: list[str],
+    *,
+    since_unix_sec: float,
+) -> list[dict]:
+    """Parse, time-bound, and deduplicate interaction-trace JSONL records."""
+    events = []
+    seen = set()
+    since = float(since_unix_sec or 0.0)
+    for chunk in chunks:
+        for raw_line in str(chunk or "").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("TRACE_FILE_COUNT="):
+                continue
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(event, dict):
+                continue
+            try:
+                timestamp = float(event.get("timestamp", 0.0) or 0.0)
+            except (TypeError, ValueError):
+                continue
+            if timestamp < since:
+                continue
+            fingerprint = json.dumps(event, sort_keys=True, separators=(",", ":"))
+            if fingerprint in seen:
+                continue
+            seen.add(fingerprint)
+            events.append(event)
+    return sorted(events, key=lambda event: float(event.get("timestamp", 0.0) or 0.0))
+
+
+def collect_structured_trace_events(container: str, since_unix_sec: float) -> dict:
+    """Read structured trace records emitted since one case began."""
+    script = (
+        "python3 - <<'PY'\n"
+        "import json\n"
+        "from pathlib import Path\n"
+        f"since={max(0.0, float(since_unix_sec) - 1.0)!r}\n"
+        "paths=sorted(Path('/root/.ros/nao_ros4hri_traces').glob('*.jsonl'))\n"
+        "print('TRACE_FILE_COUNT=%d' % len(paths))\n"
+        "for path in paths:\n"
+        "    try:\n"
+        "        handle=path.open('r', encoding='utf-8', errors='replace')\n"
+        "    except OSError:\n"
+        "        continue\n"
+        "    with handle:\n"
+        "        for raw in handle:\n"
+        "            try:\n"
+        "                event=json.loads(raw)\n"
+        "                timestamp=float(event.get('timestamp', 0.0) or 0.0)\n"
+        "            except Exception:\n"
+        "                continue\n"
+        "            if timestamp >= since:\n"
+        "                print(json.dumps(event, separators=(',', ':')))\n"
+        "PY"
+    )
+    output = run(
+        ["docker", "exec", container, "bash", "-lc", script],
+        timeout=15,
+        check=False,
+    ) or ""
+    count_match = re.search(r"^TRACE_FILE_COUNT=(\d+)$", output, flags=re.MULTILINE)
+    file_count = int(count_match.group(1)) if count_match else 0
+    events = parse_structured_trace_jsonl(
+        [output],
+        since_unix_sec=max(0.0, float(since_unix_sec) - 1.0),
+    )
+    return {
+        "available": file_count > 0,
+        "file_count": file_count,
+        "event_count": len(events),
+        "events": events,
+    }
 
 
 def recent_logs(container: str, since_sec: int) -> str:

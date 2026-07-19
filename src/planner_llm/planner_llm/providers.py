@@ -84,6 +84,9 @@ class OpenAICompatiblePlannerProvider(BasePlannerProvider):
             'temperature': float(self.config.temperature),
             'max_tokens': int(self.config.max_tokens),
         }
+        template_kwargs = _openai_chat_template_kwargs(self.config.model)
+        if template_kwargs:
+            payload['chat_template_kwargs'] = template_kwargs
         response = _post_json(
             _join_url(self.config.base_url, '/v1/chat/completions'),
             payload,
@@ -156,8 +159,7 @@ def _thinking_text(payload) -> str:
 
 
 def _no_think_messages(model: str, messages: list[dict[str, str]]) -> list[dict[str, str]]:
-    clean_model = str(model or '').strip().lower()
-    if not any(clean_model.startswith(prefix) for prefix in _NO_THINK_MODEL_PREFIXES):
+    if not _is_qwen3_model(model):
         return list(messages)
     if not messages:
         return [{'role': 'system', 'content': _NO_THINK_PREFIX}]
@@ -168,6 +170,17 @@ def _no_think_messages(model: str, messages: list[dict[str, str]]) -> list[dict[
     else:
         prepared.insert(0, {'role': 'system', 'content': _NO_THINK_PREFIX})
     return prepared
+
+
+def _is_qwen3_model(model: str) -> bool:
+    model_name = str(model or '').strip().lower().rsplit('/', 1)[-1]
+    return any(model_name.startswith(prefix) for prefix in _NO_THINK_MODEL_PREFIXES)
+
+
+def _openai_chat_template_kwargs(model: str) -> dict[str, bool]:
+    if not _is_qwen3_model(model):
+        return {}
+    return {'enable_thinking': False}
 
 
 def _post_json(url: str, payload: dict, *, timeout_sec: float, headers: dict[str, str]) -> dict:
