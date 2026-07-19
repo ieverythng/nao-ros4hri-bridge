@@ -149,3 +149,81 @@ After the harness fix, run one clean all-success maximal case, one
 coverage, one coherent acknowledgement, one natural terminal utterance, and
 verified KB postconditions. Until those gates pass, the correct disposition is
 bounded handoff rather than acceptance.
+
+## 8. Compound-Plan Closure Addendum
+
+The exact all-objects/look/wave/sit failure was isolated further after this
+broader audit. A public `PlannerEngine.plan_request` test proved that the first
+validation repair could add a selected target while retaining one coverage
+error. The prior error-count heuristic treated that as no progress and denied
+the final bounded retry. Removing that heuristic restored the existing
+three-call budget while preserving the repeated-output stop and all semantic
+validators.
+
+The first clean replacement-backend run on image v27 still failed before
+planning because the integrated launch did not expose the existing
+`intent_request_timeout_sec` parameter. The intent client retained its
+10-second default and collapsed the six-intent objective to `wave_greet` after
+transport timeout. Image v28 exposed that parameter without changing its
+default or chatbot policy. With the live value set to 180 seconds, the same
+fixture preserved all six intents and the three authoritative member IDs.
+
+The v28 maximal case passed. Planner version 1 admitted the complete ten-step
+trajectory, but misplaced `report_policy=final` into the fake-only
+`wave_greet.result_mode` argument. The fake skill rejected that value. Planner
+version 2 then retained stand, all three navigate/look pairs, wave, sit, and
+final reporting. The chatbot-owned closure named ATLAS, MIDAS, TITAS, and ALEX.
+The explicit head-motion route/ack control also passed.
+
+This closes H-05 for the exact compound trajectory. It does not close the
+broader H-03 acknowledgement transaction, H-04 robot-return semantics, or H-08
+harness-correlation work, so the overall audit remains a bounded handoff.
+Planner admission currently checks required skill arguments but not unsupported
+optional arguments. Rejecting model-generated fake-control arguments is a
+separate registry-validation hypothesis and needs its own blast-radius audit.
+
+Evidence:
+
+- `runtime_v22_critic_hardening/extreme_all_objects_v27_codex_gpt54.json`
+- `runtime_v22_critic_hardening/extreme_all_objects_v28_codex_gpt54_timeout180.json`
+- `runtime_v22_critic_hardening/route_ack_explicit_control_v28_codex_gpt54.json`
+- `compound_planner_recovery_design_review_2026-07-17.docx`
+
+## 9. Real Ollama backend ablation
+
+The canonical vLLM endpoint at `10.7.138.215:8004` was unreachable during
+qualification (`HTTP 000`). The clean v28 image was then launched three times
+against the host Ollama daemon, using the same maximal fixture and the same
+180-second timeout policy. The temporary Codex-backed compatibility adapter was
+not used for these runs.
+
+| Backend | Evidence | Interpretation |
+| --- | --- | --- |
+| `nemotron-3-super:cloud` | Both preflights passed. Chatbot preserved all six intents and target selection. Planner returned no admissible plan after bounded retries. | Model capability limitation at the planner JSON/plan contract. No partial execution was admitted. |
+| `gemma4:31b-cloud` | Both preflights passed. Intent JSON was malformed; retry exhaustion handed off only `wave_greet` without target selection. | Model capability limitation at chatbot structured intent, with the existing route/ack mismatch exposed. |
+| `gemma4:cloud` | Both preflights passed. Invalid response and intent JSON triggered route repair; planner recovered navigation plus report only. | Reproduces the known lossy recovery defect under a real Ollama backend. The harness correlated target selection and all four executed steps. |
+| `nemotron-3-ultra:cloud` | `/api/chat` returned HTTP 400 `unexpected EOF`; Ollama reported a missing cloud-stub manifest. | Not qualified. |
+
+This ablation narrows the interpretation of the earlier Codex-backed pass. That
+adapter used a stateless `codex exec --model gpt-5.4` process and supplied only
+the stack request payload, so it had no prior conversation or task context. It
+was useful as a deterministic compatibility probe, but it was not an Ollama
+hosted Qwen model and cannot establish production-backend capability. The real
+Ollama runs show that model choice changes which structured contract fails; they
+do not support adding another unconditional fallback.
+
+The CRITIC holdouts remain:
+
+1. A route repair must not publish an execution acknowledgement unless the
+   repaired intent and target-selection transaction is consistent.
+2. Planner recovery must fail or clarify when it cannot preserve the complete
+   requested capability set.
+3. Robot destination and object recipient must remain distinct.
+4. Harness correlation must continue to adjudicate logs, JSONL lineage, and
+   terminal speech separately.
+
+Evidence:
+
+- `runtime_v22_critic_hardening/extreme_all_objects_ollama_nemotron_super.json`
+- `runtime_v22_critic_hardening/extreme_all_objects_ollama_gemma4_31b.json`
+- `runtime_v22_critic_hardening/extreme_all_objects_ollama_gemma4.json`

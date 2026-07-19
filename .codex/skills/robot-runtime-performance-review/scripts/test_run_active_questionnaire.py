@@ -784,6 +784,41 @@ def test_recoverable_failure_case_requires_replan_evidence_when_declared():
     assert "did not produce a replan" in " ".join(result["reasons"])
 
 
+def test_case_assessment_requires_ordered_skills_and_rejects_forbidden_delivery():
+    module = _load_questionnaire_module()
+    case = module.ProbeCase(
+        "robot_return",
+        "capability_extreme",
+        "Pick up MIDAS and return to ALEX.",
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        expected_skill_sequence=("pick_object", "navigate_to", "report_result"),
+        forbidden_skills=("bring_object",),
+    )
+    observations = {
+        "turn_injected": True,
+        "planner_request_observed": True,
+        "execution_feedback_observed": True,
+        "terminal_observed": True,
+        "speech_observed": True,
+        "clarification_observed": False,
+        "failure_observed": False,
+        "executed_skills": ["pick_object", "bring_object", "report_result"],
+        "executed_skill_sequence": ["pick_object", "bring_object", "report_result"],
+        "fallback_markers": {"total": 0},
+    }
+
+    result = module.assess_case(
+        case,
+        observations=observations,
+        stale_world_guard=None,
+    )
+
+    assert result["status"] == "fail"
+    assert "missing ordered skills" in " ".join(result["reasons"])
+    assert "forbidden skills" in " ".join(result["reasons"])
+
+
 def test_phase_observations_expose_failure_and_replan_evidence():
     module = _load_questionnaire_module()
 
@@ -796,6 +831,282 @@ def test_phase_observations_expose_failure_and_replan_evidence():
 
     assert observations["failure_observed"] is True
     assert observations["replan_observed"] is True
+
+
+def test_structured_trace_correlates_injected_failure_and_replan():
+    module = _load_questionnaire_module()
+    events = [
+        {
+            "timestamp": 100.0,
+            "event_type": "chatbot_turn_trace",
+            "channel": "/chatbot_llm/turn_trace",
+            "payload": {
+                "event_type": "chatbot_turn_result",
+                "turn_id": "turn_case",
+                "route": "execution",
+                "intent": "navigate_to",
+                "verbal_ack": "I will visit each object.",
+                "planner_handoff_allowed": True,
+                "planner_handoff_published": True,
+            },
+        },
+        {
+            "timestamp": 100.1,
+            "event_type": "planner_request",
+            "channel": "/planner/request",
+            "payload": {
+                "data": {
+                    "dialogue_turn_id": "turn_case",
+                    "goal_id": "goal_case",
+                    "target_selection": {
+                        "operation": "visit",
+                        "member_ids": ["apple"],
+                    },
+                }
+            },
+        },
+        {
+            "timestamp": 101.0,
+            "event_type": "execution_feedback",
+            "channel": "/planner/execution_feedback",
+            "payload": {
+                "event_type": "step_failed",
+                "goal_id": "goal_case",
+                "plan_id": "plan_1",
+                "plan_version": 1,
+                "step": {"name": "navigate_to"},
+                "result_payload": {
+                    "skill": "navigate_to",
+                    "status": "failed",
+                    "metadata": {
+                        "result_mode": "fail_once",
+                        "mode_source": "skill_override",
+                    },
+                },
+            },
+        },
+        {
+            "timestamp": 102.0,
+            "event_type": "execution_feedback",
+            "channel": "/planner/execution_feedback",
+            "payload": {
+                "event_type": "plan_accepted",
+                "goal_id": "goal_case",
+                "plan_id": "plan_2",
+                "plan_version": 2,
+            },
+        },
+        {
+            "timestamp": 103.0,
+            "event_type": "execution_feedback",
+            "channel": "/planner/execution_feedback",
+            "payload": {
+                "event_type": "plan_completed",
+                "goal_id": "goal_case",
+                "plan_id": "plan_2",
+                "plan_version": 2,
+            },
+        },
+    ]
+
+    observations = module.structured_phase_observations(
+        mode="speech",
+        turn_result="published",
+        events=events,
+        turn_started_at=99.5,
+    )
+
+    assert observations["correlation_status"] == "complete"
+    assert observations["failure_observed"] is True
+    assert observations["replan_observed"] is True
+    assert observations["terminal_observed"] is True
+    assert observations["executed_skills"] == ["navigate_to"]
+    assert observations["failure_injection"] == {
+        "observed": True,
+        "result_modes": ["fail_once"],
+        "mode_sources": ["skill_override"],
+    }
+    assert observations["lineage"]["goal_id"] == "goal_case"
+    assert observations["lineage"]["plan_ids"] == ["plan_1", "plan_2"]
+
+
+def test_structured_trace_excludes_unrelated_goal_failure():
+    module = _load_questionnaire_module()
+    events = [
+        {
+            "timestamp": 100.0,
+            "event_type": "chatbot_turn_trace",
+            "payload": {
+                "event_type": "chatbot_turn_result",
+                "turn_id": "turn_case",
+                "route": "execution",
+                "planner_handoff_allowed": True,
+                "planner_handoff_published": True,
+            },
+        },
+        {
+            "timestamp": 100.1,
+            "event_type": "planner_request",
+            "payload": {
+                "data": {
+                    "dialogue_turn_id": "turn_case",
+                    "goal_id": "goal_case",
+                }
+            },
+        },
+        {
+            "timestamp": 100.2,
+            "event_type": "execution_feedback",
+            "payload": {
+                "event_type": "step_failed",
+                "goal_id": "goal_other",
+                "plan_id": "plan_other",
+                "step": {"name": "pick_object"},
+            },
+        },
+        {
+            "timestamp": 100.3,
+            "event_type": "execution_feedback",
+            "payload": {
+                "event_type": "plan_completed",
+                "goal_id": "goal_case",
+                "plan_id": "plan_case",
+            },
+        },
+    ]
+
+    observations = module.structured_phase_observations(
+        mode="speech",
+        turn_result="published",
+        events=events,
+        turn_started_at=99.5,
+    )
+
+    assert observations["failure_observed"] is False
+    assert observations["executed_skills"] == []
+    assert observations["lineage"]["plan_ids"] == ["plan_case"]
+
+
+def test_structured_trace_refuses_execution_score_without_planner_lineage():
+    module = _load_questionnaire_module()
+    observations = module.structured_phase_observations(
+        mode="speech",
+        turn_result="published",
+        events=[
+            {
+                "timestamp": 100.0,
+                "event_type": "chatbot_turn_trace",
+                "payload": {
+                    "event_type": "chatbot_turn_result",
+                    "turn_id": "turn_case",
+                    "route": "execution",
+                    "planner_handoff_allowed": True,
+                    "planner_handoff_published": True,
+                },
+            }
+        ],
+        turn_started_at=99.5,
+    )
+
+    assert observations["correlation_status"] == "incomplete"
+    assert observations["evidence_consistent"] is False
+    assert "planner request" in " ".join(observations["evidence_inconsistencies"])
+
+
+def test_structured_trace_scores_correlated_planner_failure_as_semantic_evidence():
+    module = _load_questionnaire_module()
+    observations = module.structured_phase_observations(
+        mode="speech",
+        turn_result="published",
+        events=[
+            {
+                "timestamp": 100.0,
+                "event_type": "chatbot_turn_trace",
+                "payload": {
+                    "event_type": "chatbot_turn_result",
+                    "turn_id": "turn_case",
+                    "route": "execution",
+                    "planner_handoff_allowed": True,
+                    "planner_handoff_published": True,
+                },
+            },
+            {
+                "timestamp": 100.1,
+                "event_type": "planner_request",
+                "payload": {
+                    "data": {
+                        "dialogue_turn_id": "turn_case",
+                        "goal_id": "goal_case",
+                    }
+                },
+            },
+            {
+                "timestamp": 100.2,
+                "event_type": "planner_dialogue_act",
+                "payload": {
+                    "act": "explain_failure",
+                    "goal_id": "goal_case",
+                    "plan_id": "plan_case",
+                    "plan_version": 1,
+                },
+            },
+        ],
+        turn_started_at=99.5,
+    )
+
+    assert observations["correlation_status"] == "complete"
+    assert observations["execution_feedback_observed"] is False
+    assert observations["failure_observed"] is True
+    assert observations["terminal_observed"] is True
+    assert observations["planner_dialogue_acts"] == ["explain_failure"]
+
+
+def test_assessment_does_not_score_missing_required_grounded_fixture():
+    module = _load_questionnaire_module()
+    case = module.ProbeCase(
+        "missing_fixture",
+        "grounding",
+        "return to ALEX",
+        1.0,
+        expected_outcome="execute_no_clarification",
+        all_required_context=True,
+        expected_member_ids=("person_alex",),
+    )
+
+    assessment = module.assess_case(
+        case,
+        observations={
+            "turn_injected": True,
+            "evidence_consistent": True,
+            "grounded_entity_ids": [],
+        },
+        fake_policy_profile="all_success",
+        stale_world_guard=None,
+    )
+
+    assert assessment["status"] == "not_scored"
+    assert "person_alex" in assessment["reasons"][0]
+
+
+def test_parse_structured_trace_jsonl_deduplicates_mirrored_files():
+    module = _load_questionnaire_module()
+    event = {
+        "timestamp": 100.0,
+        "trace_id": "goal_1",
+        "channel": "/planner/execution_feedback",
+        "event_type": "execution_feedback",
+        "payload": {"event_type": "step_failed", "goal_id": "goal_1"},
+    }
+    chunks = [
+        json.dumps(event) + "\ninvalid",
+        json.dumps(event)
+        + "\n"
+        + json.dumps({**event, "timestamp": 90.0, "trace_id": "old"}),
+    ]
+
+    parsed = module.parse_structured_trace_jsonl(chunks, since_unix_sec=99.0)
+
+    assert parsed == [event]
 
 
 def test_execution_feedback_without_upstream_markers_is_not_scored():

@@ -28,6 +28,31 @@ from planner_llm.skill_registry import SkillRegistry
 
 _DELIVERY_SELECTION_INTENTS = frozenset({'bring_object', 'deliver_object'})
 _NAVIGATION_SELECTION_INTENTS = frozenset({'navigate_to', 'walk_to'})
+_MOTION_INTENT_OBJECTS = {
+    'posture_stand': 'stand',
+    'posture_sit': 'sit',
+    'posture_kneel': 'kneel',
+    'posture_crouch': 'crouch',
+    'head_look_left': 'head_look_left',
+    'head_look_right': 'head_look_right',
+    'head_look_up': 'head_look_up',
+    'head_look_down': 'head_look_down',
+    'head_center': 'head_center',
+}
+_INTENT_CAPABILITIES = {
+    'navigate_to': 'navigation',
+    'walk_to': 'navigation',
+    'bring_object': 'delivery',
+    'deliver_object': 'delivery',
+    'pick_object': 'pick_object',
+    'place_object': 'place_object',
+    'look_at': 'look_at',
+    'wave_greet': 'wave_greet',
+    'find_object': 'find_object',
+    'inspect_scene': 'observation',
+    'scan': 'observation',
+    'report_result': 'report_result',
+}
 
 
 def _scene_targets_from_steps(steps) -> list[str]:
@@ -126,27 +151,6 @@ def _entity_goal_match_score(entity: dict, goal_text: str) -> int:
 
 def _normalized_text(value: str) -> str:
     return ' %s ' % ' '.join(str(value or '').strip().lower().replace('_', ' ').split())
-
-
-def _validation_retry_made_progress(
-    previous_output: str,
-    previous_errors: list[str],
-    retry_output: str,
-    retry_errors: list[str],
-) -> bool:
-    """Allow retry two only after a distinct, better validation result."""
-    previous_fingerprint = ' '.join(str(previous_output or '').split())
-    retry_fingerprint = ' '.join(str(retry_output or '').split())
-    if not retry_fingerprint or retry_fingerprint == previous_fingerprint:
-        return False
-
-    previous_error_set = tuple(sorted(set(previous_errors)))
-    retry_error_set = tuple(sorted(set(retry_errors)))
-    if not retry_error_set or retry_error_set == previous_error_set:
-        return False
-    if not extract_json_object(previous_output) and extract_json_object(retry_output):
-        return True
-    return len(retry_error_set) < len(previous_error_set)
 
 
 @dataclass(frozen=True)
@@ -313,11 +317,12 @@ class PlannerEngine:
 
                 retry_errors = retry_errors or previous_errors
                 validation_errors = retry_errors
-                if retry_index == 0 and _validation_retry_made_progress(
-                    previous_output,
-                    previous_errors,
-                    retry_output,
-                    retry_errors,
+                previous_fingerprint = ' '.join(str(previous_output or '').split())
+                retry_fingerprint = ' '.join(str(retry_output or '').split())
+                if (
+                    retry_index == 0
+                    and retry_fingerprint
+                    and retry_fingerprint != previous_fingerprint
                 ):
                     previous_output = retry_output
                     previous_errors = retry_errors
@@ -360,7 +365,11 @@ class PlannerEngine:
             return self._invalid_model_output_decision(
                 request,
                 feedback=feedback,
-                reason='authoritative target selection was not executable',
+                reason=(
+                    'incomplete requested action coverage after planner validation retries'
+                    if self._target_selection_recovery_omits_capabilities(request)
+                    else 'authoritative target selection was not executable'
+                ),
                 raw_model_output=raw_model_output,
                 goal_id=resolved_goal_id,
                 plan_version=resolved_plan_version,
@@ -471,6 +480,9 @@ class PlannerEngine:
         missing_report_error = missing_requested_report_error(request, steps)
         if missing_report_error:
             return None, [missing_report_error]
+        capability_errors = self._requested_capability_errors(request, steps)
+        if capability_errors:
+            return None, capability_errors
 
         return self._build_decision(
             request=request,
@@ -938,6 +950,8 @@ class PlannerEngine:
             return None
         if plan_semantic_errors(steps, request.grounded_context, selection):
             return None
+        if self._requested_capability_errors(request, steps):
+            return None
 
         return self._build_decision(
             request=request,
@@ -1026,6 +1040,119 @@ class PlannerEngine:
             if canonical_name:
                 return canonical_name
         return ''
+
+    @staticmethod
+    def _target_selection_recovery_omits_capabilities(request: PlannerRequest) -> bool:
+        operation = str(request.target_selection.get('operation', '')).strip().lower()
+        covered = {'report_result'}
+        if operation == 'deliver':
+            covered.add('delivery')
+        elif operation == 'visit':
+            covered.add('navigation')
+        requested = {
+            capability
+            for capability in (
+                PlannerEngine._intent_capability(intent)
+                for intent in request.normalized_intents
+            )
+            if capability
+        }
+        return not requested.issubset(covered)
+
+    @staticmethod
+    def _requested_capability_errors(
+        request: PlannerRequest,
+        steps: list[dict],
+    ) -> list[str]:
+        required = [
+            capability
+            for capability in (
+                PlannerEngine._intent_capability(intent)
+                for intent in request.normalized_intents
+            )
+            if capability
+        ]
+        observed = [
+            capability
+            for capability in (
+                PlannerEngine._step_capability(step) for step in steps
+            )
+            if capability
+        ]
+        cursor = 0
+        missing = []
+        for capability in required:
+            matching_index = next(
+                (
+                    index
+                    for index in range(cursor, len(observed))
+                    if PlannerEngine._capability_matches(capability, observed[index])
+                ),
+                None,
+            )
+            if matching_index is None:
+                missing.append(capability)
+            else:
+                cursor = matching_index + 1
+        if missing:
+            return [
+                'incomplete requested action coverage; missing=%s observed=%s'
+                % (','.join(missing), ','.join(observed) or '<none>')
+            ]
+
+        selection = request.target_selection
+        if 'look_at' in required and str(selection.get('operation', '')).lower() == 'visit':
+            selected = {
+                str(member).strip()
+                for member in selection.get('member_ids', [])
+                if str(member).strip()
+            }
+            looked_at = {
+                str(step.get('args', {}).get('target_frame', step.get('args', {}).get('target', ''))).strip()
+                for step in steps
+                if isinstance(step, dict)
+                and str(step.get('name', '')).strip().lower() == 'look_at'
+                and isinstance(step.get('args'), dict)
+            }
+            missing_look_targets = sorted(selected - looked_at)
+            if missing_look_targets:
+                return [
+                    'look_at coverage is missing selected visit targets: %s'
+                    % ','.join(missing_look_targets)
+                ]
+        return []
+
+    @staticmethod
+    def _intent_capability(intent) -> str:
+        clean = str(intent or '').strip().lower()
+        if clean in _MOTION_INTENT_OBJECTS:
+            return 'motion:%s' % _MOTION_INTENT_OBJECTS[clean]
+        return _INTENT_CAPABILITIES.get(clean, '')
+
+    @staticmethod
+    def _step_capability(step: dict) -> str:
+        if not isinstance(step, dict):
+            return ''
+        name = str(step.get('name', '')).strip().lower()
+        if name == 'perform_motion':
+            args = step.get('args', {}) if isinstance(step.get('args'), dict) else {}
+            motion = str(args.get('object', '')).strip().lower()
+            return 'motion:%s' % motion if motion else ''
+        if name in {'navigate_to', 'walk_to'}:
+            return 'navigation'
+        if name in {'bring_object', 'deliver_object'}:
+            return 'delivery'
+        if name in {'scan', 'inspect_area'}:
+            return 'observation'
+        return _INTENT_CAPABILITIES.get(name, '')
+
+    @staticmethod
+    def _capability_matches(required: str, observed: str) -> bool:
+        if required == observed:
+            return True
+        if required == 'observation' and observed == 'look_at':
+            return True
+        return required == 'motion:stand' and observed == 'motion:standinit'
 
     def _build_decision(
         self,

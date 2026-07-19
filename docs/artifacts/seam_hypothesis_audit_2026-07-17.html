@@ -425,6 +425,44 @@
 <p>coverage, one coherent acknowledgement, one natural terminal utterance, and</p>
 <p>verified KB postconditions. Until those gates pass, the correct disposition is</p>
 <p>bounded handoff rather than acceptance.</p>
+<h2>8. Compound-Plan Closure Addendum</h2>
+<p>The exact all-objects/look/wave/sit failure was isolated further after this broader audit. A public <code>PlannerEngine.plan_request</code> test proved that the first validation repair could add a selected target while retaining one coverage error. The prior error-count heuristic treated that as no progress and denied the final bounded retry. Removing that heuristic restored the existing three-call budget while preserving the repeated-output stop and all semantic validators.</p>
+<p>The first clean replacement-backend run on image v27 still failed before planning because the integrated launch did not expose the existing <code>intent_request_timeout_sec</code> parameter. The intent client retained its 10-second default and collapsed the six-intent objective to <code>wave_greet</code> after transport timeout. Image v28 exposed that parameter without changing its default or chatbot policy. With the live value set to 180 seconds, the same fixture preserved all six intents and the three authoritative member IDs.</p>
+<p>The v28 maximal case passed. Planner version 1 admitted the complete ten-step trajectory, but misplaced <code>report_policy=final</code> into the fake-only <code>wave_greet.result_mode</code> argument. The fake skill rejected that value. Planner version 2 then retained stand, all three navigate/look pairs, wave, sit, and final reporting. The chatbot-owned closure named ATLAS, MIDAS, TITAS, and ALEX. The explicit head-motion route/ack control also passed.</p>
+<p>This closes H-05 for the exact compound trajectory. It does not close the broader H-03 acknowledgement transaction, H-04 robot-return semantics, or H-08 harness-correlation work, so the overall audit remains a bounded handoff. Planner admission currently checks required skill arguments but not unsupported optional arguments. Rejecting model-generated fake-control arguments is a separate registry-validation hypothesis and needs its own blast-radius audit.</p>
+<p>Evidence:</p>
+<ul>
+  <li><code>runtime_v22_critic_hardening/extreme_all_objects_v27_codex_gpt54.json</code></li>
+  <li><code>runtime_v22_critic_hardening/extreme_all_objects_v28_codex_gpt54_timeout180.json</code></li>
+  <li><code>runtime_v22_critic_hardening/route_ack_explicit_control_v28_codex_gpt54.json</code></li>
+  <li><code>compound_planner_recovery_design_review_2026-07-17.docx</code></li>
+</ul>
+<h2>9. Real Ollama Backend Ablation</h2>
+<p>The canonical vLLM endpoint at <code>10.7.138.215:8004</code> was unreachable
+during qualification (<code>HTTP 000</code>). The clean v28 image was launched
+three times against the host Ollama daemon with the same maximal fixture and
+180-second timeout policy. The temporary Codex-backed adapter was not used.</p>
+<table><thead><tr><th>Backend</th><th>Evidence</th><th>Interpretation</th></tr></thead><tbody>
+<tr><td><code>nemotron-3-super:cloud</code></td><td>Both preflights passed. All six intents and target selection were preserved, but no admissible planner plan survived bounded retries.</td><td>Planner JSON/plan contract limitation. No partial execution was admitted.</td></tr>
+<tr><td><code>gemma4:31b-cloud</code></td><td>Both preflights passed. Intent JSON was malformed; retry exhaustion handed off only <code>wave_greet</code> without target selection.</td><td>Chatbot structured-intent limitation, with route/ack mismatch exposed.</td></tr>
+<tr><td><code>gemma4:cloud</code></td><td>Both preflights passed. Invalid response and intent JSON triggered route repair; planner recovery executed navigation plus report only.</td><td>Reproduces lossy recovery under a real Ollama backend.</td></tr>
+<tr><td><code>nemotron-3-ultra:cloud</code></td><td><code>/api/chat</code> returned HTTP 400 <code>unexpected EOF</code>; Ollama reported a missing cloud-stub manifest.</td><td>Not qualified.</td></tr>
+</tbody></table>
+<p>This narrows the earlier Codex-backed pass: that adapter used a stateless
+<code>codex exec --model gpt-5.4</code> process with only the stack request
+payload, so it had no prior task context. It was a compatibility probe, not an
+Ollama-hosted Qwen qualification. The real ablation shows that model choice
+changes which structured contract fails, and does not justify another
+unconditional fallback.</p>
+<p>CRITIC holdouts remain route/ack atomicity, complete planner recovery,
+robot-destination versus object-recipient semantics, and independent harness
+correlation of logs, JSONL lineage, and terminal speech.</p>
+<p>Evidence:</p>
+<ul>
+  <li><code>runtime_v22_critic_hardening/extreme_all_objects_ollama_nemotron_super.json</code></li>
+  <li><code>runtime_v22_critic_hardening/extreme_all_objects_ollama_gemma4_31b.json</code></li>
+  <li><code>runtime_v22_critic_hardening/extreme_all_objects_ollama_gemma4.json</code></li>
+</ul>
   </main>
 </body>
 </html>

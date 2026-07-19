@@ -7,6 +7,8 @@ import json
 import sys
 import time
 
+from planner_common.target_selection import normalize_target_selection
+
 
 DEFAULT_PLANNER_REQUEST_INTENT = 'planner_request'
 
@@ -109,9 +111,21 @@ _LLM_RELATION_PREDICATE_ALIASES = {
 _MAX_LLM_RELATIONS_PER_ENTITY = 6
 _LOCATION_MEMBERSHIP_PREDICATES = frozenset(('oro:isAt', 'oro:isOn', 'oro:isIn'))
 _LOCATION_CONTAINER_PREDICATE = 'oro:contains'
-_LOCATION_SUPPORT_CLASSES = frozenset(('counter', 'desk', 'shelf', 'surface', 'table'))
+_LOCATION_SUPPORT_CLASSES = frozenset(
+    ('bench', 'counter', 'desk', 'shelf', 'surface', 'table', 'workbench')
+)
 _LOCATION_PLACE_CLASSES = frozenset(
-    ('corridor', 'kitchen', 'lab', 'location', 'place', 'robot_station', 'room', 'station')
+    (
+        'container',
+        'corridor',
+        'kitchen',
+        'lab',
+        'location',
+        'place',
+        'robot_station',
+        'room',
+        'station',
+    )
 )
 _NON_USER_OBJECT_CLASSES = frozenset(
     (
@@ -124,7 +138,6 @@ _NON_USER_OBJECT_CLASSES = frozenset(
         'spatialthing',
         'spatialthing-localized',
         'support_surface',
-        'table',
     )
 )
 _DEFAULT_COMMUNICATION_POLICY = {
@@ -239,6 +252,15 @@ def coerce_str_list(value) -> list[str]:
     return [clean for clean in (str(item).strip() for item in value) if clean]
 
 
+def is_explicit_knowledge_statement(value) -> bool:
+    """Check the subject-predicate-object form accepted by KnowledgeCore."""
+    parts = str(value or '').strip().split(maxsplit=2)
+    if len(parts) != 3:
+        return False
+    subject, predicate, obj = parts
+    return bool(subject and obj and ':' in predicate)
+
+
 def coerce_bool(value) -> bool:
     """Normalize common JSON-ish boolean representations."""
     if isinstance(value, bool):
@@ -293,6 +315,11 @@ def optional_float_fields(source: dict, keys: tuple[str, ...]) -> dict[str, floa
 
 def request_requests_report(request) -> bool:
     """Return True if the request includes a report_result intent."""
+    target_selection = getattr(request, 'target_selection', {})
+    if isinstance(target_selection, dict) and str(
+        target_selection.get('report_policy', 'none')
+    ).strip().lower() in {'per_target', 'final'}:
+        return True
     return any(
         str(intent_name or '').strip().lower() == 'report_result'
         for intent_name in getattr(request, 'normalized_intents', ())
@@ -461,6 +488,46 @@ def _normalize_look_at_args(step_args: dict) -> dict:
     return normalized
 
 
+def _normalize_place_object_args(step_args: dict, *, held_object: str = '') -> dict:
+    """Canonicalize object and destination aliases for placement steps."""
+    if not isinstance(step_args, dict):
+        return {}
+
+    normalized = _clean_payload(step_args)
+    target = str(normalized.get('target', '')).strip()
+    object_id = _first_non_empty(
+        normalized.get('object_id', ''),
+        normalized.get('object', ''),
+    )
+    destination = _first_non_empty(
+        normalized.get('destination_id', ''),
+        normalized.get('destination', ''),
+        normalized.get('support', ''),
+        normalized.get('target_location', ''),
+    )
+    if not object_id and not destination and held_object and target != held_object:
+        object_id = held_object
+        destination = target
+    if object_id and not destination and target and target != object_id:
+        destination = target
+    if object_id:
+        target = object_id
+
+    for alias in (
+        'object_id',
+        'object',
+        'destination_id',
+        'support',
+        'target_location',
+    ):
+        normalized.pop(alias, None)
+    if target:
+        normalized['target'] = target
+    if destination:
+        normalized['destination'] = destination
+    return normalized
+
+
 def _normalize_choice(value: str, allowed: tuple[str, ...], fallback: str) -> str:
     clean_value = str(value or '').strip().lower()
     if clean_value in allowed:
@@ -527,6 +594,7 @@ def project_llm_grounded_context(
     grounded_context: dict,
     *,
     knowledge_rows: list[dict] | None = None,
+    active_person_ids: set[str] | None = None,
     include_state_t0: bool = False,
     include_planner_details: bool = False,
     include_raw_relations: bool = False,
@@ -542,6 +610,7 @@ def project_llm_grounded_context(
             for item in normalized.get('entities', [])
             if isinstance(item, dict)
         ]
+        entities = _filter_inactive_detector_people(entities, active_person_ids)
         compact = {
             'entities': entities,
         }
@@ -652,6 +721,16 @@ def project_llm_grounded_context(
                 include_raw_relation=include_raw_relations,
             )
 
+    if active_person_ids is not None:
+        inactive_ids = {
+            entity_id
+            for entity_id in entities_by_id
+            if _is_person_entity_id(entity_id)
+            and entity_id not in active_person_ids
+        }
+        for entity_id in inactive_ids:
+            entities_by_id.pop(entity_id, None)
+
     entities = sorted(
         (_finalize_compact_entity(item) for item in entities_by_id.values()),
         key=_llm_entity_sort_key,
@@ -701,18 +780,27 @@ def _normalize_grounded_entity(
     entity_id = str(item.get('id', item.get('entity_id', ''))).strip()
     label_value = item.get('label', None)
     label = None if label_value is None else str(label_value).strip()
-    kind = _normalized_kind(item.get('kind', ''), item.get('class', item.get('type', '')))
+    entity_class = item.get('class', item.get('type', ''))
+    relations = _normalize_relations(
+        item.get('relations', []),
+        entity_class=entity_class,
+    )
+    kind = _normalized_kind(
+        item.get('kind', ''),
+        entity_class,
+        entity_id=entity_id,
+        relations=relations,
+    )
+    if _is_person_entity_id(entity_id):
+        kind = 'person'
     label = _grounded_entity_label(label, entity_id, kind)
     entity = {
         'id': entity_id,
         'label': label,
         'kind': kind,
-        'class': str(item.get('class', item.get('type', ''))).strip(),
+        'class': str(entity_class).strip(),
         'visible': coerce_bool(item.get('visible', True)),
-        'relations': _normalize_relations(
-            item.get('relations', []),
-            entity_class=item.get('class', item.get('type', '')),
-        ),
+        'relations': relations,
     }
     raw_relations = item.get('raw_relations', [])
     if include_raw_relations and isinstance(raw_relations, list) and raw_relations:
@@ -748,6 +836,13 @@ def _attach_grounded_context_counts(context: dict) -> None:
         for item in locations
         if isinstance(item, dict) and str(item.get('id', '')).strip()
     }
+    entity_location_ids = {
+        str(item.get('id', '')).strip()
+        for item in entities
+        if isinstance(item, dict)
+        and str(item.get('kind', '')).strip().lower() == 'location'
+        and str(item.get('id', '')).strip()
+    }
     people_count = sum(
         1
         for item in entities
@@ -757,7 +852,7 @@ def _attach_grounded_context_counts(context: dict) -> None:
         1
         for item in entities
         if isinstance(item, dict)
-        and _is_user_facing_location_member(
+        and _is_user_facing_object_entity(
             item,
             str(item.get('id', '')).strip(),
         )
@@ -766,7 +861,7 @@ def _attach_grounded_context_counts(context: dict) -> None:
         'entities': len(entity_ids | location_ids),
         'people': people_count,
         'objects': object_count,
-        'locations': len(location_ids),
+        'locations': len(location_ids | entity_location_ids),
     }
 
 
@@ -973,6 +1068,8 @@ def _is_location_group_candidate(entity: dict, group_id: str, entity_class='') -
         if _is_recipient_entity(entity):
             return False
         kind = str(entity.get('kind', '')).strip().lower()
+        if kind in {'location', 'place', 'room', 'support'}:
+            return True
         if kind and kind != 'object':
             return False
         class_token = _class_token(_first_non_empty(entity_class, entity.get('class', '')))
@@ -1154,8 +1251,8 @@ def _finalize_location_groups(groups_by_id: dict[str, dict]) -> list[dict]:
     return groups
 
 
-def _is_user_facing_location_member(entity: dict, entity_id: str) -> bool:
-    """Filter ontology/meta/support entities from compact object inventories."""
+def _is_user_facing_object_entity(entity: dict, entity_id: str) -> bool:
+    """Return whether an entity is a physical user-facing object."""
     if not isinstance(entity, dict) or not entity:
         return bool(_compact_term(entity_id))
     if _is_recipient_entity(entity):
@@ -1177,7 +1274,7 @@ def _is_user_facing_location_member(entity: dict, entity_id: str) -> bool:
         return False
     if entity_class.startswith('cyc:spatialthing'):
         return False
-    if entity_class in _LOCATION_SUPPORT_CLASSES or entity_class in _LOCATION_PLACE_CLASSES:
+    if entity_class in _LOCATION_PLACE_CLASSES:
         return False
     if _is_user_object_type_token(entity_class):
         return True
@@ -1186,7 +1283,24 @@ def _is_user_facing_location_member(entity: dict, entity_id: str) -> bool:
             return False
         if relation_class.startswith('cyc:spatialthing'):
             return False
-        if relation_class in _LOCATION_SUPPORT_CLASSES or relation_class in _LOCATION_PLACE_CLASSES:
+        if relation_class in _LOCATION_PLACE_CLASSES:
+            return False
+    return True
+
+
+def _is_user_facing_location_member(entity: dict, entity_id: str) -> bool:
+    """Filter support anchors and ontology entities from group members."""
+    if not _is_user_facing_object_entity(entity, entity_id):
+        return False
+    entity_class = _class_token(entity.get('class', ''))
+    if entity_class in _LOCATION_SUPPORT_CLASSES:
+        return False
+    for relation in entity.get('relations', []):
+        if not isinstance(relation, dict):
+            continue
+        if str(relation.get('predicate', '')).strip() != 'rdf:type':
+            continue
+        if _class_token(relation.get('object', '')) in _LOCATION_SUPPORT_CLASSES:
             return False
     return True
 
@@ -1204,7 +1318,10 @@ def _location_group_role(entity_class, group_id: str) -> str:
     if class_token in _LOCATION_PLACE_CLASSES:
         return 'navigation_target'
     clean_id = str(group_id or '').strip().lower()
-    if any(marker in clean_id for marker in ('counter', 'desk', 'shelf', 'surface', 'table')):
+    if any(
+        marker in clean_id
+        for marker in ('bench', 'counter', 'desk', 'shelf', 'surface', 'table', 'workbench')
+    ):
         return 'support_group'
     if any(marker in clean_id for marker in ('corridor', 'kitchen', 'lab', 'room', 'station')):
         return 'navigation_target'
@@ -1258,7 +1375,7 @@ def _is_user_object_type_token(class_token: str) -> bool:
         return False
     if token.startswith('cyc:spatialthing'):
         return False
-    if token in _LOCATION_SUPPORT_CLASSES or token in _LOCATION_PLACE_CLASSES:
+    if token in _LOCATION_PLACE_CLASSES:
         return False
     return True
 
@@ -1324,6 +1441,8 @@ def _ensure_compact_entity(
     entity_class,
 ) -> dict:
     clean_id = str(entity_id or '').strip()
+    if _is_person_entity_id(clean_id):
+        kind = 'person'
     entity = entities_by_id.setdefault(
         clean_id,
         {
@@ -1350,6 +1469,8 @@ def _display_entity_label(value, entity_id: str) -> str:
         raw = str(entity_id or '').strip()
     if not raw:
         return ''
+    if raw.startswith('codex_'):
+        return raw
     parts = raw.split('_')
     if len(parts) > 1 and _looks_generated_suffix(parts[-1]):
         return '_'.join(parts[:-1])
@@ -1403,16 +1524,92 @@ def _looks_generated_suffix(value: str) -> bool:
     return len(clean) >= 4 and clean.isalnum() and not clean.isdigit()
 
 
-def _normalized_kind(kind_value, type_value) -> str:
+def _normalized_kind(
+    kind_value,
+    type_value,
+    *,
+    entity_id: str = '',
+    relations: list[dict] | None = None,
+) -> str:
     kind = str(kind_value or '').strip().lower()
     if kind in ('person', 'human'):
         return 'person'
-    if kind == 'object':
+    if kind in {'location', 'place', 'room'}:
+        return 'location'
+    if kind == 'support':
         return 'object'
     type_text = str(type_value or '').strip().lower()
     if any(token in type_text for token in ('person', 'human', 'face', 'speaker')):
         return 'person'
+    class_token = _class_token(type_text)
+    if class_token in _LOCATION_PLACE_CLASSES:
+        return 'location'
+    if kind == 'object' and _looks_like_spatial_location(
+        entity_id,
+        class_token,
+        relations,
+    ):
+        return 'location'
     return 'object'
+
+
+def _looks_like_spatial_location(
+    entity_id: str,
+    class_token: str,
+    relations: list[dict] | None,
+) -> bool:
+    token = str(class_token or '').strip().lower()
+    if token and not token.startswith('cyc:spatialthing'):
+        return False
+    predicates = {
+        str(item.get('predicate', '')).strip().lower()
+        for item in relations or ()
+        if isinstance(item, dict)
+    }
+    rdf_types = {
+        _class_token(item.get('object', ''))
+        for item in relations or ()
+        if isinstance(item, dict)
+        and str(item.get('predicate', '')).strip().lower() == 'rdf:type'
+    }
+    if any(_is_user_object_type_token(type_token) for type_token in rdf_types):
+        return False
+    if 'oro:contains' in predicates:
+        return True
+    clean_id = str(entity_id or '').strip().lower()
+    return any(
+        marker in clean_id
+        for marker in (
+            'corridor',
+            'kitchen',
+            'lab',
+            'room',
+            'station',
+        )
+    )
+
+
+def _is_person_entity_id(entity_id: str) -> bool:
+    clean_id = str(entity_id or '').strip().lower()
+    return clean_id.startswith(('anonymous_person_', 'sim_person_', 'person_'))
+
+
+def _filter_inactive_detector_people(
+    entities: list[dict],
+    active_person_ids: set[str] | None,
+) -> list[dict]:
+    if active_person_ids is None:
+        return entities
+    active_ids = {str(entity_id).strip() for entity_id in active_person_ids}
+    return [
+        entity
+        for entity in entities
+        if not (
+            isinstance(entity, dict)
+            and _is_person_entity_id(entity.get('id', ''))
+            and str(entity.get('id', '')).strip() not in active_ids
+        )
+    ]
 
 
 def _copy_optional_planner_details(entity: dict, source: dict, keys: tuple[str, ...]) -> None:
@@ -1528,16 +1725,26 @@ def _compact_term(value) -> str:
 
 
 def _finalize_compact_entity(entity: dict) -> dict:
+    relations = _normalize_relations(
+        entity.get('relations', []),
+        entity_class=entity.get('class', ''),
+    )
+    kind = _normalized_kind(
+        entity.get('kind', ''),
+        entity.get('class', ''),
+        entity_id=entity.get('id', ''),
+        relations=relations,
+    )
+    if _is_person_entity_id(entity.get('id', '')):
+        kind = 'person'
+    semantic_name = _relation_value({'relations': relations}, 'dbp:name')
     finalized = {
         'id': str(entity.get('id', '')).strip(),
-        'label': entity.get('label') if entity.get('label') else None,
-        'kind': str(entity.get('kind', 'object')).strip() or 'object',
+        'label': semantic_name or (entity.get('label') if entity.get('label') else None),
+        'kind': kind,
         'class': str(entity.get('class', '')).strip(),
         'visible': coerce_bool(entity.get('visible', True)),
-        'relations': _normalize_relations(
-            entity.get('relations', []),
-            entity_class=entity.get('class', ''),
-        ),
+        'relations': relations,
     }
     raw_relations = _normalize_raw_relations(entity.get('raw_relations', []))
     if raw_relations:
@@ -1598,6 +1805,7 @@ def normalize_plan_steps(steps) -> list[dict]:
         return []
 
     normalized_steps: list[dict] = []
+    held_object = ''
     for index, step in enumerate(steps, start=1):
         if not isinstance(step, dict):
             continue
@@ -1617,6 +1825,11 @@ def normalize_plan_steps(steps) -> list[dict]:
         step_args = _clean_payload(step.get('args', {}))
         if step_type == 'look_at' or step_name == 'look_at':
             step_args = _normalize_look_at_args(step_args)
+        elif step_name == 'place_object':
+            step_args = _normalize_place_object_args(
+                step_args,
+                held_object=held_object,
+            )
 
         normalized_steps.append(
             {
@@ -1635,6 +1848,14 @@ def normalize_plan_steps(steps) -> list[dict]:
                 ),
             }
         )
+        if step_name == 'pick_object':
+            held_object = _first_non_empty(
+                step_args.get('target', ''),
+                step_args.get('object_id', ''),
+                step_args.get('object', ''),
+            )
+        elif step_name == 'place_object' and step_args.get('target'):
+            held_object = ''
     return normalized_steps
 
 
@@ -1656,7 +1877,11 @@ def build_plan_payload(
     communication_policy_source: str = '',
 ) -> dict:
     """Build one planner result payload using the shared envelope shape."""
-    resolved_scene_targets = list(scene_targets or getattr(request, 'scene_targets', []))
+    resolved_scene_targets = list(
+        getattr(request, 'scene_targets', [])
+        if scene_targets is None
+        else scene_targets
+    )
     resolved_goal_id = str(goal_id or getattr(request, 'goal_id', '')).strip()
     resolved_plan_id = str(plan_id or make_plan_id()).strip()
     resolved_steps = normalize_plan_steps(list(steps or []))
@@ -1674,6 +1899,9 @@ def build_plan_payload(
         'replan_hint': str(replan_hint or '').strip(),
         'retry_budget': _coerce_nonnegative_int(retry_budget),
         'scene_targets': resolved_scene_targets,
+        'target_selection': normalize_target_selection(
+            getattr(request, 'target_selection', {})
+        ),
         'communication_policy': resolved_policy,
         'communication_policy_source': str(communication_policy_source or '').strip(),
         'steps': resolved_steps,
@@ -1796,6 +2024,7 @@ class PlannerRequest:
     user_text: str
     normalized_intents: tuple[str, ...]
     scene_targets: tuple[str, ...]
+    target_selection: dict
     dialogue_context: tuple[str, ...]
     grounded_context: dict
     planner_mode: str
@@ -1827,6 +2056,7 @@ class PlannerRequest:
             user_text=str(data.get('user_text', '')).strip(),
             normalized_intents=tuple(coerce_str_list(data.get('normalized_intents', []))),
             scene_targets=tuple(coerce_str_list(data.get('scene_targets', []))),
+            target_selection=normalize_target_selection(data.get('target_selection', {})),
             dialogue_context=tuple(coerce_str_list(dialogue_context)),
             grounded_context=normalize_grounded_context(data.get('grounded_context', {})),
             planner_mode=str(data.get('planner_mode', 'default')).strip() or 'default',

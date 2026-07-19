@@ -1880,6 +1880,27 @@ def test_openai_provider_warns_when_think_is_enabled() -> None:
     assert any('think=True is ignored' in str(item.message) for item in caught)
 
 
+def test_openai_provider_disables_thinking_for_namespaced_qwen_model(monkeypatch) -> None:
+    captured = {}
+
+    def fake_post_json(url, payload, *, timeout_sec, headers):
+        captured['url'] = url
+        captured['payload'] = payload
+        return {'choices': [{'message': {'content': '{"steps":[]}'}}]}
+
+    monkeypatch.setattr('planner_llm.providers._post_json', fake_post_json)
+    provider = build_provider(
+        PlannerProviderConfig(
+            provider='openai_compatible',
+            model='cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit',
+            base_url='http://10.7.138.215:8004',
+        )
+    )
+
+    assert provider.generate([{'role': 'user', 'content': 'plan'}]) == '{"steps":[]}'
+    assert captured['payload']['chat_template_kwargs'] == {'enable_thinking': False}
+
+
 def test_ollama_provider_payload_disables_thinking_by_default(monkeypatch) -> None:
     captured = {}
 
@@ -2050,3 +2071,170 @@ def test_invalid_model_recovers_validated_navigation_to_location() -> None:
         skill_names=['navigate_to'],
         scene_targets=['kitchen'],
     )
+
+
+def test_target_selection_recovery_rejects_incomplete_rich_objective() -> None:
+    provider = _FakeProvider('not json')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = _rich_visit_request()
+
+    decision = engine.plan_request(request, goal_id=request.goal_id, plan_version=1)
+
+    _assert_invalid_planner_failure(decision)
+    assert 'incomplete requested action coverage' in decision.payload['plan']['failure_reason']
+
+
+def test_planner_accepts_rich_objective_when_all_action_capabilities_are_ordered() -> None:
+    provider = _FakeProvider(
+        '{"steps":['
+        '{"type":"skill","name":"perform_motion","args":{"object":"stand"}},'
+        '{"type":"skill","name":"navigate_to","args":{"target":"book_1"}},'
+        '{"type":"skill","name":"look_at","args":{"target_frame":"book_1"}},'
+        '{"type":"skill","name":"wave_greet","args":{"target":"person_alex"}},'
+        '{"type":"skill","name":"perform_motion","args":{"object":"sit"}},'
+        '{"type":"skill","name":"report_result","args":{}}]}'
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = _rich_visit_request()
+
+    decision = engine.plan_request(request, goal_id=request.goal_id, plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert [step['name'] for step in decision.payload['plan']['steps']] == [
+        'perform_motion',
+        'navigate_to',
+        'look_at',
+        'wave_greet',
+        'perform_motion',
+        'report_result',
+    ]
+
+
+def test_planner_allows_second_validation_retry_after_partial_target_coverage() -> None:
+    provider = _SequenceProvider(
+        [
+            _all_objects_plan_response(['book_1']),
+            _all_objects_plan_response(['book_1', 'cup_1']),
+            _all_objects_plan_response(['book_1', 'cup_1', 'apple_1']),
+        ]
+    )
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = _rich_all_objects_request()
+
+    decision = engine.plan_request(request, goal_id=request.goal_id, plan_version=1)
+
+    assert decision.mode == 'plan'
+    assert len(provider.messages) == 3
+    assert [
+        step['args']['target_frame']
+        for step in decision.payload['plan']['steps']
+        if step['name'] == 'look_at'
+    ] == ['book_1', 'cup_1', 'apple_1']
+
+
+def _rich_visit_request() -> PlannerRequest:
+    return PlannerRequest.from_payload(
+        {
+            'request_id': 'r_rich_visit',
+            'goal_id': 'goal_rich_visit',
+            'goal_text': (
+                'stand, walk to the book, look at it, wave to ALEX, sit, and summarize'
+            ),
+            'normalized_intents': [
+                'posture_stand',
+                'navigate_to',
+                'look_at',
+                'wave_greet',
+                'posture_sit',
+                'report_result',
+            ],
+            'planner_mode': 'multi_step',
+            'scene_targets': ['book_1', 'person_alex'],
+            'target_selection': {
+                'selection_kind': 'explicit_members',
+                'operation': 'visit',
+                'member_ids': ['book_1'],
+                'ordering': 'sequential',
+                'report_policy': 'final',
+            },
+            'grounded_context': {
+                'entities': [
+                    {'id': 'book_1', 'label': 'MIDAS', 'kind': 'object', 'class': 'Book'},
+                    {
+                        'id': 'person_alex',
+                        'label': 'ALEX',
+                        'kind': 'person',
+                        'class': 'Human',
+                        'relations': [{'predicate': 'dbp:name', 'object': 'ALEX'}],
+                    },
+                ]
+            },
+        }
+    )
+
+
+def _rich_all_objects_request() -> PlannerRequest:
+    return PlannerRequest.from_payload(
+        {
+            'request_id': 'r_rich_all_objects',
+            'goal_id': 'goal_rich_all_objects',
+            'goal_text': (
+                'stand, walk to each visible object, look at each one, wave to ALEX, '
+                'sit, and summarize'
+            ),
+            'normalized_intents': [
+                'posture_stand',
+                'navigate_to',
+                'look_at',
+                'wave_greet',
+                'posture_sit',
+                'report_result',
+            ],
+            'planner_mode': 'multi_step',
+            'scene_targets': ['book_1', 'cup_1', 'apple_1', 'person_alex'],
+            'target_selection': {
+                'selection_kind': 'explicit_members',
+                'operation': 'visit',
+                'member_ids': ['book_1', 'cup_1', 'apple_1'],
+                'ordering': 'sequential',
+                'report_policy': 'final',
+            },
+            'grounded_context': {
+                'entities': [
+                    {'id': 'book_1', 'label': 'MIDAS', 'kind': 'object', 'class': 'Book'},
+                    {'id': 'cup_1', 'label': 'TITAS', 'kind': 'object', 'class': 'Cup'},
+                    {'id': 'apple_1', 'label': 'ATLAS', 'kind': 'object', 'class': 'Apple'},
+                    {
+                        'id': 'person_alex',
+                        'label': 'ALEX',
+                        'kind': 'person',
+                        'class': 'Human',
+                        'relations': [{'predicate': 'dbp:name', 'object': 'ALEX'}],
+                    },
+                ]
+            },
+        }
+    )
+
+
+def _all_objects_plan_response(look_targets: list[str]) -> str:
+    steps = [
+        '{"type":"skill","name":"perform_motion","args":{"object":"stand"}}',
+    ]
+    for target in ('book_1', 'cup_1', 'apple_1'):
+        steps.append(
+            '{"type":"skill","name":"navigate_to","args":{"target":"%s"}}' % target
+        )
+        if target in look_targets:
+            steps.append(
+                '{"type":"skill","name":"look_at","args":{"target_frame":"%s"}}'
+                % target
+            )
+    steps.extend(
+        [
+            '{"type":"skill","name":"wave_greet","args":{"target":"person_alex"}}',
+            '{"type":"skill","name":"perform_motion","args":{"object":"sit"}}',
+            '{"type":"skill","name":"report_result","args":{}}',
+        ]
+    )
+    return '{"steps":[%s]}' % ','.join(steps)

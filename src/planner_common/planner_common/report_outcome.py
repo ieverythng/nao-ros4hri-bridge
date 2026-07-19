@@ -6,8 +6,12 @@ for report wording. They do not produce user-facing sentences.
 
 from __future__ import annotations
 
+from planner_common.target_selection import validate_target_selection
 
-_DELIVERY_SKILLS = frozenset({'bring_object', 'deliver_object', 'place_object'})
+
+_HANDOFF_SKILLS = frozenset({'bring_object', 'deliver_object'})
+_PLACEMENT_SKILLS = frozenset({'place_object'})
+_DELIVERY_SKILLS = _HANDOFF_SKILLS | _PLACEMENT_SKILLS
 _OBJECT_REPORT_SKILLS = _DELIVERY_SKILLS | frozenset({'pick_object'})
 _NAVIGATION_SKILLS = frozenset({'navigate_to', 'walk_to'})
 _OBSERVATION_SKILLS = frozenset({'look_at', 'scan', 'inspect_scene', 'find_object'})
@@ -33,6 +37,8 @@ def build_report_outcome(
     plan_outcome_summary: dict | None = None,
     grounded_context: dict | None = None,
     scene_targets: list[str] | tuple[str, ...] | None = None,
+    target_selection: dict | None = None,
+    report_role: str = '',
 ) -> dict:
     """Build a normalized semantic contract for execution-report wording."""
     steps = [dict(item) for item in plan_steps or [] if isinstance(item, dict)]
@@ -60,6 +66,12 @@ def build_report_outcome(
         status = str(result.get('status', step.get('status', ''))).strip().lower()
         target = _step_target(step)
         summary = str(result.get('result_summary', '') or step.get('result_summary', '')).strip()
+        semantic_failure = ''
+        if skill in _PLACEMENT_SKILLS:
+            placement_support = _step_recipient_id(step)
+            if placement_support and _target_is_person(placement_support, entity_index):
+                status = 'failed'
+                semantic_failure = 'a person cannot be a placement support'
         events.append(
             {
                 'step_id': step_id,
@@ -75,7 +87,8 @@ def build_report_outcome(
                     'step_id': step_id,
                     'skill': skill,
                     'target': target,
-                    'reason': str(result.get('reason', '') or step.get('reason', '')).strip(),
+                    'reason': semantic_failure
+                    or str(result.get('reason', '') or step.get('reason', '')).strip(),
                 }
             )
             continue
@@ -104,7 +117,7 @@ def build_report_outcome(
                     ),
                 )
 
-        if skill in _DELIVERY_SKILLS:
+        if skill in _HANDOFF_SKILLS:
             recipient = _step_recipient_id(step)
             if recipient:
                 if _target_is_person(recipient, entity_index):
@@ -179,6 +192,42 @@ def build_report_outcome(
                 ),
             )
 
+    selection = target_selection if isinstance(target_selection, dict) else {}
+    if str(report_role or '').strip().lower() == 'final' and selection:
+        operation = str(selection.get('operation', '')).strip().lower()
+        if operation == 'visit':
+            completed_ids = {
+                str(item.get('target', '')).strip()
+                for item in events
+                if str(item.get('status', '')).strip().lower() == 'succeeded'
+                and str(item.get('skill', '')).strip().lower() in _NAVIGATION_SKILLS
+                and str(item.get('target', '')).strip()
+            }
+        else:
+            completed_ids = {
+                str(item.get('id', '')).strip()
+                for item in reportable_objects
+                if str(item.get('id', '')).strip()
+            }
+        failed_ids = {
+            str(item.get('target', '')).strip()
+            for item in failures
+            if str(item.get('target', '')).strip()
+        }
+        skill = 'bring_object' if operation == 'deliver' else 'navigate_to'
+        for member_id in selection.get('member_ids', []):
+            member_id = str(member_id).strip()
+            if not member_id or member_id in completed_ids or member_id in failed_ids:
+                continue
+            failures.append(
+                {
+                    'step_id': '',
+                    'skill': skill,
+                    'target': member_id,
+                    'reason': 'selected target has no successful execution evidence',
+                }
+            )
+
     mode = _report_mode(
         reportable_objects=reportable_objects,
         recipients=recipients,
@@ -195,6 +244,118 @@ def build_report_outcome(
         'events': events,
         'failures': failures,
     }
+
+
+def plan_semantic_errors(
+    steps,
+    grounded_context: dict | None = None,
+    target_selection: dict | None = None,
+) -> list[str]:
+    """Return grounded semantic errors that must block dispatch."""
+    context = grounded_context if isinstance(grounded_context, dict) else {}
+    entity_index = _entity_index(context)
+    location_index = _location_index(context)
+    plan_steps = [
+        step
+        for step in steps if isinstance(steps, (list, tuple))
+        if isinstance(step, dict)
+    ]
+    errors = []
+    for step in plan_steps:
+        if _step_name(step) not in _PLACEMENT_SKILLS:
+            continue
+        support = _step_recipient_id(step)
+        if support and _target_is_person(support, entity_index):
+            errors.append(
+                '%s: place_object destination %r is a person, not a placement support'
+                % (str(step.get('id', '')).strip() or 'step', support)
+            )
+    selection = target_selection if isinstance(target_selection, dict) else {}
+    if selection:
+        selection_validation = validate_target_selection(selection, context)
+        errors.extend(selection_validation.errors)
+        selection = selection_validation.selection
+    operation = str(selection.get('operation', '')).strip().lower()
+    member_ids = {
+        str(item).strip()
+        for item in selection.get('member_ids', [])
+        if str(item).strip()
+    }
+    if operation == 'deliver':
+        recipient_id = str(selection.get('recipient_id', '')).strip()
+        delivered_ids = set()
+        wrong_recipients = set()
+        for step in plan_steps:
+            if _step_name(step) not in _HANDOFF_SKILLS:
+                continue
+            step_recipient = _step_recipient_id(step)
+            if recipient_id and step_recipient != recipient_id:
+                if step_recipient:
+                    wrong_recipients.add(step_recipient)
+                continue
+            object_id = _step_object_id(step)
+            if object_id:
+                delivered_ids.add(object_id)
+        missing_ids = sorted(member_ids - delivered_ids)
+        if missing_ids:
+            errors.append(
+                'delivery plan does not hand off %s to recipient %r'
+                % (', '.join(missing_ids), recipient_id)
+            )
+        extra_ids = sorted(delivered_ids - member_ids)
+        if extra_ids:
+            errors.append('delivery plan contains unselected objects: %s' % ', '.join(extra_ids))
+        if wrong_recipients:
+            errors.append(
+                'delivery plan changes recipient %r to: %s'
+                % (recipient_id, ', '.join(sorted(wrong_recipients)))
+            )
+
+    if operation == 'visit':
+        visit_targets = {
+            _step_target(step)
+            for step in plan_steps
+            if _step_name(step) in _NAVIGATION_SKILLS
+            and _step_target(step)
+        }
+        if visit_targets != member_ids:
+            errors.append(
+                'visit targets must exactly match selected members; expected=%s actual=%s'
+                % (sorted(member_ids), sorted(visit_targets))
+            )
+
+    report_policy = str(selection.get('report_policy', '')).strip().lower()
+    report_steps = [
+        step
+        for step in plan_steps
+        if _step_name(step) == 'report_result'
+    ]
+    if report_policy == 'final' and not report_steps:
+        errors.append('final report policy requires a report_result step')
+    if report_policy == 'per_target':
+        if len(report_steps) != len(member_ids):
+            errors.append(
+                'per-target report policy requires %d report_result steps, got %d'
+                % (len(member_ids), len(report_steps))
+            )
+        navigation_ids = {
+            str(step.get('id', '')).strip()
+            for step in plan_steps
+            if _step_name(step) in _NAVIGATION_SKILLS
+        }
+        reported_dependencies = {
+            str(dependency).strip()
+            for step in report_steps
+            for dependency in step.get('requires', [])
+            if str(dependency).strip()
+        }
+        missing_dependencies = sorted(navigation_ids - reported_dependencies)
+        if missing_dependencies:
+            errors.append(
+                'per-target reports do not depend on navigation steps: %s'
+                % ', '.join(missing_dependencies)
+            )
+    return errors
 
 
 def _merge_step_record(plan_step: dict, result_step: dict) -> dict:

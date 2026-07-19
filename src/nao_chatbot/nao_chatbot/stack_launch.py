@@ -1726,6 +1726,15 @@ def generate_profile_launch_description(
         default_value=_profile_default(profile_defaults, "chatbot_first_request_timeout_sec", "60.0"),
         description="Timeout for the first chatbot_llm response request in a dialogue.",
     )
+    chatbot_intent_request_timeout_sec_arg = DeclareLaunchArgument(
+        "chatbot_intent_request_timeout_sec",
+        default_value=_profile_default(
+            profile_defaults,
+            "chatbot_intent_request_timeout_sec",
+            "10.0",
+        ),
+        description="Timeout for chatbot_llm intent extraction requests.",
+    )
     chatbot_preflight_required_arg = DeclareLaunchArgument(
         "chatbot_preflight_required",
         default_value=_profile_default(profile_defaults, "chatbot_preflight_required", "false"),
@@ -1918,6 +1927,12 @@ def generate_profile_launch_description(
             {
                 "first_request_timeout_sec": ParameterValue(
                     LaunchConfiguration("chatbot_first_request_timeout_sec"),
+                    value_type=float,
+                )
+            },
+            {
+                "intent_request_timeout_sec": ParameterValue(
+                    LaunchConfiguration("chatbot_intent_request_timeout_sec"),
                     value_type=float,
                 )
             },
@@ -3102,6 +3117,7 @@ def generate_profile_launch_description(
             chatbot_server_url_arg,
             chatbot_request_timeout_sec_arg,
             chatbot_first_request_timeout_sec_arg,
+            chatbot_intent_request_timeout_sec_arg,
             chatbot_preflight_required_arg,
             chatbot_preflight_timeout_sec_arg,
             chatbot_preflight_attempts_arg,

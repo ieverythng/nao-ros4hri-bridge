@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CRITIC Seam Hardening, 2026-07-17</title>
+  <style>
+    body { font: 16px/1.55 system-ui, sans-serif; margin: 0; color: #202124; background: #f7f8fa; }
+    main { max-width: 980px; margin: 0 auto; padding: 32px 24px 56px; background: white; }
+    h1, h2 { letter-spacing: 0; }
+    h1 { font-size: 30px; margin-top: 0; }
+    h2 { font-size: 20px; margin-top: 30px; border-bottom: 1px solid #dfe3e8; padding-bottom: 6px; }
+    code { background: #eef1f4; padding: 2px 5px; }
+    table { width: 100%; border-collapse: collapse; margin: 14px 0; }
+    th, td { text-align: left; vertical-align: top; padding: 9px; border: 1px solid #dfe3e8; }
+    th { background: #f0f3f6; }
+    .pass { color: #176b36; font-weight: 700; }
+    .fail { color: #a12820; font-weight: 700; }
+    .ns { color: #805900; font-weight: 700; }
+  </style>
+</head>
+<body><main>
+  <h1>CRITIC Seam Hardening</h1>
+  <p>Runtime and source evidence captured on 2026-07-17.</p>
+  <h2>Target contract</h2>
+  <p>Harden structured failure correlation, route and acknowledgement consistency,
+  robot-return semantics, and planner action coverage without adding normal-path
+  fallback wording.</p>
+  <h2>Accepted changes</h2>
+  <ul>
+    <li>Structured JSONL correlation spans turn, goal, plan, version, step, fake mode, terminal outcome, and speech.</li>
+    <li>Dialogue-to-execution repair requires one valid locked chatbot acknowledgement.</li>
+    <li>Ordered intent sequences no longer acquire contradictory summary intents.</li>
+    <li>Robot return and object delivery remain distinct when grounding is available.</li>
+    <li>Planner admission rejects plans and recovery paths that omit requested actions.</li>
+  </ul>
+  <h2>Runtime evidence</h2>
+  <p>Candidate <code>iiia:nao-runtime-v26-critic-hardening</code><br>
+  Image <code>sha256:70f3875ff0116e44290d2edf71cc1fb8e09efd21ce4d6af2e8d411b7770255e7</code></p>
+  <table><thead><tr><th>Probe</th><th>Result</th><th>Evidence</th></tr></thead><tbody>
+    <tr><td>Polite head execution</td><td class="pass">Pass</td><td>Natural commitment, five motions, report, complete lineage</td></tr>
+    <tr><td>Explicit head execution</td><td class="pass">Pass</td><td>Natural commitment, five motions, report, complete lineage</td></tr>
+    <tr><td>Walk, pick, sit, report</td><td class="pass">Pass</td><td>Complete ordered execution and closure</td></tr>
+    <tr><td>Robot return to ALEX</td><td class="ns">Not scored</td><td>Required grounded ALEX entity absent; clarification was truthful</td></tr>
+    <tr><td>All objects, look, wave, sit</td><td class="fail">Fail</td><td>Planner rejected incomplete action coverage</td></tr>
+  </tbody></table>
+  <h2>Validation</h2>
+  <p>All 547 workspace tests and launch smoke passed. All 64 harness tests passed.
+  Diff checks and the ROS4HRI ownership audit passed. Every clean launch passed
+  chatbot and planner model preflight on attempt one.</p>
+  <h2>Decision</h2>
+  <p>Accept the source changes. Do not promote v26 to the frozen canonical image
+  until fixture readiness is proven and the complete all-objects objective passes.</p>
+  <h2>Compound-plan closure addendum</h2>
+  <p>The all-objects objective is closed on the clean
+  <code>iiia:nao-runtime-v28-intent-timeout</code> overlay
+  (<code>sha256:76fe210c293499f2cf22a0524e2aebdcc8e7e8e9a45fea3960d7da75ed4425b8</code>).
+  The v27 replacement-backend probe exposed a launch projection gap: intent
+  extraction retained the nested 10-second timeout even when the other model
+  timeouts were set to 180 seconds.</p>
+  <table><thead><tr><th>Probe</th><th>Result</th><th>Evidence</th></tr></thead><tbody>
+    <tr><td>V27 maximal case</td><td class="fail">Fail</td><td>Intent transport timeout collapsed six intents to <code>wave_greet</code> before planning</td></tr>
+    <tr><td>V28 maximal case</td><td class="pass">Pass</td><td>Complete ten-step plan; invalid fake-only wave argument rejected; full-objective replan; truthful final report</td></tr>
+    <tr><td>V28 explicit head motion</td><td class="pass">Pass</td><td>Execution acknowledgement, five motions, and natural completion remained aligned</td></tr>
+  </tbody></table>
+  <p>The replacement was a temporary Codex-backed Ollama-compatible adapter
+  because the prescribed Qwen cloud tags returned HTTP 410 and the tested local
+  Qwen models failed the real planner contract or exceeded the scoring window.
+  This accepts the stack correction, not the canonical production backend.
+  Planner admission still checks required arguments without rejecting unsupported
+  optional arguments; that residual needs a separate registry-validation audit.</p>
+  <h2>Production backend ablation</h2>
+  <p>The canonical vLLM endpoint remained unreachable during qualification
+  (<code>HTTP 000</code>, connection refused). These runs used the host Ollama
+  daemon through the real <code>/api/chat</code> transport, the same v28 image,
+  canonical launch profile, 180-second timeout policy, and maximal fixture.</p>
+  <table><thead><tr><th>Backend</th><th>Startup</th><th>Maximal case</th><th>Adjudicated finding</th></tr></thead><tbody>
+    <tr><td><code>nemotron-3-super:cloud</code></td><td class="pass">Pass</td><td class="fail">Fail</td><td>All six intents and target selection were preserved, but no admissible planner plan survived bounded validation retries.</td></tr>
+    <tr><td><code>gemma4:31b-cloud</code></td><td class="pass">Pass</td><td class="fail">Fail</td><td>Malformed intent JSON led to a <code>wave_greet</code>-only handoff with target selection lost, despite a complete spoken acknowledgement.</td></tr>
+    <tr><td><code>gemma4:cloud</code></td><td class="pass">Pass</td><td class="fail">Fail</td><td>Invalid structured output triggered route repair; planner recovery executed navigation and reporting while dropping posture, look, wave, and sit.</td></tr>
+    <tr><td><code>nemotron-3-ultra:cloud</code></td><td class="ns">Not qualified</td><td class="ns">Not run</td><td>Real <code>/api/chat</code> returned HTTP 400 <code>unexpected EOF</code>; Ollama also reported a missing cloud-stub manifest.</td></tr>
+  </tbody></table>
+  <p>The results are capability-sensitive evidence, not a reason to add another
+  normal-path fallback. The maximal case remains a backend qualification gate,
+  with route/ack atomicity, planner action coverage, and target-selection
+  preservation checked independently.</p>
+</main></body></html>
