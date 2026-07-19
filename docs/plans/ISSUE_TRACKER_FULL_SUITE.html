@@ -36,7 +36,7 @@
 <body>
 <main>
   <h1>NAO ROS4HRI Full Runtime Issue Tracker</h1>
-  <p class="meta">Submission readiness tracker for the NAO ROS4HRI planner, dialogue, grounding, and fake-skill stack. Last consolidated update: 14 July 2026 after the runtime deslop and v1-v7 overlay sequence.</p>
+  <p class="meta">Submission readiness tracker for the NAO ROS4HRI planner, dialogue, grounding, and fake-skill stack. Last consolidated update: 19 July 2026 for the Qwen3.6 vLLM qualification campaign.</p>
 
   <p class="note">This tracker is the ground-truth working document. The top sections are supervisor-facing and summarize the current architecture state. The long implementation and SkillOpt logs remain below as provenance. The dedicated fake-skill, preloaded-environment, and replan tracker is <code>ISSUE_TRACKER_FAKE_SUITE.html</code>.</p>
 
@@ -51,6 +51,9 @@
 
   <h2 id="current-state">Current State For Supervisor Review</h2>
   <section class="cards">
+    <div class="card"><strong>Qwen3.6: not yet scored</strong>The model passed realistic chatbot and planner preflight at 08:00 CEST, then the external endpoint switched to Qwen3-VL around 08:30. Post-swap 404s are infrastructure evidence, not model failures.</div>
+    <div class="card"><strong>v31 source candidate</strong>Clean image <code>3859d1414627</code> fixes the Qwen chat-template system-role violation and exposes the complete sampling tuple. Source gate: 290 chatbot behavioral, 101 planner, and 7 launch tests; image gate: 25 packages built.</div>
+    <div class="card"><strong>Ablation pending</strong>Baseline, deterministic sampling, larger output budget, and reduced-timeout cells are frozen in the runtime seam audit. The complete suite starts only after continuous Qwen3.6 provenance.</div>
     <div class="card"><strong>8.6 / 10</strong>Best accepted isolated live success-path baseline, from the response-first rqt speech sweep. This remains the strongest demonstration profile, but not the latest full-suite score.</div>
     <div class="card"><strong>7.0 / 10</strong>Fresh 25 June full-suite response-first score. Dialogue routing improved and KB mutation passed at the architecture seam, but speech-level KB ingestion and long composite/fake cases still cap the score.</div>
     <div class="card"><strong>8.7 / 10</strong>Fresh response-first validation session confirms the prior 8.6 success-path baseline and adds live proof for the corrected speech-ingress harness, KB add/revise/remove, fake-skill KB guards, grouped kitchen delivery, and post-skill KB effects.</div>
@@ -65,6 +68,7 @@
   <p><span class="tag">Recommended demo mode: response_first</span><span class="tag">Ablation mode: intent_first</span><span class="tag">Future experiment: IRR single-pass</span><span class="tag">Detector profile scored separately</span></p>
 
   <h2 id="pipeline-ablation">Route Pipeline Ablation</h2>
+  <p class="note"><strong>19 July model-parameter ablation:</strong> run A0 application defaults, A1 Qwen's published non-thinking sampling tuple, A2 deterministic sampling, A3 256/256/1024 budgets, and A4 reduced timeout floors using identical group-scoped cases. After those fields are locked, compare schema-constrained decoding separately. No prompt wording changes are permitted between cells. Full protocol and provenance evidence: <code>docs/artifacts/qwen36_runtime_seam_audit_2026-07-19.md</code>.</p>
   <table>
     <thead><tr><th>Pipeline</th><th>Purpose</th><th>Current evidence</th><th>Decision</th></tr></thead>
     <tbody>

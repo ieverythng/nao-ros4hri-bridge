@@ -53,15 +53,16 @@ Defaults live in `config/00-defaults.yml`.
 - `model`
 - `base_url`
 - `temperature`
+- `top_p`, `top_k`, `min_p`, `presence_penalty`, and `repetition_penalty`
 - `max_tokens`
 - `timeout_sec`
 - `think`: forwarded to Ollama-compatible backends; default is `false`.
 - `default_retry_budget`
 - `auto_replan`
 
-The default model is currently `qwen3.5:397b-cloud`. If its planner output is
-too variable for a demo, use the launch argument `planner_llm_model` to return
-to the previous known model.
+The integrated launch selects the planner model explicitly. Sampling parameters
+must be recorded with runtime artifacts because model-card defaults and
+application-specific deterministic settings can differ.
 
 ## Launch And Smoke Test
 

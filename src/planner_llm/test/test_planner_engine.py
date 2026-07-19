@@ -1894,11 +1894,21 @@ def test_openai_provider_disables_thinking_for_namespaced_qwen_model(monkeypatch
             provider='openai_compatible',
             model='cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit',
             base_url='http://10.7.138.215:8004',
+            top_p=0.8,
+            top_k=20,
+            min_p=0.0,
+            presence_penalty=1.5,
+            repetition_penalty=1.0,
         )
     )
 
     assert provider.generate([{'role': 'user', 'content': 'plan'}]) == '{"steps":[]}'
     assert captured['payload']['chat_template_kwargs'] == {'enable_thinking': False}
+    assert captured['payload']['top_p'] == 0.8
+    assert captured['payload']['top_k'] == 20
+    assert captured['payload']['min_p'] == 0.0
+    assert captured['payload']['presence_penalty'] == 1.5
+    assert captured['payload']['repetition_penalty'] == 1.0
 
 
 def test_ollama_provider_payload_disables_thinking_by_default(monkeypatch) -> None:
