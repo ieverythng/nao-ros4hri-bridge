@@ -5,7 +5,7 @@
 \contentsline {chapter}{List of Abbreviations}{x}{section*.8}%
 \contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}%
 \contentsline {section}{\numberline {1.1}Language-Guided Robot Interaction and Execution}{1}{section.1.1}%
-\contentsline {section}{\numberline {1.2}Problem Statement}{2}{section.1.2}%
+\contentsline {section}{\numberline {1.2}Problem Statement}{1}{section.1.2}%
 \contentsline {section}{\numberline {1.3}Research Questions}{2}{section.1.3}%
 \contentsline {section}{\numberline {1.4}Objectives}{2}{section.1.4}%
 \contentsline {section}{\numberline {1.5}Document Structure}{3}{section.1.5}%
@@ -16,82 +16,81 @@
 \contentsline {section}{\numberline {2.4}The NAO Robot Platform}{5}{section.2.4}%
 \contentsline {section}{\numberline {2.5}LLMs as High-Level Planners}{5}{section.2.5}%
 \contentsline {section}{\numberline {2.6}Embodied Multimodal Models, VLMs, and VLAs}{6}{section.2.6}%
-\contentsline {section}{\numberline {2.7}Symbolic State, Knowledge Bases, and Grounded Context}{7}{section.2.7}%
+\contentsline {section}{\numberline {2.7}Symbolic State and Knowledge Bases}{7}{section.2.7}%
 \contentsline {section}{\numberline {2.8}Execution Monitoring, Replanning, and Clarification}{7}{section.2.8}%
 \contentsline {section}{\numberline {2.9}Literature Gap}{7}{section.2.9}%
-\contentsline {chapter}{\numberline {3}System Requirements and Architecture}{9}{chapter.3}%
+\contentsline {chapter}{\numberline {3}System Design}{9}{chapter.3}%
 \contentsline {section}{\numberline {3.1}Functional Requirements}{9}{section.3.1}%
 \contentsline {section}{\numberline {3.2}Design Principles}{9}{section.3.2}%
-\contentsline {section}{\numberline {3.3}High-Level ROS 2 Architecture}{10}{section.3.3}%
-\contentsline {subsection}{\numberline {3.3.1}Runtime Flow}{11}{subsection.3.3.1}%
-\contentsline {chapter}{\numberline {4}Runtime Contracts}{13}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Runtime Ownership Rules}{13}{section.4.1}%
-\contentsline {section}{\numberline {4.2}Runtime Contract Overview}{13}{section.4.2}%
-\contentsline {section}{\numberline {4.3}Contract 1: Chatbot Turn Output}{14}{section.4.3}%
-\contentsline {section}{\numberline {4.4}Contract 2: Planner Request}{16}{section.4.4}%
-\contentsline {section}{\numberline {4.5}Contract 3: Grounded Context}{18}{section.4.5}%
-\contentsline {section}{\numberline {4.6}Contract 4: Shared Skill Entry}{19}{section.4.6}%
-\contentsline {section}{\numberline {4.7}Grounded Context Pipeline}{21}{section.4.7}%
-\contentsline {section}{\numberline {4.8}Planner LLM Internals}{21}{section.4.8}%
-\contentsline {section}{\numberline {4.9}Contract 5: Planner Output}{22}{section.4.9}%
-\contentsline {paragraph}{Runtime recovery metadata.}{23}{section*.20}%
-\contentsline {section}{\numberline {4.10}Contract 6: Skill Execution Result}{24}{section.4.10}%
-\contentsline {section}{\numberline {4.11}Contract 7: Execution Feedback}{24}{section.4.11}%
-\contentsline {section}{\numberline {4.12}Contract 8: Planner Dialogue Act}{25}{section.4.12}%
-\contentsline {section}{\numberline {4.13}Contract 9: RDF Knowledge State and Raw Evidence}{26}{section.4.13}%
-\contentsline {chapter}{\numberline {5}Implementation: ROS 2 Nodes and APIs}{28}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Runtime Flow}{28}{section.5.1}%
-\contentsline {section}{\numberline {5.2}ROS Nodes}{31}{section.5.2}%
-\contentsline {subsection}{\numberline {5.2.1}\code {dialogue_manager}}{31}{subsection.5.2.1}%
-\contentsline {subsection}{\numberline {5.2.2}\code {chatbot_llm}}{31}{subsection.5.2.2}%
-\contentsline {subsection}{\numberline {5.2.3}\code {planner_llm}}{33}{subsection.5.2.3}%
-\contentsline {subsection}{\numberline {5.2.4}Goal-Keyed Planning-State Helper}{34}{subsection.5.2.4}%
-\contentsline {subsection}{\numberline {5.2.5}Skill Registry (\code {skill_common})}{34}{subsection.5.2.5}%
-\contentsline {subsection}{\numberline {5.2.6}\code {nao_orchestrator} and the Execution Boundary}{35}{subsection.5.2.6}%
-\contentsline {section}{\numberline {5.3}Deterministic Guards and Bounded Fallbacks}{37}{section.5.3}%
-\contentsline {section}{\numberline {5.4}World State and Scene Grounding}{38}{section.5.4}%
-\contentsline {section}{\numberline {5.5}Fake Skills and Simulation}{39}{section.5.5}%
-\contentsline {section}{\numberline {5.6}Models and Runtime Configuration}{40}{section.5.6}%
-\contentsline {chapter}{\numberline {6}Validation Methodology}{42}{chapter.6}%
-\contentsline {section}{\numberline {6.1}Validation Scope and Unit of Analysis}{42}{section.6.1}%
-\contentsline {section}{\numberline {6.2}Validation Levels and Supported Claims}{42}{section.6.2}%
-\contentsline {section}{\numberline {6.3}Execution Profiles}{43}{section.6.3}%
-\contentsline {section}{\numberline {6.4}Validation Goals and Acceptance Rules}{44}{section.6.4}%
-\contentsline {section}{\numberline {6.5}Full Runtime Questionnaire}{46}{section.6.5}%
-\contentsline {section}{\numberline {6.6}Multi-Step Deterministic Fake-Skill Matrix}{47}{section.6.6}%
-\contentsline {section}{\numberline {6.7}Robustness Set and Repetition}{48}{section.6.7}%
-\contentsline {section}{\numberline {6.8}Interface and Architecture Checks}{49}{section.6.8}%
-\contentsline {section}{\numberline {6.9}Reset, Repetition, and Isolation}{49}{section.6.9}%
-\contentsline {section}{\numberline {6.10}Metrics and Denominators}{50}{section.6.10}%
-\contentsline {section}{\numberline {6.11}Runtime Review Score}{51}{section.6.11}%
-\contentsline {section}{\numberline {6.12}Research-Question Evidence Map}{52}{section.6.12}%
-\contentsline {section}{\numberline {6.13}Evidence Bundle}{53}{section.6.13}%
-\contentsline {section}{\numberline {6.14}Threats to Validity}{54}{section.6.14}%
-\contentsline {chapter}{\numberline {7}Results}{55}{chapter.7}%
-\contentsline {section}{\numberline {7.1}Selected Evidence Sets}{55}{section.7.1}%
-\contentsline {section}{\numberline {7.2}Trajectory and Semantic Contract Results}{57}{section.7.2}%
-\contentsline {section}{\numberline {7.3}Focused Post-Hardening Results}{57}{section.7.3}%
-\contentsline {section}{\numberline {7.4}Full Integrated Runtime Results}{58}{section.7.4}%
-\contentsline {section}{\numberline {7.5}Deterministic Fake-Skill and Replan Results}{59}{section.7.5}%
-\contentsline {section}{\numberline {7.6}Strict KB-Effect and Reporting Audit}{59}{section.7.6}%
-\contentsline {section}{\numberline {7.7}Alternate-Model Ablation}{60}{section.7.7}%
-\contentsline {section}{\numberline {7.8}Interaction and Runtime-Contract Preservation}{60}{section.7.8}%
-\contentsline {section}{\numberline {7.9}Research-Question Synthesis}{61}{section.7.9}%
-\contentsline {chapter}{\numberline {8}Discussion}{63}{chapter.8}%
-\contentsline {section}{\numberline {8.1}Architectural Findings}{63}{section.8.1}%
-\contentsline {section}{\numberline {8.2}Harness Engineering and Failure Attribution}{63}{section.8.2}%
-\contentsline {section}{\numberline {8.3}Prompt Packs and Skill Contracts as Runtime Policy}{65}{section.8.3}%
-\contentsline {section}{\numberline {8.4}Planner Behaviour and Feedback}{65}{section.8.4}%
-\contentsline {section}{\numberline {8.5}Grounding, Identity, and World State}{66}{section.8.5}%
-\contentsline {section}{\numberline {8.6}Execution Evidence and Truthful Closure}{67}{section.8.6}%
-\contentsline {section}{\numberline {8.7}ROS 2 and HRI Modularity}{67}{section.8.7}%
-\contentsline {section}{\numberline {8.8}Validation Implications}{68}{section.8.8}%
-\contentsline {chapter}{\numberline {9}Limitations and Future Work}{69}{chapter.9}%
-\contentsline {section}{\numberline {9.1}Current Limitations}{69}{section.9.1}%
-\contentsline {section}{\numberline {9.2}Future Work}{69}{section.9.2}%
-\contentsline {chapter}{\numberline {10}Conclusion}{70}{chapter.10}%
-\contentsline {chapter}{\numberline {A}Full Runtime Contracts}{72}{appendix.A}%
-\contentsline {section}{\numberline {A.1}Runtime Skill Inventory}{72}{section.A.1}%
-\contentsline {chapter}{\numberline {B}Launch Commands}{75}{appendix.B}%
-\contentsline {chapter}{\numberline {C}Validation Log Template}{76}{appendix.C}%
-\contentsline {chapter}{Bibliography}{77}{section*.44}%
+\contentsline {section}{\numberline {3.3}High-Level Architecture}{10}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Runtime Flow}{11}{section.3.4}%
+\contentsline {chapter}{\numberline {4}Implementation}{13}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Runtime Interfaces and Data Contracts}{13}{section.4.1}%
+\contentsline {subsection}{\numberline {4.1.1}Runtime Contract Overview}{13}{subsection.4.1.1}%
+\contentsline {subsection}{\numberline {4.1.2}Contract 1: Chatbot Turn Output}{14}{subsection.4.1.2}%
+\contentsline {subsection}{\numberline {4.1.3}Contract 2: Planner Request}{15}{subsection.4.1.3}%
+\contentsline {subsection}{\numberline {4.1.4}Contract 3: Grounded Context}{16}{subsection.4.1.4}%
+\contentsline {subsection}{\numberline {4.1.5}Contract 4: Shared Skill Entry}{18}{subsection.4.1.5}%
+\contentsline {subsection}{\numberline {4.1.6}Contract 5: Planner Output}{19}{subsection.4.1.6}%
+\contentsline {paragraph}{Runtime recovery metadata.}{21}{section*.19}%
+\contentsline {subsection}{\numberline {4.1.7}Contract 6: Skill Execution Result}{22}{subsection.4.1.7}%
+\contentsline {subsection}{\numberline {4.1.8}Contract 7: Execution Feedback}{22}{subsection.4.1.8}%
+\contentsline {subsection}{\numberline {4.1.9}Contract 8: Planner Dialogue Act}{23}{subsection.4.1.9}%
+\contentsline {subsection}{\numberline {4.1.10}Contract 9: RDF Knowledge State}{23}{subsection.4.1.10}%
+\contentsline {section}{\numberline {4.2}ROS Components}{24}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}\code {dialogue_manager}}{26}{subsection.4.2.1}%
+\contentsline {subsection}{\numberline {4.2.2}\code {chatbot_llm}}{26}{subsection.4.2.2}%
+\contentsline {subsection}{\numberline {4.2.3}\code {planner_llm}}{27}{subsection.4.2.3}%
+\contentsline {subsection}{\numberline {4.2.4}Goal-Keyed Planning-State Helper}{28}{subsection.4.2.4}%
+\contentsline {subsection}{\numberline {4.2.5}Skill Registry (\code {skill_common})}{29}{subsection.4.2.5}%
+\contentsline {subsection}{\numberline {4.2.6}\code {nao_orchestrator} and Plan Execution}{29}{subsection.4.2.6}%
+\contentsline {section}{\numberline {4.3}World State and Scene Grounding}{30}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Skill Adapters and Controlled Simulation}{31}{section.4.4}%
+\contentsline {section}{\numberline {4.5}Models and Runtime Configuration}{32}{section.4.5}%
+\contentsline {chapter}{\numberline {5}Validation Methodology}{33}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Validation Scope}{33}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Validation Levels}{33}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Acceptance Criteria}{34}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Full End-to-End Questionnaire}{36}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Skill-Execution and Failure Stress Testing}{37}{section.5.5}%
+\contentsline {section}{\numberline {5.6}Metrics}{38}{section.5.6}%
+\contentsline {section}{\numberline {5.7}Model and Configuration Variability}{40}{section.5.7}%
+\contentsline {section}{\numberline {5.8}Research-Question Evidence Map}{40}{section.5.8}%
+\contentsline {section}{\numberline {5.9}Threats to Validity}{41}{section.5.9}%
+\contentsline {chapter}{\numberline {6}Results}{42}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Frozen Evidence Scope}{42}{section.6.1}%
+\contentsline {section}{\numberline {6.2}End-to-End Questionnaire Analysis}{43}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Environment and Stateful Knowledge Results}{44}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Skill-Execution and Failure-Management Results}{44}{section.6.4}%
+\contentsline {section}{\numberline {6.5}Repeated Robustness and Capability Extremes}{45}{section.6.5}%
+\contentsline {section}{\numberline {6.6}Model and Backend Evidence}{46}{section.6.6}%
+\contentsline {section}{\numberline {6.7}Answers to the Research Questions}{48}{section.6.7}%
+\contentsline {section}{\numberline {6.8}Result Summary}{48}{section.6.8}%
+\contentsline {chapter}{\numberline {7}Discussion}{50}{chapter.7}%
+\contentsline {section}{\numberline {7.1}What the Final Evidence Demonstrates}{50}{section.7.1}%
+\contentsline {section}{\numberline {7.2}Model-Independent Interfaces and Model-Dependent Behaviour}{50}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Questionnaire-Level Interpretation}{51}{section.7.3}%
+\contentsline {section}{\numberline {7.4}Grounding, Roles, and Symbolic State}{51}{section.7.4}%
+\contentsline {section}{\numberline {7.5}Planning, Admission, and Replanning}{52}{section.7.5}%
+\contentsline {section}{\numberline {7.6}Application Ablations and Non-Determinism}{52}{section.7.6}%
+\contentsline {section}{\numberline {7.7}Controlled Skill Adapters, Physical Claims, and Portability}{53}{section.7.7}%
+\contentsline {section}{\numberline {7.8}Implications for the Research Questions}{53}{section.7.8}%
+\contentsline {chapter}{\numberline {8}Limitations and Future Work}{54}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Current Limitations}{54}{section.8.1}%
+\contentsline {section}{\numberline {8.2}Future Work}{55}{section.8.2}%
+\contentsline {subsection}{\numberline {8.2.1}Model Coupling and Qualification}{55}{subsection.8.2.1}%
+\contentsline {subsection}{\numberline {8.2.2}Deterministic Semantic Guards}{55}{subsection.8.2.2}%
+\contentsline {subsection}{\numberline {8.2.3}Broader Embodied Validation}{55}{subsection.8.2.3}%
+\contentsline {subsection}{\numberline {8.2.4}Evidence and Reproducibility}{56}{subsection.8.2.4}%
+\contentsline {chapter}{\numberline {9}Conclusion}{57}{chapter.9}%
+\contentsline {chapter}{\numberline {A}Full Runtime Contracts}{58}{appendix.A}%
+\contentsline {section}{\numberline {A.1}Runtime Skill Inventory}{58}{section.A.1}%
+\contentsline {chapter}{\numberline {B}Launch Commands}{61}{appendix.B}%
+\contentsline {chapter}{\numberline {C}Validation Log Template}{62}{appendix.C}%
+\contentsline {chapter}{\numberline {D}Final Evaluation Dataset}{63}{appendix.D}%
+\contentsline {section}{\numberline {D.1}Dataset Scope and Attachment}{63}{section.D.1}%
+\contentsline {section}{\numberline {D.2}Run Inventory}{64}{section.D.2}%
+\contentsline {section}{\numberline {D.3}Field Dictionary}{64}{section.D.3}%
+\contentsline {section}{\numberline {D.4}Evidence Integrity}{65}{section.D.4}%
+\contentsline {section}{\numberline {D.5}Complete Case Index}{65}{section.D.5}%
+\contentsline {chapter}{Bibliography}{68}{section*.41}%

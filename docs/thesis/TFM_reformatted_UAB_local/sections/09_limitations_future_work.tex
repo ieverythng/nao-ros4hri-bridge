@@ -3,12 +3,38 @@
 
 \section{Current Limitations}
 
-The current system has several limitations. The physical implementation is centred on NAO, so cross-robot portability is architectural rather than fully proven. LLM planning remains sensitive to prompt design, model availability, token limits, and JSON schema adherence. The validation strategy is scenario-based and cannot prove exhaustive safety. Perception and grounding quality also constrain planner performance because a correct planner cannot reliably act on objects that are missing, stale, or ambiguously represented in the world state.
+The final campaign is scenario-based. Its 108 retained records and the 22-case end-to-end questionnaire provide bounded evidence, not exhaustive coverage of natural language, world states, or failure modes. Repeated development against known prompts may also improve those prompts more than unseen requests.
 
-The recovered evidence is qualified by mutable or multi-image runtime provenance, so it does not yet define one final frozen aggregate. The semantic audit also found incomplete target selection for the gold-apple handoff, stale KB postconditions after some grouped deliveries, and incomplete closure in selected failure profiles. Deterministic fake skills validate supervision and symbolic effects but do not establish physical navigation or manipulation performance. Detector-enabled grounding remains separate because the principal semantic profile intentionally disables detector scoring.
+Only the Qwen3-VL configuration completed the frozen primary qualification. The Qwen3.5 and Ollama observations are heterogeneous historical probes, and the final \code{gemma4:31b-cloud} selection has only preflight and one dialogue smoke pass. Stable interfaces therefore do not imply equivalent semantic behavior across models.
+
+Residual variance remained visible even with a frozen runtime tuple. The robustness profile passed 12/15 and the capability-extreme profile passed 5/7. Errors included incomplete universal target selection, omitted closure, missing-recipient wording, and incomplete capability-extreme plans. The orchestrator rejected or bounded these cases, but a safe rejection is still a task failure.
+
+The questionnaire exposes two remaining semantic limits. The red-cup update is a route failure under the knowledge/planner separation, and the kitchen request is a role-preservation failure. The recorded wave case uses \code{wave_greet}, whereas the canonical registry taxonomy represents the behavior through \code{perform_motion}.
+
+Most execution evidence uses deterministic simulated skill adapters and controlled KB fixtures. This supports software-contract, replan, and symbolic-state conclusions but not physical navigation, grasping, manipulation, perception accuracy, or human safety. Object detection was intentionally disabled in the principal frozen profile, so detector-grounded behavior is outside the main result.
 
 \section{Future Work}
 
-Future validation should freeze one clean source revision, nested revision, container digest, model configuration, prompt and registry hashes, fixtures, and questionnaires before running the complete profile matrix. The deterministic policy ladder should be followed by repeated compact robustness cases and a separately scored detector profile. Cross-run comparison should use the hash-addressed bundles and semantic metrics defined in Chapter~\ref{chap:validation-methodology}.
+\subsection{Model Coupling and Qualification}
 
-Architectural extensions include richer grounding through a persistent world model, broader skill-registry generation from reviewed contracts, safer composite execution, and cross-platform validation on another ROS-compatible robot or simulator. A longer-term extension would track uncertainty, object identity, and temporal freshness explicitly while preserving the compact planner-facing projection.
+A promising next step is parameter-efficient post-training, such as LoRA, using accepted planner traces and carefully labelled failures. Training examples should target exact role preservation, universal-set coverage, valid JSON, clarification wording, plan completeness, and one truthful terminal closure. Training and evaluation sets must be separated by task template, entity names, and paraphrase family so that improvement is not measured on memorised prompts.
+
+Schema-constrained decoding or grammar-guided generation could reduce malformed outputs, but it will not by itself repair omitted targets or incorrect roles. Any adapted model must therefore repeat the same frozen 22-case questionnaire, 15-run robustness set, failure injections, KB chain, and capability-extreme profile. No replacement should inherit qualification from endpoint compatibility or a smoke test.
+
+\subsection{Deterministic Semantic Guards}
+
+The deterministic boundary can be extended beyond schema and skill validation. Future guards should compare requested and selected cardinalities, enforce object/person/location role types, require every admitted composite capability to appear in the plan, and verify report coverage against attempted targets. A rejected plan should produce a deterministic failure reason that the dialogue layer can express even if the model cannot formulate a clarification.
+
+Terminal closure should become an explicit orchestrator obligation rather than a best-effort model behavior. Similarly, knowledge-only mutations should bypass the robot-action planner by construction, preventing the route failure observed in the red-cup case.
+
+\subsection{Broader Embodied Validation}
+
+The next physical campaign should separately measure navigation, head motion, gaze, speech, and any supported manipulation adapter with exact trial counts and direct observations. A detector-enabled profile should test freshness, identity continuity, ambiguity, and disagreement between perception and authored KB facts. These results should remain separate from deterministic simulated-skill evidence.
+
+Portability should be tested by implementing the same reviewed contracts on a second ROS-compatible platform. Reuse would be demonstrated only if the alternative adapters produce equivalent typed evidence and pass the same software questionnaire without changing planner-facing semantics.
+
+\subsection{Evidence and Reproducibility}
+
+Future campaigns should retain one immutable runtime tuple, machine-readable manifests, raw traces, dataset rows, and a rendered report generated from the same aggregate source. The A0 manual/machine discrepancy and the compact report's source-file-count mismatch show why generated summaries require consistency checks. Automated validation should fail the report build when denominators disagree.
+
+The retained structured traces provide the baseline for future comparison. New experiments should add a separate frozen campaign rather than overwrite the existing evidence.

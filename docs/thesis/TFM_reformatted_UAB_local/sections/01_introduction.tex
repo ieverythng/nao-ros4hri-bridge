@@ -7,7 +7,7 @@ Human-robot interaction (HRI) requires a robot to connect communication with per
 
 Large language models (LLMs) can transform user utterances into structured intent payloads, infer task goals, and propose multi-step action decompositions. This flexibility is useful because users rarely speak in planner-ready commands. They ask questions, refer to visible people or objects, change goals, and expect responses that remain consistent with the interaction history. LLMs are not inherently grounded in the robot's live state, available skills, or execution constraints. A linguistically plausible response may select the wrong route, refer to an unavailable entity, propose an unsupported action, or report success without corresponding execution evidence.
 
-This thesis addresses that problem across the complete NAO stack. The implemented system combines dialogue lifecycle management, LLM-based semantic routing, compact symbolic grounding, structured task planning, deterministic orchestration, robot-facing skills, and feedback-driven user communication. The language model participates in dialogue and planning, while ROS~2 interfaces, reviewed skill contracts, and an orchestrator retain control over admissible execution. The focus is therefore the integrated interaction and execution stack rather than the planner in isolation.
+This thesis addresses that problem through a modular interactive architecture. The system combines dialogue management, LLM-based semantic interpretation, symbolic grounding, task planning, deterministic orchestration, robot skills, and feedback-driven user communication. The language model participates in dialogue and planning, while explicit interfaces, reviewed skill descriptions, and an orchestrator retain control over execution. The focus is therefore the complete interaction architecture rather than the planner in isolation.
 
 \section{Problem Statement}
 
@@ -24,7 +24,7 @@ Five recurring problems define the scope of this thesis:
 The central problem addressed in this thesis is therefore:
 
 \begin{quote}
-\textit{How can a modular NAO robot stack integrate language-based dialogue, symbolic grounding, task planning, deterministic execution, and feedback while preserving inspectable ownership boundaries and evidence-based user communication?}
+\textit{How can a modular robot architecture integrate language-based dialogue, symbolic grounding, task planning, deterministic execution, and feedback while preserving clear responsibility boundaries and evidence-based user communication?}
 \end{quote}
 
 \section{Research Questions}
@@ -40,12 +40,12 @@ The work is guided by five research questions. Each question is linked to eviden
 
   \item \textbf{RQ4:} How does typed execution feedback affect the stack's ability to recover from failed actions, request clarification, revise a plan, or stop safely when the current plan cannot continue?
 
-  \item \textbf{RQ5:} Which ownership and interface boundaries are required to keep language-guided interaction, planning, execution, and user-facing reporting inspectable within the evaluated NAO stack?
+  \item \textbf{RQ5:} Which responsibility and interface boundaries are required to keep language-guided interaction, planning, execution, and user-facing reporting inspectable?
 \end{enumerate}
 
 \section{Objectives}
 
-The main objective is to design, integrate, and validate a modular language-model-enabled interaction and execution stack for NAO. This objective is divided into the following implementation and validation goals:
+The main objective is to design, integrate, and validate a modular language-model-enabled interactive architecture for a robot. This objective is divided into the following implementation and validation goals:
 
 \begin{enumerate}
   \item integrate dialogue management, semantic routing, symbolic grounding, task planning, deterministic orchestration, and skill execution through explicit ROS~2 interfaces;
@@ -54,7 +54,7 @@ The main objective is to design, integrate, and validate a modular language-mode
   \item support conversational, knowledge-query, atomic execution, and composite execution turns without transferring speech or execution ownership to an LLM;
   \item constrain candidate plans through deterministic validation before robot actions are dispatched;
   \item return typed execution evidence to the planning and dialogue paths so that failure, ambiguity, replanning, and truthful reporting remain observable;
-  \item validate the integrated stack through full user turns, planner-isolated probes, controlled fake-skill policies, symbolic postcondition checks, and trace-based acceptance rules.
+  \item validate the integrated stack through full user turns, focused subsystem tests, controlled skill-adapter outcomes, and symbolic postcondition checks.
 \end{enumerate}
 
 \section{Document Structure}
@@ -63,10 +63,9 @@ The thesis is organised as follows:
 
 \begin{enumerate}
   \item Chapter~\ref{chap:background} reviews HRI, ROS~2, language-based planning, multimodal models, symbolic grounding, and feedback-driven execution.
-  \item Chapter~\ref{chap:architecture-requirements} defines the system requirements, responsibility boundaries, and high-level runtime architecture.
-  \item Chapter~\ref{chap:runtime-contracts} specifies the payloads and evidence ownership shared between the stack components.
-  \item Chapter~\ref{chap:implementation} maps those abstract responsibilities and contracts to the implemented ROS~2 nodes, skills, launch profiles, and deterministic guards.
-  \item Chapter~\ref{chap:validation-methodology} defines the validation scope, case manifests, profiles, metrics, acceptance rules, and evidence bundle.
+  \item Chapter~\ref{chap:architecture-requirements} presents the system requirements, responsibility boundaries, high-level architecture, and runtime flow as one design chapter.
+  \item Chapter~\ref{chap:implementation} maps the design to the implemented ROS~2 components, runtime interfaces, skills, and robot adapters.
+  \item Chapter~\ref{chap:validation-methodology} defines the validation scope, test profiles, questionnaire, metrics, and acceptance rules.
   \item Chapter~\ref{chap:results} reports the observed trajectory, semantic, failure-injection, KB-effect, model-ablation, and ownership results.
   \item Chapter~\ref{chap:discussion} interprets the findings with respect to the research questions and related work.
   \item Chapters~\ref{chap:limitations-future-work} and~\ref{chap:conclusion} present limitations, future work, contributions, and conclusions.

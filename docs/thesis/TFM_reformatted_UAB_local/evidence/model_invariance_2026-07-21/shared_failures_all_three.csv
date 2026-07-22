@@ -1,0 +1,8 @@
+"case_name","models"
+"extreme_all_objects_visit_look_wave_sit","gemma4:31b-cloud;gemma4:cloud;nemotron-3-super:cloud"
+"extreme_kneel_under_table_pick_report","gemma4:31b-cloud;gemma4:cloud;nemotron-3-super:cloud"
+"extreme_pick_place_kneel_report","gemma4:31b-cloud;gemma4:cloud;nemotron-3-super:cloud"
+"extreme_unreachable_object_recovery","gemma4:31b-cloud;gemma4:cloud;nemotron-3-super:cloud"
+"maximal_kitchen_cup_to_operator","gemma4:31b-cloud;gemma4:cloud;nemotron-3-super:cloud"
+"robust_missing_recipient","gemma4:31b-cloud;gemma4:cloud;nemotron-3-super:cloud"
+"skill_pick_object_on_table","gemma4:31b-cloud;gemma4:cloud;nemotron-3-super:cloud"

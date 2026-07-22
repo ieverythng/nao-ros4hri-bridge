@@ -1,7 +1,7 @@
 \documentclass[12pt,a4paper]{report}
 
 % ============================================================
-% UAB MSc Thesis, modular language-guided NAO interaction stack
+% UAB MSc Thesis, modular language-guided interactive architecture
 % ============================================================
 
 \usepackage[utf8]{inputenc}
@@ -24,6 +24,7 @@
 \usepackage[toc]{appendix}
 \usepackage[section]{placeins}
 \usepackage{pdflscape}
+\usepackage{pdfpages}
 \usepackage{ragged2e}
 \usepackage{microtype}
 \usepackage{needspace}
@@ -34,10 +35,11 @@
 \usepackage{listings}
 \usepackage{fancyhdr}
 \usepackage[colorlinks=true, linkcolor=black, citecolor=blue, urlcolor=blue]{hyperref}
+\usepackage{attachfile2}
 \hypersetup{
-  pdftitle={Design, Integration, and Validation of a Modular Language-Model-Enabled Interaction and Execution Stack for the NAO Robot},
+  pdftitle={Design, Integration, and Validation of a Modular LLM-Based Interactive Architecture},
   pdfauthor={Juan David Bendek Williamson},
-  pdfsubject={Modular language-guided human-robot interaction and execution on NAO}
+  pdfsubject={Modular language-guided human-robot interaction and execution}
 }
 \usepackage[
   backend=biber,
@@ -69,6 +71,7 @@
 \setstretch{1.15}
 \setlength{\parskip}{6pt}
 \setlength{\parindent}{0pt}
+\setlength{\emergencystretch}{3em}
 \setlist[itemize]{topsep=3pt,itemsep=2pt,parsep=0pt}
 \setlist[enumerate]{topsep=3pt,itemsep=2pt,parsep=0pt}
 
@@ -119,7 +122,7 @@
 \DeclareRobustCommand{\code}[1]{\texttt{\detokenize{#1}}}
 
 \begin{document}
-\pagenumbering{roman}
+\hypersetup{pageanchor=false}
 
 \begin{titlepage}
 \centering
@@ -130,7 +133,7 @@
 
 \hrule
 \vspace{0.9cm}
-{\LARGE Design, Integration, and Validation of a Modular Language-Model-Enabled Interaction and Execution Stack for the NAO Robot}\\[8mm]
+{\LARGE Design, Integration, and Validation of a Modular LLM-Based Interactive Architecture}\\[8mm]
 \hrule
 \vspace{18mm}
 
@@ -147,6 +150,14 @@ Date: \today\\[3mm]
 \end{titlepage}
 
 \clearpage
+\includepdf[
+  pages=1,
+  pagecommand={\thispagestyle{empty}}
+]{prism-uploads/Obraoriginal_TFG_202425.pdf}
+
+\clearpage
+\hypersetup{pageanchor=true}
+\pagenumbering{roman}
 \input{sections/00_abstract}
 \clearpage
 \input{sections/00_acknowledgements}
@@ -174,7 +185,6 @@ Date: \today\\[3mm]
 \input{sections/01_introduction}
 \input{sections/02_background}
 \input{sections/03_architecture_requirements}
-\input{sections/04_runtime_contracts}
 \input{sections/05_implementation}
 \input{sections/06_validation_methodology}
 \input{sections/07_results}

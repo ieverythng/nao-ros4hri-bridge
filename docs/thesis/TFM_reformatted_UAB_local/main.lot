@@ -1,42 +1,40 @@
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {3.1}{\ignorespaces Functional requirements for the proposed NAO interaction and execution stack.}}{9}{table.caption.10}%
+\contentsline {table}{\numberline {3.1}{\ignorespaces Functional requirements for the proposed interaction and execution architecture.}}{9}{table.caption.10}%
 \addvspace {10\p@ }
 \contentsline {table}{\numberline {4.1}{\ignorespaces Runtime contract map and ownership in the active dialogue, planning, and execution stack.}}{14}{table.caption.13}%
 \contentsline {table}{\numberline {4.2}{\ignorespaces Fields in Contract 1: chatbot turn output.}}{15}{table.caption.14}%
 \contentsline {table}{\numberline {4.3}{\ignorespaces Fields in Contract 2: minimal planner-facing request.}}{16}{table.caption.15}%
-\contentsline {table}{\numberline {4.4}{\ignorespaces Fields in Contract 3: grounded context.}}{19}{table.caption.16}%
-\contentsline {table}{\numberline {4.5}{\ignorespaces Shared skill-entry fields used by planning and execution.}}{20}{table.caption.17}%
-\contentsline {table}{\numberline {4.6}{\ignorespaces Fields in Contract 5: planner output.}}{23}{table.caption.19}%
-\contentsline {table}{\numberline {4.7}{\ignorespaces Principal RDF-style predicate families used by the runtime KB.}}{26}{table.caption.21}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces Fields in Contract 3: grounded context.}}{18}{table.caption.16}%
+\contentsline {table}{\numberline {4.5}{\ignorespaces Shared skill-entry fields used by planning and execution.}}{19}{table.caption.17}%
+\contentsline {table}{\numberline {4.6}{\ignorespaces Fields in Contract 5: planner output.}}{21}{table.caption.18}%
+\contentsline {table}{\numberline {4.7}{\ignorespaces Principal RDF-style predicate families used by the runtime KB.}}{24}{table.caption.20}%
+\contentsline {table}{\numberline {4.8}{\ignorespaces Planner-visible skills and their implementations.}}{29}{table.caption.24}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {5.1}{\ignorespaces Planner-visible runtime skills and their current execution profiles.}}{35}{table.caption.25}%
-\contentsline {table}{\numberline {5.2}{\ignorespaces Fake-skill outcome-policy resolution order.}}{39}{table.caption.28}%
-\contentsline {table}{\numberline {5.3}{\ignorespaces Principal integrated launch profiles used by the implementation.}}{40}{table.caption.29}%
+\contentsline {table}{\numberline {5.1}{\ignorespaces Validation levels and supported claims.}}{34}{table.caption.27}%
+\contentsline {table}{\numberline {5.2}{\ignorespaces Validation goals, acceptance rules, and evidence sources.}}{34}{table.5.2}%
+\contentsline {table}{\numberline {5.3}{\ignorespaces Twenty-two-case full end-to-end questionnaire.}}{36}{table.5.3}%
+\contentsline {table}{\numberline {5.4}{\ignorespaces Validation families and their principal acceptance focus.}}{37}{table.caption.28}%
+\contentsline {table}{\numberline {5.5}{\ignorespaces Failure position and required recovery evidence.}}{38}{table.caption.29}%
+\contentsline {table}{\numberline {5.6}{\ignorespaces Validation metrics and their interpretation.}}{39}{table.caption.30}%
+\contentsline {table}{\numberline {5.7}{\ignorespaces Research questions and validation evidence.}}{40}{table.caption.31}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {6.1}{\ignorespaces Validation levels and supported claims.}}{43}{table.caption.30}%
-\contentsline {table}{\numberline {6.2}{\ignorespaces Evaluation profiles and their validation scope.}}{44}{table.caption.31}%
-\contentsline {table}{\numberline {6.3}{\ignorespaces Validation goals, acceptance rules, and evidence sources.}}{45}{table.6.3}%
-\contentsline {table}{\numberline {6.4}{\ignorespaces Frozen twenty-one-case full-runtime questionnaire.}}{46}{table.6.4}%
-\contentsline {table}{\numberline {6.5}{\ignorespaces Canonical multi-step deterministic fake-skill manifest.}}{48}{table.6.5}%
-\contentsline {table}{\numberline {6.6}{\ignorespaces Frozen five-case robustness set.}}{49}{table.caption.32}%
-\contentsline {table}{\numberline {6.7}{\ignorespaces Components of the run-level reviewer score.}}{52}{table.caption.33}%
-\contentsline {table}{\numberline {6.8}{\ignorespaces Research questions, primary profiles, and acceptance evidence.}}{53}{table.caption.34}%
-\addvspace {10\p@ }
-\contentsline {table}{\numberline {7.1}{\ignorespaces Run-level and diagnostic evidence sets.}}{56}{table.caption.35}%
-\contentsline {table}{\numberline {7.2}{\ignorespaces Trajectory and semantic findings from evidence set F13.}}{57}{table.caption.36}%
-\contentsline {table}{\numberline {7.3}{\ignorespaces Full-runtime results for evidence set F28.}}{58}{table.caption.37}%
-\contentsline {table}{\numberline {7.4}{\ignorespaces Deterministic fake-skill policy results for evidence set F08.}}{59}{table.caption.38}%
-\contentsline {table}{\numberline {7.5}{\ignorespaces Alternate-model ablation results for evidence set F11.}}{60}{table.caption.39}%
-\contentsline {table}{\numberline {7.6}{\ignorespaces Interaction-interface and runtime-contract results.}}{61}{table.caption.40}%
-\contentsline {table}{\numberline {7.7}{\ignorespaces Qualified answers to the research questions from the recovered evidence.}}{62}{table.caption.41}%
-\addvspace {10\p@ }
-\contentsline {table}{\numberline {8.1}{\ignorespaces Representative failure shapes and the architectural boundaries needed to diagnose them.}}{64}{table.caption.42}%
+\contentsline {table}{\numberline {6.1}{\ignorespaces Evaluation evidence by purpose and model scope.}}{42}{table.caption.32}%
+\contentsline {table}{\numberline {6.2}{\ignorespaces Results for the 22-case end-to-end questionnaire.}}{43}{table.caption.33}%
+\contentsline {table}{\numberline {6.3}{\ignorespaces Grounding and symbolic-state profiles in the primary frozen evaluation.}}{44}{table.caption.34}%
+\contentsline {table}{\numberline {6.4}{\ignorespaces Skill-execution and staged failure-management results.}}{45}{table.caption.35}%
+\contentsline {table}{\numberline {6.5}{\ignorespaces Frozen robustness cases across three repetitions.}}{46}{table.caption.36}%
+\contentsline {table}{\numberline {6.6}{\ignorespaces Model evidence and qualification boundary.}}{47}{table.caption.37}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {A.1}{\ignorespaces Compressed runtime skill inventory and registry values.}}{73}{table.A.1}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {A.1}{\ignorespaces Compressed runtime skill inventory and registry values.}}{59}{table.A.1}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {C.1}{\ignorespaces Validation log template.}}{76}{table.caption.43}%
+\contentsline {table}{\numberline {C.1}{\ignorespaces Validation log template.}}{62}{table.caption.38}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {D.1}{\ignorespaces Machine-derived archive inventory used by the final dataset.}}{64}{table.caption.39}%
+\contentsline {table}{\numberline {D.2}{\ignorespaces SHA-256 identifiers for the final supplied evidence files.}}{65}{table.caption.40}%
+\contentsline {table}{\numberline {D.3}{\ignorespaces Complete index of the 108 retained case records.}}{66}{table.D.3}%

@@ -1,4 +1,4 @@
-\relax
+\relax 
 \providecommand\hyper@newdestlabel[2]{}
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
@@ -7,8 +7,8 @@
 \@writefile{toc}{\contentsline {chapter}{Acknowledgements}{ii}{chapter*.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {chapter}{List of Figures}{vii}{section*.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {chapter}{List of Tables}{viii}{section*.6}\protected@file@percent }
-\gdef \LT@i {\LT@entry
-    {1}{115.91003pt}\LT@entry
+\gdef \LT@i {\LT@entry 
+    {1}{115.91003pt}\LT@entry 
     {1}{333.17125pt}}
 \@writefile{toc}{\contentsline {chapter}{List of Abbreviations}{x}{section*.8}\protected@file@percent }
 \abx@aux@cite{0}{mcdermott1998pddl}
@@ -37,7 +37,7 @@
 \abx@aux@page{5}{1}
 \abx@aux@page{6}{1}
 \abx@aux@page{7}{1}
-\@writefile{toc}{\contentsline {section}{\numberline {1.2}Problem Statement}{2}{section.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {1.2}Problem Statement}{1}{section.1.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {1.3}Research Questions}{2}{section.1.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {1.4}Objectives}{2}{section.1.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {1.5}Document Structure}{3}{section.1.5}\protected@file@percent }
@@ -138,7 +138,7 @@
 \abx@aux@segm{0}{0}{huang2022innermonologue}
 \abx@aux@cite{0}{yao2022react}
 \abx@aux@segm{0}{0}{yao2022react}
-\@writefile{toc}{\contentsline {section}{\numberline {2.7}Symbolic State, Knowledge Bases, and Grounded Context}{7}{section.2.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2.7}Symbolic State and Knowledge Bases}{7}{section.2.7}\protected@file@percent }
 \abx@aux@page{25}{7}
 \abx@aux@page{26}{7}
 \abx@aux@page{27}{7}
@@ -159,289 +159,259 @@
 \abx@aux@page{40}{7}
 \abx@aux@page{41}{7}
 \abx@aux@page{42}{7}
-\@writefile{toc}{\contentsline {chapter}{\numberline {3}System Requirements and Architecture}{9}{chapter.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {3}System Design}{9}{chapter.3}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{chap:architecture-requirements}{{3}{9}{System Requirements and Architecture}{chapter.3}{}}
+\newlabel{chap:architecture-requirements}{{3}{9}{System Design}{chapter.3}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {3.1}Functional Requirements}{9}{section.3.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {3.1}{\ignorespaces Functional requirements for the proposed NAO interaction and execution stack.}}{9}{table.caption.10}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3.1}{\ignorespaces Functional requirements for the proposed interaction and execution architecture.}}{9}{table.caption.10}\protected@file@percent }
 \providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
-\newlabel{tab:functional-requirements}{{3.1}{9}{Functional requirements for the proposed NAO interaction and execution stack}{table.caption.10}{}}
+\newlabel{tab:functional-requirements}{{3.1}{9}{Functional requirements for the proposed interaction and execution architecture}{table.caption.10}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {3.2}Design Principles}{9}{section.3.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {3.3}High-Level ROS 2 Architecture}{10}{section.3.3}\protected@file@percent }
-\newlabel{sec:high-level-ros-architecture}{{3.3}{10}{High-Level ROS 2 Architecture}{section.3.3}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.1}{\ignorespaces High-level layered architecture. Dialogue interpretation and symbolic grounding provide parallel inputs to the planning layer. The chatbot layer also consumes symbolic scene context. The planner proposes structured skill plans, while the execution layer validates and dispatches skills before returning feedback for replanning or dialogue.}}{11}{figure.caption.11}\protected@file@percent }
-\newlabel{fig:layered-architecture}{{3.1}{11}{High-level layered architecture. Dialogue interpretation and symbolic grounding provide parallel inputs to the planning layer. The chatbot layer also consumes symbolic scene context. The planner proposes structured skill plans, while the execution layer validates and dispatches skills before returning feedback for replanning or dialogue}{figure.caption.11}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.1}Runtime Flow}{11}{subsection.3.3.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {3.2}{\ignorespaces Runtime message and responsibility sequence from user input to spoken response. The colour coding follows Figure~\ref {fig:layered-architecture}: dialogue components are blue, grounding and evidence are orange, planning is green, and execution is purple.}}{12}{figure.caption.12}\protected@file@percent }
-\newlabel{fig:runtime-sequence}{{3.2}{12}{Runtime message and responsibility sequence from user input to spoken response. The colour coding follows Figure~\ref {fig:layered-architecture}: dialogue components are blue, grounding and evidence are orange, planning is green, and execution is purple}{figure.caption.12}{}}
-\@writefile{toc}{\contentsline {chapter}{\numberline {4}Runtime Contracts}{13}{chapter.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3.3}High-Level Architecture}{10}{section.3.3}\protected@file@percent }
+\newlabel{sec:high-level-ros-architecture}{{3.3}{10}{High-Level Architecture}{section.3.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.1}{\ignorespaces High-level architecture. The language and grounding components provide the planner with the user's goal and current symbolic context. The planner proposes a skill sequence; the orchestrator validates and coordinates it; and the skills return fresh execution evidence.}}{10}{figure.caption.11}\protected@file@percent }
+\newlabel{fig:layered-architecture}{{3.1}{10}{High-level architecture. The language and grounding components provide the planner with the user's goal and current symbolic context. The planner proposes a skill sequence; the orchestrator validates and coordinates it; and the skills return fresh execution evidence}{figure.caption.11}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.4}Runtime Flow}{11}{section.3.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.2}{\ignorespaces Runtime sequence from a user request to an evidence-based response. Dialogue and knowledge turns stop after interpretation; only execution requests continue through planning and skill execution.}}{12}{figure.caption.12}\protected@file@percent }
+\newlabel{fig:runtime-sequence}{{3.2}{12}{Runtime sequence from a user request to an evidence-based response. Dialogue and knowledge turns stop after interpretation; only execution requests continue through planning and skill execution}{figure.caption.12}{}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {4}Implementation}{13}{chapter.4}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{chap:runtime-contracts}{{4}{13}{Runtime Contracts}{chapter.4}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.1}Runtime Ownership Rules}{13}{section.4.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4.2}Runtime Contract Overview}{13}{section.4.2}\protected@file@percent }
+\newlabel{chap:implementation}{{4}{13}{Implementation}{chapter.4}{}}
+\newlabel{sec:implementation}{{4}{13}{Implementation}{chapter.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.1}Runtime Interfaces and Data Contracts}{13}{section.4.1}\protected@file@percent }
+\newlabel{sec:runtime-contracts}{{4.1}{13}{Runtime Interfaces and Data Contracts}{section.4.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.1}Runtime Contract Overview}{13}{subsection.4.1.1}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {4.1}{\ignorespaces Runtime contract map and ownership in the active dialogue, planning, and execution stack.}}{14}{table.caption.13}\protected@file@percent }
 \newlabel{tab:contract-map}{{4.1}{14}{Runtime contract map and ownership in the active dialogue, planning, and execution stack}{table.caption.13}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.3}Contract 1: Chatbot Turn Output}{14}{section.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.2}Contract 1: Chatbot Turn Output}{14}{subsection.4.1.2}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {4.2}{\ignorespaces Fields in Contract 1: chatbot turn output.}}{15}{table.caption.14}\protected@file@percent }
 \newlabel{tab:chatbot-fields}{{4.2}{15}{Fields in Contract 1: chatbot turn output}{table.caption.14}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.4}Contract 2: Planner Request}{16}{section.4.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.3}Contract 2: Planner Request}{15}{subsection.4.1.3}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {4.3}{\ignorespaces Fields in Contract 2: minimal planner-facing request.}}{16}{table.caption.15}\protected@file@percent }
 \newlabel{tab:planner-request-fields}{{4.3}{16}{Fields in Contract 2: minimal planner-facing request}{table.caption.15}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.5}Contract 3: Grounded Context}{18}{section.4.5}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {4.4}{\ignorespaces Fields in Contract 3: grounded context.}}{19}{table.caption.16}\protected@file@percent }
-\newlabel{tab:grounded-context-fields}{{4.4}{19}{Fields in Contract 3: grounded context}{table.caption.16}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.6}Contract 4: Shared Skill Entry}{19}{section.4.6}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {4.5}{\ignorespaces Shared skill-entry fields used by planning and execution.}}{20}{table.caption.17}\protected@file@percent }
-\newlabel{tab:skill-entry-contract}{{4.5}{20}{Shared skill-entry fields used by planning and execution}{table.caption.17}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.7}Grounded Context Pipeline}{21}{section.4.7}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {4.1}{\ignorespaces Grounded-context pipeline. Scene and KB evidence are projected by a grounded perception helper into a compact \code  {grounded_context} for \code  {chatbot_llm} and \code  {planner_llm}. Skills receive planner-approved arguments through execution, while also retaining access to raw scene and KB evidence for live requery and validation before reporting outcomes.}}{21}{figure.caption.18}\protected@file@percent }
-\newlabel{fig:grounded-context-pipeline}{{4.1}{21}{Grounded-context pipeline. Scene and KB evidence are projected by a grounded perception helper into a compact \code {grounded_context} for \code {chatbot_llm} and \code {planner_llm}. Skills receive planner-approved arguments through execution, while also retaining access to raw scene and KB evidence for live requery and validation before reporting outcomes}{figure.caption.18}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.8}Planner LLM Internals}{21}{section.4.8}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4.9}Contract 5: Planner Output}{22}{section.4.9}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {4.6}{\ignorespaces Fields in Contract 5: planner output.}}{23}{table.caption.19}\protected@file@percent }
-\newlabel{tab:planner-output-fields}{{4.6}{23}{Fields in Contract 5: planner output}{table.caption.19}{}}
-\@writefile{toc}{\contentsline {paragraph}{Runtime recovery metadata.}{23}{section*.20}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4.10}Contract 6: Skill Execution Result}{24}{section.4.10}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4.11}Contract 7: Execution Feedback}{24}{section.4.11}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4.12}Contract 8: Planner Dialogue Act}{25}{section.4.12}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4.13}Contract 9: RDF Knowledge State and Raw Evidence}{26}{section.4.13}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {4.7}{\ignorespaces Principal RDF-style predicate families used by the runtime KB.}}{26}{table.caption.21}\protected@file@percent }
-\newlabel{tab:rdf-kb-predicates}{{4.7}{26}{Principal RDF-style predicate families used by the runtime KB}{table.caption.21}{}}
-\@writefile{toc}{\contentsline {chapter}{\numberline {5}Implementation: ROS 2 Nodes and APIs}{28}{chapter.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.4}Contract 3: Grounded Context}{16}{subsection.4.1.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.4}{\ignorespaces Fields in Contract 3: grounded context.}}{18}{table.caption.16}\protected@file@percent }
+\newlabel{tab:grounded-context-fields}{{4.4}{18}{Fields in Contract 3: grounded context}{table.caption.16}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.5}Contract 4: Shared Skill Entry}{18}{subsection.4.1.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.5}{\ignorespaces Shared skill-entry fields used by planning and execution.}}{19}{table.caption.17}\protected@file@percent }
+\newlabel{tab:skill-entry-contract}{{4.5}{19}{Shared skill-entry fields used by planning and execution}{table.caption.17}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.6}Contract 5: Planner Output}{19}{subsection.4.1.6}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.6}{\ignorespaces Fields in Contract 5: planner output.}}{21}{table.caption.18}\protected@file@percent }
+\newlabel{tab:planner-output-fields}{{4.6}{21}{Fields in Contract 5: planner output}{table.caption.18}{}}
+\@writefile{toc}{\contentsline {paragraph}{Runtime recovery metadata.}{21}{section*.19}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.7}Contract 6: Skill Execution Result}{22}{subsection.4.1.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.8}Contract 7: Execution Feedback}{22}{subsection.4.1.8}\protected@file@percent }
+\abx@aux@cite{0}{knowledgecore}
+\abx@aux@segm{0}{0}{knowledgecore}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.9}Contract 8: Planner Dialogue Act}{23}{subsection.4.1.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.10}Contract 9: RDF Knowledge State}{23}{subsection.4.1.10}\protected@file@percent }
+\abx@aux@page{43}{23}
+\abx@aux@cite{0}{mohamed2020ros4hri}
+\abx@aux@segm{0}{0}{mohamed2020ros4hri}
+\@writefile{lot}{\contentsline {table}{\numberline {4.7}{\ignorespaces Principal RDF-style predicate families used by the runtime KB.}}{24}{table.caption.20}\protected@file@percent }
+\newlabel{tab:rdf-kb-predicates}{{4.7}{24}{Principal RDF-style predicate families used by the runtime KB}{table.caption.20}{}}
+\abx@aux@page{44}{24}
+\@writefile{toc}{\contentsline {section}{\numberline {4.2}ROS Components}{24}{section.4.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.1}{\ignorespaces Full-stack implementation of the modular interaction architecture. Dialogue interpretation and symbolic grounding provide the planner input; \code  {nao_orchestrator} admits the request, validates the returned plan, dispatches skill servers, and forwards execution feedback. Robot-facing and simulated adapters share the same typed skill-result boundary.}}{25}{figure.caption.21}\protected@file@percent }
+\newlabel{fig:full-stack-implementation}{{4.1}{25}{Full-stack implementation of the modular interaction architecture. Dialogue interpretation and symbolic grounding provide the planner input; \code {nao_orchestrator} admits the request, validates the returned plan, dispatches skill servers, and forwards execution feedback. Robot-facing and simulated adapters share the same typed skill-result boundary}{figure.caption.21}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.1}\code  {dialogue_manager}}{26}{subsection.4.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.2}\code  {chatbot_llm}}{26}{subsection.4.2.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.2}{\ignorespaces Internal \code  {chatbot_llm} path. Dialogue history and grounded context condition a structured semantic decision that either returns a user-facing response or submits an execution request for admission.}}{27}{figure.caption.22}\protected@file@percent }
+\newlabel{fig:chatbot-llm-node}{{4.2}{27}{Internal \code {chatbot_llm} path. Dialogue history and grounded context condition a structured semantic decision that either returns a user-facing response or submits an execution request for admission}{figure.caption.22}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.3}\code  {planner_llm}}{27}{subsection.4.2.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.3}{\ignorespaces Internal \code  {planner_llm} path, from admitted request through validated plan envelope and feedback-driven goal-state handling.}}{28}{figure.caption.23}\protected@file@percent }
+\newlabel{fig:planner-llm-node}{{4.3}{28}{Internal \code {planner_llm} path, from admitted request through validated plan envelope and feedback-driven goal-state handling}{figure.caption.23}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.4}Goal-Keyed Planning-State Helper}{28}{subsection.4.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.5}Skill Registry (\code  {skill_common})}{29}{subsection.4.2.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.8}{\ignorespaces Planner-visible skills and their implementations.}}{29}{table.caption.24}\protected@file@percent }
+\newlabel{tab:runtime-skill-surface}{{4.8}{29}{Planner-visible skills and their implementations}{table.caption.24}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.6}\code  {nao_orchestrator} and Plan Execution}{29}{subsection.4.2.6}\protected@file@percent }
+\abx@aux@cite{0}{mohamed2020ros4hri}
+\abx@aux@segm{0}{0}{mohamed2020ros4hri}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.4}{\ignorespaces Execution path implemented by \code  {nao_orchestrator}. Accepted plans are validated, dispatched in order, and correlated with typed skill results and execution feedback.}}{30}{figure.caption.25}\protected@file@percent }
+\newlabel{fig:nao-orchestrator-node}{{4.4}{30}{Execution path implemented by \code {nao_orchestrator}. Accepted plans are validated, dispatched in order, and correlated with typed skill results and execution feedback}{figure.caption.25}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.3}World State and Scene Grounding}{30}{section.4.3}\protected@file@percent }
+\abx@aux@page{45}{30}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.5}{\ignorespaces Implemented perception and symbolic-grounding pipeline. Reused person-perception components and the local object-grounding path provide bounded scene and knowledge representations to dialogue, planning, and execution skills.}}{31}{figure.caption.26}\protected@file@percent }
+\newlabel{fig:perception-grounding-pipeline}{{4.5}{31}{Implemented perception and symbolic-grounding pipeline. Reused person-perception components and the local object-grounding path provide bounded scene and knowledge representations to dialogue, planning, and execution skills}{figure.caption.26}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.4}Skill Adapters and Controlled Simulation}{31}{section.4.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.5}Models and Runtime Configuration}{32}{section.4.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {5}Validation Methodology}{33}{chapter.5}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{chap:implementation}{{5}{28}{Implementation: ROS 2 Nodes and APIs}{chapter.5}{}}
-\newlabel{sec:implementation}{{5}{28}{Implementation: ROS 2 Nodes and APIs}{chapter.5}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5.1}Runtime Flow}{28}{section.5.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {5.1}{\ignorespaces Full-stack implementation of the modular NAO interaction and execution system. Dialogue components are blue, grounding and evidence components orange, planning components green, execution components purple, and skills or adapters neutral grey. The \code  {interaction_sim} and KB-fixture paths provide controlled validation inputs. The dashed red World Model Enricher box denotes future work rather than an implemented runtime component.}}{30}{figure.caption.22}\protected@file@percent }
-\newlabel{fig:full-stack-architecture-plate}{{5.1}{30}{Full-stack implementation of the modular NAO interaction and execution system. Dialogue components are blue, grounding and evidence components orange, planning components green, execution components purple, and skills or adapters neutral grey. The \code {interaction_sim} and KB-fixture paths provide controlled validation inputs. The dashed red World Model Enricher box denotes future work rather than an implemented runtime component}{figure.caption.22}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5.2}ROS Nodes}{31}{section.5.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.1}\code  {dialogue_manager}}{31}{subsection.5.2.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.2}\code  {chatbot_llm}}{31}{subsection.5.2.2}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {5.2}{\ignorespaces Internal \code  {chatbot_llm} path. The node owns semantic interpretation and candidate planner metadata, but not plan construction, dispatch, or speech execution.}}{33}{figure.caption.23}\protected@file@percent }
-\newlabel{fig:chatbot-llm-node}{{5.2}{33}{Internal \code {chatbot_llm} path. The node owns semantic interpretation and candidate planner metadata, but not plan construction, dispatch, or speech execution}{figure.caption.23}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.3}\code  {planner_llm}}{33}{subsection.5.2.3}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {5.3}{\ignorespaces Internal \code  {planner_llm} path, from admitted request through validated plan envelope and feedback-driven goal-state handling.}}{34}{figure.caption.24}\protected@file@percent }
-\newlabel{fig:planner-llm-node}{{5.3}{34}{Internal \code {planner_llm} path, from admitted request through validated plan envelope and feedback-driven goal-state handling}{figure.caption.24}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.4}Goal-Keyed Planning-State Helper}{34}{subsection.5.2.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.5}Skill Registry (\code  {skill_common})}{34}{subsection.5.2.5}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {5.1}{\ignorespaces Planner-visible runtime skills and their current execution profiles.}}{35}{table.caption.25}\protected@file@percent }
-\newlabel{tab:runtime-skill-surface}{{5.1}{35}{Planner-visible runtime skills and their current execution profiles}{table.caption.25}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.6}\code  {nao_orchestrator} and the Execution Boundary}{35}{subsection.5.2.6}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {5.4}{\ignorespaces The \code  {nao_orchestrator} admission and execution boundaries. All effects cross deterministic validation and retain goal and plan lineage.}}{36}{figure.caption.26}\protected@file@percent }
-\newlabel{fig:nao-orchestrator-node}{{5.4}{36}{The \code {nao_orchestrator} admission and execution boundaries. All effects cross deterministic validation and retain goal and plan lineage}{figure.caption.26}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5.3}Deterministic Guards and Bounded Fallbacks}{37}{section.5.3}\protected@file@percent }
-\newlabel{sec:deterministic-guards}{{5.3}{37}{Deterministic Guards and Bounded Fallbacks}{section.5.3}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5.4}World State and Scene Grounding}{38}{section.5.4}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {5.5}{\ignorespaces Combined perception and symbolic-grounding pipeline. Compact projections serve dialogue and planning, while raw and fresh evidence remains at its source interface.}}{39}{figure.caption.27}\protected@file@percent }
-\newlabel{fig:perception-grounding-pipeline}{{5.5}{39}{Combined perception and symbolic-grounding pipeline. Compact projections serve dialogue and planning, while raw and fresh evidence remains at its source interface}{figure.caption.27}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5.5}Fake Skills and Simulation}{39}{section.5.5}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {5.2}{\ignorespaces Fake-skill outcome-policy resolution order.}}{39}{table.caption.28}\protected@file@percent }
-\newlabel{tab:fake-policy-resolution}{{5.2}{39}{Fake-skill outcome-policy resolution order}{table.caption.28}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5.6}Models and Runtime Configuration}{40}{section.5.6}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {5.3}{\ignorespaces Principal integrated launch profiles used by the implementation.}}{40}{table.caption.29}\protected@file@percent }
-\newlabel{tab:integrated-launch-profiles}{{5.3}{40}{Principal integrated launch profiles used by the implementation}{table.caption.29}{}}
-\@writefile{toc}{\contentsline {chapter}{\numberline {6}Validation Methodology}{42}{chapter.6}\protected@file@percent }
-\@writefile{lof}{\addvspace {10\p@ }}
-\@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{chap:validation-methodology}{{6}{42}{Validation Methodology}{chapter.6}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6.1}Validation Scope and Unit of Analysis}{42}{section.6.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6.2}Validation Levels and Supported Claims}{42}{section.6.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6.1}{\ignorespaces Validation levels and supported claims.}}{43}{table.caption.30}\protected@file@percent }
-\newlabel{tab:validation-depth}{{6.1}{43}{Validation levels and supported claims}{table.caption.30}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6.3}Execution Profiles}{43}{section.6.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6.2}{\ignorespaces Evaluation profiles and their validation scope.}}{44}{table.caption.31}\protected@file@percent }
-\newlabel{tab:evaluation-profiles}{{6.2}{44}{Evaluation profiles and their validation scope}{table.caption.31}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6.4}Validation Goals and Acceptance Rules}{44}{section.6.4}\protected@file@percent }
-\gdef \LT@ii {\LT@entry
-    {1}{106.4617pt}\LT@entry
-    {1}{182.03395pt}\LT@entry
+\newlabel{chap:validation-methodology}{{5}{33}{Validation Methodology}{chapter.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.1}Validation Scope}{33}{section.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5.2}Validation Levels}{33}{section.5.2}\protected@file@percent }
+\gdef \LT@ii {\LT@entry 
+    {1}{106.4617pt}\LT@entry 
+    {1}{182.03395pt}\LT@entry 
     {1}{172.58562pt}}
-\@writefile{lot}{\contentsline {table}{\numberline {6.3}{\ignorespaces Validation goals, acceptance rules, and evidence sources.}}{45}{table.6.3}\protected@file@percent }
-\newlabel{tab:validation-goals-expanded}{{6.3}{45}{Validation goals, acceptance rules, and evidence sources}{table.6.3}{}}
-\gdef \LT@iii {\LT@entry
-    {1}{114.6306pt}\LT@entry
-    {1}{171.3134pt}\LT@entry
-    {1}{67.40335pt}\LT@entry
-    {1}{100.4617pt}}
-\@writefile{toc}{\contentsline {section}{\numberline {6.5}Full Runtime Questionnaire}{46}{section.6.5}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6.4}{\ignorespaces Frozen twenty-one-case full-runtime questionnaire.}}{46}{table.6.4}\protected@file@percent }
-\newlabel{tab:main-questionnaire-manifest}{{6.4}{46}{Frozen twenty-one-case full-runtime questionnaire}{table.6.4}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6.6}Multi-Step Deterministic Fake-Skill Matrix}{47}{section.6.6}\protected@file@percent }
-\gdef \LT@iv {\LT@entry
-    {1}{124.07893pt}\LT@entry
-    {1}{86.2928pt}\LT@entry
-    {1}{157.1445pt}\LT@entry
-    {1}{86.2928pt}}
-\@writefile{lot}{\contentsline {table}{\numberline {6.5}{\ignorespaces Canonical multi-step deterministic fake-skill manifest.}}{48}{table.6.5}\protected@file@percent }
-\newlabel{tab:fake-deep-manifest}{{6.5}{48}{Canonical multi-step deterministic fake-skill manifest}{table.6.5}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6.7}Robustness Set and Repetition}{48}{section.6.7}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6.6}{\ignorespaces Frozen five-case robustness set.}}{49}{table.caption.32}\protected@file@percent }
-\newlabel{tab:robustness-manifest}{{6.6}{49}{Frozen five-case robustness set}{table.caption.32}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6.8}Interface and Architecture Checks}{49}{section.6.8}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6.9}Reset, Repetition, and Isolation}{49}{section.6.9}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6.10}Metrics and Denominators}{50}{section.6.10}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6.11}Runtime Review Score}{51}{section.6.11}\protected@file@percent }
-\newlabel{sec:runtime-score}{{6.11}{51}{Runtime Review Score}{section.6.11}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {6.7}{\ignorespaces Components of the run-level reviewer score.}}{52}{table.caption.33}\protected@file@percent }
-\newlabel{tab:runtime-score-components}{{6.7}{52}{Components of the run-level reviewer score}{table.caption.33}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6.12}Research-Question Evidence Map}{52}{section.6.12}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6.8}{\ignorespaces Research questions, primary profiles, and acceptance evidence.}}{53}{table.caption.34}\protected@file@percent }
-\newlabel{tab:rq-evidence-map}{{6.8}{53}{Research questions, primary profiles, and acceptance evidence}{table.caption.34}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6.13}Evidence Bundle}{53}{section.6.13}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {6.1}{\ignorespaces Validation evidence bundle.}}{53}{lstlisting.6.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6.14}Threats to Validity}{54}{section.6.14}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{\numberline {7}Results}{55}{chapter.7}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5.1}{\ignorespaces Validation levels and supported claims.}}{34}{table.caption.27}\protected@file@percent }
+\newlabel{tab:validation-depth}{{5.1}{34}{Validation levels and supported claims}{table.caption.27}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.3}Acceptance Criteria}{34}{section.5.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5.2}{\ignorespaces Validation goals, acceptance rules, and evidence sources.}}{34}{table.5.2}\protected@file@percent }
+\newlabel{tab:validation-goals-expanded}{{5.2}{34}{Validation goals, acceptance rules, and evidence sources}{table.5.2}{}}
+\gdef \LT@iii {\LT@entry 
+    {1}{109.91003pt}\LT@entry 
+    {1}{171.3134pt}\LT@entry 
+    {1}{67.40335pt}\LT@entry 
+    {1}{105.18947pt}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.4}Full End-to-End Questionnaire}{36}{section.5.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5.3}{\ignorespaces Twenty-two-case full end-to-end questionnaire.}}{36}{table.5.3}\protected@file@percent }
+\newlabel{tab:main-questionnaire-manifest}{{5.3}{36}{Twenty-two-case full end-to-end questionnaire}{table.5.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.5}Skill-Execution and Failure Stress Testing}{37}{section.5.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5.4}{\ignorespaces Validation families and their principal acceptance focus.}}{37}{table.caption.28}\protected@file@percent }
+\newlabel{tab:validation-boundary-families}{{5.4}{37}{Validation families and their principal acceptance focus}{table.caption.28}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5.5}{\ignorespaces Failure position and required recovery evidence.}}{38}{table.caption.29}\protected@file@percent }
+\newlabel{tab:failure-stage-methodology}{{5.5}{38}{Failure position and required recovery evidence}{table.caption.29}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.6}Metrics}{38}{section.5.6}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5.6}{\ignorespaces Validation metrics and their interpretation.}}{39}{table.caption.30}\protected@file@percent }
+\newlabel{tab:validation-metrics}{{5.6}{39}{Validation metrics and their interpretation}{table.caption.30}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.7}Model and Configuration Variability}{40}{section.5.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5.8}Research-Question Evidence Map}{40}{section.5.8}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5.7}{\ignorespaces Research questions and validation evidence.}}{40}{table.caption.31}\protected@file@percent }
+\newlabel{tab:rq-evidence-map}{{5.7}{40}{Research questions and validation evidence}{table.caption.31}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.9}Threats to Validity}{41}{section.5.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {6}Results}{42}{chapter.6}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{chap:results}{{7}{55}{Results}{chapter.7}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {7.1}Selected Evidence Sets}{55}{section.7.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {7.1}{\ignorespaces Run-level and diagnostic evidence sets.}}{56}{table.caption.35}\protected@file@percent }
-\newlabel{tab:run-level-evidence}{{7.1}{56}{Run-level and diagnostic evidence sets}{table.caption.35}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {7.2}Trajectory and Semantic Contract Results}{57}{section.7.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {7.2}{\ignorespaces Trajectory and semantic findings from evidence set F13.}}{57}{table.caption.36}\protected@file@percent }
-\newlabel{tab:trajectory-semantic-results}{{7.2}{57}{Trajectory and semantic findings from evidence set F13}{table.caption.36}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {7.3}Focused Post-Hardening Results}{57}{section.7.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {7.4}Full Integrated Runtime Results}{58}{section.7.4}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {7.3}{\ignorespaces Full-runtime results for evidence set F28.}}{58}{table.caption.37}\protected@file@percent }
-\newlabel{tab:full-runtime-results}{{7.3}{58}{Full-runtime results for evidence set F28}{table.caption.37}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {7.5}Deterministic Fake-Skill and Replan Results}{59}{section.7.5}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {7.4}{\ignorespaces Deterministic fake-skill policy results for evidence set F08.}}{59}{table.caption.38}\protected@file@percent }
-\newlabel{tab:fake-policy-results}{{7.4}{59}{Deterministic fake-skill policy results for evidence set F08}{table.caption.38}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {7.6}Strict KB-Effect and Reporting Audit}{59}{section.7.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {7.7}Alternate-Model Ablation}{60}{section.7.7}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {7.5}{\ignorespaces Alternate-model ablation results for evidence set F11.}}{60}{table.caption.39}\protected@file@percent }
-\newlabel{tab:model-ablation-results}{{7.5}{60}{Alternate-model ablation results for evidence set F11}{table.caption.39}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {7.8}Interaction and Runtime-Contract Preservation}{60}{section.7.8}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {7.6}{\ignorespaces Interaction-interface and runtime-contract results.}}{61}{table.caption.40}\protected@file@percent }
-\newlabel{tab:interaction-contract-results}{{7.6}{61}{Interaction-interface and runtime-contract results}{table.caption.40}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {7.9}Research-Question Synthesis}{61}{section.7.9}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {7.7}{\ignorespaces Qualified answers to the research questions from the recovered evidence.}}{62}{table.caption.41}\protected@file@percent }
-\newlabel{tab:rq-result-synthesis}{{7.7}{62}{Qualified answers to the research questions from the recovered evidence}{table.caption.41}{}}
-\abx@aux@cite{0}{huang2022zeroshot}
-\abx@aux@segm{0}{0}{huang2022zeroshot}
-\abx@aux@cite{0}{ahn2022saycan}
-\abx@aux@segm{0}{0}{ahn2022saycan}
-\abx@aux@cite{0}{liang2022codepolicies}
-\abx@aux@segm{0}{0}{liang2022codepolicies}
-\abx@aux@cite{0}{valmeekam2023planning}
-\abx@aux@segm{0}{0}{valmeekam2023planning}
-\@writefile{toc}{\contentsline {chapter}{\numberline {8}Discussion}{63}{chapter.8}\protected@file@percent }
+\newlabel{chap:results}{{6}{42}{Results}{chapter.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.1}Frozen Evidence Scope}{42}{section.6.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.1}{\ignorespaces Evaluation evidence by purpose and model scope.}}{42}{table.caption.32}\protected@file@percent }
+\newlabel{tab:final-evidence-scope}{{6.1}{42}{Evaluation evidence by purpose and model scope}{table.caption.32}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.2}End-to-End Questionnaire Analysis}{43}{section.6.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.2}{\ignorespaces Results for the 22-case end-to-end questionnaire.}}{43}{table.caption.33}\protected@file@percent }
+\newlabel{tab:final-questionnaire-summary}{{6.2}{43}{Results for the 22-case end-to-end questionnaire}{table.caption.33}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.3}Environment and Stateful Knowledge Results}{44}{section.6.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.3}{\ignorespaces Grounding and symbolic-state profiles in the primary frozen evaluation.}}{44}{table.caption.34}\protected@file@percent }
+\newlabel{tab:grounding-kb-results}{{6.3}{44}{Grounding and symbolic-state profiles in the primary frozen evaluation}{table.caption.34}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.4}Skill-Execution and Failure-Management Results}{44}{section.6.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.4}{\ignorespaces Skill-execution and staged failure-management results.}}{45}{table.caption.35}\protected@file@percent }
+\newlabel{tab:skill-failure-results}{{6.4}{45}{Skill-execution and staged failure-management results}{table.caption.35}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.5}Repeated Robustness and Capability Extremes}{45}{section.6.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.5}{\ignorespaces Frozen robustness cases across three repetitions.}}{46}{table.caption.36}\protected@file@percent }
+\newlabel{tab:robustness-repetitions-final}{{6.5}{46}{Frozen robustness cases across three repetitions}{table.caption.36}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.6}Model and Backend Evidence}{46}{section.6.6}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.6}{\ignorespaces Model evidence and qualification boundary.}}{47}{table.caption.37}\protected@file@percent }
+\newlabel{tab:model-evidence-final}{{6.6}{47}{Model evidence and qualification boundary}{table.caption.37}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.7}Answers to the Research Questions}{48}{section.6.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6.8}Result Summary}{48}{section.6.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {7}Discussion}{50}{chapter.7}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{chap:discussion}{{8}{63}{Discussion}{chapter.8}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {8.1}Architectural Findings}{63}{section.8.1}\protected@file@percent }
-\abx@aux@page{43}{63}
-\abx@aux@page{44}{63}
-\abx@aux@page{45}{63}
-\abx@aux@page{46}{63}
-\@writefile{toc}{\contentsline {section}{\numberline {8.2}Harness Engineering and Failure Attribution}{63}{section.8.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {8.1}{\ignorespaces Representative failure shapes and the architectural boundaries needed to diagnose them.}}{64}{table.caption.42}\protected@file@percent }
-\newlabel{tab:discussion-failure-attribution}{{8.1}{64}{Representative failure shapes and the architectural boundaries needed to diagnose them}{table.caption.42}{}}
-\abx@aux@cite{0}{ahn2022saycan}
-\abx@aux@segm{0}{0}{ahn2022saycan}
-\abx@aux@cite{0}{liang2022codepolicies}
-\abx@aux@segm{0}{0}{liang2022codepolicies}
-\abx@aux@cite{0}{huang2022innermonologue}
-\abx@aux@segm{0}{0}{huang2022innermonologue}
-\abx@aux@cite{0}{yao2022react}
-\abx@aux@segm{0}{0}{yao2022react}
-\@writefile{toc}{\contentsline {section}{\numberline {8.3}Prompt Packs and Skill Contracts as Runtime Policy}{65}{section.8.3}\protected@file@percent }
-\abx@aux@page{47}{65}
-\abx@aux@page{48}{65}
-\@writefile{toc}{\contentsline {section}{\numberline {8.4}Planner Behaviour and Feedback}{65}{section.8.4}\protected@file@percent }
-\abx@aux@cite{0}{tenorth2013knowrob}
-\abx@aux@segm{0}{0}{tenorth2013knowrob}
-\abx@aux@cite{0}{tenorth2017knowrob}
-\abx@aux@segm{0}{0}{tenorth2017knowrob}
-\abx@aux@cite{0}{saxena2014robobrain}
-\abx@aux@segm{0}{0}{saxena2014robobrain}
-\abx@aux@page{49}{66}
-\abx@aux@page{50}{66}
-\@writefile{toc}{\contentsline {section}{\numberline {8.5}Grounding, Identity, and World State}{66}{section.8.5}\protected@file@percent }
-\abx@aux@page{51}{66}
+\newlabel{chap:discussion}{{7}{50}{Discussion}{chapter.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7.1}What the Final Evidence Demonstrates}{50}{section.7.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7.2}Model-Independent Interfaces and Model-Dependent Behaviour}{50}{section.7.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7.3}Questionnaire-Level Interpretation}{51}{section.7.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7.4}Grounding, Roles, and Symbolic State}{51}{section.7.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7.5}Planning, Admission, and Replanning}{52}{section.7.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7.6}Application Ablations and Non-Determinism}{52}{section.7.6}\protected@file@percent }
 \abx@aux@cite{0}{quigley2009ros}
 \abx@aux@segm{0}{0}{quigley2009ros}
 \abx@aux@cite{0}{macenski2022ros2}
 \abx@aux@segm{0}{0}{macenski2022ros2}
 \abx@aux@cite{0}{mohamed2020ros4hri}
 \abx@aux@segm{0}{0}{mohamed2020ros4hri}
-\abx@aux@page{52}{67}
-\abx@aux@page{53}{67}
-\@writefile{toc}{\contentsline {section}{\numberline {8.6}Execution Evidence and Truthful Closure}{67}{section.8.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {8.7}ROS 2 and HRI Modularity}{67}{section.8.7}\protected@file@percent }
-\abx@aux@page{54}{67}
-\abx@aux@page{55}{67}
-\abx@aux@page{56}{67}
-\@writefile{toc}{\contentsline {section}{\numberline {8.8}Validation Implications}{68}{section.8.8}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{\numberline {9}Limitations and Future Work}{69}{chapter.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7.7}Controlled Skill Adapters, Physical Claims, and Portability}{53}{section.7.7}\protected@file@percent }
+\abx@aux@page{46}{53}
+\abx@aux@page{47}{53}
+\abx@aux@page{48}{53}
+\@writefile{toc}{\contentsline {section}{\numberline {7.8}Implications for the Research Questions}{53}{section.7.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {8}Limitations and Future Work}{54}{chapter.8}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{chap:limitations-future-work}{{9}{69}{Limitations and Future Work}{chapter.9}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {9.1}Current Limitations}{69}{section.9.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {9.2}Future Work}{69}{section.9.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{\numberline {10}Conclusion}{70}{chapter.10}\protected@file@percent }
+\newlabel{chap:limitations-future-work}{{8}{54}{Limitations and Future Work}{chapter.8}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {8.1}Current Limitations}{54}{section.8.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {8.2}Future Work}{55}{section.8.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2.1}Model Coupling and Qualification}{55}{subsection.8.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2.2}Deterministic Semantic Guards}{55}{subsection.8.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2.3}Broader Embodied Validation}{55}{subsection.8.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2.4}Evidence and Reproducibility}{56}{subsection.8.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {9}Conclusion}{57}{chapter.9}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{chap:conclusion}{{10}{70}{Conclusion}{chapter.10}{}}
-\@writefile{toc}{\contentsline {chapter}{\numberline {A}Full Runtime Contracts}{72}{appendix.A}\protected@file@percent }
+\newlabel{chap:conclusion}{{9}{57}{Conclusion}{chapter.9}{}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {A}Full Runtime Contracts}{58}{appendix.A}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{chap:appendix}{{A}{72}{Full Runtime Contracts}{appendix.A}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {A.1}Runtime Skill Inventory}{72}{section.A.1}\protected@file@percent }
-\newlabel{sec:runtime-skill-inventory}{{A.1}{72}{Runtime Skill Inventory}{section.A.1}{}}
-\gdef \LT@v {\LT@entry
-    {1}{106.77922pt}\LT@entry
-    {1}{92.37904pt}\LT@entry
-    {1}{149.96875pt}\LT@entry
-    {1}{207.55844pt}\LT@entry
+\newlabel{chap:appendix}{{A}{58}{Full Runtime Contracts}{appendix.A}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A.1}Runtime Skill Inventory}{58}{section.A.1}\protected@file@percent }
+\newlabel{sec:runtime-skill-inventory}{{A.1}{58}{Runtime Skill Inventory}{section.A.1}{}}
+\gdef \LT@iv {\LT@entry 
+    {1}{106.77922pt}\LT@entry 
+    {1}{92.37904pt}\LT@entry 
+    {1}{149.96875pt}\LT@entry 
+    {1}{207.55844pt}\LT@entry 
     {1}{135.56857pt}}
-\@writefile{lot}{\contentsline {table}{\numberline {A.1}{\ignorespaces Compressed runtime skill inventory and registry values.}}{73}{table.A.1}\protected@file@percent }
-\newlabel{tab:runtime-skill-inventory}{{A.1}{73}{Compressed runtime skill inventory and registry values}{table.A.1}{}}
-\@writefile{toc}{\contentsline {chapter}{\numberline {B}Launch Commands}{75}{appendix.B}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {A.1}{\ignorespaces Compressed runtime skill inventory and registry values.}}{59}{table.A.1}\protected@file@percent }
+\newlabel{tab:runtime-skill-inventory}{{A.1}{59}{Compressed runtime skill inventory and registry values}{table.A.1}{}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {B}Launch Commands}{61}{appendix.B}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {chapter}{\numberline {C}Validation Log Template}{76}{appendix.C}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {C}Validation Log Template}{62}{appendix.C}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{lot}{\contentsline {table}{\numberline {C.1}{\ignorespaces Validation log template.}}{76}{table.caption.43}\protected@file@percent }
-\newlabel{tab:validation-log-template}{{C.1}{76}{Validation log template}{table.caption.43}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {C.1}{\ignorespaces Validation log template.}}{62}{table.caption.38}\protected@file@percent }
+\newlabel{tab:validation-log-template}{{C.1}{62}{Validation log template}{table.caption.38}{}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {D}Final Evaluation Dataset}{63}{appendix.D}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{chap:evidence-dataset}{{D}{63}{Final Evaluation Dataset}{appendix.D}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {D.1}Dataset Scope and Attachment}{63}{section.D.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {D.2}Run Inventory}{64}{section.D.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {D.1}{\ignorespaces Machine-derived archive inventory used by the final dataset.}}{64}{table.caption.39}\protected@file@percent }
+\newlabel{tab:dataset-run-inventory}{{D.1}{64}{Machine-derived archive inventory used by the final dataset}{table.caption.39}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {D.3}Field Dictionary}{64}{section.D.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {D.4}Evidence Integrity}{65}{section.D.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {D.2}{\ignorespaces SHA-256 identifiers for the final supplied evidence files.}}{65}{table.caption.40}\protected@file@percent }
+\newlabel{tab:evidence-hashes}{{D.2}{65}{SHA-256 identifiers for the final supplied evidence files}{table.caption.40}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {D.5}Complete Case Index}{65}{section.D.5}\protected@file@percent }
+\gdef \LT@v {\LT@entry 
+    {1}{150.07153pt}\LT@entry 
+    {1}{58.98691pt}\LT@entry 
+    {1}{256.95354pt}\LT@entry 
+    {1}{48.18951pt}\LT@entry 
+    {1}{44.58673pt}\LT@entry 
+    {1}{42.08673pt}}
+\@writefile{lot}{\contentsline {table}{\numberline {D.3}{\ignorespaces Complete index of the 108 retained case records.}}{66}{table.D.3}\protected@file@percent }
+\newlabel{tab:final-dataset-index}{{D.3}{66}{Complete index of the 108 retained case records}{table.D.3}{}}
 \abx@aux@nociteall
-\@writefile{toc}{\contentsline {chapter}{Bibliography}{77}{section*.44}\protected@file@percent }
-\abx@aux@page{57}{77}
-\abx@aux@page{58}{77}
-\abx@aux@page{59}{77}
-\abx@aux@page{60}{77}
-\abx@aux@page{61}{77}
-\abx@aux@page{62}{77}
-\abx@aux@page{63}{77}
-\abx@aux@page{64}{77}
-\abx@aux@page{65}{77}
-\abx@aux@page{66}{77}
-\abx@aux@page{67}{77}
-\abx@aux@page{68}{78}
-\abx@aux@page{69}{78}
-\abx@aux@page{70}{78}
-\abx@aux@page{71}{78}
-\abx@aux@page{72}{78}
-\abx@aux@page{73}{78}
-\abx@aux@page{74}{78}
-\abx@aux@page{75}{78}
-\abx@aux@page{76}{78}
-\abx@aux@page{77}{78}
-\abx@aux@page{78}{78}
-\abx@aux@page{79}{78}
-\abx@aux@page{80}{78}
-\abx@aux@page{81}{78}
-\abx@aux@page{82}{78}
-\abx@aux@page{83}{79}
-\abx@aux@page{84}{79}
-\abx@aux@page{85}{79}
-\abx@aux@page{86}{79}
-\abx@aux@page{87}{79}
-\abx@aux@read@bbl@mdfivesum{2317599FF57BE07D858567042D3225DC}
+\@writefile{toc}{\contentsline {chapter}{Bibliography}{68}{section*.41}\protected@file@percent }
+\abx@aux@page{49}{68}
+\abx@aux@page{50}{68}
+\abx@aux@page{51}{68}
+\abx@aux@page{52}{68}
+\abx@aux@page{53}{68}
+\abx@aux@page{54}{68}
+\abx@aux@page{55}{68}
+\abx@aux@page{56}{68}
+\abx@aux@page{57}{68}
+\abx@aux@page{58}{68}
+\abx@aux@page{59}{68}
+\abx@aux@page{60}{69}
+\abx@aux@page{61}{69}
+\abx@aux@page{62}{69}
+\abx@aux@page{63}{69}
+\abx@aux@page{64}{69}
+\abx@aux@page{65}{69}
+\abx@aux@page{66}{69}
+\abx@aux@page{67}{69}
+\abx@aux@page{68}{69}
+\abx@aux@page{69}{69}
+\abx@aux@page{70}{69}
+\abx@aux@page{71}{69}
+\abx@aux@page{72}{69}
+\abx@aux@page{73}{69}
+\abx@aux@page{74}{69}
+\abx@aux@page{75}{70}
+\abx@aux@page{76}{70}
+\abx@aux@page{77}{70}
+\abx@aux@page{78}{70}
+\abx@aux@page{79}{70}
+\abx@aux@page{80}{70}
+\abx@aux@read@bbl@mdfivesum{922DFD67ACE2F3930CBB2BE4C11FA408}
 \abx@aux@defaultrefcontext{0}{ahn2022saycan}{nyt/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{bastianelli2013knowledge}{nyt/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{brohan2023rt2}{nyt/global//global/global/global}
@@ -456,6 +426,7 @@
 \abx@aux@defaultrefcontext{0}{huang2022zeroshot}{nyt/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{huang2022innermonologue}{nyt/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{kim2024openvla}{nyt/global//global/global/global}
+\abx@aux@defaultrefcontext{0}{knowledgecore}{nyt/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{li2023blip2}{nyt/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{liang2022codepolicies}{nyt/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{liu2023llmp}{nyt/global//global/global/global}
@@ -473,4 +444,4 @@
 \abx@aux@defaultrefcontext{0}{tenorth2017knowrob}{nyt/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{valmeekam2023planning}{nyt/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{yao2022react}{nyt/global//global/global/global}
-\gdef \@abspage@last{90}
+\gdef \@abspage@last{82}
