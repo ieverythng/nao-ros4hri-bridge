@@ -1,23 +1,15 @@
 \chapter{Validation Methodology}
 \label{chap:validation-methodology}
 
-\section{Validation Scope and Unit of Analysis}
+\section{Validation Scope}
 
-The evaluation tests whether the complete NAO interaction and execution stack preserves the runtime contracts defined in Chapter~\ref{chap:runtime-contracts}. The planner is only one component of this claim: the scored system also includes tracked speech ingress, dialogue ownership, symbolic grounding, planner admission, orchestrator validation, skill dispatch, KB effects, execution feedback, and spoken closure. This chapter therefore defines the unit of analysis, evidence depths, execution profiles, frozen case sets, reset rules, metrics, and final-run acceptance gate before any results are reported. A successful case must route the user turn correctly, use the declared grounded evidence, produce an admissible plan when execution is required, dispatch only registered skills, retain execution lineage, and report the observed outcome through the designated dialogue and speech interfaces. Task completion alone is insufficient when it is accompanied by duplicate speech, unsupported world-state claims, invalid planner output, or missing trace evidence.
+The evaluation tests whether the designed system works from a user request to a correct response or robot action. A case passes only when the request is interpreted correctly, the relevant world information is used, any required plan contains suitable skills in the correct order, the orchestrator executes only the accepted plan, and the final response agrees with the observed outcome.
 
-The unit of analysis is one case execution under a fixed configuration tuple:
+The unit of analysis is one user request under a fixed software, model, world-state, and skill configuration. The main questionnaire is entered through the ROS \code{rqt} chat interface, which provides repeatable text input to the same dialogue component used by the integrated system. These runs do not claim to evaluate automatic speech recognition. Robot speech output is checked separately when it is part of the case.
 
-\[
-\mathcal{C} = (u, p, e, a, m_c, m_p, h_c, h_p, f, s),
-\]
+\section{Validation Levels}
 
-where \(u\) is the user utterance, \(p\) the launch profile, \(e\) the environment fixture, \(a\) the source, container, registry, and prompt artifact fingerprint, \(m_c\) and \(m_p\) the chatbot and planner models, \(h_c\) and \(h_p\) the corresponding prompt-pack revisions, \(f\) the real or fake execution policy, and \(s\) the deterministic seed when one is used. A run is one complete case-set execution under a shared tuple. Results from different tuples are reported as separate evidence sets rather than merged into one aggregate.
-
-The independent variables are the turn-pipeline mode, case set, fixture, detector state, skill-adapter profile, injected failure policy, seed, and model configuration. The dependent variables are route correctness, plan validity, required-skill coverage, order correctness, safe failure, clarification behaviour, phase completeness, speech multiplicity, state freshness, latency, and the run-level score defined in Section~\ref{sec:runtime-score}.
-
-\section{Validation Levels and Supported Claims}
-
-The runtime harness evaluates five levels of evidence. Passing one level does not imply the next: a turn may traverse every expected ROS interface while preserving the wrong target set or an inconsistent symbolic post-state. Table~\ref{tab:validation-depth} defines the evidence required at each level and the claim it can support.
+Table~\ref{tab:validation-depth} separates the claims that can be supported by language and software evidence from those that require a physical observation.
 
 \begin{table}[H]
 \centering
@@ -25,52 +17,29 @@ The runtime harness evaluates five levels of evidence. Passing one level does no
 \renewcommand{\arraystretch}{1.14}
 \caption{Validation levels and supported claims.}
 \label{tab:validation-depth}
-\begin{tabularx}{\textwidth}{@{}p{0.21\textwidth}p{0.42\textwidth}X@{}}
+\begin{tabularx}{\textwidth}{@{}p{0.22\textwidth}p{0.39\textwidth}X@{}}
 \toprule
-\textbf{Depth} & \textbf{Required evidence} & \textbf{Permitted claim}\\
+\textbf{Level} & \textbf{Required evidence} & \textbf{Supported claim}\\
 \midrule
-Runtime readiness & Source and image fingerprint, unique nodes, active lifecycle state, speech QoS, model preflight, KB services, and required action servers. & The declared configuration was available for case injection.\\
-ROS trajectory & User turn, route, planner admission when eligible, plan or dialogue outcome, execution feedback, terminal event, and speech. & The case traversed the expected software path.\\
-Semantic contract & Exact requested and selected members, entity roles, plan targets, recipient, ordering, and report policy agree. & The executed software task was a valid refinement of the user request.\\
-State and closure & Per-member effects pass KB post-queries and the final structured outcome covers every evidenced success and failure. & The symbolic post-state and user-facing closure agree with execution evidence.\\
-Embodied outcome & Robot, scene, or sensor evidence proves the physical effect under the detector or robot profile. & The corresponding physical behaviour was observed within the evaluated conditions.\\
+Semantic response & Correct dialogue/knowledge route, relevant grounded entities, and an appropriate response or planner request. & The system understood the tested request and used the declared symbolic context.\\
+Software execution & Valid plan, required skills in the correct sequence, typed skill results, and a truthful final report. & The integrated software completed or safely rejected the tested task.\\
+Physical outcome & Direct robot, camera, or sensor observation of the requested effect. & The tested physical behaviour occurred under the stated conditions.\\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-Deterministic fake skills can support readiness, trajectory, semantic-contract, and symbolic post-state claims. They do not establish physical navigation or manipulation accuracy. The principal semantic-stack score therefore stops at state and closure. Detector-enabled and physical-robot evidence are reported separately, and neither planner-only nor detector-only success is promoted to a claim about the entire NAO stack.
 
-\section{Execution Profiles}
+Controlled skill adapters support semantic-response and software-execution claims by exposing the same call and result contracts as the robot-facing skills. Deterministic simulated outcomes provide repeatable success and failure conditions, while physical claims still require direct robot or sensor observation. The validation is organised into the following stages:
 
-Table~\ref{tab:evaluation-profiles} distinguishes the scored full-stack profile from diagnostic and ablation profiles. This prevents planner-isolated success, direct skill success, or detector variability from being reported as integrated-stack performance.
+\begin{enumerate}
+  \item \textbf{Perception and grounding:} checks that simulated or detected people and objects are represented with the correct identifiers, types, properties, and relations. In software-only runs, the people and objects are simulated by inserting controlled scene and KB facts.
+  \item \textbf{Intent and routing:} checks that dialogue and knowledge questions do not request a plan, while action requests do.
+  \item \textbf{Planner:} checks that an admitted action request becomes a valid sequence of available skills with the required arguments.
+  \item \textbf{Skill execution:} checks ordered execution, controlled failures, replanning or clarification, world-state updates, and truthful reporting without requiring hardware.
+  \item \textbf{Full end-to-end test:} checks the complete path from an \code{rqt} chat request through dialogue, grounding, planning, orchestration, skills, and the final response. Here, \emph{end-to-end} means that all software components of the designed system participate in the same case.
+\end{enumerate}
 
-\begin{table}[H]
-\centering
-\small
-\renewcommand{\arraystretch}{1.14}
-\caption{Evaluation profiles and their validation scope.}
-\label{tab:evaluation-profiles}
-\begin{tabularx}{\textwidth}{@{}p{0.16\textwidth}p{0.22\textwidth}p{0.33\textwidth}X@{}}
-\toprule
-\textbf{Profile} & \textbf{Entry point} & \textbf{Components under test} & \textbf{Score use}\\
-\midrule
-E2E-main & Tracked voice and \path{hri_msgs/LiveSpeech} & Dialogue lifecycle, chatbot routing, grounding, planner admission, execution feedback, and speech ownership & Primary full-runtime score.\\
-Planner-isolated & \path{/nao_orchestrator/planner_request} & Planner gate, planner output, orchestrator validation, selected skills, and feedback & Diagnostic score only.\\
-Fake-multistep & E2E-main with named fixtures and deterministic fake policies & Ordered execution, failure injection, replanning, clarification, KB effects, and truthful reporting & Separate fake/replan score.\\
-Detector-enabled & E2E-main with the detector and grounding bridge enabled & Detector normalisation, scene summary, KB projection, and detector-derived dialogue & Perception score reported separately.\\
-Intent ablation & E2E-main with \code{intent_first} & Route lock, response consistency, planner admission, and speech behaviour under changed stage ordering & Paired ablation against \code{response_first}.\\
-Architecture sweep & Chatbot service, KB services, and direct fake actions & Contract-specific add/revise/remove, no-mutation, skill guard, and adapter checks & Compliance evidence, not a substitute for E2E-main.\\
-Direct atomic control & Direct \code{/intents} ingress for one registered atomic operation & Orchestrator normalization, argument guards, dispatch, and typed result handling without planner mediation & Safety control only; not a causal planner baseline.\\
-Source verification & Focused unit, contract, and launch tests & Schema normalization, semantic validators, registry projections, and deterministic guards & Implementation evidence only; no live-runtime score.\\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-The primary E2E profile uses \code{response_first}, group-scoped synthetic voices, and the tracked-voice plus \code{LiveSpeech} ingress. Unrelated cases receive separate conversation groups, while intentional follow-ups share a declared group. The detector is disabled in the principal semantic-stack score and enabled only for the detector profile. Stable KB-authored objects are therefore not confused with object-recognition performance. The final frozen run must report the E2E-main, fake-multistep, robustness, and source-verification evidence as separate rows under one manifest rather than merging them into an undocumented aggregate.
-
-\section{Validation Goals and Acceptance Rules}
-
-Each goal in Table~\ref{tab:validation-goals-expanded} has an explicit pass rule. The goals are grouped around routing, grounding, target preservation, execution supervision, failure handling, speech ownership, traceability, state freshness, and interaction-interface compliance. Evidence inferred only from a timeout, a console summary, or a topic that was not observed does not satisfy the corresponding rule.
+\section{Acceptance Criteria}
 
 \begin{longtable}{p{0.20\linewidth}p{0.36\linewidth}p{0.34\linewidth}}
 \caption{Validation goals, acceptance rules, and evidence sources.}
@@ -86,258 +55,175 @@ Each goal in Table~\ref{tab:validation-goals-expanded} has an explicit pass rule
 \endhead
 \bottomrule
 \endfoot
-Route correctness & The observed route equals the declared route. Dialogue and knowledge turns emit no planner request or execution feedback. & \code{/chatbot_llm/turn_trace}, planner-request and intent topics.\\
+Route correctness & The observed route equals the declared route. Dialogue and knowledge turns emit no planner request or execution feedback. & Chatbot turn record, planner-request topic, and plan topic.\\
 Semantic-decision uniqueness & One user turn produces one validated route before acknowledgement. A dialogue response followed by unintended execution is a failure even when both paths are individually observable. & Turn identifier, route decision, planner request, dialogue response, and speech events.\\
-Plan validity & Every candidate plan admitted for execution passes Contract~5 schema, Contract~4 skill-name, argument, ordering, failure-policy, and lineage checks. & Planner decision record, \code{/intents}, orchestrator validation events.\\
-Skill and order coverage & All required subgoals appear, forbidden skills are absent, and declared partial-order constraints hold. & Expected-plan manifest and observed plan steps.\\
-Grounding use & Required fixture entities appear in Contract~3 using canonical identifiers and the declared people/object/location roles. & KB pre-query, \code{/scene/summary}, planner request, grounded-context trace.\\
-Target-set and role integrity & The selected, planned, executed, and reported members equal the declared object set. People remain recipients or human targets; locations and supports remain anchors. & Case oracle, \code{target_selection}, admitted plan, execution events, and structured report outcome.\\
-Execution validation & Only admitted steps are dispatched, and every dispatch has a Contract~6 result and Contract~7 feedback with matching lineage. & Action events, \path{/planner/execution_feedback}, trace JSONL.\\
-Safe failure & An injected failure ends in a valid replan, clarification, help request, or truthful terminal failure. False completion is a fail. & Fake result, plan versions, dialogue act, spoken result.\\
-Exactly-once speech & Each expected semantic stage produces one speech event. Acknowledgement and terminal reporting count as separate stages only when both are declared. & Planner dialogue relay, dialogue output, \code{/debug/nao_say/speech}.\\
-Report coverage & Every selected member with execution evidence appears in the structured outcome with the correct status; the spoken closure must not claim completion when evidence is incomplete. & Contract~6 results, report outcome, report-result event, and final speech.\\
-Trace completeness & All mandatory phases contain timestamps, identifiers, and payload evidence sufficient to reconstruct the case. & Per-case \code{phase_observations}, JSONL trace, report bundle.\\
-State freshness & The pre-case fixture is verified, undeclared earlier entities are absent, and successful material effects are visible in a post-case KB query. & Fixture manifest, stale-world guard, \code{/kb/query}, skill KB effects.\\
-Interaction-interface compliance & Public interaction follows the tracked-voice and \code{LiveSpeech} contracts; dialogue ownership, lifecycle readiness, and planner-dialogue relay remain intact. & ROS graph, lifecycle state, QoS/subscription preflight, relay topics.\\
+Plan validity & Every candidate plan admitted for execution passes the Contract~5 schema and the Contract~4 skill-name, argument, ordering, failure-policy, and lineage checks. & Planner decision record, \code{/intents}, and orchestrator validation events.\\
+Skill and order coverage & All required subgoals appear, forbidden skills are absent, and the declared action-order constraints hold. & Expected-plan definition and observed plan steps.\\
+Grounding use & Required fixture entities appear in Contract~3 with canonical identifiers and the declared people, object, and location roles. & KB pre-query, \code{/scene/summary}, planner request, and grounded-context record.\\
+Target-set and role integrity & The selected, planned, executed, and reported members equal the declared target set. People remain recipients or human targets; locations and supports remain anchors. & Case definition, target selection, admitted plan, execution events, and structured report outcome.\\
+Execution validation & Only admitted steps are dispatched, and every dispatch has a Contract~6 result and Contract~7 feedback with matching lineage. & Skill action events and \path{/planner/execution_feedback}.\\
+Safe failure & An injected failure ends in a valid replan, clarification, help request, or truthful terminal failure. A false completion is a failure. & Controlled skill result, plan versions, dialogue act, and final response.\\
+Report coverage & Every selected member with execution evidence appears in the structured outcome with the correct status; the final response must not claim completion when evidence is incomplete. & Contract~6 results, report outcome, report-result event, and final response.\\
+State freshness & The pre-case fixture is verified, undeclared earlier entities are absent, and successful material effects are visible in a post-case KB query. & Fixture definition, pre/post \code{/kb/query}, and skill world-state updates.\\
 \end{longtable}
 
-\section{Full Runtime Questionnaire}
+\section{Full End-to-End Questionnaire}
 
-The principal questionnaire contains twenty-one cases. The original twenty cases retain five dialogue, five knowledge, five simple execution, and five composite execution cases. A route-safety holdout adds one explicit non-action turn. Table~\ref{tab:main-questionnaire-manifest} records the exact utterances used by the runtime harness and is the E2E-main component of the final frozen run. Dialogue and KB-query cases forbid planner activity. Execution cases admit planner work but still require grounded arguments, registered skills, truthful evidence, and the speech policy declared for the case.
+The questionnaire in Table~\ref{tab:main-questionnaire-manifest} contains dialogue, knowledge, atomic-action, composite-action, and route-safety cases. Every dialogue and knowledge case explicitly forbids a planner request. The knowledge cases cover common entity features---name, type, colour, count, and location relation---as well as a KB update that remains outside the robot-action planner.
 
 \begingroup
 \scriptsize
 \setlength{\tabcolsep}{3pt}
-\begin{longtable}{p{0.23\linewidth}p{0.35\linewidth}p{0.13\linewidth}p{0.20\linewidth}}
-\caption{Frozen twenty-one-case full-runtime questionnaire.}
+\begin{longtable}{p{0.22\linewidth}p{0.35\linewidth}p{0.13\linewidth}p{0.21\linewidth}}
+\caption{Twenty-two-case full end-to-end questionnaire.}
 \label{tab:main-questionnaire-manifest}\\
 \toprule
-\textbf{Case ID} & \textbf{Exact utterance} & \textbf{Route} & \textbf{Required or forbidden evidence}\\
+\textbf{Case ID} & \textbf{Exact utterance} & \textbf{Expected route} & \textbf{Required behaviour}\\
 \midrule
 \endfirsthead
 \multicolumn{4}{l}{\small\itshape Table~\thetable\ continued}\\
 \toprule
-\textbf{Case ID} & \textbf{Exact utterance} & \textbf{Route} & \textbf{Required or forbidden evidence}\\
+\textbf{Case ID} & \textbf{Exact utterance} & \textbf{Expected route} & \textbf{Required behaviour}\\
 \midrule
 \endhead
 \bottomrule
 \endfoot
-\path{dialogue_greeting} & ``Hey, how are you?'' & dialogue & One response; no planner activity.\\
-\path{dialogue_favorite_movie} & ``What is your favourite movie?'' & dialogue & Natural answer; no planner activity.\\
-\path{dialogue_movie_followup} & ``My favourite movie is Back to the Future!'' & dialogue & Contextual acknowledgement; no planner activity.\\
-\path{dialogue_weekend_plans} & ``Any ideas for plans this weekend?'' & dialogue & Advice is not promoted to execution.\\
-\path{dialogue_speed_of_light} & ``What is the speed of light?'' & dialogue & Informational answer; no planner activity.\\
-\path{kb_visible_now_baseline} & ``What can you see now?'' & knowledge & Answer from declared state; no planner activity.\\
-\path{kb_probe_scene_update} & ``What else can you see now?'' & knowledge & Newly injected cup/table facts are used.\\
-\path{kb_object_on_table} & ``What object is on the table?'' & knowledge & Correct support relation and canonical subject.\\
-\path{kb_cup_name} & ``Can you tell me the name of the cup?'' & knowledge & Name is recovered from the KB projection.\\
-\path{kb_multi_object_count} & ``How many objects can you see?'' & knowledge & Correct count without treating people/supports as objects.\\
-\path{skill_head_up} & ``Move your head up.'' & execution & Admissible motion and evidence-based report.\\
-\path{skill_pick_phone_generic} & ``Pick up the phone.'' & execution & Grounded \code{pick_object}; noun phrase is resolved before dispatch.\\
-\path{skill_pick_object_on_table} & ``Pick up the object on the table.'' & execution & Support relation identifies one canonical target.\\
-\path{skill_look_at_person} & ``Look at the person named ALEX.'' & execution & Person remains a human target; \code{look_at} is dispatched.\\
-\path{kb_mutation_add_red_cup} & ``Add a red cup to your KB.'' & execution & Explicit \code{kb_add} through the KB boundary and post-query.\\
-\path{composite_head_all_directions} & ``Can you move your head in all directions?'' & execution & Multi-step motion; no one-step collapse.\\
-\path{composite_bring_every_object_to_person} & ``Can you bring every object in view to the person named ALEX?'' & execution & Canonical objects and human recipient; complete report.\\
-\path{maximal_kitchen_cup_to_operator} & ``Can you go to the kitchen and bring me the cup?'' & execution & Grounded location/object chain; no fabricated detector evidence.\\
-\path{composite_go_to_person_wave_report} & ``Go to the person named ALEX and wave at them. Let me know when you've done that.'' & execution & Ordered navigation, social motion, and terminal report.\\
-\path{composite_walk_every_object_reports_main} & ``Walk to every object and let me know when you get to each one.'' & execution & Alternating navigation/report stages for every grounded object.\\
-\path{dialogue_non_action_recipient_memory} & ``Remember that ALEX is the recipient, but do not act yet.'' & dialogue & One acknowledgement; no planner request, KB mutation, or execution feedback.\\
+\path{dialogue_greeting} & ``Hey, how are you?'' & dialogue & One natural response; no planner request.\\
+\path{dialogue_favorite_movie} & ``What is your favourite movie?'' & dialogue & Natural answer; no planner request.\\
+\path{dialogue_movie_followup} & ``My favourite movie is Back to the Future!'' & dialogue & Contextual acknowledgement; no planner request.\\
+\path{dialogue_weekend_plans} & ``Do you have any ideas for this weekend?'' & dialogue & Advice only; no planner request.\\
+\path{dialogue_speed_of_light} & ``What is the speed of light?'' & dialogue & Informational answer; no planner request.\\
+\path{kb_visible_now_baseline} & ``What can you see now?'' & knowledge & Answer from the declared state; no planner request.\\
+\path{kb_probe_scene_update} & ``What new objects can you see?'' & knowledge & Use the newly inserted scene facts; no planner request.\\
+\path{kb_object_on_table} & ``Which object is on the table?'' & knowledge & Return the correct support relation; no planner request.\\
+\path{kb_cup_name} & ``What is the cup called?'' & knowledge & Return the stored name; no planner request.\\
+\path{kb_multi_object_count} & ``How many objects can you see?'' & knowledge & Count objects without counting people or tables; no planner request.\\
+\path{kb_cup_colour} & ``What colour is the cup?'' & knowledge & Return the stored colour; no planner request.\\
+\path{kb_update_red_cup} & ``Add a red cup to your knowledge base.'' & knowledge & Update symbolic state only; no robot plan is requested.\\
+\path{skill_head_up} & ``Move your head up.'' & execution & Execute the required motion and report the result.\\
+\path{skill_pick_phone_generic} & ``Pick up the phone.'' & execution & Ground one phone before dispatching \code{pick_object}.\\
+\path{skill_pick_object_on_table} & ``Pick up the object on the table.'' & execution & Use the support relation to select one object.\\
+\path{skill_look_at_person} & ``Look at ALEX.'' & execution & Keep ALEX as a person and gaze target.\\
+\path{composite_head_all_directions} & ``Move your head up, down, left, and right.'' & execution & Preserve all requested motions in the correct order.\\
+\path{composite_bring_objects_to_person} & ``Bring all the objects you can see to ALEX.'' & execution & Preserve the object set and the human recipient.\\
+\path{composite_kitchen_cup_to_operator} & ``Go to the kitchen, find the cup, and bring it to me.'' & execution & Preserve the location, object, recipient, and action order.\\
+\path{composite_go_to_person_wave_report} & ``Go to ALEX, wave, and tell me when you are finished.'' & execution & Navigate, perform the greeting motion, and report completion.\\
+\path{composite_walk_every_object_reports} & ``Visit every object and tell me when you reach each one.'' & execution & Visit each object once and report each arrival.\\
+\path{dialogue_non_action_recipient_memory} & ``Remember that ALEX is the recipient, but do not act yet.'' & dialogue & Acknowledge without a planner request or robot action.\\
 \end{longtable}
 \endgroup
 
-\section{Multi-Step Deterministic Fake-Skill Matrix}
+\section{Skill-Execution and Failure Stress Testing}
 
-The fake-skill matrix reuses the full tracked-voice and \code{LiveSpeech} ingress and replaces hardware-dependent outcomes with named, typed policies. The canonical manifest contains the nine cases in Table~\ref{tab:fake-deep-manifest}. Each policy sweep retains the same prompts and fixtures, allowing differences to be attributed to injected outcomes rather than changed language.
+The validation follows the same observable boundaries for robot-facing and simulated skill adapters. Robot skills provide evidence from the physical platform, whereas deterministic adapters reproduce the same result contract while allowing the outcome of an individual skill call to be selected. This makes it possible to stress planning, dispatch, feedback, replanning, and reporting without changing the request or planner-visible skill definition.
 
-\begingroup
-\scriptsize
-\setlength{\tabcolsep}{3pt}
-\begin{longtable}{p{0.25\linewidth}p{0.17\linewidth}p{0.32\linewidth}p{0.17\linewidth}}
-\caption{Canonical multi-step deterministic fake-skill manifest.}
-\label{tab:fake-deep-manifest}\\
-\toprule
-\textbf{Case ID} & \textbf{Fixture} & \textbf{Exact utterance} & \textbf{Acceptance focus}\\
-\midrule
-\endfirsthead
-\multicolumn{4}{l}{\small\itshape Table~\thetable\ continued}\\
-\toprule
-\textbf{Case ID} & \textbf{Fixture} & \textbf{Exact utterance} & \textbf{Acceptance focus}\\
-\midrule
-\endhead
-\bottomrule
-\endfoot
-\path{fake_deep_baseline_inventory} & \path{baseline_table} & ``What objects are on the table?'' & Fixture and grounding preflight.\\
-\path{fake_deep_ordered_walk_report} & \path{lab_table} & ``Walk to every object on the table and let me know when you get to each one.'' & Ordered reports and no repeated steps.\\
-\path{fake_deep_grouped_work_table_delivery} & \path{lab_sections} & ``Bring every object from the work table to ALEX and report what happened.'' & Group expansion, recipient, and KB effects.\\
-\path{fake_deep_missing_object_recovery} & \path{baseline_table} & ``Find the codex missing cup. If you cannot find it, scan the scene and report what you can confirm.'' & Replan or truthful failure.\\
-\path{fake_deep_missing_recipient_clarification} & \path{lab_sections} & ``Bring every object from the work table to the person named BLAKE and report what happened.'' & No invented recipient or false completion.\\
-\path{fake_deep_iiia_kitchen_delivery} & \path{iiia_floor} & ``Bring every object from the kitchen to ALEX and report what happened.'' & Maximal location-scoped delivery.\\
-\path{fake_deep_iiia_floor_location_followup} & \path{iiia_floor} & ``Where are the objects from the kitchen now?'' & Post-effect state, not stale origin facts.\\
-\path{fake_deep_gold_apple_multiturn} & \path{gold_apple_handoff} & ``Can you bring that gold apple to the person named ALEX?'' & Pronoun, colour, recipient, and delivery.\\
-\path{fake_deep_gold_apple_followup} & \path{gold_apple_handoff} & ``Where is the gold apple now?'' & Follow-up from verified KB state.\\
-\end{longtable}
-\endgroup
-
-The deterministic policy ladder is \code{all_success}, \code{fail_once_navigation}, \code{fail_once_pick}, \code{delivery_blocked}, and \code{recipient_missing}. A seeded pseudo-random profile is used only after these policies have been completed, and its seed is part of the run tuple. An isolated rerun may diagnose a failed case, but it does not overwrite the full-ladder result; both outcomes are reported.
-
-\section{Robustness Set and Repetition}
-
-Five language variants are frozen after source hardening and excluded from subsequent implementation selection. They test a paraphrased grouped delivery, explicit exclusion of person and support targets, complete whole-chain reporting, a missing recipient, and a dialogue-only future instruction followed by an explicit execution turn. The compact set is repeated three times with independent dialogue groups. The exhaustive main, environment, and deterministic-policy profiles are run once; every degraded or failed case is repeated once in isolation. The full-sweep status remains primary, while the isolated result diagnoses case interaction or nondeterminism.
+Table~\ref{tab:validation-boundary-families} groups the tests by the interaction or execution boundary they exercise. Dialogue and KB checks establish that non-executable turns remain outside the planner. Single-skill and composite cases then test the transition from grounded request to ordered execution. Failure-management cases examine whether a failed step is correlated with the active goal and produces a valid continuation or truthful termination.
 
 \begin{table}[H]
 \centering
-\scriptsize
-\renewcommand{\arraystretch}{1.12}
-\caption{Frozen five-case robustness set.}
-\label{tab:robustness-manifest}
-\begin{tabularx}{\textwidth}{@{}p{0.25\textwidth}X p{0.20\textwidth}@{}}
+\footnotesize
+\renewcommand{\arraystretch}{1.08}
+\caption{Validation families and their principal acceptance focus.}
+\label{tab:validation-boundary-families}
+\begin{tabularx}{\textwidth}{@{}>{\RaggedRight\arraybackslash}p{0.24\textwidth}>{\RaggedRight\arraybackslash}p{0.31\textwidth}>{\RaggedRight\arraybackslash}X@{}}
 \toprule
-\textbf{Case ID} & \textbf{Exact utterance} & \textbf{Acceptance focus}\\
+\textbf{Validation family} & \textbf{Path exercised} & \textbf{Acceptance focus}\\
 \midrule
-\path{robust_paraphrased_group_delivery} & ``Take everything resting on the work table over to ALEX. Once every item has reached them, summarize the whole delivery.'' & Exact members, recipient, and final coverage.\\
-\path{robust_object_role_exclusion} & ``Visit each movable item on the table in turn. Do not navigate to the table or to any person, and report each arrival.'' & Object-only selection and per-target reports.\\
-\path{robust_missing_recipient} & ``Deliver every work-table object to MORGAN and explain what information is missing if MORGAN is not present.'' & Truthful clarification without execution.\\
-\path{robust_future_recipient_memory} & ``ALEX will receive the work-table items later. For now, only acknowledge this and do not execute anything.'' & Dialogue-only decision with no KB mutation.\\
-\path{robust_multiturn_execute_followup} & ``Now deliver all of those objects to them and tell me the overall result.'' & Grounded multi-turn carry-over and complete report.\\
+Dialogue interaction & Dialogue manager and chatbot response path & One non-executable route, coherent response, and no planner or skill activity.\\
+Knowledge checks & Chatbot, grounded context, and KnowledgeCore & Correct entities, properties, and relations with no robot-action plan.\\
+Single-skill execution & Grounding, planner, orchestrator, and one principal skill & Correct target and arguments, one admitted execution path, typed result, and truthful report.\\
+Composite skill execution & Planner and orchestrator across an ordered multi-step goal & Complete skill coverage, preserved roles and targets, ordered dispatch, postconditions, and final coverage.\\
+Failure management & Skill result, execution feedback, planner state, and dialogue closure & Correct goal/plan lineage, bounded replan or clarification, no obsolete-step continuation, and no false completion.\\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\section{Interface and Architecture Checks}
-
-The following preflight checks are mandatory before any speech-mode case is scored:
-
-\begin{enumerate}
-  \item the container fingerprint, source revision, image tag, and model configuration are recorded;
-  \item \code{dialogue_manager} is in the active lifecycle state and subscribes to the remapped speech topic;
-  \item the tracked-voice topic uses reliable transient-local delivery and the per-voice \code{LiveSpeech} topic uses reliable volatile delivery;
-  \item the planner ingress follows \code{chatbot_llm -> nao_orchestrator -> planner_llm};
-  \item planner communication is published on \path{/planner/dialogue_act}; \code{nao_orchestrator} relays it and \code{dialogue_manager} realizes the utterance;
-  \item long-running skills expose action servers, streamed state remains on topics, and short KB operations remain behind \code{kb_skills};
-  \item no duplicate nodes, stale container imports, or unconfigured required lifecycle skill servers are present.
-\end{enumerate}
-
-A preflight failure marks the run as \emph{not scored}; it is not attributed to chatbot, planner, or model behaviour. NAO-specific transport remains behind adapters, people and objects remain semantically distinct, and planner or orchestrator code must not bypass the public tracked-voice, dialogue, and speech path.
-
-\section{Reset, Repetition, and Isolation}
-
-Before each case group, the harness clears terminal goal state, resets fake-skill counters and policy, injects the declared fixture through \code{/kb/revise}, verifies the fixture through \code{/kb/query}, checks the stale-world guard, and begins a new trace interval. Run-unique fixture identities are preferred when equivalent semantic names may recur. Cleanup checks outgoing and incoming asserted relations, waits for KnowledgeCore materialisation to settle, and refuses to score the next group when absence cannot be verified. Successful state-changing fake steps are checked against their declared per-member postconditions. The dialogue scope is new unless the case explicitly tests a follow-up. Fixture lifetimes must exceed the maximum group duration.
-
-One full questionnaire or policy sweep is the primary run unit. Any degraded or failed case is repeated once in isolation using the same tuple to distinguish case interaction from intrinsic failure. The isolated result is reported beside the full-sweep result. Latency statistics are computed only for case families with at least three valid observations. Infrastructure failures before turn injection may be retried once and are logged as exclusions; failures after injection remain in the denominator.
-
-\section{Metrics and Denominators}
-
-Let \(N\) be the number of declared cases, including cases that fail or do not reach a terminal event. The principal rates are:
-
-\begin{align}
-\mathrm{RouteAccuracy} &= \frac{N_{\mathrm{correct\ route}}}{N},\\
-\mathrm{ValidPlanRate} &= \frac{N_{\mathrm{plans\ accepted}}}{N_{\mathrm{planner\ eligible}}},\\
-\mathrm{SkillCoverage} &= \frac{\sum_c |S_c^{\mathrm{required}} \cap S_c^{\mathrm{observed}}|}{\sum_c |S_c^{\mathrm{required}}|},\\
-\mathrm{OrderAccuracy} &= \frac{N_{\mathrm{cases\ satisfying\ required\ order}}}{N_{\mathrm{ordered\ cases}}},\\
-\mathrm{SafeFailureRate} &= \frac{N_{\mathrm{safe\ failure\ outcomes}}}{N_{\mathrm{injected\ failure\ cases}}},\\
-\mathrm{PhaseCompletion} &= \frac{\sum_c N_{c,\mathrm{observed\ mandatory\ phases}}}{\sum_c N_{c,\mathrm{mandatory\ phases}}},\\
-\mathrm{ExactlyOnceSpeech} &= \frac{N_{\mathrm{semantic\ stages\ spoken\ once}}}{N_{\mathrm{expected\ speech\ stages}}}.
-\end{align}
-
-The semantic rates are:
-
-\begin{align}
-\mathrm{TargetSetExactness} &= \frac{N_{\mathrm{cases\ with\ exact\ selected,planned,executed,reported\ sets}}}{N_{\mathrm{target\ bearing\ cases}}},\\
-\mathrm{RoleIntegrity} &= \frac{N_{\mathrm{role\ sensitive\ cases\ without\ forbidden\ kinds}}}{N_{\mathrm{role\ sensitive\ cases}}},\\
-\mathrm{ReportCoverage} &= \frac{N_{\mathrm{selected\ members\ represented\ in\ the\ structured\ outcome}}}{N_{\mathrm{selected\ members\ requiring\ reporting}}},\\
-\mathrm{PostconditionRate} &= \frac{N_{\mathrm{verified\ required\ effects}}}{N_{\mathrm{declared\ required\ effects}}},\\
-\mathrm{DecisionUniqueness} &= \frac{N_{\mathrm{turns\ with\ one\ validated\ semantic\ decision}}}{N_{\mathrm{injected\ turns}}}.
-\end{align}
-
-Clarification precision and recall are reported separately. A clarification is incorrect when the fixture already supplies the required object, location, or recipient. State freshness is the proportion of cases whose pre-case guard is clean and whose declared post-effects pass the post-query. Latency is reported with median, interquartile range, 95th percentile, maximum, and timeout count; the mean is supplementary.
-
-Case status uses four values. \emph{Pass} means that all mandatory observations and the declared terminal behaviour are present. \emph{Degraded} means that the behaviour is truthful but a non-critical requirement or observation is incomplete. \emph{Fail} includes a wrong route, invalid admitted plan, missing mandatory phase, unsafe recovery, false success, duplicate semantic speech, or incorrect state transition. \emph{Not scored} is reserved for a failed preflight or an artifact that never reached case injection. The weighted case rate is
-
-\[
-\mathrm{WeightedCaseRate} = \frac{N_{\mathrm{pass}} + 0.5N_{\mathrm{degraded}}}{N};
-\]
-
-cases marked not scored remain in \(N\), so incomplete coverage cannot increase the rate.
-
-\section{Runtime Review Score}
-\label{sec:runtime-score}
-
-The thesis reports the runtime-review 1--10 score as a secondary operational index. Reproducible case, semantic, state, speech, and latency metrics remain the primary results. Table~\ref{tab:runtime-score-components} defines eight weighted dimensions. For dimension \(j\), the compliant fraction \(r_j\) is calculated from its declared cases or mandatory observations and lies in \([0,1]\). Every published index includes the eight component values and their denominators.
-
-\begin{table}[H]
-\centering
-\small
-\caption{Components of the run-level reviewer score.}
-\label{tab:runtime-score-components}
-\begin{tabularx}{\textwidth}{@{}p{0.27\textwidth}p{0.13\textwidth}X@{}}
-\toprule
-\textbf{Dimension} & \textbf{Weight} & \textbf{Principal evidence}\\
-\midrule
-Dialogue and route safety & 1.0 & Route accuracy, non-execution of dialogue/KB turns, and response quality.\\
-Grounding and KB state & 1.5 & Fixture use, canonical identities, state freshness, and verified KB effects.\\
-Plan admission & 1.5 & Valid-plan rate, registered skills, arguments, ordering, and lineage.\\
-Skill execution & 1.5 & Required-skill coverage, action results, terminal behaviour, and truthful reporting.\\
-Failure and replan handling & 1.5 & Safe-failure rate, clarification correctness, plan-version progression, and recovery.\\
-Speech ownership & 1.0 & Exactly-once semantic stages and absence of raw planner/backend text.\\
-Trace completeness & 1.0 & Mandatory phase observations, identifiers, timestamps, and attributable outcomes.\\
-Runtime health & 1.0 & Lifecycle/QoS preflight, node uniqueness, bounded latency, and absence of sustained resource pressure.\\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-The uncapped score and reported score are
-
-\[
-S_{\mathrm{raw}} = \max\left(1, \sum_j w_j r_j\right),
-\qquad
-S_r = \min\left(S_{\mathrm{raw}}, C_r\right),
-\]
-
-where the weights \(w_j\) sum to 10 and \(C_r\) is the critical-failure cap. Component values are retained at full precision and \(S_r\) is rounded to one decimal place. A simple-dialogue failure, duplicate semantic speech, raw planner leakage, or false execution success sets \(C_r=6\). Missing mandatory evidence or failure of stable simulator/KB grounding sets \(C_r=7\); otherwise \(C_r=10\). Detector-only variability is reported under the detector profile and does not cap the semantic-stack score. Route-repair and fallback counters are pressure telemetry: they lower a component only when they produce an incorrect route, invalid admitted plan, missing phase, unsafe recovery, or user-visible failure. A score of 9 or above additionally requires complete speech ingress, natural-chat KB mutation, deterministic failure/replan evidence, exactly-once speech, and a complete fingerprinted evidence bundle.
-
-\section{Research-Question Evidence Map}
-
-Table~\ref{tab:rq-evidence-map} links each research question to its primary profile and metrics, and states how far the resulting evidence can support the claim. A diagnostic probe or software-only fake-skill result cannot therefore be reported as broader embodied evidence.
+Failure injection is interpreted by its position within the accepted goal, as summarised in Table~\ref{tab:failure-stage-methodology}. A failure at the beginning tests whether the initial plan is stopped before later work is dispatched. A middle-stage failure tests whether completed work and goal lineage are preserved while the remaining sequence is revised. An end-stage failure tests final action or reporting closure. The retained evidence contains controlled beginning- and middle-stage skill failures; end-stage evidence is provided by terminal-report checks rather than by a dedicated last-skill failure injection.
 
 \begin{table}[H]
 \centering
 \small
 \renewcommand{\arraystretch}{1.14}
-\caption{Research questions, primary profiles, and acceptance evidence.}
-\label{tab:rq-evidence-map}
-\begin{tabularx}{\textwidth}{@{}p{0.08\textwidth}p{0.23\textwidth}p{0.31\textwidth}X@{}}
+\caption{Failure position and required recovery evidence.}
+\label{tab:failure-stage-methodology}
+\begin{tabularx}{\textwidth}{@{}>{\RaggedRight\arraybackslash}p{0.18\textwidth}>{\RaggedRight\arraybackslash}p{0.34\textwidth}>{\RaggedRight\arraybackslash}X@{}}
 \toprule
-\textbf{RQ} & \textbf{Primary profile} & \textbf{Principal metrics} & \textbf{Claim boundary}\\
+\textbf{Position} & \textbf{Injected or observed condition} & \textbf{Required evidence}\\
 \midrule
-RQ1 & E2E-main and fake-multistep & Valid-plan rate, skill coverage, order accuracy, and target-set exactness & Coherent plans for the frozen task families, not unrestricted natural-language planning.\\
-RQ2 & E2E-main and environment & Grounding use, role integrity, state freshness, and postcondition rate & Consistency with injected or observed state within the declared fixture lifetime.\\
-RQ3 & Planner admission and architecture sweep & Invalid-plan rejection, registered-skill coverage, and unsupported-dispatch count & Deterministic rejection and bounded repair, not proof that the model never proposes invalid output.\\
-RQ4 & Deterministic failure policies & Safe-failure rate, plan-version lineage, clarification precision/recall, and truthful closure & Recovery under the injected policies and available skills.\\
-RQ5 & E2E-main and direct atomic control & Route accuracy, decision uniqueness, trace completeness, exactly-once speech, and ownership checks & Inspectability and separation within the evaluated NAO stack.\\
+Beginning & The first executable or target-confirmation step fails. & The original plan stops, later obsolete steps are not dispatched, and the system replans, clarifies, or terminates truthfully.\\
+Middle & One or more steps succeed before a later skill fails. & Completed work remains correlated with the goal, the plan version changes when replanning occurs, and only valid remaining work is executed.\\
+End & The final action, report, or terminal communication is unavailable or inconsistent. & Completion is withheld until evidence is complete; retry, a bounded final continuation, or truthful terminal failure is produced.\\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\section{Evidence Bundle}
+The expected response depends on the controlled outcome. A successful case must complete all required steps and update the represented world state. A recoverable failure may produce a revised valid plan; missing information must produce clarification; and an unrecoverable failure must produce a truthful final message. No case passes if completion is reported after a failed or unexecuted step.
 
-Every scored run produces a reproducible, hash-addressed bundle:
+\section{Metrics}
 
-\begin{lstlisting}[style=sharedCode, caption={Validation evidence bundle.}]
-docs/evaluation/runs/<run_id>/
-  manifest.json
-  per_case_metrics.csv
-  aggregate_metrics.json
-  raw/
-    <questionnaire>.json
-    <snapshot>.json.gz
-    <selected runtime logs>
-\end{lstlisting}
+All rates in Table~\ref{tab:validation-metrics} range from 0 to 1. For every metric, 1 is the best possible result and 0 is the worst. Cases for which a metric is not applicable are excluded from that metric's denominator.
 
-The manifest records hashes for the original artifacts and bundled copies, source and nested-repository revisions, dirty-diff status, image identity, model and provider settings, prompt-pack and registry hashes, turn-pipeline mode, digest setting, detector state, fake policy, seed, and lifecycle/QoS preflight. Each case records its emitted utterance, fixture, route, target selection, plan, skill events, Contract~6 results, Contract~7 feedback, KB pre/post queries, speech stages, fallback markers, timestamps, and terminal assessment. Historical or focused artifacts that lack this fingerprint are labelled qualified or diagnostic and cannot define the final score.
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.16}
+\caption{Validation metrics and their interpretation.}
+\label{tab:validation-metrics}
+\begin{tabularx}{\textwidth}{@{}p{0.25\textwidth}X p{0.20\textwidth}@{}}
+\toprule
+\textbf{Metric} & \textbf{Definition} & \textbf{Interpretation}\\
+\midrule
+Route accuracy & Fraction of cases assigned to the expected dialogue, knowledge, or execution path. & 1: every route correct; 0: none correct.\\
+Valid-plan rate & Fraction of execution cases that produce a plan accepted by the orchestrator. & 1: every plan valid; 0: no plan valid.\\
+Required-skill coverage & Fraction of required actions that appear in the accepted plans. & 1: no required action omitted; 0: all omitted.\\
+Step-order accuracy & Fraction of ordered cases in which the required robot actions occur in the requested sequence. & 1: every sequence correct; 0: none correct.\\
+Safe-failure rate & Fraction of injected failures that end in a valid replan, clarification, or truthful failure. & 1: every failure handled safely; 0: none handled safely.\\
+Target-set exactness & Fraction of target-bearing cases in which the executed objects or people exactly match those requested. & 1: every target set exact; 0: none exact.\\
+Role integrity & Fraction of cases in which people remain people, objects remain objects, and locations remain locations. & 1: no role errors; 0: every case has a role error.\\
+Report coverage & Fraction of attempted targets or actions represented correctly in the final report. & 1: complete reporting; 0: nothing reported correctly.\\
+Postcondition rate & Fraction of required world-state changes confirmed by the post-execution KB query. & 1: every change confirmed; 0: none confirmed.\\
+Decision uniqueness & Fraction of turns that produce one route decision without contradictory dialogue and execution behaviour. & 1: every turn consistent; 0: every turn contradictory.\\
+\bottomrule
+\end{tabularx}
+\end{table}
 
-The stateful KB stress profile adds a seven-turn chain to the environment and main questionnaires. It inserts two named objects with colour and support predicates, revises one support relation, queries the revision, executes two grounded deliveries to a named person, verifies each delivery with a direct post-execution KB query, and closes with a mixed relational question. State and wording are scored independently: a direct postcondition establishes symbolic state but does not establish response quality, while a fluent answer does not establish an action effect. Explicit provider quota, authentication, or connectivity errors define an external-validity cutoff. Model-dependent cases after the first such error are marked not scored.
+Latency is reported separately using the median, interquartile range, 95th percentile, maximum, and timeout count. A case passes only when every applicable acceptance criterion succeeds. Any missing mandatory element, including terminal closure, is reported as a failure. A result is excluded from scoring only when the required observation is unavailable or cannot be correlated reliably.
+
+\section{Model and Configuration Variability}
+
+The ROS~2 interfaces and runtime contracts are model-independent, but the semantic outputs of compatible models are not assumed to be invariant. Two models can receive the same user request, grounded entity set, skill registry, and output schema while selecting different routes, target sets, arguments, or action sequences. Consequently, endpoint compatibility establishes integration compatibility only; it does not transfer task-level qualification from one model to another.
+
+Model comparisons are interpreted only when the case set, KB fixture, skill configuration, prompt version, sampling parameters, token limits, and execution policy are held constant. Results obtained from different configurations are reported as separate evidence scopes rather than pooled into one score.
+
+Within-model variation is evaluated through repeated prompts under the same configuration. Alternative models are screened first on demanding composite and route-consistency cases; failure on those cases is sufficient to reject equivalence for the tested configuration, but not to construct a universal ranking. A replacement model must complete the full qualification before it can be treated as operationally equivalent.
+
+\section{Research-Question Evidence Map}
+
+Table~\ref{tab:rq-evidence-map} links each research question to the evidence used to answer it.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.14}
+\caption{Research questions and validation evidence.}
+\label{tab:rq-evidence-map}
+\begin{tabularx}{\textwidth}{@{}p{0.08\textwidth}p{0.27\textwidth}p{0.30\textwidth}X@{}}
+\toprule
+\textbf{RQ} & \textbf{Profile} & \textbf{Main metrics} & \textbf{Claim boundary}\\
+\midrule
+RQ1 & Planner, skill-execution, and full end-to-end tests & Valid-plan rate, skill coverage, and step-order accuracy & Supported task families only.\\
+RQ2 & Perception/grounding and full end-to-end tests & Target-set exactness, role integrity, and postcondition rate & Declared simulated or observed world state.\\
+RQ3 & Planner and orchestrator tests & Invalid-plan rejection and absence of unsupported skill dispatch & Tested schemas, arguments, and registered skills.\\
+RQ4 & Controlled skill failures & Safe-failure rate and truthful reporting & Retained beginning-, middle-, and end-stage evidence.\\
+RQ5 & Full end-to-end tests & Route accuracy, decision uniqueness, and report coverage & Implemented component and interface boundaries.\\
+\bottomrule
+\end{tabularx}
+\end{table}
 
 \section{Threats to Validity}
 
-Deterministic fake skills evaluate software supervision, recovery, and declared symbolic effects, not physical navigation or manipulation accuracy. A fixed questionnaire samples only part of the language space, and repeated development against known prompts can tune behaviour to the evaluation set. The frozen robustness set reduces but does not remove this risk. Model output may vary despite fixed prompts and low temperature. Results from different model, source, or prompt tuples are therefore not pooled. Fixture leakage, expiring facts, reused conversation history, and mutable container tags can confound a run; the reset and fingerprint gates are intended to expose these effects. A trajectory pass can also overestimate task correctness when semantic targets or postconditions are not inspected, which is why the semantic and state depths remain separate. Finally, a single NAO platform limits claims about transfer to other robots, while detector-enabled results depend on camera conditions and the restricted proof-of-concept object classes described in Chapter~\ref{chap:implementation}.
+The fixed questionnaire covers only a bounded part of natural language, and repeated development against known prompts may improve performance specifically on those prompts. The robustness set reduces this risk through paraphrase and repetition but does not estimate performance over unrestricted instructions. Controlled people, objects, and relations also simplify the grounding problem compared with an uncontrolled environment.
+
+Language-model output may vary even when the request, KB entities, prompt, and skill registry are unchanged. A single pass can therefore overstate reliability, while comparisons across different models or backend settings can confound model quality with configuration changes. The methodology addresses this by retaining all repetitions, separating configuration tuples, and limiting cross-model conclusions to matched evidence.
+
+Deterministic simulated adapters make it possible to test the same planner, orchestrator, feedback, and reporting logic independently of the robot platform. This reduces platform dependence and supports reuse through equivalent skill adapters. Simulated results do not measure physical navigation, grasping, manipulation, or safety. Physical observations in this thesis are limited to the capabilities exercised on NAO, while the software-level conclusions apply to platforms that provide equivalent skill and result interfaces.

@@ -2416,21 +2416,13 @@
     <bcf:citekey order="26" intorder="2">saxena2014robobrain</bcf:citekey>
     <bcf:citekey order="27" intorder="1">huang2022innermonologue</bcf:citekey>
     <bcf:citekey order="27" intorder="2">yao2022react</bcf:citekey>
-    <bcf:citekey order="28" intorder="1">huang2022zeroshot</bcf:citekey>
-    <bcf:citekey order="28" intorder="2">ahn2022saycan</bcf:citekey>
-    <bcf:citekey order="28" intorder="3">liang2022codepolicies</bcf:citekey>
-    <bcf:citekey order="28" intorder="4">valmeekam2023planning</bcf:citekey>
-    <bcf:citekey order="29" intorder="1">ahn2022saycan</bcf:citekey>
-    <bcf:citekey order="29" intorder="2">liang2022codepolicies</bcf:citekey>
-    <bcf:citekey order="30" intorder="1">huang2022innermonologue</bcf:citekey>
-    <bcf:citekey order="30" intorder="2">yao2022react</bcf:citekey>
-    <bcf:citekey order="31" intorder="1">tenorth2013knowrob</bcf:citekey>
-    <bcf:citekey order="31" intorder="2">tenorth2017knowrob</bcf:citekey>
-    <bcf:citekey order="31" intorder="3">saxena2014robobrain</bcf:citekey>
-    <bcf:citekey order="32" intorder="1">quigley2009ros</bcf:citekey>
-    <bcf:citekey order="32" intorder="2">macenski2022ros2</bcf:citekey>
-    <bcf:citekey order="32" intorder="3">mohamed2020ros4hri</bcf:citekey>
-    <bcf:citekey order="33" intorder="1" nocite="1">*</bcf:citekey>
+    <bcf:citekey order="28" intorder="1">knowledgecore</bcf:citekey>
+    <bcf:citekey order="29" intorder="1">mohamed2020ros4hri</bcf:citekey>
+    <bcf:citekey order="30" intorder="1">mohamed2020ros4hri</bcf:citekey>
+    <bcf:citekey order="31" intorder="1">quigley2009ros</bcf:citekey>
+    <bcf:citekey order="31" intorder="2">macenski2022ros2</bcf:citekey>
+    <bcf:citekey order="31" intorder="3">mohamed2020ros4hri</bcf:citekey>
+    <bcf:citekey order="32" intorder="1" nocite="1">*</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->
   <bcf:sortingtemplate name="nyt">

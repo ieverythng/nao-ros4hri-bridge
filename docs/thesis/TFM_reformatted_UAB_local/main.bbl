@@ -764,6 +764,36 @@
       \field{title}{OpenVLA: An Open-Source Vision-Language-Action Model}
       \field{year}{2024}
     \endentry
+    \entry{knowledgecore}{misc}{}{}
+      \name{author}{2}{}{%
+        {{hash=0863b623f7777186d1e9f267656e6123}{%
+           family={Lemaignan},
+           familyi={L\bibinitperiod},
+           given={Séverin},
+           giveni={S\bibinitperiod}}}%
+        {{hash=a8b2e39951bba535f313f563f6abaef6}{%
+           family={contributors},
+           familyi={c\bibinitperiod}}}%
+      }
+      \strng{namehash}{cbf25396e488d8029fd8fb297b04ea22}
+      \strng{fullhash}{0cc2a2c140903e0a8db7e268ccef1053}
+      \strng{fullhashraw}{0cc2a2c140903e0a8db7e268ccef1053}
+      \strng{bibnamehash}{0cc2a2c140903e0a8db7e268ccef1053}
+      \strng{authorbibnamehash}{0cc2a2c140903e0a8db7e268ccef1053}
+      \strng{authornamehash}{cbf25396e488d8029fd8fb297b04ea22}
+      \strng{authorfullhash}{0cc2a2c140903e0a8db7e268ccef1053}
+      \strng{authorfullhashraw}{0cc2a2c140903e0a8db7e268ccef1053}
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://github.com/severin-lemaignan/knowledge_core}}
+      \field{note}{Open-source software reused by the implementation; accessed July 20, 2026}
+      \field{title}{{KnowledgeCore}: an RDF-backed knowledge base for robotic applications}
+      \field{year}{2026}
+    \endentry
     \entry{li2023blip2}{article}{}{}
       \name{author}{4}{}{%
         {{hash=1c6e653d1c884531f9bc28d48227c534}{%
@@ -1563,3 +1593,4 @@
   \enddatalist
 \endrefsection
 \endinput
+

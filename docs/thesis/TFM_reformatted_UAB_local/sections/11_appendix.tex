@@ -1,12 +1,12 @@
 \chapter{Full Runtime Contracts}
 \label{chap:appendix}
 
-The full runtime contracts are described in Chapter~\ref{chap:runtime-contracts}. This appendix is reserved for additional machine-readable schemas when the final validation artefacts are frozen.
+The runtime contracts are described in Section~\ref{sec:runtime-contracts}. This appendix provides a compact reference for the implemented skill interfaces.
 
 \section{Runtime Skill Inventory}
 \label{sec:runtime-skill-inventory}
 
-Table~\ref{tab:runtime-skill-inventory} gives the compressed runtime projection used by the current planner and orchestrator profiles. The values are taken from the shared skill registry and are shortened only to fit the appendix. The machine-readable registry and the generated runtime projections are frozen with the source revision of each validation bundle. The inventory includes all sixteen planner-visible runtime skills, including the non-physical communication skill \code{ask_user}. Its inclusion does not move final wording or speech ownership out of the dialogue layer described by Contract~8.
+Table~\ref{tab:runtime-skill-inventory} gives the compressed runtime projection used by the planner and orchestrator. The inventory contains the twelve planner-visible robot and interaction skills. Knowledge-base add, revise, and remove operations are not included because they are knowledge-component interfaces rather than robot skills.
 
 \begin{landscape}
 \scriptsize
@@ -89,24 +89,6 @@ Table~\ref{tab:runtime-skill-inventory} gives the compressed runtime projection 
 & \code{missing_target}, \code{dispatch_failed}
 & \code{orchestrator.look_at}; first-party\\
 
-\shortstack[l]{\code{kb_add}\\knowledge}
-& \code{statements}
-& requested predicates are added through KnowledgeCore
-& \code{missing_statements}, \code{kb_service_unavailable}, \code{kb_mutation_rejected}
-& \code{orchestrator.kb_add}; first-party\\
-
-\shortstack[l]{\code{kb_revise}\\knowledge}
-& \code{statements}
-& requested predicates are revised through KnowledgeCore
-& \code{missing_statements}, \code{kb_service_unavailable}, \code{kb_mutation_rejected}
-& \code{orchestrator.kb_revise}; first-party\\
-
-\shortstack[l]{\code{kb_remove}\\knowledge}
-& \code{statements}
-& requested predicates are removed through KnowledgeCore
-& \code{missing_statements}, \code{kb_service_unavailable}, \code{kb_mutation_rejected}
-& \code{orchestrator.kb_remove}; first-party\\
-
 \shortstack[l]{\code{report_result}\\communication}
 & none
 & user receives a result summary through robot speech
@@ -119,12 +101,6 @@ Table~\ref{tab:runtime-skill-inventory} gives the compressed runtime projection 
 & \code{missing_prompt}, \code{dialogue_relay_unavailable}
 & \code{orchestrator.ask_user}; first-party\\
 
-\shortstack[l]{\code{wave_greet}\\social motion}
-& none
-& robot performs a greeting wave gesture
-& \code{motion_unavailable}, \code{safety_disabled}, \code{unexpected_payload}
-& \code{orchestrator.wave_greet}; hybrid\\
-
 \shortstack[l]{\code{inspect_area}\\perception}
 & \code{target}
 & scene evidence for the target area is returned
@@ -134,14 +110,7 @@ Table~\ref{tab:runtime-skill-inventory} gives the compressed runtime projection 
 \end{longtable}
 \end{landscape}
 
-The inventory separates the planner-facing name from the executor mapping. In
-the display column, \code{orchestrator.*} abbreviates
-\code{nao_orchestrator.*}, and \code{fake.*} abbreviates
-\code{fake_skills.*}. The table also records whether failure injection is
-supported in the current fake profile, which is used by the multi-step
-deterministic fake-skill cases in Chapter~\ref{chap:validation-methodology}.
-The table does not imply that every hybrid or fake entry is enabled in the
-primary scored launch profile.
+The inventory separates each planner-facing skill name from its executor. In the display column, \code{orchestrator.*} abbreviates \code{nao_orchestrator.*}, and \code{fake.*} abbreviates \code{fake_skills.*}. A greeting wave is represented as a named \code{perform_motion} action rather than as a separate skill.
 
 \chapter{Launch Commands}
 
@@ -178,3 +147,85 @@ Notes & \textit{Observations}\\
 \caption{Validation log template.}
 \label{tab:validation-log-template}
 \end{table}
+
+\chapter{Final Evaluation Dataset}
+\label{chap:evidence-dataset}
+
+\section{Dataset Scope and Attachment}
+
+The final dataset is a provenance index over the retained runtime artifacts. It contains 108 case records and 24 fields. The raw JSON files in the evidence archive remain authoritative for complete event order, payloads, and timing. The accompanying machine-readable index is embedded in this PDF as an attachment:
+
+\begin{center}
+\fbox{\textbf{Embedded dataset:} \texttt{dataset.csv}\quad
+\attachfile[
+  icon=Paperclip,
+  description={Final 108-record thesis evaluation dataset}
+]{prism-uploads/dataset.csv}}
+\end{center}
+
+PDF viewers differ in how they display attachments. If the paperclip icon is not interactive, the external file with the matching SHA-256 value in Table~\ref{tab:evidence-hashes} is the same dataset used for the reported aggregates.
+
+\section{Run Inventory}
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.12}
+\caption{Machine-derived archive inventory used by the final dataset.}
+\label{tab:dataset-run-inventory}
+\begin{tabularx}{\textwidth}{@{}p{0.27\textwidth}rrX@{}}
+\toprule
+\textbf{Archive group} & \textbf{Source files} & \textbf{Case records} & \textbf{Purpose}\\
+\midrule
+\code{current_v34} & 12 & 72 & Frozen primary qualification, including two zero-case state snapshots.\\
+\code{ablations} & 13 & 26 & Sampling, token-budget, timeout, and startup-state evidence.\\
+\code{historical_vllm} & 3 & 6 & Earlier Qwen3.5 route and capability-extreme evidence.\\
+\code{historical_ollama} & 3 & 3 & Historical reserve-model capability-extreme probes.\\
+\code{current_ollama_switch} & 2 & 1 & Model-resolution record and current Gemma smoke result.\\
+\midrule
+\textbf{Total} & \textbf{33} & \textbf{108} & \textbf{Complete retained index.}\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Field Dictionary}
+
+The 24 machine-readable fields are grouped as follows:
+
+\begin{itemize}
+  \item \textbf{Provenance and identity:} \nolinkurl{record_id}, \nolinkurl{source_file}, \nolinkurl{run_group}, \nolinkurl{backend}, \nolinkurl{model}, \nolinkurl{case_set}, \nolinkurl{case_name}, and \nolinkurl{category}.
+  \item \textbf{Adjudication:} \nolinkurl{status}, \nolinkurl{expected_outcome}, \nolinkurl{reasons}, and \nolinkurl{attribution_class}.
+  \item \textbf{Context and consistency:} \nolinkurl{all_required_context}, \nolinkurl{evidence_consistent}, and \nolinkurl{route_observed}.
+  \item \textbf{Runtime observations:} \nolinkurl{planner_request_observed}, \nolinkurl{execution_feedback_observed}, \nolinkurl{clarification_observed}, \nolinkurl{failure_observed}, and \nolinkurl{replan_observed}.
+  \item \textbf{Event counts:} \nolinkurl{fallback_total}, \nolinkurl{target_selection_count}, \nolinkurl{executed_skill_count}, and \nolinkurl{spoken_text_count}.
+\end{itemize}
+
+The source status codes are \emph{pass}, \emph{degraded}, \emph{fail}, and \emph{not scored}. The complete index below abbreviates them as P, D, F, and NS. Run groups are V34, ABL, HVL, HOL, and CUR. Model codes are QVL for Qwen3-VL, Q35 for Qwen3.5, G31 for \code{gemma4:31b-cloud}, G4 for \code{gemma4:cloud}, and NEM for \code{nemotron-3-super:cloud}. Attribution codes are SC for coherent stack success, MV for model/backend variance, HO for harness observability, and SR for stack contract/runtime.
+
+\section{Evidence Integrity}
+
+\begin{table}[H]
+\centering
+\scriptsize
+\renewcommand{\arraystretch}{1.12}
+\caption{SHA-256 identifiers for the final supplied evidence files.}
+\label{tab:evidence-hashes}
+\begin{tabularx}{\textwidth}{@{}p{0.31\textwidth}X@{}}
+\toprule
+\textbf{File} & \textbf{SHA-256}\\
+\midrule
+\nolinkurl{dataset.csv} &
+\texttt{be4d7d9b0499557cb9a16ba08cba65d58c011863affcaff74211b3e6c57931ce}\\
+\nolinkurl{nao_ros4hri_model_agnostic_evidence_2026-07-20.zip} &
+\texttt{9e49b71bd633a8f2005858bbb145dcb5be4917cbf37c2f34c6e6ee05d65b1992}\\
+\nolinkurl{Model_Agnostic_Runtime_Qualification_Report.docx} &
+\texttt{225c38378bfc175c69c8bb9d23b1dcdb90516473607026d8d99d4d4a8d7667c7}\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Complete Case Index}
+
+Table~\ref{tab:final-dataset-index} lists every retained record. It is an index, not a replacement for the raw trace artifacts.
+
+\input{sections/12_dataset_rows}

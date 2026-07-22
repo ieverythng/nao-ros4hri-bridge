@@ -1,0 +1,277 @@
+{
+  "attribution_counts": {
+    "harness_observability": 3,
+    "model_or_backend_variance": 14,
+    "stack_coherent_success": 150,
+    "stack_contract_or_runtime": 18,
+    "unclassified": 6
+  },
+  "model_counts": {
+    "gemma4:31b-cloud": 69,
+    "gemma4:cloud": 61,
+    "nemotron-3-super:cloud": 61
+  },
+  "record_count": 191,
+  "run_file_count": 28,
+  "run_inventory": [
+    {
+      "backend": "ollama",
+      "case_count": 7,
+      "case_set": "capability_extreme",
+      "model": "gemma4:31b-cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "gemma4_31b/capability_extreme.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 11,
+      "case_set": "environment",
+      "model": "gemma4:31b-cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "gemma4_31b/environment.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 9,
+      "case_set": "fake_deep",
+      "model": "gemma4:31b-cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "gemma4_31b/fake_deep_all_success.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 0,
+      "case_set": "fake_deep",
+      "model": "gemma4:31b-cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "gemma4_31b/fake_deep_fail_once_navigation.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 9,
+      "case_set": "fake_deep",
+      "model": "gemma4:31b-cloud",
+      "run_group": "other",
+      "run_status": "timed_out",
+      "source_file": "gemma4_31b/fake_deep_fail_once_navigation_full.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 0,
+      "case_set": "",
+      "model": "",
+      "run_group": "other",
+      "run_status": "",
+      "source_file": "gemma4_31b/final_snapshot.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 7,
+      "case_set": "kb_stress",
+      "model": "gemma4:31b-cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "gemma4_31b/kb_stress.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 21,
+      "case_set": "main",
+      "model": "gemma4:31b-cloud",
+      "run_group": "other",
+      "run_status": "timed_out",
+      "source_file": "gemma4_31b/main.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 5,
+      "case_set": "robustness",
+      "model": "gemma4:31b-cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "gemma4_31b/robustness.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 0,
+      "case_set": "",
+      "model": "",
+      "run_group": "other",
+      "run_status": "",
+      "source_file": "gemma4_31b/startup_snapshot.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 7,
+      "case_set": "capability_extreme",
+      "model": "gemma4:cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "gemma4_cloud/capability_extreme.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 11,
+      "case_set": "environment",
+      "model": "gemma4:cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "gemma4_cloud/environment.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 9,
+      "case_set": "fake_deep",
+      "model": "gemma4:cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "gemma4_cloud/fake_deep_all_success.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 1,
+      "case_set": "fake_deep",
+      "model": "gemma4:cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "gemma4_cloud/fake_deep_fail_once_navigation_targeted.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 7,
+      "case_set": "kb_stress",
+      "model": "gemma4:cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "gemma4_cloud/kb_stress.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 21,
+      "case_set": "main",
+      "model": "gemma4:cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "gemma4_cloud/main.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 5,
+      "case_set": "robustness",
+      "model": "gemma4:cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "gemma4_cloud/robustness.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 0,
+      "case_set": "",
+      "model": "",
+      "run_group": "other",
+      "run_status": "",
+      "source_file": "gemma4_cloud/startup_snapshot.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 7,
+      "case_set": "capability_extreme",
+      "model": "nemotron-3-super:cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "nemotron_3_super/capability_extreme.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 11,
+      "case_set": "environment",
+      "model": "nemotron-3-super:cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "nemotron_3_super/environment.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 9,
+      "case_set": "fake_deep",
+      "model": "nemotron-3-super:cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "nemotron_3_super/fake_deep_all_success.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 1,
+      "case_set": "fake_deep",
+      "model": "nemotron-3-super:cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "nemotron_3_super/fake_deep_fail_once_navigation_targeted.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 7,
+      "case_set": "kb_stress",
+      "model": "nemotron-3-super:cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "nemotron_3_super/kb_stress.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 21,
+      "case_set": "main",
+      "model": "nemotron-3-super:cloud",
+      "run_group": "other",
+      "run_status": "timed_out",
+      "source_file": "nemotron_3_super/main.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 5,
+      "case_set": "robustness",
+      "model": "nemotron-3-super:cloud",
+      "run_group": "other",
+      "run_status": "completed",
+      "source_file": "nemotron_3_super/robustness.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 0,
+      "case_set": "",
+      "model": "",
+      "run_group": "other",
+      "run_status": "",
+      "source_file": "nemotron_3_super/startup_snapshot.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 0,
+      "case_set": "",
+      "model": "",
+      "run_group": "other",
+      "run_status": "",
+      "source_file": "nemotron_3_super/startup_snapshot_controlled.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 0,
+      "case_set": "",
+      "model": "",
+      "run_group": "other",
+      "run_status": "",
+      "source_file": "nemotron_3_super/startup_snapshot_final.json"
+    }
+  ],
+  "status_counts": {
+    "": 3,
+    "degraded": 2,
+    "fail": 30,
+    "not_scored": 6,
+    "pass": 150
+  }
+}
