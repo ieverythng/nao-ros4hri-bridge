@@ -49,6 +49,9 @@ This top-level docs surface is intentionally small and operational.
 ## Universal Agentic Harness
 
 - `agentic_harness/README.md` — project index and current extraction decision.
+- `agentic_harness/universal_agentic_harness_masterplan.md` (+ HTML) —
+  canonical H0-H5 implementation spine, AB4/AB5 boundary, subsystem plan,
+  external-harness adoption matrix, evaluation gates, and ordered work queue.
 - `agentic_harness/universal_agentic_harness_foundation.md` (+ HTML) —
   AB-aware harness architecture, implementation survey, current-stack
   extraction map, hypothesis registry, serving strategy, evals, and phased

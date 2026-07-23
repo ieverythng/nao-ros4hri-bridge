@@ -7,6 +7,9 @@ the Neural Workbench AB capability graph.
 
 ## Canonical Document
 
+- `universal_agentic_harness_masterplan.md` (+ HTML) - canonical implementation
+  plan, H0-H5 release spine, AB4/AB5 boundary, subsystem map, external-harness
+  adoption decisions, seam-hypothesis audit, ablations, and ordered work queue.
 - `universal_agentic_harness_foundation.md` (+ HTML) - project thesis,
   primary-source harness survey, current-stack extraction map, AB-aware
   architecture, model-serving design, hypothesis registry, evaluation plan,
@@ -46,27 +49,32 @@ the Neural Workbench research repository. It should depend on `skill_common`
 instead of copying the AB registry. ROS nodes, Codex/Pi/OpenHands workers, and
 served-model backends should integrate through adapters.
 
-No runtime package has been extracted yet. The foundation document defines the
-acceptance gates that must pass before moving code out of `chatbot_llm` or
-`planner_llm`.
+The parent repository now contains a pure-Python `src/ab_harness` H0 contract
+proof. It implements frame-relative role bands, a hashed read-only canonical
+registry snapshot, task projection with decomposition closure, deterministic
+output/reachability checks, append-only JSONL traces, and temporary NAO payload
+adapters. Seven focused tests pass. It is not yet wired into live nodes, and the
+full H0 lifecycle grammar remains incomplete. The masterplan separates that
+implemented proof from H1 runtime and H2 cooperative integration work.
 
-## First Implementation Slice
+## H0 Completion Slice
 
-1. Stabilize `HarnessSpec`, `TaskSpec`, `InteractionModuleSpec`, `ModelProfile`,
-   and `TraceEvent` schemas.
-2. Add an AB task-projection compiler over `skill_common.ABRegistry`.
-3. Extract provider-neutral structured-output and provider-capability helpers
-   behind compatibility adapters.
+1. Preserve the implemented frame, control-band, registry snapshot, projection,
+   gate, trace, and NAO compatibility proof.
+2. Add the missing `HarnessSpec`, `TaskSpec`, `ModelProfile`, environment,
+   permission, effect-evidence, and lifecycle-event schemas.
+3. Compile AB closure from required task effects rather than only requested IDs.
 4. Keep prompt text and NAO policy in their current owning packages.
-5. Prove behavior parity with existing chatbot and planner tests.
-6. Run same-model harness ablations before claiming harness uplift.
-7. Transform `chatbot_llm` and `planner_llm` incrementally into harness clients,
-   with their existing suites acting as behavioral parity gates.
+5. Complete a synthetic lifecycle replay before integrating any live node.
+6. Prove behavior parity with existing chatbot and planner tests in H2 shadow
+   and cooperative modes.
+7. Run same-model harness ablations before claiming harness uplift.
 
 The adaptive extension deliberately starts with release H0: one AB-grounded,
 role-scoped, traceable agent path using existing model calls and runtime owners.
-Candidate search, trace-derived priors, entropy, and crystallization are H1-H3
-capabilities and are not required to prove the first useful harness.
+The canonical release spine is now defined in the masterplan: H1 adds the
+executable lifecycle, H2 proves cooperative NAO parity, H3 adds trace adaptation,
+H4 quarantines crystallization, and H5 proves cross-runtime/domain universality.
 
 ## Rendering
 

@@ -352,6 +352,13 @@ This track merges prior simple-viewer and full-dashboard plans.
 
 ## 6. Research Track: Universal AB-Aware Agentic Harness
 
+The [Universal Agentic Harness implementation masterplan](../agentic_harness/universal_agentic_harness_masterplan.md)
+is now the canonical delivery plan for this research track. It consolidates the
+earlier extraction (`P#`) and adaptive research (`A#`) phases into an H0-H5
+product spine, records the current H0 contract proof and open lifecycle seams,
+defines the AB4-versus-AB5 boundary, and gates external harness reuse through
+adapter conformance rather than wholesale migration.
+
 The [Universal Agentic Harness foundation](../agentic_harness/universal_agentic_harness_foundation.md)
 defines a NAO-agnostic harness that compiles task-specific interaction modules
 from an AB capability graph. The current NAO stack is its first reference

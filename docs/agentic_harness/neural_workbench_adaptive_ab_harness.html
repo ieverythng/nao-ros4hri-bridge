@@ -196,22 +196,17 @@
   <main class="doc">
 
 <h1>Adaptive AB Harness: Neural Workbench Search, Memory, and Crystallization</h1>
-<p><strong>Status:</strong> Research extension; H0 parent-repo proof implemented</p>
-<p><strong>Date:</strong> 2026-07-13</p>
-<p><strong>Extends:</strong> <code>universal_agentic_harness_foundation.md</code></p>
-<p><strong>Primary theory source:</strong> Neural Workbench documentation and current source on <code>feat/base-implementation</code></p>
+<p><strong>Status:</strong> Research extension; H0 parent-repo proof implemented <strong>Date:</strong> 2026-07-13 <strong>Extends:</strong> <code>universal_agentic_harness_foundation.md</code> <strong>Primary theory source:</strong> Neural Workbench documentation and current source on <code>feat/base-implementation</code> <strong>Canonical delivery status:</strong> <code>universal_agentic_harness_masterplan.md</code> (2026-07-22)</p>
+<p>This document remains the canonical adaptive theory extension. The masterplan owns current H0-H5 release status and extends the ladder with H5 cross-runtime federation plus a separately gated AB5 research hypothesis.</p>
 <h2>1. Extension Claim</h2>
-<p>The Universal Agentic Harness foundation defines how a task receives the</p>
-<p>smallest valid interaction surface from an environment capability graph. This</p>
-<p>extension adds the harder Neural Workbench claim:</p>
+<p>The Universal Agentic Harness foundation defines how a task receives the smallest valid interaction surface from an environment capability graph. This extension adds the harder Neural Workbench claim:</p>
 <blockquote>
 <p>The interaction surface should not remain a static projection. It should be a</p>
 <p>task-relative search space over typed AB objects, candidate pulse graphs, and</p>
 <p>empirical capability profiles. Complete traces should update future search,</p>
 <p>while repeated verified structures may be proposed as higher-level AB objects.</p>
 </blockquote>
-<p>The result is an adaptive harness that changes with the user and task without</p>
-<p>silently self-modifying its trusted runtime.</p>
+<p>The result is an adaptive harness that changes with the user and task without silently self-modifying its trusted runtime.</p>
 <p>The distinction matters:</p>
 <pre><code class="language-text">ordinary harness
   = select tools + build context + call model + validate result
@@ -229,75 +224,42 @@ adaptive AB harness
 <h3>Required outcome</h3>
 <p>Define an architecture in which:</p>
 <ul>
-<li>AB objects at every represented scale can participate in planning, search,</li>
-</ul>
-<p>evaluation, or system design;</p>
-<ul>
+<li>AB objects at every represented scale can participate in planning, search, evaluation, or system design;</li>
 <li>the task contract determines which AB levels the agent may directly control;</li>
-<li>lower-level decomposition remains inspectable without always being exposed to</li>
-</ul>
-<p>the model;</p>
-<ul>
-<li>higher-level objects remain unavailable unless the task and policy explicitly</li>
-</ul>
-<p>admit them;</p>
-<ul>
+<li>lower-level decomposition remains inspectable without always being exposed to the model;</li>
+<li>higher-level objects remain unavailable unless the task and policy explicitly admit them;</li>
 <li>several candidate plans, graphs, architectures, or policies can compete;</li>
 <li>successful and failed traces update future candidate priors;</li>
-<li>known useful pulse fragments can guide search without becoming unquestioned</li>
+<li>known useful pulse fragments can guide search without becoming unquestioned rules;</li>
+<li>repeated structures can crystallize into AB2+ proposals only through measured evidence and review;</li>
+<li>the same kernel supports embodied skills, software agents, trading systems, and architecture-design systems.</li>
 </ul>
-<p>rules;</p>
-<ul>
-<li>repeated structures can crystallize into AB2+ proposals only through measured</li>
-</ul>
-<p>evidence and review;</p>
-<ul>
-<li>the same kernel supports embodied skills, software agents, trading systems,</li>
-</ul>
-<p>and architecture-design systems.</p>
 <h3>Non-goals</h3>
 <ul>
 <li>Do not claim that AB levels are universal constants attached to names.</li>
 <li>Do not infer causality from successful trace frequency alone.</li>
 <li>Do not let an LLM write directly into a trusted runtime registry.</li>
 <li>Do not treat lower energy as proof of correctness.</li>
-<li>Do not collapse runtime action, offline learning, and human promotion into one</li>
+<li>Do not collapse runtime action, offline learning, and human promotion into one loop.</li>
+<li>Do not let the Workbench become the owner of ROS execution, trading execution, shell permissions, or user-facing speech.</li>
+<li>Do not expose every decomposition leaf when a stable higher-level contract is sufficient.</li>
 </ul>
-<p>loop.</p>
-<ul>
-<li>Do not let the Workbench become the owner of ROS execution, trading execution,</li>
-</ul>
-<p>shell permissions, or user-facing speech.</p>
-<ul>
-<li>Do not expose every decomposition leaf when a stable higher-level contract is</li>
-</ul>
-<p>sufficient.</p>
 <h3>Evidence budget</h3>
 <p>This document uses:</p>
 <ul>
 <li>all documents under <code>src/Neural-Wokbench/docs/neural_workbench/</code>;</li>
 <li>the extended formal masterplan under <code>src/Neural-Wokbench/docs/plans/</code>;</li>
 <li>current <code>skill_common</code> and <code>neural_workbench</code> source and tests;</li>
-<li>the existing Universal Agentic Harness seam audit of <code>chatbot_llm</code> and</li>
+<li>the existing Universal Agentic Harness seam audit of <code>chatbot_llm</code> and <code>planner_llm</code>.</li>
 </ul>
-<p><code>planner_llm</code>.</p>
-<p>No live ROS, robot, market simulator, Watson runtime, or learned model experiment</p>
-<p>was run for this documentation slice. Claims about uplift remain hypotheses with</p>
-<p>explicit probes.</p>
+<p>No live ROS, robot, market simulator, Watson runtime, or learned model experiment was run for this documentation slice. Claims about uplift remain hypotheses with explicit probes.</p>
 <h2>3. One AB Language, Multiple Coordinate Frames</h2>
-<p>The Neural Workbench documents use AB levels in two compatible but differently</p>
-<p>anchored ways:</p>
+<p>The Neural Workbench documents use AB levels in two compatible but differently anchored ways:</p>
 <ol>
-<li>In the NAO planning frame, AB0 contains effect primitives and runtime seams,</li>
+<li>In the NAO planning frame, AB0 contains effect primitives and runtime seams, AB1 contains executable skills, and AB2 contains reviewed skill composites.</li>
+<li>In the ML architecture frame, AB0 contains tensor primitives, AB1 contains learned operators, AB2 contains motifs, AB3 contains model families, and AB4 contains coupled agentic systems.</li>
 </ol>
-<p>AB1 contains executable skills, and AB2 contains reviewed skill composites.</p>
-<ol>
-<li>In the ML architecture frame, AB0 contains tensor primitives, AB1 contains</li>
-</ol>
-<p>learned operators, AB2 contains motifs, AB3 contains model families, and AB4</p>
-<p>contains coupled agentic systems.</p>
-<p>This is not a contradiction if AB level is treated as a coordinate relative to</p>
-<p>an explicit boundary.</p>
+<p>This is not a contradiction if AB level is treated as a coordinate relative to an explicit boundary.</p>
 <p>Define an abstraction frame:</p>
 <pre><code class="language-text">F_AB = (frame_id, substrate, atomicity_rule, owner, registry_version)</code></pre>
 <p>and an object coordinate:</p>
@@ -346,21 +308,16 @@ adaptive AB harness
 </tbody></table>
 <p>An object may have mappings across frames, but those mappings must be explicit:</p>
 <pre><code class="language-text">map_F_to_G(o, evidence) -&gt; object coordinate or unresolved</code></pre>
-<p>The harness must therefore carry <code>frame_id</code> with every AB coordinate. A bare</p>
-<p><code>ab_level: 2</code> is insufficient outside one registry and one declared boundary.</p>
+<p>The harness must therefore carry <code>frame_id</code> with every AB coordinate. A bare <code>ab_level: 2</code> is insufficient outside one registry and one declared boundary.</p>
 <h2>4. Task-Relative AB Control Bands</h2>
-<p>A task should not simply request one <code>desired_ab_level</code>. It should define a</p>
-<p>control band:</p>
+<p>A task should not simply request one <code>desired_ab_level</code>. It should define a control band:</p>
 <pre><code class="language-text">B_tau = [k_min, k_target, k_max]</code></pre>
 <p>where:</p>
 <ul>
 <li><code>k_min</code> is the lowest level the model may directly manipulate;</li>
 <li><code>k_target</code> is the preferred level for solving the task;</li>
 <li><code>k_max</code> is the highest level the model may propose or invoke;</li>
-<li>decomposition below <code>k_min</code> may remain visible for explanation and</li>
-</ul>
-<p>verification but is not directly controllable;</p>
-<ul>
+<li>decomposition below <code>k_min</code> may remain visible for explanation and verification but is not directly controllable;</li>
 <li>objects above <code>k_max</code> are outside scope even if they exist in the registry.</li>
 </ul>
 <p>A fuller contract is:</p>
@@ -376,26 +333,16 @@ adaptive AB harness
 <h3>NAO control band</h3>
 <p>For ordinary NAO tasks:</p>
 <pre><code class="language-text">B_nao = [AB1, AB1, AB2]</code></pre>
-<p>The planner normally calls <code>scan</code>, <code>find_object</code>, <code>walk_to</code>, or <code>look_at</code> as AB1</p>
-<p>skills. It can inspect their AB0 effect decomposition for evidence, debugging,</p>
-<p>and uncertainty scoring. It may use a reviewed AB2 composite, but it must not</p>
-<p>invent joint-level choreography or invoke an unpromoted macro.</p>
+<p>The planner normally calls <code>scan</code>, <code>find_object</code>, <code>walk_to</code>, or <code>look_at</code> as AB1 skills. It can inspect their AB0 effect decomposition for evidence, debugging, and uncertainty scoring. It may use a reviewed AB2 composite, but it must not invent joint-level choreography or invoke an unpromoted macro.</p>
 <h3>iTrader control band</h3>
 <p>For a coupled proposer and solver:</p>
 <pre><code class="language-text">B_itrader = [AB2, AB3, AB4]</code></pre>
-<p>The harness may manipulate TaskSpecs, model/policy roles, adapter selection,</p>
-<p>verifier-coupled candidate families, and supervision policies. Tensor operations</p>
-<p>and optimizer steps remain below direct task control unless the task is</p>
-<p>explicitly architecture or training design.</p>
+<p>The harness may manipulate TaskSpecs, model/policy roles, adapter selection, verifier-coupled candidate families, and supervision policies. Tensor operations and optimizer steps remain below direct task control unless the task is explicitly architecture or training design.</p>
 <h3>Watson control band</h3>
 <p>For a system-level engineering agent:</p>
 <pre><code class="language-text">B_watson = [AB2, AB4, AB4]</code></pre>
-<p>The model may coordinate repository interaction modules, recursive reasoning,</p>
-<p>memory, provider selection, sandboxes, subagents, and verification policies as</p>
-<p>an AB4 system. Shell commands or file edits can be lower-frame primitives, but</p>
-<p>the task-facing object is the coupled system policy and its typed effects.</p>
-<p>These values are starting hypotheses, not permanent labels. Each subsystem must</p>
-<p>validate its own frame and control band against traces and task outcomes.</p>
+<p>The model may coordinate repository interaction modules, recursive reasoning, memory, provider selection, sandboxes, subagents, and verification policies as an AB4 system. Shell commands or file edits can be lower-frame primitives, but the task-facing object is the coupled system policy and its typed effects.</p>
+<p>These values are starting hypotheses, not permanent labels. Each subsystem must validate its own frame and control band against traces and task outcomes.</p>
 <h2>5. The Adaptive Harness as an AB4 System</h2>
 <p>The harness itself can be described as a coupled AB4 object in the system frame:</p>
 <pre><code class="language-text">H_AB4 = (O, Delta, M, E, V, R, Pi, Phi)
@@ -408,12 +355,9 @@ V     = schema, effect, safety, and task verifiers
 R     = rewards, costs, and uncertainty changes
 Pi    = candidate generation, selection, recovery, and escalation policy
 Phi   = empirical capability profile</code></pre>
-<p>The harness does not become a universal executor. Its AB4 behavior is the</p>
-<p>coordination of typed objects and evidence while preserving each environment</p>
-<p>owner.</p>
+<p>The harness does not become a universal executor. Its AB4 behavior is the coordination of typed objects and evidence while preserving each environment owner.</p>
 <h3>AB3 agent inside an AB4 envelope</h3>
-<p>For the current NAO stack, <code>chatbot_llm</code> and <code>planner_llm</code> can each be modeled</p>
-<p>as role-bounded AB3 model-agent objects participating in one AB4 coupled system:</p>
+<p>For the current NAO stack, <code>chatbot_llm</code> and <code>planner_llm</code> can each be modeled as role-bounded AB3 model-agent objects participating in one AB4 coupled system:</p>
 <pre><code class="language-text">NAO_AB4 = {
   AB3 agents: chatbot_llm, planner_llm,
   deterministic owners: dialogue_manager, nao_orchestrator,
@@ -422,8 +366,7 @@ Phi   = empirical capability profile</code></pre>
   policy: route, planning, safety, speech, and execution ownership,
   environment: ROS4HRI runtime and robot/simulator
 }</code></pre>
-<p>This representation improves grounding only when it becomes an enforceable</p>
-<p>contract. The harness must compile a role-specific view for each agent:</p>
+<p>This representation improves grounding only when it becomes an enforceable contract. The harness must compile a role-specific view for each agent:</p>
 <table><thead><tr>
 <th>AB3 role</th>
 <th>May observe</th>
@@ -450,8 +393,7 @@ Phi   = empirical capability profile</code></pre>
   and every claimed effect has an evidence path
   and requested transition stays inside the AB control band
   and the receiving owner accepts the payload</code></pre>
-<p>This is a practical gate around model capability, not a claim that the harness</p>
-<p>creates reasoning the pretrained or post-trained model does not possess.</p>
+<p>This is a practical gate around model capability, not a claim that the harness creates reasoning the pretrained or post-trained model does not possess.</p>
 <div class="diagram"><pre><code class="language-mermaid">flowchart TB
     T[&quot;Task + acceptance + AB frame&quot;] --&gt; F[&quot;Frame and control-band resolver&quot;]
     G[&quot;Canonical multi-scale AB graph&quot;] --&gt; F
@@ -477,8 +419,7 @@ Phi   = empirical capability profile</code></pre>
     CR --&gt; HR[&quot;Human/evaluator review&quot;]
     HR -. approved .-&gt; G</code></pre></div>
 <h2>6. Candidate Structures, Not Only Plans</h2>
-<p>A <code>PulseProgram</code> is currently an ordered sequence. The harder Workbench needs a</p>
-<p>typed pulse graph:</p>
+<p>A <code>PulseProgram</code> is currently an ordered sequence. The harder Workbench needs a typed pulse graph:</p>
 <pre><code class="language-text">Gamma_tau = (V, E_flow, E_control, E_evidence, E_recovery, D)</code></pre>
 <p>where:</p>
 <ul>
@@ -536,11 +477,9 @@ Phi   = empirical capability profile</code></pre>
 <td>grounded answer beats unsupported action</td>
 </tr>
 </tbody></table>
-<p>A graph folds into an executable schedule only after type, scope, owner, and</p>
-<p>evidence closure checks pass.</p>
+<p>A graph folds into an executable schedule only after type, scope, owner, and evidence closure checks pass.</p>
 <h2>7. Search Space and Candidate Families</h2>
-<p>For task <code>tau</code>, state <code>x</code>, frame <code>F</code>, policy <code>rho</code>, memory <code>M</code>, and model profile</p>
-<p><code>Phi_M</code>, the compiler produces an admitted graph space:</p>
+<p>For task <code>tau</code>, state <code>x</code>, frame <code>F</code>, policy <code>rho</code>, memory <code>M</code>, and model profile <code>Phi_M</code>, the compiler produces an admitted graph space:</p>
 <pre><code class="language-text">G_tau = Project(G_AB, tau, x, F, B_tau, rho, Phi_M)</code></pre>
 <p>Candidate generators operate over <code>G_tau</code>, not the full registry:</p>
 <pre><code class="language-text">C_tau = union(
@@ -563,8 +502,7 @@ graph: {}
 assumptions: []
 expected_effects: []
 required_evidence: []</code></pre>
-<p>Candidate diversity is useful only when mechanisms differ. Ten paraphrases of</p>
-<p>the same plan are not ten independent candidates.</p>
+<p>Candidate diversity is useful only when mechanisms differ. Ten paraphrases of the same plan are not ten independent candidates.</p>
 <h2>8. Pulse Heuristics as Reviewed Search Priors</h2>
 <p>A successful pulse fragment should first become a heuristic, not a skill.</p>
 <pre><code class="language-text">trace fragment
@@ -592,11 +530,9 @@ performance:
   entropy_delta: {}
   cost: {}
 status: proposed # proposed | evaluated | approved | deprecated</code></pre>
-<p>Heuristics influence generation or priors. They do not bypass candidate</p>
-<p>verification and do not become runtime-callable endpoints.</p>
+<p>Heuristics influence generation or priors. They do not bypass candidate verification and do not become runtime-callable endpoints.</p>
 <h2>9. Energy, Entropy, and Performance Selection</h2>
-<p>The existing symbolic energy function is a good auditable baseline. The adaptive</p>
-<p>harness generalizes it without hiding the terms:</p>
+<p>The existing symbolic energy function is a good auditable baseline. The adaptive harness generalizes it without hiding the terms:</p>
 <pre><code class="language-text">E(Gamma | tau, x, M, Phi) =
     w_i invalidity
   + w_r risk
@@ -615,8 +551,7 @@ status: proposed # proposed | evaluated | approved | deprecated</code></pre>
 <pre><code class="language-text">P(Gamma | tau, x, M) = exp(-E(Gamma) / temperature) / Z</code></pre>
 <p>but this probability is a policy distribution, not epistemic truth.</p>
 <h3>Running uncertainty</h3>
-<p>For uncertain capability <code>o</code> under task family <code>q</code>, store a posterior rather</p>
-<p>than one scalar confidence:</p>
+<p>For uncertain capability <code>o</code> under task family <code>q</code>, store a posterior rather than one scalar confidence:</p>
 <pre><code class="language-text">Phi(o, q) = {
   success: Beta(alpha, beta),
   latency: empirical distribution,
@@ -630,15 +565,11 @@ status: proposed # proposed | evaluated | approved | deprecated</code></pre>
 }</code></pre>
 <p>For binary verified outcomes:</p>
 <pre><code class="language-text">p_success(o, q) ~ Beta(alpha_0 + successes, beta_0 + failures)</code></pre>
-<p>Uncertainty should increase or remain unresolved when evidence is missing. An</p>
-<p>unknown result must not be counted as success or failure simply to simplify the</p>
-<p>posterior.</p>
+<p>Uncertainty should increase or remain unresolved when evidence is missing. An unknown result must not be counted as success or failure simply to simplify the posterior.</p>
 <h3>Information gain</h3>
-<p>A candidate may be valuable because it resolves uncertainty even before final</p>
-<p>task completion:</p>
+<p>A candidate may be valuable because it resolves uncertainty even before final task completion:</p>
 <pre><code class="language-text">IG(Gamma) = H(X | tau, history) - E_y[H(X | tau, history, Gamma, y)]</code></pre>
-<p>This formalizes scan, query, inspect, test, simulate, and ask-user actions as</p>
-<p>information-producing pulses.</p>
+<p>This formalizes scan, query, inspect, test, simulate, and ask-user actions as information-producing pulses.</p>
 <h3>Multi-objective selection</h3>
 <p>Do not collapse all objectives too early. Preserve a score vector:</p>
 <pre><code class="language-text">J(Gamma) = (
@@ -652,8 +583,7 @@ status: proposed # proposed | evaluated | approved | deprecated</code></pre>
   reversibility,
   portability
 )</code></pre>
-<p>Use hard constraints first, Pareto filtering second, and a deployment-specific</p>
-<p>scalar energy only for the remaining candidates.</p>
+<p>Use hard constraints first, Pareto filtering second, and a deployment-specific scalar energy only for the remaining candidates.</p>
 <h2>10. Complete Trace as the Unit of Adaptation</h2>
 <p>The trace must preserve the full causal claim chain:</p>
 <pre><code class="language-text">task contract
@@ -693,9 +623,7 @@ uncertainty:
 capability_updates: []
 heuristics_used: []
 proposal_ids: []</code></pre>
-<p>Trace records are append-only evidence. Derived profiles and indexes may be</p>
-<p>rebuilt, but historical observations must not be rewritten to make a policy</p>
-<p>look better.</p>
+<p>Trace records are append-only evidence. Derived profiles and indexes may be rebuilt, but historical observations must not be rewritten to make a policy look better.</p>
 <h2>11. Adaptation Loop</h2>
 <p>The adaptive behavior is split into two loops.</p>
 <h3>Online bounded loop</h3>
@@ -707,8 +635,7 @@ proposal_ids: []</code></pre>
   -&gt; execute through owner
   -&gt; verify effects
   -&gt; append trace</code></pre>
-<p>The online loop may update temporary candidate priors, but it does not promote</p>
-<p>new trusted objects.</p>
+<p>The online loop may update temporary candidate priors, but it does not promote new trusted objects.</p>
 <h3>Offline Workbench loop</h3>
 <pre><code class="language-text">read immutable traces
   -&gt; cluster by task, mechanism, environment, and failure mode
@@ -719,8 +646,7 @@ proposal_ids: []</code></pre>
   -&gt; quarantine
   -&gt; review
   -&gt; publish a new versioned registry/profile</code></pre>
-<p>This separation keeps adaptation real while preventing uncontrolled online</p>
-<p>self-modification.</p>
+<p>This separation keeps adaptation real while preventing uncontrolled online self-modification.</p>
 <h2>12. Crystallization Lifecycle</h2>
 <p>Frequency is only the first filter. A candidate higher-level object must pass:</p>
 <pre><code class="language-text">observed
@@ -746,16 +672,14 @@ cost_or_latency_gain &gt; 0
 no_unresolved_safety_counterexample
 owner_approval == true</code></pre>
 <h3>Compression test</h3>
-<p>A macro is useful only if it compresses complexity without hiding required</p>
-<p>control:</p>
+<p>A macro is useful only if it compresses complexity without hiding required control:</p>
 <pre><code class="language-text">compression_gain =
   lower_graph_description_length
   - macro_contract_description_length
   - hidden_risk_penalty
   - lost_observability_penalty</code></pre>
 <h3>Causal caution</h3>
-<p>Repeated co-occurrence does not prove that the whole sequence is necessary. The</p>
-<p>Workbench should compare:</p>
+<p>Repeated co-occurrence does not prove that the whole sequence is necessary. The Workbench should compare:</p>
 <ul>
 <li>full sequence;</li>
 <li>sequence with one pulse removed;</li>
@@ -764,8 +688,7 @@ owner_approval == true</code></pre>
 <li>contexts where the candidate fails;</li>
 <li>held-out task families and environment versions.</li>
 </ul>
-<p>Only then can it claim that a composition is more than a habit in the trace</p>
-<p>corpus.</p>
+<p>Only then can it claim that a composition is more than a habit in the trace corpus.</p>
 <h2>13. Solving the Agentic &quot;Skill&quot; Problem</h2>
 <p>Many agent systems treat a skill as one of three weak artifacts:</p>
 <ul>
@@ -773,9 +696,7 @@ owner_approval == true</code></pre>
 <li>a named bundle of tools;</li>
 <li>a procedure written from one successful trajectory.</li>
 </ul>
-<p>These artifacts drift because they rarely bind task scope, environment version,</p>
-<p>typed effects, required evidence, failure modes, and measured performance in one</p>
-<p>object. The AB and Neural Workbench combination offers a stronger definition:</p>
+<p>These artifacts drift because they rarely bind task scope, environment version, typed effects, required evidence, failure modes, and measured performance in one object. The AB and Neural Workbench combination offers a stronger definition:</p>
 <blockquote>
 <p>An agent skill is a versioned, task-relative interaction object whose</p>
 <p>decomposition, permissions, expected effects, proof obligations, empirical</p>
@@ -802,15 +723,11 @@ counterexample_trace_ids: []
 environment_compatibility: []
 status: proposed
 version: 1</code></pre>
-<p>This is broader than a ROS skill and narrower than a global autonomous policy.</p>
-<p>It is the stable interaction unit for one task family under one declared frame.</p>
+<p>This is broader than a ROS skill and narrower than a global autonomous policy. It is the stable interaction unit for one task family under one declared frame.</p>
 <h3>Agent-proposed, verifier-proven</h3>
 <p>The agent may:</p>
 <ul>
-<li>discover that the current interaction module is missing an observation,</li>
-</ul>
-<p>validator, recovery edge, or tool;</p>
-<ul>
+<li>discover that the current interaction module is missing an observation, validator, recovery edge, or tool;</li>
 <li>propose a new pulse graph or modification;</li>
 <li>state the expected effect and proof obligation;</li>
 <li>generate tests, simulations, or replay cases;</li>
@@ -850,9 +767,7 @@ version: 1</code></pre>
 <td>blinded evaluator or human review with rubric</td>
 </tr>
 </tbody></table>
-<p>When only an LLM judge exists, the trace must label the result as model-judged,</p>
-<p>retain uncertainty, and avoid promotion to trusted runtime status without a</p>
-<p>stronger gate.</p>
+<p>When only an LLM judge exists, the trace must label the result as model-judged, retain uncertainty, and avoid promotion to trusted runtime status without a stronger gate.</p>
 <h3>Continuous task Workbench</h3>
 <p>Each task family can develop its own bounded Neural Workbench:</p>
 <pre><code class="language-text">task family
@@ -863,9 +778,7 @@ version: 1</code></pre>
   -&gt; candidate module repair
   -&gt; independent proof/evaluation
   -&gt; versioned replacement or rejection</code></pre>
-<p>This gives the agent continuity without giving it unlimited self-modification.</p>
-<p>The system adapts the task interaction module, not the global environment or</p>
-<p>the model&#x27;s authority.</p>
+<p>This gives the agent continuity without giving it unlimited self-modification. The system adapts the task interaction module, not the global environment or the model&#x27;s authority.</p>
 <h3>Maintenance triggers</h3>
 <p>Re-evaluate an interaction skill when:</p>
 <ul>
@@ -876,12 +789,9 @@ version: 1</code></pre>
 <li>task distribution moves outside the supported capability slice;</li>
 <li>a cheaper or safer candidate graph becomes available.</li>
 </ul>
-<p>This turns skills into maintained empirical contracts rather than frozen prompt</p>
-<p>recipes.</p>
+<p>This turns skills into maintained empirical contracts rather than frozen prompt recipes.</p>
 <h2>14. Delta Operators and Learned Systems</h2>
-<p>The new Neural Workbench documents introduce <code>delta_AB</code> operators: transformations</p>
-<p>that modify an object, graph, or policy without necessarily creating a new AB</p>
-<p>level.</p>
+<p>The new Neural Workbench documents introduce <code>delta_AB</code> operators: transformations that modify an object, graph, or policy without necessarily creating a new AB level.</p>
 <p>Examples:</p>
 <table><thead><tr>
 <th>Delta</th>
@@ -934,8 +844,7 @@ version: 1</code></pre>
 AB graph: a composition of objects
 AB delta: a transformation over an object or graph
 AB profile: measured behavior under a task/environment slice</code></pre>
-<p>This prevents LoRA, PPO, a tool call, and a runtime skill from being forced into</p>
-<p>the same semantic category.</p>
+<p>This prevents LoRA, PPO, a tool call, and a runtime skill from being forced into the same semantic category.</p>
 <h2>15. Subsystem Instantiations</h2>
 <h3>NAO ROS4HRI</h3>
 <pre><code class="language-text">Task: find the cup and report
@@ -945,8 +854,7 @@ Candidate objects: scan, find_object, report_result
 Hidden/inspectable AB0: target resolution, perception wait, evidence validation
 Owner: planner_llm selects; nao_orchestrator dispatches; skills prove effects
 Adaptation: trace priors and macro proposals only</code></pre>
-<p>The harness improves candidate selection and trace reuse. It does not make the</p>
-<p>robot controller adaptive or allow the planner to dispatch ROS primitives.</p>
+<p>The harness improves candidate selection and trace reuse. It does not make the robot controller adaptive or allow the planner to dispatch ROS primitives.</p>
 <h3>iTrader</h3>
 <pre><code class="language-text">Task: propose and solve a bounded market decision
 Frame: itrader_system
@@ -955,8 +863,7 @@ Objects: Market-JEPA, MarketFramer, SolverMLPFiLM, RiskEngine, Executor
 Deltas: adapter routing, PPO, GAE, verifier-shaped updates
 Evidence: replay, risk checks, execution simulator, realized outcomes
 Adaptation: capability profiles by regime and task family</code></pre>
-<p>The proposer, solver, and verifier can be searched as a coupled AB4 graph. Live</p>
-<p>capital execution remains a separately permissioned environment owner.</p>
+<p>The proposer, solver, and verifier can be searched as a coupled AB4 graph. Live capital execution remains a separately permissioned environment owner.</p>
 <h3>WatsonOW</h3>
 <pre><code class="language-text">Task: solve a repository or system problem
 Frame: watson_system
@@ -965,8 +872,7 @@ Objects: served model, recursive controller, tool modules, memory, sandbox,
          provider router, reviewer/evaluator
 Evidence: tests, source diffs, command results, artifacts, holdouts
 Adaptation: task-specific interaction modules and reviewed procedure heuristics</code></pre>
-<p>Watson can use the harness to control an AB4 engineering system while the</p>
-<p>repository, shell, browser, and provider remain typed runtime adapters.</p>
+<p>Watson can use the harness to control an AB4 engineering system while the repository, shell, browser, and provider remain typed runtime adapters.</p>
 <h2>16. Contracts to Add</h2>
 <p>The foundation contracts need these extensions:</p>
 <pre><code class="language-text">AbstractionFrame
@@ -1109,9 +1015,7 @@ domain adapters
 </tr>
 </tbody></table>
 <h3>Complexity ladder and release gates</h3>
-<p>The phases above are the full research route. Implementation should ship in</p>
-<p>four bounded releases so the useful harness arrives before the speculative</p>
-<p>Workbench layers.</p>
+<p>The phases above are the full research route. Implementation should ship in four bounded releases so the useful harness arrives before the speculative Workbench layers.</p>
 <h4>Release H0: AB-grounded harness MVP</h4>
 <p>Goal: make one model-agent safe, scoped, and traceable inside one subsystem.</p>
 <pre><code class="language-text">TaskSpec
@@ -1124,26 +1028,13 @@ domain adapters
   -&gt; append-only trace</code></pre>
 <p>Deliverables:</p>
 <ul>
-<li><code>AbstractionFrame</code>, <code>ABControlBand</code>, <code>AgentRoleSpec</code>, and</li>
-</ul>
-<p><code>InteractionModuleSpec</code>;</p>
-<ul>
-<li>canonical-registry projection with owner, input/output, effect, and evidence</li>
-</ul>
-<p>fields;</p>
-<ul>
+<li><code>AbstractionFrame</code>, <code>ABControlBand</code>, <code>AgentRoleSpec</code>, and <code>InteractionModuleSpec</code>;</li>
+<li>canonical-registry projection with owner, input/output, effect, and evidence fields;</li>
 <li>role-specific output schemas for chatbot and planner compatibility adapters;</li>
-<li>deterministic checks for object reachability, AB-band compliance, and output</li>
+<li>deterministic checks for object reachability, AB-band compliance, and output ownership;</li>
+<li>one versioned trace envelope containing task, projection, model, output, validation, handoff, result, and evidence references;</li>
+<li>replayable fixtures for one dialogue, one knowledge query, one execution request, and one rejected out-of-scope output.</li>
 </ul>
-<p>ownership;</p>
-<ul>
-<li>one versioned trace envelope containing task, projection, model, output,</li>
-</ul>
-<p>validation, handoff, result, and evidence references;</p>
-<ul>
-<li>replayable fixtures for one dialogue, one knowledge query, one execution</li>
-</ul>
-<p>request, and one rejected out-of-scope output.</p>
 <p>Explicitly excluded:</p>
 <ul>
 <li>graph search;</li>
@@ -1161,25 +1052,15 @@ domain adapters
 + no moved ROS4HRI ownership</code></pre>
 <p>H0 implementation checkpoint (2026-07-13):</p>
 <ul>
-<li><code>src/ab_harness/ab_harness/contracts.py</code> implements frames, bands, roles,</li>
-</ul>
-<p>interaction modules, outputs, gate decisions, and traces;</p>
-<ul>
+<li><code>src/ab_harness/ab_harness/contracts.py</code> implements frames, bands, roles, interaction modules, outputs, gate decisions, and traces;</li>
 <li><code>registry.py</code> reads and hashes the canonical AB registry without changing it;</li>
 <li><code>projection.py</code> compiles a task object set plus inspectable decomposition;</li>
-<li><code>gate.py</code> rejects role-owned output violations, out-of-projection objects,</li>
-</ul>
-<p>direct AB0 use, and model-claimed execution effects;</p>
-<ul>
+<li><code>gate.py</code> rejects role-owned output violations, out-of-projection objects, direct AB0 use, and model-claimed execution effects;</li>
 <li><code>trace.py</code> round-trips append-only H0 JSONL evidence;</li>
-<li><code>nao_h0.py</code> maps current chatbot and planner payload shapes without importing</li>
-</ul>
-<p>or modifying either nested package;</p>
-<ul>
+<li><code>nao_h0.py</code> maps current chatbot and planner payload shapes without importing or modifying either nested package;</li>
 <li>focused tests cover accepted planner/chatbot paths and fail-closed cases.</li>
 </ul>
-<p>This is a contract proof, not a live node integration. Existing node validators</p>
-<p>and runtime ownership remain authoritative until a later cooperative ablation.</p>
+<p>This is a contract proof, not a live node integration. Existing node validators and runtime ownership remain authoritative until a later cooperative ablation.</p>
 <h4>Release H1: Candidate and recovery Workbench</h4>
 <p>Goal: use the current symbolic Workbench behind the H0 contracts.</p>
 <ul>
@@ -1189,8 +1070,7 @@ domain adapters
 <li>expose candidate, verifier, selection, and fallback stages in the trace;</li>
 <li>preserve provider planning as a compatibility fallback during ablation.</li>
 </ul>
-<p>Acceptance: same-model candidate search improves validity or recovery on a</p>
-<p>frozen task set without worsening latency beyond the declared budget.</p>
+<p>Acceptance: same-model candidate search improves validity or recovery on a frozen task set without worsening latency beyond the declared budget.</p>
 <h4>Release H2: Trace-adaptive harness</h4>
 <p>Goal: let prior evidence affect future search conservatively.</p>
 <ul>
@@ -1200,8 +1080,7 @@ domain adapters
 <li>add symbolic entropy and information-gain terms only where observables exist;</li>
 <li>compare no-memory, success-only, and success-plus-failure policies.</li>
 </ul>
-<p>Acceptance: holdout uplift, calibrated uncertainty, and no regression in scope,</p>
-<p>safety, or evidence completeness.</p>
+<p>Acceptance: holdout uplift, calibrated uncertainty, and no regression in scope, safety, or evidence completeness.</p>
 <h4>Release H3: Crystallizing Neural Workbench</h4>
 <p>Goal: propose and evaluate reusable higher-level AB objects.</p>
 <ul>
@@ -1211,32 +1090,23 @@ domain adapters
 <li>require owner and safety review before registry publication;</li>
 <li>monitor promoted objects and support deprecation.</li>
 </ul>
-<p>Acceptance: a reviewed AB2+ object compresses a repeated solution family while</p>
-<p>preserving effect evidence, recovery visibility, and task performance.</p>
+<p>Acceptance: a reviewed AB2+ object compresses a repeated solution family while preserving effect evidence, recovery visibility, and task performance.</p>
 <h4>Release H4: Cross-domain AB4 design and learned deltas</h4>
 <p>Goal: prove the object calculus beyond NAO.</p>
 <ul>
 <li>instantiate Watson or iTrader through the same core contracts;</li>
 <li>search over AB3/AB4 system arrangements where the task permits it;</li>
-<li>represent adapters, routing, PPO/GAE/RLVR, and other changes as versioned</li>
-</ul>
-<p><code>delta_AB</code> operators;</p>
-<ul>
+<li>represent adapters, routing, PPO/GAE/RLVR, and other changes as versioned <code>delta_AB</code> operators;</li>
 <li>evaluate architecture and policy changes offline before activation.</li>
 </ul>
-<p>Acceptance: one non-NAO system uses the unchanged kernel and shows measured</p>
-<p>benefit from AB-grounded interaction or system search.</p>
+<p>Acceptance: one non-NAO system uses the unchanged kernel and shows measured benefit from AB-grounded interaction or system search.</p>
 <h3>Anti-overengineering budget</h3>
-<p>Every release must satisfy a deletion test: if an abstraction does not enforce</p>
-<p>scope, improve traceability, enable a discriminating experiment, or remove</p>
-<p>duplicated harness code, it does not enter the MVP.</p>
-<p>Pretraining and post-training remain responsible for broad reasoning and</p>
-<p>language competence. The harness is responsible for environment truth:</p>
+<p>Every release must satisfy a deletion test: if an abstraction does not enforce scope, improve traceability, enable a discriminating experiment, or remove duplicated harness code, it does not enter the MVP.</p>
+<p>Pretraining and post-training remain responsible for broad reasoning and language competence. The harness is responsible for environment truth:</p>
 <pre><code class="language-text">model training supplies priors and reasoning behavior
 harness supplies reachable capabilities, contracts, permissions, state,
 evidence, execution ownership, and measured feedback</code></pre>
-<p>The first release should therefore wrap the existing good model calls and</p>
-<p>runtime seams rather than introduce another reasoning layer.</p>
+<p>The first release should therefore wrap the existing good model calls and runtime seams rather than introduce another reasoning layer.</p>
 <h2>19. Required Ablations</h2>
 <ol>
 <li>Scalar desired AB level versus task-relative AB control band.</li>
@@ -1248,11 +1118,9 @@ evidence, execution ownership, and measured feedback</code></pre>
 <li>Sequence-frequency macro proposal versus counterfactual crystallization gate.</li>
 <li>Static node internals versus cooperative harness adapters.</li>
 <li>NAO AB1 task versus Watson/iTrader AB4 task under the same kernel contracts.</li>
-<li>Unversioned context versus registry, model, harness, and environment-versioned</li>
+<li>Unversioned context versus registry, model, harness, and environment-versioned trace replay.</li>
 </ol>
-<p>trace replay.</p>
-<p>For every ablation, hold model, task set, environment version, and acceptance</p>
-<p>checks constant unless that variable is the subject of the test.</p>
+<p>For every ablation, hold model, task set, environment version, and acceptance checks constant unless that variable is the subject of the test.</p>
 <h2>20. Approach Registry</h2>
 <table><thead><tr>
 <th>ID</th>
@@ -1341,10 +1209,7 @@ evidence, execution ownership, and measured feedback</code></pre>
 <li>[x] Failed, unknown, and counterexample traces remain visible.</li>
 <li>[x] The proposing agent is not automatically accepted as its own prover.</li>
 <li>[x] Energy is not treated as proof or collapsed before hard constraints.</li>
-<li>[x] Crystallization is proposal-only until replay, holdout, safety, and owner</li>
-</ul>
-<p>review pass.</p>
-<ul>
+<li>[x] Crystallization is proposal-only until replay, holdout, safety, and owner review pass.</li>
 <li>[x] Model and policy deltas are distinguished from AB objects.</li>
 <li>[x] NAO dialogue, planning, execution, and evidence ownership remain intact.</li>
 <li>[x] A non-NAO AB4 proof is required before claiming universality.</li>
@@ -1353,10 +1218,8 @@ evidence, execution ownership, and measured feedback</code></pre>
 <li>[ ] No live or simulated adaptive-loop experiment has been run.</li>
 </ul>
 <h2>22. Decision</h2>
-<p>Accept the adaptive, frame-relative, dual-loop architecture as the research</p>
-<p>extension to the Universal Agentic Harness.</p>
-<p>The immediate implementation target is not a self-improving global agent. It is</p>
-<p>a portable set of contracts and compatibility adapters that can:</p>
+<p>Accept the adaptive, frame-relative, dual-loop architecture as the research extension to the Universal Agentic Harness.</p>
+<p>The immediate implementation target is not a self-improving global agent. It is a portable set of contracts and compatibility adapters that can:</p>
 <ol>
 <li>express the task&#x27;s AB frame and control band;</li>
 <li>represent candidate pulse graphs and their provenance;</li>
@@ -1408,54 +1271,26 @@ evidence, execution ownership, and measured feedback</code></pre>
 <td>Version every delta and rerun frozen holdouts before activation</td>
 </tr>
 </tbody></table>
-<p>The first probe should implement only <code>AbstractionFrame</code>, <code>ABControlBand</code>, and a</p>
-<p>compatibility scorer over current <code>PulseProgram</code> candidates. This is small</p>
-<p>enough to validate the central relative-scale claim without prematurely building</p>
-<p>the full graph learner.</p>
+<p>The first probe should implement only <code>AbstractionFrame</code>, <code>ABControlBand</code>, and a compatibility scorer over current <code>PulseProgram</code> candidates. This is small enough to validate the central relative-scale claim without prematurely building the full graph learner.</p>
 <h2>24. Source Map</h2>
 <p>This extension consolidates the following Neural Workbench documents:</p>
 <ul>
 <li><code>01_mission_statement.md</code>: structured workbench and recursive abstraction.</li>
-<li><code>02_mathematical_basis.md</code>: pulse programs, AB geometry, energy, traces, and</li>
-</ul>
-<p>crystallization.</p>
-<ul>
+<li><code>02_mathematical_basis.md</code>: pulse programs, AB geometry, energy, traces, and crystallization.</li>
 <li><code>03_architecture_integration.md</code>: environment ownership and planner boundary.</li>
 <li><code>04_implementation_roadmap.md</code>: staged symbolic-to-adaptive implementation.</li>
 <li><code>05_evaluation_protocol.md</code>: baselines, failures, and AB correctness.</li>
 <li><code>06_current_implementation.md</code>: actual packages and operational limits.</li>
 <li><code>07_ab_registry_unification.md</code>: canonical object graph and projections.</li>
-<li><code>08_entropy_machines_and_capability_space.md</code>: uncertainty reduction,</li>
+<li><code>08_entropy_machines_and_capability_space.md</code>: uncertainty reduction, probability shift, and maturity.</li>
+<li><code>09_registry_metrics_and_probability_visualization.md</code>: graph and trace observability.</li>
+<li><code>neural_workbench_mathematical_basis_v3.md</code>: registry-grounded graph metrics and probability profiles.</li>
+<li><code>Neural_Workbench_AB_ML_Object_Theory.html</code>: typed ML operators and effect signatures.</li>
+<li><code>LoRA, adapters, PPO, GAE and RLVR as operators over AB.html</code>: delta operators over models and policies.</li>
+<li><code>Neural_Workbench_Formal_Masterplan_Extended.html</code>: typed architecture graphs, capability profiles, and AB4 system assignments.</li>
+<li><code>architecture/workbench_architecture_single_file.md</code>: concrete NAO runtime and trace seams.</li>
+<li><code>plans/neural_workbench_codex_handoff.md</code>: active implementation state and standing gaps.</li>
 </ul>
-<p>probability shift, and maturity.</p>
-<ul>
-<li><code>09_registry_metrics_and_probability_visualization.md</code>: graph and trace</li>
-</ul>
-<p>observability.</p>
-<ul>
-<li><code>neural_workbench_mathematical_basis_v3.md</code>: registry-grounded graph metrics</li>
-</ul>
-<p>and probability profiles.</p>
-<ul>
-<li><code>Neural_Workbench_AB_ML_Object_Theory.html</code>: typed ML operators and effect</li>
-</ul>
-<p>signatures.</p>
-<ul>
-<li><code>LoRA, adapters, PPO, GAE and RLVR as operators over AB.html</code>: delta operators</li>
-</ul>
-<p>over models and policies.</p>
-<ul>
-<li><code>Neural_Workbench_Formal_Masterplan_Extended.html</code>: typed architecture graphs,</li>
-</ul>
-<p>capability profiles, and AB4 system assignments.</p>
-<ul>
-<li><code>architecture/workbench_architecture_single_file.md</code>: concrete NAO runtime and</li>
-</ul>
-<p>trace seams.</p>
-<ul>
-<li><code>plans/neural_workbench_codex_handoff.md</code>: active implementation state and</li>
-</ul>
-<p>standing gaps.</p>
   </main>
 </body>
 </html>

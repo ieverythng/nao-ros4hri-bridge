@@ -6,6 +6,11 @@
 **Seed artifact:** `Universal Agentic Harness Blueprint.html` (user-provided,
 2026-07-12)
 **Primary reference subsystem:** NAO ROS4HRI + Neural Workbench
+**Canonical delivery status:** `universal_agentic_harness_masterplan.md` (2026-07-22)
+
+The phase tables in this foundation preserve the original extraction plan. Use
+the canonical masterplan for current H0-H5 implementation status, acceptance
+gates, and the AB4/AB5 boundary.
 
 ## 1. Project Claim
 
@@ -637,13 +642,17 @@ adding another reasoning layer.
 - [x] Provider fallback requires capability and schema compatibility.
 - [x] Current node-specific tests are retained as parity gates.
 - [x] Learned composites remain proposal-only until reviewed.
-- [ ] Package schemas have not yet been implemented or reviewed.
+- [~] Core H0 frame, band, role, projection, gate, and trace schemas are
+  implemented and tested; the full task/provider/environment/lifecycle grammar
+  remains open.
 - [ ] No same-model harness ablation has yet measured uplift.
 - [ ] No external Pi/OpenHands adapter has yet been prototyped.
 - [ ] Live ROS and robot behavior remain outside this documentation-only pass.
 
-**Decision:** accept the architecture as a P0 foundation; implementation remains
-gated by schema review, behavior-parity tests, and same-model ablations.
+**Decision:** accept the architecture and implemented H0 proof. Complete the H0
+lifecycle grammar before H1, then gate H2 cooperative integration by
+behavior-parity tests and same-model ablations. The canonical masterplan owns
+current status.
 
 ## 16. Primary Sources
 
