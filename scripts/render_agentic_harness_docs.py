@@ -11,6 +11,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 RENDERER = ROOT / "scripts" / "render_markdown_html.py"
 DOCS = (
+    "universal_agentic_harness_masterplan",
     "universal_agentic_harness_foundation",
     "neural_workbench_adaptive_ab_harness",
 )

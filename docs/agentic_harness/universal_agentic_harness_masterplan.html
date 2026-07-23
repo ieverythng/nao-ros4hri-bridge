@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Universal Agentic Harness: Implementation Masterplan</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2.6cm 2.2cm 2.4cm 2.2cm;
+    }
+    :root {
+      --ink: #111;
+      --muted: #3a3a3a;
+      --line: #1f1f1f;
+      --soft: #f3f3f3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #fff;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 11.5pt;
+      line-height: 1.42;
+    }
+    .doc {
+      max-width: 172mm;
+      margin: 0 auto;
+      padding: 0;
+    }
+    .title-page {
+      min-height: 247mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+    }
+    .title-top {
+      text-align: center;
+      margin-top: 18mm;
+    }
+    .title-top h1 {
+      font-size: 20pt;
+      line-height: 1.28;
+      margin: 20mm 0 8mm;
+      font-weight: 700;
+    }
+    .title-top h2 {
+      font-size: 13pt;
+      margin: 0 0 3mm;
+      font-weight: 600;
+      border-bottom: 0;
+    }
+    .title-top p {
+      margin: 2mm 0;
+      color: var(--muted);
+    }
+    .title-meta {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 auto 20mm;
+      font-size: 11pt;
+    }
+    .title-meta td {
+      padding: 2.5mm 0;
+      vertical-align: top;
+      border: 0;
+    }
+    .title-meta td:first-child {
+      width: 38mm;
+      font-weight: 700;
+    }
+    .small { font-size: 10.3pt; color: #222; }
+    h1, h2, h3 {
+      margin: 0 0 3mm;
+      line-height: 1.28;
+      font-weight: 700;
+    }
+    h1 { font-size: 16.5pt; margin-top: 0; }
+    h2 {
+      font-size: 13pt;
+      margin-top: 9mm;
+      border-bottom: 0.5pt solid var(--line);
+      padding-bottom: 1.5mm;
+    }
+    h3 {
+      font-size: 11.8pt;
+      margin-top: 6mm;
+    }
+    p { margin: 2.2mm 0; }
+    ul, ol { margin: 2.5mm 0 2.5mm 6mm; padding: 0; }
+    li { margin: 1.4mm 0; }
+    pre {
+      margin: 2.5mm 0 4mm;
+      background: var(--soft);
+      border: 0.6pt solid #666;
+      padding: 2.6mm 2.8mm;
+      overflow-x: auto;
+      white-space: pre;
+      font-family: "Liberation Mono", "Courier New", monospace;
+      font-size: 9.2pt;
+      line-height: 1.3;
+    }
+    code {
+      font-family: "Liberation Mono", "Courier New", monospace;
+      background: #efefef;
+      padding: 0.2mm 1mm;
+      border: 0.4pt solid #d7d7d7;
+      border-radius: 2px;
+      font-size: 10.3pt;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      border: 0;
+      font-size: inherit;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 3mm 0 4mm;
+      font-size: 10.8pt;
+    }
+    th, td {
+      border: 0.6pt solid #333;
+      padding: 2.2mm 2.3mm;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+      hyphens: auto;
+    }
+    th {
+      background: #fafafa;
+      text-align: left;
+      font-weight: 700;
+    }
+    .diagram {
+      margin: 4mm 0 5mm;
+      border: 0.6pt solid #777;
+      padding: 2mm;
+      background: #fff;
+    }
+    .diagram pre {
+      margin: 0;
+      border: 0;
+      background: #fcfcfc;
+      font-size: 10.2pt;
+      white-space: pre-wrap;
+    }
+    .diagram svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .diagram-labels {
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 25px;
+      font-weight: 700;
+      fill: #111;
+    }
+    .lifelines {
+      stroke: #999;
+      stroke-dasharray: 4 4;
+    }
+    .messages {
+      stroke: #111;
+      stroke-width: 1.35;
+      fill: none;
+    }
+    .messages text {
+      stroke: none;
+      fill: #111;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 22px;
+    }
+    .caption {
+      margin-top: 2mm;
+      font-size: 10.5pt;
+      color: #222;
+      font-style: italic;
+      text-align: center;
+    }
+    blockquote {
+      border: 0.6pt solid #333;
+      background: #fcfcfc;
+      margin: 3mm 0;
+      padding: 2.6mm 3mm;
+      color: var(--muted);
+    }
+    a { color: #111; }
+  </style>
+  <link rel="stylesheet" href="assets/harness-theme.css" />
+  <script defer src="assets/harness-theme.js"></script>
+</head>
+<body>
+  <main class="doc">
+
+<h1>Universal Agentic Harness: Implementation Masterplan</h1>
+<p><strong>Status:</strong> Canonical implementation plan; H0 contract proof implemented, live integration pending <strong>Date:</strong> 2026-07-22 <strong>Scope:</strong> Model-agnostic and task-agnostic harness kernel with domain-specific AB frames and adapters <strong>Extends:</strong> <code>universal_agentic_harness_foundation.md</code> and <code>neural_workbench_adaptive_ab_harness.md</code> <strong>Decision owner:</strong> Neural Workbench research track; NAO remains the first reference environment</p>
+<h2>1. Executive Decision</h2>
+<p>The project should build a Universal Agentic Harness, but not by replacing the model loop, tool runtime, sandbox, session store, or provider layer of every existing agent.</p>
+<p>The defensible architecture is a hybrid:</p>
+<blockquote>
+<p>Own the AB-semantic kernel, task projection, evidence gate, trace grammar,</p>
+<p>evaluation protocol, and promotion lifecycle. Reuse or adapt mature provider,</p>
+<p>session, extension, sandbox, and worker runtimes behind conformance adapters.</p>
+</blockquote>
+<p>This gives the project a genuinely different basis vector from Hermes, Pi, OpenClaw, OpenHands, Codex, or Claude Code. Those systems primarily organize tools, context, permissions, sessions, and execution. Our kernel additionally asks:</p>
+<pre><code class="language-text">Which abstraction frame applies?
+Which AB objects may this role inspect, propose, or control for this task?
+What decomposition and effect signatures make those objects real?
+What evidence closes the claimed effect?
+What trace changed our capability belief?
+When may a repeated structure become a reviewed higher-level object?</code></pre>
+<p>The release strategy is deliberately conservative:</p>
+<pre><code class="language-text">H0  AB contract spine and deterministic gate             IMPLEMENTED PROOF
+H1  Executable harness runtime and complete lifecycle     NEXT ENGINEERING TARGET
+H2  Cooperative NAO adapter and parity ablation           FIRST REAL ENVIRONMENT
+H3  Trace-adaptive Neural Workbench                       OFFLINE-FIRST ADAPTATION
+H4  Crystallization and reviewed AB promotion             QUARANTINED LEARNING
+H5  Cross-runtime federation and conformance              UNIVERSAL HARNESS v1
+H6  AB5 policy-foundry hypothesis                         RESEARCH ONLY, NOT COMMITTED</code></pre>
+<p>The true Universal Agentic Harness is reached at H5, not when every feature of every existing harness has been copied. H5 means that the unchanged semantic kernel can govern more than one model family, runtime style, and task domain through explicit adapters and comparable traces.</p>
+<h2>2. Target Contract</h2>
+<h3>Required outcome</h3>
+<p>Build a portable harness that can turn a model into a bounded subsystem agent by compiling a task-specific interaction module from a versioned AB object graph. The resulting system must:</p>
+<ul>
+<li>remain independent of ROS, NAO, any single model provider, and any single agent runtime;</li>
+<li>preserve domain ownership instead of absorbing the environment into the harness;</li>
+<li>expose the minimum sufficient AB closure for the current role and task;</li>
+<li>distinguish inspection, proposal, control, execution, and effect-claim authority;</li>
+<li>preserve an append-only, replayable, versioned execution trace;</li>
+<li>bind completion to deterministic evidence obligations;</li>
+<li>support local models, API models, and external frontier harness workers;</li>
+<li>adapt search and context from measured traces without silently rewriting the trusted runtime;</li>
+<li>propose reusable AB2+ interaction objects through quarantine, holdout, and owner review;</li>
+<li>compare model-harness configurations under frozen task and environment contracts.</li>
+</ul>
+<h3>Non-goals</h3>
+<ul>
+<li>A global ontology in which one absolute AB number has the same meaning in all systems.</li>
+<li>A universal bag of all tools, skills, prompts, and memories.</li>
+<li>Another LLM layer inserted between the current chatbot and planner.</li>
+<li>Automatic prompt rewriting without a bounded SkillOpt train/holdout ledger.</li>
+<li>Online publication of agent-authored skills into a trusted registry.</li>
+<li>Treating MCP discovery as authorization, effect truth, or evidence closure.</li>
+<li>Treating a lower energy score or lower entropy proxy as proof of correctness.</li>
+<li>Moving dialogue, planning, execution, knowledge, perception, or speech ownership out of their current NAO packages.</li>
+<li>Calling an adaptive AB4 system AB5 merely because it becomes more capable.</li>
+</ul>
+<h3>Protected owners in the NAO reference environment</h3>
+<table><thead><tr>
+<th>Seam</th>
+<th>Authoritative owner</th>
+<th>Harness relationship</th>
+</tr></thead><tbody>
+<tr>
+<td>Dialogue lifecycle and speech</td>
+<td><code>dialogue_manager</code></td>
+<td>Observe and relay typed dialogue outputs; never create a second speech authority</td>
+</tr>
+<tr>
+<td>Route selection and planner handoff</td>
+<td><code>chatbot_llm</code></td>
+<td>Compile role projection and validate output reach; do not create executable plans</td>
+</tr>
+<tr>
+<td>Planning and supervision</td>
+<td><code>planner_llm</code></td>
+<td>Validate plan object reach and evidence obligations; do not execute skills</td>
+</tr>
+<tr>
+<td>Admission, deterministic dispatch, lineage, feedback</td>
+<td><code>nao_orchestrator</code></td>
+<td>Consume accepted plans and return authoritative execution events</td>
+</tr>
+<tr>
+<td>KB query and mutation transport</td>
+<td><code>kb_skills</code></td>
+<td>Expose typed capabilities; never permit direct hidden writes</td>
+</tr>
+<tr>
+<td>Scene facts and detector normalization</td>
+<td><code>nao_scene_grounding</code></td>
+<td>Supply bounded observations; never treat model claims as perception</td>
+</tr>
+<tr>
+<td>Runtime effect evidence</td>
+<td>AB1 skill owner</td>
+<td>Close effects using fresh execution-time evidence</td>
+</tr>
+<tr>
+<td>Canonical AB object graph</td>
+<td>Neural Workbench <code>skill_common</code> registry</td>
+<td>Read by snapshot/hash; changed only through registry governance</td>
+</tr>
+</tbody></table>
+<h3>Acceptance definition</h3>
+<p>The implementation is accepted only when the same task contract can be replayed with fixed models and environments and demonstrates:</p>
+<pre><code class="language-text">correct scope + correct ownership + valid output + evidence-complete effect
++ reconstructable trace + bounded cost/latency + no protected-path regression</code></pre>
+<h2>3. Baseline Evidence</h2>
+<h3>Repository state checked on 2026-07-22</h3>
+<ul>
+<li>Parent checkout: <code>feat/TFM-LLM_planner</code>, clean and synchronized with origin.</li>
+<li><code>src/chatbot_llm</code>: <code>refactor/IRR-turn-engine</code>, clean and synchronized.</li>
+<li>Neural Workbench: <code>feat/base-implementation</code>; one user-owned documentation relocation is present and deliberately untouched.</li>
+<li><code>python3 scripts/ros4hri_change_audit.py --mode working</code>: no ROS package changes detected before this documentation pass.</li>
+<li><code>PYTHONPATH=src/ab_harness .venv/bin/python -m pytest -q src/ab_harness/test</code>: seven tests passed.</li>
+<li><code>.venv/bin/python scripts/check_skill_registry_consistency.py</code>: canonical registry and projections passed consistency checks.</li>
+<li>System <code>python3</code> lacks PyYAML; this is an interpreter-environment gap, not a registry inconsistency.</li>
+</ul>
+<h3>What H0 actually implements</h3>
+<p>The parent-only <code>src/ab_harness</code> package is a real portable contract proof. It contains no ROS or NAO imports in the core and currently proves:</p>
+<table><thead><tr>
+<th>Implemented seam</th>
+<th>Source</th>
+<th>Current proof</th>
+</tr></thead><tbody>
+<tr>
+<td>Frame-relative control band</td>
+<td><code>contracts.py</code></td>
+<td>Ordering, direct-control range, inspectable range</td>
+</tr>
+<tr>
+<td>Read-only canonical registry snapshot</td>
+<td><code>registry.py</code></td>
+<td>JSON load, object views, SHA-256 content identity</td>
+</tr>
+<tr>
+<td>Task projection and decomposition closure</td>
+<td><code>projection.py</code></td>
+<td>Requested objects plus inspectable lower decomposition</td>
+</tr>
+<tr>
+<td>Deterministic role/output gate</td>
+<td><code>gate.py</code></td>
+<td>Output ownership, reachability, direct AB level, effect-claim rejection</td>
+</tr>
+<tr>
+<td>Append-only trace proof</td>
+<td><code>trace.py</code></td>
+<td>JSONL append and round-trip reconstruction</td>
+</tr>
+<tr>
+<td>NAO compatibility views</td>
+<td><code>nao_h0.py</code></td>
+<td>Chatbot route and planner-step mapping without nested package imports</td>
+</tr>
+<tr>
+<td>Focused fail-closed tests</td>
+<td><code>test_h0_nao_harness.py</code></td>
+<td>Accepted paths, unknown object, inspection-only AB0, effect claim, trace replay</td>
+</tr>
+</tbody></table>
+<h3>What H0 does not yet implement</h3>
+<p>The current proof is intentionally narrower than the desired H0 contract in the earlier foundation document. These are open seams, not failures:</p>
+<ul>
+<li>no serialized <code>HarnessSpec</code>, <code>TaskSpec</code>, <code>ModelProfile</code>, permission policy, environment identity, or versioned schema envelope;</li>
+<li>registry object views do not yet carry full input/output schemas, owner authority, side-effect class, freshness, or evidence obligation types;</li>
+<li>projection starts from requested object IDs rather than compiling them from a complete task/effect contract;</li>
+<li>the output gate does not yet validate payload schemas, canonical aliases, preconditions, permissions, budgets, or evidence closure;</li>
+<li>the trace captures projection and gate decisions, not the full observation, model-call, validation, handoff, execution, feedback, cancellation, and terminal-evidence lifecycle;</li>
+<li>the chatbot adapter assumes <code>user_intent.type</code> can be interpreted as one object reference, which is not sufficient for all multi-intent or target cases;</li>
+<li>no live chatbot, planner, ROS, simulator, or external worker path invokes the package;</li>
+<li>no same-model harness ablation has measured uplift.</li>
+</ul>
+<p>Therefore the correct status is:</p>
+<blockquote>
+<p>H0 contract proof implemented; H0 lifecycle completion and H1 runtime</p>
+<p>integration remain open.</p>
+</blockquote>
+<h3>Existing seams worth preserving</h3>
+<p><code>chatbot_llm</code> and <code>planner_llm</code> already paid much of the software-engineering cost of a harness. Current source includes prompt-pack loading, provider configuration, structured schemas, JSON cleanup, retries, skill projection, grounded-context construction, route/plan validation, supervision, and trace stages. The extraction objective is not to rewrite those working domain rules. It is to separate provider-neutral mechanisms behind compatibility adapters and measure parity one seam at a time.</p>
+<h2>4. AB Semantics: Capability Is Not Abstraction Order</h2>
+<h3>Frame-relative coordinates</h3>
+<p>An AB level is a structural coordinate relative to an explicit abstraction frame, not a global intelligence score:</p>
+<pre><code class="language-text">F_AB = (frame_id, substrate, atomicity_rule, owners, registry_version)
+
+coord_F(o) =
+  (level, kind, input_signature, output_signature, effect_signature,
+   decomposition, evidence_obligations)</code></pre>
+<p>In the NAO runtime frame, AB0 effect primitives compose AB1 callable skills. In the ML architecture frame, tensor primitives and learned operators compose AB2 motifs, AB3 models, and AB4 coupled systems. Cross-frame relations must be explicit mappings, never inferred from equal numbers.</p>
+<h3>Why an LLM plus harness is AB4</h3>
+<p>The served LLM is an AB3 model object in the ML architecture frame. A harness couples it to state, tools, memory, environment, verifiers, execution policy, and feedback:</p>
+<pre><code class="language-text">H_AB4 = (O, Delta, M, E, V, R, Pi, Phi)
+
+O      admitted AB objects and interaction modules
+Delta  allowed graph, adapter, prompt, policy, or model transformations
+M      trace, artifact, and capability memory
+E      environment and runtime adapters
+V      schema, effect, safety, and task verifiers
+R      provider/model router
+Pi     lifecycle and control policy
+Phi    promotion, rollback, and governance policy</code></pre>
+<p>The coupled system is AB4 because the task-facing object is no longer the model alone. It is the coordinated model-environment policy with typed effects.</p>
+<h3>Static and dynamic learning inside AB4</h3>
+<p>The system can learn in two distinct channels:</p>
+<table><thead><tr>
+<th>Channel</th>
+<th>Examples</th>
+<th>Representation</th>
+</tr></thead><tbody>
+<tr>
+<td>Static/offline</td>
+<td>model weights, adapters, fine-tuning, post-training</td>
+<td>versioned <code>delta_AB</code> over model or policy objects</td>
+</tr>
+<tr>
+<td>Dynamic/runtime-derived</td>
+<td>trace retrieval, capability posterior, heuristic priors, context projection</td>
+<td>versioned harness state and reviewed interaction objects</td>
+</tr>
+</tbody></table>
+<p>Both can improve the same AB4 system. They may increase task success, reduce uncertainty, reduce latency, improve calibration, or expand the verified feasible region. None of those improvements automatically changes the AB level.</p>
+<p>Use a maturity vector instead of abusing the level:</p>
+<pre><code class="language-text">maturity(o, F, t) =
+  (coverage, reliability, calibration, evidence_completeness,
+   recovery_quality, portability, cost_efficiency, safety)</code></pre>
+<h3>When AB5 would be a defensible claim</h3>
+<p>AB5 requires a new object boundary. A candidate AB5 object would govern a family of AB4 systems by creating, comparing, revising, and retiring their policies or abstraction frames under an independent contract:</p>
+<pre><code class="language-text">AB4: executes and adapts one coupled agent-environment policy
+
+AB5 candidate: designs/governs a population of AB4 policies or Workbenches,
+               proves cross-system effects, and maintains their lifecycle</code></pre>
+<p>The minimum AB5 evidence gate is:</p>
+<ol>
+<li>the object accepts AB4 systems or policies as typed inputs;</li>
+<li>it produces a materially new AB4 arrangement, policy, or frame mapping;</li>
+<li>an independent evaluator measures effects across held-out systems/tasks;</li>
+<li>the creator cannot publish its own proposal directly;</li>
+<li>rollback and provenance preserve the replaced AB4 state;</li>
+<li>the behavior cannot be equivalently described as ordinary search within one fixed AB4 policy space.</li>
+</ol>
+<p>Until those conditions are met, the honest description is an increasingly capable, adaptive, and efficient AB4 system.</p>
+<h2>5. Canonical System Architecture</h2>
+<pre><code class="language-text">                         UNIVERSAL SEMANTIC PLANE
+
+ TaskContract + AgentRole + ABFrame + RegistrySnapshot + EnvironmentIdentity
+                                  |
+                                  v
+                    Task Interaction Compiler
+       projection + decomposition + permissions + evidence closure
+                                  |
+                                  v
+                     InteractionModuleSpec
+                                  |
+              +-------------------+-------------------+
+              |                                       |
+              v                                       v
+      Model/Harness Adapter                      Runtime Adapter
+ local API | remote API | Pi | Codex       ROS | shell | browser | MCP
+ Claude | Hermes | OpenClaw | OpenHands    API | sandbox | simulator
+              |                                       |
+              +-------------------+-------------------+
+                                  v
+                     Deterministic Control Plane
+          schema gate + AB reach + permissions + budgets + approvals
+                                  |
+                                  v
+                    Environment-owned execution
+                                  |
+                                  v
+              Observation + EffectEvidence + TerminalState
+                                  |
+                                  v
+                       Append-only Trace Store
+                                  |
+                   +--------------+--------------+
+                   |                             |
+                   v                             v
+             Evaluation Plane             Neural Workbench
+       milestones/minefields/holdout   posterior/search/crystallization</code></pre>
+<h3>Six planes</h3>
+<table><thead><tr>
+<th>Plane</th>
+<th>Owns</th>
+<th>Must not own</th>
+</tr></thead><tbody>
+<tr>
+<td>Semantic</td>
+<td>AB frames, objects, effects, decomposition, role authority</td>
+<td>Provider transport or domain execution</td>
+</tr>
+<tr>
+<td>Interaction compiler</td>
+<td>Minimal task projection and evidence closure</td>
+<td>Free-form prompt policy</td>
+</tr>
+<tr>
+<td>Runtime</td>
+<td>Lifecycle, cancellation, budgets, approvals, adapter calls</td>
+<td>Domain truth not returned by owners</td>
+</tr>
+<tr>
+<td>Trace</td>
+<td>Versioned events, artifacts, lineage, environment identity</td>
+<td>Unverified summaries as source of truth</td>
+</tr>
+<tr>
+<td>Evaluation</td>
+<td>Milestones, minefields, terminal acceptance, cost and process metrics</td>
+<td>Self-reported model success</td>
+</tr>
+<tr>
+<td>Workbench</td>
+<td>Candidate portfolios, priors, uncertainty, proposal quarantine</td>
+<td>Direct publication or trusted execution</td>
+</tr>
+</tbody></table>
+<h3>Core contracts</h3>
+<p>The first stable grammar should contain:</p>
+<table><thead><tr>
+<th>Contract</th>
+<th>Purpose</th>
+</tr></thead><tbody>
+<tr>
+<td><code>HarnessSpec</code></td>
+<td>Kernel version, policies, adapters, trace/eval configuration</td>
+</tr>
+<tr>
+<td><code>TaskSpec</code></td>
+<td>Goal, role, frame, required effects, prohibited effects, budgets, terminal checks</td>
+</tr>
+<tr>
+<td><code>AbstractionFrame</code></td>
+<td>Substrate, atomicity rule, owners, registry version</td>
+</tr>
+<tr>
+<td><code>ABObjectSpec</code></td>
+<td>Typed object, decomposition, effects, observables, permissions, callable status</td>
+</tr>
+<tr>
+<td><code>ABControlBand</code></td>
+<td>Inspect, propose, direct-control, and effect-claim bounds</td>
+</tr>
+<tr>
+<td><code>InteractionModuleSpec</code></td>
+<td>Closed task projection presented to one role</td>
+</tr>
+<tr>
+<td><code>ModelProfile</code></td>
+<td>Provider protocol, schema/tool capabilities, context, latency, trust tier</td>
+</tr>
+<tr>
+<td><code>EnvironmentProfile</code></td>
+<td>Runtime identity, adapters, resources, security and freshness policy</td>
+</tr>
+<tr>
+<td><code>ActionProposal</code></td>
+<td>Model-proposed typed operation without effect truth</td>
+</tr>
+<tr>
+<td><code>GateDecision</code></td>
+<td>Deterministic acceptance/rejection with machine-readable reasons</td>
+</tr>
+<tr>
+<td><code>EffectEvidence</code></td>
+<td>Owner-issued observation satisfying a declared effect obligation</td>
+</tr>
+<tr>
+<td><code>TraceEvent</code></td>
+<td>Append-only lifecycle event with lineage and artifact references</td>
+</tr>
+<tr>
+<td><code>CapabilityProfile</code></td>
+<td>Failure-aware empirical belief over object/task/environment slices</td>
+</tr>
+<tr>
+<td><code>InteractionSkillProposal</code></td>
+<td>Quarantined higher-order composition with proofs and counterexamples</td>
+</tr>
+</tbody></table>
+<h2>6. H0-H6 Delivery Spine</h2>
+<h3>H0: AB contract spine</h3>
+<p><strong>Purpose:</strong> Prove that one model role can be scoped to a real task-relative AB projection and rejected deterministically when it exceeds that projection.</p>
+<p><strong>Current state:</strong> The parent package proves the smallest core, but not the full lifecycle.</p>
+<p><strong>Complete H0 deliverables:</strong></p>
+<ul>
+<li>serialize and version <code>HarnessSpec</code>, <code>TaskSpec</code>, <code>ModelProfile</code>, and <code>EnvironmentProfile</code>;</li>
+<li>expand <code>ABObjectView</code> with input/output, effect, evidence, freshness, side effect, permission, and owner fields;</li>
+<li>compile projection from required task effects and role policy, not only a caller-provided list of object IDs;</li>
+<li>distinguish <code>inspect</code>, <code>propose</code>, <code>direct</code>, <code>execute</code>, and <code>claim_effect</code> authority;</li>
+<li>add payload-schema and canonical-alias validation;</li>
+<li>define complete lifecycle event types and trace identity;</li>
+<li>create golden fixtures for dialogue, KB query, execution handoff, rejected reach, cancellation, and failed evidence closure.</li>
+</ul>
+<p><strong>Acceptance gate:</strong></p>
+<pre><code class="language-text">all current H0 tests
++ schema round-trip/version tests
++ fail-closed permission and evidence tests
++ one complete synthetic lifecycle replay
++ no ROS or nested LLM import in core</code></pre>
+<h3>H1: Executable runtime kernel</h3>
+<p><strong>Purpose:</strong> Turn the contracts into a small runnable harness without migrating NAO nodes.</p>
+<p><strong>Deliverables:</strong></p>
+<ul>
+<li>deterministic lifecycle state machine: compile, observe, propose, gate, dispatch, receive, verify, recover, terminate;</li>
+<li>provider interface for local and OpenAI-compatible API calls;</li>
+<li>structured-output adapter with explicit parse/repair provenance;</li>
+<li>runtime adapter protocol for shell/API/simulator/MCP/worker calls;</li>
+<li>cancellation, time, token, tool, retry, and cost budgets;</li>
+<li>human approval and policy-intervention events;</li>
+<li>append-only event store with artifact addressing;</li>
+<li>reference CLI and synthetic deterministic environment;</li>
+<li>replay runner that can replace the model with recorded proposals.</li>
+</ul>
+<p><strong>Key design rule:</strong> H1 owns control mechanics, not environment semantics. A runtime adapter returns typed observations; only the environment contract says what those observations prove.</p>
+<p><strong>Acceptance gate:</strong> A frozen synthetic task suite must cover success, invalid proposal, unavailable tool, timeout, cancellation, retry exhaustion, stale evidence, and false completion. Every case must be reconstructable from events.</p>
+<h3>H2: Cooperative NAO adapter</h3>
+<p><strong>Purpose:</strong> Prove the harness against a real, already-engineered multi-node system without moving ownership or degrading behavior.</p>
+<p><strong>Migration order:</strong></p>
+<ol>
+<li>read-only registry projection and trace correlation;</li>
+<li>chatbot output shadow-gating;</li>
+<li>planner output shadow-gating;</li>
+<li>provider capability normalization behind current callers;</li>
+<li>optional cooperative gate for one low-risk path;</li>
+<li>failure, cancellation, supersede, replan, and duplicate-speech validation;</li>
+<li>live robot validation only after fake/sim parity.</li>
+</ol>
+<p><strong>Shadow mode:</strong> The harness computes projection and decisions but cannot block or dispatch. Differences against current validators are logged. This gives us counterexamples before authority changes.</p>
+<p><strong>Cooperative mode:</strong> One current node explicitly calls a compatibility adapter at a narrow seam. Existing node validation remains authoritative until the ablation proves equivalence.</p>
+<p><strong>Required task set:</strong></p>
+<table><thead><tr>
+<th>Family</th>
+<th>Success case</th>
+<th>Adversarial/failure case</th>
+</tr></thead><tbody>
+<tr>
+<td>Dialogue</td>
+<td>ordinary social turn</td>
+<td>action wording must not create execution</td>
+</tr>
+<tr>
+<td>Knowledge</td>
+<td>current scene query</td>
+<td>stale memory must not become current truth</td>
+</tr>
+<tr>
+<td>Execution</td>
+<td>grounded single-skill request</td>
+<td>unknown/ambiguous target clarification</td>
+</tr>
+<tr>
+<td>Plan</td>
+<td>valid multi-step skill plan</td>
+<td>unregistered or inspection-only AB0 step</td>
+</tr>
+<tr>
+<td>Recovery</td>
+<td>retryable skill failure</td>
+<td>exhausted retry or non-retryable failure</td>
+</tr>
+<tr>
+<td>Speech</td>
+<td>one acknowledgement and one terminal result</td>
+<td>no duplicate utterance authority</td>
+</tr>
+</tbody></table>
+<p><strong>Acceptance gate:</strong> Same model, prompt pack, task set, fixture, and launch profile produce behavioral parity or an explicitly reviewed improvement. No prompt wording change enters this phase without SkillOpt.</p>
+<h3>H3: Trace-adaptive Neural Workbench</h3>
+<p><strong>Purpose:</strong> Let measured experience shape candidate generation, context, and recovery without modifying trusted runtime policy online.</p>
+<p><strong>Deliverables:</strong></p>
+<ul>
+<li>normalized complete traces indexed by task, AB object, mechanism, environment version, model-harness configuration, and failure class;</li>
+<li>conservative capability posterior with explicit unknown state;</li>
+<li>retrieval of supporting and counterexample traces;</li>
+<li>mechanism-diverse candidate portfolio rather than paraphrased duplicates;</li>
+<li>deterministic graph verifier and hard-constraint filter;</li>
+<li>Pareto vector for success, risk, latency, cost, evidence, and uncertainty;</li>
+<li>symbolic entropy proxy only for declared observable variables;</li>
+<li>reviewed pulse heuristics with provenance and expiry;</li>
+<li>exploration floor so early trace errors cannot permanently collapse search.</li>
+</ul>
+<p><strong>Running uncertainty:</strong></p>
+<pre><code class="language-text">H_proxy(task, t) =
+  w1 * missing_required_inputs
++ w2 * unresolved_target_count
++ w3 * unknown_preconditions
++ w4 * (1 - grounded_confidence)
++ w5 * unresolved_effect_obligations
++ w6 * failure_or_staleness_uncertainty
+
+delta_H_proxy = H_proxy_before - H_proxy_after</code></pre>
+<p>This is a measured proxy, not Shannon entropy unless a calibrated probability distribution exists. Every term must name its observable and owner.</p>
+<p><strong>Acceptance gate:</strong> On held-out tasks, success-plus-failure retrieval must beat no-memory and success-only baselines without degrading calibration, scope, evidence completeness, or latency beyond budget.</p>
+<h3>H4: Crystallization and reviewed AB promotion</h3>
+<p><strong>Purpose:</strong> Convert repeated, causally supported interaction structures into maintained higher-level AB proposals.</p>
+<p><strong>Candidate lifecycle:</strong></p>
+<pre><code class="language-text">observed fragment
+  -&gt; normalized candidate
+  -&gt; decomposition/effect closure
+  -&gt; removal and substitution counterfactuals
+  -&gt; replay across supporting and opposing traces
+  -&gt; held-out task/environment tests
+  -&gt; security and owner review
+  -&gt; quarantine
+  -&gt; approved registry proposal
+  -&gt; monitored activation
+  -&gt; retain, revise, deprecate, or roll back</code></pre>
+<p><strong>Promotion is blocked by:</strong></p>
+<ul>
+<li>frequency without causal or counterfactual support;</li>
+<li>hidden side effects or unowned evidence;</li>
+<li>compression that erases a recovery or cancellation seam;</li>
+<li>performance measured only on training traces;</li>
+<li>proposer acting as sole verifier;</li>
+<li>unversioned model, prompt, environment, or registry state;</li>
+<li>absent rollback/decompression path.</li>
+</ul>
+<p><strong>Acceptance gate:</strong> At least one reviewed AB2+ proposal must compress a real solution family while preserving effects, observability, recovery, and holdout performance. Automatic runtime publication remains prohibited.</p>
+<h3>H5: Universal federation and conformance</h3>
+<p><strong>Purpose:</strong> Prove that the semantic kernel is independent of model provider, agent runtime, and task domain.</p>
+<p><strong>Required adapter classes:</strong></p>
+<table><thead><tr>
+<th>Adapter</th>
+<th>Minimum proof</th>
+</tr></thead><tbody>
+<tr>
+<td>Direct local/API model</td>
+<td>capability handshake, structured output, token/cost/latency trace</td>
+</tr>
+<tr>
+<td>Minimal embedded worker</td>
+<td>Pi SDK or RPC adapter with explicit active tools</td>
+</tr>
+<tr>
+<td>Sandboxed execution worker</td>
+<td>OpenHands-style action/observation adapter with reproducible environment identity</td>
+</tr>
+<tr>
+<td>Persistent personal-agent worker</td>
+<td>Hermes or OpenClaw adapter with bounded toolset, memory scope, and session lineage</td>
+</tr>
+<tr>
+<td>Frontier coding worker</td>
+<td>Codex or Claude Code process/SDK adapter with permissions and artifact extraction</td>
+</tr>
+<tr>
+<td>Protocol bridge</td>
+<td>MCP discovery mapped into AB objects without granting implicit authority</td>
+</tr>
+<tr>
+<td>Non-NAO domain</td>
+<td>iTrader, Watson, or a synthetic AB4 system using the unchanged core</td>
+</tr>
+</tbody></table>
+<p><strong>Conformance suite:</strong></p>
+<ul>
+<li>adapter capability negotiation;</li>
+<li>task projection equivalence;</li>
+<li>permission and approval equivalence;</li>
+<li>cancellation and timeout behavior;</li>
+<li>artifact and trace normalization;</li>
+<li>effect-evidence mapping;</li>
+<li>model-harness matrix evaluation;</li>
+<li>environment/version replay;</li>
+<li>provider/runtime failure isolation;</li>
+<li>no domain imports in the semantic core.</li>
+</ul>
+<p><strong>Acceptance gate:</strong> The same kernel version must run at least two model styles, two runtime styles, and two domains, including one non-NAO AB4 task. Results are reported as model-harness-environment configurations, not model scores alone.</p>
+<h3>H6: Optional AB5 policy foundry</h3>
+<p><strong>Purpose:</strong> Test whether the Workbench can govern a population of AB4 harnesses or policies rather than merely tune one.</p>
+<p><strong>Status:</strong> Research hypothesis. It is not required for Universal Harness v1.</p>
+<p><strong>Candidate experiments:</strong></p>
+<ul>
+<li>propose different AB4 harness configurations for a task distribution;</li>
+<li>train on one model/runtime subset and hold out other systems;</li>
+<li>compare, retire, and roll back whole harness policies;</li>
+<li>infer or revise cross-frame mappings with independent validation;</li>
+<li>test whether the operation is genuinely higher-order rather than ordinary H3/H4 search over a fixed AB4 space.</li>
+</ul>
+<p><strong>Acceptance gate:</strong> All six AB5 conditions in Section 4 must pass. Otherwise the result remains an advanced AB4 Workbench.</p>
+<h2>7. Mapping Existing Phase Names</h2>
+<p>The earlier documents use three phase systems. They are retained for provenance, but the H-series is the canonical product spine.</p>
+<table><thead><tr>
+<th>Product release</th>
+<th>Parent extraction phases</th>
+<th>Adaptive research phases</th>
+<th>Meaning</th>
+</tr></thead><tbody>
+<tr>
+<td>H0</td>
+<td>P0-P2 in part</td>
+<td>A0-A1 in part</td>
+<td>Contracts, frames, projection, deterministic gate, initial trace</td>
+</tr>
+<tr>
+<td>H1</td>
+<td>P1-P2</td>
+<td>A2-A3</td>
+<td>Runtime state machine, graph verifier, complete trace</td>
+</tr>
+<tr>
+<td>H2</td>
+<td>P3</td>
+<td>A3 and A7</td>
+<td>Cooperative NAO migration and parity ablation</td>
+</tr>
+<tr>
+<td>H3</td>
+<td>P4 and P7 in part</td>
+<td>A4-A5</td>
+<td>Capability posterior, entropy proxy, retrieval, reviewed heuristics</td>
+</tr>
+<tr>
+<td>H4</td>
+<td>P7</td>
+<td>A6 and A9</td>
+<td>Counterfactual crystallization and versioned deltas</td>
+</tr>
+<tr>
+<td>H5</td>
+<td>P5-P6</td>
+<td>A8</td>
+<td>External workers, serving control, and cross-domain proof</td>
+</tr>
+<tr>
+<td>H6</td>
+<td>future</td>
+<td>beyond A9</td>
+<td>Higher-order AB4 policy governance research</td>
+</tr>
+</tbody></table>
+<p>The parent <code>P#</code> phases describe extraction/integration work. The adaptive <code>A#</code> phases describe research mechanisms. The <code>H#</code> releases describe usable system capability and are what implementation status should report.</p>
+<h2>8. Package and Subsystem Plan</h2>
+<p>The first implementation remains in this repository to reduce migration risk. Relocation occurs only after H2 parity and one non-NAO adapter prove that moving the package changes packaging, not meaning.</p>
+<table><thead><tr>
+<th>Proposed module</th>
+<th>Responsibility</th>
+<th>H release</th>
+</tr></thead><tbody>
+<tr>
+<td><code>ab_harness.contracts</code></td>
+<td>Frozen portable schemas and versions</td>
+<td>H0</td>
+</tr>
+<tr>
+<td><code>ab_harness.registry</code></td>
+<td>Read-only snapshots, frame maps, object resolution</td>
+<td>H0</td>
+</tr>
+<tr>
+<td><code>ab_harness.compiler</code></td>
+<td>Task/effect to minimal AB closure</td>
+<td>H0-H1</td>
+</tr>
+<tr>
+<td><code>ab_harness.policy</code></td>
+<td>Role authority, permissions, budgets, approvals</td>
+<td>H1</td>
+</tr>
+<tr>
+<td><code>ab_harness.gate</code></td>
+<td>Schema, reach, effect, evidence, and terminal checks</td>
+<td>H0-H1</td>
+</tr>
+<tr>
+<td><code>ab_harness.runtime</code></td>
+<td>Lifecycle state machine and adapter orchestration</td>
+<td>H1</td>
+</tr>
+<tr>
+<td><code>ab_harness.trace</code></td>
+<td>Event grammar, JSONL/artifact stores, replay</td>
+<td>H0-H1</td>
+</tr>
+<tr>
+<td><code>ab_harness.eval</code></td>
+<td>Milestones, minefields, acceptance, cost/process metrics</td>
+<td>H1-H2</td>
+</tr>
+<tr>
+<td><code>ab_harness.providers</code></td>
+<td>Direct local/API model capability normalization</td>
+<td>H1</td>
+</tr>
+<tr>
+<td><code>ab_harness.adapters.nao</code></td>
+<td>Temporary cooperative chatbot/planner/ROS views</td>
+<td>H2</td>
+</tr>
+<tr>
+<td><code>ab_harness.adapters.workers</code></td>
+<td>Pi, OpenHands, Hermes, OpenClaw, Codex, Claude</td>
+<td>H5</td>
+</tr>
+<tr>
+<td><code>ab_harness.adapters.mcp</code></td>
+<td>Protocol discovery and transport mapping</td>
+<td>H5</td>
+</tr>
+<tr>
+<td><code>neural_workbench.search</code></td>
+<td>Candidate families, graph verifier, scoring</td>
+<td>H3</td>
+</tr>
+<tr>
+<td><code>neural_workbench.capability</code></td>
+<td>Posterior, calibration, entropy proxies</td>
+<td>H3</td>
+</tr>
+<tr>
+<td><code>neural_workbench.crystallization</code></td>
+<td>Counterfactuals, quarantine, promotion</td>
+<td>H4</td>
+</tr>
+<tr>
+<td><code>skill_common</code></td>
+<td>Canonical governed multi-frame AB object graph</td>
+<td>all</td>
+</tr>
+</tbody></table>
+<h3>Dependency rule</h3>
+<pre><code class="language-text">portable contracts -&gt; no ROS, NAO, provider SDK, or frontier harness imports
+domain adapters     -&gt; may depend on domain contracts
+worker adapters     -&gt; may depend on worker protocol/SDK
+Workbench learning  -&gt; consumes traces and registry snapshots, never executor internals</code></pre>
+<h2>9. Build, Borrow, or Wrap</h2>
+<h3>Decision matrix</h3>
+<table><thead><tr>
+<th>System</th>
+<th>Strong mechanism to reuse</th>
+<th>Why not use as semantic core</th>
+<th>Integration decision</th>
+</tr></thead><tbody>
+<tr>
+<td>Pi</td>
+<td>Small loop, four-tool default, JSONL session tree, SDK/RPC, event interception, explicit tool allowlist</td>
+<td>Security and orchestration intentionally delegated to extensions/environment; no AB/effect semantics</td>
+<td>Prototype first embedded-worker adapter; borrow event/session patterns</td>
+</tr>
+<tr>
+<td>OpenHands</td>
+<td>Typed action-observation tools, isolated runtime, reproducible images, evaluator controller</td>
+<td>Heavy software-engineering and container assumptions; no AB promotion semantics</td>
+<td>Reuse as optional sandbox/runtime adapter, not kernel</td>
+</tr>
+<tr>
+<td>Hermes Agent</td>
+<td>Broad providers, toolsets, skills, memory, delegates, ACP/JSON-RPC/API integration</td>
+<td>Large personal-agent surface and autonomous skill behavior exceed minimum trusted core</td>
+<td>Wrap bounded sessions/toolsets; study skill lifecycle but require our quarantine</td>
+</tr>
+<tr>
+<td>OpenClaw</td>
+<td>Reusable agent core, harness registry, lifecycle, sessions, plugins, multi-channel persistence</td>
+<td>Product-scale personal-agent policy and plugin ecosystem are broader than task projection</td>
+<td>Adapter for persistent-agent tasks; borrow registry/lifecycle concepts</td>
+</tr>
+<tr>
+<td>Codex</td>
+<td>Scoped repository instructions, skills, MCP, sandbox/approval policy, worktrees, subagents</td>
+<td>Closed product runtime; repository semantics are not our AB registry</td>
+<td>External worker with task package, artifact contract, and trace bridge</td>
+</tr>
+<tr>
+<td>Claude Code</td>
+<td>CLI/SDK, tool permissions, structured streaming, sessions, MCP</td>
+<td>Closed product runtime and provider-specific policy</td>
+<td>External worker with bounded tools, turns, permissions, and artifact extraction</td>
+</tr>
+<tr>
+<td>MCP</td>
+<td>Dynamic capability discovery, tools/resources/prompts, local/remote transport</td>
+<td>Protocol explicitly leaves context policy and model behavior to the host</td>
+<td>Transport adapter only; map discoveries into reviewed AB objects</td>
+</tr>
+<tr>
+<td>AgentSpec</td>
+<td>Trigger-predicate-enforcement rule model</td>
+<td>Research DSL, not full harness/runtime</td>
+<td>Borrow policy-rule concepts and validate generated rules independently</td>
+</tr>
+<tr>
+<td>Meta-Harness</td>
+<td>Outer-loop search over harness code using scores and traces</td>
+<td>Search can overfit or mutate trusted code without our governance</td>
+<td>H4 offline optimizer candidate behind quarantine and holdout</td>
+</tr>
+<tr>
+<td>AutoHarness</td>
+<td>Environment-feedback synthesis of deterministic guard/policy code</td>
+<td>Extreme synthesis can replace policy and overfit one environment</td>
+<td>H4 bounded candidate generator, never direct activation</td>
+</tr>
+</tbody></table>
+<h3>Cannibalization rule</h3>
+<p>Before copying source rather than adapting a public interface:</p>
+<ol>
+<li>verify the exact repository, revision, and license;</li>
+<li>identify the smallest independently testable mechanism;</li>
+<li>preserve attribution and license obligations;</li>
+<li>wrap it behind a harness-owned protocol;</li>
+<li>add conformance tests before making it required;</li>
+<li>retain a local reference implementation so the semantic kernel is not held hostage by one external runtime;</li>
+<li>reject the dependency if AB closure or evidence ownership requires an invasive fork.</li>
+</ol>
+<p>Pi and Hermes currently declare MIT licenses in their official repositories. The exact licenses and dependency obligations of every selected revision must still be recorded in an adoption ADR before source reuse.</p>
+<h2>10. Research Synthesis</h2>
+<h3>What recent evidence supports</h3>
+<table><thead><tr>
+<th>Evidence</th>
+<th>Finding</th>
+<th>Consequence for this roadmap</th>
+</tr></thead><tbody>
+<tr>
+<td><a href="https://arxiv.org/abs/2605.27922">Harness-Bench</a></td>
+<td>Model-harness pairings differ substantially across completion, process, cost, and failures</td>
+<td>Report configuration-level results and preserve complete traces</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2606.12344">Claw-SWE-Bench</a></td>
+<td>With a fixed model, adapter design can produce very large performance differences</td>
+<td>Treat adapters as evaluated code, not glue</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2605.22166">Life-Harness</a></td>
+<td>Training-trajectory interface interventions can transfer across frozen models</td>
+<td>H3 may learn reusable environment-side structures without weight updates</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2606.25447">Harness design and post-training</a></td>
+<td>Harness choices affect post-training and out-of-distribution behavior</td>
+<td>Co-design future training with the harness; do not begin there</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2603.28052">Meta-Harness</a></td>
+<td>Outer-loop harness code search benefits from complete prior code, scores, and traces</td>
+<td>H4 optimizer should see artifacted candidates and holdouts</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2603.03329">AutoHarness</a></td>
+<td>Synthesized code harnesses can prevent invalid actions and outperform larger models in bounded games</td>
+<td>Crystallize deterministic checks where environment rules are provable</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2603.25723">Natural-Language Agent Harnesses</a></td>
+<td>Control logic can be externalized behind explicit contracts and durable artifacts</td>
+<td>Natural language may express proposals/policy, but deterministic gates remain code</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2503.18666">AgentSpec</a></td>
+<td>Runtime trigger/predicate/enforcement rules can be lightweight and effective; generated rules still miss cases</td>
+<td>Keep policy typed, inspectable, and independently tested</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2604.13630">SafeHarness</a></td>
+<td>Harness centrality makes it a security attack surface requiring lifecycle defenses</td>
+<td>Integrate filtering, causal checks, privilege separation, rollback, and degradation</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2408.04682">ToolSandbox</a></td>
+<td>Stateful tool use needs intermediate milestones and minefields, not final text scoring</td>
+<td>Make process acceptance first-class in <code>ab_harness.eval</code></td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2606.05238">DeployBench</a></td>
+<td>Agents often self-stop after checking a weaker target than the task requires</td>
+<td>Compile terminal acceptance from <code>TaskSpec</code>; never trust self-declared completion</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2405.15793">SWE-agent ACI</a></td>
+<td>Agent-computer interface design materially changes behavior</td>
+<td>AB projection is an interface design experiment, not ontology decoration</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2604.18071">Architectural Design Decisions</a></td>
+<td>Public harnesses vary repeatedly along subagents, context, tools, safety, and orchestration; high-assurance audit is rare</td>
+<td>Keep these dimensions separate and make audit/evidence a differentiator</td>
+</tr>
+<tr>
+<td><a href="https://openreview.net/forum?id=nM5tDHrQsx">Agent Systems with Harness Engineering</a></td>
+<td>Harness design spans workflows, memory, skills, orchestration, context, safety, and evaluation</td>
+<td>The Workbench belongs in a broader lifecycle, not just a planner</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2605.18747">Code as Agent Harness</a></td>
+<td>Code supports action, environment modeling, verification, memory, and coordination</td>
+<td>Keep executable contracts and verifiers as durable artifacts</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2606.10106">What makes a harness a harness</a></td>
+<td>A harness needs loop, tool interface, context management, and control, and is distinct from an SDK or evaluator</td>
+<td>H0 alone is a contract proof; H1 is where the system becomes a runnable harness</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2603.18030">Quine</a></td>
+<td>POSIX processes already provide lifecycle, isolation, composition, and resource controls</td>
+<td>Prefer OS/runtime primitives over custom orchestration where sufficient</td>
+</tr>
+</tbody></table>
+<h3>What the literature does not prove for us</h3>
+<ul>
+<li>No cited result proves that AB projection improves NAO, iTrader, or Watson.</li>
+<li>No cited result validates our AB levels as universal constants.</li>
+<li>No cited result makes an entropy proxy a calibrated probability measure.</li>
+<li>Cross-model transfer in one benchmark does not prove cross-domain transfer.</li>
+<li>Harness code search does not prove safe online self-modification.</li>
+<li>Better final-task performance does not prove correct effect ownership.</li>
+<li>A personal or coding harness succeeding on software tasks does not prove it can safely own embodied execution.</li>
+</ul>
+<p>These remain explicit experiments in H2-H6.</p>
+<h2>11. Evaluation and Ablation Program</h2>
+<h3>Configuration identity</h3>
+<p>Every result must identify:</p>
+<pre><code class="language-text">model + model revision + provider/runtime + harness version + adapter version
++ prompt pack hash + registry hash + environment image/state + task suite version</code></pre>
+<h3>Core metrics</h3>
+<table><thead><tr>
+<th>Dimension</th>
+<th>Metrics</th>
+</tr></thead><tbody>
+<tr>
+<td>Task</td>
+<td>terminal acceptance, milestone completion, minefield violations</td>
+</tr>
+<tr>
+<td>Scope</td>
+<td>projected object count, out-of-band proposals, permission denials</td>
+</tr>
+<tr>
+<td>Evidence</td>
+<td>obligation closure, stale evidence, fabricated claims, owner correctness</td>
+</tr>
+<tr>
+<td>Process</td>
+<td>retries, recovery success, cancellation latency, completion-judgment errors</td>
+</tr>
+<tr>
+<td>Model</td>
+<td>parse failures, repair attempts, context tokens, output tokens</td>
+</tr>
+<tr>
+<td>Runtime</td>
+<td>wall time, tool latency, sandbox startup, provider failures</td>
+</tr>
+<tr>
+<td>Cost</td>
+<td>API cost, compute time, repeated work, evaluator cost</td>
+</tr>
+<tr>
+<td>Adaptation</td>
+<td>posterior calibration, retrieval precision, delta-H proxy, counterexample use</td>
+</tr>
+<tr>
+<td>Portability</td>
+<td>adapter conformance, task-spec reuse, trace-schema equivalence</td>
+</tr>
+<tr>
+<td>Safety</td>
+<td>approval violations, privilege escalation, rollback success, unsafe behavior rate</td>
+</tr>
+</tbody></table>
+<h3>Required ablations</h3>
+<ol>
+<li>Flat tool catalog versus AB-closed task projection.</li>
+<li>Scalar desired level versus frame-relative role control band.</li>
+<li>Current validator only versus shadow harness gate.</li>
+<li>One candidate versus mechanism-diverse candidate portfolio.</li>
+<li>No memory versus success-only retrieval versus success-and-failure posterior.</li>
+<li>Final-result check versus compiled milestones, minefields, and terminal proof.</li>
+<li>Symbolic energy only versus hard constraints, Pareto filtering, and energy.</li>
+<li>No entropy term versus symbolic proxy versus calibrated distribution where available.</li>
+<li>Frequency macro proposal versus counterfactual crystallization.</li>
+<li>Direct model call versus Pi/OpenHands/frontier worker under the same task.</li>
+<li>Static harness versus H3 adaptation under in-distribution and shifted tools.</li>
+<li>NAO AB1 task versus non-NAO AB4 task under unchanged core schemas.</li>
+</ol>
+<h3>Acceptance statistics</h3>
+<ul>
+<li>freeze train/development and holdout splits before mutation;</li>
+<li>report per-task and aggregate results, not only averages;</li>
+<li>retain failed trajectories and counterexamples;</li>
+<li>use paired comparisons where model/task/environment are held fixed;</li>
+<li>report uncertainty intervals when sample size allows;</li>
+<li>reject changes that improve success while materially worsening evidence, safety, or protected-path behavior;</li>
+<li>do not promote from one anecdotal trace.</li>
+</ul>
+<h2>12. Approach Registry</h2>
+<table><thead><tr>
+<th>ID</th>
+<th>Architecture family</th>
+<th>Discriminating probe</th>
+<th>Status</th>
+<th>Exact gap or rejection reason</th>
+</tr></thead><tbody>
+<tr>
+<td>UAH-01</td>
+<td>Build every harness layer from scratch</td>
+<td>Compare development cost and conformance against a Pi/OpenHands adapter</td>
+<td>Rejected as default</td>
+<td>Reimplements mature sessions, providers, runtimes, and sandboxes without strengthening AB semantics</td>
+</tr>
+<tr>
+<td>UAH-02</td>
+<td>Fork Hermes or OpenClaw as the whole product</td>
+<td>Attempt AB closure/evidence gate without invasive changes</td>
+<td>Bounded alternative</td>
+<td>Attractive breadth, but product policy and plugin surfaces may dominate the semantic kernel</td>
+</tr>
+<tr>
+<td>UAH-03</td>
+<td>Use Pi as the kernel</td>
+<td>Implement AB projection/gate as extension and inspect trace/effect completeness</td>
+<td>Active adapter hypothesis</td>
+<td>Minimal core is promising; security and effect semantics must remain ours</td>
+</tr>
+<tr>
+<td>UAH-04</td>
+<td>Use OpenHands as the kernel</td>
+<td>Run same task through action-observation adapter and compare environment identity/replay</td>
+<td>Active runtime hypothesis</td>
+<td>Strong sandbox, but domain and container assumptions may be too heavy</td>
+</tr>
+<tr>
+<td>UAH-05</td>
+<td>MCP-first object model</td>
+<td>Encode ownership, freshness, effect proof, AB decomposition, and promotion in MCP alone</td>
+<td>Rejected as semantic core</td>
+<td>MCP intentionally standardizes exchange, not host context policy or effect truth</td>
+</tr>
+<tr>
+<td>UAH-06</td>
+<td>Own semantic kernel, wrap runtimes</td>
+<td>Complete H1 synthetic suite, then Pi/OpenHands conformance</td>
+<td>Accepted leading route</td>
+<td>Requires disciplined adapter boundary and independent eval suite</td>
+</tr>
+<tr>
+<td>UAH-07</td>
+<td>Natural-language harness as trusted policy</td>
+<td>Mutate policy prose and test deterministic safety/effect guarantees</td>
+<td>Rejected for enforcement</td>
+<td>Useful as proposal/configuration language, insufficient as sole trusted gate</td>
+</tr>
+<tr>
+<td>UAH-08</td>
+<td>Online self-modifying Workbench</td>
+<td>Let traces directly alter runtime and run adversarial replay</td>
+<td>Rejected</td>
+<td>Violates review, rollback, holdout, and owner boundaries</td>
+</tr>
+<tr>
+<td>UAH-09</td>
+<td>Offline dual-loop Workbench</td>
+<td>Compare frozen baseline to reviewed trace-derived candidates on holdout</td>
+<td>Accepted research route</td>
+<td>Needs representative traces and calibrated uncertainty</td>
+</tr>
+<tr>
+<td>UAH-10</td>
+<td>Capability improvement implies higher AB</td>
+<td>Improve an AB4 configuration and test for a new object boundary</td>
+<td>Rejected</td>
+<td>Performance and abstraction order are different axes</td>
+</tr>
+<tr>
+<td>UAH-11</td>
+<td>AB5 policy foundry</td>
+<td>Govern held-out populations of AB4 systems under independent evaluation</td>
+<td>Blocked research route</td>
+<td>No implemented system or evidence yet satisfies the AB5 gate</td>
+</tr>
+</tbody></table>
+<h2>13. Discriminating Probes and Results</h2>
+<table><thead><tr>
+<th>Probe</th>
+<th>Observation</th>
+<th>Route changed</th>
+</tr></thead><tbody>
+<tr>
+<td>Inspect and test parent <code>ab_harness</code></td>
+<td>Seven tests pass; registry projection, gate, and trace proof are real</td>
+<td>H0 is implemented in part, not merely planned</td>
+</tr>
+<tr>
+<td>Compare desired H0 grammar to source</td>
+<td>Task/provider/environment specs and complete lifecycle are absent</td>
+<td>H0 must be completed before calling H1 operational</td>
+</tr>
+<tr>
+<td>Run registry checker in system Python</td>
+<td>Fails because PyYAML is absent</td>
+<td>Environment issue; not evidence of registry drift</td>
+</tr>
+<tr>
+<td>Run registry checker in repo venv</td>
+<td>Consistency passes</td>
+<td>Canonical registry remains a sound H0 substrate</td>
+</tr>
+<tr>
+<td>Audit ROS package changes</td>
+<td>No working ROS package changes</td>
+<td>Documentation work can proceed without runtime interference</td>
+</tr>
+<tr>
+<td>Inspect chatbot/planner source seams</td>
+<td>Both already contain mature, package-owned harness mechanisms</td>
+<td>Extraction must be cooperative and parity-gated, not a rewrite</td>
+</tr>
+<tr>
+<td>Compare MCP specification to AB needs</td>
+<td>MCP leaves model/context use to host and exposes transport primitives</td>
+<td>Reject MCP as semantic core; retain it as adapter</td>
+</tr>
+<tr>
+<td>Compare Pi, OpenHands, Hermes, OpenClaw</td>
+<td>Each solves different runtime mechanics; none supplies our effect/promotion calculus</td>
+<td>Accept hybrid semantic-core plus worker/runtime adapters</td>
+</tr>
+<tr>
+<td>Review recent harness benchmarks</td>
+<td>Same model changes materially across harnesses/adapters</td>
+<td>Require frozen model-harness matrix and process traces</td>
+</tr>
+<tr>
+<td>Apply AB5 boundary test</td>
+<td>Current adaptive design tunes one AB4 system</td>
+<td>Keep AB5 blocked until a governed population-of-AB4 object exists</td>
+</tr>
+</tbody></table>
+<h2>14. Adversarial Audit</h2>
+<ul>
+<li>[x] The semantic core remains model-, ROS-, and NAO-independent.</li>
+<li>[x] NAO dialogue, planner, orchestrator, KB, perception, execution, and speech ownership remain unchanged.</li>
+<li>[x] The current H0 proof is separated from unimplemented lifecycle claims.</li>
+<li>[x] AB level is separated from capability, maturity, and performance.</li>
+<li>[x] AB5 has a structural evidence gate and is not used as marketing language.</li>
+<li>[x] MCP is transport/discovery, not authorization or effect truth.</li>
+<li>[x] External harnesses are adapters or substrates, not hidden semantic owners.</li>
+<li>[x] Completion requires task-owned evidence rather than model self-report.</li>
+<li>[x] Prompt changes remain under SkillOpt and are excluded from H0-H2 by default.</li>
+<li>[x] Online adaptation and offline promotion are separate loops.</li>
+<li>[x] Failed traces and counterevidence remain first-class.</li>
+<li>[x] The proposer cannot become its sole verifier.</li>
+<li>[x] Registry promotion remains reviewed, versioned, reversible, and decomposable.</li>
+<li>[x] Model-harness configuration is the evaluation unit.</li>
+<li>[ ] Full H0 schemas and lifecycle traces are not implemented.</li>
+<li>[ ] No synthetic H1 runtime suite exists.</li>
+<li>[ ] No NAO shadow-mode adapter has been run.</li>
+<li>[ ] No external harness adapter has passed conformance.</li>
+<li>[ ] Entropy proxies and capability posteriors are not calibrated.</li>
+<li>[ ] No crystallized AB2+ interaction object has passed counterfactual holdout.</li>
+<li>[ ] No non-NAO AB4 implementation has proved universality.</li>
+<li>[ ] No AB5 candidate has passed the structural boundary test.</li>
+</ul>
+<h2>15. Decision</h2>
+<p><strong>Accept</strong> the hybrid semantic-kernel architecture and H0-H5 release spine.</p>
+<p><strong>Reject</strong> a wholesale fork of a broad agent product as the default core, MCP-first semantics, online self-publication, and AB-level inflation from performance alone.</p>
+<p><strong>Bounded handoff:</strong> Implement only the remaining H0 contract/lifecycle schemas and H1 synthetic runtime before touching live chatbot/planner behavior. In parallel, produce throwaway Pi RPC and OpenHands action-observation adapter spikes only after the adapter protocol is frozen. Neither spike becomes a dependency until it passes conformance.</p>
+<h2>16. Ordered Implementation Queue</h2>
+<h3>Now: finish H0</h3>
+<ol>
+<li>Freeze schema versioning and serialization conventions.</li>
+<li>Add <code>HarnessSpec</code>, <code>TaskSpec</code>, <code>ModelProfile</code>, and <code>EnvironmentProfile</code>.</li>
+<li>Expand AB object effect/evidence/permission fields through a read-only adapter over the canonical registry.</li>
+<li>Compile one synthetic task from required effects to a closed object graph.</li>
+<li>Extend the deterministic gate and reason codes.</li>
+<li>Define full lifecycle <code>TraceEvent</code> variants and replay.</li>
+<li>Add success, rejection, cancellation, and stale-evidence fixtures.</li>
+<li>Keep the existing H0 API behind compatibility exports while tests migrate.</li>
+</ol>
+<h3>Next: H1 executable kernel</h3>
+<ol>
+<li>Implement the minimal lifecycle state machine.</li>
+<li>Add direct local/API model and synthetic runtime adapters.</li>
+<li>Add budget, approval, cancellation, and terminal-evidence controls.</li>
+<li>Implement milestones and minefields.</li>
+<li>Run the frozen synthetic conformance suite.</li>
+<li>Deslop only after behavior is covered; avoid framework-building beyond tested needs.</li>
+</ol>
+<h3>Then: H2 cooperative NAO proof</h3>
+<ol>
+<li>Record frozen chatbot/planner fixtures and current test results.</li>
+<li>Add read-only projection and trace bridge.</li>
+<li>Run shadow gates and classify disagreements.</li>
+<li>Integrate one low-risk path behind a launch/config flag.</li>
+<li>Run same-model standalone versus harness-backed ablations.</li>
+<li>Validate fake/sim success and failure paths.</li>
+<li>Run live robot tests only when the operator and robot are available.</li>
+</ol>
+<h3>After parity: H3-H5</h3>
+<ol>
+<li>Normalize complete traces and implement failure-aware posterior.</li>
+<li>Add reviewed retrieval and symbolic uncertainty experiments.</li>
+<li>Build counterfactual crystallization quarantine.</li>
+<li>Prototype Pi and OpenHands adapters.</li>
+<li>Add one persistent-agent or frontier-worker adapter.</li>
+<li>Prove a non-NAO AB4 task with the unchanged core.</li>
+<li>Publish a conformance matrix and declare Universal Harness v1 only after H5.</li>
+</ol>
+<h2>17. Key Targets and Success Criteria</h2>
+<table><thead><tr>
+<th>Target</th>
+<th>Near-term measure</th>
+<th>v1 success</th>
+</tr></thead><tbody>
+<tr>
+<td>Scope precision</td>
+<td>projected graph smaller than flat catalog without missing required objects</td>
+<td>minimal sufficient projection across domains</td>
+</tr>
+<tr>
+<td>Effect integrity</td>
+<td>no model-only effect claims accepted</td>
+<td>all terminal effects closed by owner evidence</td>
+</tr>
+<tr>
+<td>Traceability</td>
+<td>synthetic task reconstructable</td>
+<td>cross-runtime comparable lifecycle traces</td>
+</tr>
+<tr>
+<td>Portability</td>
+<td>no domain imports in core</td>
+<td>two domains, two runtimes, two model styles</td>
+</tr>
+<tr>
+<td>Recovery</td>
+<td>explicit failure/cancel paths</td>
+<td>measured recovery without hidden retries or duplicate effects</td>
+</tr>
+<tr>
+<td>Adaptation</td>
+<td>posterior preserves unknown and counterexamples</td>
+<td>holdout uplift without safety/evidence regression</td>
+</tr>
+<tr>
+<td>Crystallization</td>
+<td>proposal quarantine exists</td>
+<td>one reviewed AB2+ object with rollback</td>
+</tr>
+<tr>
+<td>Efficiency</td>
+<td>bounded context/tool surface</td>
+<td>improved success-cost frontier against flat baseline</td>
+</tr>
+<tr>
+<td>Governance</td>
+<td>versioned policies and approvals</td>
+<td>reproducible activation, deprecation, and rollback</td>
+</tr>
+</tbody></table>
+<h2>18. Continuous Research Points</h2>
+<h3>AB frame comparability</h3>
+<p>How can different frames remain locally meaningful without becoming arbitrary? The next theorem-sized task is to define frame invariants and partial mappings that preserve effect signatures and decomposition depth where possible.</p>
+<h3>Projection optimality</h3>
+<p>Minimal tool exposure may remove useful affordances. We need projection precision and recall, not only smaller catalogs. Counterfactual task replays can measure whether omitted objects were genuinely unnecessary.</p>
+<h3>Entropy calibration</h3>
+<p>Symbolic uncertainty is useful only if it correlates with terminal acceptance and human/domain labels. The project must distinguish count-based proxies, Bayesian/posterior uncertainty, model uncertainty, and world-state uncertainty.</p>
+<h3>Harness-model co-adaptation</h3>
+<p>H3 should first adapt the interface around frozen models. Later work may compare harness-aware post-training against generic post-training under tool and task shift. Weight changes remain versioned deltas and never erase harness evidence.</p>
+<h3>Completion judgment</h3>
+<p>The terminal verifier must compile the exact required effect and artifact checks from the task contract. A model saying it is finished is an action proposal, not a terminal fact.</p>
+<h3>Security and untrusted context</h3>
+<p>AB scope reduces reach but does not eliminate prompt injection, malicious tool descriptions, credential leakage, or poisoned memories. Security must follow the lifecycle: input provenance, causal/action checks, privilege separation, artifact scanning, rollback, and degradation.</p>
+<h3>Multi-agent and AB4 composition</h3>
+<p>Subagents are not automatically higher AB objects. A multi-agent system is AB4 when the coupled coordination policy, memory, environment, and verification form the task-facing object. More agents can also mean more uncorrelated state, cost, and authority; orchestration must earn its complexity in ablation.</p>
+<h3>AB5 boundary</h3>
+<p>The decisive experiment is not “can the system optimize itself?” It is “does a new governed object operate over a family of AB4 systems with independently verified cross-system effects?” Until then, research should report AB4 maturity and <code>delta_AB</code>, not AB5.</p>
+<h2>19. Residual Risk and Next Probe</h2>
+<table><thead><tr>
+<th>Risk</th>
+<th>Current evidence gap</th>
+<th>Next discriminating probe</th>
+</tr></thead><tbody>
+<tr>
+<td>Core becomes another overbuilt framework</td>
+<td>H1 does not exist</td>
+<td>Implement one synthetic loop with deletion budget and no plugin system</td>
+</tr>
+<tr>
+<td>AB projection harms model flexibility</td>
+<td>No same-model ablation</td>
+<td>Flat versus projected task suite with missing-object analysis</td>
+</tr>
+<tr>
+<td>External harness semantics leak inward</td>
+<td>No adapter conformance</td>
+<td>Pi RPC spike using only frozen contracts and normalized events</td>
+</tr>
+<tr>
+<td>Sandbox dominates latency</td>
+<td>No measured runtime matrix</td>
+<td>Direct local runtime versus OpenHands sandbox on identical tasks</td>
+</tr>
+<tr>
+<td>Trace priors amplify early errors</td>
+<td>No posterior calibration</td>
+<td>Inject controlled false successes and measure recovery with counterevidence</td>
+</tr>
+<tr>
+<td>Entropy proxy rewards easy observables</td>
+<td>No correlation study</td>
+<td>Compare proxy delta to terminal acceptance and domain labels</td>
+</tr>
+<tr>
+<td>Crystallization hides unsafe detail</td>
+<td>No promoted object</td>
+<td>Decompress candidate and verify every effect/recovery seam on replay</td>
+</tr>
+<tr>
+<td>Frontier worker cannot expose complete trace</td>
+<td>Product APIs differ</td>
+<td>Define minimum artifact/event contract and classify unavailable fields</td>
+</tr>
+<tr>
+<td>AB5 remains relabeled optimization</td>
+<td>No higher-order object</td>
+<td>Require held-out population-of-AB4 governance experiment</td>
+</tr>
+</tbody></table>
+<p>The immediate next probe is H0 lifecycle completion: serialize a <code>TaskSpec</code>, compile one synthetic object closure, pass one action through the expanded gate, and reconstruct success and stale-evidence failure from append-only events. This tests the semantic center without touching the live NAO stack or committing to an external harness.</p>
+<h2>20. Primary Sources and Implementation References</h2>
+<h3>Research</h3>
+<ul>
+<li><a href="https://arxiv.org/abs/2605.27922">Harness-Bench</a></li>
+<li><a href="https://arxiv.org/abs/2606.12344">Claw-SWE-Bench</a></li>
+<li><a href="https://arxiv.org/abs/2605.22166">Adapting the Interface, Not the Model / Life-Harness</a></li>
+<li><a href="https://arxiv.org/abs/2606.25447">The Interplay of Harness Design and Post-Training</a></li>
+<li><a href="https://arxiv.org/abs/2603.28052">Meta-Harness</a> and its <a href="https://github.com/stanford-iris-lab/meta-harness">reference implementation</a></li>
+<li><a href="https://arxiv.org/abs/2603.03329">AutoHarness</a></li>
+<li><a href="https://arxiv.org/abs/2603.25723">Natural-Language Agent Harnesses</a></li>
+<li><a href="https://arxiv.org/abs/2503.18666">AgentSpec</a></li>
+<li><a href="https://arxiv.org/abs/2604.13630">SafeHarness</a></li>
+<li><a href="https://arxiv.org/abs/2408.04682">ToolSandbox</a></li>
+<li><a href="https://arxiv.org/abs/2606.05238">DeployBench</a></li>
+<li><a href="https://arxiv.org/abs/2405.15793">SWE-agent Agent-Computer Interface</a></li>
+<li><a href="https://arxiv.org/abs/2604.18071">Architectural Design Decisions in AI Agent Harnesses</a></li>
+<li><a href="https://openreview.net/forum?id=nM5tDHrQsx">Agent Systems with Harness Engineering</a></li>
+<li><a href="https://arxiv.org/abs/2605.18747">Code as Agent Harness</a></li>
+<li><a href="https://arxiv.org/abs/2606.10106">What makes a harness a harness</a></li>
+<li><a href="https://arxiv.org/abs/2603.18030">Quine: LLM Agents as Native POSIX Processes</a></li>
+<li><a href="https://arxiv.org/abs/2404.07972">OSWorld</a></li>
+</ul>
+<h3>Harnesses and protocols</h3>
+<ul>
+<li>Pi <a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/README.md">coding-agent README</a> and <a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md">extensions</a></li>
+<li>OpenHands <a href="https://docs.openhands.dev/openhands/usage/architecture/runtime">runtime architecture</a> and <a href="https://docs.openhands.dev/sdk/arch/tool-system">typed tool system</a></li>
+<li>Hermes Agent <a href="https://github.com/NousResearch/hermes-agent">repository</a> and <a href="https://github.com/NousResearch/hermes-agent/blob/main/website/docs/developer-guide/programmatic-integration.md">programmatic integration</a></li>
+<li>OpenClaw <a href="https://docs.openclaw.ai/agent-runtime-architecture">runtime architecture</a> and <a href="https://github.com/openclaw/openclaw">repository</a></li>
+<li>Model Context Protocol <a href="https://modelcontextprotocol.io/docs/learn/architecture">architecture</a></li>
+<li>Anthropic <a href="https://docs.anthropic.com/en/docs/claude-code/cli-usage">Claude Code CLI and permissions</a></li>
+<li>OpenAI Codex documentation: <a href="https://developers.openai.com/codex/guides/agents-md">AGENTS.md</a>, <a href="https://developers.openai.com/codex/skills">skills</a>, and <a href="https://developers.openai.com/codex/security">security</a></li>
+</ul>
+<h3>Internal foundations</h3>
+<ul>
+<li><code>docs/agentic_harness/universal_agentic_harness_foundation.md</code></li>
+<li><code>docs/agentic_harness/neural_workbench_adaptive_ab_harness.md</code></li>
+<li><code>src/Neural-Wokbench/docs/neural_workbench/08_entropy_machines_and_capability_space.md</code></li>
+<li><code>src/Neural-Wokbench/docs/neural_workbench/Neural_Workbench_AB_ML_Object_Theory.html</code></li>
+<li><code>src/Neural-Wokbench/docs/plans/Neural_Workbench_Formal_Masterplan_Extended.html</code></li>
+<li><code>src/Neural-Wokbench/docs/plans/neural_workbench_codex_handoff.md</code></li>
+</ul>
+  </main>
+</body>
+</html>

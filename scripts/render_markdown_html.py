@@ -38,6 +38,32 @@ def _table_cells(line: str) -> list[str]:
     return [cell.strip() for cell in line.strip().strip("|").split("|")]
 
 
+def _starts_block(line: str) -> bool:
+    stripped = line.strip()
+    return bool(
+        not stripped
+        or stripped.startswith("```")
+        or re.match(r"^#{1,6}\s+", stripped)
+        or stripped in ("---", "***")
+        or stripped.startswith("> ")
+        or re.match(r"^[-*]\s+", stripped)
+        or re.match(r"^\d+\.\s+", stripped)
+        or _is_table_row(stripped)
+    )
+
+
+def _wrapped_list_text(lines: list[str], start: int, initial: str) -> tuple[str, int]:
+    parts = [initial.strip()]
+    index = start + 1
+    while index < len(lines):
+        raw = lines[index]
+        if not raw[:1].isspace() or _starts_block(raw):
+            break
+        parts.append(raw.strip())
+        index += 1
+    return " ".join(parts), index
+
+
 def _render_mermaid(code_text: str) -> str:
     stripped = code_text.strip()
     if stripped.startswith("sequenceDiagram"):
@@ -281,8 +307,9 @@ def render_markdown(markdown_text: str) -> tuple[str, str]:
             if not in_ul:
                 output.append("<ul>")
                 in_ul = True
-            output.append(f"<li>{_inline(unordered.group(1).strip())}</li>")
-            i += 1
+            item_text, next_index = _wrapped_list_text(lines, i, unordered.group(1))
+            output.append(f"<li>{_inline(item_text)}</li>")
+            i = next_index
             continue
 
         ordered = re.match(r"^\d+\.\s+(.+)$", stripped)
@@ -293,8 +320,9 @@ def render_markdown(markdown_text: str) -> tuple[str, str]:
             if not in_ol:
                 output.append("<ol>")
                 in_ol = True
-            output.append(f"<li>{_inline(ordered.group(1).strip())}</li>")
-            i += 1
+            item_text, next_index = _wrapped_list_text(lines, i, ordered.group(1))
+            output.append(f"<li>{_inline(item_text)}</li>")
+            i = next_index
             continue
 
         if in_ul:
@@ -304,8 +332,12 @@ def render_markdown(markdown_text: str) -> tuple[str, str]:
             output.append("</ol>")
             in_ol = False
 
-        output.append(f"<p>{_inline(stripped)}</p>")
+        paragraph = [stripped]
         i += 1
+        while i < len(lines) and not _starts_block(lines[i]):
+            paragraph.append(lines[i].strip())
+            i += 1
+        output.append(f"<p>{_inline(' '.join(paragraph))}</p>")
 
     if in_code:
         raw_code_text = "\n".join(code_lines)
