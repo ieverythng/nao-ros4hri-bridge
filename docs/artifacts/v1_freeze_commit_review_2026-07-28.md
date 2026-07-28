@@ -19,7 +19,7 @@ and Chapters 5 to 9 of the final thesis.
 
 ## Replacement commit messages
 
-### `317e319`
+### `317e319` to `874f7cb`
 
 Subject: `feat(runtime): harden target selection and failure evidence`
 
@@ -29,7 +29,7 @@ Body:
 - strengthen plan/report outcome contracts and planner capability checks;
 - expand the runtime questionnaire and retain the supporting stress artifacts.
 
-### `f25d36b`
+### `f25d36b` to `1ddddad`
 
 Subject: `feat(llm): expose backend preflight and generation controls`
 
@@ -39,7 +39,7 @@ Body:
 - expose realistic LLM preflight behavior and provider settings;
 - update runtime trackers for the Qwen qualification campaign.
 
-### `b618eff`
+### `b618eff` to `770f84a`
 
 Subject: `test(runtime): harden questionnaire provenance and scoring`
 
