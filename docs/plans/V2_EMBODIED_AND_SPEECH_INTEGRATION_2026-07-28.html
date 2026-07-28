@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>v2 Embodied Skills, Speech, and Autonomy Integration</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2.6cm 2.2cm 2.4cm 2.2cm;
+    }
+    :root {
+      --ink: #111;
+      --muted: #3a3a3a;
+      --line: #1f1f1f;
+      --soft: #f3f3f3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #fff;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 11.5pt;
+      line-height: 1.42;
+    }
+    .doc {
+      max-width: 172mm;
+      margin: 0 auto;
+      padding: 0;
+    }
+    .title-page {
+      min-height: 247mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+    }
+    .title-top {
+      text-align: center;
+      margin-top: 18mm;
+    }
+    .title-top h1 {
+      font-size: 20pt;
+      line-height: 1.28;
+      margin: 20mm 0 8mm;
+      font-weight: 700;
+    }
+    .title-top h2 {
+      font-size: 13pt;
+      margin: 0 0 3mm;
+      font-weight: 600;
+      border-bottom: 0;
+    }
+    .title-top p {
+      margin: 2mm 0;
+      color: var(--muted);
+    }
+    .title-meta {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 auto 20mm;
+      font-size: 11pt;
+    }
+    .title-meta td {
+      padding: 2.5mm 0;
+      vertical-align: top;
+      border: 0;
+    }
+    .title-meta td:first-child {
+      width: 38mm;
+      font-weight: 700;
+    }
+    .small { font-size: 10.3pt; color: #222; }
+    h1, h2, h3 {
+      margin: 0 0 3mm;
+      line-height: 1.28;
+      font-weight: 700;
+    }
+    h1 { font-size: 16.5pt; margin-top: 0; }
+    h2 {
+      font-size: 13pt;
+      margin-top: 9mm;
+      border-bottom: 0.5pt solid var(--line);
+      padding-bottom: 1.5mm;
+    }
+    h3 {
+      font-size: 11.8pt;
+      margin-top: 6mm;
+    }
+    p { margin: 2.2mm 0; }
+    ul, ol { margin: 2.5mm 0 2.5mm 6mm; padding: 0; }
+    li { margin: 1.4mm 0; }
+    pre {
+      margin: 2.5mm 0 4mm;
+      background: var(--soft);
+      border: 0.6pt solid #666;
+      padding: 2.6mm 2.8mm;
+      overflow-x: auto;
+      white-space: pre;
+      font-family: "Liberation Mono", "Courier New", monospace;
+      font-size: 9.2pt;
+      line-height: 1.3;
+    }
+    code {
+      font-family: "Liberation Mono", "Courier New", monospace;
+      background: #efefef;
+      padding: 0.2mm 1mm;
+      border: 0.4pt solid #d7d7d7;
+      border-radius: 2px;
+      font-size: 10.3pt;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      border: 0;
+      font-size: inherit;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 3mm 0 4mm;
+      font-size: 10.8pt;
+    }
+    th, td {
+      border: 0.6pt solid #333;
+      padding: 2.2mm 2.3mm;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+      hyphens: auto;
+    }
+    th {
+      background: #fafafa;
+      text-align: left;
+      font-weight: 700;
+    }
+    .diagram {
+      margin: 4mm 0 5mm;
+      border: 0.6pt solid #777;
+      padding: 2mm;
+      background: #fff;
+    }
+    .diagram pre {
+      margin: 0;
+      border: 0;
+      background: #fcfcfc;
+      font-size: 10.2pt;
+      white-space: pre-wrap;
+    }
+    .diagram svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .diagram-labels {
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 25px;
+      font-weight: 700;
+      fill: #111;
+    }
+    .lifelines {
+      stroke: #999;
+      stroke-dasharray: 4 4;
+    }
+    .messages {
+      stroke: #111;
+      stroke-width: 1.35;
+      fill: none;
+    }
+    .messages text {
+      stroke: none;
+      fill: #111;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 22px;
+    }
+    .caption {
+      margin-top: 2mm;
+      font-size: 10.5pt;
+      color: #222;
+      font-style: italic;
+      text-align: center;
+    }
+    blockquote {
+      border: 0.6pt solid #333;
+      background: #fcfcfc;
+      margin: 3mm 0;
+      padding: 2.6mm 3mm;
+      color: var(--muted);
+    }
+    a { color: #111; }
+  </style>
+</head>
+<body>
+  <main class="doc">
+
+<h1>v2 Embodied Skills, Speech, and Autonomy Integration</h1>
+<p>Date: 28 July 2026</p>
+<p>Status: roadmap only. None of the capabilities in this document extend the frozen v1 result unless they pass the acceptance gates below.</p>
+<h2>Source-truth baseline</h2>
+<p>The active v1 source exposes three robot-facing motion surfaces:</p>
+<table><thead><tr>
+<th>Surface</th>
+<th>Current implementation</th>
+<th>v1 claim</th>
+</tr></thead><tbody>
+<tr>
+<td><code>/skill/replay_motion</code> and <code>/skill/do_posture</code></td>
+<td><code>nao_replay_motion</code> uses <code>ALRobotPosture.goToPosture</code> for named postures</td>
+<td>Robot adapter present</td>
+</tr>
+<tr>
+<td><code>/skill/do_head_motion</code></td>
+<td>Publishes bounded head yaw and pitch commands</td>
+<td>Open-loop command evidence</td>
+</tr>
+<tr>
+<td><code>/skill/look_at</code></td>
+<td><code>nao_look_at</code> implements the ROS4HRI <code>LookAt</code> action over TF and head joints</td>
+<td>Real adapter present, fake orchestration remains the default</td>
+</tr>
+</tbody></table>
+<p>There is no active <code>MoveTo</code> action, physical <code>walk_to</code> implementation, or qualified <code>wave</code> motion in v1. <code>point_at</code> is not implemented. These are v2 promotion candidates.</p>
+<h2>NAOqi capability map</h2>
+<p>The NAOqi 2.8 motion API provides joint stiffness, joint interpolation, locomotion, Cartesian control, task management, and safety reflexes. ALMotion runs at 50 Hz and creates a motion task for each request. Safety reflexes are enabled by default and may alter requested movement.</p>
+<p>Primary references:</p>
+<ul>
+<li>&lt;https://doc.aldebaran.com/2-8/naoqi/motion/almotion.html&gt;</li>
+<li>&lt;https://doc.aldebaran.com/2-5/naoqi/motion/control-joint.html&gt;</li>
+<li>&lt;https://doc.aldebaran.com/2-8/dev/python/intro_python.html&gt;</li>
+</ul>
+<p>The stack should use these APIs only behind ROS action servers. Direct planner or chatbot calls to NAOqi would bypass cancellation, lineage, and deterministic admission.</p>
+<h3>Candidate API use</h3>
+<table><thead><tr>
+<th>v2 capability</th>
+<th>NAOqi primitive</th>
+<th>Required ROS boundary</th>
+</tr></thead><tbody>
+<tr>
+<td><code>wave</code></td>
+<td><code>angleInterpolation</code> or a verified stored motion</td>
+<td>Named, cancellable replay-motion action</td>
+</tr>
+<tr>
+<td><code>look_at</code> refinement</td>
+<td>Head <code>angleInterpolationWithSpeed</code> or the existing joint command topic</td>
+<td>Existing ROS4HRI <code>LookAt</code> action</td>
+</tr>
+<tr>
+<td>body-relative movement</td>
+<td><code>moveTo(x, y, theta)</code> or equivalent locomotion task</td>
+<td>New AB=0 <code>MoveTo</code> action</td>
+</tr>
+<tr>
+<td>velocity-limited walking</td>
+<td><code>moveToward</code> with bounded configuration</td>
+<td>Same <code>MoveTo</code> server, never planner-direct</td>
+</tr>
+<tr>
+<td><code>point_at</code> prototype</td>
+<td>Arm and hand joint interpolation, later Cartesian control</td>
+<td>New action with target frame and explicit evidence policy</td>
+</tr>
+</tbody></table>
+<p>Collision protection, fall management, stiffness policy, cancellation, posture preconditions, and operator clearance remain mandatory. No acceptance test may disable a critical safety reflex.</p>
+<h2>Promotion order</h2>
+<h3>1. Real <code>look_at</code></h3>
+<p>Promote the existing adapter before adding a new skill. The physical test set must cover reset, one static TF target, one tracked person frame, target loss, cancellation, missing joint subscribers, and repeated goals. Completion must mean either measured convergence or an explicitly labelled open-loop command, not successful publication alone.</p>
+<h3>2. Named <code>wave</code></h3>
+<p>Add one allowlisted <code>wave</code> trajectory to <code>nao_replay_motion</code>. Keep the motion independent of a person target. <code>wave_at(person)</code> remains a later composition because it combines target selection, gaze or body orientation, social policy, and gesture execution.</p>
+<h3>3. Body-relative <code>MoveTo</code></h3>
+<p>Introduce a local primitive with bounded metres and radians, conservative speed profiles, posture checks, timeout, cancellation, and explicit task cleanup. Start with dry-run payload validation. Physical trials should progress through zero motion, rotation in place, short forward movement, cancellation, obstacle response, and recovery to a stable posture.</p>
+<p>Semantic <code>navigate_to(location)</code> remains a higher-level composition. It needs localization, a frame-qualified destination, obstacle evidence, segment or path selection, and post-motion verification.</p>
+<h3>4. <code>point_at</code></h3>
+<p>A camera bounding-box centre is not a spatial target. A prototype may use a flat image-plane mapping for a clearly labelled demonstration, but the supported skill requires a target frame or calibrated 3D ray, reachability checks, joint limits, self-collision protection, hand pose, cancellation, and visible result evidence.</p>
+<h2>Speech service recommendation</h2>
+<p>Keep speech transport outside the dialogue and planner nodes.</p>
+<h3>Preferred main-PC service</h3>
+<p>Use Speaches behind ZeroTier as the first integration target. It provides an OpenAI-compatible API, Docker deployment, streaming transcription, GPU or CPU execution, dynamic model loading, faster-whisper ASR, and Kokoro or Piper TTS:</p>
+<ul>
+<li>&lt;https://github.com/speaches-ai/speaches&gt;</li>
+<li>&lt;https://github.com/SYSTRAN/faster-whisper&gt;</li>
+<li>&lt;https://github.com/OHF-Voice/piper1-gpl&gt;</li>
+</ul>
+<p>Recommended initial configuration:</p>
+<ul>
+<li>ASR: faster-whisper <code>turbo</code> on CUDA with VAD enabled. Use <code>distil-large-v3</code> when English-only latency and accuracy measurements justify it.</li>
+<li>TTS: Kokoro for the presentation-quality path, with Piper as the low-resource offline reserve.</li>
+<li>CPU-only ASR reserve: <code>whisper.cpp</code>, which provides a local server and VAD support (&lt;https://github.com/ggml-org/whisper.cpp&gt;).</li>
+</ul>
+<p>The existing Vosk profile remains the no-network fallback. Native <code>ALSpeechRecognition</code> is designed around predefined phrases, so it is useful for small command vocabularies but not as the primary open-domain thesis ASR.</p>
+<h3>ROS ownership</h3>
+<ol>
+<li>A remote ASR adapter publishes ROS4HRI speech input with language, timing, confidence, endpoint identity, and request correlation.</li>
+<li><code>dialogue_manager</code> continues to own dialogue lifecycle.</li>
+<li>A remote TTS adapter implements the existing Say action and supports cancel.</li>
+<li>Startup preflight reports endpoint health, selected models, and latency.</li>
+<li>The robot-local Say adapter remains available when remote TTS is unhealthy.</li>
+</ol>
+<p>Remote failure must be decided before a turn starts. Do not switch ASR, TTS, or LLM models halfway through a turn solely because latency is high.</p>
+<h2>Autonomous behaviour arbitration</h2>
+<p>Autonomous animation should be a bounded idle client, not another planner.</p>
+<pre><code class="language-text">operator stop / safety fault
+          &gt; admitted user or planner goal
+          &gt; explicit robot command
+          &gt; allowlisted idle behaviour</code></pre>
+<p>The arbiter admits idle actions only when no user or planner goal is active. A new admitted goal cancels the idle action through the same ROS action boundary. Allowed v2 starter behaviours are gaze reset, breathing or low-amplitude idle motion, and a posture-safe wave. Walking and target-aware gestures are excluded until their physical gates pass.</p>
+<p>Every autonomous action must carry an origin, action ID, timestamps, priority, cancellation reason, and result. This keeps live presentation behaviour visible without creating hidden execution authority.</p>
+<h2>Model selection policy</h2>
+<p>The CLI model is authoritative. At startup, the resolver inventories vLLM and then Ollama, probes the requested model, and selects the highest-priority healthy candidate. The selected model is pinned for the launch. A fallback emits a visible event naming the unavailable preferred model and the replacement.</p>
+<p>Timeout and readiness thresholds must be separate. One slow request does not prove endpoint failure. Runtime model switching is allowed only after a terminal provider failure and a new turn boundary, and it must invalidate any unfinished planner proposal from the previous model.</p>
+<h2>Acceptance gates</h2>
+<p>Each promoted capability requires:</p>
+<ol>
+<li>one canonical ROS action or service contract;</li>
+<li>registry and AB-level consistency;</li>
+<li>unit tests for bounds, normalization, cancellation, and failure mapping;</li>
+<li>a clean image rebuild from <code>iiia:nao</code>;</li>
+<li>one physical success and one physical failure or cancellation record;</li>
+<li>no duplicate speech and no fabricated completion;</li>
+<li>an evidence bundle that separates command publication, measured physical effect, semantic result, and observability quality.</li>
+</ol>
+<p>The current v1 image and thesis result remain unchanged until a v2 slice meets all applicable gates.</p>
+  </main>
+</body>
+</html>

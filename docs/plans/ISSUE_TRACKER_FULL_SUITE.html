@@ -35,6 +35,26 @@
 </head>
 <body>
 <main>
+  <h2>28 July v1 freeze and v2 boundary</h2>
+  <section class="cards">
+    <div class="card"><strong>v1 status: frozen</strong>The code, evidence, and presentation runtime are being closed against the final thesis claims.</div>
+    <div class="card"><strong>Final image</strong><code>iiia:nao-final</code>, digest <code>bb82c158092a</code>, preserves the validated v34 runtime.</div>
+    <div class="card"><strong>Qualified scope</strong>Modular dialogue, symbolic grounding, structured planning, deterministic execution, fake-skill recovery, typed feedback, and evidence-based reporting.</div>
+    <div class="card"><strong>Not qualified</strong>Physical navigation, grasping, manipulation, detector accuracy, unrestricted autonomy, and human safety.</div>
+    <div class="card"><strong>v2 focus</strong>Real gaze and motion skills, WME and LocateAnything grounding, Neural Workbench integration, speech services, and autonomous/request arbitration.</div>
+    <div class="card"><strong>Evidence discipline</strong>Unit tests remain separate from live stress evidence. Each new model or robot adapter starts a new qualification scope.</div>
+  </section>
+  <p class="note">The canonical v1 and v2 handoff is <code>docs/plans/V1_FREEZE_AND_V2_ROADMAP_2026-07-28.html</code>. Historical campaign material below is retained for provenance.</p>
+  <h2>19 July v34 model-agnostic qualification</h2>
+  <section class="cards">
+    <div class="card"><strong>8.4 / 10 current</strong>Qwen3-VL is the qualified primary on v34. Final preflight was ready and deduplicated fallbacks were zero.</div>
+    <div class="card"><strong>Live base seams</strong>Main harness 21/21 with two manual downgrades; environment 11/11; KB stress 7/7.</div>
+    <div class="card"><strong>Live adversarial seams</strong>Robustness 12/15 across three frozen repetitions, fake-deep 7 pass / 1 degraded / 1 fail, fail-once navigation pass, capability-extreme 5/7.</div>
+    <div class="card"><strong>Manual reconciliation retained</strong>Grouped-delivery closure, clarification wording, absent-recipient substitution, and omitted universal targets are not hidden by green harness labels.</div>
+    <div class="card"><strong>Deterministic source gate</strong>Planner 103 pass / 1 skip, review harness 72 pass, and prior same-campaign chatbot 291 pass / 1 skip. These are not runtime stress counts.</div>
+    <div class="card"><strong>Reserve order</strong>Qwen3.6, Ollama Qwen3-Coder, Nemotron Super, then Gemma4 31B. Every reserve requires role-specific requalification.</div>
+  </section>
+  <p class="note">Current authoritative report and archived JSON evidence: <code>docs/artifacts/runtime_v34_model_agnostic_review/</code>. Historical sections below remain provenance.</p>
   <h1>NAO ROS4HRI Full Runtime Issue Tracker</h1>
   <p class="meta">Submission readiness tracker for the NAO ROS4HRI planner, dialogue, grounding, and fake-skill stack. Last consolidated update: 19 July 2026 for the Qwen3.6 vLLM qualification campaign.</p>
 
