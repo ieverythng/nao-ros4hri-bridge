@@ -1,0 +1,1151 @@
+{
+  "case_set": "kb_stress",
+  "cases": [
+    {
+      "case_assessment": {
+        "all_required_context": false,
+        "expected_outcome": "dialogue_only",
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass"
+      },
+      "category": "kb_stress_dialogue",
+      "configured_wait_sec": 18.0,
+      "injection_scope": "full_ros4hri_dialogue_ingress",
+      "log_excerpt": "1784607123.9569261 [start_manager-27] \u001b[0m[INFO] [1784607123.956653224] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_kb_stress_chain\": \"What are the names, colors, and current locations of the two objects in the test area?\" (locale=en_US, confidence=1.00)\u001b[0m\n1784607123.9593611 [start_manager-27] \u001b[0m[INFO] [1784607123.959235876] [dialogue_manager]: [CHATBOT] prepare_dialogue: id=d6493b1c-83b1-47a3-a1f8-635f391abf13 role='__default__'\u001b[0m\n1784607123.9614785 [start_manager-27] \u001b[0m[INFO] [1784607123.961337436] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue d6493b1c-83b1-47a3-a1f8-635f391abf13\u001b[0m\n1784607123.9631279 [start_manager-27] \u001b[0m[INFO] [1784607123.962879147] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13 role='__default__' history_len=1 last='codex_kb_stress_chain':\"What are the names, colors, and current locations of the two objects in the test\"\u001b[0m\n1784607123.9649088 [start_node-26] \u001b[0m[INFO] [1784607123.964692787] [chatbot_llm]: [CHATBOT] dialogue=d6493b1c user=codex_kb_stress_chain turn=__default__:d6493b1c:1 input=What are the names, colors, and current locations of the two objects ...\u001b[0m\n1784607125.3031709 [start_node-26] \u001b[0m[INFO] [1784607125.303042830] [chatbot_llm]: [turn:__default__:d6493b1c:1] GROUNDED_CONTEXT | Grounded context JSON:\n1784607130.5481312 [start_node-26] \u001b[0m[INFO] [1784607130.547827771] [chatbot_llm]: [turn:__default__:d6493b1c:1] ROUTE_RESOLVED | route=knowledge_query intent=kb_query_visible_objects source=llm_response_route+llm_intent confidence=0.98\u001b[0m\n1784607130.5569739 [start_manager-27] \u001b[0m[INFO] [1784607130.553030225] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13: \"I can see two objects on the work table: a blue book named MIDAS and a gold cup named TITAS.\" terminal=False\u001b[0m\n1784607130.5570889 [start_manager-27] \u001b[0m[INFO] [1784607130.554888278] [dialogue_manager]: [CHATBOT RESPONSE] 1 intent(s) detected\u001b[0m\n1784607130.5662851 [start_skill-34] \u001b[0m[INFO] [1784607130.566062899] [nao_say_skill]: [turn:codex_kb_stress_chain] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=92\u001b[0m\n1784607150.6359468 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,635] Removing expired statement <codex_iiia_handoff_area dbp:frameId map> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6364858 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,635] Removing expired statement <codex_iiia_alex isIn codex_iiia_handoff_area> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6365757 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,635] Removing expired statement <codex_iiia_cup rdf:type Cup> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6366403 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,635] Removing expired statement <codex_iiia_lab dbp:poseSource semantic_fixture> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6366999 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,635] Removing expired statement <codex_iiia_kitchen_table isIn codex_iiia_kitchen> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6367500 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,635] Removing expired statement <codex_iiia_corridor dbp:poseY 0.0> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6368101 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,635] Removing expired statement <nao_robot isAt codex_iiia_station> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6368573 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,635] Removing expired statement <codex_iiia_lab rdf:type Room> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6369028 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,635] Removing expired statement <codex_iiia_cup isIn codex_iiia_kitchen> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6369479 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,635] Removing expired statement <myself sees codex_iiia_alex> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6369920 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,636] Removing expired statement <codex_iiia_station rdf:type Place> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6370361 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,636] Removing expired statement <codex_iiia_corridor dbp:name corridor> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6373422 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,636] Removing expired statement <codex_iiia_corridor dbp:poseSource semantic_fixture> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6376233 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,636] Removing expired statement <codex_iiia_handoff_area dbp:poseY 0.7> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6376846 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,636] Removing expired statement <codex_iiia_lab dbp:name lab> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6377330 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,636] Removing expired statement <codex_iiia_station dbp:frameId map> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6377790 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,636] Removing expired statement <codex_iiia_phone isOn codex_iiia_lab_table> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6378322 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,636] Removing expired statement <codex_iiia_book dbp:color blue> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6378784 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,636] Removing expired statement <codex_iiia_corridor dbp:poseX 0.8> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6379225 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,636] Removing expired statement <myself sees codex_iiia_cup> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6379652 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,636] Removing expired statement <myself sees codex_iiia_book> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6380074 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,636] Removing expired statement <codex_iiia_kitchen dbp:poseSource semantic_fixture> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6380498 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,636] Removing expired statement <codex_iiia_kitchen dbp:poseX 1.6> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6380916 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,636] Removing expired statement <codex_iiia_book dbp:name IIIA_BOOK> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6381423 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,636] Removing expired statement <codex_iiia_kitchen dbp:poseY -0.6> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6381903 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,636] Removing expired statement <codex_iiia_alex dbp:poseY -0.3> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6382332 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,636] Removing expired statement <codex_iiia_lab dbp:frameId map> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6382754 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,636] Removing expired statement <myself canReach codex_iiia_cup> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6383266 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <codex_iiia_station dbp:poseSource semantic_fixture> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6383705 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <myself canReach codex_iiia_book> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6386728 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <codex_iiia_station dbp:poseY 0.0> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6389744 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <codex_iiia_kitchen contains codex_iiia_cup> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6390355 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <myself sees codex_iiia_lab_table> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6390827 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <myself sees codex_iiia_phone> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6391261 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <codex_iiia_phone dbp:name IIIA_PHONE> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6391971 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <codex_iiia_kitchen dbp:frameId map> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6392443 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <codex_iiia_kitchen_table rdf:type Table> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6395175 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <myself canReach codex_iiia_phone> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6395776 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <myself isAt codex_iiia_station> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6396239 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <codex_iiia_book isOn codex_iiia_lab_table> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6396682 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <codex_iiia_lab dbp:poseY 0.6> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6397111 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <codex_iiia_lab dbp:poseX 1.6> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6397538 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <myself sees codex_iiia_kitchen_table> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6397965 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <codex_iiia_handoff_area dbp:poseSource semantic_fixture> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6398389 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <codex_iiia_lab_table rdf:type Table> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6398811 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <codex_iiia_kitchen dbp:name kitchen> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6399238 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <codex_iiia_lab_table dbp:name lab_table> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6399660 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <codex_iiia_handoff_area dbp:poseX 0.2> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6400077 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <codex_iiia_kitchen_table dbp:name kitchen_table> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6400499 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,637] Removing expired statement <codex_iiia_lab_table isIn codex_iiia_lab> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6401014 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_alex rdf:type Human> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6401570 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_handoff_area contains codex_iiia_alex> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6402042 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_alex dbp:frameId codex_iiia_alex> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6402466 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_station dbp:poseX 0.0> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6402886 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_kitchen rdf:type Room> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6403308 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_book rdf:type Book> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6403725 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_alex dbp:name ALEX> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6406162 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_handoff_area dbp:name handoff_area> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6408808 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_kitchen contains codex_iiia_kitchen_table> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6409400 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_phone dbp:color silver> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6409869 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <myself canReceiveAt codex_iiia_station> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6410310 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_phone rdf:type CellularTelephone> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6410749 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_station dbp:name robot_station> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6411185 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_corridor rdf:type Place> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6413772 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_cup dbp:color white> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6416252 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_alex dbp:poseX 0.2> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6416821 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_corridor dbp:frameId map> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6417303 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_cup dbp:name IIIA_CUP> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6417761 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_lab contains codex_iiia_lab_table> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6418197 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,638] Removing expired statement <codex_iiia_handoff_area rdf:type Place> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n1784607150.6418626 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:12:30,639] Removing expired statement <codex_iiia_alex dbp:poseSource semantic_fixture> from <default> (expired on 2026-07-21T04:12:30+00:00)\u001b[0m\n[INFO] [1784607123.964692787] [chatbot_llm]: [CHATBOT] dialogue=d6493b1c user=codex_kb_stress_chain turn=__default__:d6493b1c:1 input=What are the names, colors, and current locations of the two objects ...\n[INFO] [1784607125.303042830] [chatbot_llm]: [turn:__default__:d6493b1c:1] GROUNDED_CONTEXT | Grounded context JSON:\n[INFO] [1784607130.547827771] [chatbot_llm]: [turn:__default__:d6493b1c:1] ROUTE_RESOLVED | route=knowledge_query intent=kb_query_visible_objects source=llm_response_route+llm_intent confidence=0.98\n[INFO] [1784607123.956653224] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_kb_stress_chain\": \"What are the names, colors, and current locations of the two objects in the test area?\" (locale=en_US, confidence=1.00)\n[INFO] [1784607123.959235876] [dialogue_manager]: [CHATBOT] prepare_dialogue: id=d6493b1c-83b1-47a3-a1f8-635f391abf13 role='__default__'\n[INFO] [1784607123.961337436] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue d6493b1c-83b1-47a3-a1f8-635f391abf13\n[INFO] [1784607123.962879147] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13 role='__default__' history_len=1 last='codex_kb_stress_chain':\"What are the names, colors, and current locations of the two objects in the test\"\n[INFO] [1784607130.553030225] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13: \"I can see two objects on the work table: a blue book named MIDAS and a gold cup named TITAS.\" terminal=False\n[INFO] [1784607130.554888278] [dialogue_manager]: [CHATBOT RESPONSE] 1 intent(s) detected\n[INFO] [1784607130.566062899] [nao_say_skill]: [turn:codex_kb_stress_chain] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=92\n[INFO] [1784607130.560323428] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"I can see two objects on the work table: a blue book named MIDAS and a gold cup named TITAS.\"\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n  summary: /rosout {\"name\":\"chatbot_llm\",\"msg\":\"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\"level\":30,\"file\":\"/home/ubuntu/ws/build/chatbot_llm/chatbot_llm/node_impl.py\",\"function\":\"_trace\",\"line\":624}\n      \"msg\": \"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",",
+      "mode": "speech",
+      "name": "kb_stress_seed_inventory",
+      "phase_observations": {
+        "clarification_observed": false,
+        "clarification_speech_observed": false,
+        "correlation_status": "complete",
+        "evidence_consistent": true,
+        "evidence_inconsistencies": [],
+        "evidence_source": "interaction_trace_jsonl",
+        "executed_skill_sequence": [],
+        "executed_skills": [],
+        "execution_feedback_observed": false,
+        "failure_injection": {
+          "mode_sources": [],
+          "observed": false,
+          "result_modes": []
+        },
+        "failure_observed": false,
+        "fallback_markers": {
+          "complete_context_clarification": 0,
+          "duplicate_active_goal": 0,
+          "kb_service_timeout": 0,
+          "language_model_unreachable_speech": 0,
+          "llm_disabled": 0,
+          "llm_response_failed": 0,
+          "planner_gate_rejected": 0,
+          "planner_invalid_json": 0,
+          "planner_invalid_plan": 0,
+          "planner_target_selection_recovery": 0,
+          "report_result_fallback": 0,
+          "route_repair": 0,
+          "rules_intent_fallback": 0,
+          "rules_response_fallback": 0,
+          "total": 0
+        },
+        "grounded_entity_ids": [],
+        "lineage": {
+          "dialogue_turn_id": "__default__:d6493b1c:1",
+          "goal_id": "",
+          "plan_ids": [],
+          "plan_versions": []
+        },
+        "observability_note": "semantic scoring uses structured trace lineage",
+        "planner_dialogue_acts": [],
+        "planner_request_observed": false,
+        "post_failure_speech_observed": false,
+        "post_terminal_speech_observed": false,
+        "replan_observed": false,
+        "route_intent_gap_count": 0,
+        "route_intent_handoff_observed": false,
+        "route_observed": true,
+        "speech_observed": true,
+        "spoken_texts": [
+          "I can see two objects on the work table: a blue book named MIDAS and a gold cup named TITAS."
+        ],
+        "structured_event_count": 4,
+        "target_selection_observed": false,
+        "target_selections": [],
+        "terminal_observed": false,
+        "turn_injected": true
+      },
+      "setup_result": {
+        "case": {
+          "fixture_readiness": {
+            "missing_type_bindings": [],
+            "poll_timeout_sec": 12.0,
+            "ready": true,
+            "required_type_count": 4
+          },
+          "object_id": "codex_stress_scene",
+          "query_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Query_Request(patterns=['codex_stress_table rdf:type ?object'], vars=['?object'], models=['default'])\n\nresponse:\nkb_msgs.srv.Query_Response(success=True, json='[{\"object\": \"Table\"}, {\"object\": \"cyc:SpatialThing-Localized\"}, {\"object\": \"owl:Thing\"}, {\"object\": \"cyc:SpatialThing\"}, {\"object\": \"Location\"}, {\"object\": \"cyc:EnduringThing-Localized\"}]', error_msg='')",
+          "retract_output": "",
+          "revise_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Revise_Request(method='update', statements=['codex_stress_table rdf:type Table', 'codex_stress_table dbp:name work_table', 'codex_stress_shelf rdf:type Shelf', 'codex_stress_shelf dbp:name storage_shelf', 'codex_stress_cup rdf:type Cup', 'codex_stress_cup dbp:name TITAS', 'codex_stress_cup dbp:color gold', 'codex_stress_cup oro:isOn codex_stress_table', 'codex_stress_book rdf:type Book', 'codex_stress_book dbp:name MIDAS', 'codex_stress_book dbp:color blue', 'codex_stress_book oro:isOn codex_stress_table', 'myself sees codex_stress_table', 'myself sees codex_stress_shelf', 'myself sees codex_stress_cup', 'myself sees codex_stress_book', 'myself canReach codex_stress_cup', 'myself canReach codex_stress_book'], models=['default'], lifespan=builtin_interfaces.msg.Duration(sec=300, nanosec=0))\n\nresponse:\nkb_msgs.srv.Revise_Response(success=True, error_msg='')",
+          "service_probe": "/kb/query [kb_msgs/srv/Query]\n/kb/revise [kb_msgs/srv/Revise]"
+        }
+      },
+      "stale_world_guard": null,
+      "started_at_unix_sec": 1784607096.4627495,
+      "status": "pass",
+      "structured_trace": {
+        "available": true,
+        "event_count": 4,
+        "file_count": 1
+      },
+      "text": "What are the names, colors, and current locations of the two objects in the test area?",
+      "topic_samples": {},
+      "turn_result": "[runtime-review] Speech ingress seam:\n  tracked_topic=/nao_chatbot/humans/voices/tracked\n  tracked_qos=--qos-reliability reliable --qos-durability transient_local\n  speech_topic=/humans/voices/codex_kb_stress_chain/speech\n  speech_qos=--qos-reliability reliable --qos-durability volatile\n  rqt_display_mirror=true\n  rqt_display_topics=/rosout,/dialogue_manager/closed_captions\n  contract=publish tracked voice with TRANSIENT_LOCAL durability and keep the publisher alive until the per-voice LiveSpeech subscription appears.\n  reason=dialogue_manager creates the remapped per-voice rqt-chat subscription only after seeing the tracked voice id.\n  dialogue_manager_lifecycle=active [3]\n[runtime-review] OK: dialogue_manager speech subscription visible before LiveSpeech publish for /humans/voices/codex_kb_stress_chain/speech.\nWaiting for at least 1 matching subscription(s)...\npublisher: beginning loop\npublishing #1: rcl_interfaces.msg.Log(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), level=20, name='runtime_review_rqt_input', msg='[runtime-review INPUT] What are the names, colors, and current locations of the two objects in the test area?', file='run_active_questionnaire.py', function='publish_voice_turn', line=0)\n\nWaiting for at least 1 matching subscription(s)...\npublisher: beginning loop\npublishing #1: hri_actions_msgs.msg.ClosedCaption(speaker_id='codex_kb_stress_chain', text='What are the names, colors, and current locations of the two objects in the test area?', locale='en_US')\n\nType: hri_msgs/msg/IdsList\n\nPublisher count: 1\n\nNode name: rqt_gui_py_node_67\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.43.00.b5.63.00.00.00.00.00.00.13.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.5d.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nType: hri_msgs/msg/LiveSpeech\n\nPublisher count: 0\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/LiveSpeech\nTopic type hash: RIHS01_2cfdf359eed836b1d32ac2d62e1476f2048212e7ed79a17c0a594b04c33f8783\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.77.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\npublisher: beginning loop\npublishing #1: hri_msgs.msg.LiveSpeech(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), incremental='', final='What are the names, colors, and current locations of the two objects in the test area?', confidence=1.0, locale='en_US')",
+      "turn_started_at_unix_sec": 1784607114.3880293,
+      "voice_id": "codex_kb_stress_chain",
+      "wait_sec": 30.0
+    },
+    {
+      "case_assessment": {
+        "all_required_context": false,
+        "expected_outcome": "dialogue_only",
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass"
+      },
+      "category": "kb_stress_relation_revision",
+      "configured_wait_sec": 18.0,
+      "injection_scope": "full_ros4hri_dialogue_ingress",
+      "log_excerpt": "1784607170.8613842 [start_manager-27] \u001b[0m[INFO] [1784607170.861033669] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_kb_stress_chain\": \"The cup has been moved. Which surface is TITAS on now, and where is MIDAS?\" (locale=en_US, confidence=1.00)\u001b[0m\n1784607170.8631699 [start_manager-27] \u001b[0m[INFO] [1784607170.863020765] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue d6493b1c-83b1-47a3-a1f8-635f391abf13\u001b[0m\n1784607170.8655488 [start_manager-27] \u001b[0m[INFO] [1784607170.865347778] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13 role='__default__' history_len=3 last='codex_kb_stress_chain':\"The cup has been moved. Which surface is TITAS on now, and where is MIDAS?\"\u001b[0m\n1784607170.8680806 [start_node-26] \u001b[0m[INFO] [1784607170.867806779] [chatbot_llm]: [CHATBOT] dialogue=d6493b1c user=codex_kb_stress_chain turn=__default__:d6493b1c:2 input=The cup has been moved. Which surface is TITAS on now, and where is M...\u001b[0m\n1784607172.1987591 [start_node-26] \u001b[0m[INFO] [1784607172.198621863] [chatbot_llm]: [turn:__default__:d6493b1c:2] GROUNDED_CONTEXT | Grounded context JSON:\n1784607174.8921824 [start_node-26] \u001b[0m[INFO] [1784607174.891875859] [chatbot_llm]: [turn:__default__:d6493b1c:2] ROUTE_RESOLVED | route=knowledge_query intent=kb_query_visible_objects source=llm_response_route+llm_intent confidence=0.98\u001b[0m\n1784607174.8988380 [start_manager-27] \u001b[0m[INFO] [1784607174.896461367] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13: \"TITAS is currently on the storage shelf, and MIDAS is on the work table.\" terminal=False\u001b[0m\n1784607174.9025111 [start_manager-27] \u001b[0m[INFO] [1784607174.902207321] [dialogue_manager]: [CHATBOT RESPONSE] 1 intent(s) detected\u001b[0m\n1784607174.9133456 [start_skill-34] \u001b[0m[INFO] [1784607174.913109413] [nao_say_skill]: [turn:codex_kb_stress_chain] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=72\u001b[0m\n[INFO] [1784607170.867806779] [chatbot_llm]: [CHATBOT] dialogue=d6493b1c user=codex_kb_stress_chain turn=__default__:d6493b1c:2 input=The cup has been moved. Which surface is TITAS on now, and where is M...\n[INFO] [1784607172.198621863] [chatbot_llm]: [turn:__default__:d6493b1c:2] GROUNDED_CONTEXT | Grounded context JSON:\n[INFO] [1784607174.891875859] [chatbot_llm]: [turn:__default__:d6493b1c:2] ROUTE_RESOLVED | route=knowledge_query intent=kb_query_visible_objects source=llm_response_route+llm_intent confidence=0.98\n[INFO] [1784607170.861033669] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_kb_stress_chain\": \"The cup has been moved. Which surface is TITAS on now, and where is MIDAS?\" (locale=en_US, confidence=1.00)\n[INFO] [1784607170.863020765] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue d6493b1c-83b1-47a3-a1f8-635f391abf13\n[INFO] [1784607170.865347778] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13 role='__default__' history_len=3 last='codex_kb_stress_chain':\"The cup has been moved. Which surface is TITAS on now, and where is MIDAS?\"\n[INFO] [1784607174.896461367] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13: \"TITAS is currently on the storage shelf, and MIDAS is on the work table.\" terminal=False\n[INFO] [1784607174.902207321] [dialogue_manager]: [CHATBOT RESPONSE] 1 intent(s) detected\n[INFO] [1784607174.913109413] [nao_say_skill]: [turn:codex_kb_stress_chain] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=72\n[INFO] [1784607174.908099218] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"TITAS is currently on the storage shelf, and MIDAS is on the work table.\"\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n  summary: /rosout {\"name\":\"chatbot_llm\",\"msg\":\"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\"level\":30,\"file\":\"/home/ubuntu/ws/build/chatbot_llm/chatbot_llm/node_impl.py\",\"function\":\"_trace\",\"line\":624}\n      \"msg\": \"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",",
+      "mode": "speech",
+      "name": "kb_stress_revise_support",
+      "phase_observations": {
+        "clarification_observed": false,
+        "clarification_speech_observed": false,
+        "correlation_status": "complete",
+        "evidence_consistent": true,
+        "evidence_inconsistencies": [],
+        "evidence_source": "interaction_trace_jsonl",
+        "executed_skill_sequence": [],
+        "executed_skills": [],
+        "execution_feedback_observed": false,
+        "failure_injection": {
+          "mode_sources": [],
+          "observed": false,
+          "result_modes": []
+        },
+        "failure_observed": false,
+        "fallback_markers": {
+          "complete_context_clarification": 0,
+          "duplicate_active_goal": 0,
+          "kb_service_timeout": 0,
+          "language_model_unreachable_speech": 0,
+          "llm_disabled": 0,
+          "llm_response_failed": 0,
+          "planner_gate_rejected": 0,
+          "planner_invalid_json": 0,
+          "planner_invalid_plan": 0,
+          "planner_target_selection_recovery": 0,
+          "report_result_fallback": 0,
+          "route_repair": 0,
+          "rules_intent_fallback": 0,
+          "rules_response_fallback": 0,
+          "total": 0
+        },
+        "grounded_entity_ids": [],
+        "lineage": {
+          "dialogue_turn_id": "__default__:d6493b1c:2",
+          "goal_id": "",
+          "plan_ids": [],
+          "plan_versions": []
+        },
+        "observability_note": "semantic scoring uses structured trace lineage",
+        "planner_dialogue_acts": [],
+        "planner_request_observed": false,
+        "post_failure_speech_observed": false,
+        "post_terminal_speech_observed": false,
+        "replan_observed": false,
+        "route_intent_gap_count": 0,
+        "route_intent_handoff_observed": false,
+        "route_observed": true,
+        "speech_observed": true,
+        "spoken_texts": [
+          "TITAS is currently on the storage shelf, and MIDAS is on the work table."
+        ],
+        "structured_event_count": 4,
+        "target_selection_observed": false,
+        "target_selections": [],
+        "terminal_observed": false,
+        "turn_injected": true
+      },
+      "setup_result": {
+        "case": {
+          "fixture_readiness": {
+            "missing_type_bindings": [],
+            "poll_timeout_sec": 12.0,
+            "ready": true,
+            "required_type_count": 0
+          },
+          "object_id": "codex_stress_support_revision",
+          "query_output": "",
+          "retract_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Revise_Request(method='retract', statements=['codex_stress_cup oro:isOn codex_stress_table'], models=['default'], lifespan=builtin_interfaces.msg.Duration(sec=1, nanosec=0))\n\nresponse:\nkb_msgs.srv.Revise_Response(success=True, error_msg='')",
+          "revise_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Revise_Request(method='update', statements=['codex_stress_cup oro:isOn codex_stress_shelf'], models=['default'], lifespan=builtin_interfaces.msg.Duration(sec=300, nanosec=0))\n\nresponse:\nkb_msgs.srv.Revise_Response(success=True, error_msg='')",
+          "service_probe": "/kb/query [kb_msgs/srv/Query]\n/kb/revise [kb_msgs/srv/Revise]"
+        }
+      },
+      "stale_world_guard": null,
+      "started_at_unix_sec": 1784607154.8855565,
+      "status": "pass",
+      "structured_trace": {
+        "available": true,
+        "event_count": 4,
+        "file_count": 1
+      },
+      "text": "The cup has been moved. Which surface is TITAS on now, and where is MIDAS?",
+      "topic_samples": {},
+      "turn_result": "[runtime-review] Speech ingress seam:\n  tracked_topic=/nao_chatbot/humans/voices/tracked\n  tracked_qos=--qos-reliability reliable --qos-durability transient_local\n  speech_topic=/humans/voices/codex_kb_stress_chain/speech\n  speech_qos=--qos-reliability reliable --qos-durability volatile\n  rqt_display_mirror=true\n  rqt_display_topics=/rosout,/dialogue_manager/closed_captions\n  contract=publish tracked voice with TRANSIENT_LOCAL durability and keep the publisher alive until the per-voice LiveSpeech subscription appears.\n  reason=dialogue_manager creates the remapped per-voice rqt-chat subscription only after seeing the tracked voice id.\n  dialogue_manager_lifecycle=active [3]\n[runtime-review] OK: dialogue_manager speech subscription visible before LiveSpeech publish for /humans/voices/codex_kb_stress_chain/speech.\npublisher: beginning loop\npublishing #1: rcl_interfaces.msg.Log(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), level=20, name='runtime_review_rqt_input', msg='[runtime-review INPUT] The cup has been moved. Which surface is TITAS on now, and where is MIDAS?', file='run_active_questionnaire.py', function='publish_voice_turn', line=0)\n\npublisher: beginning loop\npublishing #1: hri_actions_msgs.msg.ClosedCaption(speaker_id='codex_kb_stress_chain', text='The cup has been moved. Which surface is TITAS on now, and where is MIDAS?', locale='en_US')\n\nType: hri_msgs/msg/IdsList\n\nPublisher count: 2\n\nNode name: rqt_gui_py_node_67\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.43.00.b5.63.00.00.00.00.00.00.13.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: _ros2cli_16716\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.4c.41.0c.0d.00.00.00.00.00.00.07.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.5d.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nType: hri_msgs/msg/LiveSpeech\n\nPublisher count: 0\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/LiveSpeech\nTopic type hash: RIHS01_2cfdf359eed836b1d32ac2d62e1476f2048212e7ed79a17c0a594b04c33f8783\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.77.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\npublisher: beginning loop\npublishing #1: hri_msgs.msg.LiveSpeech(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), incremental='', final='The cup has been moved. Which surface is TITAS on now, and where is MIDAS?', confidence=1.0, locale='en_US')",
+      "turn_started_at_unix_sec": 1784607163.3013878,
+      "voice_id": "codex_kb_stress_chain",
+      "wait_sec": 30.0
+    },
+    {
+      "case_assessment": {
+        "all_required_context": false,
+        "expected_outcome": "dialogue_only",
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass"
+      },
+      "category": "kb_stress_dialogue",
+      "configured_wait_sec": 18.0,
+      "injection_scope": "full_ros4hri_dialogue_ingress",
+      "log_excerpt": "1784607208.7310147 [start_manager-27] \u001b[0m[INFO] [1784607208.730601428] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_kb_stress_chain\": \"Which object is on the storage shelf, and which object remains on the work table?\" (locale=en_US, confidence=1.00)\u001b[0m\n1784607208.7330813 [start_manager-27] \u001b[0m[INFO] [1784607208.732632426] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue d6493b1c-83b1-47a3-a1f8-635f391abf13\u001b[0m\n1784607208.7349758 [start_manager-27] \u001b[0m[INFO] [1784607208.734743405] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13 role='__default__' history_len=5 last='codex_kb_stress_chain':\"Which object is on the storage shelf, and which object remains on the work table\"\u001b[0m\n1784607208.7371576 [start_node-26] \u001b[0m[INFO] [1784607208.736894358] [chatbot_llm]: [CHATBOT] dialogue=d6493b1c user=codex_kb_stress_chain turn=__default__:d6493b1c:3 input=Which object is on the storage shelf, and which object remains on the...\u001b[0m\n1784607210.0955052 [start_node-26] \u001b[0m[INFO] [1784607210.095366748] [chatbot_llm]: [turn:__default__:d6493b1c:3] GROUNDED_CONTEXT | Grounded context JSON:\n1784607214.7265291 [start_node-26] \u001b[0m[INFO] [1784607214.726066684] [chatbot_llm]: [turn:__default__:d6493b1c:3] ROUTE_RESOLVED | route=knowledge_query intent=kb_query_visible_objects source=llm_response_route+llm_intent confidence=0.98\u001b[0m\n1784607214.7367980 [start_manager-27] \u001b[0m[INFO] [1784607214.731345793] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13: \"The gold cup TITAS is on the storage shelf, and the blue book MIDAS remains on the work table.\" terminal=False\u001b[0m\n1784607214.7369730 [start_manager-27] \u001b[0m[INFO] [1784607214.733338029] [dialogue_manager]: [CHATBOT RESPONSE] 1 intent(s) detected\u001b[0m\n1784607214.7489207 [start_skill-34] \u001b[0m[INFO] [1784607214.742994597] [nao_say_skill]: [turn:codex_kb_stress_chain] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=94\u001b[0m\n[INFO] [1784607208.736894358] [chatbot_llm]: [CHATBOT] dialogue=d6493b1c user=codex_kb_stress_chain turn=__default__:d6493b1c:3 input=Which object is on the storage shelf, and which object remains on the...\n[INFO] [1784607210.095366748] [chatbot_llm]: [turn:__default__:d6493b1c:3] GROUNDED_CONTEXT | Grounded context JSON:\n[INFO] [1784607214.726066684] [chatbot_llm]: [turn:__default__:d6493b1c:3] ROUTE_RESOLVED | route=knowledge_query intent=kb_query_visible_objects source=llm_response_route+llm_intent confidence=0.98\n[INFO] [1784607208.730601428] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_kb_stress_chain\": \"Which object is on the storage shelf, and which object remains on the work table?\" (locale=en_US, confidence=1.00)\n[INFO] [1784607208.732632426] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue d6493b1c-83b1-47a3-a1f8-635f391abf13\n[INFO] [1784607208.734743405] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13 role='__default__' history_len=5 last='codex_kb_stress_chain':\"Which object is on the storage shelf, and which object remains on the work table\"\n[INFO] [1784607214.731345793] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13: \"The gold cup TITAS is on the storage shelf, and the blue book MIDAS remains on the work table.\" terminal=False\n[INFO] [1784607214.733338029] [dialogue_manager]: [CHATBOT RESPONSE] 1 intent(s) detected\n[INFO] [1784607214.742994597] [nao_say_skill]: [turn:codex_kb_stress_chain] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=94\n[INFO] [1784607214.737480166] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"The gold cup TITAS is on the storage shelf, and the blue book MIDAS remains on the work table.\"\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n  summary: /rosout {\"name\":\"chatbot_llm\",\"msg\":\"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\"level\":30,\"file\":\"/home/ubuntu/ws/build/chatbot_llm/chatbot_llm/node_impl.py\",\"function\":\"_trace\",\"line\":624}\n      \"msg\": \"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",",
+      "mode": "speech",
+      "name": "kb_stress_revised_relation_query",
+      "phase_observations": {
+        "clarification_observed": false,
+        "clarification_speech_observed": false,
+        "correlation_status": "complete",
+        "evidence_consistent": true,
+        "evidence_inconsistencies": [],
+        "evidence_source": "interaction_trace_jsonl",
+        "executed_skill_sequence": [],
+        "executed_skills": [],
+        "execution_feedback_observed": false,
+        "failure_injection": {
+          "mode_sources": [],
+          "observed": false,
+          "result_modes": []
+        },
+        "failure_observed": false,
+        "fallback_markers": {
+          "complete_context_clarification": 0,
+          "duplicate_active_goal": 0,
+          "kb_service_timeout": 0,
+          "language_model_unreachable_speech": 0,
+          "llm_disabled": 0,
+          "llm_response_failed": 0,
+          "planner_gate_rejected": 0,
+          "planner_invalid_json": 0,
+          "planner_invalid_plan": 0,
+          "planner_target_selection_recovery": 0,
+          "report_result_fallback": 0,
+          "route_repair": 0,
+          "rules_intent_fallback": 0,
+          "rules_response_fallback": 0,
+          "total": 0
+        },
+        "grounded_entity_ids": [],
+        "lineage": {
+          "dialogue_turn_id": "__default__:d6493b1c:3",
+          "goal_id": "",
+          "plan_ids": [],
+          "plan_versions": []
+        },
+        "observability_note": "semantic scoring uses structured trace lineage",
+        "planner_dialogue_acts": [],
+        "planner_request_observed": false,
+        "post_failure_speech_observed": false,
+        "post_terminal_speech_observed": false,
+        "replan_observed": false,
+        "route_intent_gap_count": 0,
+        "route_intent_handoff_observed": false,
+        "route_observed": true,
+        "speech_observed": true,
+        "spoken_texts": [
+          "The gold cup TITAS is on the storage shelf, and the blue book MIDAS remains on the work table."
+        ],
+        "structured_event_count": 4,
+        "target_selection_observed": false,
+        "target_selections": [],
+        "terminal_observed": false,
+        "turn_injected": true
+      },
+      "setup_result": null,
+      "stale_world_guard": null,
+      "started_at_unix_sec": 1784607201.7808764,
+      "status": "pass",
+      "structured_trace": {
+        "available": true,
+        "event_count": 4,
+        "file_count": 1
+      },
+      "text": "Which object is on the storage shelf, and which object remains on the work table?",
+      "topic_samples": {},
+      "turn_result": "[runtime-review] Speech ingress seam:\n  tracked_topic=/nao_chatbot/humans/voices/tracked\n  tracked_qos=--qos-reliability reliable --qos-durability transient_local\n  speech_topic=/humans/voices/codex_kb_stress_chain/speech\n  speech_qos=--qos-reliability reliable --qos-durability volatile\n  rqt_display_mirror=true\n  rqt_display_topics=/rosout,/dialogue_manager/closed_captions\n  contract=publish tracked voice with TRANSIENT_LOCAL durability and keep the publisher alive until the per-voice LiveSpeech subscription appears.\n  reason=dialogue_manager creates the remapped per-voice rqt-chat subscription only after seeing the tracked voice id.\n  dialogue_manager_lifecycle=active [3]\n[runtime-review] OK: dialogue_manager speech subscription visible before LiveSpeech publish for /humans/voices/codex_kb_stress_chain/speech.\npublisher: beginning loop\npublishing #1: rcl_interfaces.msg.Log(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), level=20, name='runtime_review_rqt_input', msg='[runtime-review INPUT] Which object is on the storage shelf, and which object remains on the work table?', file='run_active_questionnaire.py', function='publish_voice_turn', line=0)\n\nWaiting for at least 1 matching subscription(s)...\npublisher: beginning loop\npublishing #1: hri_actions_msgs.msg.ClosedCaption(speaker_id='codex_kb_stress_chain', text='Which object is on the storage shelf, and which object remains on the work table?', locale='en_US')\n\nType: hri_msgs/msg/IdsList\n\nPublisher count: 2\n\nNode name: rqt_gui_py_node_67\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.43.00.b5.63.00.00.00.00.00.00.13.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: _ros2cli_16716\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.4c.41.0c.0d.00.00.00.00.00.00.07.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.5d.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nType: hri_msgs/msg/LiveSpeech\n\nPublisher count: 0\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/LiveSpeech\nTopic type hash: RIHS01_2cfdf359eed836b1d32ac2d62e1476f2048212e7ed79a17c0a594b04c33f8783\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.77.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\npublisher: beginning loop\npublishing #1: hri_msgs.msg.LiveSpeech(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), incremental='', final='Which object is on the storage shelf, and which object remains on the work table?', confidence=1.0, locale='en_US')",
+      "turn_started_at_unix_sec": 1784607201.780888,
+      "voice_id": "codex_kb_stress_chain",
+      "wait_sec": 30.0
+    },
+    {
+      "case_assessment": {
+        "all_required_context": true,
+        "expected_outcome": "execute_no_clarification",
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass"
+      },
+      "category": "kb_stress_execution",
+      "configured_wait_sec": 150.0,
+      "injection_scope": "full_ros4hri_dialogue_ingress",
+      "log_excerpt": "1784607253.0262382 [start_manager-27] \u001b[0m[INFO] [1784607253.025843834] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_kb_stress_chain\": \"Bring TITAS from the storage shelf to the person named ALEX and report what happened.\" (locale=en_US, confidence=1.00)\u001b[0m\n1784607253.0287542 [start_manager-27] \u001b[0m[INFO] [1784607253.028267179] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue d6493b1c-83b1-47a3-a1f8-635f391abf13\u001b[0m\n1784607253.0309284 [start_manager-27] \u001b[0m[INFO] [1784607253.030667430] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13 role='__default__' history_len=7 last='codex_kb_stress_chain':\"Bring TITAS from the storage shelf to the person named ALEX and report what happ\"\u001b[0m\n1784607253.0330911 [start_node-26] \u001b[0m[INFO] [1784607253.032898614] [chatbot_llm]: [CHATBOT] dialogue=d6493b1c user=codex_kb_stress_chain turn=__default__:d6493b1c:4 input=Bring TITAS from the storage shelf to the person named ALEX and repor...\u001b[0m\n1784607254.7255681 [start_node-26] \u001b[0m[INFO] [1784607254.725383957] [chatbot_llm]: [turn:__default__:d6493b1c:4] GROUNDED_CONTEXT | Grounded context JSON:\n1784607261.8422561 [start_node-26] \u001b[0m[INFO] [1784607261.841891638] [chatbot_llm]: [turn:__default__:d6493b1c:4] ROUTE_RESOLVED | route=execution intent=bring_object source=llm_response_route+llm_intent confidence=0.98\u001b[0m\n1784607261.8448539 [start_node-26] \u001b[0m[INFO] [1784607261.844718189] [chatbot_llm]: [turn:__default__:d6493b1c:4] ROUTE_INTENT_HANDOFF | route=execution intent=bring_object intent_source=llm_response_route+llm_intent route_repaired=false normalized_intents=[\"bring_object\",\"report_result\"] goal_id=goal_default___d6493b1c_4 dialogue_turn_id=__default__:d6493b1c:4\u001b[0m\n1784607261.8455722 [start_node-26] \u001b[0m[INFO] [1784607261.845163755] [chatbot_llm]: [turn:__default__:d6493b1c:4] PLANNER_REQUEST | published planner request on /nao_orchestrator/planner_request goal_id=goal_default___d6493b1c_4 kind=new_goal route=execution intent=bring_object intent_source=llm_response_route+llm_intent route_repaired=false normalized_intents=[\"bring_object\",\"report_result\"] goal_id=goal_default___d6493b1c_4 dialogue_turn_id=__default__:d6493b1c:4\u001b[0m\n1784607261.8570704 [start_manager-27] \u001b[0m[INFO] [1784607261.849963656] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13: \"I understand. I will plan to bring the cup TITAS from the storage shelf to ALEX and let you know onc...\" terminal=False\u001b[0m\n1784607261.8644335 [start_skill-34] \u001b[0m[INFO] [1784607261.858491930] [nao_say_skill]: [turn:codex_kb_stress_chain] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=112\u001b[0m\n1784607264.7025468 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <codex_gold_handoff_area rdf:type Place> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7029605 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <myself sees codex_gold_recipient> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7030222 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <codex_gold_station rdf:type Place> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7030859 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <codex_gold_recipient rdf:type Human> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7031450 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <myself canReach codex_gold_apple> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7031932 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <codex_gold_station dbp:name robot_station> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7032359 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <codex_gold_apple rdf:type Apple> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7032709 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <codex_gold_apple dbp:name KAREN> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7033031 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <codex_gold_handoff_area dbp:name handoff_area> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7033434 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <codex_gold_apple dbp:color gold> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7033758 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <codex_gold_apple isOn codex_gold_table> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7034075 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <myself isAt codex_gold_station> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7034390 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <myself sees codex_gold_apple> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7034698 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <nao_robot isAt codex_gold_station> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7035003 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <codex_gold_table rdf:type Table> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7037053 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <codex_gold_handoff_area contains codex_gold_recipient> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7037508 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <codex_gold_table dbp:name table> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7037859 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <codex_gold_recipient dbp:frameId codex_gold_recipient> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7038198 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <codex_gold_recipient dbp:name ALEX> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7038519 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <myself sees codex_gold_table> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7038846 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <codex_gold_recipient dbp:poseSource semantic_fixture> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607264.7039173 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:24,702] Removing expired statement <codex_gold_recipient isIn codex_gold_handoff_area> from <default> (expired on 2026-07-21T04:14:24+00:00)\u001b[0m\n1784607267.1377547 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:14:27,137] Warning: add is deprecated. Performing update instead.\u001b[0m\n1784607267.6936412 [start_node-26] \u001b[0m[INFO] [1784607267.688617390] [chatbot_llm]: [CHATBOT] dialogue=00000000 user=__system__ turn=__default__:00000000:12 input={\"execution_report\":{\"dialogue_context\":[\"user:The cup has been moved...\u001b[0m\n1784607269.7360706 [start_node-26] \u001b[0m[INFO] [1784607269.735937559] [chatbot_llm]: [turn:__default__:00000000:12] GROUNDED_CONTEXT | Grounded context JSON:\n1784607271.4527173 [run_app-32] \u001b[0m[INFO] [1784607271.447283326] [nao_orchestrator]: Resolved report_result text via chatbot\u001b[0m\n1784607271.4652085 [start_skill-34] \u001b[0m[INFO] [1784607271.464864328] [nao_say_skill]: [turn:unknown] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=82\u001b[0m\n[INFO] [1784607253.032898614] [chatbot_llm]: [CHATBOT] dialogue=d6493b1c user=codex_kb_stress_chain turn=__default__:d6493b1c:4 input=Bring TITAS from the storage shelf to the person named ALEX and repor...\n[INFO] [1784607254.725383957] [chatbot_llm]: [turn:__default__:d6493b1c:4] GROUNDED_CONTEXT | Grounded context JSON:\n[INFO] [1784607261.841891638] [chatbot_llm]: [turn:__default__:d6493b1c:4] ROUTE_RESOLVED | route=execution intent=bring_object source=llm_response_route+llm_intent confidence=0.98\n[INFO] [1784607261.844718189] [chatbot_llm]: [turn:__default__:d6493b1c:4] ROUTE_INTENT_HANDOFF | route=execution intent=bring_object intent_source=llm_response_route+llm_intent route_repaired=false normalized_intents=[\"bring_object\",\"report_result\"] goal_id=goal_default___d6493b1c_4 dialogue_turn_id=__default__:d6493b1c:4\n[INFO] [1784607261.845163755] [chatbot_llm]: [turn:__default__:d6493b1c:4] PLANNER_REQUEST | published planner request on /nao_orchestrator/planner_request goal_id=goal_default___d6493b1c_4 kind=new_goal route=execution intent=bring_object intent_source=llm_response_route+llm_intent route_repaired=false normalized_intents=[\"bring_object\",\"report_result\"] goal_id=goal_default___d6493b1c_4 dialogue_turn_id=__default__:d6493b1c:4\n[INFO] [1784607267.688617390] [chatbot_llm]: [CHATBOT] dialogue=00000000 user=__system__ turn=__default__:00000000:12 input={\"execution_report\":{\"dialogue_context\":[\"user:The cup has been moved...\n[INFO] [1784607269.735937559] [chatbot_llm]: [turn:__default__:00000000:12] GROUNDED_CONTEXT | Grounded context JSON:\n[INFO] [1784607253.025843834] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_kb_stress_chain\": \"Bring TITAS from the storage shelf to the person named ALEX and report what happened.\" (locale=en_US, confidence=1.00)\n[INFO] [1784607253.028267179] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue d6493b1c-83b1-47a3-a1f8-635f391abf13\n[INFO] [1784607253.030667430] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13 role='__default__' history_len=7 last='codex_kb_stress_chain':\"Bring TITAS from the storage shelf to the person named ALEX and report what happ\"\n[INFO] [1784607261.849963656] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13: \"I understand. I will plan to bring the cup TITAS from the storage shelf to ALEX and let you know onc...\" terminal=False\n[INFO] [1784607271.447283326] [nao_orchestrator]: Resolved report_result text via chatbot\n[INFO] [1784607261.858491930] [nao_say_skill]: [turn:codex_kb_stress_chain] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=112\n[INFO] [1784607271.464864328] [nao_say_skill]: [turn:unknown] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=82\n[INFO] [1784607261.847696414] [planner_llm]: planner_llm request received | goal_id=goal_default___d6493b1c_4 request_id=__default__:d6493b1c:4 kind=new_goal intents=['bring_object', 'report_result'] scene_targets=['TITAS', 'storage_shelf', 'codex_stress_alex'] target_selection={'selection_kind': 'explicit_members', 'operation': 'deliver', 'source_location_id': 'codex_stress_shelf', 'member_ids': ['codex_stress_cup'], 'recipient_id': 'codex_stress_alex', 'ordering': 'none', 'report_policy': 'final'} source=codex_kb_stress_chain\n[INFO] [1784607265.125877674] [planner_llm]: planner_llm published decision | goal_id=goal_default___d6493b1c_4 plan_id=plan_1784607265124 version=1 mode=plan steps=2 validation=valid\n[INFO] [1784607265.127395461] [planner_llm]: planner_llm feedback received | goal_id=goal_default___d6493b1c_4 plan_id=plan_1784607265124 version=1 event=plan_accepted status=accepted step=/ retry_budget=1 reason=\n[INFO] [1784607265.129478948] [planner_llm]: planner_llm feedback received | goal_id=goal_default___d6493b1c_4 plan_id=plan_1784607265124 version=1 event=step_started status=running step=skill/bring_object retry_budget=1 reason=\n[INFO] [1784607267.686417785] [planner_llm]: planner_llm feedback received | goal_id=goal_default___d6493b1c_4 plan_id=plan_1784607265124 version=1 event=step_succeeded status=succeeded step=skill/bring_object retry_budget=1 reason=\n[INFO] [1784607261.854468775] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"I understand. I will plan to bring the cup TITAS from the storage shelf to ALEX and let you know once it's done.\"\n[INFO] [1784607271.458559715] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"I have successfully brought TITAS from the storage shelf and delivered it to ALEX.\"\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n  summary: /rosout {\"name\":\"chatbot_llm\",\"msg\":\"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\"level\":30,\"file\":\"/home/ubuntu/ws/build/chatbot_llm/chatbot_llm/node_impl.py\",\"function\":\"_trace\",\"line\":624}\n      \"msg\": \"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n[INFO] [1784607265.128760841] [interaction_trace_viewer]: TRACE_EVENT [1784607265.128] goal_default___d6493b1c_4 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___d6493b1c_4,plan_id=plan_1784607265124,event_type=plan_accepted\n      \"source\": \"planner_llm\",\n[INFO] [1784607265.130330665] [interaction_trace_viewer]: TRACE_EVENT [1784607265.130] goal_default___d6493b1c_4 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___d6493b1c_4,plan_id=plan_1784607265124,event_type=step_started,step=bring_object\n      \"source\": \"planner_llm\",\n[INFO] [1784607267.687231020] [interaction_trace_viewer]: TRACE_EVENT [1784607267.686] goal_default___d6493b1c_4 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___d6493b1c_4,plan_id=plan_1784607265124,event_type=step_succeeded,step=bring_object\n[INFO] [1784607271.452681400] [interaction_trace_viewer]: TRACE_EVENT [1784607271.451] goal_default___d6493b1c_4 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___d6493b1c_4,plan_id=plan_1784607265124,event_type=step_started,step=report_result\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n[INFO] [1784607271.518357922] [interaction_trace_viewer]: TRACE_EVENT [1784607271.517] goal_default___d6493b1c_4 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___d6493b1c_4,plan_id=plan_1784607265124,event_type=step_succeeded,step=report_result\n        \"skill\": \"report_result\",\n[INFO] [1784607271.519818251] [interaction_trace_viewer]: TRACE_EVENT [1784607271.519] goal_default___d6493b1c_4 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___d6493b1c_4,plan_id=plan_1784607265124,event_type=plan_completed\n        \"skill\": \"report_result\",",
+      "mode": "speech",
+      "name": "kb_stress_grounded_delivery",
+      "phase_observations": {
+        "clarification_observed": false,
+        "clarification_speech_observed": false,
+        "correlation_status": "complete",
+        "evidence_consistent": true,
+        "evidence_inconsistencies": [],
+        "evidence_source": "interaction_trace_jsonl",
+        "executed_skill_sequence": [
+          "bring_object",
+          "report_result"
+        ],
+        "executed_skills": [
+          "bring_object",
+          "report_result"
+        ],
+        "execution_feedback_observed": true,
+        "failure_injection": {
+          "mode_sources": [
+            "scenario_default"
+          ],
+          "observed": false,
+          "result_modes": [
+            "success"
+          ]
+        },
+        "failure_observed": false,
+        "fallback_markers": {
+          "complete_context_clarification": 0,
+          "duplicate_active_goal": 0,
+          "kb_service_timeout": 0,
+          "language_model_unreachable_speech": 0,
+          "llm_disabled": 0,
+          "llm_response_failed": 0,
+          "planner_gate_rejected": 0,
+          "planner_invalid_json": 0,
+          "planner_invalid_plan": 0,
+          "planner_target_selection_recovery": 0,
+          "report_result_fallback": 0,
+          "route_repair": 0,
+          "rules_intent_fallback": 0,
+          "rules_response_fallback": 0,
+          "total": 0
+        },
+        "grounded_entity_ids": [
+          "codex_stress_alex",
+          "codex_stress_book",
+          "codex_stress_cup",
+          "codex_stress_shelf",
+          "codex_stress_table"
+        ],
+        "kb_postcondition_passed": true,
+        "lineage": {
+          "dialogue_turn_id": "__default__:d6493b1c:4",
+          "goal_id": "goal_default___d6493b1c_4",
+          "plan_ids": [
+            "plan_1784607265124"
+          ],
+          "plan_versions": [
+            1
+          ]
+        },
+        "observability_note": "semantic scoring uses structured trace lineage",
+        "planner_dialogue_acts": [],
+        "planner_request_observed": true,
+        "post_failure_speech_observed": false,
+        "post_terminal_speech_observed": false,
+        "replan_observed": false,
+        "route_intent_gap_count": 0,
+        "route_intent_handoff_observed": true,
+        "route_observed": true,
+        "speech_observed": true,
+        "spoken_texts": [
+          "I understand. I will plan to bring the cup TITAS from the storage shelf to ALEX and let you know once it's done.",
+          "I have successfully brought TITAS from the storage shelf and delivered it to ALEX."
+        ],
+        "structured_event_count": 16,
+        "target_selection_observed": true,
+        "target_selections": [
+          {
+            "member_ids": [
+              "codex_stress_cup"
+            ],
+            "operation": "deliver",
+            "ordering": "none",
+            "recipient_id": "codex_stress_alex",
+            "report_policy": "final",
+            "selection_kind": "explicit_members",
+            "source_location_id": "codex_stress_shelf"
+          }
+        ],
+        "terminal_observed": true,
+        "turn_injected": true
+      },
+      "postcondition_result": {
+        "missing_values": [],
+        "name": "titas_delivered_to_alex",
+        "passed": true,
+        "raw_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Query_Request(patterns=['codex_stress_cup oro:isAt ?recipient'], vars=['?recipient'], models=['default'])\n\nresponse:\nkb_msgs.srv.Query_Response(success=True, json='[{\"recipient\": \"codex_stress_alex\"}]', error_msg='')",
+        "row_count": 1,
+        "rows": [
+          {
+            "recipient": "codex_stress_alex"
+          }
+        ]
+      },
+      "setup_result": {
+        "case": {
+          "fixture_readiness": {
+            "missing_type_bindings": [],
+            "poll_timeout_sec": 12.0,
+            "ready": true,
+            "required_type_count": 1
+          },
+          "object_id": "codex_stress_recipient",
+          "query_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Query_Request(patterns=['codex_stress_alex rdf:type ?object'], vars=['?object'], models=['default'])\n\nresponse:\nkb_msgs.srv.Query_Response(success=True, json='[{\"object\": \"cyc:SolidTangibleThing\"}, {\"object\": \"Human\"}, {\"object\": \"foaf:Person\"}, {\"object\": \"cyc:SpatialThing-Localized\"}, {\"object\": \"Agent\"}, {\"object\": \"foaf:Agent\"}, {\"object\": \"owl:Thing\"}, {\"object\": \"cyc:PartiallyTangible\"}, {\"object\": \"EmbodiedAgent\"}, {\"object\": \"cyc:SpatialThing\"}, {\"object\": \"Location\"}, {\"object\": \"cyc:EnduringThing-Localized\"}]', error_msg='')",
+          "retract_output": "",
+          "revise_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Revise_Request(method='update', statements=['codex_stress_alex rdf:type Human', 'codex_stress_alex dbp:name ALEX', 'codex_stress_alex dbp:frameId codex_stress_alex', 'codex_stress_alex dbp:poseSource semantic_fixture', 'myself sees codex_stress_alex'], models=['default'], lifespan=builtin_interfaces.msg.Duration(sec=300, nanosec=0))\n\nresponse:\nkb_msgs.srv.Revise_Response(success=True, error_msg='')",
+          "service_probe": "/kb/query [kb_msgs/srv/Query]\n/kb/revise [kb_msgs/srv/Revise]"
+        }
+      },
+      "stale_world_guard": null,
+      "started_at_unix_sec": 1784607239.666128,
+      "status": "pass",
+      "structured_trace": {
+        "available": true,
+        "event_count": 16,
+        "file_count": 1
+      },
+      "text": "Bring TITAS from the storage shelf to the person named ALEX and report what happened.",
+      "topic_samples": {},
+      "turn_result": "[runtime-review] Speech ingress seam:\n  tracked_topic=/nao_chatbot/humans/voices/tracked\n  tracked_qos=--qos-reliability reliable --qos-durability transient_local\n  speech_topic=/humans/voices/codex_kb_stress_chain/speech\n  speech_qos=--qos-reliability reliable --qos-durability volatile\n  rqt_display_mirror=true\n  rqt_display_topics=/rosout,/dialogue_manager/closed_captions\n  contract=publish tracked voice with TRANSIENT_LOCAL durability and keep the publisher alive until the per-voice LiveSpeech subscription appears.\n  reason=dialogue_manager creates the remapped per-voice rqt-chat subscription only after seeing the tracked voice id.\n  dialogue_manager_lifecycle=active [3]\n[runtime-review] OK: dialogue_manager speech subscription visible before LiveSpeech publish for /humans/voices/codex_kb_stress_chain/speech.\npublisher: beginning loop\npublishing #1: rcl_interfaces.msg.Log(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), level=20, name='runtime_review_rqt_input', msg='[runtime-review INPUT] Bring TITAS from the storage shelf to the person named ALEX and report what happened.', file='run_active_questionnaire.py', function='publish_voice_turn', line=0)\n\npublisher: beginning loop\npublishing #1: hri_actions_msgs.msg.ClosedCaption(speaker_id='codex_kb_stress_chain', text='Bring TITAS from the storage shelf to the person named ALEX and report what happened.', locale='en_US')\n\nType: hri_msgs/msg/IdsList\n\nPublisher count: 2\n\nNode name: rqt_gui_py_node_67\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.43.00.b5.63.00.00.00.00.00.00.13.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: _ros2cli_16716\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.4c.41.0c.0d.00.00.00.00.00.00.07.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.5d.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nType: hri_msgs/msg/LiveSpeech\n\nPublisher count: 0\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/LiveSpeech\nTopic type hash: RIHS01_2cfdf359eed836b1d32ac2d62e1476f2048212e7ed79a17c0a594b04c33f8783\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.77.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\npublisher: beginning loop\npublishing #1: hri_msgs.msg.LiveSpeech(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), incremental='', final='Bring TITAS from the storage shelf to the person named ALEX and report what happened.', confidence=1.0, locale='en_US')",
+      "turn_started_at_unix_sec": 1784607246.2416341,
+      "voice_id": "codex_kb_stress_chain",
+      "wait_sec": 150.0
+    },
+    {
+      "case_assessment": {
+        "all_required_context": false,
+        "expected_outcome": "dialogue_only",
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass"
+      },
+      "category": "kb_stress_dialogue",
+      "configured_wait_sec": 18.0,
+      "injection_scope": "full_ros4hri_dialogue_ingress",
+      "log_excerpt": "1784607287.5993836 [start_manager-27] \u001b[0m[INFO] [1784607287.598901584] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_kb_stress_chain\": \"Where are TITAS and MIDAS now?\" (locale=en_US, confidence=1.00)\u001b[0m\n1784607287.6033218 [start_manager-27] \u001b[0m[INFO] [1784607287.602998568] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue d6493b1c-83b1-47a3-a1f8-635f391abf13\u001b[0m\n1784607287.6064665 [start_manager-27] \u001b[0m[INFO] [1784607287.606067193] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13 role='__default__' history_len=10 last='codex_kb_stress_chain':\"Where are TITAS and MIDAS now?\"\u001b[0m\n1784607287.6132171 [start_node-26] \u001b[0m[INFO] [1784607287.612150533] [chatbot_llm]: [CHATBOT] dialogue=d6493b1c user=codex_kb_stress_chain turn=__default__:d6493b1c:5 input=Where are TITAS and MIDAS now?\u001b[0m\n1784607289.0012765 [start_node-26] \u001b[0m[INFO] [1784607289.001154396] [chatbot_llm]: [turn:__default__:d6493b1c:5] GROUNDED_CONTEXT | Grounded context JSON:\n1784607298.9305263 [start_node-26] \u001b[0m[INFO] [1784607298.930228082] [chatbot_llm]: [turn:__default__:d6493b1c:5] ROUTE_RESOLVED | route=knowledge_query intent=kb_query_visible_objects source=llm_response_route+llm_intent confidence=0.98\u001b[0m\n1784607298.9383690 [start_manager-27] \u001b[0m[INFO] [1784607298.934719265] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13: \"TITAS is currently with ALEX, and MIDAS is on the work table.\" terminal=False\u001b[0m\n1784607298.9384420 [start_manager-27] \u001b[0m[INFO] [1784607298.935975051] [dialogue_manager]: [CHATBOT RESPONSE] 1 intent(s) detected\u001b[0m\n1784607298.9463592 [start_skill-34] \u001b[0m[INFO] [1784607298.944162366] [nao_say_skill]: [turn:codex_kb_stress_chain] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=61\u001b[0m\n[INFO] [1784607287.612150533] [chatbot_llm]: [CHATBOT] dialogue=d6493b1c user=codex_kb_stress_chain turn=__default__:d6493b1c:5 input=Where are TITAS and MIDAS now?\n[INFO] [1784607289.001154396] [chatbot_llm]: [turn:__default__:d6493b1c:5] GROUNDED_CONTEXT | Grounded context JSON:\n[INFO] [1784607298.930228082] [chatbot_llm]: [turn:__default__:d6493b1c:5] ROUTE_RESOLVED | route=knowledge_query intent=kb_query_visible_objects source=llm_response_route+llm_intent confidence=0.98\n[INFO] [1784607287.598901584] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_kb_stress_chain\": \"Where are TITAS and MIDAS now?\" (locale=en_US, confidence=1.00)\n[INFO] [1784607287.602998568] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue d6493b1c-83b1-47a3-a1f8-635f391abf13\n[INFO] [1784607287.606067193] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13 role='__default__' history_len=10 last='codex_kb_stress_chain':\"Where are TITAS and MIDAS now?\"\n[INFO] [1784607298.934719265] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13: \"TITAS is currently with ALEX, and MIDAS is on the work table.\" terminal=False\n[INFO] [1784607298.935975051] [dialogue_manager]: [CHATBOT RESPONSE] 1 intent(s) detected\n[INFO] [1784607298.944162366] [nao_say_skill]: [turn:codex_kb_stress_chain] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=61\n[INFO] [1784607298.939765410] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"TITAS is currently with ALEX, and MIDAS is on the work table.\"\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n  summary: /rosout {\"name\":\"chatbot_llm\",\"msg\":\"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\"level\":30,\"file\":\"/home/ubuntu/ws/build/chatbot_llm/chatbot_llm/node_impl.py\",\"function\":\"_trace\",\"line\":624}\n      \"msg\": \"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",",
+      "mode": "speech",
+      "name": "kb_stress_delivery_postcondition",
+      "phase_observations": {
+        "clarification_observed": false,
+        "clarification_speech_observed": false,
+        "correlation_status": "complete",
+        "evidence_consistent": true,
+        "evidence_inconsistencies": [],
+        "evidence_source": "interaction_trace_jsonl",
+        "executed_skill_sequence": [],
+        "executed_skills": [],
+        "execution_feedback_observed": false,
+        "failure_injection": {
+          "mode_sources": [],
+          "observed": false,
+          "result_modes": []
+        },
+        "failure_observed": false,
+        "fallback_markers": {
+          "complete_context_clarification": 0,
+          "duplicate_active_goal": 0,
+          "kb_service_timeout": 0,
+          "language_model_unreachable_speech": 0,
+          "llm_disabled": 0,
+          "llm_response_failed": 0,
+          "planner_gate_rejected": 0,
+          "planner_invalid_json": 0,
+          "planner_invalid_plan": 0,
+          "planner_target_selection_recovery": 0,
+          "report_result_fallback": 0,
+          "route_repair": 0,
+          "rules_intent_fallback": 0,
+          "rules_response_fallback": 0,
+          "total": 0
+        },
+        "grounded_entity_ids": [],
+        "lineage": {
+          "dialogue_turn_id": "__default__:d6493b1c:5",
+          "goal_id": "",
+          "plan_ids": [],
+          "plan_versions": []
+        },
+        "observability_note": "semantic scoring uses structured trace lineage",
+        "planner_dialogue_acts": [],
+        "planner_request_observed": false,
+        "post_failure_speech_observed": false,
+        "post_terminal_speech_observed": false,
+        "replan_observed": false,
+        "route_intent_gap_count": 0,
+        "route_intent_handoff_observed": false,
+        "route_observed": true,
+        "speech_observed": true,
+        "spoken_texts": [
+          "TITAS is currently with ALEX, and MIDAS is on the work table."
+        ],
+        "structured_event_count": 4,
+        "target_selection_observed": false,
+        "target_selections": [],
+        "terminal_observed": false,
+        "turn_injected": true
+      },
+      "setup_result": null,
+      "stale_world_guard": null,
+      "started_at_unix_sec": 1784607279.34796,
+      "status": "pass",
+      "structured_trace": {
+        "available": true,
+        "event_count": 4,
+        "file_count": 1
+      },
+      "text": "Where are TITAS and MIDAS now?",
+      "topic_samples": {},
+      "turn_result": "[runtime-review] Speech ingress seam:\n  tracked_topic=/nao_chatbot/humans/voices/tracked\n  tracked_qos=--qos-reliability reliable --qos-durability transient_local\n  speech_topic=/humans/voices/codex_kb_stress_chain/speech\n  speech_qos=--qos-reliability reliable --qos-durability volatile\n  rqt_display_mirror=true\n  rqt_display_topics=/rosout,/dialogue_manager/closed_captions\n  contract=publish tracked voice with TRANSIENT_LOCAL durability and keep the publisher alive until the per-voice LiveSpeech subscription appears.\n  reason=dialogue_manager creates the remapped per-voice rqt-chat subscription only after seeing the tracked voice id.\n  dialogue_manager_lifecycle=active [3]\n[runtime-review] OK: dialogue_manager speech subscription visible before LiveSpeech publish for /humans/voices/codex_kb_stress_chain/speech.\npublisher: beginning loop\npublishing #1: rcl_interfaces.msg.Log(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), level=20, name='runtime_review_rqt_input', msg='[runtime-review INPUT] Where are TITAS and MIDAS now?', file='run_active_questionnaire.py', function='publish_voice_turn', line=0)\n\npublisher: beginning loop\npublishing #1: hri_actions_msgs.msg.ClosedCaption(speaker_id='codex_kb_stress_chain', text='Where are TITAS and MIDAS now?', locale='en_US')\n\nType: hri_msgs/msg/IdsList\n\nPublisher count: 2\n\nNode name: rqt_gui_py_node_67\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.43.00.b5.63.00.00.00.00.00.00.13.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: _ros2cli_16716\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.4c.41.0c.0d.00.00.00.00.00.00.07.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.5d.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nType: hri_msgs/msg/LiveSpeech\n\nPublisher count: 0\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/LiveSpeech\nTopic type hash: RIHS01_2cfdf359eed836b1d32ac2d62e1476f2048212e7ed79a17c0a594b04c33f8783\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.77.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nWaiting for at least 1 matching subscription(s)...\nWaiting for at least 1 matching subscription(s)...\npublisher: beginning loop\npublishing #1: hri_msgs.msg.LiveSpeech(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), incremental='', final='Where are TITAS and MIDAS now?', confidence=1.0, locale='en_US')",
+      "turn_started_at_unix_sec": 1784607279.3479757,
+      "voice_id": "codex_kb_stress_chain",
+      "wait_sec": 30.0
+    },
+    {
+      "case_assessment": {
+        "all_required_context": true,
+        "expected_outcome": "execute_no_clarification",
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass"
+      },
+      "category": "kb_stress_execution",
+      "configured_wait_sec": 150.0,
+      "injection_scope": "full_ros4hri_dialogue_ingress",
+      "log_excerpt": "1784607332.6595595 [start_manager-27] \u001b[0m[INFO] [1784607332.659186651] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_kb_stress_chain\": \"MIDAS is now on the storage shelf. Bring every object on that shelf to ALEX and summarize the overall result.\" (locale=en_US, confidence=1.00)\u001b[0m\n1784607332.6614974 [start_manager-27] \u001b[0m[INFO] [1784607332.661334159] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue d6493b1c-83b1-47a3-a1f8-635f391abf13\u001b[0m\n1784607332.6632407 [start_manager-27] \u001b[0m[INFO] [1784607332.663001396] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13 role='__default__' history_len=12 last='codex_kb_stress_chain':\"MIDAS is now on the storage shelf. Bring every object on that shelf to ALEX and \"\u001b[0m\n1784607332.6661048 [start_node-26] \u001b[0m[INFO] [1784607332.665759950] [chatbot_llm]: [CHATBOT] dialogue=d6493b1c user=codex_kb_stress_chain turn=__default__:d6493b1c:6 input=MIDAS is now on the storage shelf. Bring every object on that shelf t...\u001b[0m\n1784607334.0280907 [start_node-26] \u001b[0m[INFO] [1784607334.027954299] [chatbot_llm]: [turn:__default__:d6493b1c:6] GROUNDED_CONTEXT | Grounded context JSON:\n1784607341.9634757 [start_node-26] \u001b[0m[INFO] [1784607341.963156431] [chatbot_llm]: [turn:__default__:d6493b1c:6] ROUTE_RESOLVED | route=execution intent=bring_object source=llm_response_route+llm_intent confidence=0.95\u001b[0m\n1784607341.9656487 [start_node-26] \u001b[0m[INFO] [1784607341.965463147] [chatbot_llm]: [turn:__default__:d6493b1c:6] ROUTE_INTENT_HANDOFF | route=execution intent=bring_object intent_source=llm_response_route+llm_intent route_repaired=false normalized_intents=[\"inspect_area\",\"bring_object\",\"report_result\"] goal_id=goal_default___d6493b1c_6 dialogue_turn_id=__default__:d6493b1c:6\u001b[0m\n1784607341.9661787 [start_node-26] \u001b[0m[INFO] [1784607341.965905838] [chatbot_llm]: [turn:__default__:d6493b1c:6] PLANNER_REQUEST | published planner request on /nao_orchestrator/planner_request goal_id=goal_default___d6493b1c_6 kind=new_goal route=execution intent=bring_object intent_source=llm_response_route+llm_intent route_repaired=false normalized_intents=[\"inspect_area\",\"bring_object\",\"report_result\"] goal_id=goal_default___d6493b1c_6 dialogue_turn_id=__default__:d6493b1c:6\u001b[0m\n1784607341.9796216 [start_manager-27] \u001b[0m[INFO] [1784607341.969339418] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13: \"I understand. I will check the storage shelf and bring all objects found there to ALEX.\" terminal=False\u001b[0m\n1784607341.9833169 [start_skill-34] \u001b[0m[INFO] [1784607341.977389928] [nao_say_skill]: [turn:codex_kb_stress_chain] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=87\u001b[0m\n1784607355.5789104 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:15:55,578] Warning: add is deprecated. Performing update instead.\u001b[0m\n1784607356.1727064 [start_node-26] \u001b[0m[INFO] [1784607356.168216313] [chatbot_llm]: [CHATBOT] dialogue=00000000 user=__system__ turn=__default__:00000000:13 input={\"execution_report\":{\"dialogue_context\":[\"user:Where are TITAS and MI...\u001b[0m\n1784607357.6294684 [start_node-26] \u001b[0m[INFO] [1784607357.629329786] [chatbot_llm]: [turn:__default__:00000000:13] GROUNDED_CONTEXT | Grounded context JSON:\n1784607359.7991164 [run_app-32] \u001b[0m[INFO] [1784607359.796361042] [nao_orchestrator]: Resolved report_result text via chatbot\u001b[0m\n1784607359.8135226 [start_skill-34] \u001b[0m[INFO] [1784607359.813268114] [nao_say_skill]: [turn:unknown] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=82\u001b[0m\n[INFO] [1784607332.665759950] [chatbot_llm]: [CHATBOT] dialogue=d6493b1c user=codex_kb_stress_chain turn=__default__:d6493b1c:6 input=MIDAS is now on the storage shelf. Bring every object on that shelf t...\n[INFO] [1784607334.027954299] [chatbot_llm]: [turn:__default__:d6493b1c:6] GROUNDED_CONTEXT | Grounded context JSON:\n[INFO] [1784607341.963156431] [chatbot_llm]: [turn:__default__:d6493b1c:6] ROUTE_RESOLVED | route=execution intent=bring_object source=llm_response_route+llm_intent confidence=0.95\n[INFO] [1784607341.965463147] [chatbot_llm]: [turn:__default__:d6493b1c:6] ROUTE_INTENT_HANDOFF | route=execution intent=bring_object intent_source=llm_response_route+llm_intent route_repaired=false normalized_intents=[\"inspect_area\",\"bring_object\",\"report_result\"] goal_id=goal_default___d6493b1c_6 dialogue_turn_id=__default__:d6493b1c:6\n[INFO] [1784607341.965905838] [chatbot_llm]: [turn:__default__:d6493b1c:6] PLANNER_REQUEST | published planner request on /nao_orchestrator/planner_request goal_id=goal_default___d6493b1c_6 kind=new_goal route=execution intent=bring_object intent_source=llm_response_route+llm_intent route_repaired=false normalized_intents=[\"inspect_area\",\"bring_object\",\"report_result\"] goal_id=goal_default___d6493b1c_6 dialogue_turn_id=__default__:d6493b1c:6\n[INFO] [1784607356.168216313] [chatbot_llm]: [CHATBOT] dialogue=00000000 user=__system__ turn=__default__:00000000:13 input={\"execution_report\":{\"dialogue_context\":[\"user:Where are TITAS and MI...\n[INFO] [1784607357.629329786] [chatbot_llm]: [turn:__default__:00000000:13] GROUNDED_CONTEXT | Grounded context JSON:\n[INFO] [1784607332.659186651] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_kb_stress_chain\": \"MIDAS is now on the storage shelf. Bring every object on that shelf to ALEX and summarize the overall result.\" (locale=en_US, confidence=1.00)\n[INFO] [1784607332.661334159] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue d6493b1c-83b1-47a3-a1f8-635f391abf13\n[INFO] [1784607332.663001396] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13 role='__default__' history_len=12 last='codex_kb_stress_chain':\"MIDAS is now on the storage shelf. Bring every object on that shelf to ALEX and \"\n[INFO] [1784607341.969339418] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13: \"I understand. I will check the storage shelf and bring all objects found there to ALEX.\" terminal=False\n[INFO] [1784607359.796361042] [nao_orchestrator]: Resolved report_result text via chatbot\n[INFO] [1784607341.977389928] [nao_say_skill]: [turn:codex_kb_stress_chain] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=87\n[INFO] [1784607359.813268114] [nao_say_skill]: [turn:unknown] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=82\n[INFO] [1784607341.968033178] [planner_llm]: planner_llm request received | goal_id=goal_default___d6493b1c_6 request_id=__default__:d6493b1c:6 kind=new_goal intents=['inspect_area', 'bring_object', 'report_result'] scene_targets=['storage_shelf', 'codex_stress_alex'] target_selection={'selection_kind': 'location_members', 'operation': 'deliver', 'source_location_id': 'codex_stress_shelf', 'member_ids': ['codex_stress_book'], 'recipient_id': 'codex_stress_alex', 'ordering': 'sequential', 'report_policy': 'final'} source=codex_kb_stress_chain\n[INFO] [1784607352.657801722] [planner_llm]: planner_llm published decision | goal_id=goal_default___d6493b1c_6 plan_id=plan_1784607352656 version=1 mode=plan steps=3 validation=valid\n[INFO] [1784607352.660443778] [planner_llm]: planner_llm feedback received | goal_id=goal_default___d6493b1c_6 plan_id=plan_1784607352656 version=1 event=plan_accepted status=accepted step=/ retry_budget=1 reason=\n[INFO] [1784607352.662761786] [planner_llm]: planner_llm feedback received | goal_id=goal_default___d6493b1c_6 plan_id=plan_1784607352656 version=1 event=step_started status=running step=skill/inspect_area retry_budget=1 reason=\n[INFO] [1784607353.569683833] [planner_llm]: planner_llm feedback received | goal_id=goal_default___d6493b1c_6 plan_id=plan_1784607352656 version=1 event=step_succeeded status=succeeded step=skill/inspect_area retry_budget=1 reason=\n[INFO] [1784607353.570770511] [planner_llm]: planner_llm feedback received | goal_id=goal_default___d6493b1c_6 plan_id=plan_1784607352656 version=1 event=step_started status=running step=skill/bring_object retry_budget=1 reason=\n[INFO] [1784607356.166740014] [planner_llm]: planner_llm feedback received | goal_id=goal_default___d6493b1c_6 plan_id=plan_1784607352656 version=1 event=step_succeeded status=succeeded step=skill/bring_object retry_budget=1 reason=\n[INFO] [1784607359.799856909] [planner_llm]: planner_llm feedback received | goal_id=goal_default___d6493b1c_6 plan_id=plan_1784607352656 version=1 event=step_started status=running step=skill/report_result retry_budget=1 reason=\n[INFO] [1784607359.866400105] [planner_llm]: planner_llm feedback received | goal_id=goal_default___d6493b1c_6 plan_id=plan_1784607352656 version=1 event=step_succeeded status=succeeded step=skill/report_result retry_budget=1 reason=\n[INFO] [1784607359.867737955] [planner_llm]: planner_llm feedback received | goal_id=goal_default___d6493b1c_6 plan_id=plan_1784607352656 version=1 event=plan_completed status=completed step=/ retry_budget=1 reason=\n[INFO] [1784607341.973395496] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"I understand. I will check the storage shelf and bring all objects found there to ALEX.\"\n[INFO] [1784607359.806620024] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"I've finished! I checked the storage shelf and delivered the book, MIDAS, to ALEX.\"\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n  summary: /rosout {\"name\":\"chatbot_llm\",\"msg\":\"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\"level\":30,\"file\":\"/home/ubuntu/ws/build/chatbot_llm/chatbot_llm/node_impl.py\",\"function\":\"_trace\",\"line\":624}\n      \"msg\": \"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n[INFO] [1784607352.661028164] [interaction_trace_viewer]: TRACE_EVENT [1784607352.660] goal_default___d6493b1c_6 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___d6493b1c_6,plan_id=plan_1784607352656,event_type=plan_accepted\n      \"source\": \"planner_llm\",\n[INFO] [1784607352.662757067] [interaction_trace_viewer]: TRACE_EVENT [1784607352.662] goal_default___d6493b1c_6 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___d6493b1c_6,plan_id=plan_1784607352656,event_type=step_started,step=inspect_area\n      \"source\": \"planner_llm\",\n[INFO] [1784607353.569844825] [interaction_trace_viewer]: TRACE_EVENT [1784607353.569] goal_default___d6493b1c_6 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___d6493b1c_6,plan_id=plan_1784607352656,event_type=step_succeeded,step=inspect_area\n[INFO] [1784607353.571825130] [interaction_trace_viewer]: TRACE_EVENT [1784607353.571] goal_default___d6493b1c_6 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___d6493b1c_6,plan_id=plan_1784607352656,event_type=step_started,step=bring_object\n      \"source\": \"planner_llm\",\n[INFO] [1784607356.167269728] [interaction_trace_viewer]: TRACE_EVENT [1784607356.166] goal_default___d6493b1c_6 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___d6493b1c_6,plan_id=plan_1784607352656,event_type=step_succeeded,step=bring_object\n[INFO] [1784607359.799979569] [interaction_trace_viewer]: TRACE_EVENT [1784607359.799] goal_default___d6493b1c_6 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___d6493b1c_6,plan_id=plan_1784607352656,event_type=step_started,step=report_result\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n[INFO] [1784607359.866062392] [interaction_trace_viewer]: TRACE_EVENT [1784607359.865] goal_default___d6493b1c_6 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___d6493b1c_6,plan_id=plan_1784607352656,event_type=step_succeeded,step=report_result\n        \"skill\": \"report_result\",\n[INFO] [1784607359.867549652] [interaction_trace_viewer]: TRACE_EVENT [1784607359.867] goal_default___d6493b1c_6 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___d6493b1c_6,plan_id=plan_1784607352656,event_type=plan_completed\n        \"skill\": \"report_result\",",
+      "mode": "speech",
+      "name": "kb_stress_move_remaining_object",
+      "phase_observations": {
+        "clarification_observed": false,
+        "clarification_speech_observed": false,
+        "correlation_status": "complete",
+        "evidence_consistent": true,
+        "evidence_inconsistencies": [],
+        "evidence_source": "interaction_trace_jsonl",
+        "executed_skill_sequence": [
+          "inspect_area",
+          "bring_object",
+          "report_result"
+        ],
+        "executed_skills": [
+          "inspect_area",
+          "bring_object",
+          "report_result"
+        ],
+        "execution_feedback_observed": true,
+        "failure_injection": {
+          "mode_sources": [
+            "scenario_default"
+          ],
+          "observed": false,
+          "result_modes": [
+            "clear",
+            "success"
+          ]
+        },
+        "failure_observed": false,
+        "fallback_markers": {
+          "complete_context_clarification": 0,
+          "duplicate_active_goal": 0,
+          "kb_service_timeout": 0,
+          "language_model_unreachable_speech": 0,
+          "llm_disabled": 0,
+          "llm_response_failed": 0,
+          "planner_gate_rejected": 0,
+          "planner_invalid_json": 0,
+          "planner_invalid_plan": 0,
+          "planner_target_selection_recovery": 0,
+          "report_result_fallback": 0,
+          "route_repair": 0,
+          "rules_intent_fallback": 0,
+          "rules_response_fallback": 0,
+          "total": 0
+        },
+        "grounded_entity_ids": [
+          "codex_stress_alex",
+          "codex_stress_book",
+          "codex_stress_cup",
+          "codex_stress_shelf",
+          "codex_stress_table"
+        ],
+        "kb_postcondition_passed": true,
+        "lineage": {
+          "dialogue_turn_id": "__default__:d6493b1c:6",
+          "goal_id": "goal_default___d6493b1c_6",
+          "plan_ids": [
+            "plan_1784607352656"
+          ],
+          "plan_versions": [
+            1
+          ]
+        },
+        "observability_note": "semantic scoring uses structured trace lineage",
+        "planner_dialogue_acts": [],
+        "planner_request_observed": true,
+        "post_failure_speech_observed": false,
+        "post_terminal_speech_observed": false,
+        "replan_observed": false,
+        "route_intent_gap_count": 0,
+        "route_intent_handoff_observed": true,
+        "route_observed": true,
+        "speech_observed": true,
+        "spoken_texts": [
+          "I understand. I will check the storage shelf and bring all objects found there to ALEX.",
+          "I've finished! I checked the storage shelf and delivered the book, MIDAS, to ALEX."
+        ],
+        "structured_event_count": 20,
+        "target_selection_observed": true,
+        "target_selections": [
+          {
+            "member_ids": [
+              "codex_stress_book"
+            ],
+            "operation": "deliver",
+            "ordering": "sequential",
+            "recipient_id": "codex_stress_alex",
+            "report_policy": "final",
+            "selection_kind": "location_members",
+            "source_location_id": "codex_stress_shelf"
+          }
+        ],
+        "terminal_observed": true,
+        "turn_injected": true
+      },
+      "postcondition_result": {
+        "missing_values": [],
+        "name": "midas_delivered_to_alex",
+        "passed": true,
+        "raw_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Query_Request(patterns=['codex_stress_book oro:isAt ?recipient'], vars=['?recipient'], models=['default'])\n\nresponse:\nkb_msgs.srv.Query_Response(success=True, json='[{\"recipient\": \"codex_stress_alex\"}]', error_msg='')",
+        "row_count": 1,
+        "rows": [
+          {
+            "recipient": "codex_stress_alex"
+          }
+        ]
+      },
+      "setup_result": {
+        "case": {
+          "fixture_readiness": {
+            "missing_type_bindings": [],
+            "poll_timeout_sec": 12.0,
+            "ready": true,
+            "required_type_count": 0
+          },
+          "object_id": "codex_stress_book_revision",
+          "query_output": "",
+          "retract_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Revise_Request(method='retract', statements=['codex_stress_book oro:isOn codex_stress_table'], models=['default'], lifespan=builtin_interfaces.msg.Duration(sec=1, nanosec=0))\n\nresponse:\nkb_msgs.srv.Revise_Response(success=True, error_msg='')",
+          "revise_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Revise_Request(method='update', statements=['codex_stress_book oro:isOn codex_stress_shelf'], models=['default'], lifespan=builtin_interfaces.msg.Duration(sec=300, nanosec=0))\n\nresponse:\nkb_msgs.srv.Revise_Response(success=True, error_msg='')",
+          "service_probe": "/kb/query [kb_msgs/srv/Query]\n/kb/revise [kb_msgs/srv/Revise]"
+        }
+      },
+      "stale_world_guard": null,
+      "started_at_unix_sec": 1784607318.5745413,
+      "status": "pass",
+      "structured_trace": {
+        "available": true,
+        "event_count": 20,
+        "file_count": 1
+      },
+      "text": "MIDAS is now on the storage shelf. Bring every object on that shelf to ALEX and summarize the overall result.",
+      "topic_samples": {},
+      "turn_result": "[runtime-review] Speech ingress seam:\n  tracked_topic=/nao_chatbot/humans/voices/tracked\n  tracked_qos=--qos-reliability reliable --qos-durability transient_local\n  speech_topic=/humans/voices/codex_kb_stress_chain/speech\n  speech_qos=--qos-reliability reliable --qos-durability volatile\n  rqt_display_mirror=true\n  rqt_display_topics=/rosout,/dialogue_manager/closed_captions\n  contract=publish tracked voice with TRANSIENT_LOCAL durability and keep the publisher alive until the per-voice LiveSpeech subscription appears.\n  reason=dialogue_manager creates the remapped per-voice rqt-chat subscription only after seeing the tracked voice id.\n  dialogue_manager_lifecycle=active [3]\n[runtime-review] OK: dialogue_manager speech subscription visible before LiveSpeech publish for /humans/voices/codex_kb_stress_chain/speech.\npublisher: beginning loop\npublishing #1: rcl_interfaces.msg.Log(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), level=20, name='runtime_review_rqt_input', msg='[runtime-review INPUT] MIDAS is now on the storage shelf. Bring every object on that shelf to ALEX and summarize the overall result.', file='run_active_questionnaire.py', function='publish_voice_turn', line=0)\n\nWaiting for at least 1 matching subscription(s)...\npublisher: beginning loop\npublishing #1: hri_actions_msgs.msg.ClosedCaption(speaker_id='codex_kb_stress_chain', text='MIDAS is now on the storage shelf. Bring every object on that shelf to ALEX and summarize the overall result.', locale='en_US')\n\nType: hri_msgs/msg/IdsList\n\nPublisher count: 2\n\nNode name: rqt_gui_py_node_67\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.43.00.b5.63.00.00.00.00.00.00.13.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: _ros2cli_16716\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.4c.41.0c.0d.00.00.00.00.00.00.07.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.5d.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nType: hri_msgs/msg/LiveSpeech\n\nPublisher count: 0\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/LiveSpeech\nTopic type hash: RIHS01_2cfdf359eed836b1d32ac2d62e1476f2048212e7ed79a17c0a594b04c33f8783\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.77.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nWaiting for at least 1 matching subscription(s)...\npublisher: beginning loop\npublishing #1: hri_msgs.msg.LiveSpeech(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), incremental='', final='MIDAS is now on the storage shelf. Bring every object on that shelf to ALEX and summarize the overall result.', confidence=1.0, locale='en_US')",
+      "turn_started_at_unix_sec": 1784607325.2049005,
+      "voice_id": "codex_kb_stress_chain",
+      "wait_sec": 150.0
+    },
+    {
+      "case_assessment": {
+        "all_required_context": false,
+        "expected_outcome": "dialogue_only",
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass"
+      },
+      "category": "kb_stress_dialogue",
+      "configured_wait_sec": 20.0,
+      "injection_scope": "full_ros4hri_dialogue_ingress",
+      "log_excerpt": "1784607374.0010152 [start_manager-27] \u001b[0m[INFO] [1784607374.000703902] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_kb_stress_chain\": \"Summarize the names, colors, and current locations of TITAS and MIDAS after those changes.\" (locale=en_US, confidence=1.00)\u001b[0m\n1784607374.0033216 [start_manager-27] \u001b[0m[INFO] [1784607374.003077435] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue d6493b1c-83b1-47a3-a1f8-635f391abf13\u001b[0m\n1784607374.0050359 [start_manager-27] \u001b[0m[INFO] [1784607374.004865539] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13 role='__default__' history_len=15 last='codex_kb_stress_chain':\"Summarize the names, colors, and current locations of TITAS and MIDAS after thos\"\u001b[0m\n1784607374.0076125 [start_node-26] \u001b[0m[INFO] [1784607374.007371229] [chatbot_llm]: [CHATBOT] dialogue=d6493b1c user=codex_kb_stress_chain turn=__default__:d6493b1c:7 input=Summarize the names, colors, and current locations of TITAS and MIDAS...\u001b[0m\n1784607375.6459367 [start_node-26] \u001b[0m[INFO] [1784607375.645793391] [chatbot_llm]: [turn:__default__:d6493b1c:7] GROUNDED_CONTEXT | Grounded context JSON:\n1784607378.6919799 [start_node-26] \u001b[0m[INFO] [1784607378.691675525] [chatbot_llm]: [turn:__default__:d6493b1c:7] ROUTE_RESOLVED | route=knowledge_query intent=kb_query_visible_objects source=llm_response_route+llm_intent confidence=0.95\u001b[0m\n1784607378.6984675 [start_manager-27] \u001b[0m[INFO] [1784607378.696019753] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13: \"Of course. TITAS is a gold cup and MIDAS is a blue book; both are currently with Alex.\" terminal=False\u001b[0m\n1784607378.6990902 [start_manager-27] \u001b[0m[INFO] [1784607378.697643589] [dialogue_manager]: [CHATBOT RESPONSE] 1 intent(s) detected\u001b[0m\n1784607378.7056053 [start_skill-34] \u001b[0m[INFO] [1784607378.705464490] [nao_say_skill]: [turn:codex_kb_stress_chain] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=86\u001b[0m\n1784607402.1153004 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:16:42,114] Removing expired statement <myself sees codex_stress_shelf> from <default> (expired on 2026-07-21T04:16:42+00:00)\u001b[0m\n1784607402.1155062 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:16:42,114] Removing expired statement <codex_stress_shelf dbp:name storage_shelf> from <default> (expired on 2026-07-21T04:16:42+00:00)\u001b[0m\n1784607402.1157982 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:16:42,114] Removing expired statement <codex_stress_table rdf:type Table> from <default> (expired on 2026-07-21T04:16:42+00:00)\u001b[0m\n1784607402.1158500 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:16:42,114] Removing expired statement <myself sees codex_stress_cup> from <default> (expired on 2026-07-21T04:16:42+00:00)\u001b[0m\n1784607402.1158893 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:16:42,114] Removing expired statement <codex_stress_book dbp:name MIDAS> from <default> (expired on 2026-07-21T04:16:42+00:00)\u001b[0m\n1784607402.1159246 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:16:42,114] Removing expired statement <codex_stress_table dbp:name work_table> from <default> (expired on 2026-07-21T04:16:42+00:00)\u001b[0m\n1784607402.1159582 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:16:42,114] Removing expired statement <myself sees codex_stress_table> from <default> (expired on 2026-07-21T04:16:42+00:00)\u001b[0m\n1784607402.1159911 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:16:42,115] Removing expired statement <codex_stress_book dbp:color blue> from <default> (expired on 2026-07-21T04:16:42+00:00)\u001b[0m\n1784607402.1160231 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:16:42,115] Removing expired statement <codex_stress_cup dbp:name TITAS> from <default> (expired on 2026-07-21T04:16:42+00:00)\u001b[0m\n1784607402.1160553 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:16:42,115] Removing expired statement <codex_stress_cup rdf:type Cup> from <default> (expired on 2026-07-21T04:16:42+00:00)\u001b[0m\n1784607402.1160879 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:16:42,115] Removing expired statement <myself canReach codex_stress_book> from <default> (expired on 2026-07-21T04:16:42+00:00)\u001b[0m\n1784607402.1161213 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:16:42,115] Removing expired statement <codex_stress_shelf rdf:type Shelf> from <default> (expired on 2026-07-21T04:16:42+00:00)\u001b[0m\n1784607402.1161652 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:16:42,115] Removing expired statement <myself canReach codex_stress_cup> from <default> (expired on 2026-07-21T04:16:42+00:00)\u001b[0m\n1784607402.1162088 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:16:42,115] Removing expired statement <codex_stress_book rdf:type Book> from <default> (expired on 2026-07-21T04:16:42+00:00)\u001b[0m\n1784607402.1162536 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:16:42,115] Removing expired statement <codex_stress_cup isOn codex_stress_table> from <default> (expired on 2026-07-21T04:16:42+00:00)\u001b[0m\n1784607402.1163149 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:16:42,115] Removing expired statement <codex_stress_book isOn codex_stress_table> from <default> (expired on 2026-07-21T04:16:42+00:00)\u001b[0m\n1784607402.1163743 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:16:42,115] Removing expired statement <codex_stress_cup dbp:color gold> from <default> (expired on 2026-07-21T04:16:42+00:00)\u001b[0m\n1784607402.1164126 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:16:42,115] Removing expired statement <myself sees codex_stress_book> from <default> (expired on 2026-07-21T04:16:42+00:00)\u001b[0m\n[INFO] [1784607374.007371229] [chatbot_llm]: [CHATBOT] dialogue=d6493b1c user=codex_kb_stress_chain turn=__default__:d6493b1c:7 input=Summarize the names, colors, and current locations of TITAS and MIDAS...\n[INFO] [1784607375.645793391] [chatbot_llm]: [turn:__default__:d6493b1c:7] GROUNDED_CONTEXT | Grounded context JSON:\n[INFO] [1784607378.691675525] [chatbot_llm]: [turn:__default__:d6493b1c:7] ROUTE_RESOLVED | route=knowledge_query intent=kb_query_visible_objects source=llm_response_route+llm_intent confidence=0.95\n[INFO] [1784607374.000703902] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_kb_stress_chain\": \"Summarize the names, colors, and current locations of TITAS and MIDAS after those changes.\" (locale=en_US, confidence=1.00)\n[INFO] [1784607374.003077435] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue d6493b1c-83b1-47a3-a1f8-635f391abf13\n[INFO] [1784607374.004865539] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13 role='__default__' history_len=15 last='codex_kb_stress_chain':\"Summarize the names, colors, and current locations of TITAS and MIDAS after thos\"\n[INFO] [1784607378.696019753] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=d6493b1c-83b1-47a3-a1f8-635f391abf13: \"Of course. TITAS is a gold cup and MIDAS is a blue book; both are currently with Alex.\" terminal=False\n[INFO] [1784607378.697643589] [dialogue_manager]: [CHATBOT RESPONSE] 1 intent(s) detected\n[INFO] [1784607378.705464490] [nao_say_skill]: [turn:codex_kb_stress_chain] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=86\n[INFO] [1784607378.701124138] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"Of course. TITAS is a gold cup and MIDAS is a blue book; both are currently with Alex.\"\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n  summary: /rosout {\"name\":\"chatbot_llm\",\"msg\":\"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\"level\":30,\"file\":\"/home/ubuntu/ws/build/chatbot_llm/chatbot_llm/node_impl.py\",\"function\":\"_trace\",\"line\":624}\n      \"msg\": \"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",",
+      "mode": "speech",
+      "name": "kb_stress_mixed_final_query",
+      "phase_observations": {
+        "clarification_observed": false,
+        "clarification_speech_observed": false,
+        "correlation_status": "complete",
+        "evidence_consistent": true,
+        "evidence_inconsistencies": [],
+        "evidence_source": "interaction_trace_jsonl",
+        "executed_skill_sequence": [],
+        "executed_skills": [],
+        "execution_feedback_observed": false,
+        "failure_injection": {
+          "mode_sources": [],
+          "observed": false,
+          "result_modes": []
+        },
+        "failure_observed": false,
+        "fallback_markers": {
+          "complete_context_clarification": 0,
+          "duplicate_active_goal": 0,
+          "kb_service_timeout": 0,
+          "language_model_unreachable_speech": 0,
+          "llm_disabled": 0,
+          "llm_response_failed": 0,
+          "planner_gate_rejected": 0,
+          "planner_invalid_json": 0,
+          "planner_invalid_plan": 0,
+          "planner_target_selection_recovery": 0,
+          "report_result_fallback": 0,
+          "route_repair": 0,
+          "rules_intent_fallback": 0,
+          "rules_response_fallback": 0,
+          "total": 0
+        },
+        "grounded_entity_ids": [],
+        "lineage": {
+          "dialogue_turn_id": "__default__:d6493b1c:7",
+          "goal_id": "",
+          "plan_ids": [],
+          "plan_versions": []
+        },
+        "observability_note": "semantic scoring uses structured trace lineage",
+        "planner_dialogue_acts": [],
+        "planner_request_observed": false,
+        "post_failure_speech_observed": false,
+        "post_terminal_speech_observed": false,
+        "replan_observed": false,
+        "route_intent_gap_count": 0,
+        "route_intent_handoff_observed": false,
+        "route_observed": true,
+        "speech_observed": true,
+        "spoken_texts": [
+          "Of course. TITAS is a gold cup and MIDAS is a blue book; both are currently with Alex."
+        ],
+        "structured_event_count": 4,
+        "target_selection_observed": false,
+        "target_selections": [],
+        "terminal_observed": false,
+        "turn_injected": true
+      },
+      "setup_result": null,
+      "stale_world_guard": null,
+      "started_at_unix_sec": 1784607367.0767083,
+      "status": "pass",
+      "structured_trace": {
+        "available": true,
+        "event_count": 4,
+        "file_count": 1
+      },
+      "text": "Summarize the names, colors, and current locations of TITAS and MIDAS after those changes.",
+      "topic_samples": {},
+      "turn_result": "[runtime-review] Speech ingress seam:\n  tracked_topic=/nao_chatbot/humans/voices/tracked\n  tracked_qos=--qos-reliability reliable --qos-durability transient_local\n  speech_topic=/humans/voices/codex_kb_stress_chain/speech\n  speech_qos=--qos-reliability reliable --qos-durability volatile\n  rqt_display_mirror=true\n  rqt_display_topics=/rosout,/dialogue_manager/closed_captions\n  contract=publish tracked voice with TRANSIENT_LOCAL durability and keep the publisher alive until the per-voice LiveSpeech subscription appears.\n  reason=dialogue_manager creates the remapped per-voice rqt-chat subscription only after seeing the tracked voice id.\n  dialogue_manager_lifecycle=active [3]\n[runtime-review] OK: dialogue_manager speech subscription visible before LiveSpeech publish for /humans/voices/codex_kb_stress_chain/speech.\npublisher: beginning loop\npublishing #1: rcl_interfaces.msg.Log(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), level=20, name='runtime_review_rqt_input', msg='[runtime-review INPUT] Summarize the names, colors, and current locations of TITAS and MIDAS after those changes.', file='run_active_questionnaire.py', function='publish_voice_turn', line=0)\n\npublisher: beginning loop\npublishing #1: hri_actions_msgs.msg.ClosedCaption(speaker_id='codex_kb_stress_chain', text='Summarize the names, colors, and current locations of TITAS and MIDAS after those changes.', locale='en_US')\n\nType: hri_msgs/msg/IdsList\n\nPublisher count: 2\n\nNode name: rqt_gui_py_node_67\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.43.00.b5.63.00.00.00.00.00.00.13.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: _ros2cli_16716\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.4c.41.0c.0d.00.00.00.00.00.00.07.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.5d.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nType: hri_msgs/msg/LiveSpeech\n\nPublisher count: 0\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/LiveSpeech\nTopic type hash: RIHS01_2cfdf359eed836b1d32ac2d62e1476f2048212e7ed79a17c0a594b04c33f8783\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.77.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\npublisher: beginning loop\npublishing #1: hri_msgs.msg.LiveSpeech(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), incremental='', final='Summarize the names, colors, and current locations of TITAS and MIDAS after those changes.', confidence=1.0, locale='en_US')",
+      "turn_started_at_unix_sec": 1784607367.0767229,
+      "voice_id": "codex_kb_stress_chain",
+      "wait_sec": 30.0
+    }
+  ],
+  "container": "nao_ros2",
+  "finished_at_unix_sec": 1784607425.6121726,
+  "run_status": "completed",
+  "runtime_metadata": {
+    "ablation_note": "intent_ablation is meaningful only when the active launch sets chatbot_turn_pipeline_mode:=intent_first or when comparing against a response_first control run.",
+    "available_environment_fixtures": [
+      "baseline_table",
+      "gold_apple_handoff",
+      "iiia_floor",
+      "kitchen_delivery",
+      "lab_sections",
+      "lab_table"
+    ],
+    "chatbot_generation": {
+      "first_request_timeout_sec": 75.0,
+      "intent_max_tokens": 256,
+      "intent_model": "gemma4:cloud",
+      "intent_request_timeout_sec": 10.0,
+      "min_p": 0.0,
+      "model": "gemma4:cloud",
+      "presence_penalty": 0.0,
+      "repetition_penalty": 1.0,
+      "request_timeout_sec": 60.0,
+      "response_max_tokens": 192,
+      "temperature": 0.2,
+      "think": false,
+      "top_k": 0,
+      "top_p": 0.9
+    },
+    "chatbot_turn_pipeline_mode": "response_first",
+    "environment_fixture_source": "/home/juanbeck/nao-ros4hri-bridge/src/nao_chatbot/config/preloaded_environments.json",
+    "expected_turn_pipeline_mode": "",
+    "fake_policy_application": {
+      "applied": "false",
+      "profile": "none",
+      "reason": "no policy changes requested"
+    },
+    "fake_policy_profile": "none",
+    "fake_policy_restore": {
+      "global_mode": "Set parameter successful",
+      "mode_overrides_json": "Set parameter successful"
+    },
+    "final_fixture_cleanup": {
+      "contaminated": false,
+      "parts": [
+        {
+          "contaminated": false,
+          "remaining": [],
+          "retract_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Revise_Request(method='retract', statements=['codex_stress_table rdf:type Table', 'codex_stress_table dbp:name work_table', 'codex_stress_shelf rdf:type Shelf', 'codex_stress_shelf dbp:name storage_shelf', 'codex_stress_cup rdf:type Cup', 'codex_stress_cup dbp:name TITAS', 'codex_stress_cup dbp:color gold', 'codex_stress_cup oro:isOn codex_stress_table', 'codex_stress_book rdf:type Book', 'codex_stress_book dbp:name MIDAS', 'codex_stress_book dbp:color blue', 'codex_stress_book oro:isOn codex_stress_table', 'myself sees codex_stress_table', 'myself sees codex_stress_shelf', 'myself sees codex_stress_cup', 'myself sees codex_stress_book', 'myself canReach codex_stress_cup', 'myself canReach codex_stress_book', 'codex_stress_cup oro:isOn codex_stress_shelf', 'codex_stress_alex rdf:type Human', 'codex_stress_alex dbp:name ALEX', 'codex_stress_alex dbp:frameId codex_stress_alex', 'codex_stress_alex dbp:poseSource semantic_fixture', 'myself sees codex_stress_alex', 'codex_stress_book oro:isOn codex_stress_shelf', 'codex_stress_alex rdf:type Location', 'codex_stress_alex rdf:type cyc:SpatialThing', 'codex_stress_alex oro:placeOf codex_stress_cup', 'codex_stress_alex rdf:type foaf:Person', 'codex_stress_alex rdf:type cyc:PartiallyTangible', 'codex_stress_alex rdf:type cyc:SpatialThing-Localized', 'codex_stress_cup rdf:type cyc:SpatialThing', 'codex_stress_book rdf:type Location', 'codex_stress_cup rdf:type cyc:SpatialThing-Localized', 'codex_stress_book rdf:type cyc:SpatialThing-Localized', 'codex_stress_alex oro:placeOf codex_stress_book', 'codex_stress_alex rdf:type owl:Thing', 'codex_stress_alex rdf:type cyc:SolidTangibleThing', 'codex_stress_cup oro:isAt codex_stress_alex', 'codex_stress_cup rdf:type owl:Thing', 'codex_stress_cup rdf:type Location', 'codex_stress_book rdf:type owl:Thing', 'myself oro:sees codex_stress_alex', 'codex_stress_alex rdf:type EmbodiedAgent', 'codex_stress_book oro:isAt codex_stress_alex', 'codex_stress_alex rdf:type Agent', 'codex_stress_alex rdf:type cyc:EnduringThing-Localized', 'codex_stress_alex rdf:type foaf:Agent', 'codex_stress_book rdf:type cyc:SpatialThing'], models=['default'], lifespan=builtin_interfaces.msg.Duration(sec=1, nanosec=0))\n\nresponse:\nkb_msgs.srv.Revise_Response(success=True, error_msg='')",
+          "retracted_statement_count": 49,
+          "subjects": [
+            "codex_stress_table",
+            "codex_stress_shelf",
+            "codex_stress_cup",
+            "codex_stress_book",
+            "codex_stress_alex"
+          ]
+        },
+        {
+          "contaminated": false,
+          "remaining": [],
+          "retract_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Revise_Request(method='retract', statements=['codex_base_table rdf:type Table', 'codex_base_table dbp:name table', 'codex_base_table dbp:frameId map', 'codex_base_table dbp:poseSource semantic_fixture', 'codex_base_table dbp:poseX 0.80', 'codex_base_table dbp:poseY 0.00', 'myself sees codex_base_table', 'codex_base_cup rdf:type Cup', 'codex_base_cup dbp:name BASE_CUP', 'codex_base_cup dbp:color red', 'codex_base_cup oro:isOn codex_base_table', 'myself sees codex_base_cup', 'myself canReach codex_base_cup', 'codex_base_book rdf:type Book', 'codex_base_book dbp:name BASE_BOOK', 'codex_base_book dbp:color blue', 'codex_base_book oro:isOn codex_base_table', 'myself sees codex_base_book', 'myself canReach codex_base_book', 'myself oro:isAt codex_base_station', 'codex_base_station rdf:type Place', 'codex_base_station dbp:name robot_station', 'codex_base_station dbp:frameId map', 'codex_base_station dbp:poseSource semantic_fixture', 'codex_base_station dbp:poseX 0.00', 'codex_base_station dbp:poseY 0.00', 'codex_gold_table rdf:type Table', 'codex_gold_table dbp:name table', 'myself sees codex_gold_table', 'codex_gold_handoff_area rdf:type Place', 'codex_gold_handoff_area dbp:name handoff_area', 'codex_gold_apple rdf:type Apple', 'codex_gold_apple dbp:name KAREN', 'codex_gold_apple dbp:color gold', 'codex_gold_apple oro:isOn codex_gold_table', 'myself sees codex_gold_apple', 'myself canReach codex_gold_apple', 'codex_gold_recipient rdf:type Human', 'codex_gold_recipient dbp:name ALEX', 'codex_gold_recipient dbp:frameId codex_gold_recipient', 'codex_gold_recipient dbp:poseSource semantic_fixture', 'codex_gold_recipient oro:isIn codex_gold_handoff_area', 'codex_gold_handoff_area oro:contains codex_gold_recipient', 'myself sees codex_gold_recipient', 'codex_gold_station rdf:type Place', 'codex_gold_station dbp:name robot_station', 'myself oro:isAt codex_gold_station', 'nao_robot oro:isAt codex_gold_station', 'codex_iiia_station rdf:type Place', 'codex_iiia_station dbp:name robot_station', 'codex_iiia_station dbp:frameId map', 'codex_iiia_station dbp:poseSource semantic_fixture', 'codex_iiia_station dbp:poseX 0.00', 'codex_iiia_station dbp:poseY 0.00', 'myself oro:isAt codex_iiia_station', 'nao_robot oro:isAt codex_iiia_station', 'myself canReceiveAt codex_iiia_station', 'codex_iiia_corridor rdf:type Place', 'codex_iiia_corridor dbp:name corridor', 'codex_iiia_corridor dbp:frameId map', 'codex_iiia_corridor dbp:poseSource semantic_fixture', 'codex_iiia_corridor dbp:poseX 0.80', 'codex_iiia_corridor dbp:poseY 0.00', 'codex_iiia_handoff_area rdf:type Place', 'codex_iiia_handoff_area dbp:name handoff_area', 'codex_iiia_handoff_area dbp:frameId map', 'codex_iiia_handoff_area dbp:poseSource semantic_fixture', 'codex_iiia_handoff_area dbp:poseX 0.20', 'codex_iiia_handoff_area dbp:poseY 0.70', 'codex_iiia_lab rdf:type Room', 'codex_iiia_lab dbp:name lab', 'codex_iiia_lab dbp:frameId map', 'codex_iiia_lab dbp:poseSource semantic_fixture', 'codex_iiia_lab dbp:poseX 1.60', 'codex_iiia_lab dbp:poseY 0.60', 'codex_iiia_kitchen rdf:type Room', 'codex_iiia_kitchen dbp:name kitchen', 'codex_iiia_kitchen dbp:frameId map', 'codex_iiia_kitchen dbp:poseSource semantic_fixture', 'codex_iiia_kitchen dbp:poseX 1.60', 'codex_iiia_kitchen dbp:poseY -0.60', 'codex_iiia_lab_table rdf:type Table', 'codex_iiia_lab_table dbp:name lab_table', 'codex_iiia_lab_table oro:isIn codex_iiia_lab', 'codex_iiia_lab oro:contains codex_iiia_lab_table', 'myself sees codex_iiia_lab_table', 'codex_iiia_kitchen_table rdf:type Table', 'codex_iiia_kitchen_table dbp:name kitchen_table', 'codex_iiia_kitchen_table oro:isIn codex_iiia_kitchen', 'codex_iiia_kitchen oro:contains codex_iiia_kitchen_table', 'myself sees codex_iiia_kitchen_table', 'codex_iiia_cup rdf:type Cup', 'codex_iiia_cup dbp:name IIIA_CUP', 'codex_iiia_cup dbp:color white', 'codex_iiia_cup oro:isIn codex_iiia_kitchen', 'codex_iiia_kitchen oro:contains codex_iiia_cup', 'myself sees codex_iiia_cup', 'myself canReach codex_iiia_cup', 'codex_iiia_book rdf:type Book', 'codex_iiia_book dbp:name IIIA_BOOK', 'codex_iiia_book dbp:color blue', 'codex_iiia_book oro:isOn codex_iiia_lab_table', 'myself sees codex_iiia_book', 'myself canReach codex_iiia_book', 'codex_iiia_phone rdf:type CellularTelephone', 'codex_iiia_phone dbp:name IIIA_PHONE', 'codex_iiia_phone dbp:color silver', 'codex_iiia_phone oro:isOn codex_iiia_lab_table', 'myself sees codex_iiia_phone', 'myself canReach codex_iiia_phone', 'codex_iiia_alex rdf:type Human', 'codex_iiia_alex dbp:name ALEX', 'codex_iiia_alex dbp:frameId codex_iiia_alex', 'codex_iiia_alex dbp:poseSource semantic_fixture', 'codex_iiia_alex dbp:poseX 0.20', 'codex_iiia_alex dbp:poseY -0.30', 'codex_iiia_alex oro:isIn codex_iiia_handoff_area', 'codex_iiia_handoff_area oro:contains codex_iiia_alex', 'myself sees codex_iiia_alex', 'codex_robot_station rdf:type Place', 'codex_robot_station dbp:name robot_station', 'codex_robot_station dbp:frameId map', 'codex_robot_station dbp:poseSource semantic_fixture', 'codex_robot_station dbp:poseX 0.00', 'codex_robot_station dbp:poseY 0.00', 'codex_kitchen rdf:type Room', 'codex_kitchen dbp:name kitchen', 'codex_kitchen dbp:frameId map', 'codex_kitchen dbp:poseSource semantic_fixture', 'codex_kitchen dbp:poseX 1.20', 'codex_kitchen dbp:poseY 0.40', 'codex_kitchen oro:contains codex_kitchen_cup', 'codex_kitchen oro:contains codex_kitchen_book', 'codex_recipient_area rdf:type Place', 'codex_recipient_area dbp:name handoff_area', 'codex_recipient_area dbp:frameId map', 'codex_recipient_area dbp:poseSource semantic_fixture', 'codex_recipient_area dbp:poseX 0.40', 'codex_recipient_area dbp:poseY -0.25', 'codex_kitchen_cup rdf:type Cup', 'codex_kitchen_cup dbp:name KITCHEN_PROBE_CUP', 'codex_kitchen_cup dbp:color white', 'codex_kitchen_cup oro:isIn codex_kitchen', 'myself sees codex_kitchen_cup', 'myself canReach codex_kitchen_cup', 'codex_kitchen_book rdf:type Book', 'codex_kitchen_book dbp:name RECIPE_BOOK', 'codex_kitchen_book dbp:color green', 'codex_kitchen_book oro:isIn codex_kitchen', 'myself sees codex_kitchen_book', 'myself canReach codex_kitchen_book', 'codex_recipient_person rdf:type Human', 'codex_recipient_person dbp:name ALEX', 'codex_recipient_person dbp:frameId codex_recipient_person', 'codex_recipient_person dbp:poseSource semantic_fixture', 'codex_recipient_person dbp:poseX 0.30', 'codex_recipient_person dbp:poseY -0.20', 'codex_recipient_person oro:isIn codex_recipient_area', 'codex_recipient_area oro:contains codex_recipient_person', 'myself sees codex_recipient_person', 'myself oro:isAt codex_robot_station', 'nao_robot oro:isAt codex_robot_station', 'myself canReceiveAt codex_robot_station', 'codex_lab_room rdf:type Room', 'codex_lab_room dbp:name lab', 'codex_lab_room dbp:frameId map', 'codex_lab_room dbp:poseSource semantic_fixture', 'codex_lab_room dbp:poseX 1.00', 'codex_lab_room dbp:poseY 0.20', 'codex_lab_station rdf:type Place', 'codex_lab_station dbp:name robot_station', 'codex_lab_station dbp:frameId map', 'codex_lab_station dbp:poseSource semantic_fixture', 'codex_lab_station dbp:poseX 0.00', 'codex_lab_station dbp:poseY 0.00', 'myself oro:isAt codex_lab_station', 'nao_robot oro:isAt codex_lab_station', 'codex_lab_desk rdf:type Desk', 'codex_lab_desk dbp:name desk', 'codex_lab_desk oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_desk', 'myself sees codex_lab_desk', 'codex_lab_table_section rdf:type Table', 'codex_lab_table_section dbp:name work_table', 'codex_lab_table_section oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_table_section', 'myself sees codex_lab_table_section', 'codex_lab_handoff_area rdf:type Place', 'codex_lab_handoff_area dbp:name handoff_area', 'codex_lab_handoff_area oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_handoff_area', 'codex_lab_computer rdf:type Computer', 'codex_lab_computer dbp:name LAB_COMPUTER', 'codex_lab_computer dbp:color black', 'codex_lab_computer oro:isOn codex_lab_desk', 'myself sees codex_lab_computer', 'codex_lab_keyboard rdf:type Keyboard', 'codex_lab_keyboard dbp:name LAB_KEYBOARD', 'codex_lab_keyboard dbp:color white', 'codex_lab_keyboard oro:isOn codex_lab_desk', 'myself sees codex_lab_keyboard', 'codex_lab_cup rdf:type Cup', 'codex_lab_cup dbp:name LAB_CUP', 'codex_lab_cup dbp:color red', 'codex_lab_cup oro:isOn codex_lab_table_section', 'myself sees codex_lab_cup', 'myself canReach codex_lab_cup', 'codex_lab_manual rdf:type Book', 'codex_lab_manual dbp:name LAB_MANUAL', 'codex_lab_manual dbp:color green', 'codex_lab_manual oro:isOn codex_lab_table_section', 'myself sees codex_lab_manual', 'myself canReach codex_lab_manual', 'codex_lab_phone rdf:type CellularTelephone', 'codex_lab_phone dbp:name LAB_PHONE', 'codex_lab_phone dbp:color silver', 'codex_lab_phone oro:isOn codex_lab_table_section', 'myself sees codex_lab_phone', 'myself canReach codex_lab_phone', 'codex_lab_alex rdf:type Human', 'codex_lab_alex dbp:name ALEX', 'codex_lab_alex dbp:frameId codex_lab_alex', 'codex_lab_alex dbp:poseSource semantic_fixture', 'codex_lab_alex dbp:poseX 0.30', 'codex_lab_alex dbp:poseY -0.25', 'codex_lab_alex oro:isIn codex_lab_handoff_area', 'codex_lab_handoff_area oro:contains codex_lab_alex', 'myself sees codex_lab_alex', 'codex_lab_table rdf:type Table', 'codex_lab_table dbp:name table', 'myself sees codex_lab_table', 'codex_lab_apple rdf:type Apple', 'codex_lab_apple dbp:name ATLAS', 'codex_lab_apple dbp:color red', 'codex_lab_apple oro:isOn codex_lab_table', 'myself sees codex_lab_apple', 'myself canReach codex_lab_apple', 'codex_lab_book rdf:type Book', 'codex_lab_book dbp:name MIDAS', 'codex_lab_book dbp:color blue', 'codex_lab_book oro:isOn codex_lab_table', 'myself sees codex_lab_book', 'myself canReach codex_lab_book', 'codex_lab_phone dbp:name VEGA', 'codex_lab_phone oro:isOn codex_lab_table', 'codex_probe_cup rdf:type Cup', 'codex_probe_cup dbp:name TITAS', 'codex_probe_cup dbp:color gold', 'codex_probe_cup oro:isOn codex_lab_table', 'myself sees codex_probe_cup', 'myself canReach codex_probe_cup', 'codex_lab_table_station rdf:type Place', 'codex_lab_table_station dbp:name robot_station', 'myself oro:isAt codex_lab_table_station', 'nao_robot oro:isAt codex_lab_table_station'], models=['default'], lifespan=builtin_interfaces.msg.Duration(sec=1, nanosec=0))\n\nresponse:\nkb_msgs.srv.Revise_Response(success=True, error_msg='')",
+          "retracted_statement_count": 255,
+          "subjects": [
+            "codex_base_table",
+            "codex_base_cup",
+            "codex_base_book",
+            "codex_base_station",
+            "codex_gold_table",
+            "codex_gold_handoff_area",
+            "codex_gold_apple",
+            "codex_gold_recipient",
+            "codex_gold_station",
+            "codex_iiia_station",
+            "codex_iiia_corridor",
+            "codex_iiia_handoff_area",
+            "codex_iiia_lab",
+            "codex_iiia_kitchen",
+            "codex_iiia_lab_table",
+            "codex_iiia_kitchen_table",
+            "codex_iiia_cup",
+            "codex_iiia_book",
+            "codex_iiia_phone",
+            "codex_iiia_alex",
+            "codex_robot_station",
+            "codex_kitchen",
+            "codex_recipient_area",
+            "codex_kitchen_cup",
+            "codex_kitchen_book",
+            "codex_recipient_person",
+            "codex_lab_room",
+            "codex_lab_station",
+            "codex_lab_desk",
+            "codex_lab_table_section",
+            "codex_lab_handoff_area",
+            "codex_lab_computer",
+            "codex_lab_keyboard",
+            "codex_lab_cup",
+            "codex_lab_manual",
+            "codex_lab_phone",
+            "codex_lab_alex",
+            "codex_lab_table",
+            "codex_lab_apple",
+            "codex_lab_book",
+            "codex_probe_cup",
+            "codex_lab_table_station"
+          ]
+        }
+      ],
+      "remaining": [],
+      "retracted_statement_count": 304,
+      "subjects": [
+        "codex_stress_table",
+        "codex_stress_shelf",
+        "codex_stress_cup",
+        "codex_stress_book",
+        "codex_stress_alex",
+        "codex_base_table",
+        "codex_base_cup",
+        "codex_base_book",
+        "codex_base_station",
+        "codex_gold_table",
+        "codex_gold_handoff_area",
+        "codex_gold_apple",
+        "codex_gold_recipient",
+        "codex_gold_station",
+        "codex_iiia_station",
+        "codex_iiia_corridor",
+        "codex_iiia_handoff_area",
+        "codex_iiia_lab",
+        "codex_iiia_kitchen",
+        "codex_iiia_lab_table",
+        "codex_iiia_kitchen_table",
+        "codex_iiia_cup",
+        "codex_iiia_book",
+        "codex_iiia_phone",
+        "codex_iiia_alex",
+        "codex_robot_station",
+        "codex_kitchen",
+        "codex_recipient_area",
+        "codex_kitchen_cup",
+        "codex_kitchen_book",
+        "codex_recipient_person",
+        "codex_lab_room",
+        "codex_lab_station",
+        "codex_lab_desk",
+        "codex_lab_table_section",
+        "codex_lab_handoff_area",
+        "codex_lab_computer",
+        "codex_lab_keyboard",
+        "codex_lab_cup",
+        "codex_lab_manual",
+        "codex_lab_phone",
+        "codex_lab_alex",
+        "codex_lab_table",
+        "codex_lab_apple",
+        "codex_lab_book",
+        "codex_probe_cup",
+        "codex_lab_table_station"
+      ]
+    },
+    "grounded_context_digest_enabled": false,
+    "initial_fixture_cleanup": {
+      "contaminated": false,
+      "parts": [
+        {
+          "contaminated": false,
+          "remaining": [],
+          "retract_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Revise_Request(method='retract', statements=['myself sees codex_probe_cup', 'codex_probe_cup rdf:type Cup', 'codex_probe_cup dbp:name TITAS', 'codex_probe_cup dbp:color gold', 'codex_probe_cup oro:isOn table_1', 'codex_probe_cup oro:isOn codex_probe_table', 'codex_probe_table rdf:type Table', 'codex_probe_table dbp:name probe_table', 'myself sees codex_probe_table', 'codex_probe_table dbp:name table', 'myself sees codex_count_cup', 'codex_count_cup rdf:type Cup', 'codex_count_cup dbp:name TITAS', 'codex_count_cup dbp:color gold', 'myself sees codex_count_book', 'codex_count_book rdf:type Book', 'codex_count_book dbp:name MIDAS', 'codex_count_book dbp:color blue', 'myself sees codex_count_phone', 'codex_count_phone rdf:type CellularTelephone', 'codex_count_phone dbp:name VEGA', 'codex_count_phone dbp:color silver', 'myself sees codex_skill_phone', 'codex_skill_phone rdf:type CellularTelephone', 'codex_skill_phone dbp:name VEGA', 'codex_skill_phone dbp:color silver', 'codex_skill_phone oro:isOn codex_probe_table', 'myself canReach codex_skill_phone', 'myself sees codex_table_object', 'codex_table_object rdf:type Cup', 'codex_table_object dbp:name TABLE_PROBE', 'codex_table_object dbp:color red', 'codex_table_object oro:isOn codex_probe_table', 'myself canReach codex_table_object', 'myself sees codex_recipient_person', 'codex_recipient_person rdf:type Human', 'codex_recipient_person dbp:name ALEX', 'codex_recipient_person dbp:frameId codex_recipient_person', 'codex_recipient_person dbp:poseSource semantic_fixture', 'myself sees codex_bring_cup', 'codex_bring_cup rdf:type Cup', 'codex_bring_cup dbp:name TITAS', 'codex_bring_cup dbp:color gold', 'myself sees codex_bring_book', 'codex_bring_book rdf:type Book', 'codex_bring_book dbp:name MIDAS', 'codex_bring_book dbp:color blue', 'myself canReach codex_bring_cup', 'myself canReach codex_bring_book', 'codex_kitchen rdf:type Room', 'codex_kitchen dbp:name kitchen', 'codex_kitchen dbp:frameId map', 'codex_kitchen dbp:poseSource semantic_fixture', 'codex_kitchen dbp:poseX 1.20', 'codex_kitchen dbp:poseY 0.40', 'codex_kitchen_cup rdf:type Cup', 'codex_kitchen_cup dbp:name KITCHEN_PROBE_CUP', 'codex_kitchen_cup dbp:color white', 'codex_kitchen_cup oro:isIn codex_kitchen', 'myself sees codex_kitchen_cup', 'myself canReceiveAt codex_robot_station', 'codex_recipient_person dbp:poseX 0.30', 'codex_recipient_person dbp:poseY -0.20', 'myself sees codex_probe_apple', 'codex_probe_apple rdf:type Apple', 'codex_probe_apple dbp:name ATLAS', 'codex_probe_apple dbp:color red', 'codex_probe_apple oro:isOn table_1', 'myself sees codex_probe_book', 'codex_probe_book rdf:type Book', 'codex_probe_book dbp:name MIDAS', 'codex_probe_book dbp:color blue', 'codex_probe_book oro:isOn table_1', 'myself sees codex_probe_phone', 'codex_probe_phone rdf:type CellularTelephone', 'codex_probe_phone dbp:name VEGA', 'codex_probe_phone dbp:color silver', 'codex_probe_phone oro:isOn table_1', 'codex_robot_station rdf:type Place', 'codex_robot_station dbp:name robot_station', 'codex_robot_station dbp:frameId map', 'codex_robot_station dbp:poseSource semantic_fixture', 'codex_robot_station dbp:poseX 0.00', 'codex_robot_station dbp:poseY 0.00', 'myself oro:isAt codex_robot_station', 'nao_robot oro:isAt codex_robot_station', 'myself canReach codex_kitchen', 'apple_ajrte rdf:type Apple', 'apple_ajrte dbp:name apple', 'apple_ajrte dbp:color red', 'apple_ajrte oro:isOn table_zmrkd', 'table_zmrkd rdf:type Table', 'table_zmrkd dbp:name table', 'myself sees apple_ajrte', 'myself sees table_zmrkd', 'myself canReach apple_ajrte', 'myself canReach table_zmrkd', 'book_vpqlm rdf:type Book', 'book_vpqlm dbp:name book', 'book_vpqlm dbp:color blue', 'book_vpqlm oro:isOn table_zmrkd', 'person_axlre rdf:type Human', 'person_axlre dbp:name Alex', 'myself sees book_vpqlm', 'myself sees person_axlre', 'myself canReach book_vpqlm', 'myself sees codex_gold_apple', 'codex_gold_apple rdf:type Apple', 'codex_gold_apple dbp:name KAREN', 'codex_gold_apple dbp:color gold', 'codex_gold_apple oro:isOn codex_gold_table', 'codex_gold_table rdf:type Table', 'codex_gold_table dbp:name table', 'myself sees codex_gold_recipient', 'codex_gold_recipient rdf:type Human', 'codex_gold_recipient dbp:name ALEX', 'codex_gold_recipient dbp:frameId codex_gold_recipient', 'myself canReach codex_gold_apple', 'myself sees codex_ablation_cup', 'codex_ablation_cup rdf:type Cup', 'codex_ablation_cup dbp:name TITAS', 'codex_ablation_cup dbp:color gold', 'myself sees codex_ablation_person', 'codex_ablation_person rdf:type Human', 'codex_ablation_person dbp:name ALEX', 'codex_stress_table rdf:type Table', 'codex_stress_table dbp:name work_table', 'codex_stress_shelf rdf:type Shelf', 'codex_stress_shelf dbp:name storage_shelf', 'codex_stress_cup rdf:type Cup', 'codex_stress_cup dbp:name TITAS', 'codex_stress_cup dbp:color gold', 'codex_stress_cup oro:isOn codex_stress_table', 'codex_stress_book rdf:type Book', 'codex_stress_book dbp:name MIDAS', 'codex_stress_book dbp:color blue', 'codex_stress_book oro:isOn codex_stress_table', 'myself sees codex_stress_table', 'myself sees codex_stress_shelf', 'myself sees codex_stress_cup', 'myself sees codex_stress_book', 'myself canReach codex_stress_cup', 'myself canReach codex_stress_book', 'codex_stress_cup oro:isOn codex_stress_shelf', 'codex_stress_alex rdf:type Human', 'codex_stress_alex dbp:name ALEX', 'codex_stress_alex dbp:frameId codex_stress_alex', 'codex_stress_alex dbp:poseSource semantic_fixture', 'myself sees codex_stress_alex', 'codex_stress_book oro:isOn codex_stress_shelf', 'anonymous_person_stale rdf:type Human', 'myself sees anonymous_person_stale', 'sim_person_stale rdf:type Human', 'myself sees sim_person_stale', 'codex_extreme_table rdf:type Table', 'codex_extreme_table dbp:name work_table', 'codex_extreme_shelf rdf:type Shelf', 'codex_extreme_shelf dbp:name storage_shelf', 'codex_extreme_cup rdf:type Cup', 'codex_extreme_cup dbp:name TITAS', 'codex_extreme_cup dbp:color gold', 'codex_extreme_cup oro:isOn codex_extreme_table', 'codex_extreme_book rdf:type Book', 'codex_extreme_book dbp:name MIDAS', 'codex_extreme_book dbp:color blue', 'codex_extreme_book oro:isOn codex_extreme_table', 'codex_extreme_book dbp:locationHint under_table', 'codex_extreme_apple rdf:type Apple', 'codex_extreme_apple dbp:name ATLAS', 'codex_extreme_apple dbp:color red', 'codex_extreme_apple oro:isOn codex_extreme_table', 'codex_extreme_alex rdf:type Human', 'codex_extreme_alex dbp:name ALEX', 'codex_extreme_alex dbp:frameId codex_extreme_alex', 'codex_extreme_alex dbp:poseSource semantic_fixture', 'myself sees codex_extreme_table', 'myself sees codex_extreme_shelf', 'myself sees codex_extreme_cup', 'myself sees codex_extreme_book', 'myself sees codex_extreme_apple', 'myself sees codex_extreme_alex', 'myself canReach codex_extreme_cup', 'myself canReach codex_extreme_book', 'myself canReach codex_extreme_apple', 'codex_extreme_heavy_box rdf:type Box', 'codex_extreme_heavy_box dbp:name heavy_box', 'codex_extreme_heavy_box dbp:locationHint under_table', 'codex_extreme_heavy_box oro:isOn codex_extreme_table', 'myself sees codex_extreme_heavy_box'], models=['default'], lifespan=builtin_interfaces.msg.Duration(sec=1, nanosec=0))\n\nresponse:\nkb_msgs.srv.Revise_Response(success=True, error_msg='')",
+          "retracted_statement_count": 189,
+          "subjects": [
+            "codex_probe_cup",
+            "codex_probe_table",
+            "codex_count_cup",
+            "codex_count_book",
+            "codex_count_phone",
+            "codex_skill_phone",
+            "codex_table_object",
+            "codex_recipient_person",
+            "codex_bring_cup",
+            "codex_bring_book",
+            "codex_kitchen",
+            "codex_kitchen_cup",
+            "codex_probe_apple",
+            "codex_probe_book",
+            "codex_probe_phone",
+            "codex_robot_station",
+            "apple_ajrte",
+            "table_zmrkd",
+            "book_vpqlm",
+            "person_axlre",
+            "codex_gold_apple",
+            "codex_gold_table",
+            "codex_gold_recipient",
+            "codex_ablation_cup",
+            "codex_ablation_person",
+            "codex_stress_table",
+            "codex_stress_shelf",
+            "codex_stress_cup",
+            "codex_stress_book",
+            "codex_stress_alex",
+            "anonymous_person_stale",
+            "sim_person_stale",
+            "codex_extreme_table",
+            "codex_extreme_shelf",
+            "codex_extreme_cup",
+            "codex_extreme_book",
+            "codex_extreme_apple",
+            "codex_extreme_alex",
+            "codex_extreme_heavy_box"
+          ]
+        },
+        {
+          "contaminated": false,
+          "remaining": [],
+          "retract_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Revise_Request(method='retract', statements=['codex_base_table rdf:type Table', 'codex_base_table dbp:name table', 'codex_base_table dbp:frameId map', 'codex_base_table dbp:poseSource semantic_fixture', 'codex_base_table dbp:poseX 0.80', 'codex_base_table dbp:poseY 0.00', 'myself sees codex_base_table', 'codex_base_cup rdf:type Cup', 'codex_base_cup dbp:name BASE_CUP', 'codex_base_cup dbp:color red', 'codex_base_cup oro:isOn codex_base_table', 'myself sees codex_base_cup', 'myself canReach codex_base_cup', 'codex_base_book rdf:type Book', 'codex_base_book dbp:name BASE_BOOK', 'codex_base_book dbp:color blue', 'codex_base_book oro:isOn codex_base_table', 'myself sees codex_base_book', 'myself canReach codex_base_book', 'myself oro:isAt codex_base_station', 'codex_base_station rdf:type Place', 'codex_base_station dbp:name robot_station', 'codex_base_station dbp:frameId map', 'codex_base_station dbp:poseSource semantic_fixture', 'codex_base_station dbp:poseX 0.00', 'codex_base_station dbp:poseY 0.00', 'codex_gold_table rdf:type Table', 'codex_gold_table dbp:name table', 'myself sees codex_gold_table', 'codex_gold_handoff_area rdf:type Place', 'codex_gold_handoff_area dbp:name handoff_area', 'codex_gold_apple rdf:type Apple', 'codex_gold_apple dbp:name KAREN', 'codex_gold_apple dbp:color gold', 'codex_gold_apple oro:isOn codex_gold_table', 'myself sees codex_gold_apple', 'myself canReach codex_gold_apple', 'codex_gold_recipient rdf:type Human', 'codex_gold_recipient dbp:name ALEX', 'codex_gold_recipient dbp:frameId codex_gold_recipient', 'codex_gold_recipient dbp:poseSource semantic_fixture', 'codex_gold_recipient oro:isIn codex_gold_handoff_area', 'codex_gold_handoff_area oro:contains codex_gold_recipient', 'myself sees codex_gold_recipient', 'codex_gold_station rdf:type Place', 'codex_gold_station dbp:name robot_station', 'myself oro:isAt codex_gold_station', 'nao_robot oro:isAt codex_gold_station', 'codex_iiia_station rdf:type Place', 'codex_iiia_station dbp:name robot_station', 'codex_iiia_station dbp:frameId map', 'codex_iiia_station dbp:poseSource semantic_fixture', 'codex_iiia_station dbp:poseX 0.00', 'codex_iiia_station dbp:poseY 0.00', 'myself oro:isAt codex_iiia_station', 'nao_robot oro:isAt codex_iiia_station', 'myself canReceiveAt codex_iiia_station', 'codex_iiia_corridor rdf:type Place', 'codex_iiia_corridor dbp:name corridor', 'codex_iiia_corridor dbp:frameId map', 'codex_iiia_corridor dbp:poseSource semantic_fixture', 'codex_iiia_corridor dbp:poseX 0.80', 'codex_iiia_corridor dbp:poseY 0.00', 'codex_iiia_handoff_area rdf:type Place', 'codex_iiia_handoff_area dbp:name handoff_area', 'codex_iiia_handoff_area dbp:frameId map', 'codex_iiia_handoff_area dbp:poseSource semantic_fixture', 'codex_iiia_handoff_area dbp:poseX 0.20', 'codex_iiia_handoff_area dbp:poseY 0.70', 'codex_iiia_lab rdf:type Room', 'codex_iiia_lab dbp:name lab', 'codex_iiia_lab dbp:frameId map', 'codex_iiia_lab dbp:poseSource semantic_fixture', 'codex_iiia_lab dbp:poseX 1.60', 'codex_iiia_lab dbp:poseY 0.60', 'codex_iiia_kitchen rdf:type Room', 'codex_iiia_kitchen dbp:name kitchen', 'codex_iiia_kitchen dbp:frameId map', 'codex_iiia_kitchen dbp:poseSource semantic_fixture', 'codex_iiia_kitchen dbp:poseX 1.60', 'codex_iiia_kitchen dbp:poseY -0.60', 'codex_iiia_lab_table rdf:type Table', 'codex_iiia_lab_table dbp:name lab_table', 'codex_iiia_lab_table oro:isIn codex_iiia_lab', 'codex_iiia_lab oro:contains codex_iiia_lab_table', 'myself sees codex_iiia_lab_table', 'codex_iiia_kitchen_table rdf:type Table', 'codex_iiia_kitchen_table dbp:name kitchen_table', 'codex_iiia_kitchen_table oro:isIn codex_iiia_kitchen', 'codex_iiia_kitchen oro:contains codex_iiia_kitchen_table', 'myself sees codex_iiia_kitchen_table', 'codex_iiia_cup rdf:type Cup', 'codex_iiia_cup dbp:name IIIA_CUP', 'codex_iiia_cup dbp:color white', 'codex_iiia_cup oro:isIn codex_iiia_kitchen', 'codex_iiia_kitchen oro:contains codex_iiia_cup', 'myself sees codex_iiia_cup', 'myself canReach codex_iiia_cup', 'codex_iiia_book rdf:type Book', 'codex_iiia_book dbp:name IIIA_BOOK', 'codex_iiia_book dbp:color blue', 'codex_iiia_book oro:isOn codex_iiia_lab_table', 'myself sees codex_iiia_book', 'myself canReach codex_iiia_book', 'codex_iiia_phone rdf:type CellularTelephone', 'codex_iiia_phone dbp:name IIIA_PHONE', 'codex_iiia_phone dbp:color silver', 'codex_iiia_phone oro:isOn codex_iiia_lab_table', 'myself sees codex_iiia_phone', 'myself canReach codex_iiia_phone', 'codex_iiia_alex rdf:type Human', 'codex_iiia_alex dbp:name ALEX', 'codex_iiia_alex dbp:frameId codex_iiia_alex', 'codex_iiia_alex dbp:poseSource semantic_fixture', 'codex_iiia_alex dbp:poseX 0.20', 'codex_iiia_alex dbp:poseY -0.30', 'codex_iiia_alex oro:isIn codex_iiia_handoff_area', 'codex_iiia_handoff_area oro:contains codex_iiia_alex', 'myself sees codex_iiia_alex', 'codex_robot_station rdf:type Place', 'codex_robot_station dbp:name robot_station', 'codex_robot_station dbp:frameId map', 'codex_robot_station dbp:poseSource semantic_fixture', 'codex_robot_station dbp:poseX 0.00', 'codex_robot_station dbp:poseY 0.00', 'codex_kitchen rdf:type Room', 'codex_kitchen dbp:name kitchen', 'codex_kitchen dbp:frameId map', 'codex_kitchen dbp:poseSource semantic_fixture', 'codex_kitchen dbp:poseX 1.20', 'codex_kitchen dbp:poseY 0.40', 'codex_kitchen oro:contains codex_kitchen_cup', 'codex_kitchen oro:contains codex_kitchen_book', 'codex_recipient_area rdf:type Place', 'codex_recipient_area dbp:name handoff_area', 'codex_recipient_area dbp:frameId map', 'codex_recipient_area dbp:poseSource semantic_fixture', 'codex_recipient_area dbp:poseX 0.40', 'codex_recipient_area dbp:poseY -0.25', 'codex_kitchen_cup rdf:type Cup', 'codex_kitchen_cup dbp:name KITCHEN_PROBE_CUP', 'codex_kitchen_cup dbp:color white', 'codex_kitchen_cup oro:isIn codex_kitchen', 'myself sees codex_kitchen_cup', 'myself canReach codex_kitchen_cup', 'codex_kitchen_book rdf:type Book', 'codex_kitchen_book dbp:name RECIPE_BOOK', 'codex_kitchen_book dbp:color green', 'codex_kitchen_book oro:isIn codex_kitchen', 'myself sees codex_kitchen_book', 'myself canReach codex_kitchen_book', 'codex_recipient_person rdf:type Human', 'codex_recipient_person dbp:name ALEX', 'codex_recipient_person dbp:frameId codex_recipient_person', 'codex_recipient_person dbp:poseSource semantic_fixture', 'codex_recipient_person dbp:poseX 0.30', 'codex_recipient_person dbp:poseY -0.20', 'codex_recipient_person oro:isIn codex_recipient_area', 'codex_recipient_area oro:contains codex_recipient_person', 'myself sees codex_recipient_person', 'myself oro:isAt codex_robot_station', 'nao_robot oro:isAt codex_robot_station', 'myself canReceiveAt codex_robot_station', 'codex_lab_room rdf:type Room', 'codex_lab_room dbp:name lab', 'codex_lab_room dbp:frameId map', 'codex_lab_room dbp:poseSource semantic_fixture', 'codex_lab_room dbp:poseX 1.00', 'codex_lab_room dbp:poseY 0.20', 'codex_lab_station rdf:type Place', 'codex_lab_station dbp:name robot_station', 'codex_lab_station dbp:frameId map', 'codex_lab_station dbp:poseSource semantic_fixture', 'codex_lab_station dbp:poseX 0.00', 'codex_lab_station dbp:poseY 0.00', 'myself oro:isAt codex_lab_station', 'nao_robot oro:isAt codex_lab_station', 'codex_lab_desk rdf:type Desk', 'codex_lab_desk dbp:name desk', 'codex_lab_desk oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_desk', 'myself sees codex_lab_desk', 'codex_lab_table_section rdf:type Table', 'codex_lab_table_section dbp:name work_table', 'codex_lab_table_section oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_table_section', 'myself sees codex_lab_table_section', 'codex_lab_handoff_area rdf:type Place', 'codex_lab_handoff_area dbp:name handoff_area', 'codex_lab_handoff_area oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_handoff_area', 'codex_lab_computer rdf:type Computer', 'codex_lab_computer dbp:name LAB_COMPUTER', 'codex_lab_computer dbp:color black', 'codex_lab_computer oro:isOn codex_lab_desk', 'myself sees codex_lab_computer', 'codex_lab_keyboard rdf:type Keyboard', 'codex_lab_keyboard dbp:name LAB_KEYBOARD', 'codex_lab_keyboard dbp:color white', 'codex_lab_keyboard oro:isOn codex_lab_desk', 'myself sees codex_lab_keyboard', 'codex_lab_cup rdf:type Cup', 'codex_lab_cup dbp:name LAB_CUP', 'codex_lab_cup dbp:color red', 'codex_lab_cup oro:isOn codex_lab_table_section', 'myself sees codex_lab_cup', 'myself canReach codex_lab_cup', 'codex_lab_manual rdf:type Book', 'codex_lab_manual dbp:name LAB_MANUAL', 'codex_lab_manual dbp:color green', 'codex_lab_manual oro:isOn codex_lab_table_section', 'myself sees codex_lab_manual', 'myself canReach codex_lab_manual', 'codex_lab_phone rdf:type CellularTelephone', 'codex_lab_phone dbp:name LAB_PHONE', 'codex_lab_phone dbp:color silver', 'codex_lab_phone oro:isOn codex_lab_table_section', 'myself sees codex_lab_phone', 'myself canReach codex_lab_phone', 'codex_lab_alex rdf:type Human', 'codex_lab_alex dbp:name ALEX', 'codex_lab_alex dbp:frameId codex_lab_alex', 'codex_lab_alex dbp:poseSource semantic_fixture', 'codex_lab_alex dbp:poseX 0.30', 'codex_lab_alex dbp:poseY -0.25', 'codex_lab_alex oro:isIn codex_lab_handoff_area', 'codex_lab_handoff_area oro:contains codex_lab_alex', 'myself sees codex_lab_alex', 'codex_lab_table rdf:type Table', 'codex_lab_table dbp:name table', 'myself sees codex_lab_table', 'codex_lab_apple rdf:type Apple', 'codex_lab_apple dbp:name ATLAS', 'codex_lab_apple dbp:color red', 'codex_lab_apple oro:isOn codex_lab_table', 'myself sees codex_lab_apple', 'myself canReach codex_lab_apple', 'codex_lab_book rdf:type Book', 'codex_lab_book dbp:name MIDAS', 'codex_lab_book dbp:color blue', 'codex_lab_book oro:isOn codex_lab_table', 'myself sees codex_lab_book', 'myself canReach codex_lab_book', 'codex_lab_phone dbp:name VEGA', 'codex_lab_phone oro:isOn codex_lab_table', 'codex_probe_cup rdf:type Cup', 'codex_probe_cup dbp:name TITAS', 'codex_probe_cup dbp:color gold', 'codex_probe_cup oro:isOn codex_lab_table', 'myself sees codex_probe_cup', 'myself canReach codex_probe_cup', 'codex_lab_table_station rdf:type Place', 'codex_lab_table_station dbp:name robot_station', 'myself oro:isAt codex_lab_table_station', 'nao_robot oro:isAt codex_lab_table_station'], models=['default'], lifespan=builtin_interfaces.msg.Duration(sec=1, nanosec=0))\n\nresponse:\nkb_msgs.srv.Revise_Response(success=True, error_msg='')",
+          "retracted_statement_count": 255,
+          "subjects": [
+            "codex_base_table",
+            "codex_base_cup",
+            "codex_base_book",
+            "codex_base_station",
+            "codex_gold_table",
+            "codex_gold_handoff_area",
+            "codex_gold_apple",
+            "codex_gold_recipient",
+            "codex_gold_station",
+            "codex_iiia_station",
+            "codex_iiia_corridor",
+            "codex_iiia_handoff_area",
+            "codex_iiia_lab",
+            "codex_iiia_kitchen",
+            "codex_iiia_lab_table",
+            "codex_iiia_kitchen_table",
+            "codex_iiia_cup",
+            "codex_iiia_book",
+            "codex_iiia_phone",
+            "codex_iiia_alex",
+            "codex_robot_station",
+            "codex_kitchen",
+            "codex_recipient_area",
+            "codex_kitchen_cup",
+            "codex_kitchen_book",
+            "codex_recipient_person",
+            "codex_lab_room",
+            "codex_lab_station",
+            "codex_lab_desk",
+            "codex_lab_table_section",
+            "codex_lab_handoff_area",
+            "codex_lab_computer",
+            "codex_lab_keyboard",
+            "codex_lab_cup",
+            "codex_lab_manual",
+            "codex_lab_phone",
+            "codex_lab_alex",
+            "codex_lab_table",
+            "codex_lab_apple",
+            "codex_lab_book",
+            "codex_probe_cup",
+            "codex_lab_table_station"
+          ]
+        }
+      ],
+      "remaining": [],
+      "retracted_statement_count": 444,
+      "subjects": [
+        "codex_probe_cup",
+        "codex_probe_table",
+        "codex_count_cup",
+        "codex_count_book",
+        "codex_count_phone",
+        "codex_skill_phone",
+        "codex_table_object",
+        "codex_recipient_person",
+        "codex_bring_cup",
+        "codex_bring_book",
+        "codex_kitchen",
+        "codex_kitchen_cup",
+        "codex_probe_apple",
+        "codex_probe_book",
+        "codex_probe_phone",
+        "codex_robot_station",
+        "apple_ajrte",
+        "table_zmrkd",
+        "book_vpqlm",
+        "person_axlre",
+        "codex_gold_apple",
+        "codex_gold_table",
+        "codex_gold_recipient",
+        "codex_ablation_cup",
+        "codex_ablation_person",
+        "codex_stress_table",
+        "codex_stress_shelf",
+        "codex_stress_cup",
+        "codex_stress_book",
+        "codex_stress_alex",
+        "anonymous_person_stale",
+        "sim_person_stale",
+        "codex_extreme_table",
+        "codex_extreme_shelf",
+        "codex_extreme_cup",
+        "codex_extreme_book",
+        "codex_extreme_apple",
+        "codex_extreme_alex",
+        "codex_extreme_heavy_box",
+        "codex_base_table",
+        "codex_base_cup",
+        "codex_base_book",
+        "codex_base_station",
+        "codex_gold_handoff_area",
+        "codex_gold_station",
+        "codex_iiia_station",
+        "codex_iiia_corridor",
+        "codex_iiia_handoff_area",
+        "codex_iiia_lab",
+        "codex_iiia_kitchen",
+        "codex_iiia_lab_table",
+        "codex_iiia_kitchen_table",
+        "codex_iiia_cup",
+        "codex_iiia_book",
+        "codex_iiia_phone",
+        "codex_iiia_alex",
+        "codex_recipient_area",
+        "codex_kitchen_book",
+        "codex_lab_room",
+        "codex_lab_station",
+        "codex_lab_desk",
+        "codex_lab_table_section",
+        "codex_lab_handoff_area",
+        "codex_lab_computer",
+        "codex_lab_keyboard",
+        "codex_lab_cup",
+        "codex_lab_manual",
+        "codex_lab_phone",
+        "codex_lab_alex",
+        "codex_lab_table",
+        "codex_lab_apple",
+        "codex_lab_book",
+        "codex_lab_table_station"
+      ]
+    },
+    "planner_generation": {
+      "max_tokens": 800,
+      "min_p": 0.0,
+      "model": "gemma4:cloud",
+      "presence_penalty": 0.0,
+      "provider": "ollama",
+      "repetition_penalty": 1.0,
+      "temperature": 0.1,
+      "think": false,
+      "timeout_sec": 60.0,
+      "top_k": 0,
+      "top_p": 1.0
+    },
+    "structured_trace_preflight": {
+      "available": true,
+      "event_count": 0,
+      "file_count": 1
+    },
+    "tracked_voice_cleanup": "",
+    "tracked_voice_cleanup_before_run": "",
+    "turn_pipeline_mode_matches_expected": true
+  },
+  "started_at_unix_sec": 1784607078.8061762,
+  "updated_at_unix_sec": 1784607425.6121726
+}

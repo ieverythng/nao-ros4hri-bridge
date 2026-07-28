@@ -1,0 +1,19 @@
+{
+  "evidence_date": "2026-07-14",
+  "main_revision": "3a95f08",
+  "main_worktree_state": "dirty",
+  "nested_chatbot_revision": "96ecc34",
+  "nested_chatbot_worktree_state": "dirty",
+  "runtime_images": {
+    "v4": "sha256:e3a321f4704e383cf3f92e89b72680226f7966f7dc2ab70c2b8e527591cdd372",
+    "v5": "sha256:c06c107ba56b9d6e63d3252b21c3f6638b0df9a6b6c214c7aeaa7a025b097c84",
+    "v6": "sha256:5d4e93c3612afd03b1a3151408172940c2cc841eb1dac55b3f0a69f18b407b38"
+  },
+  "chatbot_model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+  "planner_model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+  "turn_pipeline_mode": "response_first",
+  "grounded_context_digest_enabled": false,
+  "detector_scored": false,
+  "provenance_grade": "diagnostic",
+  "provenance_note": "Focused ordered-selection and grouped-delivery probes span three successive rebuilt images and do not form one complete run tuple."
+}

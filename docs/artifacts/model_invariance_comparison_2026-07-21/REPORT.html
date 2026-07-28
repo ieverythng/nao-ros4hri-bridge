@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Runtime Review: model invariance across Ollama candidates</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2.6cm 2.2cm 2.4cm 2.2cm;
+    }
+    :root {
+      --ink: #111;
+      --muted: #3a3a3a;
+      --line: #1f1f1f;
+      --soft: #f3f3f3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #fff;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 11.5pt;
+      line-height: 1.42;
+    }
+    .doc {
+      max-width: 172mm;
+      margin: 0 auto;
+      padding: 0;
+    }
+    .title-page {
+      min-height: 247mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+    }
+    .title-top {
+      text-align: center;
+      margin-top: 18mm;
+    }
+    .title-top h1 {
+      font-size: 20pt;
+      line-height: 1.28;
+      margin: 20mm 0 8mm;
+      font-weight: 700;
+    }
+    .title-top h2 {
+      font-size: 13pt;
+      margin: 0 0 3mm;
+      font-weight: 600;
+      border-bottom: 0;
+    }
+    .title-top p {
+      margin: 2mm 0;
+      color: var(--muted);
+    }
+    .title-meta {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 auto 20mm;
+      font-size: 11pt;
+    }
+    .title-meta td {
+      padding: 2.5mm 0;
+      vertical-align: top;
+      border: 0;
+    }
+    .title-meta td:first-child {
+      width: 38mm;
+      font-weight: 700;
+    }
+    .small { font-size: 10.3pt; color: #222; }
+    h1, h2, h3 {
+      margin: 0 0 3mm;
+      line-height: 1.28;
+      font-weight: 700;
+    }
+    h1 { font-size: 16.5pt; margin-top: 0; }
+    h2 {
+      font-size: 13pt;
+      margin-top: 9mm;
+      border-bottom: 0.5pt solid var(--line);
+      padding-bottom: 1.5mm;
+    }
+    h3 {
+      font-size: 11.8pt;
+      margin-top: 6mm;
+    }
+    p { margin: 2.2mm 0; }
+    ul, ol { margin: 2.5mm 0 2.5mm 6mm; padding: 0; }
+    li { margin: 1.4mm 0; }
+    pre {
+      margin: 2.5mm 0 4mm;
+      background: var(--soft);
+      border: 0.6pt solid #666;
+      padding: 2.6mm 2.8mm;
+      overflow-x: auto;
+      white-space: pre;
+      font-family: "Liberation Mono", "Courier New", monospace;
+      font-size: 9.2pt;
+      line-height: 1.3;
+    }
+    code {
+      font-family: "Liberation Mono", "Courier New", monospace;
+      background: #efefef;
+      padding: 0.2mm 1mm;
+      border: 0.4pt solid #d7d7d7;
+      border-radius: 2px;
+      font-size: 10.3pt;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      border: 0;
+      font-size: inherit;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 3mm 0 4mm;
+      font-size: 10.8pt;
+    }
+    th, td {
+      border: 0.6pt solid #333;
+      padding: 2.2mm 2.3mm;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+      hyphens: auto;
+    }
+    th {
+      background: #fafafa;
+      text-align: left;
+      font-weight: 700;
+    }
+    .diagram {
+      margin: 4mm 0 5mm;
+      border: 0.6pt solid #777;
+      padding: 2mm;
+      background: #fff;
+    }
+    .diagram pre {
+      margin: 0;
+      border: 0;
+      background: #fcfcfc;
+      font-size: 10.2pt;
+      white-space: pre-wrap;
+    }
+    .diagram svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .diagram-labels {
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 25px;
+      font-weight: 700;
+      fill: #111;
+    }
+    .lifelines {
+      stroke: #999;
+      stroke-dasharray: 4 4;
+    }
+    .messages {
+      stroke: #111;
+      stroke-width: 1.35;
+      fill: none;
+    }
+    .messages text {
+      stroke: none;
+      fill: #111;
+      font-family: "Liberation Serif", "Times New Roman", Times, serif;
+      font-size: 22px;
+    }
+    .caption {
+      margin-top: 2mm;
+      font-size: 10.5pt;
+      color: #222;
+      font-style: italic;
+      text-align: center;
+    }
+    blockquote {
+      border: 0.6pt solid #333;
+      background: #fcfcfc;
+      margin: 3mm 0;
+      padding: 2.6mm 3mm;
+      color: var(--muted);
+    }
+    a { color: #111; }
+  </style>
+</head>
+<body>
+  <main class="doc">
+
+<h1>Runtime Review: model invariance across Ollama candidates</h1>
+<p>Run ID: <code>model-invariance-e2e-2026-07-21</code></p>
+<p>Date: 21 July 2026</p>
+<h2>Executive result</h2>
+<p>The frozen stack reached the required startup gate with three Ollama models. The vLLM endpoint was unavailable and therefore has no semantic score in this run. The strongest evidence is not a universal model ranking. It is the separation between invariant stack behavior and model-sensitive planning behavior.</p>
+<p>Both Gemma variants reproduced the same main and extreme-capability failure shape. They passed the full environment matrix, the stateful KB chain, and the all-success fake-skill matrix. Nemotron preserved the environment matrix and the targeted fail-once navigation replan, but showed additional variance in KB wording, trace correlation, target selection, report closure, and extreme multi-step coverage.</p>
+<p>The results support the following bounded conclusion:</p>
+<blockquote>
+<p>The NAO ROS4HRI stack preserved its ownership, grounding, execution-lineage, and fake-skill recovery boundaries across the tested Ollama models. Model-generated target selection, plan coverage, clarification wording, and terminal closure remained variable. The repeated Gemma failure shape requires a stack-seam investigation before those failures are attributed to Gemma quality.</p>
+</blockquote>
+<p>This conclusion is suitable for the TFM Results and Discussion sections when accompanied by the raw JSON and the controlled-profile caveat below.</p>
+<h2>Runtime review format</h2>
+<h3>Overall sentiment</h3>
+<p><code>stable with model-dependent degradation in high-composition planning</code></p>
+<h3>Startup gate</h3>
+<p>All three scoreable model cells had:</p>
+<ul>
+<li>chatbot, planner, orchestrator, dialogue manager, KnowledgeCore, and fake-skill nodes present;</li>
+<li>active lifecycle state for the required core nodes;</li>
+<li>chatbot and planner preflight success on the selected model;</li>
+<li>zero fallback events during the scored cell;</li>
+<li>structured interaction traces available for case-level attribution.</li>
+</ul>
+<p>The optional <code>knowledge_viewer</code> configuration warning and missing downstream TTS subscriber were retained as runtime observability conditions. They did not prevent the required semantic graph from becoming ready. The NAOqi connection timed out because <code>172.26.112.143:9559</code> was unavailable. The alternative semantic cells disabled the external driver to prevent this dependency from changing the model comparison.</p>
+<h3>Model cells</h3>
+<table><thead><tr>
+<th>Cell</th>
+<th>Backend and model</th>
+<th>Startup</th>
+<th>Profile</th>
+<th>Role</th>
+</tr></thead><tbody>
+<tr>
+<td>Baseline</td>
+<td>Ollama <code>gemma4:31b-cloud</code></td>
+<td>ready for semantic scoring</td>
+<td>historical baseline with <code>start_naoqi_driver=true</code></td>
+<td>baseline</td>
+</tr>
+<tr>
+<td>Reserve 1</td>
+<td>Ollama <code>nemotron-3-super:cloud</code></td>
+<td>ready for semantic scoring</td>
+<td>controlled semantic profile with <code>start_naoqi_driver=false</code></td>
+<td>second candidate</td>
+</tr>
+<tr>
+<td>Reserve 2</td>
+<td>Ollama <code>gemma4:cloud</code></td>
+<td>ready for semantic scoring</td>
+<td>controlled semantic profile with <code>start_naoqi_driver=false</code></td>
+<td>third candidate</td>
+</tr>
+</tbody></table>
+<p>The frozen image was <code>iiia:nao-runtime-v34-final-frozen-review</code> with image ID <code>sha256:bb82c158092a69870dae48272b3b20fd8cd4ecfe97a0e61a2253a2cca00c663e</code>.</p>
+<h2>Endpoint inventory and selection</h2>
+<p>The requested vLLM probe was:</p>
+<pre><code class="language-text">http://10.7.138.215:8004/v1/models</code></pre>
+<p>The final probe failed with <code>HTTP_STATUS=000</code>, so the served vLLM model could not be identified and no vLLM semantic result was invented. The local Ollama inventory returned 11 names:</p>
+<p><code>deepseek-v4-flash:cloud</code>, <code>gemini-3-flash-preview:latest</code>, <code>gemma4:31b-cloud</code>, <code>gemma4:cloud</code>, <code>glm-5.2:cloud</code>, <code>kimi-k2.5:cloud</code>, <code>kimi-k2.6:cloud</code>, <code>minimax-m2.7:cloud</code>, <code>nemotron-3-super:cloud</code>, <code>qwen3-coder:480b-cloud</code>, and <code>qwen3.5:cloud</code>.</p>
+<p>The three tested names were selected because they were visible in the live inventory and could pass the required chatbot and planner preflight. Availability was treated as a launch condition, not as evidence of semantic quality.</p>
+<h2>Frozen evaluation contract</h2>
+<p>The following factors were held constant across the comparison:</p>
+<ul>
+<li>the v34 frozen container image;</li>
+<li>ROS 2 Jazzy launch profile and ROS domain;</li>
+<li>response-first turn pipeline;</li>
+<li>chatbot and planner provider settings, model parameters, timeouts, token budgets, and thinking policy;</li>
+<li>KnowledgeCore fixtures and grounded context projection;</li>
+<li>fake-skill server and all-success/failure policy definitions;</li>
+<li>questionnaire source, case names, speech voice scope, and trace collection;</li>
+<li>scene grounding enabled and object detection disabled.</li>
+</ul>
+<p>The historical Gemma4 31B baseline was captured before the NAOqi dependency was isolated. It is kept as the baseline artifact. The Nemotron and Gemma4 cloud cells use the controlled no-driver profile because the physical NAOqi endpoint was unreachable. This difference is a declared runtime precondition and prevents a physical robot connection timeout from being misclassified as model behavior.</p>
+<h2>E2E score matrix</h2>
+<p>The table reports strict scoreable outcomes. A pass is counted as a pass. A degraded case is retained as scoreable but is not counted as a pass. <code>not_scored</code> and blank global-timeout rows are excluded from the denominator.</p>
+<table><thead><tr>
+<th>Case family</th>
+<th>Gemma4 31B</th>
+<th>Gemma4 cloud</th>
+<th>Nemotron 3 Super</th>
+</tr></thead><tbody>
+<tr>
+<td>Environment</td>
+<td>11/11</td>
+<td>11/11</td>
+<td>11/11</td>
+</tr>
+<tr>
+<td>Main</td>
+<td>17/20</td>
+<td>18/21</td>
+<td>17/19 plus 1 degraded</td>
+</tr>
+<tr>
+<td>KB stress</td>
+<td>7/7</td>
+<td>7/7</td>
+<td>4/6</td>
+</tr>
+<tr>
+<td>Robustness</td>
+<td>3/5</td>
+<td>3/5</td>
+<td>3/5</td>
+</tr>
+<tr>
+<td>Fake deep, all success</td>
+<td>9/9</td>
+<td>9/9</td>
+<td>8/9 plus 1 degraded</td>
+</tr>
+<tr>
+<td>Capability extreme</td>
+<td>3/7</td>
+<td>3/7</td>
+<td>0/6, 1 not scored</td>
+</tr>
+<tr>
+<td>Targeted fail-once navigation</td>
+<td>diagnostic full run retained</td>
+<td>1/1</td>
+<td>1/1</td>
+</tr>
+</tbody></table>
+<p>The comparable standard-family pass rates were:</p>
+<table><thead><tr>
+<th>Model</th>
+<th>Passes</th>
+<th>Scoreable cases</th>
+<th>Strict pass rate</th>
+<th>Reading</th>
+</tr></thead><tbody>
+<tr>
+<td><code>gemma4:31b-cloud</code></td>
+<td>50</td>
+<td>59</td>
+<td>84.7%</td>
+<td>Strong shared-stack behavior with high-composition planning failures.</td>
+</tr>
+<tr>
+<td><code>gemma4:cloud</code></td>
+<td>51</td>
+<td>60</td>
+<td>85.0%</td>
+<td>Same failure shape as the Gemma4 31B baseline.</td>
+</tr>
+<tr>
+<td><code>nemotron-3-super:cloud</code></td>
+<td>43</td>
+<td>56</td>
+<td>76.8%</td>
+<td>Environment and targeted recovery remained reliable; high-composition and KB wording varied more.</td>
+</tr>
+</tbody></table>
+<p>The rates are descriptive one-run engineering evidence. They are not a statistical confidence interval and should not be presented as a universal ranking.</p>
+<h2>What remained invariant</h2>
+<h3>Grounded environment behavior</h3>
+<p>All three models passed the 11-case environment matrix. The frozen scene fixtures, KnowledgeCore access, grounded context projection, and basic response path were therefore available to each model. This is strong evidence against a broad stack-wide grounding outage in this run.</p>
+<h3>Stateful KnowledgeCore behavior</h3>
+<p>Both Gemma variants passed all seven KB stress cases. Nemotron passed four of six scoreable cases and failed two wording checks:</p>
+<ul>
+<li><code>kb_stress_revise_support</code> omitted <code>storage shelf</code> and <code>work table</code> from speech;</li>
+<li><code>kb_stress_revised_relation_query</code> omitted <code>TITAS</code>, <code>storage shelf</code>, <code>MIDAS</code>, and <code>work table</code> from speech.</li>
+</ul>
+<p>The failures were speech-content omissions, not evidence that the KB mutation transport itself was unavailable. This separates KnowledgeCore state transport from model-mediated verbal projection.</p>
+<h3>Basic fake-skill execution</h3>
+<p>The all-success fake-deep matrix passed 9/9 for both Gemma variants. Nemotron passed 8/9 and degraded on <code>fake_deep_missing_object_recovery</code> because recovery evidence lacked terminal or speech closure. The targeted fail-once navigation probe passed for Nemotron and Gemma4 cloud with an observed injected failure and replan. The fake-skill server, orchestrator admission, and execution lineage can therefore remain coherent when the emitted plan is admissible and the recovery condition is applicable.</p>
+<h3>Failure honesty</h3>
+<p>No model cell was accepted as a passing result when the expected planner request, execution feedback, target selection, postcondition, clarification speech, or terminal evidence was absent. The questionnaire retained failures instead of converting them to successful conversational responses. This protects the thesis claim that stack coherence is measured through execution evidence rather than fluency alone.</p>
+<h2>Shared failures and seam attribution</h2>
+<p>The most important comparison is the failure intersection. Both Gemma variants failed the same cases with the same broad reasons:</p>
+<table><thead><tr>
+<th>Case</th>
+<th>Observed pattern</th>
+<th>Initial attribution</th>
+</tr></thead><tbody>
+<tr>
+<td><code>skill_pick_phone_generic</code></td>
+<td>no expected planner request and execution feedback</td>
+<td>stack or contract seam candidate</td>
+</tr>
+<tr>
+<td><code>skill_pick_object_on_table</code></td>
+<td>no expected planner request and execution feedback; Nemotron dispatched a partial recovery and was degraded</td>
+<td>shared admission or target normalization seam, with model-sensitive variation</td>
+</tr>
+<tr>
+<td><code>maximal_kitchen_cup_to_operator</code></td>
+<td>clarification was not expressed in correlated speech</td>
+<td>shared response or dialogue-act closure seam candidate</td>
+</tr>
+<tr>
+<td><code>extreme_kneel_under_table_pick_report</code></td>
+<td>no expected ordered motion, pick, motion, report sequence</td>
+<td>shared planner coverage or capability-contract seam candidate</td>
+</tr>
+<tr>
+<td><code>extreme_all_objects_visit_look_wave_sit</code></td>
+<td>target selection was not carried in planner evidence</td>
+<td>shared universal-selection or context-size seam candidate</td>
+</tr>
+<tr>
+<td><code>extreme_pick_place_kneel_report</code></td>
+<td>clarification or plan coverage failed before expected execution</td>
+<td>shared high-composition planning seam candidate</td>
+</tr>
+<tr>
+<td><code>extreme_unreachable_object_recovery</code></td>
+<td>expected motion, pick, and report sequence was absent</td>
+<td>shared recovery admission or target-selection seam candidate</td>
+</tr>
+<tr>
+<td><code>robust_missing_recipient</code></td>
+<td>clarification text was not correlated even though the absent recipient was recognized</td>
+<td>shared clarification speech seam candidate</td>
+</tr>
+</tbody></table>
+<p>These cases are not sufficient to prove that the stack implementation is faulty. They are sufficient to reject the claim that Gemma quality alone explains the failures. The next discriminating probes should inspect planner requests, route intents, target selections, and structured dialogue acts at the first failing seam.</p>
+<h2>Model-specific variance</h2>
+<p>Nemotron introduced additional failures not reproduced by either Gemma cell:</p>
+<ul>
+<li>two KB speech cases omitted grounded terms;</li>
+<li><code>robust_object_role_exclusion</code> failed at planner request and execution feedback;</li>
+<li><code>extreme_walk_pick_sit_report</code> and <code>extreme_dialogue_sit_stand_grab_return</code> failed plan coverage;</li>
+<li><code>extreme_dialogue_inventory</code> was not scored because trace correlation was internally inconsistent;</li>
+<li><code>extreme_pick_place_kneel_report</code> and <code>extreme_unreachable_object_recovery</code> executed partial skill sequences but omitted expected final reporting;</li>
+<li><code>fake_deep_missing_object_recovery</code> degraded on terminal or speech closure;</li>
+<li><code>main</code> included one degraded partial pick recovery and one not-scored KB mutation trace.</li>
+</ul>
+<p>These outcomes are model or backend variance candidates. The trace inconsistency is a measurement seam and must not be presented as a semantic planner failure without checking the raw trace.</p>
+<h2>Seam hypothesis adjudication</h2>
+<table><thead><tr>
+<th>Hypothesis</th>
+<th>Evidence</th>
+<th>Status</th>
+<th>Next discriminating probe</th>
+</tr></thead><tbody>
+<tr>
+<td>H-01 runtime wiring or provider mismatch</td>
+<td>all three required preflights passed; vLLM was unavailable before scoring</td>
+<td>ruled out for Ollama cells, blocked for vLLM</td>
+<td>repeat only after vLLM <code>/v1/models</code> and completion probe succeed</td>
+</tr>
+<tr>
+<td>H-02 model policy variance</td>
+<td>Gemma variants share a stable failure shape; Nemotron adds coverage and wording variance</td>
+<td>supported</td>
+<td>capture first chatbot route, planner request, target selection, and dialogue act for shared failures</td>
+</tr>
+<tr>
+<td>H-03 grounding and KB</td>
+<td>environment 11/11 for all; Gemma KB 7/7; Nemotron wording omissions only</td>
+<td>broad outage rejected; projection variance supported</td>
+<td>compare grounded context digest with spoken terms and planner payload for the same KB facts</td>
+</tr>
+<tr>
+<td>H-04 executor and recovery</td>
+<td>targeted fail-once navigation passed for Nemotron and Gemma cloud; partial-report failures remain</td>
+<td>executor core supported, closure seam open</td>
+<td>repeat fail-once pick, delivery-blocked, and recipient-missing with stable terminal speech capture</td>
+</tr>
+<tr>
+<td>H-05 observability</td>
+<td>Nemotron contains internally inconsistent trace rows; global timeout rows exist</td>
+<td>active measurement limitation</td>
+<td>reconcile trace JSONL, speech topics, and harness timestamps for each not-scored row</td>
+</tr>
+<tr>
+<td>H-06 external service variance</td>
+<td>vLLM unavailable; Ollama cloud models passed preflight with zero fallback events</td>
+<td>vLLM blocked, Ollama cell usable</td>
+<td>record endpoint identity, first error, and quota/auth status during a stable window</td>
+</tr>
+</tbody></table>
+<h2>Deterministic tests versus runtime stress</h2>
+<p>The earlier count of runtime-review tests should not be described as 69 randomized stress trials. The formal runtime review combines different evidence classes:</p>
+<ol>
+<li>deterministic source and harness checks, which validate parser, manifest, registry, contract, and owner behavior;</li>
+<li>live questionnaire cases, which exercise the running ROS graph and a fixed sequence of interactions;</li>
+<li>model-sensitive runtime cases, where the same input can produce different route, target, plan, wording, and timing outcomes.</li>
+</ol>
+<p>This comparison belongs to the third class. It is a controlled E2E stress evaluation over fixed case families, not a deterministic proof that every possible natural-language request will succeed. The raw JSON preserves the model response path, structured trace, speech observations, and timeout evidence needed for a thesis discussion of non-determinism and model variance.</p>
+<h2>Thesis interpretation</h2>
+<p>The evidence supports three separate claims:</p>
+<ol>
+<li>The stack has a stable architectural core. Environment grounding, KnowledgeCore transport, fake-skill execution, execution lineage, and failure honesty were repeatedly exercised across changing models.</li>
+<li>The stack is not semantically invariant at the model boundary. Target selection, multi-step coverage, clarification wording, report closure, and model-dependent recovery remain variable.</li>
+<li>A model replacement cannot be qualified from endpoint availability or one successful dialogue. It requires the same frozen E2E matrix, the same attribution rules, and repeated sensitive cases.</li>
+</ol>
+<p>A conservative TFM formulation is:</p>
+<blockquote>
+<p>The evaluation shows that the ROS4HRI stack preserves its principal ownership and execution contracts across the tested language-model backends. At the same time, generated target selection, multi-step plan coverage, clarification wording, and terminal report closure vary with the selected model. Shared failures across the two Gemma variants were retained as stack-seam hypotheses rather than attributed to model quality alone.</p>
+</blockquote>
+<h2>Artifacts and provenance</h2>
+<ul>
+<li><code>analysis/comparison_summary.json</code>: model inventory, startup gates, per-suite rates, case matrix, and shared-failure intersection.</li>
+<li><code>analysis/dataset.csv</code>: tabular per-case index with status, observations, fallback markers, skills, speech count, and provenance path.</li>
+<li><code>analysis/dataset.jsonl</code>: JSONL form for TFM processing.</li>
+<li><code>raw/gemma4_31b/</code>: baseline JSON outputs.</li>
+<li><code>raw/nemotron_3_super/</code>: Nemotron JSON outputs, including controlled startup snapshots.</li>
+<li><code>raw/gemma4_cloud/</code>: Gemma cloud JSON outputs.</li>
+<li><code>METHODOLOGY.md</code>: frozen tuple, status semantics, and reproduction contract.</li>
+<li><code>inventory_probe.md</code>: vLLM and Ollama endpoint evidence.</li>
+<li><code>PROVENANCE_GAPS.md</code>: explicit note about transient launch logs inspected live but not all copied after container reuse.</li>
+<li><code>../model_invariance_seam_audit_2026-07-21.md</code>: hypothesis registry and adversarial audit.</li>
+</ul>
+<p>The HTML version is <code>REPORT.html</code>. The retained artifact-template design report is in <code>report/Model_Invariance_Runtime_Qualification_Report.docx</code>.</p>
+  </main>
+</body>
+</html>

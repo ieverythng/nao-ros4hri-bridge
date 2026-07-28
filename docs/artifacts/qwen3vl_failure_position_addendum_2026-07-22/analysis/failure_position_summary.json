@@ -1,0 +1,98 @@
+{
+  "case_record_count": 61,
+  "case_role_counts": {
+    "baseline_control": 9,
+    "closure_or_recovery_observation": 1,
+    "failure_position_target": 12,
+    "other_qwen3vl_evidence": 39
+  },
+  "classification_note": "Beginning/middle/end labels describe the failure injection or observed closure position in the emitted plan, not physical robot execution proof. Unknown is retained when the artifact does not isolate a step.",
+  "failure_profile_counts": {
+    "all_success": 15,
+    "delivery_blocked": 2,
+    "every_other": 1,
+    "fail_once_navigation": 2,
+    "fail_once_pick": 1,
+    "none": 37,
+    "random_seeded": 1,
+    "recipient_missing": 2
+  },
+  "model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+  "observed_failure_stage_counts": {
+    "beginning": 5,
+    "end": 2,
+    "middle": 2,
+    "middle_to_end": 2,
+    "unknown": 2
+  },
+  "provenance_note": "F13 and F14 are diagnostic Qwen3VL runs. They span distinct runtime images and are not a single frozen qualification tuple.",
+  "run_id": "qwen3vl-failure-position-addendum-2026-07-22",
+  "runtime_image": "iiia:nao",
+  "source_file_count": 14,
+  "source_run_ids": [
+    "F13_semantic_audit",
+    "F14_targeted_hardening"
+  ],
+  "status_counts": {
+    "degraded": 5,
+    "fail": 5,
+    "not_scored": 6,
+    "pass": 45
+  },
+  "targeted_stage_matrix": {
+    "beginning": {
+      "case_names": [
+        "fake_deep_gold_apple_multiturn",
+        "fake_deep_missing_object_recovery",
+        "fake_deep_ordered_walk_report",
+        "kb_mutation_add_red_cup"
+      ],
+      "records": 5,
+      "statuses": {
+        "degraded": 1,
+        "fail": 2,
+        "pass": 2
+      }
+    },
+    "end": {
+      "case_names": [
+        "fake_deep_gold_apple_multiturn",
+        "fake_deep_grouped_work_table_delivery"
+      ],
+      "records": 2,
+      "statuses": {
+        "degraded": 1,
+        "fail": 1
+      }
+    },
+    "middle": {
+      "case_names": [
+        "fake_deep_grouped_work_table_delivery",
+        "skill_pick_phone_generic"
+      ],
+      "records": 2,
+      "statuses": {
+        "degraded": 1,
+        "pass": 1
+      }
+    },
+    "middle_to_end": {
+      "case_names": [
+        "fake_deep_grouped_work_table_delivery"
+      ],
+      "records": 2,
+      "statuses": {
+        "fail": 2
+      }
+    },
+    "unknown": {
+      "case_names": [
+        "fake_deep_iiia_kitchen_delivery"
+      ],
+      "records": 2,
+      "statuses": {
+        "degraded": 2
+      }
+    }
+  }
+}
