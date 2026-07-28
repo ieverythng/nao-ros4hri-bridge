@@ -53,3 +53,7 @@ src/emorobcare_cv_msgs/
 /src/my_game_interface
 ref_src/
 /src/Neural-Wokbench
+
+# Local runtime state and review scratch space
+/status/
+/tmp/
