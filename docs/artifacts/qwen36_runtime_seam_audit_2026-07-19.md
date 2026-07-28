@@ -1,5 +1,7 @@
 # Qwen3.6 Runtime Seam Audit, 19 July 2026
 
+> Status update: this model-specific audit is superseded for current stack qualification by `runtime_v34_model_agnostic_review/REPORT.md`. Qwen3.6 remains the second-ranked vLLM reserve because only its startup window was proven. Qwen3-VL was the model continuously available for the complete v33/v34 live campaign.
+
 ## Target contract
 
 - Problem: qualify `QuantTrio/Qwen3.6-35B-A3B-AWQ` as the dialogue, intent, and planner model, then identify stable generation and timeout parameters using a complete scored runtime suite.
