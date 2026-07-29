@@ -1,0 +1,26 @@
+{
+  "choice": {
+    "backend": "ollama",
+    "model": "gemma4:31b-cloud",
+    "vllm_base_url": "",
+    "ollama_host": "127.0.0.1:11434"
+  },
+  "chatbot_server_url": "http://127.0.0.1:11434/api/chat",
+  "launch_args": [
+    "chatbot_model:=gemma4:31b-cloud",
+    "chatbot_intent_model:=gemma4:31b-cloud",
+    "chatbot_server_url:=http://127.0.0.1:11434/api/chat",
+    "chatbot_think:=false",
+    "planner_llm_model:=gemma4:31b-cloud",
+    "planner_llm_think:=false",
+    "start_managed_ollama:=false",
+    "planner_llm_provider:=ollama",
+    "planner_llm_base_url:=http://127.0.0.1:11434"
+  ],
+  "diagnostics": [
+    "vLLM unavailable: http://10.7.138.215:8004/v1/models: <urlopen error [Errno 113] No route to host>",
+    "Ollama cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit rejected: HTTP 404 from http://127.0.0.1:11434/api/chat: {\"error\":\"model 'cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit' not found\"}"
+  ],
+  "fallback_used": true,
+  "requested_model": "cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit"
+}

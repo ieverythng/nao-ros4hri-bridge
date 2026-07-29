@@ -1,0 +1,1 @@
+{"name":"/nao_ros2","image_id":"sha256:bb82c158092a69870dae48272b3b20fd8cd4ecfe97a0e61a2253a2cca00c663e","configured_image":"iiia:nao-runtime-v34-final-frozen-review","path":"/ros_entrypoint.sh","args":["bash"],"network_mode":"host","started_at":"2026-07-28T09:20:08.1654418Z","status":"running"}

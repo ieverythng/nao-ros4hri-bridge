@@ -1,0 +1,322 @@
+{
+  "attribution_counts": {
+    "harness_observability": 2,
+    "model_or_backend_variance": 19,
+    "stack_coherent_success": 86,
+    "stack_contract_or_runtime": 1
+  },
+  "model_counts": {
+    "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ": 98,
+    "cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit": 6,
+    "gemma4:31b-cloud": 2,
+    "gemma4:cloud": 1,
+    "nemotron-3-super:cloud": 1
+  },
+  "record_count": 108,
+  "run_file_count": 33,
+  "run_inventory": [
+    {
+      "backend": "openai_compatible",
+      "case_count": 0,
+      "case_set": "",
+      "model": "",
+      "run_group": "ablations",
+      "run_status": "",
+      "source_file": "ablations/nao_qwen36_baseline_snapshot.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 0,
+      "case_set": "",
+      "model": "",
+      "run_group": "ablations",
+      "run_status": "",
+      "source_file": "ablations/nao_qwenvl_a0_post_snapshot.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 6,
+      "case_set": "smoke",
+      "model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+      "run_group": "ablations",
+      "run_status": "completed",
+      "source_file": "ablations/nao_qwenvl_a0_smoke.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 0,
+      "case_set": "",
+      "model": "",
+      "run_group": "ablations",
+      "run_status": "",
+      "source_file": "ablations/nao_qwenvl_a0_startup_snapshot.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 1,
+      "case_set": "capability_extreme",
+      "model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+      "run_group": "ablations",
+      "run_status": "completed",
+      "source_file": "ablations/nao_qwenvl_a0max_capability.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 6,
+      "case_set": "smoke",
+      "model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+      "run_group": "ablations",
+      "run_status": "completed",
+      "source_file": "ablations/nao_qwenvl_a1r_smoke.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 0,
+      "case_set": "",
+      "model": "",
+      "run_group": "ablations",
+      "run_status": "",
+      "source_file": "ablations/nao_qwenvl_a1r_startup_snapshot.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 6,
+      "case_set": "smoke",
+      "model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+      "run_group": "ablations",
+      "run_status": "completed",
+      "source_file": "ablations/nao_qwenvl_a2_smoke.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 0,
+      "case_set": "",
+      "model": "",
+      "run_group": "ablations",
+      "run_status": "",
+      "source_file": "ablations/nao_qwenvl_a2_startup_snapshot.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 1,
+      "case_set": "capability_extreme",
+      "model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+      "run_group": "ablations",
+      "run_status": "completed",
+      "source_file": "ablations/nao_qwenvl_a3_capability.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 0,
+      "case_set": "",
+      "model": "",
+      "run_group": "ablations",
+      "run_status": "",
+      "source_file": "ablations/nao_qwenvl_a3_startup_snapshot.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 6,
+      "case_set": "smoke",
+      "model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+      "run_group": "ablations",
+      "run_status": "completed",
+      "source_file": "ablations/nao_qwenvl_a4_smoke.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 0,
+      "case_set": "",
+      "model": "",
+      "run_group": "ablations",
+      "run_status": "",
+      "source_file": "ablations/nao_qwenvl_a4_startup_snapshot.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 0,
+      "case_set": "",
+      "model": "",
+      "run_group": "current_ollama_switch",
+      "run_status": "",
+      "source_file": "current_ollama_switch/nao_model_resolution_override.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 1,
+      "case_set": "smoke",
+      "model": "gemma4:31b-cloud",
+      "run_group": "current_ollama_switch",
+      "run_status": "completed",
+      "source_file": "current_ollama_switch/nao_ollama_gemma_smoke.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 7,
+      "case_set": "capability_extreme",
+      "model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+      "run_group": "current_v34",
+      "run_status": "completed",
+      "source_file": "current_v34/capability_extreme_v34.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 11,
+      "case_set": "environment",
+      "model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+      "run_group": "current_v34",
+      "run_status": "completed",
+      "source_file": "current_v34/environment_v33.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 1,
+      "case_set": "fake_deep",
+      "model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+      "run_group": "current_v34",
+      "run_status": "completed",
+      "source_file": "current_v34/fail_once_navigation_v34.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 9,
+      "case_set": "fake_deep",
+      "model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+      "run_group": "current_v34",
+      "run_status": "completed",
+      "source_file": "current_v34/fake_deep_all_success_v34.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 0,
+      "case_set": "",
+      "model": "",
+      "run_group": "current_v34",
+      "run_status": "",
+      "source_file": "current_v34/final_snapshot.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 0,
+      "case_set": "",
+      "model": "",
+      "run_group": "current_v34",
+      "run_status": "",
+      "source_file": "current_v34/final_snapshot_after_robustness.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 7,
+      "case_set": "kb_stress",
+      "model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+      "run_group": "current_v34",
+      "run_status": "completed",
+      "source_file": "current_v34/kb_stress_v33.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 21,
+      "case_set": "main",
+      "model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+      "run_group": "current_v34",
+      "run_status": "completed",
+      "source_file": "current_v34/main_v33.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 1,
+      "case_set": "robustness",
+      "model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+      "run_group": "current_v34",
+      "run_status": "completed",
+      "source_file": "current_v34/missing_recipient_v34.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 5,
+      "case_set": "robustness",
+      "model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+      "run_group": "current_v34",
+      "run_status": "completed",
+      "source_file": "current_v34/robustness_v34_r1.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 5,
+      "case_set": "robustness",
+      "model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+      "run_group": "current_v34",
+      "run_status": "completed",
+      "source_file": "current_v34/robustness_v34_r2.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 5,
+      "case_set": "robustness",
+      "model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+      "run_group": "current_v34",
+      "run_status": "completed",
+      "source_file": "current_v34/robustness_v34_r3.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 1,
+      "case_set": "capability_extreme",
+      "model": "gemma4:cloud",
+      "run_group": "historical_ollama",
+      "run_status": "completed",
+      "source_file": "historical_ollama/extreme_all_objects_ollama_gemma4.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 1,
+      "case_set": "capability_extreme",
+      "model": "gemma4:31b-cloud",
+      "run_group": "historical_ollama",
+      "run_status": "completed",
+      "source_file": "historical_ollama/extreme_all_objects_ollama_gemma4_31b.json"
+    },
+    {
+      "backend": "ollama",
+      "case_count": 1,
+      "case_set": "capability_extreme",
+      "model": "nemotron-3-super:cloud",
+      "run_group": "historical_ollama",
+      "run_status": "completed",
+      "source_file": "historical_ollama/extreme_all_objects_ollama_nemotron_super.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 1,
+      "case_set": "capability_extreme",
+      "model": "cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit",
+      "run_group": "historical_vllm",
+      "run_status": "completed",
+      "source_file": "historical_vllm/extreme_all_objects_v29_vllm_qwen35.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 1,
+      "case_set": "capability_extreme",
+      "model": "cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit",
+      "run_group": "historical_vllm",
+      "run_status": "completed",
+      "source_file": "historical_vllm/extreme_all_objects_v29_vllm_qwen35_budget2048.json"
+    },
+    {
+      "backend": "openai_compatible",
+      "case_count": 4,
+      "case_set": "route_ack",
+      "model": "cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit",
+      "run_group": "historical_vllm",
+      "run_status": "completed",
+      "source_file": "historical_vllm/route_ack_v29_vllm_qwen35.json"
+    }
+  ],
+  "status_counts": {
+    "degraded": 1,
+    "fail": 19,
+    "not_scored": 2,
+    "pass": 86
+  }
+}

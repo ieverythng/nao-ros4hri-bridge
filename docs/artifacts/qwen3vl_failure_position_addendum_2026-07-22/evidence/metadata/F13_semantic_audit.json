@@ -1,0 +1,16 @@
+{
+  "evidence_date": "2026-07-13",
+  "main_revision": "540dfd5",
+  "main_worktree_state": "dirty",
+  "nested_chatbot_revision": "96ecc34",
+  "nested_chatbot_worktree_state": "dirty",
+  "runtime_image": "iiia:nao",
+  "runtime_image_id": "sha256:1a37fc2936af2e0d2b289c5698f780f7d01fe8ad6de1f977621db6a4f045e7e4",
+  "chatbot_model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+  "planner_model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+  "turn_pipeline_mode": "response_first",
+  "grounded_context_digest_enabled": false,
+  "detector_scored": false,
+  "provenance_grade": "qualified",
+  "provenance_note": "The source and runtime imports were compared, but the mutable image tag and dirty worktrees prevent final-run status."
+}

@@ -34,6 +34,35 @@ def test_parse_kb_query_rows_handles_empty_result():
     assert module.parse_kb_query_rows(output) == []
 
 
+def test_structured_trace_preflight_rejects_stale_files_without_writer(monkeypatch):
+    module = _load_questionnaire_module()
+    monkeypatch.setattr(
+        module,
+        "run",
+        lambda *_args, **_kwargs: "TRACE_NODE_COUNT=0\nTRACE_FILE_COUNT=2\n",
+    )
+
+    result = module.collect_structured_trace_events("nao_ros2", 0.0)
+
+    assert result["available"] is False
+    assert result["file_count"] == 2
+    assert result["writer_node_count"] == 0
+
+
+def test_structured_trace_preflight_accepts_live_writer_and_trace_file(monkeypatch):
+    module = _load_questionnaire_module()
+    monkeypatch.setattr(
+        module,
+        "run",
+        lambda *_args, **_kwargs: "TRACE_NODE_COUNT=1\nTRACE_FILE_COUNT=1\n",
+    )
+
+    result = module.collect_structured_trace_events("nao_ros2", 0.0)
+
+    assert result["available"] is True
+    assert result["writer_node_count"] == 1
+
+
 def test_fixture_type_readiness_requires_declared_rdf_types():
     module = _load_questionnaire_module()
     injection = module.KbInjection(
@@ -109,8 +138,10 @@ def test_absence_guard_allows_clean_fixture(monkeypatch):
 
 def test_questionnaire_metadata_records_generation_and_timeout_configuration(monkeypatch):
     module = _load_questionnaire_module()
+    calls = []
 
-    def fake_get_ros_param(_container, node_name, param_name):
+    def fake_get_ros_params(_container, node_name, param_names):
+        calls.append((node_name, tuple(param_names)))
         values = {
             ("/chatbot_llm", "turn_pipeline_mode"): "response_first",
             ("/chatbot_llm", "grounded_context_digest_enabled"): False,
@@ -140,9 +171,9 @@ def test_questionnaire_metadata_records_generation_and_timeout_configuration(mon
             ("/planner_llm", "timeout_sec"): 45.0,
             ("/planner_llm", "think"): False,
         }
-        return values[(node_name, param_name)]
+        return {name: values[(node_name, name)] for name in param_names}
 
-    monkeypatch.setattr(module, "get_ros_param", fake_get_ros_param)
+    monkeypatch.setattr(module, "get_ros_params", fake_get_ros_params)
 
     metadata = module.collect_questionnaire_metadata(
         "nao_ros2",
@@ -181,6 +212,34 @@ def test_questionnaire_metadata_records_generation_and_timeout_configuration(mon
         "timeout_sec": 45.0,
         "think": False,
     }
+    assert [node_name for node_name, _ in calls] == ["/chatbot_llm", "/planner_llm"]
+
+
+def test_parse_ros_param_dump_extracts_typed_top_level_parameters():
+    module = _load_questionnaire_module()
+    output = """/chatbot_llm:
+  ros__parameters:
+    knowledge_patterns:
+    - myself sees ?entity
+      && ?entity rdf:type ?type
+    model: QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ
+    temperature: 0.2
+    top_k: 20
+    think: false
+    api_key: ''
+    nested_values:
+    - ignored
+"""
+
+    assert module.parse_ros_param_dump(output, "/chatbot_llm") == {
+        "model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+        "temperature": 0.2,
+        "top_k": 20,
+        "think": False,
+        "api_key": "",
+        "nested_values": "",
+        "knowledge_patterns": "",
+    }
 
 
 def test_get_ros_param_parses_typed_ros_cli_values(monkeypatch):
@@ -208,6 +267,50 @@ def test_voice_speech_topic_uses_integrated_remap_for_shared_speaker():
         module._voice_speech_topic("anonymous_speaker")
         == "/nao_chatbot/humans/voices/anonymous_speaker/speech"
     )
+
+
+def test_smoke_reflective_followup_shares_the_composite_turn_conversation():
+    module = _load_questionnaire_module()
+    cases = {case.name: case for case in module.SMOKE_CASES}
+
+    assert cases["composite_head_wave"].conversation_group == "head_wave_reflection"
+    assert cases["reflective_followup"].conversation_group == "head_wave_reflection"
+    assert cases["reflective_followup"].wait_sec >= 20.0
+    assert cases["reflective_followup"].expected_outcome == "dialogue_only"
+    assert cases["reflective_followup"].expected_speech_terms == ("four",)
+
+
+def test_smoke_dialogue_windows_prevent_late_speech_cross_case_overlap():
+    module = _load_questionnaire_module()
+    cases = {case.name: case for case in module.SMOKE_CASES}
+
+    for case_name in (
+        "simple_dialogue_hey",
+        "kb_visible_now",
+        "kb_injected_object_name",
+        "reflective_followup",
+    ):
+        assert cases[case_name].wait_sec >= 30.0
+
+
+def test_speech_dialogue_categories_receive_global_observation_floor():
+    module = _load_questionnaire_module()
+    short_dialogue = module.ProbeCase(
+        "short",
+        "kb_query_dialogue",
+        "What can you see?",
+        8.0,
+    )
+    long_execution = module.ProbeCase(
+        "long",
+        "simple_skill_execution",
+        "Wave.",
+        90.0,
+    )
+
+    assert module.effective_case_wait_sec(short_dialogue, "speech") == 30.0
+    assert module.effective_case_wait_sec(short_dialogue, "chatbot_service") == 8.0
+    assert module.effective_case_wait_sec(long_execution, "speech") == 90.0
     assert (
         module._voice_speech_topic("fake_deep_lab_sections_1")
         == "/humans/voices/fake_deep_lab_sections_1/speech"
@@ -652,6 +755,7 @@ def test_complete_context_execution_fails_on_clarification():
         "terminal_observed": True,
         "speech_observed": True,
         "clarification_observed": True,
+        "clarification_speech_observed": True,
         "fallback_markers": {"total": 0},
     }
 
@@ -684,6 +788,49 @@ def test_missing_recipient_passes_only_with_clarification_without_execution():
     assert result["status"] == "pass"
 
 
+def test_planner_clarification_requires_correlated_clarification_speech():
+    module = _load_questionnaire_module()
+    case = module.ProbeCase(
+        "missing_recipient",
+        "robustness",
+        "Bring every object to MORGAN.",
+        expected_outcome="clarification_expected",
+    )
+    observations = {
+        "turn_injected": True,
+        "planner_request_observed": True,
+        "execution_feedback_observed": False,
+        "terminal_observed": True,
+        "speech_observed": True,
+        "clarification_observed": True,
+        "clarification_speech_observed": False,
+        "planner_dialogue_acts": ["ask_clarification"],
+        "fallback_markers": {"total": 0},
+    }
+
+    result = module.assess_case(case, observations=observations, stale_world_guard=None)
+
+    assert result["status"] == "fail"
+    assert "correlated speech" in " ".join(result["reasons"])
+
+
+def test_planner_clarification_waits_for_post_act_clarification_speech():
+    module = _load_questionnaire_module()
+    observations = {
+        "terminal_observed": True,
+        "speech_observed": True,
+        "planner_dialogue_acts": ["ask_clarification"],
+        "post_terminal_speech_observed": False,
+        "clarification_speech_observed": False,
+    }
+
+    assert not module.case_wait_complete(observations, "none")
+
+    observations["post_terminal_speech_observed"] = True
+    observations["clarification_speech_observed"] = True
+    assert module.case_wait_complete(observations, "none")
+
+
 def test_missing_person_wording_counts_as_clarification():
     module = _load_questionnaire_module()
 
@@ -691,6 +838,12 @@ def test_missing_person_wording_counts_as_clarification():
         "I cannot confirm that person in the current grounded context. "
         "Which person should I use for the task?"
     )
+
+
+def test_capitalized_clarification_question_counts_as_clarification():
+    module = _load_questionnaire_module()
+
+    assert module.clarification_observed("Which person should I use for the task?")
 
 
 def test_execution_help_after_evidenced_failure_is_not_context_clarification():

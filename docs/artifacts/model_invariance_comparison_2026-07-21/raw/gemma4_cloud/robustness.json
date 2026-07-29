@@ -1,0 +1,1035 @@
+{
+  "case_set": "robustness",
+  "cases": [
+    {
+      "case_assessment": {
+        "all_required_context": true,
+        "expected_outcome": "execute_no_clarification",
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass"
+      },
+      "category": "robust_group_selection",
+      "configured_wait_sec": 180.0,
+      "injection_scope": "full_ros4hri_dialogue_ingress",
+      "log_excerpt": "1784607497.6748915 [start_manager-27] \u001b[0m[INFO] [1784607497.674511479] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_robust_group_delivery\": \"Take everything resting on the work table over to ALEX. Once every item has reached them, summarize the whole delivery.\" (locale=en_US, confidence=1.00)\u001b[0m\n1784607497.6781573 [start_manager-27] \u001b[0m[INFO] [1784607497.677929442] [dialogue_manager]: [CHATBOT] prepare_dialogue: id=a9316994-9c9f-48e4-8c43-37c3f7b53dda role='__default__'\u001b[0m\n1784607497.6815977 [start_manager-27] \u001b[0m[INFO] [1784607497.681306888] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue a9316994-9c9f-48e4-8c43-37c3f7b53dda\u001b[0m\n1784607497.6834323 [start_manager-27] \u001b[0m[INFO] [1784607497.683254171] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=a9316994-9c9f-48e4-8c43-37c3f7b53dda role='__default__' history_len=1 last='codex_robust_group_delivery':\"Take everything resting on the work table over to ALEX. Once every item has reac\"\u001b[0m\n1784607497.6958003 [start_node-26] \u001b[0m[INFO] [1784607497.695548136] [chatbot_llm]: [CHATBOT] dialogue=a9316994 user=codex_robust_group_delivery turn=__default__:a9316994:1 input=Take everything resting on the work table over to ALEX. Once every it...\u001b[0m\n1784607499.3279243 [start_node-26] \u001b[0m[INFO] [1784607499.327745248] [chatbot_llm]: [turn:__default__:a9316994:1] GROUNDED_CONTEXT | Grounded context JSON:\n1784607502.2766678 [start_node-26] \u001b[33m[WARN] [1784607502.276291550] [chatbot_llm]: Response JSON did not include a safe verbal acknowledgement\u001b[0m\n1784607505.2379193 [start_node-26] \u001b[0m[INFO] [1784607505.237561583] [chatbot_llm]: [turn:__default__:a9316994:1] ROUTE_RESOLVED | route=execution intent=bring_object source=llm_response_route_repair+llm_intent confidence=0.98\u001b[0m\n1784607505.2425919 [start_node-26] \u001b[0m[INFO] [1784607505.242359614] [chatbot_llm]: [turn:__default__:a9316994:1] ROUTE_INTENT_HANDOFF | route=execution intent=bring_object intent_source=llm_response_route_repair+llm_intent route_repaired=true normalized_intents=[\"bring_object\",\"report_result\"] goal_id=goal_default___a9316994_1 dialogue_turn_id=__default__:a9316994:1\u001b[0m\n1784607505.2432439 [start_node-26] \u001b[0m[INFO] [1784607505.243068785] [chatbot_llm]: [turn:__default__:a9316994:1] PLANNER_REQUEST | published planner request on /nao_orchestrator/planner_request goal_id=goal_default___a9316994_1 kind=new_goal route=execution intent=bring_object intent_source=llm_response_route_repair+llm_intent route_repaired=true normalized_intents=[\"bring_object\",\"report_result\"] goal_id=goal_default___a9316994_1 dialogue_turn_id=__default__:a9316994:1\u001b[0m\n1784607505.2656524 [start_manager-27] \u001b[0m[INFO] [1784607505.247719460] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=a9316994-9c9f-48e4-8c43-37c3f7b53dda: \"Okay, I will try that now.\" terminal=False\u001b[0m\n1784607505.2781804 [start_skill-34] \u001b[0m[INFO] [1784607505.257730752] [nao_say_skill]: [turn:codex_robust_group_delivery] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=26\u001b[0m\n1784607512.1158328 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:18:32,115] Warning: add is deprecated. Performing update instead.\u001b[0m\n1784607514.8519578 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:18:34,851] Warning: add is deprecated. Performing update instead.\u001b[0m\n1784607517.4956708 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:18:37,495] Warning: add is deprecated. Performing update instead.\u001b[0m\n1784607518.1488590 [start_node-26] \u001b[0m[INFO] [1784607518.145718548] [chatbot_llm]: [CHATBOT] dialogue=00000000 user=__system__ turn=__default__:00000000:14 input={\"execution_report\":{\"dialogue_context\":[\"user:Take everything restin...\u001b[0m\n1784607519.9136763 [start_node-26] \u001b[0m[INFO] [1784607519.913303203] [chatbot_llm]: [turn:__default__:00000000:14] GROUNDED_CONTEXT | Grounded context JSON:\n1784607521.1733594 [run_app-32] \u001b[0m[INFO] [1784607521.164271088] [nao_orchestrator]: Resolved report_result text via chatbot\u001b[0m\n1784607521.1805344 [start_skill-34] \u001b[0m[INFO] [1784607521.179867409] [nao_say_skill]: [turn:unknown] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=131\u001b[0m\n[INFO] [1784607497.695548136] [chatbot_llm]: [CHATBOT] dialogue=a9316994 user=codex_robust_group_delivery turn=__default__:a9316994:1 input=Take everything resting on the work table over to ALEX. Once every it...\n[INFO] [1784607499.327745248] [chatbot_llm]: [turn:__default__:a9316994:1] GROUNDED_CONTEXT | Grounded context JSON:\n[WARN] [1784607502.276291550] [chatbot_llm]: Response JSON did not include a safe verbal acknowledgement\n[INFO] [1784607505.237561583] [chatbot_llm]: [turn:__default__:a9316994:1] ROUTE_RESOLVED | route=execution intent=bring_object source=llm_response_route_repair+llm_intent confidence=0.98\n[INFO] [1784607505.242359614] [chatbot_llm]: [turn:__default__:a9316994:1] ROUTE_INTENT_HANDOFF | route=execution intent=bring_object intent_source=llm_response_route_repair+llm_intent route_repaired=true normalized_intents=[\"bring_object\",\"report_result\"] goal_id=goal_default___a9316994_1 dialogue_turn_id=__default__:a9316994:1\n[INFO] [1784607505.243068785] [chatbot_llm]: [turn:__default__:a9316994:1] PLANNER_REQUEST | published planner request on /nao_orchestrator/planner_request goal_id=goal_default___a9316994_1 kind=new_goal route=execution intent=bring_object intent_source=llm_response_route_repair+llm_intent route_repaired=true normalized_intents=[\"bring_object\",\"report_result\"] goal_id=goal_default___a9316994_1 dialogue_turn_id=__default__:a9316994:1\n[INFO] [1784607518.145718548] [chatbot_llm]: [CHATBOT] dialogue=00000000 user=__system__ turn=__default__:00000000:14 input={\"execution_report\":{\"dialogue_context\":[\"user:Take everything restin...\n[INFO] [1784607519.913303203] [chatbot_llm]: [turn:__default__:00000000:14] GROUNDED_CONTEXT | Grounded context JSON:\n[INFO] [1784607497.674511479] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_robust_group_delivery\": \"Take everything resting on the work table over to ALEX. Once every item has reached them, summarize the whole delivery.\" (locale=en_US, confidence=1.00)\n[INFO] [1784607497.677929442] [dialogue_manager]: [CHATBOT] prepare_dialogue: id=a9316994-9c9f-48e4-8c43-37c3f7b53dda role='__default__'\n[INFO] [1784607497.681306888] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue a9316994-9c9f-48e4-8c43-37c3f7b53dda\n[INFO] [1784607497.683254171] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=a9316994-9c9f-48e4-8c43-37c3f7b53dda role='__default__' history_len=1 last='codex_robust_group_delivery':\"Take everything resting on the work table over to ALEX. Once every item has reac\"\n[INFO] [1784607505.247719460] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=a9316994-9c9f-48e4-8c43-37c3f7b53dda: \"Okay, I will try that now.\" terminal=False\n[INFO] [1784607521.164271088] [nao_orchestrator]: Resolved report_result text via chatbot\n[INFO] [1784607505.257730752] [nao_say_skill]: [turn:codex_robust_group_delivery] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=26\n[INFO] [1784607521.179867409] [nao_say_skill]: [turn:unknown] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=131\n[INFO] [1784607505.247503354] [planner_llm]: planner_llm request received | goal_id=goal_default___a9316994_1 request_id=__default__:a9316994:1 kind=new_goal intents=['bring_object', 'report_result'] scene_targets=['work_table', 'codex_lab_alex'] target_selection={'selection_kind': 'location_members', 'operation': 'deliver', 'source_location_id': 'codex_lab_table_section', 'member_ids': ['codex_lab_cup', 'codex_lab_manual', 'codex_lab_phone'], 'recipient_id': 'codex_lab_alex', 'ordering': 'sequential', 'report_policy': 'final'} source=codex_robust_group_delivery\n[INFO] [1784607510.112317678] [planner_llm]: planner_llm published decision | goal_id=goal_default___a9316994_1 plan_id=plan_1784607510110 version=1 mode=plan steps=4 validation=valid\n[INFO] [1784607510.113948247] [planner_llm]: planner_llm feedback received | goal_id=goal_default___a9316994_1 plan_id=plan_1784607510110 version=1 event=plan_accepted status=accepted step=/ retry_budget=1 reason=\n[INFO] [1784607510.115729559] [planner_llm]: planner_llm feedback received | goal_id=goal_default___a9316994_1 plan_id=plan_1784607510110 version=1 event=step_started status=running step=skill/bring_object retry_budget=1 reason=\n[INFO] [1784607512.737361721] [planner_llm]: planner_llm feedback received | goal_id=goal_default___a9316994_1 plan_id=plan_1784607510110 version=1 event=step_succeeded status=succeeded step=skill/bring_object retry_budget=1 reason=\n[INFO] [1784607512.738377537] [planner_llm]: planner_llm feedback received | goal_id=goal_default___a9316994_1 plan_id=plan_1784607510110 version=1 event=step_started status=running step=skill/bring_object retry_budget=1 reason=\n[INFO] [1784607515.369453463] [planner_llm]: planner_llm feedback received | goal_id=goal_default___a9316994_1 plan_id=plan_1784607510110 version=1 event=step_succeeded status=succeeded step=skill/bring_object retry_budget=1 reason=\n[INFO] [1784607515.370503844] [planner_llm]: planner_llm feedback received | goal_id=goal_default___a9316994_1 plan_id=plan_1784607510110 version=1 event=step_started status=running step=skill/bring_object retry_budget=1 reason=\n[INFO] [1784607518.143540131] [planner_llm]: planner_llm feedback received | goal_id=goal_default___a9316994_1 plan_id=plan_1784607510110 version=1 event=step_succeeded status=succeeded step=skill/bring_object retry_budget=1 reason=\n[INFO] [1784607521.168537532] [planner_llm]: planner_llm feedback received | goal_id=goal_default___a9316994_1 plan_id=plan_1784607510110 version=1 event=step_started status=running step=skill/report_result retry_budget=1 reason=\n[INFO] [1784607521.234186760] [planner_llm]: planner_llm feedback received | goal_id=goal_default___a9316994_1 plan_id=plan_1784607510110 version=1 event=step_succeeded status=succeeded step=skill/report_result retry_budget=1 reason=\n[INFO] [1784607521.235726208] [planner_llm]: planner_llm feedback received | goal_id=goal_default___a9316994_1 plan_id=plan_1784607510110 version=1 event=plan_completed status=completed step=/ retry_budget=1 reason=\n[INFO] [1784607505.252608062] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"Okay, I will try that now.\"\n[INFO] [1784607521.174583525] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"I've finished delivering everything from the work table to Alex. I handed over the red cup, the green manual, and the silver phone.\"\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n  summary: /rosout {\"name\":\"chatbot_llm\",\"msg\":\"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\"level\":30,\"file\":\"/home/ubuntu/ws/build/chatbot_llm/chatbot_llm/node_impl.py\",\"function\":\"_trace\",\"line\":624}\n      \"msg\": \"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n[INFO] [1784607510.115160381] [interaction_trace_viewer]: TRACE_EVENT [1784607510.114] goal_default___a9316994_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___a9316994_1,plan_id=plan_1784607510110,event_type=plan_accepted\n      \"source\": \"planner_llm\",\n[INFO] [1784607510.116816979] [interaction_trace_viewer]: TRACE_EVENT [1784607510.116] goal_default___a9316994_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___a9316994_1,plan_id=plan_1784607510110,event_type=step_started,step=bring_object\n      \"source\": \"planner_llm\",\n[INFO] [1784607512.737890614] [interaction_trace_viewer]: TRACE_EVENT [1784607512.737] goal_default___a9316994_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___a9316994_1,plan_id=plan_1784607510110,event_type=step_succeeded,step=bring_object\n[INFO] [1784607512.739731277] [interaction_trace_viewer]: TRACE_EVENT [1784607512.739] goal_default___a9316994_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___a9316994_1,plan_id=plan_1784607510110,event_type=step_started,step=bring_object\n      \"source\": \"planner_llm\",\n[INFO] [1784607515.370202468] [interaction_trace_viewer]: TRACE_EVENT [1784607515.369] goal_default___a9316994_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___a9316994_1,plan_id=plan_1784607510110,event_type=step_succeeded,step=bring_object\n[INFO] [1784607515.372307337] [interaction_trace_viewer]: TRACE_EVENT [1784607515.371] goal_default___a9316994_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___a9316994_1,plan_id=plan_1784607510110,event_type=step_started,step=bring_object\n      \"source\": \"planner_llm\",\n[INFO] [1784607518.144252528] [interaction_trace_viewer]: TRACE_EVENT [1784607518.143] goal_default___a9316994_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___a9316994_1,plan_id=plan_1784607510110,event_type=step_succeeded,step=bring_object\n[INFO] [1784607521.168459896] [interaction_trace_viewer]: TRACE_EVENT [1784607521.167] goal_default___a9316994_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___a9316994_1,plan_id=plan_1784607510110,event_type=step_started,step=report_result\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n[INFO] [1784607521.233965895] [interaction_trace_viewer]: TRACE_EVENT [1784607521.233] goal_default___a9316994_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___a9316994_1,plan_id=plan_1784607510110,event_type=step_succeeded,step=report_result\n        \"skill\": \"report_result\",\n[INFO] [1784607521.235587868] [interaction_trace_viewer]: TRACE_EVENT [1784607521.235] goal_default___a9316994_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___a9316994_1,plan_id=plan_1784607510110,event_type=plan_completed\n        \"skill\": \"report_result\",",
+      "mode": "speech",
+      "name": "robust_paraphrased_group_delivery",
+      "phase_observations": {
+        "clarification_observed": false,
+        "clarification_speech_observed": false,
+        "correlation_status": "complete",
+        "evidence_consistent": true,
+        "evidence_inconsistencies": [],
+        "evidence_source": "interaction_trace_jsonl",
+        "executed_skill_sequence": [
+          "bring_object",
+          "bring_object",
+          "bring_object",
+          "report_result"
+        ],
+        "executed_skills": [
+          "bring_object",
+          "report_result"
+        ],
+        "execution_feedback_observed": true,
+        "failure_injection": {
+          "mode_sources": [
+            "scenario_default"
+          ],
+          "observed": false,
+          "result_modes": [
+            "success"
+          ]
+        },
+        "failure_observed": false,
+        "fallback_markers": {
+          "complete_context_clarification": 0,
+          "duplicate_active_goal": 0,
+          "kb_service_timeout": 0,
+          "language_model_unreachable_speech": 0,
+          "llm_disabled": 0,
+          "llm_response_failed": 0,
+          "planner_gate_rejected": 0,
+          "planner_invalid_json": 0,
+          "planner_invalid_plan": 0,
+          "planner_target_selection_recovery": 0,
+          "report_result_fallback": 0,
+          "route_repair": 0,
+          "rules_intent_fallback": 0,
+          "rules_response_fallback": 0,
+          "total": 0
+        },
+        "grounded_entity_ids": [
+          "codex_lab_alex",
+          "codex_lab_computer",
+          "codex_lab_cup",
+          "codex_lab_desk",
+          "codex_lab_handoff_area",
+          "codex_lab_keyboard",
+          "codex_lab_manual",
+          "codex_lab_phone",
+          "codex_lab_room",
+          "codex_lab_table_section"
+        ],
+        "lineage": {
+          "dialogue_turn_id": "__default__:a9316994:1",
+          "goal_id": "goal_default___a9316994_1",
+          "plan_ids": [
+            "plan_1784607510110"
+          ],
+          "plan_versions": [
+            1
+          ]
+        },
+        "observability_note": "semantic scoring uses structured trace lineage",
+        "planner_dialogue_acts": [],
+        "planner_request_observed": true,
+        "post_failure_speech_observed": false,
+        "post_terminal_speech_observed": false,
+        "replan_observed": false,
+        "route_intent_gap_count": 0,
+        "route_intent_handoff_observed": true,
+        "route_observed": true,
+        "speech_observed": true,
+        "spoken_texts": [
+          "Okay, I will try that now.",
+          "I've finished delivering everything from the work table to Alex. I handed over the red cup, the green manual, and the silver phone."
+        ],
+        "structured_event_count": 25,
+        "target_selection_observed": true,
+        "target_selections": [
+          {
+            "member_ids": [
+              "codex_lab_cup",
+              "codex_lab_manual",
+              "codex_lab_phone"
+            ],
+            "operation": "deliver",
+            "ordering": "sequential",
+            "recipient_id": "codex_lab_alex",
+            "report_policy": "final",
+            "selection_kind": "location_members",
+            "source_location_id": "codex_lab_table_section"
+          }
+        ],
+        "terminal_observed": true,
+        "turn_injected": true
+      },
+      "setup_result": {
+        "environment": {
+          "lab_sections": {
+            "description": "Lab scene with robot station, work table, desk area, computer, cup, book, phone, and ALEX in a handoff area. Use for relation-heavy KB queries and object-to-person delivery.",
+            "injection": {
+              "fixture_readiness": {
+                "missing_type_bindings": [],
+                "poll_timeout_sec": 12.0,
+                "ready": true,
+                "required_type_count": 11
+              },
+              "object_id": "lab_sections",
+              "query_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Query_Request(patterns=['codex_lab_table_section rdf:type ?object'], vars=['?object'], models=['default'])\n\nresponse:\nkb_msgs.srv.Query_Response(success=True, json='[{\"object\": \"Table\"}, {\"object\": \"cyc:SpatialThing-Localized\"}, {\"object\": \"owl:Thing\"}, {\"object\": \"cyc:SpatialThing\"}, {\"object\": \"Location\"}, {\"object\": \"cyc:EnduringThing-Localized\"}]', error_msg='')",
+              "retract_output": "",
+              "revise_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Revise_Request(method='update', statements=['codex_lab_room rdf:type Room', 'codex_lab_room dbp:name lab', 'codex_lab_room dbp:frameId map', 'codex_lab_room dbp:poseSource semantic_fixture', 'codex_lab_room dbp:poseX 1.00', 'codex_lab_room dbp:poseY 0.20', 'codex_lab_station rdf:type Place', 'codex_lab_station dbp:name robot_station', 'codex_lab_station dbp:frameId map', 'codex_lab_station dbp:poseSource semantic_fixture', 'codex_lab_station dbp:poseX 0.00', 'codex_lab_station dbp:poseY 0.00', 'myself oro:isAt codex_lab_station', 'nao_robot oro:isAt codex_lab_station', 'codex_lab_desk rdf:type Desk', 'codex_lab_desk dbp:name desk', 'codex_lab_desk oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_desk', 'myself sees codex_lab_desk', 'codex_lab_table_section rdf:type Table', 'codex_lab_table_section dbp:name work_table', 'codex_lab_table_section oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_table_section', 'myself sees codex_lab_table_section', 'codex_lab_handoff_area rdf:type Place', 'codex_lab_handoff_area dbp:name handoff_area', 'codex_lab_handoff_area oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_handoff_area', 'codex_lab_computer rdf:type Computer', 'codex_lab_computer dbp:name LAB_COMPUTER', 'codex_lab_computer dbp:color black', 'codex_lab_computer oro:isOn codex_lab_desk', 'myself sees codex_lab_computer', 'codex_lab_keyboard rdf:type Keyboard', 'codex_lab_keyboard dbp:name LAB_KEYBOARD', 'codex_lab_keyboard dbp:color white', 'codex_lab_keyboard oro:isOn codex_lab_desk', 'myself sees codex_lab_keyboard', 'codex_lab_cup rdf:type Cup', 'codex_lab_cup dbp:name LAB_CUP', 'codex_lab_cup dbp:color red', 'codex_lab_cup oro:isOn codex_lab_table_section', 'myself sees codex_lab_cup', 'myself canReach codex_lab_cup', 'codex_lab_manual rdf:type Book', 'codex_lab_manual dbp:name LAB_MANUAL', 'codex_lab_manual dbp:color green', 'codex_lab_manual oro:isOn codex_lab_table_section', 'myself sees codex_lab_manual', 'myself canReach codex_lab_manual', 'codex_lab_phone rdf:type CellularTelephone', 'codex_lab_phone dbp:name LAB_PHONE', 'codex_lab_phone dbp:color silver', 'codex_lab_phone oro:isOn codex_lab_table_section', 'myself sees codex_lab_phone', 'myself canReach codex_lab_phone', 'codex_lab_alex rdf:type Human', 'codex_lab_alex dbp:name ALEX', 'codex_lab_alex dbp:frameId codex_lab_alex', 'codex_lab_alex dbp:poseSource semantic_fixture', 'codex_lab_alex dbp:poseX 0.30', 'codex_lab_alex dbp:poseY -0.25', 'codex_lab_alex oro:isIn codex_lab_handoff_area', 'codex_lab_handoff_area oro:contains codex_lab_alex', 'myself sees codex_lab_alex'], models=['default'], lifespan=builtin_interfaces.msg.Duration(sec=300, nanosec=0))\n\nresponse:\nkb_msgs.srv.Revise_Response(success=True, error_msg='')",
+              "service_probe": "/kb/query [kb_msgs/srv/Query]\n/kb/revise [kb_msgs/srv/Revise]"
+            },
+            "visual_svg_source": "docs/artifacts/preloaded_environments/lab_sections.svg"
+          }
+        }
+      },
+      "stale_world_guard": null,
+      "started_at_unix_sec": 1784607456.5242667,
+      "status": "pass",
+      "structured_trace": {
+        "available": true,
+        "event_count": 25,
+        "file_count": 1
+      },
+      "text": "Take everything resting on the work table over to ALEX. Once every item has reached them, summarize the whole delivery.",
+      "topic_samples": {},
+      "turn_result": "[runtime-review] Speech ingress seam:\n  tracked_topic=/nao_chatbot/humans/voices/tracked\n  tracked_qos=--qos-reliability reliable --qos-durability transient_local\n  speech_topic=/humans/voices/codex_robust_group_delivery/speech\n  speech_qos=--qos-reliability reliable --qos-durability volatile\n  rqt_display_mirror=true\n  rqt_display_topics=/rosout,/dialogue_manager/closed_captions\n  contract=publish tracked voice with TRANSIENT_LOCAL durability and keep the publisher alive until the per-voice LiveSpeech subscription appears.\n  reason=dialogue_manager creates the remapped per-voice rqt-chat subscription only after seeing the tracked voice id.\n  dialogue_manager_lifecycle=active [3]\n[runtime-review] OK: dialogue_manager speech subscription visible before LiveSpeech publish for /humans/voices/codex_robust_group_delivery/speech.\npublisher: beginning loop\npublishing #1: rcl_interfaces.msg.Log(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), level=20, name='runtime_review_rqt_input', msg='[runtime-review INPUT] Take everything resting on the work table over to ALEX. Once every item has reached them, summarize the whole delivery.', file='run_active_questionnaire.py', function='publish_voice_turn', line=0)\n\nWaiting for at least 1 matching subscription(s)...\npublisher: beginning loop\npublishing #1: hri_actions_msgs.msg.ClosedCaption(speaker_id='codex_robust_group_delivery', text='Take everything resting on the work table over to ALEX. Once every item has reached them, summarize the whole delivery.', locale='en_US')\n\nType: hri_msgs/msg/IdsList\n\nPublisher count: 2\n\nNode name: _ros2cli_19738\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.1a.4d.54.12.00.00.00.00.00.00.07.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: rqt_gui_py_node_67\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.43.00.b5.63.00.00.00.00.00.00.13.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.5d.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nType: hri_msgs/msg/LiveSpeech\n\nPublisher count: 0\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/LiveSpeech\nTopic type hash: RIHS01_2cfdf359eed836b1d32ac2d62e1476f2048212e7ed79a17c0a594b04c33f8783\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.78.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nWaiting for at least 1 matching subscription(s)...\npublisher: beginning loop\npublishing #1: hri_msgs.msg.LiveSpeech(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), incremental='', final='Take everything resting on the work table over to ALEX. Once every item has reached them, summarize the whole delivery.', confidence=1.0, locale='en_US')",
+      "turn_started_at_unix_sec": 1784607486.430633,
+      "voice_id": "codex_robust_group_delivery",
+      "wait_sec": 180.0
+    },
+    {
+      "case_assessment": {
+        "all_required_context": true,
+        "expected_outcome": "execute_no_clarification",
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass"
+      },
+      "category": "robust_role_integrity",
+      "configured_wait_sec": 180.0,
+      "injection_scope": "full_ros4hri_dialogue_ingress",
+      "log_excerpt": "1784607563.8227534 [start_manager-27] \u001b[0m[INFO] [1784607563.822454844] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_robust_role_exclusion\": \"Visit each movable item on the table in turn. Do not navigate to the table or to any person, and report each arrival.\" (locale=en_US, confidence=1.00)\u001b[0m\n1784607563.8257515 [start_manager-27] \u001b[0m[INFO] [1784607563.825379842] [dialogue_manager]: [CHATBOT] prepare_dialogue: id=1954d3cd-b1f5-4c74-aa61-74c740968e64 role='__default__'\u001b[0m\n1784607563.8287506 [start_manager-27] \u001b[0m[INFO] [1784607563.828543999] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue 1954d3cd-b1f5-4c74-aa61-74c740968e64\u001b[0m\n1784607563.8302977 [start_manager-27] \u001b[0m[INFO] [1784607563.830091412] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=1954d3cd-b1f5-4c74-aa61-74c740968e64 role='__default__' history_len=1 last='codex_robust_role_exclusion':\"Visit each movable item on the table in turn. Do not navigate to the table or to\"\u001b[0m\n1784607563.8322251 [start_node-26] \u001b[0m[INFO] [1784607563.832014951] [chatbot_llm]: [CHATBOT] dialogue=1954d3cd user=codex_robust_role_exclusion turn=__default__:1954d3cd:1 input=Visit each movable item on the table in turn. Do not navigate to the ...\u001b[0m\n1784607565.1981442 [start_node-26] \u001b[0m[INFO] [1784607565.198006574] [chatbot_llm]: [turn:__default__:1954d3cd:1] GROUNDED_CONTEXT | Grounded context JSON:\n1784607567.2619057 [start_node-26] \u001b[33m[WARN] [1784607567.261290027] [chatbot_llm]: Response JSON did not include a safe verbal acknowledgement\u001b[0m\n1784607576.1338735 [start_node-26] \u001b[0m[INFO] [1784607576.133504599] [chatbot_llm]: [turn:__default__:1954d3cd:1] ROUTE_RESOLVED | route=execution intent=navigate_to source=llm_response_route_repair+llm_intent confidence=0.00\u001b[0m\n1784607576.1370702 [start_node-26] \u001b[0m[INFO] [1784607576.136774384] [chatbot_llm]: [turn:__default__:1954d3cd:1] ROUTE_INTENT_HANDOFF | route=execution intent=navigate_to intent_source=llm_response_route_repair+llm_intent route_repaired=true normalized_intents=[\"navigate_to\",\"report_result\"] goal_id=goal_default___1954d3cd_1 dialogue_turn_id=__default__:1954d3cd:1\u001b[0m\n1784607576.1380751 [start_node-26] \u001b[0m[INFO] [1784607576.137541182] [chatbot_llm]: [turn:__default__:1954d3cd:1] PLANNER_REQUEST | published planner request on /nao_orchestrator/planner_request goal_id=goal_default___1954d3cd_1 kind=new_goal route=execution intent=navigate_to intent_source=llm_response_route_repair+llm_intent route_repaired=true normalized_intents=[\"navigate_to\",\"report_result\"] goal_id=goal_default___1954d3cd_1 dialogue_turn_id=__default__:1954d3cd:1\u001b[0m\n1784607576.1610837 [start_manager-27] \u001b[0m[INFO] [1784607576.141628732] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=1954d3cd-b1f5-4c74-aa61-74c740968e64: \"Okay, I will try that now.\" terminal=False\u001b[0m\n1784607576.1666803 [start_skill-34] \u001b[0m[INFO] [1784607576.152038774] [nao_say_skill]: [turn:codex_robust_role_exclusion] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=26\u001b[0m\n1784607595.9711623 [start_node-26] \u001b[0m[INFO] [1784607595.968811810] [chatbot_llm]: [CHATBOT] dialogue=00000000 user=__system__ turn=__default__:00000000:15 input={\"execution_report\":{\"dialogue_context\":[\"user:Visit each movable ite...\u001b[0m\n1784607597.2970152 [start_node-26] \u001b[0m[INFO] [1784607597.296888799] [chatbot_llm]: [turn:__default__:00000000:15] GROUNDED_CONTEXT | Grounded context JSON:\n1784607598.5555568 [run_app-32] \u001b[0m[INFO] [1784607598.549530082] [nao_orchestrator]: Resolved report_result text via chatbot\u001b[0m\n1784607598.5661614 [start_skill-34] \u001b[0m[INFO] [1784607598.565828032] [nao_say_skill]: [turn:unknown] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=39\u001b[0m\n1784607599.6344233 [start_node-26] \u001b[0m[INFO] [1784607599.632869376] [chatbot_llm]: [CHATBOT] dialogue=00000000 user=__system__ turn=__default__:00000000:16 input={\"execution_report\":{\"dialogue_context\":[\"user:Visit each movable ite...\u001b[0m\n1784607600.9718416 [start_node-26] \u001b[0m[INFO] [1784607600.971673862] [chatbot_llm]: [turn:__default__:00000000:16] GROUNDED_CONTEXT | Grounded context JSON:\n1784607602.0288889 [run_app-32] \u001b[0m[INFO] [1784607602.022860072] [nao_orchestrator]: Resolved report_result text via chatbot\u001b[0m\n1784607602.0435069 [start_skill-34] \u001b[0m[INFO] [1784607602.043099337] [nao_say_skill]: [turn:unknown] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=39\u001b[0m\n1784607603.1039560 [start_node-26] \u001b[0m[INFO] [1784607603.102783764] [chatbot_llm]: [CHATBOT] dialogue=00000000 user=__system__ turn=__default__:00000000:17 input={\"execution_report\":{\"dialogue_context\":[\"user:Visit each movable ite...\u001b[0m\n1784607604.4928253 [start_node-26] \u001b[0m[INFO] [1784607604.492698349] [chatbot_llm]: [turn:__default__:00000000:17] GROUNDED_CONTEXT | Grounded context JSON:\n1784607605.6083550 [run_app-32] \u001b[0m[INFO] [1784607605.600742078] [nao_orchestrator]: Resolved report_result text via chatbot\u001b[0m\n1784607605.6181686 [start_skill-34] \u001b[0m[INFO] [1784607605.617079141] [nao_say_skill]: [turn:unknown] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=41\u001b[0m\n1784607606.6799896 [start_node-26] \u001b[0m[INFO] [1784607606.678376302] [chatbot_llm]: [CHATBOT] dialogue=00000000 user=__system__ turn=__default__:00000000:18 input={\"execution_report\":{\"dialogue_context\":[\"user:Visit each movable ite...\u001b[0m\n1784607608.0296504 [start_node-26] \u001b[0m[INFO] [1784607608.029474714] [chatbot_llm]: [turn:__default__:00000000:18] GROUNDED_CONTEXT | Grounded context JSON:\n1784607610.5222895 [run_app-32] \u001b[0m[INFO] [1784607610.514672228] [nao_orchestrator]: Resolved report_result text via chatbot\u001b[0m\n1784607610.5342345 [start_skill-34] \u001b[0m[INFO] [1784607610.534073601] [nao_say_skill]: [turn:unknown] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=148\u001b[0m\n[INFO] [1784607563.832014951] [chatbot_llm]: [CHATBOT] dialogue=1954d3cd user=codex_robust_role_exclusion turn=__default__:1954d3cd:1 input=Visit each movable item on the table in turn. Do not navigate to the ...\n[INFO] [1784607565.198006574] [chatbot_llm]: [turn:__default__:1954d3cd:1] GROUNDED_CONTEXT | Grounded context JSON:\n[WARN] [1784607567.261290027] [chatbot_llm]: Response JSON did not include a safe verbal acknowledgement\n[INFO] [1784607576.133504599] [chatbot_llm]: [turn:__default__:1954d3cd:1] ROUTE_RESOLVED | route=execution intent=navigate_to source=llm_response_route_repair+llm_intent confidence=0.00\n[INFO] [1784607576.136774384] [chatbot_llm]: [turn:__default__:1954d3cd:1] ROUTE_INTENT_HANDOFF | route=execution intent=navigate_to intent_source=llm_response_route_repair+llm_intent route_repaired=true normalized_intents=[\"navigate_to\",\"report_result\"] goal_id=goal_default___1954d3cd_1 dialogue_turn_id=__default__:1954d3cd:1\n[INFO] [1784607576.137541182] [chatbot_llm]: [turn:__default__:1954d3cd:1] PLANNER_REQUEST | published planner request on /nao_orchestrator/planner_request goal_id=goal_default___1954d3cd_1 kind=new_goal route=execution intent=navigate_to intent_source=llm_response_route_repair+llm_intent route_repaired=true normalized_intents=[\"navigate_to\",\"report_result\"] goal_id=goal_default___1954d3cd_1 dialogue_turn_id=__default__:1954d3cd:1\n[INFO] [1784607595.968811810] [chatbot_llm]: [CHATBOT] dialogue=00000000 user=__system__ turn=__default__:00000000:15 input={\"execution_report\":{\"dialogue_context\":[\"user:Visit each movable ite...\n[INFO] [1784607597.296888799] [chatbot_llm]: [turn:__default__:00000000:15] GROUNDED_CONTEXT | Grounded context JSON:\n[INFO] [1784607599.632869376] [chatbot_llm]: [CHATBOT] dialogue=00000000 user=__system__ turn=__default__:00000000:16 input={\"execution_report\":{\"dialogue_context\":[\"user:Visit each movable ite...\n[INFO] [1784607600.971673862] [chatbot_llm]: [turn:__default__:00000000:16] GROUNDED_CONTEXT | Grounded context JSON:\n[INFO] [1784607603.102783764] [chatbot_llm]: [CHATBOT] dialogue=00000000 user=__system__ turn=__default__:00000000:17 input={\"execution_report\":{\"dialogue_context\":[\"user:Visit each movable ite...\n[INFO] [1784607604.492698349] [chatbot_llm]: [turn:__default__:00000000:17] GROUNDED_CONTEXT | Grounded context JSON:\n[INFO] [1784607606.678376302] [chatbot_llm]: [CHATBOT] dialogue=00000000 user=__system__ turn=__default__:00000000:18 input={\"execution_report\":{\"dialogue_context\":[\"user:Visit each movable ite...\n[INFO] [1784607608.029474714] [chatbot_llm]: [turn:__default__:00000000:18] GROUNDED_CONTEXT | Grounded context JSON:\n[INFO] [1784607563.822454844] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_robust_role_exclusion\": \"Visit each movable item on the table in turn. Do not navigate to the table or to any person, and report each arrival.\" (locale=en_US, confidence=1.00)\n[INFO] [1784607563.825379842] [dialogue_manager]: [CHATBOT] prepare_dialogue: id=1954d3cd-b1f5-4c74-aa61-74c740968e64 role='__default__'\n[INFO] [1784607563.828543999] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue 1954d3cd-b1f5-4c74-aa61-74c740968e64\n[INFO] [1784607563.830091412] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=1954d3cd-b1f5-4c74-aa61-74c740968e64 role='__default__' history_len=1 last='codex_robust_role_exclusion':\"Visit each movable item on the table in turn. Do not navigate to the table or to\"\n[INFO] [1784607576.141628732] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=1954d3cd-b1f5-4c74-aa61-74c740968e64: \"Okay, I will try that now.\" terminal=False\n[INFO] [1784607598.549530082] [nao_orchestrator]: Resolved report_result text via chatbot\n[INFO] [1784607602.022860072] [nao_orchestrator]: Resolved report_result text via chatbot\n[INFO] [1784607605.600742078] [nao_orchestrator]: Resolved report_result text via chatbot\n[INFO] [1784607576.152038774] [nao_say_skill]: [turn:codex_robust_role_exclusion] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=26\n[INFO] [1784607598.565828032] [nao_say_skill]: [turn:unknown] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=39\n[INFO] [1784607602.043099337] [nao_say_skill]: [turn:unknown] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=39\n[INFO] [1784607605.617079141] [nao_say_skill]: [turn:unknown] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=41\n[INFO] [1784607576.140424652] [planner_llm]: planner_llm request received | goal_id=goal_default___1954d3cd_1 request_id=__default__:1954d3cd:1 kind=new_goal intents=['navigate_to', 'report_result'] scene_targets=['Apple', 'Book', 'Cellular Telephone', 'Cup'] target_selection={'selection_kind': 'location_members', 'operation': 'visit', 'source_location_id': 'codex_lab_table', 'member_ids': ['codex_lab_apple', 'codex_lab_book', 'codex_lab_phone', 'codex_probe_cup'], 'recipient_id': 'None', 'ordering': 'sequential', 'report_policy': 'per_target'} source=codex_robust_role_exclusion\n[INFO] [1784607594.957451117] [planner_llm]: planner_llm published decision | goal_id=goal_default___1954d3cd_1 plan_id=plan_1784607594956 version=1 mode=plan steps=8 validation=valid\n[INFO] [1784607594.958860602] [planner_llm]: planner_llm feedback received | goal_id=goal_default___1954d3cd_1 plan_id=plan_1784607594956 version=1 event=plan_accepted status=accepted step=/ retry_budget=1 reason=\n[INFO] [1784607594.960668233] [planner_llm]: planner_llm feedback received | goal_id=goal_default___1954d3cd_1 plan_id=plan_1784607594956 version=1 event=step_started status=running step=skill/navigate_to retry_budget=1 reason=\n[INFO] [1784607595.967670559] [planner_llm]: planner_llm feedback received | goal_id=goal_default___1954d3cd_1 plan_id=plan_1784607594956 version=1 event=step_succeeded status=succeeded step=skill/navigate_to retry_budget=1 reason=\n[INFO] [1784607598.553587014] [planner_llm]: planner_llm feedback received | goal_id=goal_default___1954d3cd_1 plan_id=plan_1784607594956 version=1 event=step_started status=running step=skill/report_result retry_budget=1 reason=\n[INFO] [1784607598.623270191] [planner_llm]: planner_llm feedback received | goal_id=goal_default___1954d3cd_1 plan_id=plan_1784607594956 version=1 event=step_succeeded status=succeeded step=skill/report_result retry_budget=1 reason=\n[INFO] [1784607598.625223115] [planner_llm]: planner_llm feedback received | goal_id=goal_default___1954d3cd_1 plan_id=plan_1784607594956 version=1 event=step_started status=running step=skill/navigate_to retry_budget=1 reason=\n[INFO] [1784607599.631501379] [planner_llm]: planner_llm feedback received | goal_id=goal_default___1954d3cd_1 plan_id=plan_1784607594956 version=1 event=step_succeeded status=succeeded step=skill/navigate_to retry_budget=1 reason=\n[INFO] [1784607602.028376703] [planner_llm]: planner_llm feedback received | goal_id=goal_default___1954d3cd_1 plan_id=plan_1784607594956 version=1 event=step_started status=running step=skill/report_result retry_budget=1 reason=\n[INFO] [1784607602.094909990] [planner_llm]: planner_llm feedback received | goal_id=goal_default___1954d3cd_1 plan_id=plan_1784607594956 version=1 event=step_succeeded status=succeeded step=skill/report_result retry_budget=1 reason=\n[INFO] [1784607602.095940654] [planner_llm]: planner_llm feedback received | goal_id=goal_default___1954d3cd_1 plan_id=plan_1784607594956 version=1 event=step_started status=running step=skill/navigate_to retry_budget=1 reason=\n[INFO] [1784607603.101244286] [planner_llm]: planner_llm feedback received | goal_id=goal_default___1954d3cd_1 plan_id=plan_1784607594956 version=1 event=step_succeeded status=succeeded step=skill/navigate_to retry_budget=1 reason=\n[INFO] [1784607605.604569750] [planner_llm]: planner_llm feedback received | goal_id=goal_default___1954d3cd_1 plan_id=plan_1784607594956 version=1 event=step_started status=running step=skill/report_result retry_budget=1 reason=\n[INFO] [1784607605.671393462] [planner_llm]: planner_llm feedback received | goal_id=goal_default___1954d3cd_1 plan_id=plan_1784607594956 version=1 event=step_succeeded status=succeeded step=skill/report_result retry_budget=1 reason=\n[INFO] [1784607605.672812635] [planner_llm]: planner_llm feedback received | goal_id=goal_default___1954d3cd_1 plan_id=plan_1784607594956 version=1 event=step_started status=running step=skill/navigate_to retry_budget=1 reason=\n[INFO] [1784607606.677126997] [planner_llm]: planner_llm feedback received | goal_id=goal_default___1954d3cd_1 plan_id=plan_1784607594956 version=1 event=step_succeeded status=succeeded step=skill/navigate_to retry_budget=1 reason=\n[INFO] [1784607576.146459245] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"Okay, I will try that now.\"\n[INFO] [1784607598.559649620] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"I have arrived at the red apple, ATLAS.\"\n[INFO] [1784607602.035646844] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"I have arrived at the blue book, MIDAS.\"\n[INFO] [1784607605.610311593] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"I have arrived at the silver phone, VEGA.\"\n[INFO] [1784607610.526526059] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"I have visited all the movable items on the table: the red apple ATLAS, the blue book MIDAS, the silver phone VEGA, and finally, the gold cup TITAS.\"\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n  summary: /rosout {\"name\":\"chatbot_llm\",\"msg\":\"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\"level\":30,\"file\":\"/home/ubuntu/ws/build/chatbot_llm/chatbot_llm/node_impl.py\",\"function\":\"_trace\",\"line\":624}\n      \"msg\": \"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n[INFO] [1784607594.960527209] [interaction_trace_viewer]: TRACE_EVENT [1784607594.960] goal_default___1954d3cd_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1954d3cd_1,plan_id=plan_1784607594956,event_type=plan_accepted\n      \"source\": \"planner_llm\",\n[INFO] [1784607594.962084671] [interaction_trace_viewer]: TRACE_EVENT [1784607594.961] goal_default___1954d3cd_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1954d3cd_1,plan_id=plan_1784607594956,event_type=step_started,step=navigate_to\n      \"source\": \"planner_llm\",\n[INFO] [1784607595.967855195] [interaction_trace_viewer]: TRACE_EVENT [1784607595.967] goal_default___1954d3cd_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1954d3cd_1,plan_id=plan_1784607594956,event_type=step_succeeded,step=navigate_to\n[INFO] [1784607598.553805163] [interaction_trace_viewer]: TRACE_EVENT [1784607598.553] goal_default___1954d3cd_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1954d3cd_1,plan_id=plan_1784607594956,event_type=step_started,step=report_result\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n[INFO] [1784607598.623735093] [interaction_trace_viewer]: TRACE_EVENT [1784607598.622] goal_default___1954d3cd_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1954d3cd_1,plan_id=plan_1784607594956,event_type=step_succeeded,step=report_result\n        \"skill\": \"report_result\",\n[INFO] [1784607598.626553181] [interaction_trace_viewer]: TRACE_EVENT [1784607598.625] goal_default___1954d3cd_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1954d3cd_1,plan_id=plan_1784607594956,event_type=step_started,step=navigate_to\n      \"source\": \"planner_llm\",\n[INFO] [1784607599.631347330] [interaction_trace_viewer]: TRACE_EVENT [1784607599.630] goal_default___1954d3cd_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1954d3cd_1,plan_id=plan_1784607594956,event_type=step_succeeded,step=navigate_to\n[INFO] [1784607602.029186723] [interaction_trace_viewer]: TRACE_EVENT [1784607602.028] goal_default___1954d3cd_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1954d3cd_1,plan_id=plan_1784607594956,event_type=step_started,step=report_result\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n[INFO] [1784607602.095047748] [interaction_trace_viewer]: TRACE_EVENT [1784607602.094] goal_default___1954d3cd_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1954d3cd_1,plan_id=plan_1784607594956,event_type=step_succeeded,step=report_result\n        \"skill\": \"report_result\",\n[INFO] [1784607602.096532134] [interaction_trace_viewer]: TRACE_EVENT [1784607602.096] goal_default___1954d3cd_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1954d3cd_1,plan_id=plan_1784607594956,event_type=step_started,step=navigate_to\n      \"source\": \"planner_llm\",\n[INFO] [1784607603.101231411] [interaction_trace_viewer]: TRACE_EVENT [1784607603.101] goal_default___1954d3cd_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1954d3cd_1,plan_id=plan_1784607594956,event_type=step_succeeded,step=navigate_to\n[INFO] [1784607605.604154290] [interaction_trace_viewer]: TRACE_EVENT [1784607605.603] goal_default___1954d3cd_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1954d3cd_1,plan_id=plan_1784607594956,event_type=step_started,step=report_result\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n[INFO] [1784607605.671429720] [interaction_trace_viewer]: TRACE_EVENT [1784607605.670] goal_default___1954d3cd_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1954d3cd_1,plan_id=plan_1784607594956,event_type=step_succeeded,step=report_result\n        \"skill\": \"report_result\",\n[INFO] [1784607605.672955663] [interaction_trace_viewer]: TRACE_EVENT [1784607605.672] goal_default___1954d3cd_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1954d3cd_1,plan_id=plan_1784607594956,event_type=step_started,step=navigate_to\n      \"source\": \"planner_llm\",\n[INFO] [1784607606.677629731] [interaction_trace_viewer]: TRACE_EVENT [1784607606.677] goal_default___1954d3cd_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1954d3cd_1,plan_id=plan_1784607594956,event_type=step_succeeded,step=navigate_to\n[INFO] [1784607610.519952786] [interaction_trace_viewer]: TRACE_EVENT [1784607610.519] goal_default___1954d3cd_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1954d3cd_1,plan_id=plan_1784607594956,event_type=step_started,step=report_result\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n[INFO] [1784607610.588453676] [interaction_trace_viewer]: TRACE_EVENT [1784607610.587] goal_default___1954d3cd_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1954d3cd_1,plan_id=plan_1784607594956,event_type=step_succeeded,step=report_result\n        \"skill\": \"report_result\",\n[INFO] [1784607610.590531615] [interaction_trace_viewer]: TRACE_EVENT [1784607610.589] goal_default___1954d3cd_1 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___1954d3cd_1,plan_id=plan_1784607594956,event_type=plan_completed\n        \"skill\": \"report_result\",",
+      "mode": "speech",
+      "name": "robust_object_role_exclusion",
+      "phase_observations": {
+        "clarification_observed": false,
+        "clarification_speech_observed": false,
+        "correlation_status": "complete",
+        "evidence_consistent": true,
+        "evidence_inconsistencies": [],
+        "evidence_source": "interaction_trace_jsonl",
+        "executed_skill_sequence": [
+          "navigate_to",
+          "report_result",
+          "navigate_to",
+          "report_result",
+          "navigate_to",
+          "report_result",
+          "navigate_to",
+          "report_result"
+        ],
+        "executed_skills": [
+          "navigate_to",
+          "report_result"
+        ],
+        "execution_feedback_observed": true,
+        "failure_injection": {
+          "mode_sources": [
+            "scenario_default"
+          ],
+          "observed": false,
+          "result_modes": [
+            "success"
+          ]
+        },
+        "failure_observed": false,
+        "fallback_markers": {
+          "complete_context_clarification": 0,
+          "duplicate_active_goal": 0,
+          "kb_service_timeout": 0,
+          "language_model_unreachable_speech": 0,
+          "llm_disabled": 0,
+          "llm_response_failed": 0,
+          "planner_gate_rejected": 0,
+          "planner_invalid_json": 0,
+          "planner_invalid_plan": 0,
+          "planner_target_selection_recovery": 0,
+          "report_result_fallback": 0,
+          "route_repair": 0,
+          "rules_intent_fallback": 0,
+          "rules_response_fallback": 0,
+          "total": 0
+        },
+        "grounded_entity_ids": [
+          "codex_lab_apple",
+          "codex_lab_book",
+          "codex_lab_phone",
+          "codex_lab_table",
+          "codex_probe_cup"
+        ],
+        "lineage": {
+          "dialogue_turn_id": "__default__:1954d3cd:1",
+          "goal_id": "goal_default___1954d3cd_1",
+          "plan_ids": [
+            "plan_1784607594956"
+          ],
+          "plan_versions": [
+            1
+          ]
+        },
+        "observability_note": "semantic scoring uses structured trace lineage",
+        "planner_dialogue_acts": [],
+        "planner_request_observed": true,
+        "post_failure_speech_observed": false,
+        "post_terminal_speech_observed": false,
+        "replan_observed": false,
+        "route_intent_gap_count": 0,
+        "route_intent_handoff_observed": true,
+        "route_observed": true,
+        "speech_observed": true,
+        "spoken_texts": [
+          "Okay, I will try that now.",
+          "I have arrived at the red apple, ATLAS.",
+          "I have arrived at the blue book, MIDAS.",
+          "I have arrived at the silver phone, VEGA.",
+          "I have visited all the movable items on the table: the red apple ATLAS, the blue book MIDAS, the silver phone VEGA, and finally, the gold cup TITAS."
+        ],
+        "structured_event_count": 44,
+        "target_selection_observed": true,
+        "target_selections": [
+          {
+            "member_ids": [
+              "codex_lab_apple",
+              "codex_lab_book",
+              "codex_lab_phone",
+              "codex_probe_cup"
+            ],
+            "operation": "visit",
+            "ordering": "sequential",
+            "recipient_id": "None",
+            "report_policy": "per_target",
+            "selection_kind": "location_members",
+            "source_location_id": "codex_lab_table"
+          }
+        ],
+        "terminal_observed": true,
+        "turn_injected": true
+      },
+      "setup_result": {
+        "environment": {
+          "lab_table": {
+            "description": "A table scene with an apple, book, phone, and probe cup. Use for visible-object counting, table support relations, and ordered walk/report.",
+            "injection": {
+              "fixture_readiness": {
+                "missing_type_bindings": [],
+                "poll_timeout_sec": 12.0,
+                "ready": true,
+                "required_type_count": 6
+              },
+              "object_id": "lab_table",
+              "query_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Query_Request(patterns=['codex_probe_cup rdf:type ?object'], vars=['?object'], models=['default'])\n\nresponse:\nkb_msgs.srv.Query_Response(success=True, json='[{\"object\": \"Cup\"}, {\"object\": \"cyc:SpatialThing-Localized\"}, {\"object\": \"owl:Thing\"}, {\"object\": \"cyc:SpatialThing\"}, {\"object\": \"Location\"}, {\"object\": \"cyc:EnduringThing-Localized\"}]', error_msg='')",
+              "retract_output": "",
+              "revise_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Revise_Request(method='update', statements=['codex_lab_table rdf:type Table', 'codex_lab_table dbp:name table', 'myself sees codex_lab_table', 'codex_lab_apple rdf:type Apple', 'codex_lab_apple dbp:name ATLAS', 'codex_lab_apple dbp:color red', 'codex_lab_apple oro:isOn codex_lab_table', 'myself sees codex_lab_apple', 'myself canReach codex_lab_apple', 'codex_lab_book rdf:type Book', 'codex_lab_book dbp:name MIDAS', 'codex_lab_book dbp:color blue', 'codex_lab_book oro:isOn codex_lab_table', 'myself sees codex_lab_book', 'myself canReach codex_lab_book', 'codex_lab_phone rdf:type CellularTelephone', 'codex_lab_phone dbp:name VEGA', 'codex_lab_phone dbp:color silver', 'codex_lab_phone oro:isOn codex_lab_table', 'myself sees codex_lab_phone', 'myself canReach codex_lab_phone', 'codex_probe_cup rdf:type Cup', 'codex_probe_cup dbp:name TITAS', 'codex_probe_cup dbp:color gold', 'codex_probe_cup oro:isOn codex_lab_table', 'myself sees codex_probe_cup', 'myself canReach codex_probe_cup', 'codex_lab_table_station rdf:type Place', 'codex_lab_table_station dbp:name robot_station', 'myself oro:isAt codex_lab_table_station', 'nao_robot oro:isAt codex_lab_table_station'], models=['default'], lifespan=builtin_interfaces.msg.Duration(sec=300, nanosec=0))\n\nresponse:\nkb_msgs.srv.Revise_Response(success=True, error_msg='')",
+              "service_probe": "/kb/query [kb_msgs/srv/Query]\n/kb/revise [kb_msgs/srv/Revise]"
+            },
+            "visual_svg_source": "interaction_sim SVG template: download from simulator Settings > Download environment SVG template"
+          }
+        }
+      },
+      "stale_world_guard": null,
+      "started_at_unix_sec": 1784607525.240854,
+      "status": "pass",
+      "structured_trace": {
+        "available": true,
+        "event_count": 44,
+        "file_count": 1
+      },
+      "text": "Visit each movable item on the table in turn. Do not navigate to the table or to any person, and report each arrival.",
+      "topic_samples": {},
+      "turn_result": "[runtime-review] Speech ingress seam:\n  tracked_topic=/nao_chatbot/humans/voices/tracked\n  tracked_qos=--qos-reliability reliable --qos-durability transient_local\n  speech_topic=/humans/voices/codex_robust_role_exclusion/speech\n  speech_qos=--qos-reliability reliable --qos-durability volatile\n  rqt_display_mirror=true\n  rqt_display_topics=/rosout,/dialogue_manager/closed_captions\n  contract=publish tracked voice with TRANSIENT_LOCAL durability and keep the publisher alive until the per-voice LiveSpeech subscription appears.\n  reason=dialogue_manager creates the remapped per-voice rqt-chat subscription only after seeing the tracked voice id.\n  dialogue_manager_lifecycle=active [3]\n[runtime-review] OK: dialogue_manager speech subscription visible before LiveSpeech publish for /humans/voices/codex_robust_role_exclusion/speech.\npublisher: beginning loop\npublishing #1: rcl_interfaces.msg.Log(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), level=20, name='runtime_review_rqt_input', msg='[runtime-review INPUT] Visit each movable item on the table in turn. Do not navigate to the table or to any person, and report each arrival.', file='run_active_questionnaire.py', function='publish_voice_turn', line=0)\n\nWaiting for at least 1 matching subscription(s)...\nWaiting for at least 1 matching subscription(s)...\npublisher: beginning loop\npublishing #1: hri_actions_msgs.msg.ClosedCaption(speaker_id='codex_robust_role_exclusion', text='Visit each movable item on the table in turn. Do not navigate to the table or to any person, and report each arrival.', locale='en_US')\n\nType: hri_msgs/msg/IdsList\n\nPublisher count: 2\n\nNode name: rqt_gui_py_node_67\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.43.00.b5.63.00.00.00.00.00.00.13.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: _ros2cli_20382\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.9e.4f.be.51.00.00.00.00.00.00.07.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.5d.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nType: hri_msgs/msg/LiveSpeech\n\nPublisher count: 0\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/LiveSpeech\nTopic type hash: RIHS01_2cfdf359eed836b1d32ac2d62e1476f2048212e7ed79a17c0a594b04c33f8783\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.79.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\npublisher: beginning loop\npublishing #1: hri_msgs.msg.LiveSpeech(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), incremental='', final='Visit each movable item on the table in turn. Do not navigate to the table or to any person, and report each arrival.', confidence=1.0, locale='en_US')",
+      "turn_started_at_unix_sec": 1784607554.1081278,
+      "voice_id": "codex_robust_role_exclusion",
+      "wait_sec": 180.0
+    },
+    {
+      "case_assessment": {
+        "all_required_context": false,
+        "expected_outcome": "clarification_expected",
+        "reasons": [
+          "expected clarification for deliberately absent/ambiguous target",
+          "clarification was not expressed in correlated speech"
+        ],
+        "status": "fail"
+      },
+      "category": "robust_clarification",
+      "configured_wait_sec": 90.0,
+      "injection_scope": "full_ros4hri_dialogue_ingress",
+      "log_excerpt": "1784607662.4840434 [start_manager-27] \u001b[0m[INFO] [1784607662.483681370] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_robust_missing_recipient\": \"Deliver every work-table object to MORGAN and explain what information is missing if MORGAN is not present.\" (locale=en_US, confidence=1.00)\u001b[0m\n1784607662.4865959 [start_manager-27] \u001b[0m[INFO] [1784607662.486417144] [dialogue_manager]: [CHATBOT] prepare_dialogue: id=f32e0038-ebf7-49ef-92db-e7c9bac64aaf role='__default__'\u001b[0m\n1784607662.4892004 [start_manager-27] \u001b[0m[INFO] [1784607662.489043091] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue f32e0038-ebf7-49ef-92db-e7c9bac64aaf\u001b[0m\n1784607662.4908493 [start_manager-27] \u001b[0m[INFO] [1784607662.490707264] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=f32e0038-ebf7-49ef-92db-e7c9bac64aaf role='__default__' history_len=1 last='codex_robust_missing_recipient':\"Deliver every work-table object to MORGAN and explain what information is missin\"\u001b[0m\n1784607662.4923019 [start_node-26] \u001b[0m[INFO] [1784607662.492140313] [chatbot_llm]: [CHATBOT] dialogue=f32e0038 user=codex_robust_missing_recipient turn=__default__:f32e0038:1 input=Deliver every work-table object to MORGAN and explain what informatio...\u001b[0m\n1784607664.1572175 [start_node-26] \u001b[0m[INFO] [1784607664.156901011] [chatbot_llm]: [turn:__default__:f32e0038:1] GROUNDED_CONTEXT | Grounded context JSON:\n1784607671.0161419 [start_node-26] \u001b[0m[INFO] [1784607671.015815383] [chatbot_llm]: [turn:__default__:f32e0038:1] ROUTE_RESOLVED | route=dialogue intent=- source=llm_response_route confidence=0.95\u001b[0m\n1784607671.0272758 [start_manager-27] \u001b[0m[INFO] [1784607671.021369034] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=f32e0038-ebf7-49ef-92db-e7c9bac64aaf: \"I'm sorry, I don't see anyone named Morgan here. Could you tell me where Morgan is or who they are?\" terminal=False\u001b[0m\n1784607671.0317004 [start_skill-34] \u001b[0m[INFO] [1784607671.030915968] [nao_say_skill]: [turn:codex_robust_missing_recipient] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=99\u001b[0m\n[INFO] [1784607662.492140313] [chatbot_llm]: [CHATBOT] dialogue=f32e0038 user=codex_robust_missing_recipient turn=__default__:f32e0038:1 input=Deliver every work-table object to MORGAN and explain what informatio...\n[INFO] [1784607664.156901011] [chatbot_llm]: [turn:__default__:f32e0038:1] GROUNDED_CONTEXT | Grounded context JSON:\n[INFO] [1784607671.015815383] [chatbot_llm]: [turn:__default__:f32e0038:1] ROUTE_RESOLVED | route=dialogue intent=- source=llm_response_route confidence=0.95\n[INFO] [1784607662.483681370] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_robust_missing_recipient\": \"Deliver every work-table object to MORGAN and explain what information is missing if MORGAN is not present.\" (locale=en_US, confidence=1.00)\n[INFO] [1784607662.486417144] [dialogue_manager]: [CHATBOT] prepare_dialogue: id=f32e0038-ebf7-49ef-92db-e7c9bac64aaf role='__default__'\n[INFO] [1784607662.489043091] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue f32e0038-ebf7-49ef-92db-e7c9bac64aaf\n[INFO] [1784607662.490707264] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=f32e0038-ebf7-49ef-92db-e7c9bac64aaf role='__default__' history_len=1 last='codex_robust_missing_recipient':\"Deliver every work-table object to MORGAN and explain what information is missin\"\n[INFO] [1784607671.021369034] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=f32e0038-ebf7-49ef-92db-e7c9bac64aaf: \"I'm sorry, I don't see anyone named Morgan here. Could you tell me where Morgan is or who they are?\" terminal=False\n[INFO] [1784607671.030915968] [nao_say_skill]: [turn:codex_robust_missing_recipient] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=99\n[INFO] [1784607671.025982892] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"I'm sorry, I don't see anyone named Morgan here. Could you tell me where Morgan is or who they are?\"\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n  summary: /rosout {\"name\":\"chatbot_llm\",\"msg\":\"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\"level\":30,\"file\":\"/home/ubuntu/ws/build/chatbot_llm/chatbot_llm/node_impl.py\",\"function\":\"_trace\",\"line\":624}\n      \"msg\": \"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",",
+      "mode": "speech",
+      "name": "robust_missing_recipient",
+      "phase_observations": {
+        "clarification_observed": false,
+        "clarification_speech_observed": false,
+        "correlation_status": "complete",
+        "evidence_consistent": true,
+        "evidence_inconsistencies": [],
+        "evidence_source": "interaction_trace_jsonl",
+        "executed_skill_sequence": [],
+        "executed_skills": [],
+        "execution_feedback_observed": false,
+        "failure_injection": {
+          "mode_sources": [],
+          "observed": false,
+          "result_modes": []
+        },
+        "failure_observed": false,
+        "fallback_markers": {
+          "complete_context_clarification": 0,
+          "duplicate_active_goal": 0,
+          "kb_service_timeout": 0,
+          "language_model_unreachable_speech": 0,
+          "llm_disabled": 0,
+          "llm_response_failed": 0,
+          "planner_gate_rejected": 0,
+          "planner_invalid_json": 0,
+          "planner_invalid_plan": 0,
+          "planner_target_selection_recovery": 0,
+          "report_result_fallback": 0,
+          "route_repair": 0,
+          "rules_intent_fallback": 0,
+          "rules_response_fallback": 0,
+          "total": 0
+        },
+        "grounded_entity_ids": [],
+        "lineage": {
+          "dialogue_turn_id": "__default__:f32e0038:1",
+          "goal_id": "",
+          "plan_ids": [],
+          "plan_versions": []
+        },
+        "observability_note": "semantic scoring uses structured trace lineage",
+        "planner_dialogue_acts": [],
+        "planner_request_observed": false,
+        "post_failure_speech_observed": false,
+        "post_terminal_speech_observed": false,
+        "replan_observed": false,
+        "route_intent_gap_count": 0,
+        "route_intent_handoff_observed": false,
+        "route_observed": true,
+        "speech_observed": true,
+        "spoken_texts": [
+          "I'm sorry, I don't see anyone named Morgan here. Could you tell me where Morgan is or who they are?"
+        ],
+        "structured_event_count": 3,
+        "target_selection_observed": false,
+        "target_selections": [],
+        "terminal_observed": false,
+        "turn_injected": true
+      },
+      "setup_result": {
+        "environment": {
+          "lab_sections": {
+            "description": "Lab scene with robot station, work table, desk area, computer, cup, book, phone, and ALEX in a handoff area. Use for relation-heavy KB queries and object-to-person delivery.",
+            "injection": {
+              "fixture_readiness": {
+                "missing_type_bindings": [],
+                "poll_timeout_sec": 12.0,
+                "ready": true,
+                "required_type_count": 11
+              },
+              "object_id": "lab_sections",
+              "query_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Query_Request(patterns=['codex_lab_table_section rdf:type ?object'], vars=['?object'], models=['default'])\n\nresponse:\nkb_msgs.srv.Query_Response(success=True, json='[{\"object\": \"Table\"}, {\"object\": \"cyc:SpatialThing-Localized\"}, {\"object\": \"owl:Thing\"}, {\"object\": \"cyc:SpatialThing\"}, {\"object\": \"Location\"}, {\"object\": \"cyc:EnduringThing-Localized\"}]', error_msg='')",
+              "retract_output": "",
+              "revise_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Revise_Request(method='update', statements=['codex_lab_room rdf:type Room', 'codex_lab_room dbp:name lab', 'codex_lab_room dbp:frameId map', 'codex_lab_room dbp:poseSource semantic_fixture', 'codex_lab_room dbp:poseX 1.00', 'codex_lab_room dbp:poseY 0.20', 'codex_lab_station rdf:type Place', 'codex_lab_station dbp:name robot_station', 'codex_lab_station dbp:frameId map', 'codex_lab_station dbp:poseSource semantic_fixture', 'codex_lab_station dbp:poseX 0.00', 'codex_lab_station dbp:poseY 0.00', 'myself oro:isAt codex_lab_station', 'nao_robot oro:isAt codex_lab_station', 'codex_lab_desk rdf:type Desk', 'codex_lab_desk dbp:name desk', 'codex_lab_desk oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_desk', 'myself sees codex_lab_desk', 'codex_lab_table_section rdf:type Table', 'codex_lab_table_section dbp:name work_table', 'codex_lab_table_section oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_table_section', 'myself sees codex_lab_table_section', 'codex_lab_handoff_area rdf:type Place', 'codex_lab_handoff_area dbp:name handoff_area', 'codex_lab_handoff_area oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_handoff_area', 'codex_lab_computer rdf:type Computer', 'codex_lab_computer dbp:name LAB_COMPUTER', 'codex_lab_computer dbp:color black', 'codex_lab_computer oro:isOn codex_lab_desk', 'myself sees codex_lab_computer', 'codex_lab_keyboard rdf:type Keyboard', 'codex_lab_keyboard dbp:name LAB_KEYBOARD', 'codex_lab_keyboard dbp:color white', 'codex_lab_keyboard oro:isOn codex_lab_desk', 'myself sees codex_lab_keyboard', 'codex_lab_cup rdf:type Cup', 'codex_lab_cup dbp:name LAB_CUP', 'codex_lab_cup dbp:color red', 'codex_lab_cup oro:isOn codex_lab_table_section', 'myself sees codex_lab_cup', 'myself canReach codex_lab_cup', 'codex_lab_manual rdf:type Book', 'codex_lab_manual dbp:name LAB_MANUAL', 'codex_lab_manual dbp:color green', 'codex_lab_manual oro:isOn codex_lab_table_section', 'myself sees codex_lab_manual', 'myself canReach codex_lab_manual', 'codex_lab_phone rdf:type CellularTelephone', 'codex_lab_phone dbp:name LAB_PHONE', 'codex_lab_phone dbp:color silver', 'codex_lab_phone oro:isOn codex_lab_table_section', 'myself sees codex_lab_phone', 'myself canReach codex_lab_phone', 'codex_lab_alex rdf:type Human', 'codex_lab_alex dbp:name ALEX', 'codex_lab_alex dbp:frameId codex_lab_alex', 'codex_lab_alex dbp:poseSource semantic_fixture', 'codex_lab_alex dbp:poseX 0.30', 'codex_lab_alex dbp:poseY -0.25', 'codex_lab_alex oro:isIn codex_lab_handoff_area', 'codex_lab_handoff_area oro:contains codex_lab_alex', 'myself sees codex_lab_alex'], models=['default'], lifespan=builtin_interfaces.msg.Duration(sec=300, nanosec=0))\n\nresponse:\nkb_msgs.srv.Revise_Response(success=True, error_msg='')",
+              "service_probe": "/kb/query [kb_msgs/srv/Query]\n/kb/revise [kb_msgs/srv/Revise]"
+            },
+            "visual_svg_source": "docs/artifacts/preloaded_environments/lab_sections.svg"
+          }
+        }
+      },
+      "stale_world_guard": {
+        "contaminated": false,
+        "contract": "absent-target and recovery cases must prove the target is absent before injecting the turn",
+        "guard_results": [
+          {
+            "clean": true,
+            "name": "morgan_named_person_absent",
+            "query_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Query_Request(patterns=['?subject dbp:name MORGAN'], vars=['?subject'], models=['default'])\n\nresponse:\nkb_msgs.srv.Query_Response(success=True, json='[]', error_msg='')",
+            "query_patterns": [
+              "?subject dbp:name MORGAN"
+            ],
+            "query_vars": [
+              "?subject"
+            ],
+            "row_count": 0,
+            "rows": []
+          }
+        ]
+      },
+      "started_at_unix_sec": 1784607612.8828335,
+      "status": "fail",
+      "structured_trace": {
+        "available": true,
+        "event_count": 3,
+        "file_count": 1
+      },
+      "text": "Deliver every work-table object to MORGAN and explain what information is missing if MORGAN is not present.",
+      "topic_samples": {},
+      "turn_result": "[runtime-review] Speech ingress seam:\n  tracked_topic=/nao_chatbot/humans/voices/tracked\n  tracked_qos=--qos-reliability reliable --qos-durability transient_local\n  speech_topic=/humans/voices/codex_robust_missing_recipient/speech\n  speech_qos=--qos-reliability reliable --qos-durability volatile\n  rqt_display_mirror=true\n  rqt_display_topics=/rosout,/dialogue_manager/closed_captions\n  contract=publish tracked voice with TRANSIENT_LOCAL durability and keep the publisher alive until the per-voice LiveSpeech subscription appears.\n  reason=dialogue_manager creates the remapped per-voice rqt-chat subscription only after seeing the tracked voice id.\n  dialogue_manager_lifecycle=active [3]\n[runtime-review] OK: dialogue_manager speech subscription visible before LiveSpeech publish for /humans/voices/codex_robust_missing_recipient/speech.\npublisher: beginning loop\npublishing #1: rcl_interfaces.msg.Log(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), level=20, name='runtime_review_rqt_input', msg='[runtime-review INPUT] Deliver every work-table object to MORGAN and explain what information is missing if MORGAN is not present.', file='run_active_questionnaire.py', function='publish_voice_turn', line=0)\n\npublisher: beginning loop\npublishing #1: hri_actions_msgs.msg.ClosedCaption(speaker_id='codex_robust_missing_recipient', text='Deliver every work-table object to MORGAN and explain what information is missing if MORGAN is not present.', locale='en_US')\n\nType: hri_msgs/msg/IdsList\n\nPublisher count: 2\n\nNode name: _ros2cli_21305\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.39.53.11.79.00.00.00.00.00.00.07.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: rqt_gui_py_node_67\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.43.00.b5.63.00.00.00.00.00.00.13.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.5d.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nType: hri_msgs/msg/LiveSpeech\n\nPublisher count: 0\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/LiveSpeech\nTopic type hash: RIHS01_2cfdf359eed836b1d32ac2d62e1476f2048212e7ed79a17c0a594b04c33f8783\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.7a.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\npublisher: beginning loop\npublishing #1: hri_msgs.msg.LiveSpeech(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), incremental='', final='Deliver every work-table object to MORGAN and explain what information is missing if MORGAN is not present.', confidence=1.0, locale='en_US')",
+      "turn_started_at_unix_sec": 1784607651.634536,
+      "voice_id": "codex_robust_missing_recipient",
+      "wait_sec": 90.0
+    },
+    {
+      "case_assessment": {
+        "all_required_context": false,
+        "expected_outcome": "dialogue_only",
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass"
+      },
+      "category": "robust_route_safety",
+      "configured_wait_sec": 12.0,
+      "injection_scope": "full_ros4hri_dialogue_ingress",
+      "log_excerpt": "1784607802.7871737 [start_manager-27] \u001b[0m[INFO] [1784607802.786808752] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_robust_multiturn\": \"ALEX will receive the work-table items later. For now, only acknowledge this and do not execute anything.\" (locale=en_US, confidence=1.00)\u001b[0m\n1784607802.7900817 [start_manager-27] \u001b[0m[INFO] [1784607802.789738770] [dialogue_manager]: [CHATBOT] prepare_dialogue: id=fb79d467-203d-4b9f-92a3-b7e541617414 role='__default__'\u001b[0m\n1784607802.7926283 [start_manager-27] \u001b[0m[INFO] [1784607802.792467631] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue fb79d467-203d-4b9f-92a3-b7e541617414\u001b[0m\n1784607802.7942801 [start_manager-27] \u001b[0m[INFO] [1784607802.794120683] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=fb79d467-203d-4b9f-92a3-b7e541617414 role='__default__' history_len=1 last='codex_robust_multiturn':\"ALEX will receive the work-table items later. For now, only acknowledge this and\"\u001b[0m\n1784607802.7961125 [start_node-26] \u001b[0m[INFO] [1784607802.795957100] [chatbot_llm]: [CHATBOT] dialogue=fb79d467 user=codex_robust_multiturn turn=__default__:fb79d467:1 input=ALEX will receive the work-table items later. For now, only acknowled...\u001b[0m\n1784607804.4919102 [start_node-26] \u001b[0m[INFO] [1784607804.491678702] [chatbot_llm]: [turn:__default__:fb79d467:1] GROUNDED_CONTEXT | Grounded context JSON:\n1784607810.1103823 [start_node-26] \u001b[0m[INFO] [1784607810.109985720] [chatbot_llm]: [turn:__default__:fb79d467:1] ROUTE_RESOLVED | route=dialogue intent=- source=llm_response_route confidence=0.98\u001b[0m\n1784607810.1256800 [start_manager-27] \u001b[0m[INFO] [1784607810.116235659] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=fb79d467-203d-4b9f-92a3-b7e541617414: \"I've noted that. I won't do anything with the work-table items for now.\" terminal=False\u001b[0m\n1784607810.1283710 [start_skill-34] \u001b[0m[INFO] [1784607810.124554260] [nao_say_skill]: [turn:codex_robust_multiturn] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=71\u001b[0m\n[INFO] [1784607802.795957100] [chatbot_llm]: [CHATBOT] dialogue=fb79d467 user=codex_robust_multiturn turn=__default__:fb79d467:1 input=ALEX will receive the work-table items later. For now, only acknowled...\n[INFO] [1784607804.491678702] [chatbot_llm]: [turn:__default__:fb79d467:1] GROUNDED_CONTEXT | Grounded context JSON:\n[INFO] [1784607810.109985720] [chatbot_llm]: [turn:__default__:fb79d467:1] ROUTE_RESOLVED | route=dialogue intent=- source=llm_response_route confidence=0.98\n[INFO] [1784607802.786808752] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_robust_multiturn\": \"ALEX will receive the work-table items later. For now, only acknowledge this and do not execute anything.\" (locale=en_US, confidence=1.00)\n[INFO] [1784607802.789738770] [dialogue_manager]: [CHATBOT] prepare_dialogue: id=fb79d467-203d-4b9f-92a3-b7e541617414 role='__default__'\n[INFO] [1784607802.792467631] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue fb79d467-203d-4b9f-92a3-b7e541617414\n[INFO] [1784607802.794120683] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=fb79d467-203d-4b9f-92a3-b7e541617414 role='__default__' history_len=1 last='codex_robust_multiturn':\"ALEX will receive the work-table items later. For now, only acknowledge this and\"\n[INFO] [1784607810.116235659] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=fb79d467-203d-4b9f-92a3-b7e541617414: \"I've noted that. I won't do anything with the work-table items for now.\" terminal=False\n[INFO] [1784607810.124554260] [nao_say_skill]: [turn:codex_robust_multiturn] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=71\n[INFO] [1784607810.120086516] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"I've noted that. I won't do anything with the work-table items for now.\"\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n  summary: /rosout {\"name\":\"chatbot_llm\",\"msg\":\"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\"level\":30,\"file\":\"/home/ubuntu/ws/build/chatbot_llm/chatbot_llm/node_impl.py\",\"function\":\"_trace\",\"line\":624}\n      \"msg\": \"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",",
+      "mode": "speech",
+      "name": "robust_future_recipient_memory",
+      "phase_observations": {
+        "clarification_observed": false,
+        "clarification_speech_observed": false,
+        "correlation_status": "complete",
+        "evidence_consistent": true,
+        "evidence_inconsistencies": [],
+        "evidence_source": "interaction_trace_jsonl",
+        "executed_skill_sequence": [],
+        "executed_skills": [],
+        "execution_feedback_observed": false,
+        "failure_injection": {
+          "mode_sources": [],
+          "observed": false,
+          "result_modes": []
+        },
+        "failure_observed": false,
+        "fallback_markers": {
+          "complete_context_clarification": 0,
+          "duplicate_active_goal": 0,
+          "kb_service_timeout": 0,
+          "language_model_unreachable_speech": 0,
+          "llm_disabled": 0,
+          "llm_response_failed": 0,
+          "planner_gate_rejected": 0,
+          "planner_invalid_json": 0,
+          "planner_invalid_plan": 0,
+          "planner_target_selection_recovery": 0,
+          "report_result_fallback": 0,
+          "route_repair": 0,
+          "rules_intent_fallback": 0,
+          "rules_response_fallback": 0,
+          "total": 0
+        },
+        "grounded_entity_ids": [],
+        "lineage": {
+          "dialogue_turn_id": "__default__:fb79d467:1",
+          "goal_id": "",
+          "plan_ids": [],
+          "plan_versions": []
+        },
+        "observability_note": "semantic scoring uses structured trace lineage",
+        "planner_dialogue_acts": [],
+        "planner_request_observed": false,
+        "post_failure_speech_observed": false,
+        "post_terminal_speech_observed": false,
+        "replan_observed": false,
+        "route_intent_gap_count": 0,
+        "route_intent_handoff_observed": false,
+        "route_observed": true,
+        "speech_observed": true,
+        "spoken_texts": [
+          "I've noted that. I won't do anything with the work-table items for now."
+        ],
+        "structured_event_count": 3,
+        "target_selection_observed": false,
+        "target_selections": [],
+        "terminal_observed": false,
+        "turn_injected": true
+      },
+      "setup_result": {
+        "environment": {
+          "lab_sections": {
+            "description": "Lab scene with robot station, work table, desk area, computer, cup, book, phone, and ALEX in a handoff area. Use for relation-heavy KB queries and object-to-person delivery.",
+            "injection": {
+              "fixture_readiness": {
+                "missing_type_bindings": [],
+                "poll_timeout_sec": 12.0,
+                "ready": true,
+                "required_type_count": 11
+              },
+              "object_id": "lab_sections",
+              "query_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Query_Request(patterns=['codex_lab_table_section rdf:type ?object'], vars=['?object'], models=['default'])\n\nresponse:\nkb_msgs.srv.Query_Response(success=True, json='[{\"object\": \"Table\"}, {\"object\": \"cyc:SpatialThing-Localized\"}, {\"object\": \"owl:Thing\"}, {\"object\": \"cyc:SpatialThing\"}, {\"object\": \"Location\"}, {\"object\": \"cyc:EnduringThing-Localized\"}]', error_msg='')",
+              "retract_output": "",
+              "revise_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Revise_Request(method='update', statements=['codex_lab_room rdf:type Room', 'codex_lab_room dbp:name lab', 'codex_lab_room dbp:frameId map', 'codex_lab_room dbp:poseSource semantic_fixture', 'codex_lab_room dbp:poseX 1.00', 'codex_lab_room dbp:poseY 0.20', 'codex_lab_station rdf:type Place', 'codex_lab_station dbp:name robot_station', 'codex_lab_station dbp:frameId map', 'codex_lab_station dbp:poseSource semantic_fixture', 'codex_lab_station dbp:poseX 0.00', 'codex_lab_station dbp:poseY 0.00', 'myself oro:isAt codex_lab_station', 'nao_robot oro:isAt codex_lab_station', 'codex_lab_desk rdf:type Desk', 'codex_lab_desk dbp:name desk', 'codex_lab_desk oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_desk', 'myself sees codex_lab_desk', 'codex_lab_table_section rdf:type Table', 'codex_lab_table_section dbp:name work_table', 'codex_lab_table_section oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_table_section', 'myself sees codex_lab_table_section', 'codex_lab_handoff_area rdf:type Place', 'codex_lab_handoff_area dbp:name handoff_area', 'codex_lab_handoff_area oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_handoff_area', 'codex_lab_computer rdf:type Computer', 'codex_lab_computer dbp:name LAB_COMPUTER', 'codex_lab_computer dbp:color black', 'codex_lab_computer oro:isOn codex_lab_desk', 'myself sees codex_lab_computer', 'codex_lab_keyboard rdf:type Keyboard', 'codex_lab_keyboard dbp:name LAB_KEYBOARD', 'codex_lab_keyboard dbp:color white', 'codex_lab_keyboard oro:isOn codex_lab_desk', 'myself sees codex_lab_keyboard', 'codex_lab_cup rdf:type Cup', 'codex_lab_cup dbp:name LAB_CUP', 'codex_lab_cup dbp:color red', 'codex_lab_cup oro:isOn codex_lab_table_section', 'myself sees codex_lab_cup', 'myself canReach codex_lab_cup', 'codex_lab_manual rdf:type Book', 'codex_lab_manual dbp:name LAB_MANUAL', 'codex_lab_manual dbp:color green', 'codex_lab_manual oro:isOn codex_lab_table_section', 'myself sees codex_lab_manual', 'myself canReach codex_lab_manual', 'codex_lab_phone rdf:type CellularTelephone', 'codex_lab_phone dbp:name LAB_PHONE', 'codex_lab_phone dbp:color silver', 'codex_lab_phone oro:isOn codex_lab_table_section', 'myself sees codex_lab_phone', 'myself canReach codex_lab_phone', 'codex_lab_alex rdf:type Human', 'codex_lab_alex dbp:name ALEX', 'codex_lab_alex dbp:frameId codex_lab_alex', 'codex_lab_alex dbp:poseSource semantic_fixture', 'codex_lab_alex dbp:poseX 0.30', 'codex_lab_alex dbp:poseY -0.25', 'codex_lab_alex oro:isIn codex_lab_handoff_area', 'codex_lab_handoff_area oro:contains codex_lab_alex', 'myself sees codex_lab_alex'], models=['default'], lifespan=builtin_interfaces.msg.Duration(sec=300, nanosec=0))\n\nresponse:\nkb_msgs.srv.Revise_Response(success=True, error_msg='')",
+              "service_probe": "/kb/query [kb_msgs/srv/Query]\n/kb/revise [kb_msgs/srv/Revise]"
+            },
+            "visual_svg_source": "docs/artifacts/preloaded_environments/lab_sections.svg"
+          }
+        }
+      },
+      "stale_world_guard": null,
+      "started_at_unix_sec": 1784607753.4835618,
+      "status": "pass",
+      "structured_trace": {
+        "available": true,
+        "event_count": 3,
+        "file_count": 1
+      },
+      "text": "ALEX will receive the work-table items later. For now, only acknowledge this and do not execute anything.",
+      "topic_samples": {},
+      "turn_result": "[runtime-review] Speech ingress seam:\n  tracked_topic=/nao_chatbot/humans/voices/tracked\n  tracked_qos=--qos-reliability reliable --qos-durability transient_local\n  speech_topic=/humans/voices/codex_robust_multiturn/speech\n  speech_qos=--qos-reliability reliable --qos-durability volatile\n  rqt_display_mirror=true\n  rqt_display_topics=/rosout,/dialogue_manager/closed_captions\n  contract=publish tracked voice with TRANSIENT_LOCAL durability and keep the publisher alive until the per-voice LiveSpeech subscription appears.\n  reason=dialogue_manager creates the remapped per-voice rqt-chat subscription only after seeing the tracked voice id.\n  dialogue_manager_lifecycle=active [3]\n[runtime-review] OK: dialogue_manager speech subscription visible before LiveSpeech publish for /humans/voices/codex_robust_multiturn/speech.\npublisher: beginning loop\npublishing #1: rcl_interfaces.msg.Log(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), level=20, name='runtime_review_rqt_input', msg='[runtime-review INPUT] ALEX will receive the work-table items later. For now, only acknowledge this and do not execute anything.', file='run_active_questionnaire.py', function='publish_voice_turn', line=0)\n\nWaiting for at least 1 matching subscription(s)...\nWaiting for at least 1 matching subscription(s)...\npublisher: beginning loop\npublishing #1: hri_actions_msgs.msg.ClosedCaption(speaker_id='codex_robust_multiturn', text='ALEX will receive the work-table items later. For now, only acknowledge this and do not execute anything.', locale='en_US')\n\nType: hri_msgs/msg/IdsList\n\nPublisher count: 2\n\nNode name: rqt_gui_py_node_67\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.43.00.b5.63.00.00.00.00.00.00.13.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: _ros2cli_22342\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.46.57.0c.af.00.00.00.00.00.00.07.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.5d.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nType: hri_msgs/msg/LiveSpeech\n\nPublisher count: 0\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/LiveSpeech\nTopic type hash: RIHS01_2cfdf359eed836b1d32ac2d62e1476f2048212e7ed79a17c0a594b04c33f8783\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.7b.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\npublisher: beginning loop\npublishing #1: hri_msgs.msg.LiveSpeech(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), incremental='', final='ALEX will receive the work-table items later. For now, only acknowledge this and do not execute anything.', confidence=1.0, locale='en_US')",
+      "turn_started_at_unix_sec": 1784607791.0009654,
+      "voice_id": "codex_robust_multiturn",
+      "wait_sec": 30.0
+    },
+    {
+      "case_assessment": {
+        "all_required_context": true,
+        "expected_outcome": "execute_no_clarification",
+        "reasons": [
+          "selected members differed: expected=['codex_lab_cup', 'codex_lab_manual', 'codex_lab_phone'] observed=['codex_lab_cup', 'codex_lab_manual']"
+        ],
+        "status": "fail"
+      },
+      "category": "robust_multiturn_grounding",
+      "configured_wait_sec": 180.0,
+      "injection_scope": "full_ros4hri_dialogue_ingress",
+      "log_excerpt": "1784607838.0692501 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,068] Removing expired statement <myself sees codex_lab_phone> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0694110 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,068] Removing expired statement <myself sees codex_probe_cup> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0698535 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,068] Removing expired statement <codex_probe_cup rdf:type Cup> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0699151 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,068] Removing expired statement <codex_lab_book isOn codex_lab_table> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0699625 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <myself canReach codex_lab_book> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0700064 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <codex_lab_apple isOn codex_lab_table> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0700467 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <myself isAt codex_lab_table_station> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0700865 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <codex_probe_cup isOn codex_lab_table> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0701258 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <nao_robot isAt codex_lab_table_station> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0701756 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <codex_lab_book dbp:name MIDAS> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0702164 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <myself sees codex_lab_apple> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0702567 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <codex_lab_apple rdf:type Apple> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0702949 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <codex_lab_phone isOn codex_lab_table> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0703328 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <codex_lab_phone rdf:type CellularTelephone> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0703707 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <codex_lab_apple dbp:color red> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0704083 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <myself canReach codex_probe_cup> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0706537 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <codex_lab_phone dbp:name VEGA> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0707223 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <codex_lab_apple dbp:name ATLAS> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0709400 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <codex_lab_book dbp:color blue> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0709972 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <myself canReach codex_lab_phone> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0710406 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <codex_lab_table_station dbp:name robot_station> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0710797 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <codex_probe_cup dbp:name TITAS> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0711176 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <myself sees codex_lab_book> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0711653 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <codex_lab_book rdf:type Book> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0712044 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <codex_lab_table rdf:type Table> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0712414 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <myself sees codex_lab_table> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0712874 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,069] Removing expired statement <codex_probe_cup dbp:color gold> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0713387 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,070] Removing expired statement <codex_lab_table_station rdf:type Place> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0713952 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,070] Removing expired statement <codex_lab_table dbp:name table> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0714438 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,070] Removing expired statement <myself canReach codex_lab_apple> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607838.0714834 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:23:58,070] Removing expired statement <codex_lab_phone dbp:color silver> from <default> (expired on 2026-07-21T04:23:57+00:00)\u001b[0m\n1784607842.7200620 [start_manager-27] \u001b[0m[INFO] [1784607842.719702917] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_robust_multiturn\": \"Now deliver all of those objects to them and tell me the overall result.\" (locale=en_US, confidence=1.00)\u001b[0m\n1784607842.7218206 [start_manager-27] \u001b[0m[INFO] [1784607842.721646434] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue fb79d467-203d-4b9f-92a3-b7e541617414\u001b[0m\n1784607842.7235219 [start_manager-27] \u001b[0m[INFO] [1784607842.723307531] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=fb79d467-203d-4b9f-92a3-b7e541617414 role='__default__' history_len=3 last='codex_robust_multiturn':\"Now deliver all of those objects to them and tell me the overall result.\"\u001b[0m\n1784607842.7249081 [start_node-26] \u001b[0m[INFO] [1784607842.724764966] [chatbot_llm]: [CHATBOT] dialogue=fb79d467 user=codex_robust_multiturn turn=__default__:fb79d467:2 input=Now deliver all of those objects to them and tell me the overall result.\u001b[0m\n1784607844.5483942 [start_node-26] \u001b[0m[INFO] [1784607844.548228281] [chatbot_llm]: [turn:__default__:fb79d467:2] GROUNDED_CONTEXT | Grounded context JSON:\n1784607849.9823844 [start_node-26] \u001b[0m[INFO] [1784607849.981835008] [chatbot_llm]: [turn:__default__:fb79d467:2] ROUTE_RESOLVED | route=execution intent=bring_object source=llm_response_route+llm_intent confidence=0.98\u001b[0m\n1784607849.9897151 [start_node-26] \u001b[0m[INFO] [1784607849.989516274] [chatbot_llm]: [turn:__default__:fb79d467:2] ROUTE_INTENT_HANDOFF | route=execution intent=bring_object intent_source=llm_response_route+llm_intent route_repaired=false normalized_intents=[\"bring_object\",\"report_result\"] goal_id=goal_default___fb79d467_2 dialogue_turn_id=__default__:fb79d467:2\u001b[0m\n1784607849.9905994 [start_node-26] \u001b[0m[INFO] [1784607849.990415561] [chatbot_llm]: [turn:__default__:fb79d467:2] PLANNER_REQUEST | published planner request on /nao_orchestrator/planner_request goal_id=goal_default___fb79d467_2 kind=new_goal route=execution intent=bring_object intent_source=llm_response_route+llm_intent route_repaired=false normalized_intents=[\"bring_object\",\"report_result\"] goal_id=goal_default___fb79d467_2 dialogue_turn_id=__default__:fb79d467:2\u001b[0m\n1784607850.0078771 [start_manager-27] \u001b[0m[INFO] [1784607849.994029413] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=fb79d467-203d-4b9f-92a3-b7e541617414: \"I understand. I will plan to deliver the cup and the manual from the work table to Alex and let you ...\" terminal=False\u001b[0m\n1784607850.0169163 [start_skill-34] \u001b[0m[INFO] [1784607850.003403245] [nao_say_skill]: [turn:codex_robust_multiturn] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=116\u001b[0m\n1784607861.3158410 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:24:21,315] Warning: add is deprecated. Performing update instead.\u001b[0m\n1784607863.9676065 [knowledge_core-6] \u001b[33m[WARNING] [2026-07-21 04:24:23,967] Warning: add is deprecated. Performing update instead.\u001b[0m\n1784607864.5069633 [start_node-26] \u001b[0m[INFO] [1784607864.502504331] [chatbot_llm]: [CHATBOT] dialogue=00000000 user=__system__ turn=__default__:00000000:19 input={\"execution_report\":{\"dialogue_context\":[\"system:Reminder: You are NA...\u001b[0m\n1784607866.5190992 [start_node-26] \u001b[0m[INFO] [1784607866.518962926] [chatbot_llm]: [turn:__default__:00000000:19] GROUNDED_CONTEXT | Grounded context JSON:\n1784607876.5203960 [start_skill-34] \u001b[0m[INFO] [1784607876.520190303] [nao_say_skill]: [turn:unknown] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=88\u001b[0m\n[INFO] [1784607842.724764966] [chatbot_llm]: [CHATBOT] dialogue=fb79d467 user=codex_robust_multiturn turn=__default__:fb79d467:2 input=Now deliver all of those objects to them and tell me the overall result.\n[INFO] [1784607844.548228281] [chatbot_llm]: [turn:__default__:fb79d467:2] GROUNDED_CONTEXT | Grounded context JSON:\n[INFO] [1784607849.981835008] [chatbot_llm]: [turn:__default__:fb79d467:2] ROUTE_RESOLVED | route=execution intent=bring_object source=llm_response_route+llm_intent confidence=0.98\n[INFO] [1784607849.989516274] [chatbot_llm]: [turn:__default__:fb79d467:2] ROUTE_INTENT_HANDOFF | route=execution intent=bring_object intent_source=llm_response_route+llm_intent route_repaired=false normalized_intents=[\"bring_object\",\"report_result\"] goal_id=goal_default___fb79d467_2 dialogue_turn_id=__default__:fb79d467:2\n[INFO] [1784607849.990415561] [chatbot_llm]: [turn:__default__:fb79d467:2] PLANNER_REQUEST | published planner request on /nao_orchestrator/planner_request goal_id=goal_default___fb79d467_2 kind=new_goal route=execution intent=bring_object intent_source=llm_response_route+llm_intent route_repaired=false normalized_intents=[\"bring_object\",\"report_result\"] goal_id=goal_default___fb79d467_2 dialogue_turn_id=__default__:fb79d467:2\n[INFO] [1784607864.502504331] [chatbot_llm]: [CHATBOT] dialogue=00000000 user=__system__ turn=__default__:00000000:19 input={\"execution_report\":{\"dialogue_context\":[\"system:Reminder: You are NA...\n[INFO] [1784607866.518962926] [chatbot_llm]: [turn:__default__:00000000:19] GROUNDED_CONTEXT | Grounded context JSON:\n[INFO] [1784607842.719702917] [dialogue_manager]: [SPEECH INPUT] voice_id=\"codex_robust_multiturn\": \"Now deliver all of those objects to them and tell me the overall result.\" (locale=en_US, confidence=1.00)\n[INFO] [1784607842.721646434] [dialogue_manager]: [SPEECH INPUT] Triggering chatbot turn for dialogue fb79d467-203d-4b9f-92a3-b7e541617414\n[INFO] [1784607842.723307531] [dialogue_manager]: [CHATBOT REQUEST] dialogue_id=fb79d467-203d-4b9f-92a3-b7e541617414 role='__default__' history_len=3 last='codex_robust_multiturn':\"Now deliver all of those objects to them and tell me the overall result.\"\n[INFO] [1784607849.994029413] [dialogue_manager]: [CHATBOT RESPONSE] dialogue_id=fb79d467-203d-4b9f-92a3-b7e541617414: \"I understand. I will plan to deliver the cup and the manual from the work table to Alex and let you ...\" terminal=False\n[INFO] [1784607850.003403245] [nao_say_skill]: [turn:codex_robust_multiturn] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=116\n[INFO] [1784607876.520190303] [nao_say_skill]: [turn:unknown] DEBUG_SPEECH_PUBLISHED | topic=\"/debug/nao_say/speech\" text_len=88\n[INFO] [1784607849.992789857] [planner_llm]: planner_llm request received | goal_id=goal_default___fb79d467_2 request_id=__default__:fb79d467:2 kind=new_goal intents=['bring_object', 'report_result'] scene_targets=['cup', 'manual', 'codex_lab_alex'] target_selection={'selection_kind': 'location_members', 'operation': 'deliver', 'source_location_id': 'codex_lab_table_section', 'member_ids': ['codex_lab_cup', 'codex_lab_manual'], 'recipient_id': 'codex_lab_alex', 'ordering': 'sequential', 'report_policy': 'final'} source=codex_robust_multiturn\n[INFO] [1784607859.242140585] [planner_llm]: planner_llm published decision | goal_id=goal_default___fb79d467_2 plan_id=plan_1784607859240 version=1 mode=plan steps=3 validation=valid\n[INFO] [1784607859.243757630] [planner_llm]: planner_llm feedback received | goal_id=goal_default___fb79d467_2 plan_id=plan_1784607859240 version=1 event=plan_accepted status=accepted step=/ retry_budget=1 reason=\n[INFO] [1784607859.245814810] [planner_llm]: planner_llm feedback received | goal_id=goal_default___fb79d467_2 plan_id=plan_1784607859240 version=1 event=step_started status=running step=skill/bring_object retry_budget=1 reason=\n[INFO] [1784607861.843242685] [planner_llm]: planner_llm feedback received | goal_id=goal_default___fb79d467_2 plan_id=plan_1784607859240 version=1 event=step_succeeded status=succeeded step=skill/bring_object retry_budget=1 reason=\n[INFO] [1784607861.844408362] [planner_llm]: planner_llm feedback received | goal_id=goal_default___fb79d467_2 plan_id=plan_1784607859240 version=1 event=step_started status=running step=skill/bring_object retry_budget=1 reason=\n[INFO] [1784607864.501107629] [planner_llm]: planner_llm feedback received | goal_id=goal_default___fb79d467_2 plan_id=plan_1784607859240 version=1 event=step_succeeded status=succeeded step=skill/bring_object retry_budget=1 reason=\n[INFO] [1784607876.504895679] [planner_llm]: planner_llm feedback received | goal_id=goal_default___fb79d467_2 plan_id=plan_1784607859240 version=1 event=step_started status=running step=skill/report_result retry_budget=1 reason=\n[INFO] [1784607876.573590870] [planner_llm]: planner_llm feedback received | goal_id=goal_default___fb79d467_2 plan_id=plan_1784607859240 version=1 event=step_succeeded status=succeeded step=skill/report_result retry_budget=1 reason=\n[INFO] [1784607876.574785191] [planner_llm]: planner_llm feedback received | goal_id=goal_default___fb79d467_2 plan_id=plan_1784607859240 version=1 event=plan_completed status=completed step=/ retry_budget=1 reason=\n[INFO] [1784607849.998695711] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"I understand. I will plan to deliver the cup and the manual from the work table to Alex and let you know the result.\"\n[INFO] [1784607876.512153860] [robot_speech_debug]: [ROBOT OUTPUT] (closed_caption) \"I brought codex_lab_cup to codex_lab_alex. I brought codex_lab_manual to codex_lab_alex.\"\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n  summary: /rosout {\"name\":\"chatbot_llm\",\"msg\":\"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\"level\":30,\"file\":\"/home/ubuntu/ws/build/chatbot_llm/chatbot_llm/node_impl.py\",\"function\":\"_trace\",\"line\":624}\n      \"msg\": \"[turn:__default__:a5d4c5d9:1] ROUTE_INTENT_GAP | execution admitted without normalized_intents goal_id=goal_default___a5d4c5d9_1 intent_source=llm_response_route_repair route_repaired=true dialogue_turn_id=__default__:a5d4c5d9:1\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n              \"name\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n      \"source\": \"planner_llm\",\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n        \"skill\": \"report_result\",\n        \"skill\": \"report_result\",\n[INFO] [1784607859.244505183] [interaction_trace_viewer]: TRACE_EVENT [1784607859.244] goal_default___fb79d467_2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___fb79d467_2,plan_id=plan_1784607859240,event_type=plan_accepted\n      \"source\": \"planner_llm\",\n[INFO] [1784607859.246972663] [interaction_trace_viewer]: TRACE_EVENT [1784607859.246] goal_default___fb79d467_2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___fb79d467_2,plan_id=plan_1784607859240,event_type=step_started,step=bring_object\n      \"source\": \"planner_llm\",\n[INFO] [1784607861.843473388] [interaction_trace_viewer]: TRACE_EVENT [1784607861.843] goal_default___fb79d467_2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___fb79d467_2,plan_id=plan_1784607859240,event_type=step_succeeded,step=bring_object\n[INFO] [1784607861.844663100] [interaction_trace_viewer]: TRACE_EVENT [1784607861.844] goal_default___fb79d467_2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___fb79d467_2,plan_id=plan_1784607859240,event_type=step_started,step=bring_object\n      \"source\": \"planner_llm\",\n[INFO] [1784607864.501619179] [interaction_trace_viewer]: TRACE_EVENT [1784607864.500] goal_default___fb79d467_2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___fb79d467_2,plan_id=plan_1784607859240,event_type=step_succeeded,step=bring_object\n[INFO] [1784607876.505200661] [interaction_trace_viewer]: TRACE_EVENT [1784607876.504] goal_default___fb79d467_2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___fb79d467_2,plan_id=plan_1784607859240,event_type=step_started,step=report_result\n      \"source\": \"planner_llm\",\n        \"name\": \"report_result\",\n[INFO] [1784607876.574046996] [interaction_trace_viewer]: TRACE_EVENT [1784607876.573] goal_default___fb79d467_2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___fb79d467_2,plan_id=plan_1784607859240,event_type=step_succeeded,step=report_result\n        \"skill\": \"report_result\",\n[INFO] [1784607876.576513525] [interaction_trace_viewer]: TRACE_EVENT [1784607876.575] goal_default___fb79d467_2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___fb79d467_2,plan_id=plan_1784607859240,event_type=plan_completed\n        \"skill\": \"report_result\",",
+      "mode": "speech",
+      "name": "robust_multiturn_execute_followup",
+      "phase_observations": {
+        "clarification_observed": false,
+        "clarification_speech_observed": false,
+        "correlation_status": "complete",
+        "evidence_consistent": true,
+        "evidence_inconsistencies": [],
+        "evidence_source": "interaction_trace_jsonl",
+        "executed_skill_sequence": [
+          "bring_object",
+          "bring_object",
+          "report_result"
+        ],
+        "executed_skills": [
+          "bring_object",
+          "report_result"
+        ],
+        "execution_feedback_observed": true,
+        "failure_injection": {
+          "mode_sources": [
+            "scenario_default"
+          ],
+          "observed": false,
+          "result_modes": [
+            "success"
+          ]
+        },
+        "failure_observed": false,
+        "fallback_markers": {
+          "complete_context_clarification": 0,
+          "duplicate_active_goal": 0,
+          "kb_service_timeout": 0,
+          "language_model_unreachable_speech": 0,
+          "llm_disabled": 0,
+          "llm_response_failed": 0,
+          "planner_gate_rejected": 0,
+          "planner_invalid_json": 0,
+          "planner_invalid_plan": 0,
+          "planner_target_selection_recovery": 0,
+          "report_result_fallback": 0,
+          "route_repair": 0,
+          "rules_intent_fallback": 0,
+          "rules_response_fallback": 0,
+          "total": 0
+        },
+        "grounded_entity_ids": [
+          "codex_lab_alex",
+          "codex_lab_computer",
+          "codex_lab_cup",
+          "codex_lab_desk",
+          "codex_lab_handoff_area",
+          "codex_lab_keyboard",
+          "codex_lab_manual",
+          "codex_lab_phone",
+          "codex_lab_room",
+          "codex_lab_table_section"
+        ],
+        "lineage": {
+          "dialogue_turn_id": "__default__:fb79d467:2",
+          "goal_id": "goal_default___fb79d467_2",
+          "plan_ids": [
+            "plan_1784607859240"
+          ],
+          "plan_versions": [
+            1
+          ]
+        },
+        "observability_note": "semantic scoring uses structured trace lineage",
+        "planner_dialogue_acts": [],
+        "planner_request_observed": true,
+        "post_failure_speech_observed": false,
+        "post_terminal_speech_observed": false,
+        "replan_observed": false,
+        "route_intent_gap_count": 0,
+        "route_intent_handoff_observed": true,
+        "route_observed": true,
+        "speech_observed": true,
+        "spoken_texts": [
+          "I understand. I will plan to deliver the cup and the manual from the work table to Alex and let you know the result.",
+          "I brought codex_lab_cup to codex_lab_alex. I brought codex_lab_manual to codex_lab_alex."
+        ],
+        "structured_event_count": 19,
+        "target_selection_observed": true,
+        "target_selections": [
+          {
+            "member_ids": [
+              "codex_lab_cup",
+              "codex_lab_manual"
+            ],
+            "operation": "deliver",
+            "ordering": "sequential",
+            "recipient_id": "codex_lab_alex",
+            "report_policy": "final",
+            "selection_kind": "location_members",
+            "source_location_id": "codex_lab_table_section"
+          }
+        ],
+        "terminal_observed": true,
+        "turn_injected": true
+      },
+      "setup_result": null,
+      "stale_world_guard": null,
+      "started_at_unix_sec": 1784607833.8084013,
+      "status": "fail",
+      "structured_trace": {
+        "available": true,
+        "event_count": 19,
+        "file_count": 1
+      },
+      "text": "Now deliver all of those objects to them and tell me the overall result.",
+      "topic_samples": {},
+      "turn_result": "[runtime-review] Speech ingress seam:\n  tracked_topic=/nao_chatbot/humans/voices/tracked\n  tracked_qos=--qos-reliability reliable --qos-durability transient_local\n  speech_topic=/humans/voices/codex_robust_multiturn/speech\n  speech_qos=--qos-reliability reliable --qos-durability volatile\n  rqt_display_mirror=true\n  rqt_display_topics=/rosout,/dialogue_manager/closed_captions\n  contract=publish tracked voice with TRANSIENT_LOCAL durability and keep the publisher alive until the per-voice LiveSpeech subscription appears.\n  reason=dialogue_manager creates the remapped per-voice rqt-chat subscription only after seeing the tracked voice id.\n  dialogue_manager_lifecycle=active [3]\n[runtime-review] OK: dialogue_manager speech subscription visible before LiveSpeech publish for /humans/voices/codex_robust_multiturn/speech.\nWaiting for at least 1 matching subscription(s)...\npublisher: beginning loop\npublishing #1: rcl_interfaces.msg.Log(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), level=20, name='runtime_review_rqt_input', msg='[runtime-review INPUT] Now deliver all of those objects to them and tell me the overall result.', file='run_active_questionnaire.py', function='publish_voice_turn', line=0)\n\nWaiting for at least 1 matching subscription(s)...\npublisher: beginning loop\npublishing #1: hri_actions_msgs.msg.ClosedCaption(speaker_id='codex_robust_multiturn', text='Now deliver all of those objects to them and tell me the overall result.', locale='en_US')\n\nType: hri_msgs/msg/IdsList\n\nPublisher count: 2\n\nNode name: rqt_gui_py_node_67\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.43.00.b5.63.00.00.00.00.00.00.13.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nNode name: _ros2cli_22342\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: PUBLISHER\nGID: 01.0f.b7.4b.46.57.0c.af.00.00.00.00.00.00.07.03\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/IdsList\nTopic type hash: RIHS01_7e0812d1ac945c98fd3e393568d581ad0ab567f37b24eff633eab778c1bfe62d\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.5d.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: TRANSIENT_LOCAL\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\nType: hri_msgs/msg/LiveSpeech\n\nPublisher count: 0\n\nSubscription count: 1\n\nNode name: dialogue_manager\nNode namespace: /\nTopic type: hri_msgs/msg/LiveSpeech\nTopic type hash: RIHS01_2cfdf359eed836b1d32ac2d62e1476f2048212e7ed79a17c0a594b04c33f8783\nEndpoint type: SUBSCRIPTION\nGID: 01.0f.b7.4b.76.00.12.65.00.00.00.00.00.00.7b.04\nQoS profile:\n  Reliability: RELIABLE\n  History (Depth): UNKNOWN\n  Durability: VOLATILE\n  Lifespan: Infinite\n  Deadline: Infinite\n  Liveliness: AUTOMATIC\n  Liveliness lease duration: Infinite\n\npublisher: beginning loop\npublishing #1: hri_msgs.msg.LiveSpeech(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), incremental='', final='Now deliver all of those objects to them and tell me the overall result.', confidence=1.0, locale='en_US')",
+      "turn_started_at_unix_sec": 1784607833.8084147,
+      "voice_id": "codex_robust_multiturn",
+      "wait_sec": 180.0
+    }
+  ],
+  "container": "nao_ros2",
+  "finished_at_unix_sec": 1784607899.5097737,
+  "run_status": "completed",
+  "runtime_metadata": {
+    "ablation_note": "intent_ablation is meaningful only when the active launch sets chatbot_turn_pipeline_mode:=intent_first or when comparing against a response_first control run.",
+    "available_environment_fixtures": [
+      "baseline_table",
+      "gold_apple_handoff",
+      "iiia_floor",
+      "kitchen_delivery",
+      "lab_sections",
+      "lab_table"
+    ],
+    "chatbot_generation": {
+      "first_request_timeout_sec": 75.0,
+      "intent_max_tokens": 256,
+      "intent_model": "gemma4:cloud",
+      "intent_request_timeout_sec": 10.0,
+      "min_p": 0.0,
+      "model": "gemma4:cloud",
+      "presence_penalty": 0.0,
+      "repetition_penalty": 1.0,
+      "request_timeout_sec": 60.0,
+      "response_max_tokens": 192,
+      "temperature": 0.2,
+      "think": false,
+      "top_k": 0,
+      "top_p": 0.9
+    },
+    "chatbot_turn_pipeline_mode": "response_first",
+    "environment_fixture_source": "/home/juanbeck/nao-ros4hri-bridge/src/nao_chatbot/config/preloaded_environments.json",
+    "expected_turn_pipeline_mode": "response_first",
+    "fake_policy_application": {
+      "applied": "false",
+      "profile": "none",
+      "reason": "no policy changes requested"
+    },
+    "fake_policy_profile": "none",
+    "fake_policy_restore": {
+      "global_mode": "Set parameter successful",
+      "mode_overrides_json": "Set parameter successful"
+    },
+    "final_fixture_cleanup": {
+      "contaminated": false,
+      "parts": [
+        {
+          "contaminated": false,
+          "remaining": [],
+          "retract_output": "",
+          "retracted_statement_count": 0,
+          "subjects": []
+        },
+        {
+          "contaminated": false,
+          "remaining": [],
+          "retract_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Revise_Request(method='retract', statements=['codex_base_table rdf:type Table', 'codex_base_table dbp:name table', 'codex_base_table dbp:frameId map', 'codex_base_table dbp:poseSource semantic_fixture', 'codex_base_table dbp:poseX 0.80', 'codex_base_table dbp:poseY 0.00', 'myself sees codex_base_table', 'codex_base_cup rdf:type Cup', 'codex_base_cup dbp:name BASE_CUP', 'codex_base_cup dbp:color red', 'codex_base_cup oro:isOn codex_base_table', 'myself sees codex_base_cup', 'myself canReach codex_base_cup', 'codex_base_book rdf:type Book', 'codex_base_book dbp:name BASE_BOOK', 'codex_base_book dbp:color blue', 'codex_base_book oro:isOn codex_base_table', 'myself sees codex_base_book', 'myself canReach codex_base_book', 'myself oro:isAt codex_base_station', 'codex_base_station rdf:type Place', 'codex_base_station dbp:name robot_station', 'codex_base_station dbp:frameId map', 'codex_base_station dbp:poseSource semantic_fixture', 'codex_base_station dbp:poseX 0.00', 'codex_base_station dbp:poseY 0.00', 'codex_gold_table rdf:type Table', 'codex_gold_table dbp:name table', 'myself sees codex_gold_table', 'codex_gold_handoff_area rdf:type Place', 'codex_gold_handoff_area dbp:name handoff_area', 'codex_gold_apple rdf:type Apple', 'codex_gold_apple dbp:name KAREN', 'codex_gold_apple dbp:color gold', 'codex_gold_apple oro:isOn codex_gold_table', 'myself sees codex_gold_apple', 'myself canReach codex_gold_apple', 'codex_gold_recipient rdf:type Human', 'codex_gold_recipient dbp:name ALEX', 'codex_gold_recipient dbp:frameId codex_gold_recipient', 'codex_gold_recipient dbp:poseSource semantic_fixture', 'codex_gold_recipient oro:isIn codex_gold_handoff_area', 'codex_gold_handoff_area oro:contains codex_gold_recipient', 'myself sees codex_gold_recipient', 'codex_gold_station rdf:type Place', 'codex_gold_station dbp:name robot_station', 'myself oro:isAt codex_gold_station', 'nao_robot oro:isAt codex_gold_station', 'codex_iiia_station rdf:type Place', 'codex_iiia_station dbp:name robot_station', 'codex_iiia_station dbp:frameId map', 'codex_iiia_station dbp:poseSource semantic_fixture', 'codex_iiia_station dbp:poseX 0.00', 'codex_iiia_station dbp:poseY 0.00', 'myself oro:isAt codex_iiia_station', 'nao_robot oro:isAt codex_iiia_station', 'myself canReceiveAt codex_iiia_station', 'codex_iiia_corridor rdf:type Place', 'codex_iiia_corridor dbp:name corridor', 'codex_iiia_corridor dbp:frameId map', 'codex_iiia_corridor dbp:poseSource semantic_fixture', 'codex_iiia_corridor dbp:poseX 0.80', 'codex_iiia_corridor dbp:poseY 0.00', 'codex_iiia_handoff_area rdf:type Place', 'codex_iiia_handoff_area dbp:name handoff_area', 'codex_iiia_handoff_area dbp:frameId map', 'codex_iiia_handoff_area dbp:poseSource semantic_fixture', 'codex_iiia_handoff_area dbp:poseX 0.20', 'codex_iiia_handoff_area dbp:poseY 0.70', 'codex_iiia_lab rdf:type Room', 'codex_iiia_lab dbp:name lab', 'codex_iiia_lab dbp:frameId map', 'codex_iiia_lab dbp:poseSource semantic_fixture', 'codex_iiia_lab dbp:poseX 1.60', 'codex_iiia_lab dbp:poseY 0.60', 'codex_iiia_kitchen rdf:type Room', 'codex_iiia_kitchen dbp:name kitchen', 'codex_iiia_kitchen dbp:frameId map', 'codex_iiia_kitchen dbp:poseSource semantic_fixture', 'codex_iiia_kitchen dbp:poseX 1.60', 'codex_iiia_kitchen dbp:poseY -0.60', 'codex_iiia_lab_table rdf:type Table', 'codex_iiia_lab_table dbp:name lab_table', 'codex_iiia_lab_table oro:isIn codex_iiia_lab', 'codex_iiia_lab oro:contains codex_iiia_lab_table', 'myself sees codex_iiia_lab_table', 'codex_iiia_kitchen_table rdf:type Table', 'codex_iiia_kitchen_table dbp:name kitchen_table', 'codex_iiia_kitchen_table oro:isIn codex_iiia_kitchen', 'codex_iiia_kitchen oro:contains codex_iiia_kitchen_table', 'myself sees codex_iiia_kitchen_table', 'codex_iiia_cup rdf:type Cup', 'codex_iiia_cup dbp:name IIIA_CUP', 'codex_iiia_cup dbp:color white', 'codex_iiia_cup oro:isIn codex_iiia_kitchen', 'codex_iiia_kitchen oro:contains codex_iiia_cup', 'myself sees codex_iiia_cup', 'myself canReach codex_iiia_cup', 'codex_iiia_book rdf:type Book', 'codex_iiia_book dbp:name IIIA_BOOK', 'codex_iiia_book dbp:color blue', 'codex_iiia_book oro:isOn codex_iiia_lab_table', 'myself sees codex_iiia_book', 'myself canReach codex_iiia_book', 'codex_iiia_phone rdf:type CellularTelephone', 'codex_iiia_phone dbp:name IIIA_PHONE', 'codex_iiia_phone dbp:color silver', 'codex_iiia_phone oro:isOn codex_iiia_lab_table', 'myself sees codex_iiia_phone', 'myself canReach codex_iiia_phone', 'codex_iiia_alex rdf:type Human', 'codex_iiia_alex dbp:name ALEX', 'codex_iiia_alex dbp:frameId codex_iiia_alex', 'codex_iiia_alex dbp:poseSource semantic_fixture', 'codex_iiia_alex dbp:poseX 0.20', 'codex_iiia_alex dbp:poseY -0.30', 'codex_iiia_alex oro:isIn codex_iiia_handoff_area', 'codex_iiia_handoff_area oro:contains codex_iiia_alex', 'myself sees codex_iiia_alex', 'codex_robot_station rdf:type Place', 'codex_robot_station dbp:name robot_station', 'codex_robot_station dbp:frameId map', 'codex_robot_station dbp:poseSource semantic_fixture', 'codex_robot_station dbp:poseX 0.00', 'codex_robot_station dbp:poseY 0.00', 'codex_kitchen rdf:type Room', 'codex_kitchen dbp:name kitchen', 'codex_kitchen dbp:frameId map', 'codex_kitchen dbp:poseSource semantic_fixture', 'codex_kitchen dbp:poseX 1.20', 'codex_kitchen dbp:poseY 0.40', 'codex_kitchen oro:contains codex_kitchen_cup', 'codex_kitchen oro:contains codex_kitchen_book', 'codex_recipient_area rdf:type Place', 'codex_recipient_area dbp:name handoff_area', 'codex_recipient_area dbp:frameId map', 'codex_recipient_area dbp:poseSource semantic_fixture', 'codex_recipient_area dbp:poseX 0.40', 'codex_recipient_area dbp:poseY -0.25', 'codex_kitchen_cup rdf:type Cup', 'codex_kitchen_cup dbp:name KITCHEN_PROBE_CUP', 'codex_kitchen_cup dbp:color white', 'codex_kitchen_cup oro:isIn codex_kitchen', 'myself sees codex_kitchen_cup', 'myself canReach codex_kitchen_cup', 'codex_kitchen_book rdf:type Book', 'codex_kitchen_book dbp:name RECIPE_BOOK', 'codex_kitchen_book dbp:color green', 'codex_kitchen_book oro:isIn codex_kitchen', 'myself sees codex_kitchen_book', 'myself canReach codex_kitchen_book', 'codex_recipient_person rdf:type Human', 'codex_recipient_person dbp:name ALEX', 'codex_recipient_person dbp:frameId codex_recipient_person', 'codex_recipient_person dbp:poseSource semantic_fixture', 'codex_recipient_person dbp:poseX 0.30', 'codex_recipient_person dbp:poseY -0.20', 'codex_recipient_person oro:isIn codex_recipient_area', 'codex_recipient_area oro:contains codex_recipient_person', 'myself sees codex_recipient_person', 'myself oro:isAt codex_robot_station', 'nao_robot oro:isAt codex_robot_station', 'myself canReceiveAt codex_robot_station', 'codex_lab_room rdf:type Room', 'codex_lab_room dbp:name lab', 'codex_lab_room dbp:frameId map', 'codex_lab_room dbp:poseSource semantic_fixture', 'codex_lab_room dbp:poseX 1.00', 'codex_lab_room dbp:poseY 0.20', 'codex_lab_station rdf:type Place', 'codex_lab_station dbp:name robot_station', 'codex_lab_station dbp:frameId map', 'codex_lab_station dbp:poseSource semantic_fixture', 'codex_lab_station dbp:poseX 0.00', 'codex_lab_station dbp:poseY 0.00', 'myself oro:isAt codex_lab_station', 'nao_robot oro:isAt codex_lab_station', 'codex_lab_desk rdf:type Desk', 'codex_lab_desk dbp:name desk', 'codex_lab_desk oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_desk', 'myself sees codex_lab_desk', 'codex_lab_table_section rdf:type Table', 'codex_lab_table_section dbp:name work_table', 'codex_lab_table_section oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_table_section', 'myself sees codex_lab_table_section', 'codex_lab_handoff_area rdf:type Place', 'codex_lab_handoff_area dbp:name handoff_area', 'codex_lab_handoff_area oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_handoff_area', 'codex_lab_computer rdf:type Computer', 'codex_lab_computer dbp:name LAB_COMPUTER', 'codex_lab_computer dbp:color black', 'codex_lab_computer oro:isOn codex_lab_desk', 'myself sees codex_lab_computer', 'codex_lab_keyboard rdf:type Keyboard', 'codex_lab_keyboard dbp:name LAB_KEYBOARD', 'codex_lab_keyboard dbp:color white', 'codex_lab_keyboard oro:isOn codex_lab_desk', 'myself sees codex_lab_keyboard', 'codex_lab_cup rdf:type Cup', 'codex_lab_cup dbp:name LAB_CUP', 'codex_lab_cup dbp:color red', 'codex_lab_cup oro:isOn codex_lab_table_section', 'myself sees codex_lab_cup', 'myself canReach codex_lab_cup', 'codex_lab_manual rdf:type Book', 'codex_lab_manual dbp:name LAB_MANUAL', 'codex_lab_manual dbp:color green', 'codex_lab_manual oro:isOn codex_lab_table_section', 'myself sees codex_lab_manual', 'myself canReach codex_lab_manual', 'codex_lab_phone rdf:type CellularTelephone', 'codex_lab_phone dbp:name LAB_PHONE', 'codex_lab_phone dbp:color silver', 'codex_lab_phone oro:isOn codex_lab_table_section', 'myself sees codex_lab_phone', 'myself canReach codex_lab_phone', 'codex_lab_alex rdf:type Human', 'codex_lab_alex dbp:name ALEX', 'codex_lab_alex dbp:frameId codex_lab_alex', 'codex_lab_alex dbp:poseSource semantic_fixture', 'codex_lab_alex dbp:poseX 0.30', 'codex_lab_alex dbp:poseY -0.25', 'codex_lab_alex oro:isIn codex_lab_handoff_area', 'codex_lab_handoff_area oro:contains codex_lab_alex', 'myself sees codex_lab_alex', 'codex_lab_table rdf:type Table', 'codex_lab_table dbp:name table', 'myself sees codex_lab_table', 'codex_lab_apple rdf:type Apple', 'codex_lab_apple dbp:name ATLAS', 'codex_lab_apple dbp:color red', 'codex_lab_apple oro:isOn codex_lab_table', 'myself sees codex_lab_apple', 'myself canReach codex_lab_apple', 'codex_lab_book rdf:type Book', 'codex_lab_book dbp:name MIDAS', 'codex_lab_book dbp:color blue', 'codex_lab_book oro:isOn codex_lab_table', 'myself sees codex_lab_book', 'myself canReach codex_lab_book', 'codex_lab_phone dbp:name VEGA', 'codex_lab_phone oro:isOn codex_lab_table', 'codex_probe_cup rdf:type Cup', 'codex_probe_cup dbp:name TITAS', 'codex_probe_cup dbp:color gold', 'codex_probe_cup oro:isOn codex_lab_table', 'myself sees codex_probe_cup', 'myself canReach codex_probe_cup', 'codex_lab_table_station rdf:type Place', 'codex_lab_table_station dbp:name robot_station', 'myself oro:isAt codex_lab_table_station', 'nao_robot oro:isAt codex_lab_table_station', 'codex_lab_room oro:placeOf codex_lab_desk', 'codex_lab_manual rdf:type owl:Thing', 'codex_lab_table_section oro:placeOf codex_lab_phone', 'codex_lab_keyboard rdf:type owl:Thing', 'codex_lab_keyboard rdf:type Location', 'codex_lab_station dbp:poseX 0.0', 'codex_lab_alex rdf:type EmbodiedAgent', 'myself oro:canReach codex_lab_manual', 'codex_lab_table_section oro:isAt codex_lab_phone', 'codex_lab_alex dbp:poseX 0.3', 'codex_lab_alex rdf:type Agent', 'codex_lab_phone rdf:type cyc:SpatialThing-Localized', 'codex_lab_handoff_area oro:placeOf codex_lab_alex', 'codex_lab_desk oro:isAt codex_lab_computer', 'myself oro:sees codex_lab_alex', 'codex_lab_station rdf:type Location', 'codex_lab_table_section rdf:type Location', 'myself oro:sees codex_lab_desk', 'codex_lab_alex oro:isAt codex_lab_handoff_area', 'codex_lab_desk oro:isAt codex_lab_keyboard', 'codex_lab_room oro:placeOf codex_lab_table_section', 'codex_lab_handoff_area rdf:type cyc:EnduringThing-Localized', 'codex_lab_phone rdf:type owl:Thing', 'codex_lab_phone rdf:type Location', 'codex_lab_room rdf:type Location', 'codex_lab_table_section oro:isUnder codex_lab_phone', 'codex_lab_room rdf:type cyc:PartiallyTangible', 'codex_lab_alex rdf:type Location', 'codex_lab_computer rdf:type Location', 'codex_lab_desk oro:isUnder codex_lab_computer', 'codex_lab_desk rdf:type owl:Thing', 'codex_lab_cup rdf:type owl:Thing', 'codex_lab_alex rdf:type foaf:Person', 'codex_lab_alex rdf:type cyc:PartiallyTangible', 'codex_lab_desk rdf:type cyc:EnduringThing-Localized', 'codex_lab_desk oro:isContainedIn codex_lab_room', 'codex_lab_manual oro:isAt codex_lab_alex', 'codex_lab_station oro:placeOf myself', 'codex_lab_alex oro:placeOf codex_lab_cup', 'myself oro:sees codex_lab_computer', 'myself oro:sees codex_lab_manual', 'myself oro:canReach codex_lab_cup', 'codex_lab_manual rdf:type Location', 'myself oro:sees codex_lab_table_section', 'codex_lab_computer oro:placeOf codex_lab_desk', 'codex_lab_keyboard oro:isAt codex_lab_desk', 'codex_lab_keyboard rdf:type cyc:SpatialThing', 'codex_lab_handoff_area rdf:type cyc:SpatialThing-Localized', 'codex_lab_desk oro:placeOf codex_lab_computer', 'codex_lab_phone oro:isAt codex_lab_table_section', 'codex_lab_alex rdf:type cyc:SolidTangibleThing', 'codex_lab_table_section oro:isAt codex_lab_room', 'codex_lab_alex rdf:type foaf:Agent', 'codex_lab_station rdf:type cyc:SpatialThing', 'codex_lab_table_section rdf:type cyc:SpatialThing', 'codex_lab_desk oro:placeOf codex_lab_keyboard', 'codex_lab_desk rdf:type cyc:SpatialThing-Localized', 'codex_lab_cup rdf:type cyc:SpatialThing-Localized', 'codex_lab_station rdf:type cyc:EnduringThing-Localized', 'codex_lab_handoff_area rdf:type owl:Thing', 'codex_lab_table_section rdf:type cyc:EnduringThing-Localized', 'codex_lab_room dbp:poseX 1.0', 'codex_lab_handoff_area rdf:type Location', 'codex_lab_handoff_area rdf:type Container', 'codex_lab_station oro:placeOf nao_robot', 'codex_lab_phone rdf:type cyc:SpatialThing', 'codex_lab_room rdf:type cyc:SpatialThing', 'codex_lab_room rdf:type cyc:EnduringThing-Localized', 'codex_lab_alex rdf:type cyc:SpatialThing', 'codex_lab_computer rdf:type cyc:SpatialThing', 'codex_lab_desk rdf:type Location', 'codex_lab_cup rdf:type Location', 'codex_lab_alex rdf:type cyc:EnduringThing-Localized', 'codex_lab_computer rdf:type cyc:EnduringThing-Localized', 'codex_lab_keyboard oro:placeOf codex_lab_desk', 'codex_lab_room dbp:poseY 0.2', 'codex_lab_desk oro:isUnder codex_lab_keyboard', 'codex_lab_station rdf:type cyc:SpatialThing-Localized', 'codex_lab_manual rdf:type cyc:SpatialThing', 'codex_lab_table_section rdf:type cyc:SpatialThing-Localized', 'codex_lab_phone oro:placeOf codex_lab_table_section', 'codex_lab_manual rdf:type cyc:EnduringThing-Localized', 'codex_lab_handoff_area oro:isContainedIn codex_lab_room', 'codex_lab_alex oro:placeOf codex_lab_manual', 'codex_lab_keyboard rdf:type cyc:EnduringThing-Localized', 'myself oro:sees codex_lab_keyboard', 'codex_lab_room rdf:type cyc:SpatialThing-Localized', 'codex_lab_alex oro:isContainedIn codex_lab_handoff_area', 'codex_lab_station rdf:type owl:Thing', 'codex_lab_alex rdf:type cyc:SpatialThing-Localized', 'codex_lab_computer rdf:type cyc:SpatialThing-Localized', 'codex_lab_table_section rdf:type owl:Thing', 'codex_lab_computer oro:isAt codex_lab_desk', 'codex_lab_table_section oro:isContainedIn codex_lab_room', 'codex_lab_handoff_area rdf:type cyc:SpatialThing', 'codex_lab_handoff_area rdf:type cyc:PartiallyTangible', 'codex_lab_room rdf:type owl:Thing', 'codex_lab_room rdf:type Container', 'codex_lab_desk oro:isAt codex_lab_room', 'codex_lab_room oro:placeOf codex_lab_handoff_area', 'codex_lab_manual rdf:type cyc:SpatialThing-Localized', 'codex_lab_handoff_area oro:isAt codex_lab_room', 'codex_lab_station dbp:poseY 0.0', 'codex_lab_cup oro:isAt codex_lab_alex', 'codex_lab_alex rdf:type owl:Thing', 'codex_lab_computer rdf:type owl:Thing', 'codex_lab_keyboard rdf:type cyc:SpatialThing-Localized', 'codex_lab_desk rdf:type cyc:SpatialThing', 'codex_lab_cup rdf:type cyc:SpatialThing', 'myself oro:sees codex_lab_cup', 'codex_lab_cup rdf:type cyc:EnduringThing-Localized'], models=['default'], lifespan=builtin_interfaces.msg.Duration(sec=1, nanosec=0))\n\nresponse:\nkb_msgs.srv.Revise_Response(success=True, error_msg='')",
+          "retracted_statement_count": 366,
+          "subjects": [
+            "codex_base_table",
+            "codex_base_cup",
+            "codex_base_book",
+            "codex_base_station",
+            "codex_gold_table",
+            "codex_gold_handoff_area",
+            "codex_gold_apple",
+            "codex_gold_recipient",
+            "codex_gold_station",
+            "codex_iiia_station",
+            "codex_iiia_corridor",
+            "codex_iiia_handoff_area",
+            "codex_iiia_lab",
+            "codex_iiia_kitchen",
+            "codex_iiia_lab_table",
+            "codex_iiia_kitchen_table",
+            "codex_iiia_cup",
+            "codex_iiia_book",
+            "codex_iiia_phone",
+            "codex_iiia_alex",
+            "codex_robot_station",
+            "codex_kitchen",
+            "codex_recipient_area",
+            "codex_kitchen_cup",
+            "codex_kitchen_book",
+            "codex_recipient_person",
+            "codex_lab_room",
+            "codex_lab_station",
+            "codex_lab_desk",
+            "codex_lab_table_section",
+            "codex_lab_handoff_area",
+            "codex_lab_computer",
+            "codex_lab_keyboard",
+            "codex_lab_cup",
+            "codex_lab_manual",
+            "codex_lab_phone",
+            "codex_lab_alex",
+            "codex_lab_table",
+            "codex_lab_apple",
+            "codex_lab_book",
+            "codex_probe_cup",
+            "codex_lab_table_station"
+          ]
+        }
+      ],
+      "remaining": [],
+      "retracted_statement_count": 366,
+      "subjects": [
+        "codex_base_table",
+        "codex_base_cup",
+        "codex_base_book",
+        "codex_base_station",
+        "codex_gold_table",
+        "codex_gold_handoff_area",
+        "codex_gold_apple",
+        "codex_gold_recipient",
+        "codex_gold_station",
+        "codex_iiia_station",
+        "codex_iiia_corridor",
+        "codex_iiia_handoff_area",
+        "codex_iiia_lab",
+        "codex_iiia_kitchen",
+        "codex_iiia_lab_table",
+        "codex_iiia_kitchen_table",
+        "codex_iiia_cup",
+        "codex_iiia_book",
+        "codex_iiia_phone",
+        "codex_iiia_alex",
+        "codex_robot_station",
+        "codex_kitchen",
+        "codex_recipient_area",
+        "codex_kitchen_cup",
+        "codex_kitchen_book",
+        "codex_recipient_person",
+        "codex_lab_room",
+        "codex_lab_station",
+        "codex_lab_desk",
+        "codex_lab_table_section",
+        "codex_lab_handoff_area",
+        "codex_lab_computer",
+        "codex_lab_keyboard",
+        "codex_lab_cup",
+        "codex_lab_manual",
+        "codex_lab_phone",
+        "codex_lab_alex",
+        "codex_lab_table",
+        "codex_lab_apple",
+        "codex_lab_book",
+        "codex_probe_cup",
+        "codex_lab_table_station"
+      ]
+    },
+    "grounded_context_digest_enabled": false,
+    "initial_fixture_cleanup": {
+      "contaminated": false,
+      "parts": [
+        {
+          "contaminated": false,
+          "remaining": [],
+          "retract_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Revise_Request(method='retract', statements=['myself sees codex_probe_cup', 'codex_probe_cup rdf:type Cup', 'codex_probe_cup dbp:name TITAS', 'codex_probe_cup dbp:color gold', 'codex_probe_cup oro:isOn table_1', 'codex_probe_cup oro:isOn codex_probe_table', 'codex_probe_table rdf:type Table', 'codex_probe_table dbp:name probe_table', 'myself sees codex_probe_table', 'codex_probe_table dbp:name table', 'myself sees codex_count_cup', 'codex_count_cup rdf:type Cup', 'codex_count_cup dbp:name TITAS', 'codex_count_cup dbp:color gold', 'myself sees codex_count_book', 'codex_count_book rdf:type Book', 'codex_count_book dbp:name MIDAS', 'codex_count_book dbp:color blue', 'myself sees codex_count_phone', 'codex_count_phone rdf:type CellularTelephone', 'codex_count_phone dbp:name VEGA', 'codex_count_phone dbp:color silver', 'myself sees codex_skill_phone', 'codex_skill_phone rdf:type CellularTelephone', 'codex_skill_phone dbp:name VEGA', 'codex_skill_phone dbp:color silver', 'codex_skill_phone oro:isOn codex_probe_table', 'myself canReach codex_skill_phone', 'myself sees codex_table_object', 'codex_table_object rdf:type Cup', 'codex_table_object dbp:name TABLE_PROBE', 'codex_table_object dbp:color red', 'codex_table_object oro:isOn codex_probe_table', 'myself canReach codex_table_object', 'myself sees codex_recipient_person', 'codex_recipient_person rdf:type Human', 'codex_recipient_person dbp:name ALEX', 'codex_recipient_person dbp:frameId codex_recipient_person', 'codex_recipient_person dbp:poseSource semantic_fixture', 'myself sees codex_bring_cup', 'codex_bring_cup rdf:type Cup', 'codex_bring_cup dbp:name TITAS', 'codex_bring_cup dbp:color gold', 'myself sees codex_bring_book', 'codex_bring_book rdf:type Book', 'codex_bring_book dbp:name MIDAS', 'codex_bring_book dbp:color blue', 'myself canReach codex_bring_cup', 'myself canReach codex_bring_book', 'codex_kitchen rdf:type Room', 'codex_kitchen dbp:name kitchen', 'codex_kitchen dbp:frameId map', 'codex_kitchen dbp:poseSource semantic_fixture', 'codex_kitchen dbp:poseX 1.20', 'codex_kitchen dbp:poseY 0.40', 'codex_kitchen_cup rdf:type Cup', 'codex_kitchen_cup dbp:name KITCHEN_PROBE_CUP', 'codex_kitchen_cup dbp:color white', 'codex_kitchen_cup oro:isIn codex_kitchen', 'myself sees codex_kitchen_cup', 'myself canReceiveAt codex_robot_station', 'codex_recipient_person dbp:poseX 0.30', 'codex_recipient_person dbp:poseY -0.20', 'myself sees codex_probe_apple', 'codex_probe_apple rdf:type Apple', 'codex_probe_apple dbp:name ATLAS', 'codex_probe_apple dbp:color red', 'codex_probe_apple oro:isOn table_1', 'myself sees codex_probe_book', 'codex_probe_book rdf:type Book', 'codex_probe_book dbp:name MIDAS', 'codex_probe_book dbp:color blue', 'codex_probe_book oro:isOn table_1', 'myself sees codex_probe_phone', 'codex_probe_phone rdf:type CellularTelephone', 'codex_probe_phone dbp:name VEGA', 'codex_probe_phone dbp:color silver', 'codex_probe_phone oro:isOn table_1', 'codex_robot_station rdf:type Place', 'codex_robot_station dbp:name robot_station', 'codex_robot_station dbp:frameId map', 'codex_robot_station dbp:poseSource semantic_fixture', 'codex_robot_station dbp:poseX 0.00', 'codex_robot_station dbp:poseY 0.00', 'myself oro:isAt codex_robot_station', 'nao_robot oro:isAt codex_robot_station', 'myself canReach codex_kitchen', 'apple_ajrte rdf:type Apple', 'apple_ajrte dbp:name apple', 'apple_ajrte dbp:color red', 'apple_ajrte oro:isOn table_zmrkd', 'table_zmrkd rdf:type Table', 'table_zmrkd dbp:name table', 'myself sees apple_ajrte', 'myself sees table_zmrkd', 'myself canReach apple_ajrte', 'myself canReach table_zmrkd', 'book_vpqlm rdf:type Book', 'book_vpqlm dbp:name book', 'book_vpqlm dbp:color blue', 'book_vpqlm oro:isOn table_zmrkd', 'person_axlre rdf:type Human', 'person_axlre dbp:name Alex', 'myself sees book_vpqlm', 'myself sees person_axlre', 'myself canReach book_vpqlm', 'myself sees codex_gold_apple', 'codex_gold_apple rdf:type Apple', 'codex_gold_apple dbp:name KAREN', 'codex_gold_apple dbp:color gold', 'codex_gold_apple oro:isOn codex_gold_table', 'codex_gold_table rdf:type Table', 'codex_gold_table dbp:name table', 'myself sees codex_gold_recipient', 'codex_gold_recipient rdf:type Human', 'codex_gold_recipient dbp:name ALEX', 'codex_gold_recipient dbp:frameId codex_gold_recipient', 'myself canReach codex_gold_apple', 'myself sees codex_ablation_cup', 'codex_ablation_cup rdf:type Cup', 'codex_ablation_cup dbp:name TITAS', 'codex_ablation_cup dbp:color gold', 'myself sees codex_ablation_person', 'codex_ablation_person rdf:type Human', 'codex_ablation_person dbp:name ALEX', 'codex_stress_table rdf:type Table', 'codex_stress_table dbp:name work_table', 'codex_stress_shelf rdf:type Shelf', 'codex_stress_shelf dbp:name storage_shelf', 'codex_stress_cup rdf:type Cup', 'codex_stress_cup dbp:name TITAS', 'codex_stress_cup dbp:color gold', 'codex_stress_cup oro:isOn codex_stress_table', 'codex_stress_book rdf:type Book', 'codex_stress_book dbp:name MIDAS', 'codex_stress_book dbp:color blue', 'codex_stress_book oro:isOn codex_stress_table', 'myself sees codex_stress_table', 'myself sees codex_stress_shelf', 'myself sees codex_stress_cup', 'myself sees codex_stress_book', 'myself canReach codex_stress_cup', 'myself canReach codex_stress_book', 'codex_stress_cup oro:isOn codex_stress_shelf', 'codex_stress_alex rdf:type Human', 'codex_stress_alex dbp:name ALEX', 'codex_stress_alex dbp:frameId codex_stress_alex', 'codex_stress_alex dbp:poseSource semantic_fixture', 'myself sees codex_stress_alex', 'codex_stress_book oro:isOn codex_stress_shelf', 'anonymous_person_stale rdf:type Human', 'myself sees anonymous_person_stale', 'sim_person_stale rdf:type Human', 'myself sees sim_person_stale', 'codex_extreme_table rdf:type Table', 'codex_extreme_table dbp:name work_table', 'codex_extreme_shelf rdf:type Shelf', 'codex_extreme_shelf dbp:name storage_shelf', 'codex_extreme_cup rdf:type Cup', 'codex_extreme_cup dbp:name TITAS', 'codex_extreme_cup dbp:color gold', 'codex_extreme_cup oro:isOn codex_extreme_table', 'codex_extreme_book rdf:type Book', 'codex_extreme_book dbp:name MIDAS', 'codex_extreme_book dbp:color blue', 'codex_extreme_book oro:isOn codex_extreme_table', 'codex_extreme_book dbp:locationHint under_table', 'codex_extreme_apple rdf:type Apple', 'codex_extreme_apple dbp:name ATLAS', 'codex_extreme_apple dbp:color red', 'codex_extreme_apple oro:isOn codex_extreme_table', 'codex_extreme_alex rdf:type Human', 'codex_extreme_alex dbp:name ALEX', 'codex_extreme_alex dbp:frameId codex_extreme_alex', 'codex_extreme_alex dbp:poseSource semantic_fixture', 'myself sees codex_extreme_table', 'myself sees codex_extreme_shelf', 'myself sees codex_extreme_cup', 'myself sees codex_extreme_book', 'myself sees codex_extreme_apple', 'myself sees codex_extreme_alex', 'myself canReach codex_extreme_cup', 'myself canReach codex_extreme_book', 'myself canReach codex_extreme_apple', 'codex_extreme_heavy_box rdf:type Box', 'codex_extreme_heavy_box dbp:name heavy_box', 'codex_extreme_heavy_box dbp:locationHint under_table', 'codex_extreme_heavy_box oro:isOn codex_extreme_table', 'myself sees codex_extreme_heavy_box'], models=['default'], lifespan=builtin_interfaces.msg.Duration(sec=1, nanosec=0))\n\nresponse:\nkb_msgs.srv.Revise_Response(success=True, error_msg='')",
+          "retracted_statement_count": 189,
+          "subjects": [
+            "codex_probe_cup",
+            "codex_probe_table",
+            "codex_count_cup",
+            "codex_count_book",
+            "codex_count_phone",
+            "codex_skill_phone",
+            "codex_table_object",
+            "codex_recipient_person",
+            "codex_bring_cup",
+            "codex_bring_book",
+            "codex_kitchen",
+            "codex_kitchen_cup",
+            "codex_probe_apple",
+            "codex_probe_book",
+            "codex_probe_phone",
+            "codex_robot_station",
+            "apple_ajrte",
+            "table_zmrkd",
+            "book_vpqlm",
+            "person_axlre",
+            "codex_gold_apple",
+            "codex_gold_table",
+            "codex_gold_recipient",
+            "codex_ablation_cup",
+            "codex_ablation_person",
+            "codex_stress_table",
+            "codex_stress_shelf",
+            "codex_stress_cup",
+            "codex_stress_book",
+            "codex_stress_alex",
+            "anonymous_person_stale",
+            "sim_person_stale",
+            "codex_extreme_table",
+            "codex_extreme_shelf",
+            "codex_extreme_cup",
+            "codex_extreme_book",
+            "codex_extreme_apple",
+            "codex_extreme_alex",
+            "codex_extreme_heavy_box"
+          ]
+        },
+        {
+          "contaminated": false,
+          "remaining": [],
+          "retract_output": "waiting for service to become available...\nrequester: making request: kb_msgs.srv.Revise_Request(method='retract', statements=['codex_base_table rdf:type Table', 'codex_base_table dbp:name table', 'codex_base_table dbp:frameId map', 'codex_base_table dbp:poseSource semantic_fixture', 'codex_base_table dbp:poseX 0.80', 'codex_base_table dbp:poseY 0.00', 'myself sees codex_base_table', 'codex_base_cup rdf:type Cup', 'codex_base_cup dbp:name BASE_CUP', 'codex_base_cup dbp:color red', 'codex_base_cup oro:isOn codex_base_table', 'myself sees codex_base_cup', 'myself canReach codex_base_cup', 'codex_base_book rdf:type Book', 'codex_base_book dbp:name BASE_BOOK', 'codex_base_book dbp:color blue', 'codex_base_book oro:isOn codex_base_table', 'myself sees codex_base_book', 'myself canReach codex_base_book', 'myself oro:isAt codex_base_station', 'codex_base_station rdf:type Place', 'codex_base_station dbp:name robot_station', 'codex_base_station dbp:frameId map', 'codex_base_station dbp:poseSource semantic_fixture', 'codex_base_station dbp:poseX 0.00', 'codex_base_station dbp:poseY 0.00', 'codex_gold_table rdf:type Table', 'codex_gold_table dbp:name table', 'myself sees codex_gold_table', 'codex_gold_handoff_area rdf:type Place', 'codex_gold_handoff_area dbp:name handoff_area', 'codex_gold_apple rdf:type Apple', 'codex_gold_apple dbp:name KAREN', 'codex_gold_apple dbp:color gold', 'codex_gold_apple oro:isOn codex_gold_table', 'myself sees codex_gold_apple', 'myself canReach codex_gold_apple', 'codex_gold_recipient rdf:type Human', 'codex_gold_recipient dbp:name ALEX', 'codex_gold_recipient dbp:frameId codex_gold_recipient', 'codex_gold_recipient dbp:poseSource semantic_fixture', 'codex_gold_recipient oro:isIn codex_gold_handoff_area', 'codex_gold_handoff_area oro:contains codex_gold_recipient', 'myself sees codex_gold_recipient', 'codex_gold_station rdf:type Place', 'codex_gold_station dbp:name robot_station', 'myself oro:isAt codex_gold_station', 'nao_robot oro:isAt codex_gold_station', 'codex_iiia_station rdf:type Place', 'codex_iiia_station dbp:name robot_station', 'codex_iiia_station dbp:frameId map', 'codex_iiia_station dbp:poseSource semantic_fixture', 'codex_iiia_station dbp:poseX 0.00', 'codex_iiia_station dbp:poseY 0.00', 'myself oro:isAt codex_iiia_station', 'nao_robot oro:isAt codex_iiia_station', 'myself canReceiveAt codex_iiia_station', 'codex_iiia_corridor rdf:type Place', 'codex_iiia_corridor dbp:name corridor', 'codex_iiia_corridor dbp:frameId map', 'codex_iiia_corridor dbp:poseSource semantic_fixture', 'codex_iiia_corridor dbp:poseX 0.80', 'codex_iiia_corridor dbp:poseY 0.00', 'codex_iiia_handoff_area rdf:type Place', 'codex_iiia_handoff_area dbp:name handoff_area', 'codex_iiia_handoff_area dbp:frameId map', 'codex_iiia_handoff_area dbp:poseSource semantic_fixture', 'codex_iiia_handoff_area dbp:poseX 0.20', 'codex_iiia_handoff_area dbp:poseY 0.70', 'codex_iiia_lab rdf:type Room', 'codex_iiia_lab dbp:name lab', 'codex_iiia_lab dbp:frameId map', 'codex_iiia_lab dbp:poseSource semantic_fixture', 'codex_iiia_lab dbp:poseX 1.60', 'codex_iiia_lab dbp:poseY 0.60', 'codex_iiia_kitchen rdf:type Room', 'codex_iiia_kitchen dbp:name kitchen', 'codex_iiia_kitchen dbp:frameId map', 'codex_iiia_kitchen dbp:poseSource semantic_fixture', 'codex_iiia_kitchen dbp:poseX 1.60', 'codex_iiia_kitchen dbp:poseY -0.60', 'codex_iiia_lab_table rdf:type Table', 'codex_iiia_lab_table dbp:name lab_table', 'codex_iiia_lab_table oro:isIn codex_iiia_lab', 'codex_iiia_lab oro:contains codex_iiia_lab_table', 'myself sees codex_iiia_lab_table', 'codex_iiia_kitchen_table rdf:type Table', 'codex_iiia_kitchen_table dbp:name kitchen_table', 'codex_iiia_kitchen_table oro:isIn codex_iiia_kitchen', 'codex_iiia_kitchen oro:contains codex_iiia_kitchen_table', 'myself sees codex_iiia_kitchen_table', 'codex_iiia_cup rdf:type Cup', 'codex_iiia_cup dbp:name IIIA_CUP', 'codex_iiia_cup dbp:color white', 'codex_iiia_cup oro:isIn codex_iiia_kitchen', 'codex_iiia_kitchen oro:contains codex_iiia_cup', 'myself sees codex_iiia_cup', 'myself canReach codex_iiia_cup', 'codex_iiia_book rdf:type Book', 'codex_iiia_book dbp:name IIIA_BOOK', 'codex_iiia_book dbp:color blue', 'codex_iiia_book oro:isOn codex_iiia_lab_table', 'myself sees codex_iiia_book', 'myself canReach codex_iiia_book', 'codex_iiia_phone rdf:type CellularTelephone', 'codex_iiia_phone dbp:name IIIA_PHONE', 'codex_iiia_phone dbp:color silver', 'codex_iiia_phone oro:isOn codex_iiia_lab_table', 'myself sees codex_iiia_phone', 'myself canReach codex_iiia_phone', 'codex_iiia_alex rdf:type Human', 'codex_iiia_alex dbp:name ALEX', 'codex_iiia_alex dbp:frameId codex_iiia_alex', 'codex_iiia_alex dbp:poseSource semantic_fixture', 'codex_iiia_alex dbp:poseX 0.20', 'codex_iiia_alex dbp:poseY -0.30', 'codex_iiia_alex oro:isIn codex_iiia_handoff_area', 'codex_iiia_handoff_area oro:contains codex_iiia_alex', 'myself sees codex_iiia_alex', 'codex_robot_station rdf:type Place', 'codex_robot_station dbp:name robot_station', 'codex_robot_station dbp:frameId map', 'codex_robot_station dbp:poseSource semantic_fixture', 'codex_robot_station dbp:poseX 0.00', 'codex_robot_station dbp:poseY 0.00', 'codex_kitchen rdf:type Room', 'codex_kitchen dbp:name kitchen', 'codex_kitchen dbp:frameId map', 'codex_kitchen dbp:poseSource semantic_fixture', 'codex_kitchen dbp:poseX 1.20', 'codex_kitchen dbp:poseY 0.40', 'codex_kitchen oro:contains codex_kitchen_cup', 'codex_kitchen oro:contains codex_kitchen_book', 'codex_recipient_area rdf:type Place', 'codex_recipient_area dbp:name handoff_area', 'codex_recipient_area dbp:frameId map', 'codex_recipient_area dbp:poseSource semantic_fixture', 'codex_recipient_area dbp:poseX 0.40', 'codex_recipient_area dbp:poseY -0.25', 'codex_kitchen_cup rdf:type Cup', 'codex_kitchen_cup dbp:name KITCHEN_PROBE_CUP', 'codex_kitchen_cup dbp:color white', 'codex_kitchen_cup oro:isIn codex_kitchen', 'myself sees codex_kitchen_cup', 'myself canReach codex_kitchen_cup', 'codex_kitchen_book rdf:type Book', 'codex_kitchen_book dbp:name RECIPE_BOOK', 'codex_kitchen_book dbp:color green', 'codex_kitchen_book oro:isIn codex_kitchen', 'myself sees codex_kitchen_book', 'myself canReach codex_kitchen_book', 'codex_recipient_person rdf:type Human', 'codex_recipient_person dbp:name ALEX', 'codex_recipient_person dbp:frameId codex_recipient_person', 'codex_recipient_person dbp:poseSource semantic_fixture', 'codex_recipient_person dbp:poseX 0.30', 'codex_recipient_person dbp:poseY -0.20', 'codex_recipient_person oro:isIn codex_recipient_area', 'codex_recipient_area oro:contains codex_recipient_person', 'myself sees codex_recipient_person', 'myself oro:isAt codex_robot_station', 'nao_robot oro:isAt codex_robot_station', 'myself canReceiveAt codex_robot_station', 'codex_lab_room rdf:type Room', 'codex_lab_room dbp:name lab', 'codex_lab_room dbp:frameId map', 'codex_lab_room dbp:poseSource semantic_fixture', 'codex_lab_room dbp:poseX 1.00', 'codex_lab_room dbp:poseY 0.20', 'codex_lab_station rdf:type Place', 'codex_lab_station dbp:name robot_station', 'codex_lab_station dbp:frameId map', 'codex_lab_station dbp:poseSource semantic_fixture', 'codex_lab_station dbp:poseX 0.00', 'codex_lab_station dbp:poseY 0.00', 'myself oro:isAt codex_lab_station', 'nao_robot oro:isAt codex_lab_station', 'codex_lab_desk rdf:type Desk', 'codex_lab_desk dbp:name desk', 'codex_lab_desk oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_desk', 'myself sees codex_lab_desk', 'codex_lab_table_section rdf:type Table', 'codex_lab_table_section dbp:name work_table', 'codex_lab_table_section oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_table_section', 'myself sees codex_lab_table_section', 'codex_lab_handoff_area rdf:type Place', 'codex_lab_handoff_area dbp:name handoff_area', 'codex_lab_handoff_area oro:isIn codex_lab_room', 'codex_lab_room oro:contains codex_lab_handoff_area', 'codex_lab_computer rdf:type Computer', 'codex_lab_computer dbp:name LAB_COMPUTER', 'codex_lab_computer dbp:color black', 'codex_lab_computer oro:isOn codex_lab_desk', 'myself sees codex_lab_computer', 'codex_lab_keyboard rdf:type Keyboard', 'codex_lab_keyboard dbp:name LAB_KEYBOARD', 'codex_lab_keyboard dbp:color white', 'codex_lab_keyboard oro:isOn codex_lab_desk', 'myself sees codex_lab_keyboard', 'codex_lab_cup rdf:type Cup', 'codex_lab_cup dbp:name LAB_CUP', 'codex_lab_cup dbp:color red', 'codex_lab_cup oro:isOn codex_lab_table_section', 'myself sees codex_lab_cup', 'myself canReach codex_lab_cup', 'codex_lab_manual rdf:type Book', 'codex_lab_manual dbp:name LAB_MANUAL', 'codex_lab_manual dbp:color green', 'codex_lab_manual oro:isOn codex_lab_table_section', 'myself sees codex_lab_manual', 'myself canReach codex_lab_manual', 'codex_lab_phone rdf:type CellularTelephone', 'codex_lab_phone dbp:name LAB_PHONE', 'codex_lab_phone dbp:color silver', 'codex_lab_phone oro:isOn codex_lab_table_section', 'myself sees codex_lab_phone', 'myself canReach codex_lab_phone', 'codex_lab_alex rdf:type Human', 'codex_lab_alex dbp:name ALEX', 'codex_lab_alex dbp:frameId codex_lab_alex', 'codex_lab_alex dbp:poseSource semantic_fixture', 'codex_lab_alex dbp:poseX 0.30', 'codex_lab_alex dbp:poseY -0.25', 'codex_lab_alex oro:isIn codex_lab_handoff_area', 'codex_lab_handoff_area oro:contains codex_lab_alex', 'myself sees codex_lab_alex', 'codex_lab_table rdf:type Table', 'codex_lab_table dbp:name table', 'myself sees codex_lab_table', 'codex_lab_apple rdf:type Apple', 'codex_lab_apple dbp:name ATLAS', 'codex_lab_apple dbp:color red', 'codex_lab_apple oro:isOn codex_lab_table', 'myself sees codex_lab_apple', 'myself canReach codex_lab_apple', 'codex_lab_book rdf:type Book', 'codex_lab_book dbp:name MIDAS', 'codex_lab_book dbp:color blue', 'codex_lab_book oro:isOn codex_lab_table', 'myself sees codex_lab_book', 'myself canReach codex_lab_book', 'codex_lab_phone dbp:name VEGA', 'codex_lab_phone oro:isOn codex_lab_table', 'codex_probe_cup rdf:type Cup', 'codex_probe_cup dbp:name TITAS', 'codex_probe_cup dbp:color gold', 'codex_probe_cup oro:isOn codex_lab_table', 'myself sees codex_probe_cup', 'myself canReach codex_probe_cup', 'codex_lab_table_station rdf:type Place', 'codex_lab_table_station dbp:name robot_station', 'myself oro:isAt codex_lab_table_station', 'nao_robot oro:isAt codex_lab_table_station'], models=['default'], lifespan=builtin_interfaces.msg.Duration(sec=1, nanosec=0))\n\nresponse:\nkb_msgs.srv.Revise_Response(success=True, error_msg='')",
+          "retracted_statement_count": 255,
+          "subjects": [
+            "codex_base_table",
+            "codex_base_cup",
+            "codex_base_book",
+            "codex_base_station",
+            "codex_gold_table",
+            "codex_gold_handoff_area",
+            "codex_gold_apple",
+            "codex_gold_recipient",
+            "codex_gold_station",
+            "codex_iiia_station",
+            "codex_iiia_corridor",
+            "codex_iiia_handoff_area",
+            "codex_iiia_lab",
+            "codex_iiia_kitchen",
+            "codex_iiia_lab_table",
+            "codex_iiia_kitchen_table",
+            "codex_iiia_cup",
+            "codex_iiia_book",
+            "codex_iiia_phone",
+            "codex_iiia_alex",
+            "codex_robot_station",
+            "codex_kitchen",
+            "codex_recipient_area",
+            "codex_kitchen_cup",
+            "codex_kitchen_book",
+            "codex_recipient_person",
+            "codex_lab_room",
+            "codex_lab_station",
+            "codex_lab_desk",
+            "codex_lab_table_section",
+            "codex_lab_handoff_area",
+            "codex_lab_computer",
+            "codex_lab_keyboard",
+            "codex_lab_cup",
+            "codex_lab_manual",
+            "codex_lab_phone",
+            "codex_lab_alex",
+            "codex_lab_table",
+            "codex_lab_apple",
+            "codex_lab_book",
+            "codex_probe_cup",
+            "codex_lab_table_station"
+          ]
+        }
+      ],
+      "remaining": [],
+      "retracted_statement_count": 444,
+      "subjects": [
+        "codex_probe_cup",
+        "codex_probe_table",
+        "codex_count_cup",
+        "codex_count_book",
+        "codex_count_phone",
+        "codex_skill_phone",
+        "codex_table_object",
+        "codex_recipient_person",
+        "codex_bring_cup",
+        "codex_bring_book",
+        "codex_kitchen",
+        "codex_kitchen_cup",
+        "codex_probe_apple",
+        "codex_probe_book",
+        "codex_probe_phone",
+        "codex_robot_station",
+        "apple_ajrte",
+        "table_zmrkd",
+        "book_vpqlm",
+        "person_axlre",
+        "codex_gold_apple",
+        "codex_gold_table",
+        "codex_gold_recipient",
+        "codex_ablation_cup",
+        "codex_ablation_person",
+        "codex_stress_table",
+        "codex_stress_shelf",
+        "codex_stress_cup",
+        "codex_stress_book",
+        "codex_stress_alex",
+        "anonymous_person_stale",
+        "sim_person_stale",
+        "codex_extreme_table",
+        "codex_extreme_shelf",
+        "codex_extreme_cup",
+        "codex_extreme_book",
+        "codex_extreme_apple",
+        "codex_extreme_alex",
+        "codex_extreme_heavy_box",
+        "codex_base_table",
+        "codex_base_cup",
+        "codex_base_book",
+        "codex_base_station",
+        "codex_gold_handoff_area",
+        "codex_gold_station",
+        "codex_iiia_station",
+        "codex_iiia_corridor",
+        "codex_iiia_handoff_area",
+        "codex_iiia_lab",
+        "codex_iiia_kitchen",
+        "codex_iiia_lab_table",
+        "codex_iiia_kitchen_table",
+        "codex_iiia_cup",
+        "codex_iiia_book",
+        "codex_iiia_phone",
+        "codex_iiia_alex",
+        "codex_recipient_area",
+        "codex_kitchen_book",
+        "codex_lab_room",
+        "codex_lab_station",
+        "codex_lab_desk",
+        "codex_lab_table_section",
+        "codex_lab_handoff_area",
+        "codex_lab_computer",
+        "codex_lab_keyboard",
+        "codex_lab_cup",
+        "codex_lab_manual",
+        "codex_lab_phone",
+        "codex_lab_alex",
+        "codex_lab_table",
+        "codex_lab_apple",
+        "codex_lab_book",
+        "codex_lab_table_station"
+      ]
+    },
+    "planner_generation": {
+      "max_tokens": 800,
+      "min_p": 0.0,
+      "model": "gemma4:cloud",
+      "presence_penalty": 0.0,
+      "provider": "ollama",
+      "repetition_penalty": 1.0,
+      "temperature": 0.1,
+      "think": false,
+      "timeout_sec": 60.0,
+      "top_k": 0,
+      "top_p": 1.0
+    },
+    "structured_trace_preflight": {
+      "available": true,
+      "event_count": 0,
+      "file_count": 1
+    },
+    "tracked_voice_cleanup": "",
+    "tracked_voice_cleanup_before_run": "",
+    "turn_pipeline_mode_matches_expected": true
+  },
+  "started_at_unix_sec": 1784607434.9010315,
+  "updated_at_unix_sec": 1784607899.5097737
+}
