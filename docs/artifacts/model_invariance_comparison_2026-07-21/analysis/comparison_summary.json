@@ -1,0 +1,4113 @@
+{
+  "case_matrix": {
+    "composite_bring_every_object_to_person": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      }
+    },
+    "composite_go_to_person_wave_report": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      }
+    },
+    "composite_head_all_directions": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      }
+    },
+    "composite_walk_every_object_reports_main": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      }
+    },
+    "dialogue_favorite_movie": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      }
+    },
+    "dialogue_greeting": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      }
+    },
+    "dialogue_movie_followup": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      }
+    },
+    "dialogue_non_action_recipient_memory": {
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      }
+    },
+    "dialogue_speed_of_light": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      }
+    },
+    "dialogue_weekend_plans": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      }
+    },
+    "environment_baseline_table_inventory": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      }
+    },
+    "environment_gold_apple_followup": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      }
+    },
+    "environment_gold_apple_handoff": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      }
+    },
+    "environment_grouped_location_delivery": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      }
+    },
+    "environment_grouped_location_followup": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      }
+    },
+    "environment_iiia_floor_inventory": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      }
+    },
+    "environment_iiia_kitchen_delivery": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      }
+    },
+    "environment_kitchen_inventory": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      }
+    },
+    "environment_lab_sections_delivery": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      }
+    },
+    "environment_lab_sections_inventory": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      }
+    },
+    "environment_lab_table_inventory": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "environment"
+      }
+    },
+    "extreme_all_objects_visit_look_wave_sit": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "expected planner request and execution feedback",
+          "planner evidence did not carry target_selection",
+          "missing ordered skills: perform_motion,navigate_to,look_at,wave_greet,perform_motion,report_result; observed=<none>"
+        ],
+        "status": "fail",
+        "suite": "capability_extreme"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "expected planner request and execution feedback",
+          "planner evidence did not carry target_selection",
+          "missing ordered skills: perform_motion,navigate_to,look_at,wave_greet,perform_motion,report_result; observed=<none>"
+        ],
+        "status": "fail",
+        "suite": "capability_extreme"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "expected planner request and execution feedback",
+          "missing ordered skills: perform_motion,navigate_to,look_at,wave_greet,perform_motion,report_result; observed=<none>"
+        ],
+        "status": "fail",
+        "suite": "capability_extreme"
+      }
+    },
+    "extreme_dialogue_inventory": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "capability_extreme"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "capability_extreme"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "evidence correlation is internally inconsistent: planner goal is missing execution feedback"
+        ],
+        "status": "not_scored",
+        "suite": "capability_extreme"
+      }
+    },
+    "extreme_dialogue_sit_stand_grab_return": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "capability_extreme"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "capability_extreme"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "expected planner request and execution feedback",
+          "report policy differed: expected=final observed=none",
+          "missing ordered skills: perform_motion,perform_motion,pick_object,navigate_to,report_result; observed=<none>"
+        ],
+        "status": "fail",
+        "suite": "capability_extreme"
+      }
+    },
+    "extreme_kneel_under_table_pick_report": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "expected planner request and execution feedback",
+          "missing ordered skills: perform_motion,pick_object,perform_motion,report_result; observed=<none>"
+        ],
+        "status": "fail",
+        "suite": "capability_extreme"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "expected planner request and execution feedback",
+          "missing ordered skills: perform_motion,pick_object,perform_motion,report_result; observed=<none>"
+        ],
+        "status": "fail",
+        "suite": "capability_extreme"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "missing ordered skills: report_result; observed=perform_motion,pick_object,perform_motion,pick_object,perform_motion"
+        ],
+        "status": "fail",
+        "suite": "capability_extreme"
+      }
+    },
+    "extreme_pick_place_kneel_report": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "asked for clarification despite complete fixture context",
+          "expected planner request and execution feedback",
+          "missing ordered skills: pick_object,place_object,perform_motion,report_result; observed=<none>",
+          "declared KB postcondition was not observed"
+        ],
+        "status": "fail",
+        "suite": "capability_extreme"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "asked for clarification despite complete fixture context",
+          "expected planner request and execution feedback",
+          "missing ordered skills: pick_object,place_object,perform_motion,report_result; observed=<none>",
+          "declared KB postcondition was not observed"
+        ],
+        "status": "fail",
+        "suite": "capability_extreme"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "missing ordered skills: report_result; observed=pick_object,place_object,perform_motion"
+        ],
+        "status": "fail",
+        "suite": "capability_extreme"
+      }
+    },
+    "extreme_unreachable_object_recovery": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "missing ordered skills: perform_motion,pick_object,report_result; observed=<none>"
+        ],
+        "status": "fail",
+        "suite": "capability_extreme"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "missing ordered skills: perform_motion,pick_object,report_result; observed=<none>"
+        ],
+        "status": "fail",
+        "suite": "capability_extreme"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "missing ordered skills: report_result; observed=perform_motion,pick_object"
+        ],
+        "status": "fail",
+        "suite": "capability_extreme"
+      }
+    },
+    "extreme_walk_pick_sit_report": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "capability_extreme"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "capability_extreme"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "expected planner request and execution feedback",
+          "missing ordered skills: navigate_to,pick_object,perform_motion,report_result; observed=<none>"
+        ],
+        "status": "fail",
+        "suite": "capability_extreme"
+      }
+    },
+    "fake_deep_baseline_inventory": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_fail_once_navigation_full"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_all_success"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_all_success"
+      }
+    },
+    "fake_deep_gold_apple_followup": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_all_success"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_all_success"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_all_success"
+      }
+    },
+    "fake_deep_gold_apple_multiturn": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "configured fake failure for navigate_to was not applicable to dispatched skills"
+        ],
+        "status": "not_scored",
+        "suite": "fake_deep_fail_once_navigation_full"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_all_success"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_all_success"
+      }
+    },
+    "fake_deep_grouped_work_table_delivery": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "configured fake failure for navigate_to was not applicable to dispatched skills"
+        ],
+        "status": "not_scored",
+        "suite": "fake_deep_fail_once_navigation_full"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_all_success"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_all_success"
+      }
+    },
+    "fake_deep_iiia_floor_location_followup": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_fail_once_navigation_full"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_all_success"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_all_success"
+      }
+    },
+    "fake_deep_iiia_kitchen_delivery": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "configured fake failure for navigate_to was not applicable to dispatched skills"
+        ],
+        "status": "not_scored",
+        "suite": "fake_deep_fail_once_navigation_full"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_all_success"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_all_success"
+      }
+    },
+    "fake_deep_missing_object_recovery": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_fail_once_navigation_full"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_all_success"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "recovery/failure case lacked terminal or speech evidence"
+        ],
+        "status": "degraded",
+        "suite": "fake_deep_all_success"
+      }
+    },
+    "fake_deep_missing_recipient_clarification": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_fail_once_navigation_full"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_all_success"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_all_success"
+      }
+    },
+    "fake_deep_ordered_walk_report": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "missing terminal or speech evidence",
+          "configured recoverable failure did not produce a replan"
+        ],
+        "status": "fail",
+        "suite": "fake_deep_fail_once_navigation_full"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_fail_once_navigation_targeted"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "fake_deep_fail_once_navigation_targeted"
+      }
+    },
+    "global_timeout": {
+      "gemma4:31b-cloud": {
+        "reasons": [],
+        "status": "",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [],
+        "status": "",
+        "suite": "main"
+      }
+    },
+    "kb_cup_name": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      }
+    },
+    "kb_multi_object_count": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      }
+    },
+    "kb_mutation_add_red_cup": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "evidence correlation is internally inconsistent: planner goal is missing execution feedback"
+        ],
+        "status": "not_scored",
+        "suite": "main"
+      }
+    },
+    "kb_object_on_table": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      }
+    },
+    "kb_probe_scene_update": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      }
+    },
+    "kb_stress_delivery_postcondition": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "kb_stress"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "kb_stress"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "evidence correlation is internally inconsistent: structured trace is missing the chatbot turn result"
+        ],
+        "status": "not_scored",
+        "suite": "kb_stress"
+      }
+    },
+    "kb_stress_grounded_delivery": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "kb_stress"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "kb_stress"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "kb_stress"
+      }
+    },
+    "kb_stress_mixed_final_query": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "kb_stress"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "kb_stress"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "kb_stress"
+      }
+    },
+    "kb_stress_move_remaining_object": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "kb_stress"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "kb_stress"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "kb_stress"
+      }
+    },
+    "kb_stress_revise_support": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "kb_stress"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "kb_stress"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "robot speech omitted grounded terms: storage shelf, work table"
+        ],
+        "status": "fail",
+        "suite": "kb_stress"
+      }
+    },
+    "kb_stress_revised_relation_query": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "kb_stress"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "kb_stress"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "robot speech omitted grounded terms: TITAS, storage shelf, MIDAS, work table"
+        ],
+        "status": "fail",
+        "suite": "kb_stress"
+      }
+    },
+    "kb_stress_seed_inventory": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "kb_stress"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "kb_stress"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "kb_stress"
+      }
+    },
+    "kb_visible_now_baseline": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      }
+    },
+    "maximal_kitchen_cup_to_operator": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "clarification was not expressed in correlated speech"
+        ],
+        "status": "fail",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "clarification was not expressed in correlated speech"
+        ],
+        "status": "fail",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "clarification was not expressed in correlated speech"
+        ],
+        "status": "fail",
+        "suite": "main"
+      }
+    },
+    "robust_future_recipient_memory": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "robustness"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "robustness"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "robustness"
+      }
+    },
+    "robust_missing_recipient": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "expected clarification for deliberately absent/ambiguous target",
+          "clarification was not expressed in correlated speech"
+        ],
+        "status": "fail",
+        "suite": "robustness"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "expected clarification for deliberately absent/ambiguous target",
+          "clarification was not expressed in correlated speech"
+        ],
+        "status": "fail",
+        "suite": "robustness"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "expected clarification for deliberately absent/ambiguous target",
+          "clarification was not expressed in correlated speech"
+        ],
+        "status": "fail",
+        "suite": "robustness"
+      }
+    },
+    "robust_multiturn_execute_followup": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "selected members differed: expected=['codex_lab_cup', 'codex_lab_manual', 'codex_lab_phone'] observed=['codex_lab_cup', 'codex_lab_manual']"
+        ],
+        "status": "fail",
+        "suite": "robustness"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "selected members differed: expected=['codex_lab_cup', 'codex_lab_manual', 'codex_lab_phone'] observed=['codex_lab_cup', 'codex_lab_manual']"
+        ],
+        "status": "fail",
+        "suite": "robustness"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "robustness"
+      }
+    },
+    "robust_object_role_exclusion": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "robustness"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "robustness"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "expected planner request and execution feedback"
+        ],
+        "status": "fail",
+        "suite": "robustness"
+      }
+    },
+    "robust_paraphrased_group_delivery": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "robustness"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "robustness"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "robustness"
+      }
+    },
+    "skill_head_up": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      }
+    },
+    "skill_look_at_person": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      }
+    },
+    "skill_pick_object_on_table": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "expected planner request and execution feedback"
+        ],
+        "status": "fail",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "expected planner request and execution feedback"
+        ],
+        "status": "fail",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "missing terminal or speech evidence"
+        ],
+        "status": "degraded",
+        "suite": "main"
+      }
+    },
+    "skill_pick_phone_generic": {
+      "gemma4:31b-cloud": {
+        "reasons": [
+          "expected planner request and execution feedback"
+        ],
+        "status": "fail",
+        "suite": "main"
+      },
+      "gemma4:cloud": {
+        "reasons": [
+          "expected planner request and execution feedback"
+        ],
+        "status": "fail",
+        "suite": "main"
+      },
+      "nemotron-3-super:cloud": {
+        "reasons": [
+          "matched expected trajectory"
+        ],
+        "status": "pass",
+        "suite": "main"
+      }
+    }
+  },
+  "date": "2026-07-21",
+  "frozen_image": "iiia:nao-runtime-v34-final-frozen-review",
+  "frozen_image_id": "sha256:bb82c158092a69870dae48272b3b20fd8cd4ecfe97a0e61a2253a2cca00c663e",
+  "interpretation": {
+    "attribution_rule": "Shared failures across both Gemma variants are treated as stack or contract-sensitive until a discriminating probe proves otherwise. Nemotron-only failures are model or backend variance candidates unless evidence correlation identifies a harness issue.",
+    "deterministic_tests": "Source and harness tests remain separate from these live questionnaire records.",
+    "live_status_semantics": "pass is scoreable success, degraded is scoreable but incomplete, fail is scoreable failure, not_scored is excluded from rates, and blank status is an unresolved global timeout."
+  },
+  "models": [
+    {
+      "all_case_rate": {
+        "degraded": 0,
+        "fail": 10,
+        "not_scored": 3,
+        "pass": 54,
+        "scored": 64,
+        "strict_pass_rate": 0.8438,
+        "unresolved": 2
+      },
+      "comparison_role": "baseline",
+      "directory": "gemma4_31b",
+      "label": "Gemma4 31B cloud",
+      "model": "gemma4:31b-cloud",
+      "preflight": {
+        "fallback_events": 0,
+        "knowledge_core_ready": true,
+        "lifecycle_states": {
+          "/chatbot_llm": "active [3]",
+          "/dialogue_manager": "active [3]",
+          "/nao_orchestrator": "active [3]"
+        },
+        "llm_preflight_failures": {
+          "chatbot_llm": 0,
+          "planner_llm": 0
+        },
+        "missing_nodes": [],
+        "status": "ready_for_semantic_scoring"
+      },
+      "profile": "historical baseline, start_naoqi_driver=true",
+      "provider": "ollama",
+      "startup_snapshot": "gemma4_31b/startup_snapshot.json",
+      "suite_summary": {
+        "capability_extreme": {
+          "case_count": 7,
+          "case_set": "capability_extreme",
+          "cases": [
+            {
+              "executed_skills": [
+                "navigate_to",
+                "pick_object",
+                "perform_motion",
+                "report_result"
+              ],
+              "name": "extreme_walk_pick_sit_report",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "extreme_kneel_under_table_pick_report",
+              "reasons": [
+                "expected planner request and execution feedback",
+                "missing ordered skills: perform_motion,pick_object,perform_motion,report_result; observed=<none>"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [],
+              "name": "extreme_dialogue_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "perform_motion",
+                "pick_object",
+                "navigate_to",
+                "report_result"
+              ],
+              "name": "extreme_dialogue_sit_stand_grab_return",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "extreme_all_objects_visit_look_wave_sit",
+              "reasons": [
+                "expected planner request and execution feedback",
+                "planner evidence did not carry target_selection",
+                "missing ordered skills: perform_motion,navigate_to,look_at,wave_greet,perform_motion,report_result; observed=<none>"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [],
+              "name": "extreme_pick_place_kneel_report",
+              "reasons": [
+                "asked for clarification despite complete fixture context",
+                "expected planner request and execution feedback",
+                "missing ordered skills: pick_object,place_object,perform_motion,report_result; observed=<none>",
+                "declared KB postcondition was not observed"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [],
+              "name": "extreme_unreachable_object_recovery",
+              "reasons": [
+                "missing ordered skills: perform_motion,pick_object,report_result; observed=<none>"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 4,
+            "not_scored": 0,
+            "pass": 3,
+            "scored": 7,
+            "strict_pass_rate": 0.4286,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "gemma4_31b/capability_extreme.json",
+          "status_counts": {
+            "fail": 4,
+            "pass": 3
+          }
+        },
+        "environment": {
+          "case_count": 11,
+          "case_set": "environment",
+          "cases": [
+            {
+              "executed_skills": [],
+              "name": "environment_baseline_table_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "environment_lab_table_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "environment_lab_sections_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "environment_lab_sections_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "environment_kitchen_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "environment_grouped_location_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "environment_grouped_location_followup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "environment_iiia_floor_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "environment_iiia_kitchen_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "environment_gold_apple_handoff",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "environment_gold_apple_followup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 0,
+            "not_scored": 0,
+            "pass": 11,
+            "scored": 11,
+            "strict_pass_rate": 1.0,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "gemma4_31b/environment.json",
+          "status_counts": {
+            "pass": 11
+          }
+        },
+        "fake_deep_all_success": {
+          "case_count": 9,
+          "case_set": "fake_deep",
+          "cases": [
+            {
+              "executed_skills": [],
+              "name": "fake_deep_baseline_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "navigate_to",
+                "report_result"
+              ],
+              "name": "fake_deep_ordered_walk_report",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "fake_deep_grouped_work_table_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "find_object"
+              ],
+              "name": "fake_deep_missing_object_recovery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "fake_deep_missing_recipient_clarification",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "fake_deep_iiia_kitchen_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "fake_deep_iiia_floor_location_followup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "fake_deep_gold_apple_multiturn",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "fake_deep_gold_apple_followup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 0,
+            "not_scored": 0,
+            "pass": 9,
+            "scored": 9,
+            "strict_pass_rate": 1.0,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "gemma4_31b/fake_deep_all_success.json",
+          "status_counts": {
+            "pass": 9
+          }
+        },
+        "fake_deep_fail_once_navigation": {
+          "case_count": 0,
+          "case_set": "fake_deep",
+          "cases": [],
+          "rate": {
+            "degraded": 0,
+            "fail": 0,
+            "not_scored": 0,
+            "pass": 0,
+            "scored": 0,
+            "strict_pass_rate": null,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "gemma4_31b/fake_deep_fail_once_navigation.json",
+          "status_counts": {}
+        },
+        "fake_deep_fail_once_navigation_full": {
+          "case_count": 9,
+          "case_set": "fake_deep",
+          "cases": [
+            {
+              "executed_skills": [],
+              "name": "fake_deep_baseline_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "navigate_to"
+              ],
+              "name": "fake_deep_ordered_walk_report",
+              "reasons": [
+                "missing terminal or speech evidence",
+                "configured recoverable failure did not produce a replan"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "fake_deep_grouped_work_table_delivery",
+              "reasons": [
+                "configured fake failure for navigate_to was not applicable to dispatched skills"
+              ],
+              "replan_observed": false,
+              "status": "not_scored"
+            },
+            {
+              "executed_skills": [
+                "find_object"
+              ],
+              "name": "fake_deep_missing_object_recovery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "fake_deep_missing_recipient_clarification",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "inspect_area",
+                "bring_object",
+                "report_result"
+              ],
+              "name": "fake_deep_iiia_kitchen_delivery",
+              "reasons": [
+                "configured fake failure for navigate_to was not applicable to dispatched skills"
+              ],
+              "replan_observed": false,
+              "status": "not_scored"
+            },
+            {
+              "executed_skills": [],
+              "name": "fake_deep_iiia_floor_location_followup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "fake_deep_gold_apple_multiturn",
+              "reasons": [
+                "configured fake failure for navigate_to was not applicable to dispatched skills"
+              ],
+              "replan_observed": false,
+              "status": "not_scored"
+            },
+            {
+              "executed_skills": [],
+              "name": "global_timeout",
+              "reasons": [],
+              "replan_observed": false,
+              "status": ""
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 1,
+            "not_scored": 3,
+            "pass": 4,
+            "scored": 5,
+            "strict_pass_rate": 0.8,
+            "unresolved": 1
+          },
+          "run_status": "timed_out",
+          "source_file": "gemma4_31b/fake_deep_fail_once_navigation_full.json",
+          "status_counts": {
+            "": 1,
+            "fail": 1,
+            "not_scored": 3,
+            "pass": 4
+          }
+        },
+        "kb_stress": {
+          "case_count": 7,
+          "case_set": "kb_stress",
+          "cases": [
+            {
+              "executed_skills": [],
+              "name": "kb_stress_seed_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_stress_revise_support",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_stress_revised_relation_query",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "kb_stress_grounded_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_stress_delivery_postcondition",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "kb_stress_move_remaining_object",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_stress_mixed_final_query",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 0,
+            "not_scored": 0,
+            "pass": 7,
+            "scored": 7,
+            "strict_pass_rate": 1.0,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "gemma4_31b/kb_stress.json",
+          "status_counts": {
+            "pass": 7
+          }
+        },
+        "main": {
+          "case_count": 21,
+          "case_set": "main",
+          "cases": [
+            {
+              "executed_skills": [],
+              "name": "dialogue_greeting",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "dialogue_favorite_movie",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "dialogue_movie_followup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "dialogue_weekend_plans",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "dialogue_speed_of_light",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_visible_now_baseline",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_probe_scene_update",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_object_on_table",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_cup_name",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_multi_object_count",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "perform_motion"
+              ],
+              "name": "skill_head_up",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "skill_pick_phone_generic",
+              "reasons": [
+                "expected planner request and execution feedback"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [],
+              "name": "skill_pick_object_on_table",
+              "reasons": [
+                "expected planner request and execution feedback"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [
+                "look_at",
+                "report_result"
+              ],
+              "name": "skill_look_at_person",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "kb_add"
+              ],
+              "name": "kb_mutation_add_red_cup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "perform_motion",
+                "report_result"
+              ],
+              "name": "composite_head_all_directions",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "composite_bring_every_object_to_person",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "maximal_kitchen_cup_to_operator",
+              "reasons": [
+                "clarification was not expressed in correlated speech"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [
+                "navigate_to",
+                "wave_greet",
+                "report_result"
+              ],
+              "name": "composite_go_to_person_wave_report",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "navigate_to",
+                "report_result"
+              ],
+              "name": "composite_walk_every_object_reports_main",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "global_timeout",
+              "reasons": [],
+              "replan_observed": false,
+              "status": ""
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 3,
+            "not_scored": 0,
+            "pass": 17,
+            "scored": 20,
+            "strict_pass_rate": 0.85,
+            "unresolved": 1
+          },
+          "run_status": "timed_out",
+          "source_file": "gemma4_31b/main.json",
+          "status_counts": {
+            "": 1,
+            "fail": 3,
+            "pass": 17
+          }
+        },
+        "robustness": {
+          "case_count": 5,
+          "case_set": "robustness",
+          "cases": [
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "robust_paraphrased_group_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "navigate_to",
+                "report_result"
+              ],
+              "name": "robust_object_role_exclusion",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "robust_missing_recipient",
+              "reasons": [
+                "expected clarification for deliberately absent/ambiguous target",
+                "clarification was not expressed in correlated speech"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [],
+              "name": "robust_future_recipient_memory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "robust_multiturn_execute_followup",
+              "reasons": [
+                "selected members differed: expected=['codex_lab_cup', 'codex_lab_manual', 'codex_lab_phone'] observed=['codex_lab_cup', 'codex_lab_manual']"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 2,
+            "not_scored": 0,
+            "pass": 3,
+            "scored": 5,
+            "strict_pass_rate": 0.6,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "gemma4_31b/robustness.json",
+          "status_counts": {
+            "fail": 2,
+            "pass": 3
+          }
+        }
+      }
+    },
+    {
+      "all_case_rate": {
+        "degraded": 0,
+        "fail": 9,
+        "not_scored": 0,
+        "pass": 52,
+        "scored": 61,
+        "strict_pass_rate": 0.8525,
+        "unresolved": 0
+      },
+      "comparison_role": "third model",
+      "directory": "gemma4_cloud",
+      "label": "Gemma4 cloud",
+      "model": "gemma4:cloud",
+      "preflight": {
+        "fallback_events": 0,
+        "knowledge_core_ready": true,
+        "lifecycle_states": {
+          "/chatbot_llm": "active [3]",
+          "/dialogue_manager": "active [3]",
+          "/nao_orchestrator": "active [3]"
+        },
+        "llm_preflight_failures": {
+          "chatbot_llm": 0,
+          "planner_llm": 0
+        },
+        "missing_nodes": [],
+        "status": "ready_for_semantic_scoring"
+      },
+      "profile": "controlled semantic cell, start_naoqi_driver=false",
+      "provider": "ollama",
+      "startup_snapshot": "gemma4_cloud/startup_snapshot.json",
+      "suite_summary": {
+        "capability_extreme": {
+          "case_count": 7,
+          "case_set": "capability_extreme",
+          "cases": [
+            {
+              "executed_skills": [
+                "navigate_to",
+                "pick_object",
+                "perform_motion",
+                "report_result"
+              ],
+              "name": "extreme_walk_pick_sit_report",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "extreme_kneel_under_table_pick_report",
+              "reasons": [
+                "expected planner request and execution feedback",
+                "missing ordered skills: perform_motion,pick_object,perform_motion,report_result; observed=<none>"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [],
+              "name": "extreme_dialogue_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "perform_motion",
+                "pick_object",
+                "navigate_to",
+                "report_result"
+              ],
+              "name": "extreme_dialogue_sit_stand_grab_return",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "extreme_all_objects_visit_look_wave_sit",
+              "reasons": [
+                "expected planner request and execution feedback",
+                "planner evidence did not carry target_selection",
+                "missing ordered skills: perform_motion,navigate_to,look_at,wave_greet,perform_motion,report_result; observed=<none>"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [],
+              "name": "extreme_pick_place_kneel_report",
+              "reasons": [
+                "asked for clarification despite complete fixture context",
+                "expected planner request and execution feedback",
+                "missing ordered skills: pick_object,place_object,perform_motion,report_result; observed=<none>",
+                "declared KB postcondition was not observed"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [],
+              "name": "extreme_unreachable_object_recovery",
+              "reasons": [
+                "missing ordered skills: perform_motion,pick_object,report_result; observed=<none>"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 4,
+            "not_scored": 0,
+            "pass": 3,
+            "scored": 7,
+            "strict_pass_rate": 0.4286,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "gemma4_cloud/capability_extreme.json",
+          "status_counts": {
+            "fail": 4,
+            "pass": 3
+          }
+        },
+        "environment": {
+          "case_count": 11,
+          "case_set": "environment",
+          "cases": [
+            {
+              "executed_skills": [],
+              "name": "environment_baseline_table_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "environment_lab_table_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "environment_lab_sections_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "environment_lab_sections_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "environment_kitchen_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "environment_grouped_location_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "environment_grouped_location_followup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "environment_iiia_floor_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "environment_iiia_kitchen_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "environment_gold_apple_handoff",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "environment_gold_apple_followup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 0,
+            "not_scored": 0,
+            "pass": 11,
+            "scored": 11,
+            "strict_pass_rate": 1.0,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "gemma4_cloud/environment.json",
+          "status_counts": {
+            "pass": 11
+          }
+        },
+        "fake_deep_all_success": {
+          "case_count": 9,
+          "case_set": "fake_deep",
+          "cases": [
+            {
+              "executed_skills": [],
+              "name": "fake_deep_baseline_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "navigate_to",
+                "report_result"
+              ],
+              "name": "fake_deep_ordered_walk_report",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "fake_deep_grouped_work_table_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "find_object"
+              ],
+              "name": "fake_deep_missing_object_recovery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "fake_deep_missing_recipient_clarification",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "fake_deep_iiia_kitchen_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "fake_deep_iiia_floor_location_followup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "fake_deep_gold_apple_multiturn",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "fake_deep_gold_apple_followup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 0,
+            "not_scored": 0,
+            "pass": 9,
+            "scored": 9,
+            "strict_pass_rate": 1.0,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "gemma4_cloud/fake_deep_all_success.json",
+          "status_counts": {
+            "pass": 9
+          }
+        },
+        "fake_deep_fail_once_navigation_targeted": {
+          "case_count": 1,
+          "case_set": "fake_deep",
+          "cases": [
+            {
+              "executed_skills": [
+                "navigate_to",
+                "report_result"
+              ],
+              "name": "fake_deep_ordered_walk_report",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": true,
+              "status": "pass"
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 0,
+            "not_scored": 0,
+            "pass": 1,
+            "scored": 1,
+            "strict_pass_rate": 1.0,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "gemma4_cloud/fake_deep_fail_once_navigation_targeted.json",
+          "status_counts": {
+            "pass": 1
+          }
+        },
+        "kb_stress": {
+          "case_count": 7,
+          "case_set": "kb_stress",
+          "cases": [
+            {
+              "executed_skills": [],
+              "name": "kb_stress_seed_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_stress_revise_support",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_stress_revised_relation_query",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "kb_stress_grounded_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_stress_delivery_postcondition",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "inspect_area",
+                "bring_object",
+                "report_result"
+              ],
+              "name": "kb_stress_move_remaining_object",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_stress_mixed_final_query",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 0,
+            "not_scored": 0,
+            "pass": 7,
+            "scored": 7,
+            "strict_pass_rate": 1.0,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "gemma4_cloud/kb_stress.json",
+          "status_counts": {
+            "pass": 7
+          }
+        },
+        "main": {
+          "case_count": 21,
+          "case_set": "main",
+          "cases": [
+            {
+              "executed_skills": [],
+              "name": "dialogue_greeting",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "dialogue_favorite_movie",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "dialogue_movie_followup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "dialogue_weekend_plans",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "dialogue_speed_of_light",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_visible_now_baseline",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_probe_scene_update",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_object_on_table",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_cup_name",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_multi_object_count",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "perform_motion"
+              ],
+              "name": "skill_head_up",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "skill_pick_phone_generic",
+              "reasons": [
+                "expected planner request and execution feedback"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [],
+              "name": "skill_pick_object_on_table",
+              "reasons": [
+                "expected planner request and execution feedback"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [
+                "look_at",
+                "report_result"
+              ],
+              "name": "skill_look_at_person",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "kb_add"
+              ],
+              "name": "kb_mutation_add_red_cup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "perform_motion",
+                "report_result"
+              ],
+              "name": "composite_head_all_directions",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "composite_bring_every_object_to_person",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "maximal_kitchen_cup_to_operator",
+              "reasons": [
+                "clarification was not expressed in correlated speech"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [
+                "navigate_to",
+                "wave_greet",
+                "report_result"
+              ],
+              "name": "composite_go_to_person_wave_report",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "navigate_to",
+                "report_result"
+              ],
+              "name": "composite_walk_every_object_reports_main",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "dialogue_non_action_recipient_memory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 3,
+            "not_scored": 0,
+            "pass": 18,
+            "scored": 21,
+            "strict_pass_rate": 0.8571,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "gemma4_cloud/main.json",
+          "status_counts": {
+            "fail": 3,
+            "pass": 18
+          }
+        },
+        "robustness": {
+          "case_count": 5,
+          "case_set": "robustness",
+          "cases": [
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "robust_paraphrased_group_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "navigate_to",
+                "report_result"
+              ],
+              "name": "robust_object_role_exclusion",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "robust_missing_recipient",
+              "reasons": [
+                "expected clarification for deliberately absent/ambiguous target",
+                "clarification was not expressed in correlated speech"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [],
+              "name": "robust_future_recipient_memory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "robust_multiturn_execute_followup",
+              "reasons": [
+                "selected members differed: expected=['codex_lab_cup', 'codex_lab_manual', 'codex_lab_phone'] observed=['codex_lab_cup', 'codex_lab_manual']"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 2,
+            "not_scored": 0,
+            "pass": 3,
+            "scored": 5,
+            "strict_pass_rate": 0.6,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "gemma4_cloud/robustness.json",
+          "status_counts": {
+            "fail": 2,
+            "pass": 3
+          }
+        }
+      }
+    },
+    {
+      "all_case_rate": {
+        "degraded": 2,
+        "fail": 11,
+        "not_scored": 3,
+        "pass": 44,
+        "scored": 57,
+        "strict_pass_rate": 0.7719,
+        "unresolved": 1
+      },
+      "comparison_role": "second model",
+      "directory": "nemotron_3_super",
+      "label": "Nemotron 3 Super cloud",
+      "model": "nemotron-3-super:cloud",
+      "preflight": {
+        "fallback_events": 0,
+        "knowledge_core_ready": true,
+        "lifecycle_states": {
+          "/chatbot_llm": "active [3]",
+          "/dialogue_manager": "active [3]",
+          "/nao_orchestrator": "active [3]"
+        },
+        "llm_preflight_failures": {
+          "chatbot_llm": 0,
+          "planner_llm": 0
+        },
+        "missing_nodes": [],
+        "status": "ready_for_semantic_scoring"
+      },
+      "profile": "controlled semantic cell, start_naoqi_driver=false",
+      "provider": "ollama",
+      "startup_snapshot": "nemotron_3_super/startup_snapshot_controlled.json",
+      "suite_summary": {
+        "capability_extreme": {
+          "case_count": 7,
+          "case_set": "capability_extreme",
+          "cases": [
+            {
+              "executed_skills": [],
+              "name": "extreme_walk_pick_sit_report",
+              "reasons": [
+                "expected planner request and execution feedback",
+                "missing ordered skills: navigate_to,pick_object,perform_motion,report_result; observed=<none>"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [
+                "perform_motion",
+                "pick_object",
+                "report_result"
+              ],
+              "name": "extreme_kneel_under_table_pick_report",
+              "reasons": [
+                "missing ordered skills: report_result; observed=perform_motion,pick_object,perform_motion,pick_object,perform_motion"
+              ],
+              "replan_observed": true,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [],
+              "name": "extreme_dialogue_inventory",
+              "reasons": [
+                "evidence correlation is internally inconsistent: planner goal is missing execution feedback"
+              ],
+              "replan_observed": false,
+              "status": "not_scored"
+            },
+            {
+              "executed_skills": [],
+              "name": "extreme_dialogue_sit_stand_grab_return",
+              "reasons": [
+                "expected planner request and execution feedback",
+                "report policy differed: expected=final observed=none",
+                "missing ordered skills: perform_motion,perform_motion,pick_object,navigate_to,report_result; observed=<none>"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [],
+              "name": "extreme_all_objects_visit_look_wave_sit",
+              "reasons": [
+                "expected planner request and execution feedback",
+                "missing ordered skills: perform_motion,navigate_to,look_at,wave_greet,perform_motion,report_result; observed=<none>"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [
+                "pick_object",
+                "place_object",
+                "perform_motion",
+                "report_result"
+              ],
+              "name": "extreme_pick_place_kneel_report",
+              "reasons": [
+                "missing ordered skills: report_result; observed=pick_object,place_object,perform_motion"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [
+                "perform_motion",
+                "pick_object",
+                "report_result"
+              ],
+              "name": "extreme_unreachable_object_recovery",
+              "reasons": [
+                "missing ordered skills: report_result; observed=perform_motion,pick_object"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 6,
+            "not_scored": 1,
+            "pass": 0,
+            "scored": 6,
+            "strict_pass_rate": 0.0,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "nemotron_3_super/capability_extreme.json",
+          "status_counts": {
+            "fail": 6,
+            "not_scored": 1
+          }
+        },
+        "environment": {
+          "case_count": 11,
+          "case_set": "environment",
+          "cases": [
+            {
+              "executed_skills": [],
+              "name": "environment_baseline_table_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "environment_lab_table_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "environment_lab_sections_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "environment_lab_sections_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "environment_kitchen_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "environment_grouped_location_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "environment_grouped_location_followup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "environment_iiia_floor_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "environment_iiia_kitchen_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object"
+              ],
+              "name": "environment_gold_apple_handoff",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "environment_gold_apple_followup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 0,
+            "not_scored": 0,
+            "pass": 11,
+            "scored": 11,
+            "strict_pass_rate": 1.0,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "nemotron_3_super/environment.json",
+          "status_counts": {
+            "pass": 11
+          }
+        },
+        "fake_deep_all_success": {
+          "case_count": 9,
+          "case_set": "fake_deep",
+          "cases": [
+            {
+              "executed_skills": [],
+              "name": "fake_deep_baseline_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "navigate_to",
+                "report_result"
+              ],
+              "name": "fake_deep_ordered_walk_report",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "fake_deep_grouped_work_table_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "find_object"
+              ],
+              "name": "fake_deep_missing_object_recovery",
+              "reasons": [
+                "recovery/failure case lacked terminal or speech evidence"
+              ],
+              "replan_observed": true,
+              "status": "degraded"
+            },
+            {
+              "executed_skills": [],
+              "name": "fake_deep_missing_recipient_clarification",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "fake_deep_iiia_kitchen_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "fake_deep_iiia_floor_location_followup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object"
+              ],
+              "name": "fake_deep_gold_apple_multiturn",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "fake_deep_gold_apple_followup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            }
+          ],
+          "rate": {
+            "degraded": 1,
+            "fail": 0,
+            "not_scored": 0,
+            "pass": 8,
+            "scored": 9,
+            "strict_pass_rate": 0.8889,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "nemotron_3_super/fake_deep_all_success.json",
+          "status_counts": {
+            "degraded": 1,
+            "pass": 8
+          }
+        },
+        "fake_deep_fail_once_navigation_targeted": {
+          "case_count": 1,
+          "case_set": "fake_deep",
+          "cases": [
+            {
+              "executed_skills": [
+                "navigate_to",
+                "report_result"
+              ],
+              "name": "fake_deep_ordered_walk_report",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": true,
+              "status": "pass"
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 0,
+            "not_scored": 0,
+            "pass": 1,
+            "scored": 1,
+            "strict_pass_rate": 1.0,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "nemotron_3_super/fake_deep_fail_once_navigation_targeted.json",
+          "status_counts": {
+            "pass": 1
+          }
+        },
+        "kb_stress": {
+          "case_count": 7,
+          "case_set": "kb_stress",
+          "cases": [
+            {
+              "executed_skills": [],
+              "name": "kb_stress_seed_inventory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_stress_revise_support",
+              "reasons": [
+                "robot speech omitted grounded terms: storage shelf, work table"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_stress_revised_relation_query",
+              "reasons": [
+                "robot speech omitted grounded terms: TITAS, storage shelf, MIDAS, work table"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "kb_stress_grounded_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_stress_delivery_postcondition",
+              "reasons": [
+                "evidence correlation is internally inconsistent: structured trace is missing the chatbot turn result"
+              ],
+              "replan_observed": false,
+              "status": "not_scored"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "kb_stress_move_remaining_object",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_stress_mixed_final_query",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 2,
+            "not_scored": 1,
+            "pass": 4,
+            "scored": 6,
+            "strict_pass_rate": 0.6667,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "nemotron_3_super/kb_stress.json",
+          "status_counts": {
+            "fail": 2,
+            "not_scored": 1,
+            "pass": 4
+          }
+        },
+        "main": {
+          "case_count": 21,
+          "case_set": "main",
+          "cases": [
+            {
+              "executed_skills": [],
+              "name": "dialogue_greeting",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "dialogue_favorite_movie",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "dialogue_movie_followup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "dialogue_weekend_plans",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "dialogue_speed_of_light",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_visible_now_baseline",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_probe_scene_update",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_object_on_table",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_cup_name",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_multi_object_count",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "perform_motion",
+                "report_result"
+              ],
+              "name": "skill_head_up",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "pick_object",
+                "report_result"
+              ],
+              "name": "skill_pick_phone_generic",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "pick_object",
+                "find_object"
+              ],
+              "name": "skill_pick_object_on_table",
+              "reasons": [
+                "missing terminal or speech evidence"
+              ],
+              "replan_observed": true,
+              "status": "degraded"
+            },
+            {
+              "executed_skills": [
+                "look_at",
+                "report_result"
+              ],
+              "name": "skill_look_at_person",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "kb_mutation_add_red_cup",
+              "reasons": [
+                "evidence correlation is internally inconsistent: planner goal is missing execution feedback"
+              ],
+              "replan_observed": false,
+              "status": "not_scored"
+            },
+            {
+              "executed_skills": [
+                "perform_motion",
+                "report_result"
+              ],
+              "name": "composite_head_all_directions",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object"
+              ],
+              "name": "composite_bring_every_object_to_person",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "maximal_kitchen_cup_to_operator",
+              "reasons": [
+                "clarification was not expressed in correlated speech"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [
+                "navigate_to",
+                "wave_greet",
+                "report_result"
+              ],
+              "name": "composite_go_to_person_wave_report",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "navigate_to",
+                "report_result"
+              ],
+              "name": "composite_walk_every_object_reports_main",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "global_timeout",
+              "reasons": [],
+              "replan_observed": false,
+              "status": ""
+            }
+          ],
+          "rate": {
+            "degraded": 1,
+            "fail": 1,
+            "not_scored": 1,
+            "pass": 17,
+            "scored": 19,
+            "strict_pass_rate": 0.8947,
+            "unresolved": 1
+          },
+          "run_status": "timed_out",
+          "source_file": "nemotron_3_super/main.json",
+          "status_counts": {
+            "": 1,
+            "degraded": 1,
+            "fail": 1,
+            "not_scored": 1,
+            "pass": 17
+          }
+        },
+        "robustness": {
+          "case_count": 5,
+          "case_set": "robustness",
+          "cases": [
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "robust_paraphrased_group_delivery",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [],
+              "name": "robust_object_role_exclusion",
+              "reasons": [
+                "expected planner request and execution feedback"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [],
+              "name": "robust_missing_recipient",
+              "reasons": [
+                "expected clarification for deliberately absent/ambiguous target",
+                "clarification was not expressed in correlated speech"
+              ],
+              "replan_observed": false,
+              "status": "fail"
+            },
+            {
+              "executed_skills": [],
+              "name": "robust_future_recipient_memory",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            },
+            {
+              "executed_skills": [
+                "bring_object",
+                "report_result"
+              ],
+              "name": "robust_multiturn_execute_followup",
+              "reasons": [
+                "matched expected trajectory"
+              ],
+              "replan_observed": false,
+              "status": "pass"
+            }
+          ],
+          "rate": {
+            "degraded": 0,
+            "fail": 2,
+            "not_scored": 0,
+            "pass": 3,
+            "scored": 5,
+            "strict_pass_rate": 0.6,
+            "unresolved": 0
+          },
+          "run_status": "completed",
+          "source_file": "nemotron_3_super/robustness.json",
+          "status_counts": {
+            "fail": 2,
+            "pass": 3
+          }
+        }
+      }
+    }
+  ],
+  "ollama_inventory": [
+    "nemotron-3-super:cloud",
+    "kimi-k2.6:cloud",
+    "gemma4:31b-cloud",
+    "gemma4:cloud",
+    "minimax-m2.7:cloud",
+    "gemini-3-flash-preview:latest",
+    "glm-5.2:cloud",
+    "deepseek-v4-flash:cloud",
+    "qwen3-coder:480b-cloud",
+    "kimi-k2.5:cloud",
+    "qwen3.5:cloud"
+  ],
+  "run_id": "model-invariance-e2e-2026-07-21",
+  "selection": {
+    "baseline": "gemma4:31b-cloud",
+    "caveat": "The Gemma4 31B historical baseline was also retained with start_naoqi_driver=true. Alternative cells used the controlled no-driver profile after the NAOqi connection timeout delayed lifecycle readiness.",
+    "controlled_semantic_profile": "start_naoqi_driver=false to remove the unavailable external NAOqi endpoint from semantic comparison",
+    "same_case_families": true,
+    "same_image": true,
+    "same_model_parameters": true,
+    "second": "nemotron-3-super:cloud",
+    "third": "gemma4:cloud"
+  },
+  "shared_failure_matrix": [
+    {
+      "case_name": "extreme_all_objects_visit_look_wave_sit",
+      "models": [
+        "gemma4:31b-cloud",
+        "gemma4:cloud",
+        "nemotron-3-super:cloud"
+      ],
+      "shared_by_all_three": true
+    },
+    {
+      "case_name": "extreme_dialogue_sit_stand_grab_return",
+      "models": [
+        "nemotron-3-super:cloud"
+      ],
+      "shared_by_all_three": false
+    },
+    {
+      "case_name": "extreme_kneel_under_table_pick_report",
+      "models": [
+        "gemma4:31b-cloud",
+        "gemma4:cloud",
+        "nemotron-3-super:cloud"
+      ],
+      "shared_by_all_three": true
+    },
+    {
+      "case_name": "extreme_pick_place_kneel_report",
+      "models": [
+        "gemma4:31b-cloud",
+        "gemma4:cloud",
+        "nemotron-3-super:cloud"
+      ],
+      "shared_by_all_three": true
+    },
+    {
+      "case_name": "extreme_unreachable_object_recovery",
+      "models": [
+        "gemma4:31b-cloud",
+        "gemma4:cloud",
+        "nemotron-3-super:cloud"
+      ],
+      "shared_by_all_three": true
+    },
+    {
+      "case_name": "extreme_walk_pick_sit_report",
+      "models": [
+        "nemotron-3-super:cloud"
+      ],
+      "shared_by_all_three": false
+    },
+    {
+      "case_name": "fake_deep_missing_object_recovery",
+      "models": [
+        "nemotron-3-super:cloud"
+      ],
+      "shared_by_all_three": false
+    },
+    {
+      "case_name": "fake_deep_ordered_walk_report",
+      "models": [
+        "gemma4:31b-cloud"
+      ],
+      "shared_by_all_three": false
+    },
+    {
+      "case_name": "kb_stress_revise_support",
+      "models": [
+        "nemotron-3-super:cloud"
+      ],
+      "shared_by_all_three": false
+    },
+    {
+      "case_name": "kb_stress_revised_relation_query",
+      "models": [
+        "nemotron-3-super:cloud"
+      ],
+      "shared_by_all_three": false
+    },
+    {
+      "case_name": "maximal_kitchen_cup_to_operator",
+      "models": [
+        "gemma4:31b-cloud",
+        "gemma4:cloud",
+        "nemotron-3-super:cloud"
+      ],
+      "shared_by_all_three": true
+    },
+    {
+      "case_name": "robust_missing_recipient",
+      "models": [
+        "gemma4:31b-cloud",
+        "gemma4:cloud",
+        "nemotron-3-super:cloud"
+      ],
+      "shared_by_all_three": true
+    },
+    {
+      "case_name": "robust_multiturn_execute_followup",
+      "models": [
+        "gemma4:31b-cloud",
+        "gemma4:cloud"
+      ],
+      "shared_by_all_three": false
+    },
+    {
+      "case_name": "robust_object_role_exclusion",
+      "models": [
+        "nemotron-3-super:cloud"
+      ],
+      "shared_by_all_three": false
+    },
+    {
+      "case_name": "skill_pick_object_on_table",
+      "models": [
+        "gemma4:31b-cloud",
+        "gemma4:cloud",
+        "nemotron-3-super:cloud"
+      ],
+      "shared_by_all_three": true
+    },
+    {
+      "case_name": "skill_pick_phone_generic",
+      "models": [
+        "gemma4:31b-cloud",
+        "gemma4:cloud"
+      ],
+      "shared_by_all_three": false
+    }
+  ],
+  "suite_order": [
+    "environment",
+    "main",
+    "kb_stress",
+    "robustness",
+    "fake_deep_all_success",
+    "capability_extreme",
+    "fake_deep_fail_once_navigation_targeted"
+  ],
+  "total_case_records": 191,
+  "vllm_probe": {
+    "endpoint": "http://10.7.138.215:8004/v1/models",
+    "http_status": 0,
+    "observation": "TCP connection refused or unavailable during final inventory probe",
+    "semantic_cell": "not_scored",
+    "status": "unavailable"
+  }
+}

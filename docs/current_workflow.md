@@ -1,6 +1,10 @@
 # Current Workflow
 
-Last updated: 2026-06-30
+Last updated: 2026-07-28
+
+Status: v1 frozen for thesis and presentation use. New physical skills,
+perception backends, world-model work, and autonomy policies belong to the v2
+roadmap unless they are required to repair a v1 regression.
 
 This is the canonical workflow map for the active NAO ROS4HRI bridge. Historical
 handoffs and old integration notes live in `docs/artifacts/`.

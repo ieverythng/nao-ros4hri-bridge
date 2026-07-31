@@ -9,6 +9,8 @@ This top-level docs surface is intentionally small and operational.
 - `launch_profiles.md` — launch matrix, arguments, operator runbooks.
 - `plans/nao_ros4hri_masterplan.md` — planner execution status, known gaps,
   and next checks.
+- `plans/V1_FREEZE_AND_V2_ROADMAP_2026-07-28.md` (+ HTML) — frozen v1
+  capability boundary, image identity, known limitations, and v2 workstreams.
 
 ## Architecture
 
@@ -25,6 +27,9 @@ This top-level docs surface is intentionally small and operational.
 - `plans/ISSUE_TRACKER_FAKE_SUITE.html` — deep fake-skill, preloaded
   environment, and replan validation tracker.
 - `plans/FINAL_RUNTIME_REVIEW.html` — supervisor-facing runtime review.
+- `plans/V2_EMBODIED_AND_SPEECH_INTEGRATION_2026-07-28.md` (+ HTML) — source
+  truth for real-skill promotion, NAOqi boundaries, remote speech, autonomous
+  behaviour arbitration, and model selection.
 - `plans/IRR_Implementation.html` — intent-route-response ablation tracker.
 - `plans/LLM_MODEL_ABLATIONS.md` (+ HTML) — model-backend ablation ledger for
   Watson/Qwen, lab Qwen3-VL, mixed-role runs, and launch-wiring lessons.
@@ -60,6 +65,13 @@ This top-level docs surface is intentionally small and operational.
   frame-relative AB control, adaptive pulse graphs, task interaction skills,
   trace-derived capability profiles, and staged Neural Workbench
   crystallization.
+
+## Presentation
+
+- `presentation/TFM_PRESENTATION_TEMPLATE.html` — self-contained 25 to 30
+  minute thesis presentation with appendix slides and speaker timing.
+- `presentation/TFM_PRESENTATION_GUIDE.md` — official UAB format, live-demo
+  fallback rules, timing, and likely committee questions.
 
 ## Reference/Generated Material
 

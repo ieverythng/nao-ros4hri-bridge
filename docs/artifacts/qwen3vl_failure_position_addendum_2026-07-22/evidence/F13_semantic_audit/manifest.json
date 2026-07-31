@@ -1,0 +1,369 @@
+{
+  "artifacts": [
+    {
+      "bundle_path": "raw/nao_runtime_snapshot_20260713_heavy_preflight.json",
+      "bundle_sha256": "ccfc5b2977de98828cea36c316df64791f3f32b0c69b1220a354619a3295460c",
+      "compressed": false,
+      "name": "nao_runtime_snapshot_20260713_heavy_preflight.json",
+      "source_sha256": "ccfc5b2977de98828cea36c316df64791f3f32b0c69b1220a354619a3295460c",
+      "source_size_bytes": 43808
+    },
+    {
+      "bundle_path": "raw/nao_main_20260713_heavy_changes_clean.json",
+      "bundle_sha256": "9f6894e274f9db04f0a183fb5d60ab53345ae99c79f63c691a0b0c99cde304aa",
+      "compressed": false,
+      "name": "nao_main_20260713_heavy_changes_clean.json",
+      "source_sha256": "ed5e1d68cd633210a941b31eedd9f3247b1aa94e14c359b7383e12731253b2e4",
+      "source_size_bytes": 384013
+    },
+    {
+      "bundle_path": "raw/nao_environment_20260713_heavy_changes.json",
+      "bundle_sha256": "486e13d1db856906b0261856e5b9b1254c0822b583adcdc8d66442cb08de6b5d",
+      "compressed": false,
+      "name": "nao_environment_20260713_heavy_changes.json",
+      "source_sha256": "b9b6028a9e7e321a80702be531f9ab666eff4ea72662a6703367a6c57ee80453",
+      "source_size_bytes": 275821
+    },
+    {
+      "bundle_path": "raw/nao_fake_all_success_20260713_heavy_changes.json",
+      "bundle_sha256": "8c43f8a08f17dcec3ca08876278218a9f58ddb5626e69c28d8de6a78b07dabc3",
+      "compressed": false,
+      "name": "nao_fake_all_success_20260713_heavy_changes.json",
+      "source_sha256": "e9c268d751ebff47038dfb1b02d913066db1404347891c7bc1caf33237ab4628",
+      "source_size_bytes": 240096
+    },
+    {
+      "bundle_path": "raw/nao_fake_fail_once_navigation_20260713_heavy_changes.json",
+      "bundle_sha256": "e007c7b0ba3a63ec279c5bdfe13cd4e296b406495a33eafce62353a289a52b68",
+      "compressed": false,
+      "name": "nao_fake_fail_once_navigation_20260713_heavy_changes.json",
+      "source_sha256": "549acfddf6f85b87e195175d039a86ea01f786677271545760f24afd56cbb4a5",
+      "source_size_bytes": 59682
+    },
+    {
+      "bundle_path": "raw/nao_fake_fail_once_pick_20260713_heavy_changes.json",
+      "bundle_sha256": "5d3b3e0cdef83db29590bb3dacaafa1727fbf61660c25004af8595f16a7b841d",
+      "compressed": false,
+      "name": "nao_fake_fail_once_pick_20260713_heavy_changes.json",
+      "source_sha256": "782dea5bf324e386c3a953c50f2c1fb11f6ea2601d0e1bc44dd55890a6afafa4",
+      "source_size_bytes": 35656
+    },
+    {
+      "bundle_path": "raw/nao_fake_delivery_blocked_20260713_heavy_changes.json",
+      "bundle_sha256": "cb3c0cc9c6b7aa306d9e3b1b62153fbfa24589b0857c9f264c4d1a0f47809c30",
+      "compressed": false,
+      "name": "nao_fake_delivery_blocked_20260713_heavy_changes.json",
+      "source_sha256": "e9c7e12d022849e70d36eda3adc45c47663cf4f58f30231fd1b7279e9def0d37",
+      "source_size_bytes": 76751
+    },
+    {
+      "bundle_path": "raw/nao_fake_recipient_missing_20260713_heavy_changes.json",
+      "bundle_sha256": "ab4240488aa3a2c91892c8df13ecbb2b4bbd4d226357a00f56a606f38cc5c315",
+      "compressed": false,
+      "name": "nao_fake_recipient_missing_20260713_heavy_changes.json",
+      "source_sha256": "f0244230f6ec5067feb24dd64de82a08f327dcc78f659d1c64e3b8376cdae321",
+      "source_size_bytes": 66638
+    },
+    {
+      "bundle_path": "raw/nao_fake_every_other_20260713_heavy_changes.json",
+      "bundle_sha256": "f668765f37e9ba03dd749f22bae25859f1dbbc91a58d08749f0633991e86e2da",
+      "compressed": false,
+      "name": "nao_fake_every_other_20260713_heavy_changes.json",
+      "source_sha256": "40178d0c57bac7deb3f953ec5224493ae13bfae3896d3b75ec4afc96dd007f12",
+      "source_size_bytes": 29422
+    },
+    {
+      "bundle_path": "raw/nao_fake_random_seeded_20260713_heavy_changes.json",
+      "bundle_sha256": "06734bafb37f1a21cd7bea46ee0446d2b5fe80ea408e227561fca6fc1b76ddb7",
+      "compressed": false,
+      "name": "nao_fake_random_seeded_20260713_heavy_changes.json",
+      "source_sha256": "d1fe94e7ad7751aecae0577b6e1639b87c9b11a124b1744d89c4fc3c8ea83a0a",
+      "source_size_bytes": 28231
+    },
+    {
+      "bundle_path": "raw/nao_adversarial_language_20260713_heavy_changes.json",
+      "bundle_sha256": "02b35920a987f69800b9894b42cc3408fc0893e2c0f34e2653e8521a97d83bc6",
+      "compressed": false,
+      "name": "nao_adversarial_language_20260713_heavy_changes.json",
+      "source_sha256": "048809905233dcf5989c4f3fb2e09be8d9bb964d7503ed97723f3d86ff00dfa3",
+      "source_size_bytes": 130756
+    },
+    {
+      "bundle_path": "raw/nao_runtime_snapshot_20260713_heavy_final.json.gz",
+      "bundle_sha256": "19a0449c93994c018831669f1543f2690ee639842f0827fbac84620007d16293",
+      "compressed": true,
+      "name": "nao_runtime_snapshot_20260713_heavy_final.json",
+      "source_sha256": "82a2ebdb77d3e39a15747c999cd2c12c76895c81c3cec2daf930c0038755d351",
+      "source_size_bytes": 10670529
+    }
+  ],
+  "classification": "diagnostic",
+  "metadata": {
+    "chatbot_model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+    "detector_scored": false,
+    "evidence_date": "2026-07-13",
+    "grounded_context_digest_enabled": false,
+    "main_revision": "540dfd5",
+    "main_worktree_state": "dirty",
+    "nested_chatbot_revision": "96ecc34",
+    "nested_chatbot_worktree_state": "dirty",
+    "planner_model": "QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+    "provenance_grade": "qualified",
+    "provenance_note": "The source and runtime imports were compared, but the mutable image tag and dirty worktrees prevent final-run status.",
+    "runtime_image": "iiia:nao",
+    "runtime_image_id": "sha256:1a37fc2936af2e0d2b289c5698f780f7d01fe8ad6de1f977621db6a4f045e7e4",
+    "turn_pipeline_mode": "response_first"
+  },
+  "notes": "Trajectory-complete 13 July run re-audited against stronger semantic target, role, postcondition, and closure criteria.",
+  "questionnaire_metadata": [
+    {
+      "artifact": "nao_main_20260713_heavy_changes_clean.json",
+      "case_set": "main",
+      "runtime_metadata": {
+        "ablation_note": "intent_ablation is meaningful only when the active launch sets chatbot_turn_pipeline_mode:=intent_first or when comparing against a response_first control run.",
+        "available_environment_fixtures": [
+          "baseline_table",
+          "gold_apple_handoff",
+          "iiia_floor",
+          "kitchen_delivery",
+          "lab_sections",
+          "lab_table"
+        ],
+        "chatbot_turn_pipeline_mode": "response_first",
+        "environment_fixture_source": "/home/juanbeck/nao-ros4hri-bridge/src/nao_chatbot/config/preloaded_environments.json",
+        "expected_turn_pipeline_mode": "",
+        "fake_policy_application": {
+          "applied": "false",
+          "profile": "none",
+          "reason": "no policy changes requested"
+        },
+        "fake_policy_profile": "none",
+        "grounded_context_digest_enabled": "Boolean value is: False",
+        "turn_pipeline_mode_matches_expected": true
+      }
+    },
+    {
+      "artifact": "nao_environment_20260713_heavy_changes.json",
+      "case_set": "environment",
+      "runtime_metadata": {
+        "ablation_note": "intent_ablation is meaningful only when the active launch sets chatbot_turn_pipeline_mode:=intent_first or when comparing against a response_first control run.",
+        "available_environment_fixtures": [
+          "baseline_table",
+          "gold_apple_handoff",
+          "iiia_floor",
+          "kitchen_delivery",
+          "lab_sections",
+          "lab_table"
+        ],
+        "chatbot_turn_pipeline_mode": "response_first",
+        "environment_fixture_source": "/home/juanbeck/nao-ros4hri-bridge/src/nao_chatbot/config/preloaded_environments.json",
+        "expected_turn_pipeline_mode": "",
+        "fake_policy_application": {
+          "applied": "false",
+          "profile": "none",
+          "reason": "no policy changes requested"
+        },
+        "fake_policy_profile": "none",
+        "grounded_context_digest_enabled": "Boolean value is: False",
+        "turn_pipeline_mode_matches_expected": true
+      }
+    },
+    {
+      "artifact": "nao_fake_all_success_20260713_heavy_changes.json",
+      "case_set": "fake_deep",
+      "runtime_metadata": {
+        "ablation_note": "intent_ablation is meaningful only when the active launch sets chatbot_turn_pipeline_mode:=intent_first or when comparing against a response_first control run.",
+        "available_environment_fixtures": [
+          "baseline_table",
+          "gold_apple_handoff",
+          "iiia_floor",
+          "kitchen_delivery",
+          "lab_sections",
+          "lab_table"
+        ],
+        "chatbot_turn_pipeline_mode": "response_first",
+        "environment_fixture_source": "/home/juanbeck/nao-ros4hri-bridge/src/nao_chatbot/config/preloaded_environments.json",
+        "expected_turn_pipeline_mode": "",
+        "fake_policy_application": {
+          "applied": "true",
+          "global_mode": "Set parameter successful",
+          "mode_overrides_json": "Set parameter successful",
+          "profile": "all_success"
+        },
+        "fake_policy_profile": "all_success",
+        "grounded_context_digest_enabled": "Boolean value is: False",
+        "turn_pipeline_mode_matches_expected": true
+      }
+    },
+    {
+      "artifact": "nao_fake_fail_once_navigation_20260713_heavy_changes.json",
+      "case_set": "fake_deep",
+      "runtime_metadata": {
+        "ablation_note": "intent_ablation is meaningful only when the active launch sets chatbot_turn_pipeline_mode:=intent_first or when comparing against a response_first control run.",
+        "available_environment_fixtures": [
+          "baseline_table",
+          "gold_apple_handoff",
+          "iiia_floor",
+          "kitchen_delivery",
+          "lab_sections",
+          "lab_table"
+        ],
+        "chatbot_turn_pipeline_mode": "response_first",
+        "environment_fixture_source": "/home/juanbeck/nao-ros4hri-bridge/src/nao_chatbot/config/preloaded_environments.json",
+        "expected_turn_pipeline_mode": "",
+        "fake_policy_application": {
+          "applied": "true",
+          "global_mode": "Set parameter successful",
+          "mode_overrides_json": "Set parameter successful",
+          "profile": "fail_once_navigation"
+        },
+        "fake_policy_profile": "fail_once_navigation",
+        "grounded_context_digest_enabled": "Boolean value is: False",
+        "turn_pipeline_mode_matches_expected": true
+      }
+    },
+    {
+      "artifact": "nao_fake_fail_once_pick_20260713_heavy_changes.json",
+      "case_set": "main",
+      "runtime_metadata": {
+        "ablation_note": "intent_ablation is meaningful only when the active launch sets chatbot_turn_pipeline_mode:=intent_first or when comparing against a response_first control run.",
+        "available_environment_fixtures": [
+          "baseline_table",
+          "gold_apple_handoff",
+          "iiia_floor",
+          "kitchen_delivery",
+          "lab_sections",
+          "lab_table"
+        ],
+        "chatbot_turn_pipeline_mode": "response_first",
+        "environment_fixture_source": "/home/juanbeck/nao-ros4hri-bridge/src/nao_chatbot/config/preloaded_environments.json",
+        "expected_turn_pipeline_mode": "",
+        "fake_policy_application": {
+          "applied": "true",
+          "global_mode": "Set parameter successful",
+          "mode_overrides_json": "Set parameter successful",
+          "profile": "fail_once_pick"
+        },
+        "fake_policy_profile": "fail_once_pick",
+        "grounded_context_digest_enabled": "Boolean value is: False",
+        "turn_pipeline_mode_matches_expected": true
+      }
+    },
+    {
+      "artifact": "nao_fake_delivery_blocked_20260713_heavy_changes.json",
+      "case_set": "fake_deep",
+      "runtime_metadata": {
+        "ablation_note": "intent_ablation is meaningful only when the active launch sets chatbot_turn_pipeline_mode:=intent_first or when comparing against a response_first control run.",
+        "available_environment_fixtures": [
+          "baseline_table",
+          "gold_apple_handoff",
+          "iiia_floor",
+          "kitchen_delivery",
+          "lab_sections",
+          "lab_table"
+        ],
+        "chatbot_turn_pipeline_mode": "response_first",
+        "environment_fixture_source": "/home/juanbeck/nao-ros4hri-bridge/src/nao_chatbot/config/preloaded_environments.json",
+        "expected_turn_pipeline_mode": "",
+        "fake_policy_application": {
+          "applied": "true",
+          "global_mode": "Set parameter successful",
+          "mode_overrides_json": "Set parameter successful",
+          "profile": "delivery_blocked"
+        },
+        "fake_policy_profile": "delivery_blocked",
+        "grounded_context_digest_enabled": "Boolean value is: False",
+        "turn_pipeline_mode_matches_expected": true
+      }
+    },
+    {
+      "artifact": "nao_fake_recipient_missing_20260713_heavy_changes.json",
+      "case_set": "fake_deep",
+      "runtime_metadata": {
+        "ablation_note": "intent_ablation is meaningful only when the active launch sets chatbot_turn_pipeline_mode:=intent_first or when comparing against a response_first control run.",
+        "available_environment_fixtures": [
+          "baseline_table",
+          "gold_apple_handoff",
+          "iiia_floor",
+          "kitchen_delivery",
+          "lab_sections",
+          "lab_table"
+        ],
+        "chatbot_turn_pipeline_mode": "response_first",
+        "environment_fixture_source": "/home/juanbeck/nao-ros4hri-bridge/src/nao_chatbot/config/preloaded_environments.json",
+        "expected_turn_pipeline_mode": "",
+        "fake_policy_application": {
+          "applied": "true",
+          "global_mode": "Set parameter successful",
+          "mode_overrides_json": "Set parameter successful",
+          "profile": "recipient_missing"
+        },
+        "fake_policy_profile": "recipient_missing",
+        "grounded_context_digest_enabled": "Boolean value is: False",
+        "turn_pipeline_mode_matches_expected": true
+      }
+    },
+    {
+      "artifact": "nao_fake_every_other_20260713_heavy_changes.json",
+      "case_set": "fake_deep",
+      "runtime_metadata": {
+        "ablation_note": "intent_ablation is meaningful only when the active launch sets chatbot_turn_pipeline_mode:=intent_first or when comparing against a response_first control run.",
+        "available_environment_fixtures": [
+          "baseline_table",
+          "gold_apple_handoff",
+          "iiia_floor",
+          "kitchen_delivery",
+          "lab_sections",
+          "lab_table"
+        ],
+        "chatbot_turn_pipeline_mode": "response_first",
+        "environment_fixture_source": "/home/juanbeck/nao-ros4hri-bridge/src/nao_chatbot/config/preloaded_environments.json",
+        "expected_turn_pipeline_mode": "",
+        "fake_policy_application": {
+          "applied": "true",
+          "global_mode": "Set parameter successful",
+          "mode_overrides_json": "Set parameter successful",
+          "profile": "every_other"
+        },
+        "fake_policy_profile": "every_other",
+        "grounded_context_digest_enabled": "Boolean value is: False",
+        "turn_pipeline_mode_matches_expected": true
+      }
+    },
+    {
+      "artifact": "nao_fake_random_seeded_20260713_heavy_changes.json",
+      "case_set": "fake_deep",
+      "runtime_metadata": {
+        "ablation_note": "intent_ablation is meaningful only when the active launch sets chatbot_turn_pipeline_mode:=intent_first or when comparing against a response_first control run.",
+        "available_environment_fixtures": [
+          "baseline_table",
+          "gold_apple_handoff",
+          "iiia_floor",
+          "kitchen_delivery",
+          "lab_sections",
+          "lab_table"
+        ],
+        "chatbot_turn_pipeline_mode": "response_first",
+        "environment_fixture_source": "/home/juanbeck/nao-ros4hri-bridge/src/nao_chatbot/config/preloaded_environments.json",
+        "expected_turn_pipeline_mode": "",
+        "fake_policy_application": {
+          "applied": "true",
+          "global_mode": "Set parameter successful",
+          "mode_overrides_json": "Set parameter successful",
+          "profile": "random_seeded",
+          "random_failure_prob": "Setting parameter failed: Wrong parameter type, expected 'Type.DOUBLE' got 'Type.STRING'"
+        },
+        "fake_policy_profile": "random_seeded",
+        "grounded_context_digest_enabled": "Boolean value is: False",
+        "turn_pipeline_mode_matches_expected": true
+      }
+    },
+    {
+      "artifact": "nao_adversarial_language_20260713_heavy_changes.json",
+      "case_set": "",
+      "runtime_metadata": {}
+    }
+  ],
+  "run_id": "F13_semantic_audit",
+  "schema_version": 1
+}

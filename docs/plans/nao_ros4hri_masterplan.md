@@ -1,11 +1,41 @@
-# NAO ROS4HRI Masterplan (Consolidated, Active)
+# NAO ROS4HRI Masterplan (v1 Frozen, v2 Roadmap)
 
-**Date:** 2026-07-07 (JSON-only deep fake/replan strict scoring refresh)
-**Branch context:** `refactor/deslop_repo` with nested `chatbot_llm`
-`feat/planner_llm_hooks` and Neural-Wokbench integration seams
-**Scope:** Single active execution plan for planner/chatbot/orchestrator seams,
-grounded-context reliability, canonical registry alignment, fake-skill
-operational hardening, LocateAnything migration, and validation reporting.
+**Date:** 2026-07-28
+**Branch context:** `feat/TFM-LLM_planner`, with reviewed nested ROS4HRI forks
+and Neural Workbench research seams recorded separately.
+**Scope:** Frozen v1 implementation and evidence boundary, followed by a v2
+roadmap for embodied skills, perception, workbench integration, speech, and
+autonomy arbitration.
+
+## v1 Freeze Declaration
+
+The thesis-facing v1 stack is frozen on Docker image `iiia:nao-final`, digest
+`sha256:bb82c158092a69870dae48272b3b20fd8cd4ecfe97a0e61a2253a2cca00c663e`.
+This is the same image previously named
+`iiia:nao-runtime-v34-final-frozen-review`. The primary qualified model is
+`QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ` under the response-first,
+JSON-grounding profile. The authoritative runtime score remains 8.4/10 with
+the limitations recorded in the final thesis and runtime report.
+
+The frozen claim is bounded:
+
+- dialogue, grounding, planning, deterministic admission, fake-skill execution,
+  replanning, typed feedback, KnowledgeCore effects, and reporting are the v1
+  software contribution;
+- posture, head motion, gaze, and text-to-speech have robot-facing adapters,
+  but physical performance was not evaluated with the repeated software matrix;
+- navigation, grasping, placement, delivery, `walk_to`, and `wave_greet` remain
+  simulated or proposal-level in the current source unless a separately
+  recorded operator-gated adapter proves otherwise;
+- detector-enabled performance, WME, LocateAnything, Neural Workbench adaptive
+  execution, pointing, remote ASR/TTS, and autonomous idle behavior are v2 work;
+- every replacement model and every promoted robot adapter requires its own
+  qualification. Interface compatibility does not inherit semantic or physical
+  validation.
+
+The detailed freeze and v2 work queue is
+`docs/plans/V1_FREEZE_AND_V2_ROADMAP_2026-07-28.md` (+ `.html`). Historical
+runtime plans remain evidence, not active implementation instructions.
 
 The manuscript, final evidence synthesis, and submission closure track lives in
 `docs/plans/tfm_completion_masterplan_2026-07-13.md` (+ `.html`). This

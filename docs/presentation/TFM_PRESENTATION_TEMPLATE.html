@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TFM Defense - Modular LLM-Based Interactive Architecture</title>
+  <style>
+    :root {
+      --paper: #f7f4ee;
+      --paper-strong: #fffdf8;
+      --ink: #13202a;
+      --muted: #5b6770;
+      --teal: #0c6570;
+      --teal-dark: #073f47;
+      --amber: #e89a2f;
+      --red: #a33b32;
+      --green: #477a59;
+      --line: rgba(19, 32, 42, .18);
+      --shadow: 0 28px 80px rgba(17, 35, 45, .18);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+    body {
+      background:
+        radial-gradient(circle at 15% 20%, rgba(232,154,47,.14), transparent 34%),
+        radial-gradient(circle at 85% 85%, rgba(12,101,112,.16), transparent 38%),
+        #dfe5e4;
+      color: var(--ink);
+      font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    button { font: inherit; }
+    code { font-family: "IBM Plex Mono", "Liberation Mono", monospace; }
+
+    .deck { width: 100%; height: 100%; position: relative; }
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      overflow: hidden;
+      background: var(--paper);
+      padding: clamp(36px, 5vw, 78px) clamp(42px, 6.4vw, 104px);
+      isolation: isolate;
+    }
+    .slide.active { display: grid; animation: enter .32s ease-out; }
+    .slide::before {
+      content: "";
+      position: absolute;
+      width: 430px;
+      height: 430px;
+      right: -210px;
+      top: -230px;
+      border: 1px solid rgba(12,101,112,.16);
+      border-radius: 50%;
+      box-shadow: 0 0 0 55px rgba(12,101,112,.035), 0 0 0 120px rgba(12,101,112,.025);
+      z-index: -1;
+    }
+    .slide::after {
+      content: attr(data-kicker);
+      position: absolute;
+      right: 28px;
+      bottom: 68px;
+      writing-mode: vertical-rl;
+      text-transform: uppercase;
+      letter-spacing: .18em;
+      color: rgba(19,32,42,.3);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    @keyframes enter {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .slide-inner { align-self: center; width: 100%; max-width: 1500px; margin: auto; }
+    .eyebrow {
+      color: var(--teal);
+      font-weight: 800;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      font-size: clamp(12px, 1.1vw, 17px);
+      margin-bottom: 18px;
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(48px, 6vw, 94px);
+      line-height: .98;
+      letter-spacing: -.045em;
+      max-width: 1200px;
+      margin-bottom: 24px;
+    }
+    h2 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(38px, 4.3vw, 70px);
+      line-height: 1.02;
+      letter-spacing: -.035em;
+      margin-bottom: 28px;
+    }
+    h3 { font-size: clamp(20px, 1.65vw, 30px); margin-bottom: 10px; }
+    p, li { font-size: clamp(18px, 1.55vw, 27px); line-height: 1.43; }
+    .lead { max-width: 1080px; color: var(--muted); font-size: clamp(22px, 2.05vw, 34px); }
+    .small { font-size: clamp(14px, 1.1vw, 19px); color: var(--muted); }
+    .accent { color: var(--teal); }
+    .amber { color: #9b5c08; }
+    .red { color: var(--red); }
+    .green { color: var(--green); }
+    .mono { font-family: "IBM Plex Mono", "Liberation Mono", monospace; }
+
+    .title-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(300px, .75fr); gap: 60px; align-items: center; }
+    .title-mark {
+      width: min(100%, 500px);
+      aspect-ratio: 1;
+      justify-self: end;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at center, var(--paper-strong) 0 19%, transparent 20%),
+        conic-gradient(from -35deg, var(--teal) 0 26%, var(--amber) 26% 42%, #ccd7d6 42% 73%, var(--teal-dark) 73% 100%);
+      display: grid;
+      place-items: center;
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+    .title-mark::after {
+      content: "ROS 2\A LLM\A NAO";
+      white-space: pre;
+      text-align: center;
+      font-weight: 900;
+      line-height: 1.25;
+      letter-spacing: .08em;
+      color: var(--teal-dark);
+      font-size: clamp(18px, 2vw, 30px);
+    }
+    .meta-line { display: flex; gap: 24px; flex-wrap: wrap; color: var(--muted); font-size: clamp(15px, 1.2vw, 20px); }
+    .logo-row { display: flex; align-items: center; gap: 22px; margin-top: 32px; }
+    .logo-row img { height: 58px; width: auto; opacity: .82; }
+    .institution { border-left: 1px solid var(--line); padding-left: 22px; color: var(--muted); }
+    .slide:first-child h1 { font-size: clamp(46px, 5.35vw, 82px); }
+    .slide:first-child .title-mark { max-width: 460px; }
+    .slide:first-child .logo-row { margin-top: 20px; }
+    .slide:first-child .logo-row img { height: 48px; }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+    .card {
+      background: rgba(255,255,255,.72);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: clamp(20px, 2vw, 32px);
+      box-shadow: 0 10px 28px rgba(19,32,42,.055);
+    }
+    .card strong { color: var(--teal-dark); }
+    .card p, .card li { font-size: clamp(16px, 1.25vw, 22px); }
+    .card p:last-child { margin-bottom: 0; }
+    .number {
+      font-family: Georgia, serif;
+      font-size: clamp(42px, 5vw, 78px);
+      line-height: 1;
+      color: var(--teal);
+      margin-bottom: 12px;
+    }
+    .metric { text-align: center; }
+    .metric .number { font-weight: 700; }
+
+    .question {
+      background: var(--teal-dark);
+      color: white;
+      border-radius: 26px;
+      padding: clamp(30px, 4vw, 64px);
+      font-family: Georgia, serif;
+      font-size: clamp(30px, 3.3vw, 52px);
+      line-height: 1.25;
+      box-shadow: var(--shadow);
+    }
+
+    .flow { display: grid; gap: 16px; align-items: stretch; }
+    .flow.horizontal { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .flow-node {
+      position: relative;
+      background: white;
+      border: 1px solid var(--line);
+      border-top: 6px solid var(--teal);
+      border-radius: 16px;
+      padding: 20px 16px;
+      text-align: center;
+      min-height: 128px;
+      display: grid;
+      place-content: center;
+    }
+    .flow-node:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-top: 3px solid var(--amber);
+      border-right: 3px solid var(--amber);
+      right: -18px;
+      top: 50%;
+      transform: translateY(-50%) rotate(45deg);
+      z-index: 2;
+    }
+    .flow-node span { display: block; margin-top: 7px; color: var(--muted); font-size: clamp(13px, 1vw, 18px); }
+
+    .stack-map {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr 1fr;
+      grid-template-rows: repeat(3, minmax(110px, auto));
+      gap: 18px;
+      grid-template-areas:
+        "dialogue grounding perception"
+        "chatbot planner knowledge"
+        "speech orchestrator skills";
+    }
+    .stack-map .card { display: grid; align-content: center; }
+    .dialogue { grid-area: dialogue; }
+    .grounding { grid-area: grounding; }
+    .perception { grid-area: perception; }
+    .chatbot { grid-area: chatbot; }
+    .planner { grid-area: planner; background: var(--teal-dark); color: white; }
+    .planner strong { color: white; }
+    .knowledge { grid-area: knowledge; }
+    .speech { grid-area: speech; }
+    .orchestrator { grid-area: orchestrator; border: 3px solid var(--amber); }
+    .skills { grid-area: skills; }
+
+    .contract-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
+    .contract-table th { color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-size: 13px; text-align: left; padding: 0 16px; }
+    .contract-table td { background: rgba(255,255,255,.78); padding: 15px 16px; font-size: clamp(15px, 1.15vw, 20px); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .contract-table td:first-child { border-left: 5px solid var(--teal); border-radius: 12px 0 0 12px; font-weight: 800; }
+    .contract-table td:last-child { border-right: 1px solid var(--line); border-radius: 0 12px 12px 0; }
+
+    .bar-chart { display: grid; gap: 16px; }
+    .bar-row { display: grid; grid-template-columns: 190px 1fr 90px; gap: 16px; align-items: center; }
+    .bar-track { height: 24px; border-radius: 999px; background: rgba(19,32,42,.09); overflow: hidden; }
+    .bar { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--teal), #36a0a6); }
+    .bar.warn { background: linear-gradient(90deg, var(--amber), #efc060); }
+
+    .timeline { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; position: relative; }
+    .timeline::before { content: ""; position: absolute; left: 13%; right: 13%; top: 34px; height: 3px; background: var(--line); }
+    .stage { position: relative; padding-top: 72px; }
+    .stage::before { content: ""; position: absolute; top: 20px; left: 50%; width: 28px; height: 28px; transform: translateX(-50%); border-radius: 50%; background: var(--paper); border: 8px solid var(--teal); z-index: 2; }
+    .stage:nth-child(2)::before { border-color: var(--amber); }
+    .stage:nth-child(3)::before { border-color: var(--red); }
+
+    .boundary { display: grid; grid-template-columns: 1fr auto 1fr; gap: 28px; align-items: center; }
+    .divider { width: 2px; height: 420px; background: linear-gradient(transparent, var(--line), transparent); position: relative; }
+    .divider::after { content: "v2 gate"; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) rotate(-90deg); background: var(--paper); padding: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .15em; white-space: nowrap; }
+
+    .pill { display: inline-block; padding: 7px 12px; border-radius: 999px; background: rgba(12,101,112,.12); color: var(--teal-dark); font-weight: 800; font-size: clamp(13px, 1vw, 17px); margin: 4px 5px 4px 0; }
+    .pill.warn { background: rgba(232,154,47,.18); color: #7b4805; }
+    .pill.stop { background: rgba(163,59,50,.14); color: var(--red); }
+
+    ul.clean { padding-left: 1.2em; margin: 0; }
+    ul.clean li { margin-bottom: 10px; }
+    .quote { border-left: 6px solid var(--amber); padding: 8px 0 8px 26px; font-family: Georgia, serif; font-size: clamp(27px, 3vw, 48px); line-height: 1.28; max-width: 1180px; }
+
+    .controls {
+      position: fixed;
+      left: 18px;
+      right: 100px;
+      bottom: 14px;
+      z-index: 50;
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      gap: 14px;
+      align-items: center;
+      color: rgba(19,32,42,.68);
+      pointer-events: none;
+    }
+    .controls button { pointer-events: auto; border: 1px solid rgba(19,32,42,.16); background: rgba(255,255,255,.72); color: var(--ink); border-radius: 999px; padding: 7px 12px; cursor: pointer; backdrop-filter: blur(8px); }
+    .progress { height: 5px; background: rgba(19,32,42,.12); border-radius: 999px; overflow: hidden; }
+    .progress > div { height: 100%; width: 0; background: var(--teal); transition: width .25s ease; }
+    .counter, .timer { font-variant-numeric: tabular-nums; font-size: 13px; white-space: nowrap; }
+    .counter { width: 68px; min-width: 68px; text-align: right; }
+    .notes-panel {
+      display: none;
+      position: fixed;
+      z-index: 60;
+      left: 30px;
+      right: 30px;
+      bottom: 54px;
+      max-height: 28vh;
+      overflow: auto;
+      padding: 18px 22px;
+      border-radius: 16px;
+      background: rgba(7,63,71,.95);
+      color: white;
+      box-shadow: var(--shadow);
+    }
+    .notes-panel.visible { display: block; }
+    .notes { display: none; }
+    .appendix-badge { position: absolute; top: 28px; right: 36px; color: var(--red); font-weight: 900; text-transform: uppercase; letter-spacing: .15em; }
+
+    @media (max-width: 950px) {
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .title-grid, .grid-2, .boundary { grid-template-columns: 1fr; }
+      .title-mark { display: none; }
+      .flow.horizontal { grid-template-columns: repeat(3, 1fr); }
+      .flow-node:nth-child(3)::after { display: none; }
+      .stack-map { grid-template-columns: 1fr 1fr; grid-template-areas: "dialogue chatbot" "grounding planner" "perception knowledge" "speech orchestrator" "skills skills"; }
+      .divider { display: none; }
+    }
+
+    @media print {
+      html, body { overflow: visible; background: white; }
+      .deck { height: auto; }
+      .slide { display: grid !important; position: relative; width: 13.333in; height: 7.5in; page-break-after: always; }
+      .controls, .notes-panel { display: none !important; }
+      @page { size: 13.333in 7.5in; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+<main class="deck" id="deck">
+
+  <section class="slide active" data-kicker="Opening" data-minutes="1.0">
+    <div class="slide-inner title-grid">
+      <div>
+        <div class="eyebrow">Master's Thesis Defense</div>
+        <h1>Design, Integration, and Validation of a Modular LLM-Based Interactive Architecture</h1>
+        <p class="lead">A NAO-centered ROS 2 architecture for grounded dialogue, structured planning, deterministic execution, and evidence-based reporting.</p>
+        <div class="meta-line"><span>Juan David Bendek Williamson</span><span>Supervised by Raquel Ros</span><span>2025-2026</span></div>
+        <div class="logo-row">
+          <img src="../thesis/TFM_reformatted_UAB_local/images/uab_logo-gs.png" alt="Universitat Autonoma de Barcelona">
+          <div class="institution">IIIA-CSIC / Universitat Autonoma de Barcelona<br>MSc Modelling for Science and Engineering</div>
+        </div>
+      </div>
+      <div class="title-mark" aria-hidden="true"></div>
+    </div>
+    <aside class="notes">Open with the system problem, not the implementation history. State that the thesis is about the complete interaction architecture and its qualification boundaries.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Acknowledgements" data-minutes="0.4">
+    <div class="slide-inner">
+      <div class="eyebrow">Acknowledgements</div>
+      <h2>This work grew through a research community.</h2>
+      <div class="grid-3">
+        <div class="card"><h3>Research</h3><p>JAE ICU 2025, IIIA-CSIC, SocialMinds, Severin Lemaignan, and Raquel Ros.</p></div>
+        <div class="card"><h3>Personal</h3><p>Zsanett, my parents, my family in Barcelona, and my aunt Lina.</p></div>
+        <div class="card"><h3>Formation</h3><p>UAB and Ailylabs for the path from mechanical engineering toward data science and AI/ML.</p></div>
+      </div>
+      <p class="small" style="margin-top:24px">Keep this spoken acknowledgement brief and personal.</p>
+    </div>
+    <aside class="notes">Thank the people and institutions without reading the thesis acknowledgements verbatim.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Problem" data-minutes="1.5">
+    <div class="slide-inner">
+      <div class="eyebrow">The problem</div>
+      <h2>An LLM planner call is not an interactive robot architecture.</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Language is flexible</h3>
+          <ul class="clean"><li>Users refer to people, objects, and prior turns.</li><li>Requests mix dialogue, knowledge, and action.</li><li>Plans can be fluent while incomplete or unsupported.</li></ul>
+        </div>
+        <div class="card">
+          <h3>Robots require evidence</h3>
+          <ul class="clean"><li>Actions need explicit capability and argument checks.</li><li>Execution must preserve identity, order, and lineage.</li><li>Success must follow typed effects, not plausible wording.</li></ul>
+        </div>
+      </div>
+    </div>
+    <aside class="notes">Use one simple example: asking to bring every object to ALEX requires route choice, entity roles, plan coverage, execution feedback, and final reporting.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Research question" data-minutes="1.3">
+    <div class="slide-inner">
+      <div class="eyebrow">Central research question</div>
+      <div class="question">How can a modular robot architecture integrate language-based dialogue, symbolic grounding, task planning, deterministic execution, and feedback while preserving clear responsibility boundaries and evidence-based user communication?</div>
+      <div style="margin-top:30px">
+        <span class="pill">coherent plans</span><span class="pill">symbolic grounding</span><span class="pill">skill validation</span><span class="pill">failure recovery</span><span class="pill">inspectable ownership</span>
+      </div>
+    </div>
+    <aside class="notes">Map the five research questions onto these five phrases. The committee can then recognise the same structure in the results.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Design principle" data-minutes="1.3">
+    <div class="slide-inner">
+      <div class="eyebrow">Design principle</div>
+      <h2>The contribution is <span class="accent">containment</span>, not uniformly correct generation.</h2>
+      <div class="grid-4">
+        <div class="card"><div class="number">1</div><h3>Structure</h3><p>LLM outputs enter typed request and plan contracts.</p></div>
+        <div class="card"><div class="number">2</div><h3>Validate</h3><p>Unsupported skills, roles, arguments, and coverage are rejected.</p></div>
+        <div class="card"><div class="number">3</div><h3>Execute</h3><p>The orchestrator controls ordered dispatch and lineage.</p></div>
+        <div class="card"><div class="number">4</div><h3>Report</h3><p>Typed results and postconditions constrain user-facing claims.</p></div>
+      </div>
+    </div>
+    <aside class="notes">This is the thesis in one slide. Avoid saying that deterministic interfaces make the LLM deterministic.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Architecture" data-minutes="1.7">
+    <div class="slide-inner">
+      <div class="eyebrow">High-level architecture</div>
+      <h2>Each uncertainty has an owner.</h2>
+      <div class="stack-map">
+        <div class="card dialogue"><strong>dialogue_manager</strong><p>turn lifecycle and speaking</p></div>
+        <div class="card grounding"><strong>grounded context</strong><p>bounded people, objects, locations, relations</p></div>
+        <div class="card perception"><strong>perception</strong><p>ROS4HRI people and object detections</p></div>
+        <div class="card chatbot"><strong>chatbot_llm</strong><p>response, route, planner ingress</p></div>
+        <div class="card planner"><strong>planner_llm</strong><p>plan and supervision policy</p></div>
+        <div class="card knowledge"><strong>KnowledgeCore</strong><p>symbolic facts and effects</p></div>
+        <div class="card speech"><strong>Say adapter</strong><p>robot-facing TTS</p></div>
+        <div class="card orchestrator"><strong>nao_orchestrator</strong><p>admission, validation, dispatch, feedback</p></div>
+        <div class="card skills"><strong>real and simulated skills</strong><p>shared typed result boundary</p></div>
+      </div>
+    </div>
+    <aside class="notes">Point out that the orchestrator is deterministic but does not become the planner or dialogue owner.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Runtime flow" data-minutes="1.5">
+    <div class="slide-inner">
+      <div class="eyebrow">One complete turn</div>
+      <h2>Language enters once. Evidence returns through the same lineage.</h2>
+      <div class="flow horizontal">
+        <div class="flow-node"><strong>User turn</strong><span>ROS4HRI speech</span></div>
+        <div class="flow-node"><strong>Route</strong><span>dialogue, knowledge, execution</span></div>
+        <div class="flow-node"><strong>Ground</strong><span>compact symbolic context</span></div>
+        <div class="flow-node"><strong>Plan</strong><span>reviewed skill registry</span></div>
+        <div class="flow-node"><strong>Execute</strong><span>validated ordered steps</span></div>
+        <div class="flow-node"><strong>Close</strong><span>typed result and one speech</span></div>
+      </div>
+      <p class="lead" style="margin-top:32px">Goal ID, plan ID, plan version, and stable step IDs connect every stage.</p>
+    </div>
+    <aside class="notes">Contrast a knowledge question, which stops after grounding, with an execution request, which continues through planning and skills.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Contracts" data-minutes="1.4">
+    <div class="slide-inner">
+      <div class="eyebrow">Runtime contracts</div>
+      <h2>Explicit interfaces make failures attributable.</h2>
+      <table class="contract-table">
+        <thead><tr><th>Contract</th><th>Purpose</th><th>Key invariant</th></tr></thead>
+        <tbody>
+          <tr><td>Planner request</td><td>Goal, intents, target selection, grounded context</td><td>People, objects, and locations retain separate roles</td></tr>
+          <tr><td>Skill registry</td><td>Supported parameters, evidence, failures, AB level</td><td>The model cannot invent executable skills</td></tr>
+          <tr><td>Plan envelope</td><td>Ordered steps, dependencies, retry policy</td><td>Coverage and lineage are validated before dispatch</td></tr>
+          <tr><td>Execution feedback</td><td>Accepted, started, succeeded, failed, completed</td><td>Replanning uses typed events rather than prose</td></tr>
+          <tr><td>Dialogue act</td><td>Clarification, help, failure, completion</td><td>Speaking remains owned by the dialogue path</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <aside class="notes">Mention the nine contracts in the thesis, but focus on the five that the audience needs to understand the results.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Grounding" data-minutes="1.3">
+    <div class="slide-inner grid-2">
+      <div>
+        <div class="eyebrow">Symbolic grounding</div>
+        <h2>Context supports decisions. It does not prove execution.</h2>
+        <p class="lead">KnowledgeCore and scene grounding provide compact entities, locations, and relations. AB=1 skills must still produce fresh execution-time evidence.</p>
+      </div>
+      <div class="card">
+        <h3>Role preservation</h3>
+        <p><span class="pill">person = recipient</span><span class="pill">object = manipulable entity</span><span class="pill">location = anchor</span><span class="pill">support = object relation</span></p>
+        <h3 style="margin-top:22px">Validation chain</h3>
+        <p class="mono small">request -> grounded set -> selected set -> admitted plan -> executed set -> postcondition -> report</p>
+      </div>
+    </div>
+    <aside class="notes">Use the kitchen and ALEX example. Explain how a model can receive correct facts and still misuse roles.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Planner and executor" data-minutes="1.3">
+    <div class="slide-inner">
+      <div class="eyebrow">Planning boundary</div>
+      <h2>The LLM proposes. The orchestrator decides what can execute.</h2>
+      <div class="grid-3">
+        <div class="card"><h3>Planner</h3><p>Creates a structured candidate plan and supervises retries or replans.</p></div>
+        <div class="card" style="border:3px solid var(--amber)"><h3>Admission</h3><p>Checks supported skills, arguments, roles, coverage, dependencies, and lineage.</p></div>
+        <div class="card"><h3>Executor</h3><p>Dispatches accepted steps in order and returns typed status and effects.</p></div>
+      </div>
+      <div class="quote" style="margin-top:30px">Safe rejection is preferable to invalid execution, but it is still a task failure.</div>
+    </div>
+    <aside class="notes">This sentence is important for interpreting the two rejected extreme plans and the failed kitchen request.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Skills" data-minutes="1.3">
+    <div class="slide-inner">
+      <div class="eyebrow">Skill boundary</div>
+      <h2>Real and simulated adapters share the same result contract.</h2>
+      <div class="boundary">
+        <div>
+          <h3 class="green">Robot-facing in v1</h3>
+          <p><span class="pill">posture</span><span class="pill">head motion</span><span class="pill">look_at adapter</span><span class="pill">speech</span></p>
+          <p class="small">Integration evidence only. Repeated physical accuracy was not measured.</p>
+        </div>
+        <div class="divider"></div>
+        <div>
+          <h3 class="amber">Simulated in v1</h3>
+          <p><span class="pill warn">navigate</span><span class="pill warn">find</span><span class="pill warn">pick</span><span class="pill warn">place</span><span class="pill warn">bring</span><span class="pill warn">walk</span><span class="pill warn">wave</span></p>
+          <p class="small">Deterministic software evidence for planning, recovery, state effects, and reporting.</p>
+        </div>
+      </div>
+    </div>
+    <aside class="notes">Be exact: the real look_at package exists, but the integrated profile remains fake-by-default pending physical validation.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Validation" data-minutes="1.4">
+    <div class="slide-inner">
+      <div class="eyebrow">Validation method</div>
+      <h2>Claims were separated by evidence level.</h2>
+      <div class="grid-4">
+        <div class="card"><div class="number">A</div><h3>Source contracts</h3><p>Pure helpers, schemas, launch arguments, package tests.</p></div>
+        <div class="card"><div class="number">B</div><h3>Full user turns</h3><p>Speech ingress, route, plan, execution, and closure.</p></div>
+        <div class="card"><div class="number">C</div><h3>Controlled failures</h3><p>Known fake outcomes placed at selected skill calls.</p></div>
+        <div class="card"><div class="number">D</div><h3>State verification</h3><p>KnowledgeCore preconditions, post-effects, and follow-ups.</p></div>
+      </div>
+      <p class="lead" style="margin-top:28px">Unit tests validate contracts. They are not counted as live runtime stress cases.</p>
+    </div>
+    <aside class="notes">This addresses the likely question about the 69 or 72 review tests. Explain deterministic tests and live trials separately.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Evidence scope" data-minutes="1.2">
+    <div class="slide-inner">
+      <div class="eyebrow">Primary evidence</div>
+      <h2>One frozen primary qualification, plus a separate model supplement.</h2>
+      <div class="grid-3">
+        <div class="card metric"><div class="number">108</div><h3>Primary index records</h3><p>33 retained structured traces across current and historical scopes.</p></div>
+        <div class="card metric"><div class="number">72</div><h3>Frozen Qwen3-VL records</h3><p>64 passes and 8 non-passes.</p></div>
+        <div class="card metric"><div class="number">191</div><h3>Model supplement</h3><p>Three Ollama models, kept outside the primary denominator.</p></div>
+      </div>
+    </div>
+    <aside class="notes">Stress that the 191 records do not replace or enlarge the 72-record qualification denominator.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Primary results" data-minutes="1.6">
+    <div class="slide-inner">
+      <div class="eyebrow">Qwen3-VL primary result</div>
+      <h2>Most seams passed, while semantic non-passes remained visible.</h2>
+      <div class="grid-2">
+        <div class="bar-chart card">
+          <div class="bar-row"><strong>Environment</strong><div class="bar-track"><div class="bar" style="width:100%"></div></div><span>11/11</span></div>
+          <div class="bar-row"><strong>Stateful KB</strong><div class="bar-track"><div class="bar" style="width:100%"></div></div><span>7/7</span></div>
+          <div class="bar-row"><strong>Robustness</strong><div class="bar-track"><div class="bar warn" style="width:80%"></div></div><span>12/15</span></div>
+          <div class="bar-row"><strong>Fake deep</strong><div class="bar-track"><div class="bar warn" style="width:78%"></div></div><span>7/9</span></div>
+          <div class="bar-row"><strong>Capability extreme</strong><div class="bar-track"><div class="bar warn" style="width:71%"></div></div><span>5/7</span></div>
+        </div>
+        <div class="card">
+          <h3>What the non-passes revealed</h3>
+          <ul class="clean"><li>incomplete universal target selections;</li><li>role and recipient clarification variance;</li><li>missing terminal closure after recovery;</li><li>incomplete multi-capability plan coverage.</li></ul>
+          <p class="small">Incomplete plans were rejected before dispatch. No unrestricted partial execution was reported as completion.</p>
+        </div>
+      </div>
+    </div>
+    <aside class="notes">Use the 8.4/10 score only after showing the evidence components. Do not imply that all 72 records were full physical robot turns.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Model comparison" data-minutes="1.5">
+    <div class="slide-inner">
+      <div class="eyebrow">Model-agnostic, not model-invariant</div>
+      <h2>The same interfaces admitted different semantic behaviour.</h2>
+      <div class="grid-3">
+        <div class="card"><h3>Stable across models</h3><p>Environment profile, startup ownership, symbolic transport, typed execution boundaries.</p></div>
+        <div class="card"><h3>Variable across models</h3><p>Composition, target selection, KB wording, clarification, plan coverage, terminal closure.</p></div>
+        <div class="card"><h3>Interpretation</h3><p>Backend compatibility supports portability. It does not transfer qualification.</p></div>
+      </div>
+      <div class="quote" style="margin-top:30px">Model-agnostic describes the interface boundary. Model-invariant would describe equivalent behaviour, which the results do not show.</div>
+    </div>
+    <aside class="notes">This is a likely committee question. Keep the definition crisp.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Failure management" data-minutes="1.6">
+    <div class="slide-inner">
+      <div class="eyebrow">Failure position</div>
+      <h2>Different stages expose different obligations.</h2>
+      <div class="timeline">
+        <div class="stage card"><h3>Beginning</h3><p><code>find_object</code> or navigation fails before useful work.</p><p class="green"><strong>Observed:</strong> complete stop, versioned replan, target preservation.</p></div>
+        <div class="stage card"><h3>Middle</h3><p>Finding succeeds and <code>pick_object</code> fails.</p><p class="green"><strong>Observed:</strong> completed work and lineage survive the revised plan.</p></div>
+        <div class="stage card"><h3>End</h3><p>Delivery boundary or final closure fails.</p><p class="red"><strong>Observed:</strong> replanning can occur without reliable terminal speech.</p></div>
+      </div>
+    </div>
+    <aside class="notes">State the asymmetry: end-stage evidence is about recipient and closure boundaries, not a balanced dedicated last-skill injection.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Case study" data-minutes="1.4">
+    <div class="slide-inner">
+      <div class="eyebrow">Representative recovery</div>
+      <h2>A failed pick became a revised, traceable plan.</h2>
+      <div class="flow horizontal" style="grid-template-columns:repeat(5,1fr)">
+        <div class="flow-node"><strong>find_object</strong><span class="green">succeeded</span></div>
+        <div class="flow-node" style="border-top-color:var(--red)"><strong>pick_object</strong><span class="red">failed</span></div>
+        <div class="flow-node"><strong>feedback</strong><span>typed failure and lineage</span></div>
+        <div class="flow-node" style="border-top-color:var(--amber)"><strong>replan</strong><span>scan, find, pick</span></div>
+        <div class="flow-node"><strong>report</strong><span class="green">completed</span></div>
+      </div>
+      <p class="lead" style="margin-top:34px">The model did not directly retry the robot. The supervisor proposed a new plan after receiving structured execution feedback.</p>
+    </div>
+    <aside class="notes">This case provides the cleanest middle-stage recovery narrative.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Limitations" data-minutes="1.5">
+    <div class="slide-inner">
+      <div class="eyebrow">Current limitations</div>
+      <h2>The strongest claims are software and symbolic-state claims.</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Supported</h3>
+          <ul class="clean"><li>interface and ownership architecture;</li><li>deterministic admission and lineage;</li><li>controlled failure and replanning;</li><li>symbolic postconditions and reporting.</li></ul>
+        </div>
+        <div class="card">
+          <h3>Not established</h3>
+          <ul class="clean"><li>navigation and grasp accuracy;</li><li>manipulation reliability;</li><li>detector performance;</li><li>human safety or unrestricted autonomy;</li><li>statistical model ranking.</li></ul>
+        </div>
+      </div>
+    </div>
+    <aside class="notes">Do not apologise for the boundary. Explain why controlled adapters were necessary to validate planning and recovery independently of hardware variance.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Freeze" data-minutes="1.1">
+    <div class="slide-inner">
+      <div class="eyebrow">v1 frozen configuration</div>
+      <h2>The thesis result is preserved as one reproducible runtime tuple.</h2>
+      <div class="grid-4">
+        <div class="card metric"><div class="number">v1</div><h3>Code</h3><p>Reviewed branch and nested fork commits.</p></div>
+        <div class="card metric"><div class="number">v34</div><h3>Image</h3><p><code>iiia:nao-final</code></p></div>
+        <div class="card metric"><div class="number">Q3VL</div><h3>Primary model</h3><p>Qwen3-VL 30B A3B AWQ</p></div>
+        <div class="card metric"><div class="number">8.4</div><h3>Runtime score</h3><p>Qualified with residual model variance.</p></div>
+      </div>
+      <p class="mono small" style="margin-top:24px">sha256:bb82c158092a69870dae48272b3b20fd8cd4ecfe97a0e61a2253a2cca00c663e</p>
+    </div>
+    <aside class="notes">Explain that the final tag is an alias of the validated image, not a rebuild after the evaluation.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Future work" data-minutes="1.6">
+    <div class="slide-inner">
+      <div class="eyebrow">v2 roadmap</div>
+      <h2>Move from validated software contracts toward measured embodiment.</h2>
+      <div class="grid-3">
+        <div class="card"><h3>Embodied skills</h3><p>Real look_at trials, guarded wave, bounded local MoveTo, semantic navigation, point_at kinematics.</p></div>
+        <div class="card"><h3>World evidence</h3><p>LocateAnything through scene grounding, WME hypotheses, Neural Workbench AB promotion.</p></div>
+        <div class="card"><h3>Interaction quality</h3><p>Remote Whisper ASR, remote neural TTS, startup health, autonomous idle/request arbitration.</p></div>
+      </div>
+      <p class="lead" style="margin-top:28px">Every promoted skill starts with one physical success, one failure or cancellation, and the same typed evidence boundary.</p>
+    </div>
+    <aside class="notes">The immediate fun path is real look_at, then wave. Navigation and pointing require stronger spatial and safety evidence.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Contributions" data-minutes="1.1">
+    <div class="slide-inner">
+      <div class="eyebrow">Contributions</div>
+      <h2>What this thesis adds</h2>
+      <div class="grid-3">
+        <div class="card"><div class="number">01</div><h3>Architecture</h3><p>A modular ownership model connecting dialogue, grounding, planning, execution, and reporting.</p></div>
+        <div class="card"><div class="number">02</div><h3>Containment</h3><p>Typed contracts and deterministic admission that restrict generated execution authority.</p></div>
+        <div class="card"><div class="number">03</div><h3>Qualification</h3><p>A repeatable evidence method separating model, stack, observability, and physical claims.</p></div>
+      </div>
+    </div>
+    <aside class="notes">These are the three contributions to leave in the committee's notes.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Conclusion" data-minutes="1.0">
+    <div class="slide-inner">
+      <div class="eyebrow">Conclusion</div>
+      <div class="quote">Language-model dialogue and planning can participate in an integrated robot architecture when their outputs are grounded, validated against reviewed skills, dispatched deterministically, and checked against typed feedback and symbolic postconditions.</div>
+      <h2 style="margin-top:42px">The boundaries do not eliminate non-determinism. They make it observable and restrict its execution authority.</h2>
+      <p class="lead">Thank you. Questions?</p>
+    </div>
+    <aside class="notes">Pause after the final sentence. Do not introduce new future work during the conclusion.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Appendix" data-minutes="0">
+    <span class="appendix-badge">Appendix A</span>
+    <div class="slide-inner">
+      <h2>Frozen runtime tuple</h2>
+      <table class="contract-table">
+        <tbody>
+          <tr><td>Image</td><td><code>iiia:nao-final</code></td><td><code>bb82c158092a...</code></td></tr>
+          <tr><td>Model</td><td>Qwen3-VL 30B A3B AWQ</td><td>chatbot, intent, planner</td></tr>
+          <tr><td>Pipeline</td><td>response-first</td><td>JSON-only grounded context</td></tr>
+          <tr><td>Primary evidence</td><td>72 records</td><td>64 pass, 8 non-pass</td></tr>
+          <tr><td>Detector</td><td>disabled in primary profile</td><td>separate perception scope</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <aside class="notes">Use when asked exactly what was held constant.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Appendix" data-minutes="0">
+    <span class="appendix-badge">Appendix B</span>
+    <div class="slide-inner">
+      <h2>Live demonstration fallback plan</h2>
+      <div class="grid-2">
+        <div class="card"><h3>Preferred</h3><ol><li>Pin Qwen3-VL if vLLM advertises and probes it.</li><li>Run dialogue, KB query, real head/gaze, fake composite, controlled failure.</li><li>Keep the trace viewer visible.</li></ol></div>
+        <div class="card"><h3>If vLLM is unavailable</h3><ol><li>Use the startup model resolver.</li><li>Name the selected Ollama model.</li><li>Describe the run as a demonstration, not the Qwen3-VL qualification.</li><li>Use retained JSON and screenshots for primary evidence.</li></ol></div>
+      </div>
+    </div>
+    <aside class="notes">Do not troubleshoot the model endpoint during the timed defense.</aside>
+  </section>
+
+  <section class="slide" data-kicker="Appendix" data-minutes="0">
+    <span class="appendix-badge">Appendix C</span>
+    <div class="slide-inner">
+      <h2>Short answers for likely questions</h2>
+      <table class="contract-table">
+        <tbody>
+          <tr><td>Why fake skills?</td><td colspan="2">They place deterministic outcomes at the robot-facing result boundary, allowing planning, recovery, postconditions, and reporting to be tested independently of hardware variance.</td></tr>
+          <tr><td>What is deterministic?</td><td colspan="2">Admission, schema validation, skill dispatch order, lineage, typed feedback, and effect verification. The generated route and plan remain model-dependent.</td></tr>
+          <tr><td>Why model-agnostic?</td><td colspan="2">The interfaces and adapters accept multiple backends. The results explicitly show that semantic behaviour is not invariant.</td></tr>
+          <tr><td>Why not classical planning?</td><td colspan="2">The work focuses on flexible language interpretation and interactive decomposition, while retaining deterministic checks that classical planners make explicit.</td></tr>
+          <tr><td>What comes next?</td><td colspan="2">Physical skill trials with quantified safety and performance, then perception and world-model expansion under the same contracts.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <aside class="notes">Keep each answer under 30 seconds unless the committee asks for detail.</aside>
+  </section>
+</main>
+
+<div class="notes-panel" id="notesPanel"></div>
+<div class="controls">
+  <button id="notesButton" type="button" title="Toggle speaker notes (N)">Notes</button>
+  <div class="progress"><div id="progressBar"></div></div>
+  <div class="timer" id="timer">00:00</div>
+  <div class="counter" id="counter">1 / 25</div>
+</div>
+
+<script>
+  (() => {
+    const slides = [...document.querySelectorAll('.slide')];
+    const counter = document.getElementById('counter');
+    const progressBar = document.getElementById('progressBar');
+    const notesPanel = document.getElementById('notesPanel');
+    const notesButton = document.getElementById('notesButton');
+    const timer = document.getElementById('timer');
+    let index = Math.max(0, Math.min(slides.length - 1, Number(location.hash.slice(1)) - 1 || 0));
+    let startedAt = null;
+
+    const render = () => {
+      slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+      counter.textContent = `${index + 1} / ${slides.length}`;
+      progressBar.style.width = `${((index + 1) / slides.length) * 100}%`;
+      location.hash = String(index + 1);
+      const notes = slides[index].querySelector('.notes');
+      notesPanel.textContent = notes ? notes.textContent.trim() : 'No notes for this slide.';
+    };
+
+    const go = delta => {
+      if (startedAt === null) startedAt = Date.now();
+      index = Math.max(0, Math.min(slides.length - 1, index + delta));
+      render();
+    };
+
+    notesButton.addEventListener('click', () => notesPanel.classList.toggle('visible'));
+    document.addEventListener('keydown', event => {
+      if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(event.key)) { event.preventDefault(); go(1); }
+      if (['ArrowLeft', 'PageUp', 'Backspace'].includes(event.key)) { event.preventDefault(); go(-1); }
+      if (event.key === 'Home') { index = 0; render(); }
+      if (event.key === 'End') { index = slides.length - 1; render(); }
+      if (event.key.toLowerCase() === 'n') notesPanel.classList.toggle('visible');
+      if (event.key.toLowerCase() === 'f') document.documentElement.requestFullscreen?.();
+    });
+    window.addEventListener('hashchange', () => {
+      const requested = Number(location.hash.slice(1));
+      if (requested >= 1 && requested <= slides.length) { index = requested - 1; render(); }
+    });
+    setInterval(() => {
+      if (startedAt === null) return;
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      timer.textContent = `${String(Math.floor(elapsed / 60)).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}`;
+    }, 500);
+    render();
+  })();
+</script>
+</body>
+</html>

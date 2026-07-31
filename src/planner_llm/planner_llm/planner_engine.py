@@ -27,6 +27,7 @@ from planner_llm.skill_registry import SkillRegistry
 
 
 _DELIVERY_SELECTION_INTENTS = frozenset({'bring_object', 'deliver_object'})
+_DELIVERY_DECOMPOSITION_INTENTS = frozenset({'pick_object', 'place_object'})
 _NAVIGATION_SELECTION_INTENTS = frozenset({'navigate_to', 'walk_to'})
 _MOTION_INTENT_OBJECTS = {
     'posture_stand': 'stand',
@@ -213,7 +214,10 @@ class PlannerEngine:
             str(intent or '').strip().lower()
             for intent in request.normalized_intents
         }
-        if request_intents.intersection(_DELIVERY_SELECTION_INTENTS):
+        if (
+            request_intents.intersection(_DELIVERY_SELECTION_INTENTS)
+            or _DELIVERY_DECOMPOSITION_INTENTS.issubset(request_intents)
+        ):
             expected_operation = 'deliver'
         elif request_intents.intersection(_NAVIGATION_SELECTION_INTENTS):
             expected_operation = 'visit'
@@ -1049,14 +1053,7 @@ class PlannerEngine:
             covered.add('delivery')
         elif operation == 'visit':
             covered.add('navigation')
-        requested = {
-            capability
-            for capability in (
-                PlannerEngine._intent_capability(intent)
-                for intent in request.normalized_intents
-            )
-            if capability
-        }
+        requested = set(PlannerEngine._requested_capabilities(request))
         return not requested.issubset(covered)
 
     @staticmethod
@@ -1064,14 +1061,7 @@ class PlannerEngine:
         request: PlannerRequest,
         steps: list[dict],
     ) -> list[str]:
-        required = [
-            capability
-            for capability in (
-                PlannerEngine._intent_capability(intent)
-                for intent in request.normalized_intents
-            )
-            if capability
-        ]
+        required = PlannerEngine._requested_capabilities(request)
         observed = [
             capability
             for capability in (
@@ -1121,6 +1111,55 @@ class PlannerEngine:
                     % ','.join(missing_look_targets)
                 ]
         return []
+
+    @staticmethod
+    def _requested_capabilities(request: PlannerRequest) -> list[str]:
+        capabilities = [
+            capability
+            for capability in (
+                PlannerEngine._intent_capability(intent)
+                for intent in request.normalized_intents
+            )
+            if capability
+        ]
+        operation = str(request.target_selection.get('operation', '')).strip().lower()
+        if operation == 'visit' and 'navigation' not in capabilities:
+            return PlannerEngine._collapse_capabilities(
+                capabilities,
+                aliases={'look_at', 'observation'},
+                replacement='navigation',
+            )
+        if operation != 'deliver':
+            return capabilities
+        return PlannerEngine._collapse_capabilities(
+            capabilities,
+            aliases={
+                'delivery',
+                'find_object',
+                'pick_object',
+                'navigation',
+                'place_object',
+            },
+            replacement='delivery',
+        )
+
+    @staticmethod
+    def _collapse_capabilities(
+        capabilities: list[str],
+        *,
+        aliases: set[str],
+        replacement: str,
+    ) -> list[str]:
+        collapsed = []
+        replacement_added = False
+        for capability in capabilities:
+            if capability in aliases:
+                if not replacement_added:
+                    collapsed.append(replacement)
+                    replacement_added = True
+                continue
+            collapsed.append(capability)
+        return collapsed
 
     @staticmethod
     def _intent_capability(intent) -> str:

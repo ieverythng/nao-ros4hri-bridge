@@ -112,13 +112,13 @@ class ProbeCase:
 
 
 SMOKE_CASES = (
-    ProbeCase("simple_dialogue_hey", "simple_dialogue", "Hey, how are you?", 8.0),
-    ProbeCase("kb_visible_now", "kb_query_dialogue", "What can you see?", 10.0),
+    ProbeCase("simple_dialogue_hey", "simple_dialogue", "Hey, how are you?", 30.0),
+    ProbeCase("kb_visible_now", "kb_query_dialogue", "What can you see?", 30.0),
     ProbeCase(
         "kb_injected_object_name",
         "kb_query_dialogue",
         "What is the name and color of the probe cup?",
-        12.0,
+        30.0,
         setup=KbInjection(
             object_id=KB_PROBE_OBJECT_ID,
             statements=(
@@ -138,13 +138,16 @@ SMOKE_CASES = (
         "composite_skill_execution",
         "Move your head in all directions and then wave at me.",
         95.0,
+        conversation_group="head_wave_reflection",
     ),
     ProbeCase(
         "reflective_followup",
         "simple_dialogue",
         "How many directions did you move your head?",
-        10.0,
+        30.0,
         conversation_group="head_wave_reflection",
+        expected_outcome="dialogue_only",
+        expected_speech_terms=("four",),
     ),
 )
 
@@ -2157,7 +2160,7 @@ def main() -> int:
             results,
             runtime_metadata=runtime_metadata,
         )
-        wait_sec = max(0.0, case.wait_sec)
+        wait_sec = effective_case_wait_sec(case, mode)
         if args.max_case_wait_sec > 0:
             wait_sec = min(wait_sec, max(0.0, args.max_case_wait_sec))
         _observe_case_during_wait(
@@ -2753,6 +2756,19 @@ def structured_phase_observations(
     turn_payload = _event_payload(turn_event)
     turn_id = str(turn_payload.get("turn_id", "")).strip()
     route = str(turn_payload.get("route", "")).strip().lower()
+    turn_scope = turn_id.rsplit(":", 1)[0] if ":" in turn_id else turn_id
+    related_turn_events = [
+        event
+        for event in case_events
+        if str(event.get("event_type", "")) == "chatbot_turn_trace"
+        and _event_payload(event).get("event_type") == "chatbot_turn_result"
+        and (
+            not turn_scope
+            or str(_event_payload(event).get("turn_id", "")).startswith(
+                turn_scope + ":"
+            )
+        )
+    ]
 
     planner_event = next(
         (
@@ -2856,10 +2872,12 @@ def structured_phase_observations(
         }
     )
 
-    spoken_texts = []
-    ack = str(turn_payload.get("verbal_ack", "")).strip()
-    if ack:
-        spoken_texts.append(ack)
+    spoken_texts = [
+        str(_event_payload(event).get("verbal_ack", "")).strip()
+        for event in related_turn_events
+        if str(_event_payload(event).get("verbal_ack", "")).strip()
+    ]
+    ack = spoken_texts[0] if spoken_texts else ""
     for payload in feedback_payloads:
         summary = str(payload.get("result_summary", "")).strip()
         step = payload.get("step", {})
@@ -2892,6 +2910,27 @@ def structured_phase_observations(
         )
         or planner_acts.intersection({"explain_failure", "ask_clarification"})
     )
+    terminal_timestamps = [
+        float(event.get("timestamp", 0.0) or 0.0)
+        for event in feedback_events + planner_dialogue_events
+        if (
+            str(event.get("event_type", "")) == "planner_dialogue_act"
+            or str(_event_payload(event).get("event_type", "")).strip().lower()
+            in {"plan_completed", "plan_failed", "plan_cancelled", "plan_rejected"}
+        )
+    ]
+    terminal_timestamp = min(terminal_timestamps) if terminal_timestamps else 0.0
+    post_terminal_speech = bool(
+        terminal_timestamp
+        and any(
+            float(event.get("timestamp", 0.0) or 0.0) > terminal_timestamp
+            and str(_event_payload(event).get("verbal_ack", "")).strip()
+            for event in related_turn_events
+        )
+    )
+    clarification_speech = any(
+        clarification_observed(text) for text in spoken_texts
+    )
     injected = bool(str(turn_result or "").strip())
     if mode == "speech":
         injected = injected and "ERROR: dialogue_manager speech subscription" not in str(
@@ -2918,7 +2957,7 @@ def structured_phase_observations(
         "speech_observed": bool(spoken_texts),
         "spoken_texts": spoken_texts,
         "terminal_observed": terminal_observed_value,
-        "post_terminal_speech_observed": False,
+        "post_terminal_speech_observed": post_terminal_speech,
         "post_failure_speech_observed": bool(
             failure_observed
             and any(
@@ -2930,14 +2969,9 @@ def structured_phase_observations(
         ),
         "clarification_observed": bool(
             "ask_clarification" in planner_acts
-            or (
-                route == "dialogue"
-                and _contains_any(
-                    ack,
-                    ("clarify", "which ", "please specify", "need more information"),
-                )
-            )
+            or (route == "dialogue" and clarification_observed(ack))
         ),
+        "clarification_speech_observed": clarification_speech,
         "fallback_markers": fallback_markers("\n".join(spoken_texts)),
         "evidence_source": "interaction_trace_jsonl",
         "correlation_status": "complete" if not inconsistencies else "incomplete",
@@ -3296,6 +3330,7 @@ def _fallback_event_key(line: str) -> str:
 
 def clarification_observed(value: str) -> bool:
     """Return true when evidence shows a user-facing clarification request."""
+    value = str(value or "").casefold()
     return _contains_any(
         value,
         (
@@ -3485,6 +3520,9 @@ def assess_case(
         if not clarified:
             status = max_status(status, "fail")
             reasons.append("expected clarification for deliberately absent/ambiguous target")
+        if observations.get("clarification_speech_observed") is False:
+            status = max_status(status, "fail")
+            reasons.append("clarification was not expressed in correlated speech")
         if exec_seen:
             status = max_status(status, "fail")
             reasons.append("execution feedback appeared for a case that should clarify first")
@@ -3759,7 +3797,12 @@ def _observe_case_during_wait(
         observations = result_entry["phase_observations"]
         if case_wait_complete(observations, fake_policy_profile):
             break
-        if observations.get("clarification_observed") and observations.get("speech_observed"):
+        if (
+            observations.get("clarification_observed")
+            and observations.get("speech_observed")
+            and "ask_clarification"
+            not in set(observations.get("planner_dialogue_acts") or [])
+        ):
             break
 
 
@@ -3769,11 +3812,24 @@ def case_wait_complete(observations: dict, fake_policy_profile: str) -> bool:
         and observations.get("speech_observed")
     ):
         return False
+    if "ask_clarification" in set(observations.get("planner_dialogue_acts") or []):
+        return bool(
+            observations.get("post_terminal_speech_observed")
+            and observations.get("clarification_speech_observed")
+        )
     recovery_profile = str(fake_policy_profile or "none") not in {
         "none",
         "all_success",
     }
     return not recovery_profile or recovery_closure_observed(observations)
+
+
+def effective_case_wait_sec(case: ProbeCase, mode: str) -> float:
+    """Keep late speech inside its originating scored case window."""
+    configured = max(0.0, float(case.wait_sec or 0.0))
+    if mode == "speech":
+        return max(30.0, configured)
+    return configured
 
 
 def recovery_closure_observed(observations: dict) -> bool:
@@ -3788,51 +3844,52 @@ def collect_questionnaire_metadata(
     *,
     expected_turn_pipeline_mode: str,
 ) -> dict[str, object]:
-    active_mode = get_ros_param(
-        container,
-        "/chatbot_llm",
+    chatbot_param_names = (
         "turn_pipeline_mode",
-    )
-    expected = str(expected_turn_pipeline_mode or "").strip()
-    grounded_context_digest_enabled = get_ros_param(
-        container,
-        "/chatbot_llm",
         "grounded_context_digest_enabled",
+        "model",
+        "intent_model",
+        "temperature",
+        "top_p",
+        "top_k",
+        "min_p",
+        "presence_penalty",
+        "repetition_penalty",
+        "response_max_tokens",
+        "intent_max_tokens",
+        "request_timeout_sec",
+        "first_request_timeout_sec",
+        "intent_request_timeout_sec",
+        "think",
     )
+    planner_param_names = (
+        "provider",
+        "model",
+        "temperature",
+        "top_p",
+        "top_k",
+        "min_p",
+        "presence_penalty",
+        "repetition_penalty",
+        "max_tokens",
+        "timeout_sec",
+        "think",
+    )
+    chatbot_params = get_ros_params(container, "/chatbot_llm", chatbot_param_names)
+    planner_params = get_ros_params(container, "/planner_llm", planner_param_names)
+    active_mode = chatbot_params["turn_pipeline_mode"]
+    expected = str(expected_turn_pipeline_mode or "").strip()
+    grounded_context_digest_enabled = chatbot_params[
+        "grounded_context_digest_enabled"
+    ]
     chatbot_generation = {
-        param_name: get_ros_param(container, "/chatbot_llm", param_name)
-        for param_name in (
-            "model",
-            "intent_model",
-            "temperature",
-            "top_p",
-            "top_k",
-            "min_p",
-            "presence_penalty",
-            "repetition_penalty",
-            "response_max_tokens",
-            "intent_max_tokens",
-            "request_timeout_sec",
-            "first_request_timeout_sec",
-            "intent_request_timeout_sec",
-            "think",
-        )
+        param_name: chatbot_params[param_name]
+        for param_name in chatbot_param_names
+        if param_name not in {"turn_pipeline_mode", "grounded_context_digest_enabled"}
     }
     planner_generation = {
-        param_name: get_ros_param(container, "/planner_llm", param_name)
-        for param_name in (
-            "provider",
-            "model",
-            "temperature",
-            "top_p",
-            "top_k",
-            "min_p",
-            "presence_penalty",
-            "repetition_penalty",
-            "max_tokens",
-            "timeout_sec",
-            "think",
-        )
+        param_name: planner_params[param_name]
+        for param_name in planner_param_names
     }
     return {
         "chatbot_turn_pipeline_mode": active_mode,
@@ -3849,6 +3906,60 @@ def collect_questionnaire_metadata(
             "a response_first control run."
         ),
     }
+
+
+def get_ros_params(
+    container: str,
+    node_name: str,
+    param_names: tuple[str, ...],
+) -> dict[str, object]:
+    script = f"""
+{ROS_CLI_PREAMBLE}
+timeout 10 ros2 param dump {shlex.quote(node_name)} 2>/dev/null || true
+"""
+    output = run(
+        ["docker", "exec", container, "bash", "-lc", script],
+        timeout=14,
+        check=False,
+    )
+    parsed = parse_ros_param_dump(output, node_name)
+    return {name: parsed.get(name, "parameter_not_reported") for name in param_names}
+
+
+def parse_ros_param_dump(output: str, node_name: str) -> dict[str, object]:
+    del node_name  # The parser accepts any fully-qualified node header.
+    parameters: dict[str, object] = {}
+    in_parameters = False
+    for line in output.splitlines():
+        if line.strip() == "ros__parameters:":
+            in_parameters = True
+            continue
+        if not in_parameters:
+            continue
+        if not line.strip():
+            continue
+        indentation = len(line) - len(line.lstrip())
+        if indentation < 4:
+            break
+        if indentation != 4:
+            continue
+        entry = line.strip()
+        if ":" not in entry:
+            continue
+        name, raw_value = entry.split(":", 1)
+        parameters[name] = _parse_ros_param_scalar(raw_value.strip())
+    return parameters
+
+
+def _parse_ros_param_scalar(value: str) -> object:
+    if value.lower() in {"true", "false"}:
+        return value.lower() == "true"
+    if not value:
+        return ""
+    try:
+        return ast.literal_eval(value)
+    except (SyntaxError, ValueError):
+        return value
 
 
 def get_ros_param(container: str, node_name: str, param_name: str) -> object:
@@ -4309,6 +4420,9 @@ def parse_structured_trace_jsonl(
 def collect_structured_trace_events(container: str, since_unix_sec: float) -> dict:
     """Read structured trace records emitted since one case began."""
     script = (
+        f"{ROS_CLI_PREAMBLE}\n"
+        "node_count=$(ros2 node list 2>/dev/null | grep -c '^/interaction_trace_viewer$' || true)\n"
+        "echo TRACE_NODE_COUNT=${node_count}\n"
         "python3 - <<'PY'\n"
         "import json\n"
         "from pathlib import Path\n"
@@ -4338,13 +4452,16 @@ def collect_structured_trace_events(container: str, since_unix_sec: float) -> di
     ) or ""
     count_match = re.search(r"^TRACE_FILE_COUNT=(\d+)$", output, flags=re.MULTILINE)
     file_count = int(count_match.group(1)) if count_match else 0
+    node_match = re.search(r"^TRACE_NODE_COUNT=(\d+)$", output, flags=re.MULTILINE)
+    writer_node_count = int(node_match.group(1)) if node_match else 0
     events = parse_structured_trace_jsonl(
         [output],
         since_unix_sec=max(0.0, float(since_unix_sec) - 1.0),
     )
     return {
-        "available": file_count > 0,
+        "available": file_count > 0 and writer_node_count > 0,
         "file_count": file_count,
+        "writer_node_count": writer_node_count,
         "event_count": len(events),
         "events": events,
     }

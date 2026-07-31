@@ -1,6 +1,6 @@
 # Launch Profiles
 
-Last updated: 2026-06-30
+Last updated: 2026-07-28
 
 This file is the active launch guide. Historical launch notes are under
 `docs/artifacts/`.
@@ -17,9 +17,10 @@ This file is the active launch guide. Historical launch notes are under
 `perform_motion` uses the real motion adapter by default in every profile. Its
 head-motion branch publishes an honest open-loop command when no recent head
 joint state is available, while convergence-as-success remains disabled. The
-controlled fake perform-motion seam remains available for validation. `look_at`
-continues to default to its fake action server until its real adapter is
-introduced into the stack:
+controlled fake perform-motion seam remains available for validation. A real
+ROS4HRI-compatible `nao_look_at` adapter is installed and launched, but
+`look_at` continues to default to its fake action server until the physical
+target-frame and reset paths complete the v2 robot validation gate:
 
 ```bash
 ros2 launch nao_chatbot nao_chatbot_robot.launch.py \
@@ -199,11 +200,11 @@ ros2 launch nao_chatbot nao_chatbot_asr_only.launch.py \
 - `planner_dialogue_act_topic`: defaults to `/planner/dialogue_act`.
 - `dialogue_manager_say_action`: defaults to `/nao/say` in this stack so
   Dialogue Manager talks through `nao_say_skill`.
-- `dialogue_manager_planner_dialogue_wording_mode`: defaults to `direct` in
-  live/sim stack profiles so planner dialogue acts are spoken from planner text.
-- `dialogue_manager_planner_completion_wording_mode`: defaults to `direct` in
-  live/sim stack profiles; set to `chatbot` only when you explicitly want
-  chatbot rewording for planner completion acts.
+- Planner dialogue acts are relayed to `dialogue_manager`, which routes their
+  structured facts through `chatbot_llm` for user-facing wording and owns the
+  single Say dispatch. The removed `planner_dialogue_wording_mode` and
+  `planner_completion_wording_mode` parameters are not launch controls in the
+  frozen v1 source.
 - `planner_skill_registry_path`: optional planner skill registry overlay.
 - `planner_llm_provider`: `ollama` by default.
 - `planner_llm_model`: planner model name.
@@ -478,6 +479,29 @@ For a vLLM or other OpenAI-compatible backend, first probe the API:
   --base-url http://<vllm-host>:8004 \
   --model <served-model-name>
 ```
+
+For a demo that should prefer a live vLLM model and then use a tested Ollama
+model when vLLM is unavailable, use the model-priority wrapper:
+
+```bash
+./scripts/launch_model_priority_demo.sh \
+  posture_bridge_wake_up_on_connect:=true \
+  start_naoqi_driver:=true \
+  start_managed_ollama:=false
+```
+
+The wrapper queries vLLM `/v1/models`, probes an advertised model, and only
+then falls back to Ollama `/api/tags` plus a small non-thinking completion.
+The default preferences are Qwen3-VL then the observed Qwen3.5 vLLM id, followed
+by `gemma4:31b-cloud`, `nemotron-3-super:cloud`, and `gemma4:cloud`. Override
+the preferred candidates with `VLLM_MODEL_PREFERENCE` or
+`OLLAMA_MODEL_PREFERENCE`. A model passed through `chatbot_model:=`,
+`ollama_model:=`, or `planner_llm_model:=` is tried first and becomes the main
+CLI override. The resolved model is pinned for the launch, so a slow request
+does not cause a mid-run model change. A failed resolver is a hard launch error
+with the tested backend diagnostics. When a fallback is used, the wrapper emits
+`fallback model used, current model <model> unavailable` and appends a JSONL
+event to `${MODEL_SELECTION_LOG:-/tmp/nao_model_selection.jsonl}`.
 
 Then route the planner to vLLM:
 

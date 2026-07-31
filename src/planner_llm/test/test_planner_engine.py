@@ -749,6 +749,101 @@ def test_planner_engine_recovers_validated_grounded_location_group_delivery() ->
     assert _step_requirements(decision) == [[], [], ['step_1', 'step_2']]
 
 
+def test_planner_engine_accepts_delivery_selection_for_decomposed_delivery_intents() -> None:
+    provider = _FakeProvider('{}')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_decomposed_delivery',
+            'goal_id': 'goal_decomposed_delivery',
+            'goal_text': 'bring the gold apple to ALEX',
+            'normalized_intents': [
+                'find_object',
+                'pick_object',
+                'navigate_to',
+                'place_object',
+            ],
+            'target_selection': {
+                'selection_kind': 'explicit_members',
+                'operation': 'deliver',
+                'source_location_id': 'gold_table',
+                'member_ids': ['gold_apple'],
+                'recipient_id': 'person_alex',
+                'ordering': 'none',
+                'report_policy': 'none',
+            },
+            'grounded_context': {
+                'entities': [
+                    {'id': 'gold_apple', 'kind': 'object', 'class': 'Apple'},
+                    {'id': 'person_alex', 'kind': 'person', 'class': 'Human'},
+                ],
+                'locations': [
+                    {
+                        'id': 'gold_table',
+                        'contains': [{'id': 'gold_apple', 'kind': 'object'}],
+                    },
+                ],
+            },
+        }
+    )
+
+    decision = engine.plan_request(
+        request,
+        goal_id='goal_decomposed_delivery',
+        plan_version=1,
+    )
+
+    _assert_target_selection_recovery(
+        decision,
+        skill_names=['bring_object'],
+        scene_targets=['gold_apple', 'person_alex'],
+    )
+
+
+def test_planner_engine_recovers_visit_selection_from_inspection_intents() -> None:
+    provider = _FakeProvider('not json')
+    engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
+    member_ids = ['apple_1', 'book_1', 'phone_1', 'cup_1']
+    request = PlannerRequest.from_payload(
+        {
+            'request_id': 'r_visit_items',
+            'goal_id': 'goal_visit_items',
+            'goal_text': 'visit each movable item and report each arrival',
+            'normalized_intents': ['look_at', 'inspect_area', 'report_result'],
+            'target_selection': {
+                'selection_kind': 'explicit_members',
+                'operation': 'visit',
+                'member_ids': member_ids,
+                'ordering': 'none',
+                'report_policy': 'per_target',
+            },
+            'grounded_context': {
+                'entities': [
+                    {'id': member_id, 'kind': 'object', 'class': 'Thing'}
+                    for member_id in member_ids
+                ],
+            },
+        }
+    )
+
+    decision = engine.plan_request(request, goal_id=request.goal_id, plan_version=1)
+
+    _assert_target_selection_recovery(
+        decision,
+        skill_names=[
+            'navigate_to',
+            'report_result',
+            'navigate_to',
+            'report_result',
+            'navigate_to',
+            'report_result',
+            'navigate_to',
+            'report_result',
+        ],
+        scene_targets=member_ids,
+    )
+
+
 def test_planner_engine_rejects_container_as_delivery_recipient() -> None:
     provider = _FakeProvider('{}')
     engine = PlannerEngine(provider, SkillRegistry.load(), default_retry_budget=1)
