@@ -1,0 +1,1087 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/7uxozyps",
+    "id": "7uxozyps",
+    "slide": 59,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "masterLayoutName": "Master",
+    "backgroundColor": "#F7F4EE",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light",
+        "eastAsianTypeface": "Calibri Light",
+        "complexScriptTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri",
+        "eastAsianTypeface": "Calibri",
+        "complexScriptTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Arial",
+      "Calibri",
+      "Calibri Light",
+      "Consolas",
+      "Georgia"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fmxgr2xo",
+      "id": "16",
+      "bbox": [
+        1136,
+        0,
+        144,
+        144
+      ],
+      "geometry": "ellipse",
+      "lineColor": "#DCE9E8",
+      "lineWidth": 2
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/udcri1kn",
+      "id": "2",
+      "bbox": [
+        1170,
+        0,
+        110,
+        110
+      ],
+      "geometry": "ellipse",
+      "lineColor": "#E8ECEA",
+      "lineWidth": 20
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/velsb618",
+      "id": "3",
+      "bbox": [
+        1035,
+        662,
+        165,
+        18
+      ],
+      "geometry": "rect",
+      "text": "APPENDIX",
+      "textPreview": "APPENDIX",
+      "resolvedFontSize": 10,
+      "resolvedTextStyle": {
+        "fontSize": 10,
+        "typeface": "Arial",
+        "color": "#829091",
+        "bold": true,
+        "alignment": "right",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "APPENDIX"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "APPENDIX",
+          "resolvedTextStyle": {
+            "fontSize": 10,
+            "typeface": "Arial",
+            "color": "#829091",
+            "bold": true,
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "APPENDIX",
+              "fontSize": 10,
+              "typeface": "Arial",
+              "color": "#829091",
+              "bold": true,
+              "alignment": "right"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/43e9ob25",
+      "id": "4",
+      "bbox": [
+        1206,
+        662,
+        36,
+        18
+      ],
+      "geometry": "rect",
+      "text": "59",
+      "textPreview": "59",
+      "resolvedFontSize": 11,
+      "resolvedTextStyle": {
+        "fontSize": 11,
+        "typeface": "Arial",
+        "color": "#8A9296",
+        "alignment": "right",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "59"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "59",
+          "resolvedTextStyle": {
+            "fontSize": 11,
+            "typeface": "Arial",
+            "color": "#8A9296",
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "59",
+              "fontSize": 11,
+              "typeface": "Arial",
+              "color": "#8A9296",
+              "alignment": "right"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/54nahgja",
+      "id": "5",
+      "bbox": [
+        72,
+        52,
+        860,
+        24
+      ],
+      "geometry": "rect",
+      "text": "APPENDIX · CONTRACT 9",
+      "textPreview": "APPENDIX · CONTRACT 9",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "fontSize": 14,
+        "typeface": "Arial",
+        "color": "#0C6570",
+        "bold": true,
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "APPENDIX · CONTRACT 9"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "APPENDIX · CONTRACT 9",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Arial",
+            "color": "#0C6570",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "APPENDIX · CONTRACT 9",
+              "fontSize": 14,
+              "typeface": "Arial",
+              "color": "#0C6570",
+              "bold": true,
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ihwrm1kz",
+      "id": "6",
+      "bbox": [
+        72,
+        88,
+        1050,
+        122
+      ],
+      "geometry": "rect",
+      "text": "KnowledgeCore: state and verified effects",
+      "textPreview": "KnowledgeCore: state and verified effects",
+      "resolvedFontSize": 40,
+      "resolvedTextStyle": {
+        "fontSize": 40,
+        "typeface": "Georgia",
+        "color": "#13202A",
+        "bold": true,
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "KnowledgeCore: state and verified effects"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "KnowledgeCore: state and verified effects",
+          "resolvedTextStyle": {
+            "fontSize": 40,
+            "typeface": "Georgia",
+            "color": "#13202A",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "KnowledgeCore: state and verified effects",
+              "fontSize": 40,
+              "typeface": "Georgia",
+              "color": "#13202A",
+              "bold": true,
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ji5sf61k",
+      "id": "7",
+      "bbox": [
+        72,
+        188,
+        544,
+        410
+      ],
+      "geometry": "roundRect",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/k7a9c72l",
+      "id": "8",
+      "bbox": [
+        72,
+        188,
+        6,
+        410
+      ],
+      "geometry": "rect",
+      "fillColor": "#0C6570",
+      "lineColor": "#0C6570",
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/l8ja5cj6",
+      "id": "9",
+      "bbox": [
+        94,
+        199,
+        500,
+        36
+      ],
+      "geometry": "rect",
+      "text": "RDF-style knowledge statements",
+      "textPreview": "RDF-style knowledge statements",
+      "resolvedFontSize": 23,
+      "resolvedTextStyle": {
+        "fontSize": 23,
+        "typeface": "Arial",
+        "color": "#13202A",
+        "bold": true,
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "RDF-style knowledge statements"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "RDF-style knowledge statements",
+          "resolvedTextStyle": {
+            "fontSize": 23,
+            "typeface": "Arial",
+            "color": "#13202A",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "RDF-style knowledge statements",
+              "fontSize": 23,
+              "typeface": "Arial",
+              "color": "#13202A",
+              "bold": true,
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tkvypsfi",
+      "id": "10",
+      "bbox": [
+        94,
+        243,
+        500,
+        355
+      ],
+      "geometry": "rect",
+      "text": "codex_lab_cup rdf:type Cup\ncodex_lab_cup dbp:color red\ncodex_lab_cup oro:isOn codex_lab_table\nperson_alex rdf:type Human\nmyself sees person_alex\n\nread: /kb/query\nmutate: /kb/revise",
+      "textPreview": "codex_lab_cup rdf:type Cup | codex_lab_cup dbp:color red | codex_lab_cup oro:isOn codex_lab_table | person_alex rdf:type Human | myself s...",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "fontSize": 18,
+        "typeface": "Consolas",
+        "color": "#073F47",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 6,
+          "right": 9,
+          "bottom": 6,
+          "left": 9
+        }
+      },
+      "textLayout": {
+        "lineCount": 8,
+        "lines": [
+          {
+            "index": 1,
+            "text": "codex_lab_cup rdf:type Cup"
+          },
+          {
+            "index": 2,
+            "text": "codex_lab_cup dbp:color red"
+          },
+          {
+            "index": 3,
+            "text": "codex_lab_cup oro:isOn codex_lab_table"
+          },
+          {
+            "index": 4,
+            "text": "person_alex rdf:type Human"
+          },
+          {
+            "index": 5,
+            "text": "myself sees person_alex"
+          },
+          {
+            "index": 6,
+            "text": ""
+          },
+          {
+            "index": 7,
+            "text": "read: /kb/query"
+          },
+          {
+            "index": 8,
+            "text": "mutate: /kb/revise"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "codex_lab_cup rdf:type Cup",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left",
+            "lineSpacing": 1.02
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "codex_lab_cup rdf:type Cup",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47",
+              "alignment": "left",
+              "lineSpacing": 1.02
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "codex_lab_cup dbp:color red",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left",
+            "lineSpacing": 1.02
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "codex_lab_cup dbp:color red",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47",
+              "alignment": "left",
+              "lineSpacing": 1.02
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "codex_lab_cup oro:isOn codex_lab_table",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left",
+            "lineSpacing": 1.02
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "codex_lab_cup oro:isOn codex_lab_table",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47",
+              "alignment": "left",
+              "lineSpacing": 1.02
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "person_alex rdf:type Human",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left",
+            "lineSpacing": 1.02
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "person_alex rdf:type Human",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47",
+              "alignment": "left",
+              "lineSpacing": 1.02
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 5,
+          "text": "myself sees person_alex",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left",
+            "lineSpacing": 1.02
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "myself sees person_alex",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47",
+              "alignment": "left",
+              "lineSpacing": 1.02
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 7,
+          "text": "read: /kb/query",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left",
+            "lineSpacing": 1.02
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "read: /kb/query",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47",
+              "alignment": "left",
+              "lineSpacing": 1.02
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 8,
+          "text": "mutate: /kb/revise",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left",
+            "lineSpacing": 1.02
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "mutate: /kb/revise",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47",
+              "alignment": "left",
+              "lineSpacing": 1.02
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/szmhw7ex",
+      "id": "11",
+      "bbox": [
+        640,
+        188,
+        552,
+        410
+      ],
+      "geometry": "roundRect",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7ydgn2xc",
+      "id": "12",
+      "bbox": [
+        640,
+        188,
+        6,
+        410
+      ],
+      "geometry": "rect",
+      "fillColor": "#E89A2F",
+      "lineColor": "#E89A2F",
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/6x4zuxw7",
+      "id": "13",
+      "bbox": [
+        662,
+        199,
+        508,
+        36
+      ],
+      "geometry": "rect",
+      "text": "Ownership and verification",
+      "textPreview": "Ownership and verification",
+      "resolvedFontSize": 23,
+      "resolvedTextStyle": {
+        "fontSize": 23,
+        "typeface": "Arial",
+        "color": "#13202A",
+        "bold": true,
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Ownership and verification"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Ownership and verification",
+          "resolvedTextStyle": {
+            "fontSize": 23,
+            "typeface": "Arial",
+            "color": "#13202A",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Ownership and verification",
+              "fontSize": 23,
+              "typeface": "Arial",
+              "color": "#13202A",
+              "bold": true,
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hofytcfu",
+      "id": "14",
+      "bbox": [
+        662,
+        243,
+        508,
+        355
+      ],
+      "geometry": "rect",
+      "text": "KnowledgeCore is reused infrastructure.\nkb_skills owns query/revision transport.\n\nPerception supplies transient observations.\nFixtures declare controlled symbolic state.\nSkills report their observed effects.\nThe orchestrator applies successful effects and queries required postconditions.",
+      "textPreview": "KnowledgeCore is reused infrastructure. | kb_skills owns query/revision transport. |  | Perception supplies transient observations. | Fix...",
+      "resolvedFontSize": 21,
+      "resolvedTextStyle": {
+        "fontSize": 21,
+        "typeface": "Arial",
+        "color": "#5B6770",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 8,
+        "lines": [
+          {
+            "index": 1,
+            "text": "KnowledgeCore is reused infrastructure."
+          },
+          {
+            "index": 2,
+            "text": "kb_skills owns query/revision transport."
+          },
+          {
+            "index": 3,
+            "text": ""
+          },
+          {
+            "index": 4,
+            "text": "Perception supplies transient observations."
+          },
+          {
+            "index": 5,
+            "text": "Fixtures declare controlled symbolic state."
+          },
+          {
+            "index": 6,
+            "text": "Skills report their observed effects."
+          },
+          {
+            "index": 7,
+            "text": "The orchestrator applies successful effects and"
+          },
+          {
+            "index": 8,
+            "text": "queries required postconditions."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "KnowledgeCore is reused infrastructure.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "KnowledgeCore is reused infrastructure.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770",
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "kb_skills owns query/revision transport.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "kb_skills owns query/revision transport.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770",
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "Perception supplies transient observations.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Perception supplies transient observations.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770",
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 5,
+          "text": "Fixtures declare controlled symbolic state.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Fixtures declare controlled symbolic state.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770",
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 6,
+          "text": "Skills report their observed effects.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Skills report their observed effects.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770",
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 7,
+          "text": "The orchestrator applies successful effects and queries required postconditions.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "The orchestrator applies successful effects and queries required postconditions.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770",
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gn6h07e9",
+      "id": "15",
+      "bbox": [
+        72,
+        615,
+        1110,
+        44
+      ],
+      "geometry": "rect",
+      "text": "A correct KB postcondition and correct user-facing wording are separate checks.",
+      "textPreview": "A correct KB postcondition and correct user-facing wording are separate checks.",
+      "resolvedFontSize": 22,
+      "resolvedTextStyle": {
+        "fontSize": 22,
+        "typeface": "Georgia",
+        "color": "#073F47",
+        "bold": true,
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "A correct KB postcondition and correct user-facing wording are separate checks."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "A correct KB postcondition and correct user-facing wording are separate checks.",
+          "resolvedTextStyle": {
+            "fontSize": 22,
+            "typeface": "Georgia",
+            "color": "#073F47",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "A correct KB postcondition and correct user-facing wording are separate checks.",
+              "fontSize": 22,
+              "typeface": "Georgia",
+              "color": "#073F47",
+              "bold": true,
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

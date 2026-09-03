@@ -1,0 +1,528 @@
+1. Design, Integration, and Validation of a Modular LLM-Based Interactive Architecture
+MAIN SLIDE 1/32 · rehearsal budget 20 seconds
+20 s. State the thesis title and the complete-stack scope. Original title typography, wording, authorship and institutional elements are preserved. Photo: supplied by Juan David Bendek Williamson. Crop displays the standing NAO; no claim about the equipment in the background.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/.codex/codex-remote-attachments/01a06368-8c1c-7cb2-b172-0ca3b19255fe/8CDB8185-DE17-4E24-8EEE-4DC878BBB7A1/2-Photo-2.jpg
+
+2. Language must become verifiable action
+MAIN SLIDE 2/32 · rehearsal budget 35 seconds
+Introduce the subsymbolic-to-symbolic boundary without suggesting that all robot control is symbolic. Motivate the full architecture, not only planning.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §1.1–1.2
+
+3. Research questions
+MAIN SLIDE 3/32 · rehearsal budget 45 seconds
+45 s. These are grouped paraphrases of the five research questions. RQ1: coherent multi-step plans and ordered supported skills. RQ2: compact grounding preserves objects, people, locations and roles. RQ3: reject unsupported skills, malformed arguments, invalid lineage and direct robot calls. RQ4: use typed feedback for recovery, clarification, revision or safe stop. RQ5: establish inspectable responsibility and interface boundaries.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §1.3
+
+4. Implementation and validation objectives
+MAIN SLIDE 4/32 · rehearsal budget 40 seconds
+40 s. Seven objectives from the final thesis; the earlier presentation compressed objectives 5 and 6. Introduce integration, execution control and validation as the three themes. Do not read every line.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §1.4
+
+5. NAO, ROS 2 and ROS4HRI
+MAIN SLIDE 5/32 · rehearsal budget 55 seconds
+55 s. A ROS node is a software process/component, not a neural network node. Services can have asynchronous clients; do not equate the pattern with mandatory blocking. Actions expose cancellation; physical cancellation capability still depends on implementation. Robot photo supplied by the author. Reused ROS4HRI infrastructure is credited explicitly.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §2.2–2.4
+C:/Users/Admin/.codex/codex-remote-attachments/01a06368-8c1c-7cb2-b172-0ca3b19255fe/8CDB8185-DE17-4E24-8EEE-4DC878BBB7A1/1-Photo-1.jpg
+https://docs.ros.org/en/jazzy/How-To-Guides/Topics-Services-Actions.html
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/src/communication_skills/action/Say.action
+
+6. An LLM agent is more than a model
+MAIN SLIDE 6/32 · rehearsal budget 50 seconds
+An operational definition for this framework, not a claim of independent unrestricted autonomy. ReAct motivates coupling reasoning and external interaction; this stack does not claim to reproduce its algorithm. The two ROS components may use the same backend model. Qwen3-VL-30B-A3B is internally MoE; that is distinct from the two-agent application design and is not a focus of this talk.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §2.5
+https://arxiv.org/abs/2210.03629
+https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct
+
+7. Grounded planning in embodied systems
+MAIN SLIDE 7/32 · rehearsal budget 45 seconds
+Different approaches are context, not baselines tested here. PDDL/HTN supply vocabulary for explicit capabilities; the implementation is not presented as a classical planner. Primary semantic evaluation used symbolic fixtures with object detection disabled. A multimodal model backend does not establish image-conditioned performance.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §2.5–2.9
+https://arxiv.org/abs/2204.01691
+https://arxiv.org/abs/2303.03378
+
+8. System architecture and ownership
+MAIN SLIDE 8/32 · rehearsal budget 50 seconds
+50 s. Original Figure 3.1 from the final thesis, cropped without redrawing. This is the conceptual graph: the implementation inserts orchestrator admission between chatbot and planner, and applies skill effects through kb_skills. Chatbot is an extended upstream component, not a wholly new local package. The planner never speaks or executes skills; the orchestrator does not become an LLM policy or world-model node.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Fig. 3.1; §3.2–3.3
+
+9. Runtime: request, action and feedback
+MAIN SLIDE 9/32 · rehearsal budget 40 seconds
+40 s. Original Figure 3.2. Explain the execution branch and the feedback loop once. The next slides expand the omitted API boundaries. Planner communication is a request to the dialogue owner, not direct robot speech.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Fig. 3.2; §3.4
+
+10. Dialogue ownership and chatbot routing
+MAIN SLIDE 10/32 · rehearsal budget 60 seconds
+The final thesis evaluated response_first: response and route first, then intent extraction under that route. The intent_first ablation reverses stage order. Both preserve the same output contract. confidence is a model/stage confidence value, not proof of correctness. scene_targets are hints until grounded. DialogueInteraction is a ROS service despite potentially nontrivial LLM latency.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Fig. 4.2; Table 4.2; §4.2.1–4.2.2
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/src/nao_orchestrator/nao_orchestrator/orchestrator.py
+
+11. Grounding builds a bounded scene context
+MAIN SLIDE 11/32 · rehearsal budget 60 seconds
+Grounding construction is deterministic; downstream entity selection and interpretation remain model-dependent. The detector and EMOROBCARE dataset are reused work. Image-plane centres are not metric-distance evidence. Source default freshness: KB lifespan 4 s, local scene expiry 4.5 s; no general guarantee of execution-time availability. Detector disabled in principal semantic qualification. Context JSON appears in appendix so the diagram remains readable.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Fig. 4.5; Table 4.3; §4.3
+
+12. The planner request is an admitted objective
+MAIN SLIDE 12/32 · rehearsal budget 50 seconds
+A contract comprises structure, semantics, allowed values and owner obligations. This is the final thesis Contract 3 example with abbreviated grounding, not a captured runtime event. Intent is the ROS envelope; JSON lives in data. The orchestrator normalises and admits transition and lineage before forwarding. No hidden executable plan from chatbot.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Table 4.4; §4.1.4
+
+13. A skill definition is the planner’s vocabulary
+MAIN SLIDE 13/32 · rehearsal budget 60 seconds
+Exact selected fields from the local canonical-format registry mirror docs/architecture/ab_registry_input.json, checked against src/planner_llm/config/skill_registry.json. The canonical Neural-Wokbench nested source is absent in this Windows checkout. Do not imply params is itself JSON Schema: this projection lists names; value semantics and validation live in shared contracts and adapters. The thesis describes 12 planner-visible skills; not every primitive or proposal is runtime-callable.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Table 4.5
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/architecture/ab_registry_input.json
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/src/planner_llm/config/skill_registry.json
+
+14. Declared effects must become observed evidence
+MAIN SLIDE 14/32 · rehearsal budget 60 seconds
+Exact selected registry fields. Additional exact pick metadata: guidance resolves a grounded object; result requires skill,status,summary_text,evidence; safety flags manipulation/object_contact; runtime callable true; implementation_status fake; adapter fake_skills.pick_object; injection true. Preconditions may be scenario-owned in controlled tests. None proves a physical grasp. Full record split across appendix slides.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Table 4.5
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/architecture/ab_registry_input.json
+
+15. The planner proposes and supervises plans
+MAIN SLIDE 15/32 · rehearsal budget 65 seconds
+The goal-keyed planning-state helper reacts to correlated feedback, not an independent executor. Each step has a stable id, type and allowed skill name. retry_budget bounds retry; retry is not a separate on_failure enum. The next plan is independently validated at the orchestrator. The model cannot call robot APIs or insert speech as a normal executable plan step. Appendix includes a full readable plan excerpt.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Fig. 4.3; Table 4.6; §4.2.3–4.2.4
+
+16. The orchestrator controls execution
+MAIN SLIDE 16/32 · rehearsal budget 55 seconds
+Figure 4.4. Execution feedback is std_msgs/msg/String on /planner/execution_feedback. Skill calls are actions in the demonstrated routes; fake endpoints use nao_skills/action/ScanScene. Real posture, head and gaze use their adapters. Failure follows validated policy; replan returns control to planner_llm. Checks constrain supported malformed cases but are not a complete safety proof.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Fig. 4.4; §4.2.6
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/src/nao_orchestrator/nao_orchestrator/orchestrator.py
+
+17. Results drive feedback and truthful closure
+MAIN SLIDE 17/32 · rehearsal budget 50 seconds
+Excerpt of thesis Contract 6: the remove-holds operation is omitted for space, not a complete effect transaction. metadata.fake=true must remain visible. C7 carries result evidence, C8 requests communication and does not speak. In current frozen v1 source, orchestrator relays the act; dialogue_manager invokes chatbot wording and owns the Say dispatch. Do not copy obsolete direct-wording launch controls from older skill docs.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §4.1.7–4.1.9
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/launch_profiles.md
+
+18. Real and fake skills share a result boundary
+MAIN SLIDE 18/32 · rehearsal budget 50 seconds
+The execution path is not a physics simulator. FakeSkillActionServer wraps FakeSkillEngine and scenario policy. Current native ScanScene fields: target,target_kind,max_sweeps,evidence_policy,result_mode; result success,message,summary_text,result_payload_json,duration; feedback status,progress. Structured request data is encoded by the adapter. Parameters include global_mode,active_scenario_id,mode_overrides_json,deterministic_seed. perform_motion is real by default; look_at fake by default in frozen v1 despite installed real adapter. Exact config is appendix.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §4.4
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/src/fake_skills/fake_skills/action_server.py
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/src/nao_skills/action/ScanScene.action
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/launch_profiles.md
+
+19. Evaluation qualifies a configuration
+MAIN SLIDE 19/32 · rehearsal budget 60 seconds
+Primary backend Qwen3-VL-30B-A3B-Instruct-AWQ via vLLM. Planner temperature 0.1 and output limit 800 per thesis. Detector disabled in the principal semantic profile; fixtures establish world state. Evidence unit is a case record, not one independent human trial. Explain freeze, repeated cases and why development retests do not replace retained failures.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §5.1–5.3; Table 5.1–5.3
+
+20. Evidence determines the case verdict
+MAIN SLIDE 20/32 · rehearsal budget 60 seconds
+60 s. Four gates shown: correct semantic route; complete admitted plan; required controlled outcome; verified closure. Questionnaire22 includes6dialogue7KB4simple5composite; scene11; statefulKB7; controlled multistep9; robustness5 repeated3; multi-capability7; navigation recovery1. Use expected outcomes, not one generic successful-action rule: a clarification can be a pass for an underspecified request and a failure when all context is present. Exactly-once means per semantic event, not one utterance for the entire multi-stage task.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §5.3–5.7
+
+21. Human-supervised, agent-assisted validation
+MAIN SLIDE 21/32 · rehearsal budget 60 seconds
+Authorship/supervision statement supplied directly by the user. Explain engineering support, not a causal measured efficiency gain or independently validated new algorithm. Runtime and development agents share the model+tools+constraints+feedback pattern; they are not the same running instances. Human judgement and responsibility remain with the author. The skill operational X/10 review score is not the experimental metric. Quotes checked against current SKILL.md; do not infer every historical run followed every current rule.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/.codex/skills/robot-stack-iteration-loop/SKILL.md
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/.codex/skills/robot-runtime-performance-review/SKILL.md
+Author statement in this review conversation
+
+22. Frozen evidence scope
+MAIN SLIDE 22/32 · rehearsal budget 35 seconds
+35 s. Confirm denominators: primary64pass8nonpass. Other26ablation21pass5nonpass; archive10=1pass7fail2excluded. Separate191supplement150pass32fail9excluded. Raw primary includes one degraded row, so call all8 non-pass, not8fails. Supplement file printed hash mismatch was noted during source verification; counts match. Do not make an integrity guarantee from printed hashes.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Table 6.1; Appendix D
+
+23. Primary Qwen3-VL results
+MAIN SLIDE 23/32 · rehearsal budget 55 seconds
+55 s. Native chart is updated with clear suite names, percentages and counts. Main22=20pass2nonpass; environment11/11; KB7/7; deep7/9; robustness12/15; capability5/7; navigation recovery1/1. These total72, with64passes. Case mix matters; report suite-level context rather than only the aggregate.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Tables 6.2–6.5
+
+24. Failure analysis
+MAIN SLIDE 24/32 · rehearsal budget 45 seconds
+45 s. Preserve the five strong taxonomy rows. Route: KB update incorrectly entered robot planner despite state change. Selection: target omitted. Role: kitchen mistaken as recipient. Coverage: required capability dropped. Closure: recovery lacked final outcome. Source/launch mismatch, QoS/ingress defects and absent correlation are engineering/observability findings; do not silently count them as semantic successes or model failures.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §6.1–6.4; §7.2–7.3
+
+25. Model-agnostic does not mean invariant
+MAIN SLIDE 25/32 · rehearsal budget 40 seconds
+40 s. Rates84.7%,85.0%,76.8% use the comparable strict profile denominators, not all191retained records. All models passed environment11/11; stress profiles differed. One retained campaign per model, exclusions and case mix prevent a universal ranking. The full table is appendix.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §6.5; Tables 6.6–6.8; §7.1
+
+26. Retained recovery: “Pick up the phone.”
+MAIN SLIDE 26/32 · rehearsal budget 65 seconds
+65 s. Historical July13 F13 retained pick-recovery case, separate provenance from the72primary denominator; final thesis Table6.4 also discusses it. Exact user text Pick up the phone. goal_default___718b0d50_2. Initial plan_1783979351305: find succeeded then pick failed. New plan_1783979355769: scan/find/pick/report succeeded, plan_completed. Do NOT claim that successful find was never repeated: it was repeated in the recovery plan. Mirrored logs contain duplicates; use correlated unique events, not log-line counts. Appendix holds the actual trace excerpt.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §6.3; Table 6.4
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/evaluation/runs/F13_semantic_audit/raw/nao_fake_fail_once_pick_20260713_heavy_changes.json
+
+27. Controlled live demonstration
+MAIN SLIDE 27/32 · rehearsal budget 120 seconds
+120 s maximum including transitions. Stack already running. Rehearsed dialogue, declared-symbolic-scene query, simple head action. State the chosen model and selected real/fake adapter honestly. If unavailable, use the supervisor video or retained trace immediately. No startup or troubleshooting during the defence. The video file has not been supplied to this workstation and is not embedded. Live illustration does not alter the frozen experimental denominator.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §5.1
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/presentation/TFM_DEFENCE_DEMO_RUNBOOK_2026-09-03.md
+
+28. Discussion: answers to the research questions
+MAIN SLIDE 28/32 · rehearsal budget 45 seconds
+45 s. Explicitly return to each research question. Claim the complete interaction architecture rather than one superior planning algorithm. Explain why rejection is valuable while retaining the task non-pass.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §6.6; Chapter 7
+
+29. Limitations and claim boundaries
+MAIN SLIDE 29/32 · rehearsal budget 45 seconds
+45 s. Preserve supported/not-established/transfer columns. No repeated physical navigation, manipulation, perception-accuracy or human-safety qualification. Primary object detector disabled. Model series not statistically replicated. Dataset and harness evidence limitations remain explicit.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §8.1
+
+30. Future work
+MAIN SLIDE 30/32 · rehearsal budget 60 seconds
+60 s. Follow thesis§8.2 rather than replacing its future work with the later v2 roadmap. LoRA is a proposal, not a completed experiment. Second-platform portability remains unproven.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §8.2
+
+31. Contributions
+MAIN SLIDE 31/32 · rehearsal budget 35 seconds
+35 s. Credit upstream ROS4HRI/dialogue/KnowledgeCore components and reused detector work. Distinguish original local integration and extension from library authorship. Agent-assisted tooling supported engineering; author retained design/review/acceptance responsibility.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Chapter 9
+Author supervision statement
+
+32. Conclusion
+MAIN SLIDE 32/32 · rehearsal budget 35 seconds
+35 s. Preserve the original closing statement. Resolve the research questions within supported task families and tested boundaries. Thank the board and transition to the Q&A reference page.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Chapter 9
+
+33. Short answers for likely questions
+UNTIMED REFERENCE
+Untimed Q&A reference, directly after conclusion as requested. Use as navigation and memory aid rather than reading all answers.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Chapters 7–9
+
+34. Detailed primary results
+UNTIMED REFERENCE
+Counts sum to72 and64passes. Use non-pass rather than fail for aggregated primary records; primary contains a degraded row. Table updated to include recovery1/1.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Tables 6.2–6.5
+
+35. Main questionnaire · 1/5
+UNTIMED REFERENCE
+Untimed reference. Full prompt text is retained. Source: C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Table 5.4
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Table 5.4
+
+36. Main questionnaire · 2/5
+UNTIMED REFERENCE
+Untimed reference. Full prompt text is retained. Source: C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Table 5.4
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Table 5.4
+
+37. Main questionnaire · 3/5
+UNTIMED REFERENCE
+Untimed reference. Full prompt text is retained. Source: C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Table 5.4
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Table 5.4
+
+38. Main questionnaire · 4/5
+UNTIMED REFERENCE
+Untimed reference. Full prompt text is retained. Source: C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Table 5.4
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Table 5.4
+
+39. Main questionnaire · 5/5
+UNTIMED REFERENCE
+Untimed reference. Full prompt text is retained. Source: C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Table 5.4
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Table 5.4
+
+40. Scene and grounding · 1/3
+UNTIMED REFERENCE
+Untimed reference. Full prompt text is retained. Source: C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/environment_v33.json
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/environment_v33.json
+
+41. Scene and grounding · 2/3
+UNTIMED REFERENCE
+Untimed reference. Full prompt text is retained. Source: C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/environment_v33.json
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/environment_v33.json
+
+42. Scene and grounding · 3/3
+UNTIMED REFERENCE
+Untimed reference. Full prompt text is retained. Source: C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/environment_v33.json
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/environment_v33.json
+
+43. Stateful KB · 1/2
+UNTIMED REFERENCE
+Untimed reference. Full prompt text is retained. Source: C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/kb_stress_v33.json
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/kb_stress_v33.json
+
+44. Stateful KB · 2/2
+UNTIMED REFERENCE
+Untimed reference. Full prompt text is retained. Source: C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/kb_stress_v33.json
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/kb_stress_v33.json
+
+45. Controlled multi-step · 1/3
+UNTIMED REFERENCE
+Untimed reference. Full prompt text is retained. Source: C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/fake_deep_all_success_v34.json
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/fake_deep_all_success_v34.json
+
+46. Controlled multi-step · 2/3
+UNTIMED REFERENCE
+Untimed reference. Full prompt text is retained. Source: C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/fake_deep_all_success_v34.json
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/fake_deep_all_success_v34.json
+
+47. Controlled multi-step · 3/3
+UNTIMED REFERENCE
+Untimed reference. Full prompt text is retained. Source: C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/fake_deep_all_success_v34.json
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/fake_deep_all_success_v34.json
+
+48. Robustness · 1/2
+UNTIMED REFERENCE
+Untimed reference. Full prompt text is retained. Source: C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/robustness_v34_r1.json
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/robustness_v34_r1.json
+
+49. Robustness · 2/2
+UNTIMED REFERENCE
+Untimed reference. Full prompt text is retained. Source: C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/robustness_v34_r1.json
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/robustness_v34_r1.json
+
+50. Multi-capability · 1/2
+UNTIMED REFERENCE
+Untimed reference. Full prompt text is retained. Source: C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/capability_extreme_v34.json
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/capability_extreme_v34.json
+
+51. Multi-capability · 2/2
+UNTIMED REFERENCE
+Untimed reference. Full prompt text is retained. Source: C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/capability_extreme_v34.json
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/artifacts/runtime_v34_model_agnostic_review/capability_extreme_v34.json
+
+52. Contract 1: chatbot turn output
+UNTIMED REFERENCE
+
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Table 4.2
+
+53. Contract 2: grounded context
+UNTIMED REFERENCE
+
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Table 4.3; §4.3
+
+54. Skill metadata and dispatch
+UNTIMED REFERENCE
+
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/architecture/ab_registry_input.json
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/src/planner_llm/config/skill_registry.json
+
+55. Skill implementation and callability
+UNTIMED REFERENCE
+
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/architecture/ab_registry_input.json
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/src/planner_llm/config/skill_registry.json
+
+56. Contract 5: executable plan
+UNTIMED REFERENCE
+
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Table 4.6
+
+57. Contracts 7–8: feedback and communication
+UNTIMED REFERENCE
+Additional C7 runtime fields include plan_id,plan_version,event_type,timestamp_sec,blocking and retry metadata. C8 await_user_response tells dialogue that input is needed; slots_needed describes missing information. This feedback reason and dialogue reason are different thesis examples and are intentionally not presented as one trajectory.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §4.1.8–4.1.9
+
+58. ROS action carrier and fake configuration
+UNTIMED REFERENCE
+
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/src/nao_skills/action/ScanScene.action
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/src/fake_skills/fake_skills/action_server.py
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/launch_profiles.md
+
+59. KnowledgeCore: state and verified effects
+UNTIMED REFERENCE
+
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §4.1.10; Table 4.7
+
+60. Recovery trace: retained event sequence
+UNTIMED REFERENCE
+Exact retained source lines:
+TRACE_EVENT [1783979352.183] goal_default___718b0d50_2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___718b0d50_2,plan_id=plan_1783979351305,event_type=step_succeeded,step=find_object
+TRACE_EVENT [1783979352.946] goal_default___718b0d50_2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___718b0d50_2,plan_id=plan_1783979351305,event_type=step_failed,step=pick_object
+TRACE_EVENT [1783979359.641] goal_default___718b0d50_2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___718b0d50_2,plan_id=plan_1783979355769,event_type=step_succeeded,step=scan
+TRACE_EVENT [1783979360.506] goal_default___718b0d50_2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___718b0d50_2,plan_id=plan_1783979355769,event_type=step_succeeded,step=find_object
+TRACE_EVENT [1783979361.899] goal_default___718b0d50_2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___718b0d50_2,plan_id=plan_1783979355769,event_type=step_succeeded,step=pick_object
+TRACE_EVENT [1783979364.016] goal_default___718b0d50_2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___718b0d50_2,plan_id=plan_1783979355769,event_type=step_succeeded,step=report_result
+TRACE_EVENT [1783979364.017] goal_default___718b0d50_2 | execution_feedback | /planner/execution_feedback | node=planner_llm | flow=goal_id=goal_default___718b0d50_2,plan_id=plan_1783979355769,event_type=plan_completed
+Assessment: {"all_required_context":false,"expected_outcome":"observe","reasons":["matched expected trajectory"],"status":"pass"}. Deduplicated display of unique outcomes; source log excerpt includes unrelated earlier events, excluded by goal correlation.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/evaluation/runs/F13_semantic_audit/raw/nao_fake_fail_once_pick_20260713_heavy_changes.json
+
+61. Implementation ownership recap
+UNTIMED REFERENCE
+Conceptual recap retained from original slide5. Planner ingress is chatbot→orchestrator admission→planner; the left-to-right simplified drawing is not the complete transport topology. See main technical slides for exact interfaces. Communication returns through the dialogue owner.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §3.2; §4.2
+
+62. Evidence and interpretation notes
+UNTIMED REFERENCE
+PDF embedded primary dataset hash matches its printed table. Embedded supplement actual SHA e8d4ce4bda136fe6674e9af3cd2f3b7d78743ba528dfcc260f555549c73c8f59 differs from printed Table D.2. Counts agree. Do not state both attachments verified against printed hashes. This is a source integrity caveat, not a reason to modify thesis result counts.
+
+[Sources]
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Appendix D

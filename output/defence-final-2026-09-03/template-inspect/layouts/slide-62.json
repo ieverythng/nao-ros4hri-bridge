@@ -1,0 +1,963 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/1kzq5knq",
+    "id": "1kzq5knq",
+    "slide": 62,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "masterLayoutName": "Master",
+    "backgroundColor": "#F7F4EE",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light",
+        "eastAsianTypeface": "Calibri Light",
+        "complexScriptTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri",
+        "eastAsianTypeface": "Calibri",
+        "complexScriptTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Arial",
+      "Calibri",
+      "Calibri Light",
+      "Georgia"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/6p4nudkr",
+      "id": "16",
+      "bbox": [
+        1136,
+        0,
+        144,
+        144
+      ],
+      "geometry": "ellipse",
+      "lineColor": "#DCE9E8",
+      "lineWidth": 2
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/dk7id03u",
+      "id": "2",
+      "bbox": [
+        1170,
+        0,
+        110,
+        110
+      ],
+      "geometry": "ellipse",
+      "lineColor": "#E8ECEA",
+      "lineWidth": 20
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cjyh4v29",
+      "id": "3",
+      "bbox": [
+        1035,
+        662,
+        165,
+        18
+      ],
+      "geometry": "rect",
+      "text": "APPENDIX",
+      "textPreview": "APPENDIX",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "APPENDIX"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "APPENDIX",
+          "resolvedTextStyle": {
+            "fontSize": 10,
+            "typeface": "Arial",
+            "color": "#829091",
+            "bold": true,
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "APPENDIX",
+              "fontSize": 10,
+              "typeface": "Arial",
+              "color": "#829091",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/3upg7qlc",
+      "id": "4",
+      "bbox": [
+        1206,
+        662,
+        36,
+        18
+      ],
+      "geometry": "rect",
+      "text": "62",
+      "textPreview": "62",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "62"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "62",
+          "resolvedTextStyle": {
+            "fontSize": 11,
+            "typeface": "Arial",
+            "color": "#8A9296",
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "62",
+              "fontSize": 11,
+              "typeface": "Arial",
+              "color": "#8A9296"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/2twzylk7",
+      "id": "5",
+      "bbox": [
+        72,
+        52,
+        860,
+        24
+      ],
+      "geometry": "rect",
+      "text": "APPENDIX · PROVENANCE",
+      "textPreview": "APPENDIX · PROVENANCE",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "APPENDIX · PROVENANCE"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "APPENDIX · PROVENANCE",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Arial",
+            "color": "#0C6570",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "APPENDIX · PROVENANCE",
+              "fontSize": 14,
+              "typeface": "Arial",
+              "color": "#0C6570",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/pw7y903i",
+      "id": "6",
+      "bbox": [
+        72,
+        88,
+        1050,
+        122
+      ],
+      "geometry": "rect",
+      "text": "Evidence and interpretation notes",
+      "textPreview": "Evidence and interpretation notes",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Evidence and interpretation notes"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Evidence and interpretation notes",
+          "resolvedTextStyle": {
+            "fontSize": 40,
+            "typeface": "Georgia",
+            "color": "#13202A",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Evidence and interpretation notes",
+              "fontSize": 40,
+              "typeface": "Georgia",
+              "color": "#13202A",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4vyh0v2x",
+      "id": "7",
+      "bbox": [
+        72,
+        188,
+        544,
+        410
+      ],
+      "geometry": "roundRect",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nq90julw",
+      "id": "8",
+      "bbox": [
+        72,
+        188,
+        6,
+        410
+      ],
+      "geometry": "rect",
+      "fillColor": "#0C6570",
+      "lineColor": "#0C6570",
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/mp0zapkb",
+      "id": "9",
+      "bbox": [
+        94,
+        199,
+        500,
+        36
+      ],
+      "geometry": "rect",
+      "text": "Primary vs supplementary evidence",
+      "textPreview": "Primary vs supplementary evidence",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Primary vs supplementary evidence"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Primary vs supplementary evidence",
+          "resolvedTextStyle": {
+            "fontSize": 23,
+            "typeface": "Arial",
+            "color": "#13202A",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Primary vs supplementary evidence",
+              "fontSize": 23,
+              "typeface": "Arial",
+              "color": "#13202A",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gv650n2t",
+      "id": "10",
+      "bbox": [
+        94,
+        243,
+        500,
+        355
+      ],
+      "geometry": "rect",
+      "text": "108 primary-index records:\n72 qualification + 26 ablations + 10 archive.\n\n72 qualification: 64 pass, 8 non-pass.\n\n191 separate model-supplement records:\n150 pass, 32 fail, 9 excluded.\n\nRepeated prompts are not independent user trials.",
+      "textPreview": "108 primary-index records: | 72 qualification + 26 ablations + 10 archive. |  | 72 qualification: 64 pass, 8 non-pass. |  | 191 separate ...",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 9,
+        "lines": [
+          {
+            "index": 1,
+            "text": "108 primary-index records:"
+          },
+          {
+            "index": 2,
+            "text": "72 qualification + 26 ablations + 10 archive."
+          },
+          {
+            "index": 3,
+            "text": ""
+          },
+          {
+            "index": 4,
+            "text": "72 qualification: 64 pass, 8 non-pass."
+          },
+          {
+            "index": 5,
+            "text": ""
+          },
+          {
+            "index": 6,
+            "text": "191 separate model-supplement records:"
+          },
+          {
+            "index": 7,
+            "text": "150 pass, 32 fail, 9 excluded."
+          },
+          {
+            "index": 8,
+            "text": ""
+          },
+          {
+            "index": 9,
+            "text": "Repeated prompts are not independent user trials."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "108 primary-index records:",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "108 primary-index records:",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "72 qualification + 26 ablations + 10 archive.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "72 qualification + 26 ablations + 10 archive.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "72 qualification: 64 pass, 8 non-pass.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "72 qualification: 64 pass, 8 non-pass.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 6,
+          "text": "191 separate model-supplement records:",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "191 separate model-supplement records:",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 7,
+          "text": "150 pass, 32 fail, 9 excluded.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "150 pass, 32 fail, 9 excluded.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 9,
+          "text": "Repeated prompts are not independent user trials.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Repeated prompts are not independent user trials.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1wf69sje",
+      "id": "11",
+      "bbox": [
+        640,
+        188,
+        552,
+        410
+      ],
+      "geometry": "roundRect",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ut4nyxkn",
+      "id": "12",
+      "bbox": [
+        640,
+        188,
+        6,
+        410
+      ],
+      "geometry": "rect",
+      "fillColor": "#E89A2F",
+      "lineColor": "#E89A2F",
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fuxo7218",
+      "id": "13",
+      "bbox": [
+        662,
+        199,
+        508,
+        36
+      ],
+      "geometry": "rect",
+      "text": "Boundaries of reproducibility",
+      "textPreview": "Boundaries of reproducibility",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Boundaries of reproducibility"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Boundaries of reproducibility",
+          "resolvedTextStyle": {
+            "fontSize": 23,
+            "typeface": "Arial",
+            "color": "#13202A",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Boundaries of reproducibility",
+              "fontSize": 23,
+              "typeface": "Arial",
+              "color": "#13202A",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/srm5wn2h",
+      "id": "14",
+      "bbox": [
+        662,
+        243,
+        508,
+        355
+      ],
+      "geometry": "rect",
+      "text": "Retain model/configuration, case identity, world fixture, source hashes and raw evidence.\n\nA successful diagnostic rerun does not erase a retained non-pass.\n\nMissing terminal evidence can fail acceptance; external/harness absence may be excluded under the declared scoring rule.",
+      "textPreview": "Retain model/configuration, case identity, world fixture, source hashes and raw evidence. |  | A successful diagnostic rerun does not era...",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 9,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Retain model/configuration, case identity, world"
+          },
+          {
+            "index": 2,
+            "text": "fixture, source hashes and raw evidence."
+          },
+          {
+            "index": 3,
+            "text": ""
+          },
+          {
+            "index": 4,
+            "text": "A successful diagnostic rerun does not erase a"
+          },
+          {
+            "index": 5,
+            "text": "retained non-pass."
+          },
+          {
+            "index": 6,
+            "text": ""
+          },
+          {
+            "index": 7,
+            "text": "Missing terminal evidence can fail acceptance;"
+          },
+          {
+            "index": 8,
+            "text": "external/harness absence may be excluded under"
+          },
+          {
+            "index": 9,
+            "text": "the declared scoring rule."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Retain model/configuration, case identity, world fixture, source hashes and raw evidence.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Retain model/configuration, case identity, world fixture, source hashes and raw evidence.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "A successful diagnostic rerun does not erase a retained non-pass.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "A successful diagnostic rerun does not erase a retained non-pass.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 5,
+          "text": "Missing terminal evidence can fail acceptance; external/harness absence may be excluded under the declared scoring rule.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Missing terminal evidence can fail acceptance; external/harness absence may be excluded under the declared scoring rule.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tsv65sj2",
+      "id": "15",
+      "bbox": [
+        72,
+        615,
+        1110,
+        44
+      ],
+      "geometry": "rect",
+      "text": "Sources: final thesis Tables 6.1–6.8 and Appendix D; retained JSON/CSV artifacts.",
+      "textPreview": "Sources: final thesis Tables 6.1–6.8 and Appendix D; retained JSON/CSV artifacts.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Sources: final thesis Tables 6.1–6.8 and Appendix D; retained JSON/CSV artifacts."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Sources: final thesis Tables 6.1–6.8 and Appendix D; retained JSON/CSV artifacts.",
+          "resolvedTextStyle": {
+            "fontSize": 22,
+            "typeface": "Georgia",
+            "color": "#073F47",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Sources: final thesis Tables 6.1–6.8 and Appendix D; retained JSON/CSV artifacts.",
+              "fontSize": 22,
+              "typeface": "Georgia",
+              "color": "#073F47",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

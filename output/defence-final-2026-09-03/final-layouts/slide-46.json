@@ -1,0 +1,978 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/zixsf2ps",
+    "id": "zixsf2ps",
+    "slide": 46,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "masterLayoutName": "Master",
+    "backgroundColor": "#F7F4EE",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light",
+        "eastAsianTypeface": "Calibri Light",
+        "complexScriptTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri",
+        "eastAsianTypeface": "Calibri",
+        "complexScriptTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Arial",
+      "Calibri",
+      "Calibri Light",
+      "Georgia"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u903yx0r",
+      "id": "22",
+      "bbox": [
+        1136,
+        0,
+        144,
+        144
+      ],
+      "geometry": "ellipse",
+      "lineColor": "#DCE9E8",
+      "lineWidth": 2
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/a9s3uhcv",
+      "id": "2",
+      "bbox": [
+        1170,
+        0,
+        110,
+        110
+      ],
+      "geometry": "ellipse",
+      "lineColor": "#E8ECEA",
+      "lineWidth": 20
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/va14nmtg",
+      "id": "3",
+      "bbox": [
+        1035,
+        662,
+        165,
+        18
+      ],
+      "geometry": "rect",
+      "text": "APPENDIX",
+      "textPreview": "APPENDIX",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "APPENDIX"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "APPENDIX",
+          "resolvedTextStyle": {
+            "fontSize": 10,
+            "typeface": "Arial",
+            "color": "#829091",
+            "bold": true,
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "APPENDIX",
+              "fontSize": 10,
+              "typeface": "Arial",
+              "color": "#829091",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/kful0rud",
+      "id": "4",
+      "bbox": [
+        1206,
+        662,
+        36,
+        18
+      ],
+      "geometry": "rect",
+      "text": "46",
+      "textPreview": "46",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "46"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "46",
+          "resolvedTextStyle": {
+            "fontSize": 11,
+            "typeface": "Arial",
+            "color": "#8A9296",
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "46",
+              "fontSize": 11,
+              "typeface": "Arial",
+              "color": "#8A9296"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5g3mtwbi",
+      "id": "5",
+      "bbox": [
+        72,
+        52,
+        860,
+        24
+      ],
+      "geometry": "rect",
+      "text": "APPENDIX · QUESTIONNAIRES",
+      "textPreview": "APPENDIX · QUESTIONNAIRES",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "APPENDIX · QUESTIONNAIRES"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "APPENDIX · QUESTIONNAIRES",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Arial",
+            "color": "#0C6570",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "APPENDIX · QUESTIONNAIRES",
+              "fontSize": 14,
+              "typeface": "Arial",
+              "color": "#0C6570",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ids3yhc7",
+      "id": "6",
+      "bbox": [
+        72,
+        88,
+        1050,
+        122
+      ],
+      "geometry": "rect",
+      "text": "Controlled multi-step · 2/3",
+      "textPreview": "Controlled multi-step · 2/3",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Controlled multi-step · 2/3"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Controlled multi-step · 2/3",
+          "resolvedTextStyle": {
+            "fontSize": 38,
+            "typeface": "Georgia",
+            "color": "#13202A",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Controlled multi-step · 2/3",
+              "fontSize": 38,
+              "typeface": "Georgia",
+              "color": "#13202A",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/je14rmts",
+      "id": "7",
+      "bbox": [
+        72,
+        182,
+        220,
+        63
+      ],
+      "geometry": "rect",
+      "text": "missing recipient clarification",
+      "textPreview": "missing recipient clarification",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "missing recipient"
+          },
+          {
+            "index": 2,
+            "text": "clarification"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "missing recipient clarification",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Arial",
+            "color": "#073F47",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "missing recipient clarification",
+              "fontSize": 18,
+              "typeface": "Arial",
+              "color": "#073F47",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/s3ul4bu9",
+      "id": "8",
+      "bbox": [
+        310,
+        181,
+        866,
+        78
+      ],
+      "geometry": "rect",
+      "text": "Bring every object from the work table to the person named BLAKE and report what happened.",
+      "textPreview": "Bring every object from the work table to the person named BLAKE and report what happened.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Bring every object from the work table to the person named BLAKE and report what happened."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Bring every object from the work table to the person named BLAKE and report what happened.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Arial",
+            "color": "#13202A",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Bring every object from the work table to the person named BLAKE and report what happened.",
+              "fontSize": 17,
+              "typeface": "Arial",
+              "color": "#13202A"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/t43mxwbu",
+      "id": "9",
+      "bbox": [
+        72,
+        252,
+        1070,
+        1
+      ],
+      "geometry": "line",
+      "lineColor": "#D2D5D4",
+      "lineWidth": 1
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/l0721wre",
+      "id": "10",
+      "bbox": [
+        72,
+        271,
+        220,
+        63
+      ],
+      "geometry": "rect",
+      "text": "iiia kitchen delivery",
+      "textPreview": "iiia kitchen delivery",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "iiia kitchen delivery"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "iiia kitchen delivery",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Arial",
+            "color": "#073F47",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "iiia kitchen delivery",
+              "fontSize": 18,
+              "typeface": "Arial",
+              "color": "#073F47",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0zylsrat",
+      "id": "11",
+      "bbox": [
+        310,
+        270,
+        866,
+        78
+      ],
+      "geometry": "rect",
+      "text": "Bring every object from the kitchen to ALEX and report what happened.",
+      "textPreview": "Bring every object from the kitchen to ALEX and report what happened.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Bring every object from the kitchen to ALEX and report what happened."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Bring every object from the kitchen to ALEX and report what happened.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Arial",
+            "color": "#13202A",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Bring every object from the kitchen to ALEX and report what happened.",
+              "fontSize": 17,
+              "typeface": "Arial",
+              "color": "#13202A"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zypkzm9o",
+      "id": "12",
+      "bbox": [
+        72,
+        348,
+        1070,
+        1
+      ],
+      "geometry": "line",
+      "lineColor": "#D2D5D4",
+      "lineWidth": 1
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/yxg3qhs3",
+      "id": "13",
+      "bbox": [
+        72,
+        360,
+        220,
+        63
+      ],
+      "geometry": "rect",
+      "text": "iiia floor location followup",
+      "textPreview": "iiia floor location followup",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "iiia floor location"
+          },
+          {
+            "index": 2,
+            "text": "followup"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "iiia floor location followup",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Arial",
+            "color": "#073F47",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "iiia floor location followup",
+              "fontSize": 18,
+              "typeface": "Arial",
+              "color": "#073F47",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9orm5wrq",
+      "id": "14",
+      "bbox": [
+        310,
+        359,
+        866,
+        78
+      ],
+      "geometry": "rect",
+      "text": "Where are the objects from the kitchen now?",
+      "textPreview": "Where are the objects from the kitchen now?",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Where are the objects from the kitchen now?"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Where are the objects from the kitchen now?",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Arial",
+            "color": "#13202A",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Where are the objects from the kitchen now?",
+              "fontSize": 17,
+              "typeface": "Arial",
+              "color": "#13202A"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8nilwra5",
+      "id": "15",
+      "bbox": [
+        72,
+        444,
+        1070,
+        1
+      ],
+      "geometry": "line",
+      "lineColor": "#D2D5D4",
+      "lineWidth": 1
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nm943m9k",
+      "id": "16",
+      "bbox": [
+        72,
+        449,
+        220,
+        63
+      ],
+      "geometry": "rect",
+      "text": "gold apple\nmultiturn",
+      "textPreview": "gold apple | multiturn",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "gold apple"
+          },
+          {
+            "index": 2,
+            "text": "multiturn"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "gold apple",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Arial",
+            "color": "#073F47",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "gold apple",
+              "fontSize": 18,
+              "typeface": "Arial",
+              "color": "#073F47",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "multiturn",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Arial",
+            "color": "#073F47",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "multiturn",
+              "fontSize": 18,
+              "typeface": "Arial",
+              "color": "#073F47",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m103uhsz",
+      "id": "17",
+      "bbox": [
+        310,
+        448,
+        866,
+        78
+      ],
+      "geometry": "rect",
+      "text": "Can you bring that gold apple to the person named ALEX?",
+      "textPreview": "Can you bring that gold apple to the person named ALEX?",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Can you bring that gold apple to the person named ALEX?"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Can you bring that gold apple to the person named ALEX?",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Arial",
+            "color": "#13202A",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Can you bring that gold apple to the person named ALEX?",
+              "fontSize": 17,
+              "typeface": "Arial",
+              "color": "#13202A"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/psn2tcr6",
+      "id": "18",
+      "bbox": [
+        72,
+        540,
+        1070,
+        1
+      ],
+      "geometry": "line",
+      "lineColor": "#D2D5D4",
+      "lineWidth": 1
+    }
+  ],
+  "composeRuns": []
+}

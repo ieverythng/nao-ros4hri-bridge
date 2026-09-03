@@ -1,0 +1,999 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/x8f69ofe",
+    "id": "x8f69ofe",
+    "slide": 6,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "masterLayoutName": "Master",
+    "backgroundColor": "#F7F4EE",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light",
+        "eastAsianTypeface": "Calibri Light",
+        "complexScriptTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri",
+        "eastAsianTypeface": "Calibri",
+        "complexScriptTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Arial",
+      "Calibri",
+      "Calibri Light",
+      "Georgia"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/j6dcr65c",
+      "id": "16",
+      "bbox": [
+        1136,
+        0,
+        144,
+        144
+      ],
+      "geometry": "ellipse",
+      "lineColor": "#DCE9E8",
+      "lineWidth": 2
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/yhg7epsj",
+      "id": "2",
+      "bbox": [
+        1170,
+        0,
+        110,
+        110
+      ],
+      "geometry": "ellipse",
+      "lineColor": "#E8ECEA",
+      "lineWidth": 20
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zi98nu94",
+      "id": "3",
+      "bbox": [
+        1035,
+        662,
+        165,
+        18
+      ],
+      "geometry": "rect",
+      "text": "BACKGROUND",
+      "textPreview": "BACKGROUND",
+      "resolvedFontSize": 10,
+      "resolvedTextStyle": {
+        "fontSize": 10,
+        "typeface": "Arial",
+        "color": "#829091",
+        "bold": true,
+        "alignment": "right",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "BACKGROUND"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "BACKGROUND",
+          "resolvedTextStyle": {
+            "fontSize": 10,
+            "typeface": "Arial",
+            "color": "#829091",
+            "bold": true,
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "BACKGROUND",
+              "fontSize": 10,
+              "typeface": "Arial",
+              "color": "#829091",
+              "bold": true,
+              "alignment": "right"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/87ipkzal",
+      "id": "4",
+      "bbox": [
+        1206,
+        662,
+        36,
+        18
+      ],
+      "geometry": "rect",
+      "text": "06",
+      "textPreview": "06",
+      "resolvedFontSize": 11,
+      "resolvedTextStyle": {
+        "fontSize": 11,
+        "typeface": "Arial",
+        "color": "#8A9296",
+        "alignment": "right",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "06"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "06",
+          "resolvedTextStyle": {
+            "fontSize": 11,
+            "typeface": "Arial",
+            "color": "#8A9296",
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "06",
+              "fontSize": 11,
+              "typeface": "Arial",
+              "color": "#8A9296",
+              "alignment": "right"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/98rqt4r6",
+      "id": "5",
+      "bbox": [
+        72,
+        52,
+        860,
+        24
+      ],
+      "geometry": "rect",
+      "text": "BACKGROUND · LITERATURE",
+      "textPreview": "BACKGROUND · LITERATURE",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "fontSize": 14,
+        "typeface": "Arial",
+        "color": "#0C6570",
+        "bold": true,
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "BACKGROUND · LITERATURE"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "BACKGROUND · LITERATURE",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Arial",
+            "color": "#0C6570",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "BACKGROUND · LITERATURE",
+              "fontSize": 14,
+              "typeface": "Arial",
+              "color": "#0C6570",
+              "bold": true,
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ml07i9sv",
+      "id": "6",
+      "bbox": [
+        72,
+        88,
+        1050,
+        122
+      ],
+      "geometry": "rect",
+      "text": "An LLM agent is more than a model",
+      "textPreview": "An LLM agent is more than a model",
+      "resolvedFontSize": 40,
+      "resolvedTextStyle": {
+        "fontSize": 40,
+        "typeface": "Georgia",
+        "color": "#13202A",
+        "bold": true,
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "An LLM agent is more than a model"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "An LLM agent is more than a model",
+          "resolvedTextStyle": {
+            "fontSize": 40,
+            "typeface": "Georgia",
+            "color": "#13202A",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "An LLM agent is more than a model",
+              "fontSize": 40,
+              "typeface": "Georgia",
+              "color": "#13202A",
+              "bold": true,
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7m98ru9g",
+      "id": "7",
+      "bbox": [
+        72,
+        188,
+        544,
+        410
+      ],
+      "geometry": "roundRect",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/oryp8fah",
+      "id": "8",
+      "bbox": [
+        72,
+        188,
+        6,
+        410
+      ],
+      "geometry": "rect",
+      "fillColor": "#0C6570",
+      "lineColor": "#0C6570",
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/pc76hkr2",
+      "id": "9",
+      "bbox": [
+        94,
+        199,
+        500,
+        36
+      ],
+      "geometry": "rect",
+      "text": "Model + agent harness",
+      "textPreview": "Model + agent harness",
+      "resolvedFontSize": 23,
+      "resolvedTextStyle": {
+        "fontSize": 23,
+        "typeface": "Arial",
+        "color": "#13202A",
+        "bold": true,
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Model + agent harness"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Model + agent harness",
+          "resolvedTextStyle": {
+            "fontSize": 23,
+            "typeface": "Arial",
+            "color": "#13202A",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Model + agent harness",
+              "fontSize": 23,
+              "typeface": "Arial",
+              "color": "#13202A",
+              "bold": true,
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/h4bupgn6",
+      "id": "10",
+      "bbox": [
+        94,
+        243,
+        500,
+        355
+      ],
+      "geometry": "rect",
+      "text": "LLM · large language model\nA trained model generates text or structured output. Multimodal models can also process images.\n\nAgent harness\nSupplies context, tools, state and output rules.\n\nFeedback\nObservations and results guide the next decision.",
+      "textPreview": "LLM · large language model | A trained model generates text or structured output. Multimodal models can also process images. |  | Agent h...",
+      "resolvedFontSize": 21,
+      "resolvedTextStyle": {
+        "fontSize": 21,
+        "typeface": "Arial",
+        "color": "#5B6770",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 9,
+        "lines": [
+          {
+            "index": 1,
+            "text": "LLM · large language model"
+          },
+          {
+            "index": 2,
+            "text": "A trained model generates text or structured output."
+          },
+          {
+            "index": 3,
+            "text": "Multimodal models can also process images."
+          },
+          {
+            "index": 4,
+            "text": ""
+          },
+          {
+            "index": 5,
+            "text": "Agent harness"
+          },
+          {
+            "index": 6,
+            "text": "Supplies context, tools, state and output rules."
+          },
+          {
+            "index": 7,
+            "text": ""
+          },
+          {
+            "index": 8,
+            "text": "Feedback"
+          },
+          {
+            "index": 9,
+            "text": "Observations and results guide the next decision."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "LLM · large language model",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "LLM · large language model",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770",
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "A trained model generates text or structured output. Multimodal models can also process images.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "A trained model generates text or structured output. Multimodal models can also process images.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770",
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "Agent harness",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Agent harness",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770",
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 5,
+          "text": "Supplies context, tools, state and output rules.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Supplies context, tools, state and output rules.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770",
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 7,
+          "text": "Feedback",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Feedback",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770",
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 8,
+          "text": "Observations and results guide the next decision.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Observations and results guide the next decision.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770",
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/w32twb6l",
+      "id": "11",
+      "bbox": [
+        640,
+        188,
+        552,
+        410
+      ],
+      "geometry": "roundRect",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/v2tcn650",
+      "id": "12",
+      "bbox": [
+        640,
+        188,
+        6,
+        410
+      ],
+      "geometry": "rect",
+      "fillColor": "#E89A2F",
+      "lineColor": "#E89A2F",
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u1kbu1ov",
+      "id": "13",
+      "bbox": [
+        662,
+        199,
+        508,
+        36
+      ],
+      "geometry": "rect",
+      "text": "Two specialised agent roles",
+      "textPreview": "Two specialised agent roles",
+      "resolvedFontSize": 23,
+      "resolvedTextStyle": {
+        "fontSize": 23,
+        "typeface": "Arial",
+        "color": "#13202A",
+        "bold": true,
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Two specialised agent roles"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Two specialised agent roles",
+          "resolvedTextStyle": {
+            "fontSize": 23,
+            "typeface": "Arial",
+            "color": "#13202A",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Two specialised agent roles",
+              "fontSize": 23,
+              "typeface": "Arial",
+              "color": "#13202A",
+              "bold": true,
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5svutgni",
+      "id": "14",
+      "bbox": [
+        662,
+        243,
+        508,
+        355
+      ],
+      "geometry": "rect",
+      "text": "chatbot_llm\nInterprets a turn, selects its route and prepares a grounded request.\n\nplanner_llm\nSelects reviewed skills, proposes a plan and reacts to execution feedback.",
+      "textPreview": "chatbot_llm | Interprets a turn, selects its route and prepares a grounded request. |  | planner_llm | Selects reviewed skills, proposes ...",
+      "resolvedFontSize": 21,
+      "resolvedTextStyle": {
+        "fontSize": 21,
+        "typeface": "Arial",
+        "color": "#5B6770",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 7,
+        "lines": [
+          {
+            "index": 1,
+            "text": "chatbot_llm"
+          },
+          {
+            "index": 2,
+            "text": "Interprets a turn, selects its route and prepares a"
+          },
+          {
+            "index": 3,
+            "text": "grounded request."
+          },
+          {
+            "index": 4,
+            "text": ""
+          },
+          {
+            "index": 5,
+            "text": "planner_llm"
+          },
+          {
+            "index": 6,
+            "text": "Selects reviewed skills, proposes a plan and reacts"
+          },
+          {
+            "index": 7,
+            "text": "to execution feedback."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "chatbot_llm",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "chatbot_llm",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770",
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "Interprets a turn, selects its route and prepares a grounded request.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Interprets a turn, selects its route and prepares a grounded request.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770",
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "planner_llm",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "planner_llm",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770",
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 5,
+          "text": "Selects reviewed skills, proposes a plan and reacts to execution feedback.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Selects reviewed skills, proposes a plan and reacts to execution feedback.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770",
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/47mt0b6x",
+      "id": "15",
+      "bbox": [
+        72,
+        615,
+        1110,
+        44
+      ],
+      "geometry": "rect",
+      "text": "Agent pattern: observe → propose → validate/act → inspect the result.",
+      "textPreview": "Agent pattern: observe → propose → validate/act → inspect the result.",
+      "resolvedFontSize": 22,
+      "resolvedTextStyle": {
+        "fontSize": 22,
+        "typeface": "Georgia",
+        "color": "#073F47",
+        "bold": true,
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Agent pattern: observe → propose → validate/act → inspect the result."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Agent pattern: observe → propose → validate/act → inspect the result.",
+          "resolvedTextStyle": {
+            "fontSize": 22,
+            "typeface": "Georgia",
+            "color": "#073F47",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Agent pattern: observe → propose → validate/act → inspect the result.",
+              "fontSize": 22,
+              "typeface": "Georgia",
+              "color": "#073F47",
+              "bold": true,
+              "alignment": "left"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

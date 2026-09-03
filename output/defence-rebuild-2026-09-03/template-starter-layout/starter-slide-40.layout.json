@@ -1,0 +1,1097 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/a6r0rk",
+    "id": "a6r0rk",
+    "slide": 40,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "masterLayoutName": "Master",
+    "backgroundColor": "#F7F4EE",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light",
+        "eastAsianTypeface": "Calibri Light",
+        "complexScriptTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri",
+        "eastAsianTypeface": "Calibri",
+        "complexScriptTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Arial",
+      "Calibri",
+      "Calibri Light",
+      "Georgia"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/l032horm",
+      "id": "22",
+      "bbox": [
+        1136,
+        0,
+        144,
+        144
+      ],
+      "geometry": "ellipse",
+      "lineColor": "#DCE9E8",
+      "lineWidth": 2
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/3u5o3u5s",
+      "id": "2",
+      "bbox": [
+        1170,
+        0,
+        110,
+        110
+      ],
+      "geometry": "ellipse",
+      "lineColor": "#E8ECEA",
+      "lineWidth": 20
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/itwnupo7",
+      "id": "3",
+      "bbox": [
+        1035,
+        662,
+        165,
+        18
+      ],
+      "geometry": "rect",
+      "text": "APPENDIX E",
+      "textPreview": "APPENDIX E",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "APPENDIX E"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "APPENDIX E",
+          "resolvedTextStyle": {
+            "fontSize": 10,
+            "typeface": "Arial",
+            "color": "#A33B32",
+            "bold": true,
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "APPENDIX E",
+              "fontSize": 10,
+              "typeface": "Arial",
+              "color": "#A33B32",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hsnm1kn2",
+      "id": "4",
+      "bbox": [
+        1206,
+        662,
+        36,
+        18
+      ],
+      "geometry": "rect",
+      "text": "24",
+      "textPreview": "24",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "24"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "24",
+          "resolvedTextStyle": {
+            "fontSize": 11,
+            "typeface": "Arial",
+            "color": "#8A9296",
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "24",
+              "fontSize": 11,
+              "typeface": "Arial",
+              "color": "#8A9296"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gre5sf6h",
+      "id": "5",
+      "bbox": [
+        72,
+        52,
+        860,
+        24
+      ],
+      "geometry": "rect",
+      "text": "APPENDIX",
+      "textPreview": "APPENDIX",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "APPENDIX"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "APPENDIX",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Arial",
+            "color": "#0C6570",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "APPENDIX",
+              "fontSize": 14,
+              "typeface": "Arial",
+              "color": "#0C6570",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vq54zapw",
+      "id": "6",
+      "bbox": [
+        72,
+        88,
+        1050,
+        122
+      ],
+      "geometry": "rect",
+      "text": "Short answers for likely questions",
+      "textPreview": "Short answers for likely questions",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Short answers for likely questions"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Short answers for likely questions",
+          "resolvedTextStyle": {
+            "fontSize": 38,
+            "typeface": "Georgia",
+            "color": "#13202A",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Short answers for likely questions",
+              "fontSize": 38,
+              "typeface": "Georgia",
+              "color": "#13202A",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/upcnq5ob",
+      "id": "7",
+      "bbox": [
+        72,
+        180,
+        300,
+        40
+      ],
+      "geometry": "rect",
+      "text": "Why simulated skills?",
+      "textPreview": "Why simulated skills?",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Why simulated skills?"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Why simulated skills?",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Arial",
+            "color": "#073F47",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Why simulated skills?",
+              "fontSize": 18,
+              "typeface": "Arial",
+              "color": "#073F47",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/to3mx07q",
+      "id": "8",
+      "bbox": [
+        390,
+        180,
+        750,
+        66
+      ],
+      "geometry": "rect",
+      "text": "They place repeatable outcomes at the robot-facing result boundary, isolating planning and recovery from hardware variance.",
+      "textPreview": "They place repeatable outcomes at the robot-facing result boundary, isolating planning and recovery from hardware variance.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "They place repeatable outcomes at the robot-facing result boundary, isolating planning and"
+          },
+          {
+            "index": 2,
+            "text": "recovery from hardware variance."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "They place repeatable outcomes at the robot-facing result boundary, isolating planning and recovery from hardware variance.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Arial",
+            "color": "#13202A",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "They place repeatable outcomes at the robot-facing result boundary, isolating planning and recovery from hardware variance.",
+              "fontSize": 17,
+              "typeface": "Arial",
+              "color": "#13202A"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/83u5ov65",
+      "id": "9",
+      "bbox": [
+        72,
+        252,
+        1070,
+        1
+      ],
+      "geometry": "line",
+      "lineColor": "#D2D5D4",
+      "lineWidth": 1
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qlgnmxcb",
+      "id": "10",
+      "bbox": [
+        72,
+        276,
+        300,
+        40
+      ],
+      "geometry": "rect",
+      "text": "What is deterministic?",
+      "textPreview": "What is deterministic?",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "What is deterministic?"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "What is deterministic?",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Arial",
+            "color": "#073F47",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "What is deterministic?",
+              "fontSize": 18,
+              "typeface": "Arial",
+              "color": "#073F47",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/rm94f2tw",
+      "id": "11",
+      "bbox": [
+        390,
+        276,
+        750,
+        66
+      ],
+      "geometry": "rect",
+      "text": "Admission, schema checks, dispatch order, lineage, feedback correlation, and effect verification. Route and plan generation remain model-dependent.",
+      "textPreview": "Admission, schema checks, dispatch order, lineage, feedback correlation, and effect verification. Route and plan generation remain model-...",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Admission, schema checks, dispatch order, lineage, feedback correlation, and effect verification."
+          },
+          {
+            "index": 2,
+            "text": "Route and plan generation remain model-dependent."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Admission, schema checks, dispatch order, lineage, feedback correlation, and effect verification. Route and plan generation remain model-dependent.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Arial",
+            "color": "#13202A",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Admission, schema checks, dispatch order, lineage, feedback correlation, and effect verification. Route and plan generation remain model-dependent.",
+              "fontSize": 17,
+              "typeface": "Arial",
+              "color": "#13202A"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cni5o7uh",
+      "id": "12",
+      "bbox": [
+        72,
+        348,
+        1070,
+        1
+      ],
+      "geometry": "line",
+      "lineColor": "#D2D5D4",
+      "lineWidth": 1
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/dormhcbm",
+      "id": "13",
+      "bbox": [
+        72,
+        372,
+        300,
+        40
+      ],
+      "geometry": "rect",
+      "text": "Why model-agnostic?",
+      "textPreview": "Why model-agnostic?",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Why model-agnostic?"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Why model-agnostic?",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Arial",
+            "color": "#073F47",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Why model-agnostic?",
+              "fontSize": 18,
+              "typeface": "Arial",
+              "color": "#073F47",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/2hgnidcz",
+      "id": "14",
+      "bbox": [
+        390,
+        372,
+        750,
+        66
+      ],
+      "geometry": "rect",
+      "text": "The interfaces accept multiple backends. The results explicitly show that semantic behaviour is not invariant.",
+      "textPreview": "The interfaces accept multiple backends. The results explicitly show that semantic behaviour is not invariant.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The interfaces accept multiple backends. The results explicitly show that semantic behaviour is"
+          },
+          {
+            "index": 2,
+            "text": "not invariant."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The interfaces accept multiple backends. The results explicitly show that semantic behaviour is not invariant.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Arial",
+            "color": "#13202A",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "The interfaces accept multiple backends. The results explicitly show that semantic behaviour is not invariant.",
+              "fontSize": 17,
+              "typeface": "Arial",
+              "color": "#13202A"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/3ip4bitk",
+      "id": "15",
+      "bbox": [
+        72,
+        444,
+        1070,
+        1
+      ],
+      "geometry": "line",
+      "lineColor": "#D2D5D4",
+      "lineWidth": 1
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4jy5knu5",
+      "id": "16",
+      "bbox": [
+        72,
+        468,
+        300,
+        40
+      ],
+      "geometry": "rect",
+      "text": "Why no classical planner baseline?",
+      "textPreview": "Why no classical planner baseline?",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Why no classical planner"
+          },
+          {
+            "index": 2,
+            "text": "baseline?"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Why no classical planner baseline?",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Arial",
+            "color": "#073F47",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Why no classical planner baseline?",
+              "fontSize": 18,
+              "typeface": "Arial",
+              "color": "#073F47",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/pk7mdsbq",
+      "id": "17",
+      "bbox": [
+        390,
+        468,
+        750,
+        66
+      ],
+      "geometry": "rect",
+      "text": "The thesis validates integration and containment, not a causal comparison of planning algorithms.",
+      "textPreview": "The thesis validates integration and containment, not a causal comparison of planning algorithms.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The thesis validates integration and containment, not a causal comparison of planning"
+          },
+          {
+            "index": 2,
+            "text": "algorithms."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The thesis validates integration and containment, not a causal comparison of planning algorithms.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Arial",
+            "color": "#13202A",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "The thesis validates integration and containment, not a causal comparison of planning algorithms.",
+              "fontSize": 17,
+              "typeface": "Arial",
+              "color": "#13202A"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/utw3edc3",
+      "id": "18",
+      "bbox": [
+        72,
+        540,
+        1070,
+        1
+      ],
+      "geometry": "line",
+      "lineColor": "#D2D5D4",
+      "lineWidth": 1
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vu547ito",
+      "id": "19",
+      "bbox": [
+        72,
+        564,
+        300,
+        40
+      ],
+      "geometry": "rect",
+      "text": "What comes next?",
+      "textPreview": "What comes next?",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "What comes next?"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "What comes next?",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Arial",
+            "color": "#073F47",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "What comes next?",
+              "fontSize": 18,
+              "typeface": "Arial",
+              "color": "#073F47",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/jylkfe9g",
+      "id": "20",
+      "bbox": [
+        390,
+        564,
+        750,
+        66
+      ],
+      "geometry": "rect",
+      "text": "Quantified physical skills, detector-quality evaluation, and user-facing interaction trials under the same evidence contracts.",
+      "textPreview": "Quantified physical skills, detector-quality evaluation, and user-facing interaction trials under the same evidence contracts.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Quantified physical skills, detector-quality evaluation, and user-facing interaction trials under the"
+          },
+          {
+            "index": 2,
+            "text": "same evidence contracts."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Quantified physical skills, detector-quality evaluation, and user-facing interaction trials under the same evidence contracts.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Arial",
+            "color": "#13202A",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Quantified physical skills, detector-quality evaluation, and user-facing interaction trials under the same evidence contracts.",
+              "fontSize": 17,
+              "typeface": "Arial",
+              "color": "#13202A"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/yxcjm9sv",
+      "id": "21",
+      "bbox": [
+        72,
+        636,
+        1070,
+        1
+      ],
+      "geometry": "line",
+      "lineColor": "#D2D5D4",
+      "lineWidth": 1
+    }
+  ],
+  "composeRuns": []
+}

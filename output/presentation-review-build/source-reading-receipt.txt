@@ -1,0 +1,59 @@
+SOURCE READING RECEIPT - 2026-09-02
+
+Authoritative source supplied by user:
+C:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf
+July 23, 2026; 76 PDF pages (printed main text starts at PDF page 12).
+SHA-256: 0285a5b856db8283ea25f2699595d2f58414a91f1726ce28db011e9eab71b404
+
+Read every page, including all chapters, appendices, and bibliography.
+Read batches: PDF pages 1-14, 15-29, 30-44, 45-60, 61-76.
+Visually inspected all seven figures: PDF pages 21, 23, 36, 38, 39, 41, 42.
+Visually inspected key results tables: PDF pages 54, 56, 57, 58.
+No presentation keep/change/remove/refactor decisions made; no PPTX edits.
+
+Use this source instead of the older 82-page July 22 local draft.
+Final contract numbering: grounded context = 2; planner request = 3.
+Final thesis inventory = 12 planner-visible skills; KB operations excluded.
+Historical wave_greet is represented by perform_motion in the thesis inventory.
+
+Primary findings and interpretation:
+- 108-record provenance index is not one uniform qualification denominator.
+- 72 primary records: 64 pass and 8 non-pass.
+- Questionnaire 20/22; dialogue 6/6, KB 6/7, simple skills 4/4, composites 4/5.
+- Environment 11/11 and stateful KB 7/7 refer to controlled symbolic fixtures.
+- Controlled multi-step skills 7/9; robustness 12/15; multi-capability 5/7.
+- Safe incomplete-plan rejection is containment, not successful task completion.
+- Beginning-stage navigation and middle-stage pick recoveries exist; there is
+  no balanced dedicated final-skill failure-injection experiment.
+- Physical posture/head/gaze/TTS exercised during integration, not repeated
+  quantitative physical trials. No navigation/grasp/perception/safety rate.
+- Object detector disabled in the principal semantic profile. Reused detector
+  and training set are EMOROBCARE work, not this thesis's original contribution.
+- Primary vLLM/Qwen result and the three-model Ollama supplement stay separate.
+- Comparable supplement rates are 50/59, 51/60, 43/56; descriptive, not a
+  statistical ranking. All three models passed environment 11/11.
+
+Embedded attachments accessed from PDF page 71 FileAttachment annotations:
+1. prism-uploads/dataset.csv: 108 rows, 24 columns, hash matches Table D.2.
+   SHA-256: be4d7d9b0499557cb9a16ba08cba65d58c011863affcaff74211b3e6c57931ce
+   Raw statuses: 86 pass, 19 fail, 1 degraded, 2 not_scored.
+   Primary current_v34: 64 pass, 7 fail, 1 degraded.
+   Thus use the final thesis term non-pass rather than treating every raw row as fail.
+2. evidence/model_invariance/model-invariance-dataset-191.csv:
+   191 rows, 24 columns; 150 pass, 32 fail, 6 not_scored, 3 blank.
+   Totals agree with 9 exclusions in final thesis.
+   Actual SHA-256: e8d4ce4bda136fe6674e9af3cd2f3b7d78743ba528dfcc260f555549c73c8f59
+   Printed Table D.2: ef7502f8dacf216ae061c93c2eb6b220265e62f9c29c1ade49e6ca9c98cb07c4
+   Discrepancy observed and flagged; no source file was modified.
+
+Review HTML verification:
+- Direct artifact-tool renders from all 25 original PPTX slides.
+- Embedded image bytes match those renders exactly; original ordering retained.
+- JS syntax and annotation-schema roundtrip/rejection tests pass.
+- Browser navigation to local file was blocked by browser policy; no workaround
+  attempted. Browser-level interactions and responsive layout remain unverified.
+- File handed to Codex's file panel; HTML is self-contained and can be opened locally.
+
+Next phase only after user annotations: use grill-me one question at a time and
+wait for shared understanding before revising. Use iiia-ros4hri-check for exact
+ownership and evidence claims. Do not change runtime nodes or restart the stack.

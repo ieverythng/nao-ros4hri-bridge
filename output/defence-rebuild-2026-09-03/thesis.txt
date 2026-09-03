@@ -1,0 +1,2701 @@
+
+=== PDF PAGE 1 ===
+Faculty of Science
+Design, Integration, and Validation of a Modular
+LLM-Based Interactive Architecture
+Juan David Bendek Williamson
+Supervised by Raquel Ros
+Institution / Lab: IIIA-CSIC / Universitat Autònoma de Barcelona
+Thesis submitted as a requirement for the degree of
+MSc in Modelling for Science & Engineering
+Academic year: 2025–2026
+Date: July 23, 2026
+
+=== PDF PAGE 2 ===
+Abstract
+Large language models have shown strong potential for instruction understanding and high-
+level reasoning in human-robot interaction. Their integration into a robot nevertheless
+requires more than a planner call: dialogue state, symbolic grounding, capability descriptions,
+execution admission, robot-facing skills, feedback, and user-facing reporting must remain
+coherent across a distributed runtime. This thesis presents a modular LLM-based interactive
+architecture and evaluates its implementation on the NAO robot.
+The system separates dialogue management, semantic routing, symbolic grounding, task
+planning, deterministic orchestration, and skill execution. A chatbot interprets each turn
+and selects a conversational, knowledge, or execution route. A planner generates structured
+plans over a reviewed skill registry, while an orchestrator admits requests, validates plans,
+dispatches skills, and returns typed execution feedback. Symbolic knowledge representation
+and perception jointly provide compact grounded context without allowing planning-time
+state to stand in for execution evidence.
+The contribution is an inspectable interactive architecture and a validation method for its
+principal boundaries. The validation follows complete user turns together with focused planner,
+skill-execution, and controlled failure tests. It examines route correctness, plan validity, entity
+and role preservation, action order, symbolic postconditions, failure handling, and user-facing
+reporting.
+The primary evidence index contains 108 case records from 33 retained structured traces. The
+frozen Qwen3-VL configuration produced 64 passes and eight non-passes across 72 records,
+while the twenty-two-case end-to-end questionnaire produced twenty passes and two failures.
+A separate 191-record matched comparison across three Ollama-hosted models preserved the
+environment path for all models but showed variation in composition, grounded selection,
+clarification, and closure. Controlled beginning- and middle-stage skill failures were recovered
+through versioned replanning, while incomplete plans were rejected before execution.
+Keywords:Human-Robot Interaction, ROS 2, Large Language Models, Task Planning, NAO
+Robot, Symbolic Grounding, Deterministic Execution, Runtime Validation.
+i
+
+=== PDF PAGE 3 ===
+Acknowledgements
+The development of this thesis would not have been possible if it wasnt for the JAE ICU 2025
+scholarship I was granted at the beginning of the year, I want to express my sincere gratitude
+to the IIIA and the CSIC for granting me the opportunity to be part of such a dynamic and
+profound research team at the Socialminds lab. Im grateful to Severin and Raquel for their
+continuous support and insight while navigating the world of robotics and HRI, as it was
+a new field for me to tackle it presented challenges and required personal and professional
+developments im beyond grateful to have been able to experience.
+I want to thank my girlfriend Zsanett for her continued support and care, had it not been for
+her stern direction, guidance, patience and understanding, I wouldnt be the person that I am
+today. This really cannot be overstated, thank you my slavico. This also extends to my inner
+family consituting my parents and family in Barcelona, without their pressence and support
+this work simply wouldnt have been possible. Im beyond grateful for the guidance provided
+by my aunt Lina and will continue to aim as high as possible
+Lastly im grateful to Ailylabs and the UAB for granting me a platform to develop my SWE
+and AI/ML skills through practical applications that have furthered my understanding and
+have I didnt know possible before undertaking this Master. All future work in my career will
+stem back to this last year I had the chance to go from a Mechanical Engineer to a flourishing
+Data Scientist, I will never forget the impact these things have had in my life.
+ii
+
+=== PDF PAGE 4 ===
+Contents
+Abstract i
+Acknowledgements ii
+List of Figures vii
+List of Tables viii
+List of Abbreviations x
+1 Introduction 1
+1.1 Language-Guided Robot Interaction and Execution . . . . . . . . . . . . . . . 1
+1.2 Problem Statement . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 1
+1.3 Research Questions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2
+1.4 Objectives . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2
+1.5 Document Structure . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3
+2 Background and Literature Review 4
+2.1 Human-Robot Interaction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 4
+2.2 ROS 2 for Distributed Robot Software . . . . . . . . . . . . . . . . . . . . . . 4
+2.3 Reusable HRI Representations and Interfaces . . . . . . . . . . . . . . . . . . . 5
+2.4 The NAO Robot Platform . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
+2.5 LLMs as High-Level Planners . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
+2.6 Embodied Multimodal Models, VLMs, and VLAs . . . . . . . . . . . . . . . . 6
+2.7 Symbolic State and Knowledge Bases . . . . . . . . . . . . . . . . . . . . . . . 7
+2.8 Execution Monitoring, Replanning, and Clarification . . . . . . . . . . . . . . 7
+2.9 Literature Gap . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+iii
+
+=== PDF PAGE 5 ===
+Contents Juan David Bendek Williamson
+3 System Design 9
+3.1 Functional Requirements . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+3.2 Design Principles . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+3.3 High-Level Architecture . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+3.4 Runtime Flow . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 11
+4 Implementation 13
+4.1 Runtime Interfaces and Data Contracts . . . . . . . . . . . . . . . . . . . . . . 13
+4.1.1 Runtime Contract Overview . . . . . . . . . . . . . . . . . . . . . . . . 13
+4.1.2 Contract 1: Chatbot Turn Output . . . . . . . . . . . . . . . . . . . . 14
+4.1.3 Contract 2: Grounded Context . . . . . . . . . . . . . . . . . . . . . . 15
+4.1.4 Contract 3: Planner Request . . . . . . . . . . . . . . . . . . . . . . . . 17
+4.1.5 Contract 4: Shared Skill Entry . . . . . . . . . . . . . . . . . . . . . . 18
+4.1.6 Contract 5: Planner Output . . . . . . . . . . . . . . . . . . . . . . . . 19
+4.1.7 Contract 6: Skill Execution Result . . . . . . . . . . . . . . . . . . . . 22
+4.1.8 Contract 7: Execution Feedback . . . . . . . . . . . . . . . . . . . . . . 22
+4.1.9 Contract 8: Planner Dialogue Act . . . . . . . . . . . . . . . . . . . . . 23
+4.1.10 Contract 9: RDF Knowledge State . . . . . . . . . . . . . . . . . . . . 23
+4.2 ROS Components . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24
+4.2.1dialogue_manager. . . . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+4.2.2chatbot_llm. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+4.2.3planner_llm. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+4.2.4 Goal-Keyed Planning-State Helper . . . . . . . . . . . . . . . . . . . . 28
+4.2.5 Skill Registry (skill_common) . . . . . . . . . . . . . . . . . . . . . . . 28
+4.2.6nao_orchestratorand Plan Execution . . . . . . . . . . . . . . . . . . 29
+4.3 World State and Scene Grounding . . . . . . . . . . . . . . . . . . . . . . . . . 30
+4.4 Skill Adapters and Controlled Simulation . . . . . . . . . . . . . . . . . . . . . 31
+4.5 Models and Runtime Configuration . . . . . . . . . . . . . . . . . . . . . . . . 32
+5 Validation Methodology 33
+5.1 Validation Scope . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 33
+5.2 Validation Levels . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 33
+5.3 Acceptance Criteria . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 34
+iv
+
+=== PDF PAGE 6 ===
+Contents Juan David Bendek Williamson
+5.4 Full End-to-End Questionnaire . . . . . . . . . . . . . . . . . . . . . . . . . . . 36
+5.5 Skill Execution and Failure Stress Testing . . . . . . . . . . . . . . . . . . . . 37
+5.6 Metrics . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+5.7 Model and Configuration Variability . . . . . . . . . . . . . . . . . . . . . . . 39
+5.8 Research-Question Evidence Map . . . . . . . . . . . . . . . . . . . . . . . . . 40
+5.9 Threats to Validity . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 41
+6 Results 42
+6.1 Primary Evidence Scope . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 42
+6.2 Primary Results by Validation Mode . . . . . . . . . . . . . . . . . . . . . . . 43
+6.2.1 Environment and Stateful Knowledge . . . . . . . . . . . . . . . . . . . 43
+6.3 Failure Management . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 44
+6.4 Repeated Robustness and Multi-Capability Tasks . . . . . . . . . . . . . . . . 45
+6.5 Matched Model-Invariance Supplement . . . . . . . . . . . . . . . . . . . . . . 46
+6.6 Answers to the Research Questions . . . . . . . . . . . . . . . . . . . . . . . . 47
+7 Discussion 49
+7.1 Model and Backend Variation . . . . . . . . . . . . . . . . . . . . . . . . . . . 49
+7.2 Contract Containment and Qualification . . . . . . . . . . . . . . . . . . . . . 49
+7.3 Grounding, Roles, and Target Sets . . . . . . . . . . . . . . . . . . . . . . . . 50
+7.4 Failure Handling, Physical Claims, and Portability . . . . . . . . . . . . . . . . 50
+8 Limitations and Future Work 52
+8.1 Current Limitations . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 52
+8.2 Future Work . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 53
+8.2.1 Model Qualification and Semantic Guards . . . . . . . . . . . . . . . . 53
+8.2.2 Embodied Validation and Portability . . . . . . . . . . . . . . . . . . . 53
+8.2.3 Evidence and Reproducibility . . . . . . . . . . . . . . . . . . . . . . . 53
+9 Conclusion 54
+A Full Runtime Contracts 55
+A.1 Runtime Skill Inventory . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 55
+B Launch Commands 58
+v
+
+=== PDF PAGE 7 ===
+Contents Juan David Bendek Williamson
+C Validation Log Template 59
+D Primary Thesis Evidence Index 60
+D.1 Dataset Scope and Attachment . . . . . . . . . . . . . . . . . . . . . . . . . . 60
+D.2 Run Inventory . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 61
+D.3 Field Dictionary . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 61
+D.4 Evidence Integrity . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 62
+Bibliography 63
+vi
+
+=== PDF PAGE 8 ===
+List of Figures
+3.1 High-level architecture. Perception updates the knowledge base, while the
+dialogue and grounding components provide the planner with the user’s goal
+and symbolic context. The planner proposes a skill sequence, the orchestrator
+validates and dispatches each step, and verified state-changing skill results
+update grounding. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+3.2 Runtime sequence from a user request to an evidence-based response. Dialogue
+and knowledge turns stop after interpretation; only execution requests continue
+through planning and skill execution. . . . . . . . . . . . . . . . . . . . . . . . 12
+4.1 Full-stack implementation of the modular interaction architecture. Dia-
+logue interpretation and symbolic grounding provide the planner input;
+nao_orchestrator admits the request, validates the returned plan, dispatches
+skill servers, and forwards execution feedback. Robot-facing and simulated
+adapters share the same typed skill-result boundary. . . . . . . . . . . . . . . . 25
+4.2 Internal chatbot_llm path. Dialogue history and grounded context condition
+a structured semantic decision that either returns a user-facing response or
+submits an execution request for admission. . . . . . . . . . . . . . . . . . . . 27
+4.3 Internal planner_llm path, from admitted request through validated plan
+envelope and feedback-driven goal-state handling. . . . . . . . . . . . . . . . . 28
+4.4 Execution path implemented bynao_orchestrator. Accepted plans are vali-
+dated, dispatched in order, and correlated with typed skill results and execution
+feedback. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+4.5 Implemented perception and symbolic-grounding pipeline. Reused person-
+perception components and the local object-grounding path provide bounded
+scene and knowledge representations to dialogue, planning, and execution skills.31
+vii
+
+=== PDF PAGE 9 ===
+List of Tables
+3.1 Functional requirements for the proposed interaction and execution architecture.9
+4.1 Runtime contract map and ownership in the active dialogue, planning, and
+execution stack. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+4.2 Fields in Contract 1: chatbot turn output. . . . . . . . . . . . . . . . . . . . . 15
+4.3 Fields in Contract 2: grounded context. . . . . . . . . . . . . . . . . . . . . . . 17
+4.4 Fields in Contract 3: minimal planner-facing request. . . . . . . . . . . . . . . 18
+4.5 Shared skill-entry fields used by planning and execution. . . . . . . . . . . . . 19
+4.6 Fields in Contract 5: planner output. . . . . . . . . . . . . . . . . . . . . . . . 21
+4.7 Principal RDF-style predicate families used by the runtime KB. . . . . . . . . 24
+4.8 Planner-visible skills and their implementations. . . . . . . . . . . . . . . . . . 29
+5.1 Validation levels and supported claims. . . . . . . . . . . . . . . . . . . . . . . 34
+5.2 Five validation modes and their principal acceptance focus. . . . . . . . . . . . 34
+5.3 Validation goals, acceptance rules, and evidence sources. . . . . . . . . . . . . 35
+5.4 Twenty-two-case full end-to-end questionnaire. . . . . . . . . . . . . . . . . . . 36
+5.5 Failure position and required recovery evidence. . . . . . . . . . . . . . . . . . 38
+5.6 Validation metrics and their interpretation. . . . . . . . . . . . . . . . . . . . . 39
+5.7 Test profiles used in the matched model comparison. . . . . . . . . . . . . . . 40
+5.8 Research questions and validation evidence. . . . . . . . . . . . . . . . . . . . 41
+6.1 Primary thesis evidence index by evaluation purpose. . . . . . . . . . . . . . . 42
+6.2 Primary end-to-end questionnaire results by validation mode. . . . . . . . . . . 43
+6.3 Grounding and symbolic-state profiles in the primary qualification. . . . . . . 44
+6.4 Skill-execution and staged failure-management results. . . . . . . . . . . . . . 45
+6.5 Primary robustness cases across three repetitions. . . . . . . . . . . . . . . . . 46
+viii
+
+=== PDF PAGE 10 ===
+List of Tables Juan David Bendek Williamson
+6.6 All retained records in the separate model-invariance supplement. . . . . . . . 46
+6.7 Matched model results for the comparable standard suites. . . . . . . . . . . . 47
+6.8 Matched model results for execution-stress and targeted recovery suites. . . . . 47
+A.1 Compressed runtime skill inventory and registry values. . . . . . . . . . . . . . 56
+C.1 Validation log template. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 59
+D.1 Machine-derived archive inventory used by the primary evidence index. . . . . 61
+D.2 SHA-256 identifiers for the supplied evidence files. . . . . . . . . . . . . . . . . 62
+ix
+
+=== PDF PAGE 11 ===
+List of Abbreviations
+Abbreviation Meaning
+API Application Programming Interface
+HRI Human-Robot Interaction
+HTN Hierarchical Task Network
+JSON JavaScript Object Notation
+KB Knowledge Base
+LLM Large Language Model
+PDDL Planning Domain Definition Language
+ROS Robot Operating System
+ROS4HRI ROS conventions and interfaces for Human-Robot Interaction
+VLA Vision-Language-Action model
+VLM Vision-Language Model
+x
+
+=== PDF PAGE 12 ===
+Chapter 1
+Introduction
+1.1 Language-Guided Robot Interaction and Execution
+Human-robot interaction (HRI) requires a robot to connect communication with perception,
+task reasoning, and embodied action. Automated planning provides one part of this problem.
+Classical languages such as the Planning Domain Definition Language (PDDL) make actions,
+preconditions, effects, initial states, and goals explicit (McDermott et al. 1998). Hierarchical
+task network methods further describe how high-level tasks can be decomposed into executable
+subtasks (Erol et al. 1994; Nau et al. 2003; Georgievski et al. 2014). Language-model-assisted
+planning revisits the connection between flexible instructions and grounded action structures
+(Liu et al. 2023a; Valmeekam et al. 2023; Ahn et al. 2022).
+Large language models (LLMs) can transform user utterances into structured intent payloads,
+infer task goals, and propose multi-step action decompositions. This flexibility is useful because
+users rarely speak in planner-ready commands. They ask questions, refer to visible people
+or objects, change goals, and expect responses that remain consistent with the interaction
+history. LLMs are not inherently grounded in the robot’s live state, available skills, or
+execution constraints. A linguistically plausible response may select the wrong route, refer to
+an unavailable entity, propose an unsupported action, or report success without corresponding
+execution evidence.
+This thesis addresses that problem through a modular interactive architecture. The system
+combines dialogue management, LLM-based semantic interpretation, symbolic grounding, task
+planning, deterministic orchestration, robot skills, and feedback-driven user communication.
+The language model participates in dialogue and planning, while explicit interfaces, reviewed
+skill descriptions, and an orchestrator retain control over execution. The focus is therefore
+the complete interaction architecture rather than the planner in isolation.
+1.2 Problem Statement
+Five recurring problems define the scope of this thesis:
+1
+
+=== PDF PAGE 13 ===
+Introduction Juan David Bendek Williamson
+•integrations may be tightly coupled to one robot or task domain;
+•prompt-only action generation may lack deterministic execution validation;
+• dialogue, planning, perception, knowledge, and execution ownership may be ambiguous;
+• composite instructions may lose entity roles or ordering as they cross component
+boundaries;
+• clarification, replanning, failure recovery, and evidence-based reporting may be incom-
+plete.
+The central problem addressed in this thesis is therefore:
+How can a modular robot architecture integrate language-based dialogue, symbolic
+grounding, task planning, deterministic execution, and feedback while preserving
+clear responsibility boundaries and evidence-based user communication?
+1.3 Research Questions
+The work is guided by five research questions. Each question is linked to evidence defined in
+Chapter 5.
+1. RQ1:Can the integrated language-guided stack translate natural-language requests into
+coherent multi-step plans and ordered skill execution for the supported task families?
+2. RQ2:To what extent does compact symbolic grounding preserve the objects, people,
+locations, and interaction roles required from dialogue interpretation through execution
+and reporting?
+3. RQ3:Does a reviewed skill registry, combined with deterministic admission and
+validation, reject unsupported skills, malformed arguments, invalid lineage, and robot-
+specific calls before dispatch?
+4. RQ4:How does typed execution feedback affect the stack’s ability to recover from
+failed actions, request clarification, revise a plan, or stop safely when the current plan
+cannot continue?
+5. RQ5:Which responsibility and interface boundaries are required to keep language-
+guided interaction, planning, execution, and user-facing reporting inspectable?
+1.4 Objectives
+The main objective is to design, integrate, and validate a modular language-model-enabled
+interactive architecture for a robot. This objective is divided into the following implementation
+and validation goals:
+1. integrate dialogue management, semantic routing, symbolic grounding, task planning,
+deterministic orchestration, and skill execution through explicit ROS 2 interfaces;
+2
+
+=== PDF PAGE 14 ===
+Introduction Juan David Bendek Williamson
+2. define runtime contracts for chatbot output, planner admission, grounded context, skill
+descriptions, plans, results, execution feedback, dialogue acts, and raw evidence;
+3. expose robot capabilities through a reviewed skill registry rather than direct model-
+generated robot APIs;
+4. support simple-dialogue, KB-interaction, simple-skill, and composite-skill turns without
+transferring speech or execution ownership to an LLM;
+5. constrain candidate plans through deterministic validation before robot actions are
+dispatched;
+6. return typed execution evidence to the planning and dialogue paths so that failure,
+ambiguity, replanning, and truthful reporting remain observable;
+7. validate the integrated stack through full user turns, focused subsystem tests, controlled
+skill-adapter outcomes, and symbolic postcondition checks.
+1.5 Document Structure
+The thesis is organised as follows:
+1. Chapter 2 reviews HRI, ROS 2, language-based planning, multimodal models, symbolic
+grounding, and feedback-driven execution.
+2. Chapter 3 presents the system requirements, responsibility boundaries, high-level archi-
+tecture, and runtime flow as one design chapter.
+3. Chapter 4 maps the design to the implemented ROS 2 components, runtime interfaces,
+skills, and robot adapters.
+4. Chapter 5 defines the validation scope, test profiles, questionnaire, metrics, and accep-
+tance rules.
+5. Chapter 6 reports the observed trajectory, semantic, failure-injection, KB-effect, model-
+ablation, and ownership results.
+6. Chapter 7 interprets the findings with respect to the research questions and related
+work.
+7. Chapters 8 and 9 present limitations, future work, contributions, and conclusions.
+3
+
+=== PDF PAGE 15 ===
+Chapter 2
+Background and Literature Review
+2.1 Human-Robot Interaction
+Human-robot interaction (HRI) studies how people and robots communicate, coordinate tasks,
+and share physical or social space. In service and social robotics, an interaction cannot be
+reduced to command recognition. The robot must associate speech and other social signals
+with people, objects, prior turns, and the state of an embodied task. It must also communicate
+uncertainty and failure in a manner that is understandable to the user. Surveys of HRI and
+socially interactive robots therefore describe a multidisciplinary problem spanning robotics,
+artificial intelligence, perception, dialogue, interaction design, and safety (Fong et al. 2003;
+Goodrich et al. 2007).
+These concerns make responsibility boundaries important. Dialogue management must
+preserve turn and participant context. Perception must retain the provenance and freshness
+of observations. Planning must operate over capabilities the robot can actually invoke, while
+execution must reject unsupported or unsafe work. A user-facing response must remain
+connected to the evidence produced by these layers. The architecture studied in this thesis
+treats those responsibilities as collaborating components rather than one end-to-end language
+policy.
+2.2 ROS 2 for Distributed Robot Software
+The Robot Operating System (ROS) provides the communication infrastructure used to
+distribute these responsibilities across robot software. Nodes exchange data through typed
+topics, services, and actions. Topics carry streamed observations and state, services handle
+bounded request-response operations, and actions support long-running or cancellable work
+with feedback. ROS 2 extends this model with middleware and deployment mechanisms for
+distributed robotic systems (Quigley et al. 2009; Macenski et al. 2022).
+This communication model does not itself define HRI semantics or guarantee correct execution.
+Its value for this thesis lies in the ability to assign ownership to observable interfaces. Language
+4
+
+=== PDF PAGE 16 ===
+Background and Literature Review Juan David Bendek Williamson
+models can remain at dialogue and task-planning boundaries, while robot actions, knowledge
+queries, lifecycle state, and feedback retain typed ROS 2 owners. The same separation
+supports controlled replacement of real robot skills with deterministic simulated outcomes
+during validation.
+2.3 Reusable HRI Representations and Interfaces
+Reusable HRI systems require consistent representations of people and their observable signals.
+Mohamed et al. (2020) identify the absence of a standard human representation as a barrier to
+composing perception and interaction pipelines. Their ROS4HRI proposal defines conventions
+for bodies, faces, voices, groups, and related social signals. This thesis uses those conventions
+and compatible packages at the public person and speech boundaries; it does not treat
+ROS4HRI as the planning or execution framework of the system.
+In a modular HRI system, information passes through several levels of abstraction. Sensor and
+speech streams first become tracked observations. Tracking and semantic sources associate
+those observations with people, objects, and interaction groups. A knowledge representation
+then exposes bounded entities and relations to dialogue and planning. User intent and
+grounded roles become candidate skill plans, and admitted plans become typed robot actions
+whose results feed the knowledge and dialogue paths. Each transition removes detail, so it
+must preserve the identifiers, roles, freshness, and provenance required by the next layer.
+An error at one transition can otherwise appear as a prompt, planning, or execution failure
+downstream.
+2.4 The NAO Robot Platform
+The physical platform used in this thesis is NAO, a programmable humanoid robot originally
+developed by Aldebaran Robotics. Gouaillier et al. (2008) describe NAO as an autonomous
+humanoid platform for research, education, and RoboCup experimentation. Its speech
+capabilities, articulated body, camera, and established academic use make it suitable for
+studying spoken interaction, person and object grounding, gaze-oriented actions, motion, and
+feedback-driven task execution. NAO is the embodied platform in the evaluated system, while
+higher-level components depend on reviewed skills and ROS 2 interfaces rather than direct
+model-generated NAOqi calls.
+2.5 LLMs as High-Level Planners
+Large language models have been studied as high-level planners because they encode procedural
+and semantic knowledge that can be elicited from natural-language instructions. Huang et al.
+(2022b) show that language models can decompose embodied tasks into action-like steps,
+while also exposing the difficulty of mapping unconstrained language to admissible actions. A
+5
+
+=== PDF PAGE 17 ===
+Background and Literature Review Juan David Bendek Williamson
+linguistically reasonable plan can remain impossible, unsafe, or unsupported by the available
+robot.
+Several approaches ground model proposals in a restricted action set. SayCan combines
+language-model task knowledge with affordance scores from pretrained skills (Ahn et al. 2022).
+Code as Policies generates policy code over a supplied API, allowing feedback loops and
+spatial computations while remaining dependent on reviewed callable primitives (Liang et al.
+2022). These approaches motivate the use of an explicit skill registry in this thesis. The
+model plans over declared capabilities rather than arbitrary natural-language actions.
+Reasoning-and-acting methods also show the value of external evidence. ReAct interleaves
+language reasoning with actions that query tools or environments (Yao et al. 2022). Inner
+Monologue incorporates perception, success detectors, and human feedback into embodied
+planning (Huang et al. 2022c). Reflexion stores verbalised feedback as experience across trials
+without modifying model weights (Shinn et al. 2023). The system in this thesis adopts a
+narrower runtime loop: a planner emits a structured skill plan, an orchestrator validates
+and dispatches it, skills return typed results, and subsequent planning or dialogue acts are
+conditioned on that feedback.
+Prompt instructions alone cannot guarantee valid skills, arguments, grounding, or execution
+order. The implemented stack therefore combines model output with schema validation,
+registry lookup, argument checks, lineage checks, and deterministic dispatch. The distinction
+is between using an LLM as one task-reasoning component and allowing it to become the
+controller of the robot.
+2.6 Embodied Multimodal Models, VLMs, and VLAs
+Vision-language models (VLMs) connect visual observations with language, while vision-
+language-action models (VLAs) also map visual and language inputs to robot actions. BLIP-2
+connects frozen vision encoders and language models through a lightweight transformer (Li
+et al. 2023). LLaVA uses visual instruction tuning to support image-conditioned interaction
+(Liu et al. 2023b). These models show how visual evidence can be transformed into language-
+compatible representations without themselves defining a complete robot runtime.
+Embodied multimodal models extend this direction. PaLM-E incorporates visual and continu-
+ous sensor inputs and evaluates them on embodied tasks (Driess et al. 2023). RT-2 represents
+robot actions as tokens and co-trains on web and robot data (Brohan et al. 2023). OpenVLA
+provides an open-source VLA trained on a broad collection of robot demonstrations (Kim
+et al. 2024). This thesis does not train an end-to-end VLA policy. Visual and knowledge
+evidence instead become compact symbolic context before reaching the dialogue and planning
+components. Richer spatial or multimodal grounding remains a future extension.
+6
+
+=== PDF PAGE 18 ===
+Background and Literature Review Juan David Bendek Williamson
+2.7 Symbolic State and Knowledge Bases
+High-level robot reasoning requires a representation of the world. Raw perception streams are
+detailed and transient, while unstructured language summaries may omit identity, freshness,
+or relation information. A symbolic knowledge base (KB) provides one bridge between these
+representations. KnowRob represents objects, actions, environments, and task knowledge for
+robot reasoning (Tenorth et al. 2013; Tenorth et al. 2017). RoboBrain similarly combines
+multiple knowledge sources to support grounding, perception, and planning (Saxena et al.
+2014). Other work studies how interaction can help a robot acquire environmental knowledge
+and resolve referring expressions (Bastianelli et al. 2013; Grassi et al. 2021).
+The implementation follows this principle at bounded scale. Detector-derived observations,
+person state, and selected KB statements are projected into compact grounded context. The
+projection retains stable handles, semantic type, interaction role, visibility, and a bounded
+relation set. Dialogue and planning can use those entities without ingesting unrestricted
+detector payloads or RDF rows. Skills may still query fresh source evidence at execution time.
+This separation limits prompt growth and prevents planning-time state from being presented
+as proof of a later physical effect.
+2.8 Execution Monitoring, Replanning, and Clarification
+Robot planning cannot stop at plan generation. Actions fail, targets disappear, a user may
+change the goal, and safe continuation may require clarification. Feedback-oriented language-
+agent and embodied-planning work supports this closed-loop view (Huang et al. 2022c; Yao
+et al. 2022; Shinn et al. 2023).
+The evaluated stack treats execution feedback as a typed runtime contract. A failed or
+ambiguous result can stop dispatch, request user input, or return control to the planning
+component. The orchestrator does not create replacement plans, and the planner does not
+execute skills. Clarification follows the same ownership path: the planning component emits
+a structured communication request and the dialogue component realises the user-facing
+utterance. This keeps recovery observable and avoids inventing missing world facts.
+2.9 Literature Gap
+Prior work establishes the main ingredients separately. Language models can decompose tasks
+into action-like sequences (Huang et al. 2022b); affordance and API grounding can restrict
+proposals to available capabilities (Ahn et al. 2022; Liang et al. 2022); multimodal systems
+can connect vision, language, and action (Driess et al. 2023; Brohan et al. 2023; Kim et al.
+2024); symbolic systems can support robot knowledge and grounding (Tenorth et al. 2013;
+Saxena et al. 2014); and feedback can condition later reasoning (Huang et al. 2022c; Yao et al.
+2022).
+7
+
+=== PDF PAGE 19 ===
+Background and Literature Review Juan David Bendek Williamson
+The gap addressed here is the integration and validation of these responsibilities within one
+modular architecture. The contribution combines dialogue lifecycle, semantic route selection,
+compact symbolic grounding, skill-based planning, deterministic admission and dispatch, typed
+execution feedback, and evidence-based reporting. It occupies a middle position between
+fixed intent-to-skill mappings and end-to-end language or VLA policies. The architecture can
+express composite tasks and react to feedback, while exposing interfaces that permit each
+transition to be inspected independently.
+8
+
+=== PDF PAGE 20 ===
+Chapter 3
+System Design
+3.1 Functional Requirements
+Table 3.1 lists the functional requirements for the complete interaction and execution stack.
+They cover natural-language ingress, dialogue routing, symbolic grounding, planning, deter-
+ministic execution, feedback, and observability. Their implementation owners are introduced
+in Section 3.3 and detailed in Chapter 4.
+ID Requirement
+FR1 The system shall accept natural-language user input through the dialogue
+stack.
+FR2 The system shall distinguish dialogue-only turns from execution-eligible turns.
+FR3 The system shall convert execution-eligible user turns into admitted planner
+requests before invoking the planner.
+FR4 The planner shall generate structured skill plans over an explicit skill registry.
+FR5 The orchestrator shall validate planner outputs before any robot skill is dis-
+patched.
+FR6 The system shall publish execution feedback after relevant plan and step/skill
+events.
+FR7 The planner shall support asking for clarification, replanning and plan failure
+when execution feedback indicates that the current plan cannot continue safely.
+FR8 The system shall expose traces, logs, or runtime messages suitable for validation
+of the stack.
+Table 3.1: Functional requirements for the proposed interaction and execution architecture.
+3.2 Design Principles
+Four responsibility principles guide the implementation of Table 3.1. They define the compo-
+nent roles before the corresponding ROS 2 package names are introduced.
+9
+
+=== PDF PAGE 21 ===
+System Design Juan David Bendek Williamson
+1. Dialogue remains distinct from execution.Greetings, conversation, and questions
+about the robot’s known state remain non-executable unless the user explicitly requests
+an action.
+2. The planner proposes structured skill plans.It selects from the reviewed registry
+and uses grounded scene context, but does not execute skills, speak directly, or call
+robot-specific APIs.
+3. The orchestrator remains the execution gate.It admits execution requests,
+validates plans, dispatches skills, and publishes typed execution feedback.
+4. Execution evidence remains distinct from planning context.Perception updates
+the knowledge base (KB) through the grounding pipeline, while each executed skill
+returns the result of its own action. Planning-time context cannot establish that a later
+action succeeded.
+3.3 High-Level Architecture
+The design separates dialogue, grounding, planning, orchestration, and robot skills into
+components with distinct responsibilities. Figure 3.1 presents these components before their
+individual roles are described.
+Dialogue
+manager Chatbot
+Dialogue
+Planner
+Planning
+Orchestrator
+Robot skills
+Skill 1,
+Skill 2, ...,
+Skill N
+Execution
+Perception
+people and
+objects
+Knowledge
+base
+entities and
+relations
+Grounding
+execution goal plan validated step
+scene
+updates
+world state
+state updates
+execution feedback
+Figure 3.1: High-level architecture. Perception updates the knowledge base, while the dialogue
+and grounding components provide the planner with the user’s goal and symbolic context.
+The planner proposes a skill sequence, the orchestrator validates and dispatches each step,
+and verified state-changing skill results update grounding.
+The main components are:
+• Thedialogue managermaintains the conversation and is responsible for user-facing
+speech.
+• Thelanguage componentinterprets each request, distinguishes conversation or
+knowledge questions from action requests, and extracts an execution goal when needed.
+10
+
+=== PDF PAGE 22 ===
+System Design Juan David Bendek Williamson
+• Theperception componentsupplies observations of relevant people and objects, while
+theknowledge basemaintains their symbolic properties, locations, and relations.
+• Theplannerconverts an admitted execution goal into an ordered sequence of available
+robot skills. It proposes actions but does not execute them.
+• Theorchestratorcoordinates robot behaviour. It validates the proposed plan, invokes
+its skills in order, monitors their results, and returns execution feedback.
+• Theskillsimplement perception, movement, manipulation, motion, and communication
+capabilities. Each dispatched skill returns a typed result to the orchestrator.
+3.4 Runtime Flow
+During a normal turn, the dialogue manager receives the user’s request and passes it to the
+language component together with the relevant conversation state. The language component
+also receives a compact description of the current world. It then selects one of three outcomes:
+ordinary dialogue, a knowledge answer, or an execution request. Dialogue and knowledge
+questions return directly to the dialogue manager and do not activate the planner.
+For an execution request, the extracted goal and grounded entities are passed to the planner.
+The planner selects from the available skills and proposes an ordered plan. The orchestrator
+checks that the plan contains supported skills and valid arguments before invoking anything
+on the robot.
+The orchestrator then executes the accepted steps in order. Each skill returns a result based
+on current robot or world evidence. These results allow the orchestrator to complete the
+plan, stop truthfully, or return feedback for replanning or clarification. The dialogue manager
+communicates the final outcome to the user. Figure 3.2 summarises this flow.
+11
+
+=== PDF PAGE 23 ===
+System Design Juan David Bendek Williamson
+1. User request
+2. Dialogue manager: main-
+tain the turn and conversation
+3. Language component: choose dialogue,
+knowledge, or execution and extract the goal
+4. Planner: produce an ordered sequence
+of available skills for execution requests
+5. Orchestrator: validate the plan
+and execute its steps in order
+6. Skills: act on the robot or envi-
+ronment and return a typed result
+7. Dialogue manager: communicate
+completion, clarification, or failure
+execution requests only
+result
+failure feedback or replan
+Figure 3.2: Runtime sequence from a user request to an evidence-based response. Dialogue
+and knowledge turns stop after interpretation; only execution requests continue through
+planning and skill execution.
+12
+
+=== PDF PAGE 24 ===
+Chapter 4
+Implementation
+This chapter describes how the architecture introduced in Chapter 3 is realised in the ROS 2
+workspace. The implementation separates semantic interpretation, planning, deterministic
+execution, perception grounding, symbolic knowledge, and robot skills. Language-model
+components interpret requests and propose actions, while typed ROS 2 interfaces and the
+orchestrator govern execution.
+The workspace combines locally developed integration packages with reusable HRI and knowl-
+edge components. The implemented contribution is the integration of dialogue management,
+semantic routing, grounding, planning, orchestration, skills, and feedback into a coherent
+runtime for the NAO platform.
+4.1 Runtime Interfaces and Data Contracts
+The implemented components exchange structured messages so that a language-model output
+cannot become a robot action without validation. Each contract below identifies the data that
+crosses one implementation boundary and the component that produces, checks, or consumes
+it.
+4.1.1 Runtime Contract Overview
+Table 4.1 summarises each runtime contract, its interface or payload, and its owner.
+13
+
+=== PDF PAGE 25 ===
+Implementation Juan David Bendek Williamson
+Table 4.1: Runtime contract map and ownership in the active dialogue, planning, and execution
+stack.
+ID Contract Interface / payload Ownership
+1 Chatbot turn output Internal chatbot result before ROS planner
+publication.
+dialogue_managerinvokes the chatbot
+path;chatbot_llmproduces the semantic
+result.
+2 Compact groundinggrounded_contextprojection carried by the
+planner request.
+Scene and KB projection provide compact
+symbolic context forchatbot_llmand
+planner_llm.
+3 Planner request and
+admission
+Candidate topic
+/nao_orchestrator/planner_request.
+Admitted topic/planner/request.
+Planner-facing payload is carried inIntent.data
+and includes Contract 2.
+chatbot_llmproposes the execution
+request;nao_orchestratoradmits and
+normalizes it;planner_llmconsumes the
+admitted request.
+4 Shared skill entry Registry projection consumed by the planner
+and orchestrator; its adapter mapping identifies
+the receiving skill server.
+skill_common defines the shared capability
+shape;planner_llmuses it for prompt
+construction and nao_orchestrator uses it
+for plan validation and dispatch.
+5 Planner output Topic/intents. Structured plan payload in
+Intent.data.plan.
+planner_llmproduces the plan;
+nao_orchestratorvalidates and
+dispatches executable steps.
+6 Skill execution result ROS action result or service response with a
+typed skill-result payload.
+nao_orchestratordispatches the call; the
+skill server owns the typed action result;
+verified simulated post-effects are applied
+throughkb_skills.
+7 Execution feedback Topic/planner/execution_feedback.
+Structured JSON feedback payload.
+nao_orchestratorpublishes feedback; a
+goal-keyed planning-state helper inside
+planner_llmuses it for replanning,
+clarification, or failure handling.
+8 Planner dialogue act Topic/planner/dialogue_act. Structured
+communication request.
+planner_llmemits dialogue-act intent;
+nao_orchestratorrelays it;
+dialogue_manager realizes the final speech.
+9 RDF knowledge state
+and raw evidence
+KnowledgeCore statements through/kb/query
+and/kb/revise; source evidence includes
+tracked-person state,/scene/summary, and skill
+results.
+Source components own fact freshness;
+kb_skillsowns KB transport; compact
+projections and feedback preserve
+provenance without replacing raw
+evidence.
+The overview identifies the ownership and authority boundary of each contract.
+4.1.2 Contract 1: Chatbot Turn Output
+The intent in this contract is the user’s goal as extracted by the chatbot. It is not a planner
+output. The contract retains the acknowledgement, route, confidence, and normalized intent
+fields required to decide whether the turn remains conversational or becomes a candidate
+execution request.
+Table 4.2 identifies the fields that remain visible after the chatbot completes one semantic
+routing decision.
+14
+
+=== PDF PAGE 26 ===
+Implementation Juan David Bendek Williamson
+Table 4.2: Fields in Contract 1: chatbot turn output.
+Field Meaning
+verbal_ack Optional immediate acknowledgement generated by the chatbot layer.
+This may be spoken or logged before execution begins, depending on
+the dialogue policy.
+routeTurn classification produced bychatbot_llm. Supported values
+includedialogue,knowledge_query, andexecution. Only
+executionturns enter the planner path;dialogueand
+knowledge_queryremain non-execution turns but are still useful for
+tracing.
+confidenceConfidence assigned by the chatbot or intent-extraction stage. It is
+useful for debugging and possible admission policy, but it is not a
+planner priority score.
+user_intent.typeNormalized user-intent label extracted bychatbot_llm, such as
+look_at,find_object,scan, ornavigate_to.
+user_intent.goal_text Natural-language objective passed toward the planner path as the task
+to satisfy. This field preserves the user’s goal in a compact form.
+user_intent.
+scene_targets
+Optional target hints extracted from the utterance, such asperson,
+cup, ortable. These are hints, not validated grounded entities.
+user_intent.
+request_kind
+Proposed goal transition class, such asnew_goal,update_goal,
+answer_to_clarification, or cancel_goal. The planner gate inside
+nao_orchestratorshould normalize and admit this field before
+publishing/planner/request.
+4.1.3 Contract 2: Grounded Context
+The language and planning components receive a compact, JSON-native view of relevant
+world state. The projection is derived from the knowledge base, which is updated by the
+people- and object-perception paths and by verified simulated post-effects. Raw KB triples,
+detector metadata, and tracker-derived details remain at their source interfaces rather than
+being duplicated into every language-model prompt.
+15
+
+=== PDF PAGE 27 ===
+Implementation Juan David Bendek Williamson
+1{
+2" g r o u n d e d _ c o n t e x t ": {
+3" entities ": [
+4{
+5" id ": " cup_jrjic " ,
+6" label ": " cup " ,
+7" kind ": " object " ,
+8" class ": " Cup " ,
+9" visible ": true ,
+10" relations ": [
+11{" predicate ": " dbp : color " , " object ": " blue "} ,
+12{" predicate ": " oro : isOn " , " object ": " table_1 "} ,
+13{" predicate ": " oro : isAt " , " object ": " lab_area "}
+14]
+15} ,
+16{
+17" id ": " table_1 " ,
+18" label ": " work table " ,
+19" kind ": " object " ,
+20" class ": " Table " ,
+21" visible ": true ,
+22" relations ": [
+23{" predicate ": " oro : isAt " , " object ": " lab_area "}
+24]
+25} ,
+26{
+27" id ": " a l e x_ p e r so n " ,
+28" label ": " ALEX " ,
+29" kind ": " person " ,
+30" class ": " Human " ,
+31" visible ": true ,
+32" relations ": [
+33{" predicate ": " oro : isAt " , " object ": " lab_area "}
+34]
+35} ,
+36{
+37" id ": " lab_area " ,
+38" label ": " laboratory " ,
+39" kind ": " location " ,
+40" class ": " Room " ,
+41" visible ": false ,
+42" relations ": []
+43}
+44]
+45}
+16
+
+=== PDF PAGE 28 ===
+Implementation Juan David Bendek Williamson
+46}
+Table 4.3 defines the compact entity and relation fields used by dialogue and planning.
+Table 4.3: Fields in Contract 2: grounded context.
+Field Meaning
+id Stable entity handle used by planner steps and skill arguments. This is
+the preferred reference when a skill needs to target a known person,
+object, or location.
+labelHuman-readable name or class hint. It may be empty for anonymous
+people or entities that should not be assigned a personal name.
+kindEntity category, such asobject,person, orlocation. This prevents
+people, manipulable objects, supports, and spatial anchors from being
+assigned interchangeable roles.
+classCompact semantic class used by the planner for reasoning, such as
+Cup,Human,Table, orRoom.
+visibleIndicates whether the entity is currently grounded in the latest
+accepted scene or KB state. It should not be treated as a guarantee
+that the entity will still be available at execution time.
+relationsBounded list of relevant semantic relations, such as colour, support,
+containment, and location. These relations add task-relevant context
+without exposing the full KB.
+4.1.4 Contract 3: Planner Request
+The planner request combines the admitted goal with lineage, normalized intent hints, and the
+Contract 2 world-state projection.chatbot_llm proposes this request,nao_orchestrator
+normalizes and admits it, and planner_llm consumes the admitted form. The dialogue
+history conditions the chatbot decision but is not duplicated wholesale in the planner request;
+dialogue_turn_idlinks the request back to the owning dialogue state.
+1{
+2" d i a l o g u e _ t u r n _ i d ": " _ _ d ef a u l t_ _ : d343701c :1" ,
+3" goal_id ": " g o a l _ d e f a u l t _ _ _ d 3 4 3 7 0 1 c _ 1 " ,
+4" r e q u e s t _ k i n d ": " new_goal " ,
+5" goal_text ": " look at ALEX and report completion " ,
+6" n o r m a l i z e d _ i n t e n t s ": [" look_at "] ,
+7" g r o u n d e d _ c o n t e x t ": {
+8" entities ": [
+9{
+10" id ": " a l e x_ p e r so n " ,
+11" kind ": " person " ,
+12" visible ": true
+13}
+14]
+17
+
+=== PDF PAGE 29 ===
+Implementation Juan David Bendek Williamson
+15}
+16}
+The grounding fragment is abbreviated here; the admitted runtime payload retains the
+complete Contract 2 entity and relation fields. Table 4.4 separates request identity, goal
+semantics, and grounded evidence before the planner is invoked.
+Table 4.4: Fields in Contract 3: minimal planner-facing request.
+Field Meaning
+dialogue_turn_idCorrelates the admitted request with the dialogue turn and
+conversation state that produced it.
+goal_idIdentifier for the active objective. It groups replans and feedback for
+the same task.
+request_kindStates whether this is a new goal, an update to the current goal, a
+cancellation, or another supported transition.chatbot_llmmay
+propose it, butnao_orchestratornormalizes and admits it before
+publishing/planner/request.
+goal_textObjective extracted from the user utterance. This is the central
+planning input forplanner_llm.
+normalized_intentsIntent labels extracted bychatbot_llm. They helpplanner_llm
+choose suitable skills from the available skill registry.
+grounded_contextContract 2 projection used as the planner’s compact symbolic world
+state. It carries entities, types, visibility, and bounded relations rather
+than raw detector output.
+4.1.5 Contract 4: Shared Skill Entry
+The planner and orchestrator use one shared entry shape to describe a skill before it is placed
+in a prompt, admitted for execution, or mapped to an action server. The entry separates
+selection and ordering information from the evidence required to validate a result. Because
+this contract is the common capability boundary, its normative fields remain in the body
+rather than being reduced to an implementation-specific example.
+Table 4.5 names the common capability fields consumed by prompt construction, admission,
+dispatch, and result interpretation.
+18
+
+=== PDF PAGE 30 ===
+Implementation Juan David Bendek Williamson
+Table 4.5: Shared skill-entry fields used by planning and execution.
+Field Runtime role
+object_id,kind,
+category,aliases
+Canonical planner name, semantic group, and accepted compatibility names.
+params,required_paramsTyped planner-facing arguments and the subset required before admission.
+preconditions Grounding or state assumptions that must be satisfied or explicitly owned by a
+scenario. They do not prove a future effect.
+expected_effectsIntended state changes or evidence products used to select and order skills.
+observable_successResult or trace evidence that can support completion after execution.
+failure_modesTyped outcomes used by the orchestrator and the goal-state helper to stop,
+clarify, or request replanning.
+planner_guidanceBounded selection and ordering guidance inserted into the planner prompt.
+result_schemaRequired and optional result fields, including the summary and evidence
+payload.
+safety_flagsSafety-relevant labels used during admission and dispatch.
+metadata.runtime_
+callable
+Whether the registry permits planner-visible runtime use.
+implementation_statusCurrent implementation class, such as first-party, fake, or hybrid.
+robot_adapter_mappingAdapter or skill server that receives the dispatched call.
+supports_failure_
+injection
+Whether controlled failure outcomes are available for validation.
+The same shape is projected to the planner prompt, deterministic orchestrator checks, con-
+trolled simulation policies, and adapter configuration. Preconditions constrain admission,
+while expected effects remain hypotheses until a skill returns observable evidence. This
+distinction is used byreport_result: a final summary must be derived from result payloads
+or trace evidence rather than copied from a planner-generated claim. The complete runtime
+inventory is provided in Appendix A.1.
+4.1.6 Contract 5: Planner Output
+The planner output is a plan: a sequence of skill steps to achieve the user goal. It should
+focus on executable content and minimal lineage. Communication policy and retry metadata
+are still valid runtime fields when used by the stack, but this controlled version foregrounds
+the orderedstepslist because that is the essential planner output.
+19
+
+=== PDF PAGE 31 ===
+Implementation Juan David Bendek Williamson
+1{
+2" plan ": {
+3" goal_id ": " g o a l _ t u r n _ 1 2 3 " ,
+4" plan_id ": " plan_123 " ,
+5" p l a n _ v e r s i o n ": 1 ,
+6" status ": " planned " ,
+7" steps ": [
+8{
+9" id ": " step_1 " ,
+10" type ": " skill " ,
+11" name ": " look_at " ,
+12" args ": {" t a r g e t _ f r a m e ": " a n o n y m o u s _ p e r s o n _ e h f b f "} ,
+13" requires ": [] ,
+14" on_failure ": " replan "
+15}
+16]
+17}
+18}
+Table 4.6 identifies the plan and step fields that must survive deterministic validation before
+dispatch.
+20
+
+=== PDF PAGE 32 ===
+Implementation Juan David Bendek Williamson
+Table 4.6: Fields in Contract 5: planner output.
+Field Meaning
+goal_idUser objective that this plan attempts to satisfy. It links the planner
+output to the active goal.
+plan_id Identifier for this concrete plan proposal. It is useful when the runtime
+keeps plan history or compares revised plans for the same goal.
+plan_versionRevision number for replans of the same goal. This helps distinguish
+the initial plan from later feedback-driven planning outputs.
+statusPlanning outcome for this plan, such asplanned,
+needs_clarification, orfailed_to_plan. This describes whether
+planner_llmproduced an executable plan, not whether the robot has
+already executed it.
+steps Ordered list of skill calls produced by the planner. This is the essential
+planner output consumed bynao_orchestrator.
+steps[].id Stable step identifier used for execution feedback, dependency tracking,
+and possible replan joins.
+steps[].nameSkill name selected from the allowed skill registry. The planner should
+not invent skills or use robot-specific APIs directly.
+steps[].argsSkill arguments. They should refer to known entity IDs, explicit
+primitive values, or arguments supported by the selected skill schema.
+steps[].requiresDependencies between steps, if any. This allows the runtime to know
+which steps depend on previous successful outcomes.
+steps[].
+on_failure
+Recovery policy proposed byplanner_llmfor this step. If the step
+fails,nao_orchestratormay fail safely, continue if allowed, request
+user input, or send feedback back toplanner_llmfor replanning.
+Allowed values includereplan, clarify, ask_user, continue, ignore,
+andfail.
+Runtime recovery metadata.The current contract supports recovery metadata as skill
+failure may require controlled recovery. Each step may carry aretry_budget, and the plan
+envelope may also carry a plan-levelretry_budget. This does not mean thatretry is a
+separate on_failure value. Instead, retry behaviour is controlled bynao_orchestrator
+using the available retry budget together with the step’son_failure policy. The plan envelope
+may also carrycommunication_policy. This controls when the planner/dialogue path should
+communicate progress, completion, clarification needs, or failure.
+When a step fails withon_failure = replan , nao_orchestrator halts or blocks continua-
+tion, publishes execution feedback toplanner_llm, and waits for a revised validated plan
+before dispatching further actions. This keeps execution authority insidenao_orchestrator,
+while allowing recovery to be driven by feedback-driven planning rather than by hard-coded
+local replanning.
+21
+
+=== PDF PAGE 33 ===
+Implementation Juan David Bendek Williamson
+4.1.7 Contract 6: Skill Execution Result
+Every dispatched skill returns a typed result before the orchestrator can mark its step as
+completed. The result distinguishes the execution status from the evidence that supports it.
+For state-changing skills, the evidence may also describe world-state changes that must be
+reflected in the KB. These changes are reported by the skill that observed or produced them;
+they are not inferred from the planner’s expected-effects text in Contract 4.
+1{
+2" skill ": " p l a c e _ o b j e c t " ,
+3" status ": " succeeded " ,
+4" s u m m a r y _ t e x t ": " I placed cup_1 on table_1 ." ,
+5" evidence ": {
+6" object_id ": " cup_1 " ,
+7" d e s t i n a t i o n _ i d ": " table_1 " ,
+8" kb_effects ": [
+9{" operation ": " remove " , " statement ": " robot oro : holds cup_1 "} ,
+10{" operation ": " add " , " statement ": " cup_1 oro : isOn table_1 "}
+11]
+12} ,
+13" failure ": null ,
+14" metadata ": {" fake ": true }
+15}
+The implementation retains the field nameevidence.kb_effects, but the field describes
+observed world-state changes that must be reflected in the KB and the orchestrator applies
+these statements only after a successful result.
+4.1.8 Contract 7: Execution Feedback
+Execution feedback tells the planner which goal and step were affected, whether the step
+succeeded or failed, and why. This compact information is sufficient to decide whether to
+continue, replan, request clarification, or report failure.
+22
+
+=== PDF PAGE 34 ===
+Implementation Juan David Bendek Williamson
+1{
+2" goal_id ": " g o a l _ t u r n _ 1 2 3 " ,
+3" status ": " failed " ,
+4" step ": {
+5" id ": " step_1 " ,
+6" name ": " look_at "
+7} ,
+8" reason ": " target frame u na v a i la b l e " ,
+9" r e s u l t _ p a y l o a d ": {
+10" t a r g e t _ f o u n d ": false ,
+11" t ar g e t _k i n d ": " person "
+12}
+13}
+Runtime feedback may include additional fields used bynao_orchestrator, logging, and
+the goal-state helper. Lineage uses plan_id and plan_version; event handling may add
+event_type, validation_status, blocking, andneeds_user_input; observability may add
+timestamp_sec, result_summary, and retry metadata. These fields support execution control
+and debugging, while the minimal planner-facing feedback remains the goal, step, status,
+reason, and result payload.
+4.1.9 Contract 8: Planner Dialogue Act
+Planner dialogue acts represent planner intent to communicate, not direct speech execution.
+They are relayed through the orchestrator and realized by the dialogue layer.
+1{
+2" goal_id ": " g o a l _ t u r n _ 1 2 3 " ,
+3" act ": " a s k _ c l a r i f i c a t i o n " ,
+4" a w a i t _ u s e r _ r e s p o n s e ": true ,
+5" reason ": " multiple visible people " ,
+6" text_hint ": " Which person should I look at ?" ,
+7" s l o t s _ n e e d e d ": [" t a r g e t _ p e r s o n "]
+8}
+Allowed dialogue acts are acknowledgement, progress update, clarification, help request, failure
+explanation, completion notification, and cancellation notification. The planner does not
+speak directly; it emits a structured communication request.
+4.1.10 Contract 9: RDF Knowledge State
+The implementation reuses the open-source KnowledgeCore package rather than introducing
+a new knowledge-base system (Lemaignan et al. 2026). KnowledgeCore represents symbolic
+world state as an RDF-style graph. Each statement has a subject, predicate, and object. Stable
+23
+
+=== PDF PAGE 35 ===
+Implementation Juan David Bendek Williamson
+subjects identify people, objects, places, supports, and the robot; predicates express class
+membership, attributes, visibility, containment, and spatial relations. The same statement
+shape is used by preloaded fixtures, detector-derived object facts, explicit user-authorised KB
+mutations, and verified post-skill effects.
+1c o d e x _ l a b _ c u p rdf : type Cup
+2c o d e x _ l a b _ c u p dbp : color red
+3c o d e x _ l a b _ c u p oro : isOn c o d e x _ l a b _ t a b l e
+4c o d e x _ l a b _ r o o m oro : contains c o d e x _ l a b _ t a b l e
+5p e rs o n _ al e x rdf : type Human
+6myself sees p e r so n _ a le x
+The principal predicate families are shown in Table 4.7. A class statement such asrdf:type
+Human also preserves the semantic distinction between a person and an object even when both
+can be action targets.
+Table 4.7: Principal RDF-style predicate families used by the runtime KB.
+Role Representative predicates Runtime meaning
+Entity classrdf:type Distinguishes people, objects, supports, rooms,
+and other planner-relevant classes.
+Attributesdbp:name,dbp:color Provides stable semantic labels and disam-
+biguating properties.
+Observationsees , visual-centre, score,
+source, and last-seen predicates
+Records who observed an entity and the
+bounded provenance/freshness of a detector
+observation.
+Spatial relationsoro:isOn , oro:isAt,
+oro:isIn,oro:contains
+Represents support, destination, room mem-
+bership, and containment used by grounding
+and skill effects.
+KB mutations use add, revise, and remove operations on this shared statement form through
+/kb/revise; reads use query patterns through/kb/query. Transient perception facts carry a
+finite lifespan, while explicit fixture and verified skill-effect facts follow the lifetime declared
+by their owner. Reused person-perception components publish person identities and tracked
+state through their public interfaces (Mohamed et al. 2020). Object detections are handled
+separately by nao_scene_grounding, which publishes/scene/summary and detector-derived
+KB statements.
+4.2 ROS Components
+Figure 4.1 locates the principal ROS 2 components and the information exchanged between
+them. It uses one representation ofnao_orchestrator, whose internal responsibilities include
+planner-request admission and deterministic plan execution, and focuses on the operational
+path exercised by the implementation.
+24
+
+=== PDF PAGE 36 ===
+Implementation Juan David Bendek Williamson
+User input and
+robot speech
+dialogue_manager
+turn state and
+speech ownership
+chatbot_llm
+response, route,
+intent, and goal
+Perception components
+objects and
+tracked people
+KnowledgeCore
+and kb_skills
+symbolic state and
+query/revision
+grounded_context
+bounded entities
+and relations
+planner_llm
+skill-plan genera-
+tion and feedback-
+driven replanning
+nao_orchestrator
+request admission, plan
+validation, and dispatch
+Skill servers
+perception, motion,
+navigation, manip-
+ulation, reporting
+NAO or simulated
+skill adapters
+Figure 4.1: Full-stack implementation of the modular interaction architecture. Dialogue interpretation and symbolic grounding provide the
+planner input;nao_orchestratoradmits the request, validates the returned plan, dispatches skill servers, and forwards execution feedback.
+Robot-facing and simulated adapters share the same typed skill-result boundary.
+25
+
+=== PDF PAGE 37 ===
+Implementation Juan David Bendek Williamson
+4.2.1dialogue_manager
+dialogue_manager is the ROS 2 lifecycle component responsible for multimodal communi-
+cation between the robot and its interlocutors. Following the upstream package design1, it
+preserves chronological conversation histories for active interlocutors and associates incoming
+hri_msgs/LiveSpeech streams with the relevant dialogue state. The node invokes the chat-
+bot through DialogueInteraction, exposes the high-level/skill/chat, /skill/ask, and
+/skill/say interfaces, and realises final user-facing expressions through the configured Say
+sub-skill.
+This ownership boundary is also a runtime constraint. Planning and execution components
+publish structured communication requests through the designated dialogue interfaces, while
+dialogue_manager retains responsibility for the final utterance and its delivery through the
+speech backend.
+Planner dialogue acts return through the same boundary. planner_llm publishes struc-
+tured acknowledgement, clarification, failure, or completion acts on/planner/dialogue_act;
+nao_orchestrator relays the admitted act on/nao_orchestrator/planner_dialogue_act;
+and the dialogue layer selects the final wording and speech mechanism. This arrangement
+provides one user-facing speech authority for each semantic event and makes duplicate
+acknowledgements or completion reports observable during validation.
+4.2.2chatbot_llm
+chatbot_llm is a lifecycle-managed semantic-routing node built on the existing chatbot
+scaffold. Its turn callback receives aDialogueInteraction request and the conversation
+history assembled bydialogue_manager. Before response generation or planner handoff, it
+queries the KB throughkb_skills, reads the most recent/scene/summary, and passes both
+sources through thePlannerHandoff projection helper. The resulting grounded_context,
+defined by Contract 2, contains a bounded set of entities, locations, and task-relevant relations
+instead of raw detector streams or unrestricted KB rows. This projection informs dialogue
+and knowledge answers on every user turn and is attached to Contract 3 when the selected
+route produces a planner request.
+The turn engine implements the route field from Contract 1 as follows:
+• A dialogue route covers conversational and task-discussion turns and does not publish
+planner work.
+• A knowledge_query route answers from current symbolic evidence without causing
+a physical action. For example, “what can you see?” can use the current grounded
+context, whereas “scan and tell me what you see” requests fresh sensing and is eligible
+for execution.
+• An execution route constructs planner-facing metadata such as goal text, request kind,
+normalised intent hints, and target KB entities. It publishes a candidate request to
+1Package source:https://github.com/ieverythng/dialogue_manager.
+26
+
+=== PDF PAGE 38 ===
+Implementation Juan David Bendek Williamson
+/nao_orchestrator/planner_requestwithout constructing the skill sequence itself.
+The chatbot prompt defines the component role, the permitted routes, the response require-
+ments, and the structured intent fields. Runtime context adds the dialogue history, available
+skill summary, and grounded entities. In the evaluatedresponse_first configuration, the
+first model call produces the acknowledgement and route decision; the intent stage then
+extracts goal and target metadata under that route. Theintent_first ablation reverses
+the stage order and constrains response generation with the previously selected route. Both
+configurations produce the same Contract 1 output and planner-request format, which allows
+route consistency to be compared without changing downstream interfaces.
+Figure 4.2 summarises the implemented turn path and the two possible outputs: a response
+returned to the dialogue manager or an execution request submitted for planner admission.
+DialogueInteraction
+conversation state
+and user turn
+Prompt construction
+role, history, routes,
+and output schema
+LLM semantic
+interpretation
+response and
+intent stages
+Contract 1 turn result
+acknowledgement,
+route, confidence, goal
+Grounded context
+KB, scene, and
+tracked people
+Response returned
+to dialogue_manager
+Execution request
+submitted to
+nao_orchestrator
+Figure 4.2: Internalchatbot_llm path. Dialogue history and grounded context condition a
+structured semantic decision that either returns a user-facing response or submits an execution
+request for admission.
+4.2.3planner_llm
+planner_llm is the high-level planning node and contains a goal-keyed planning-state helper
+for feedback-driven state transitions. The node subscribes to admitted/planner/request
+messages instead of directly consuming chatbot output. Throughplanner_common, each
+request is normalised into the canonical contract with goal metadata nested underplan.
+The planner prompt combines the goal text, request kind, normalised intent hints, grounded
+context, the shared skill-entry projection from Contract 4, permitted step types, and the
+required JSON output envelope.
+The planner prompt is assembled from the admitted request, bounded grounded entities,
+the skill-registry fields relevant to selection and ordering, the permitted step types, and
+the planner output contract. It specifies the available skills, required arguments, expected
+effects, observable completion evidence, and failure modes that may require clarification or
+replanning. This registry projection links the model’s language-level proposal to the typed
+ROS 2 execution surface.
+The model response remains a candidate until the planner engine extracts the JSON object,
+normalises its schema, validates the required metadata and step fields, and applies one
+27
+
+=== PDF PAGE 39 ===
+Implementation Juan David Bendek Williamson
+bounded repair retry when configured. Unsupported skill names, malformed arguments,
+invalid recovery policies, or unparseable output become typed failure or clarification outcomes.
+Valid plans are published on/intentsfor independent orchestrator validation.
+Evidence-producing plans receive an additional reporting check. Whenreport_result follows
+a sensing, navigation, motion, or manipulation skill,planner_common requires the reporting
+step to omit planner-authored result wording. Compatibility normalisation removes fields
+such as summary_text, result_summary, text, message, and utterance before validation.
+The reporting step is later resolved from the preceding Contract 6 result payload, preventing
+an expected effect from being presented as an observed result.
+The node also subscribes to/planner/execution_feedback. The embedded planning-state
+helper associates relevant events with the active goal and invokes the planning path when the
+orchestrator reports completion, failure, a recoverable condition, or a need for user input. The
+response may be a revised plan or a structured dialogue act. Robot control remains with the
+orchestrator, while user-facing communication follows the planner-dialogue relay and dialogue
+manager.
+Figure 4.3 shows the planner model call together with its validation, retry, feedback, and
+publication paths.
+Admitted request
+/planner/request
+goal_id
+Planner context
+grounded_context
+scene targets
+Normalize request
+planner_common
+contract shape
+Planner prompt
+skill registry
+allowed step types
+LLM plan call
+JSON plan envelope
+Extract + validate
+schema repair
+failure payload
+Executable output
+/intents
+nested plan
+Goal-state helper
+active goal
+replan / clarify
+Execution feedback
+/planner/execution_feedback
+step outcomes
+Planner dialogue act
+/planner/dialogue_act
+clarify/fail/complete
+Figure 4.3: Internalplanner_llmpath, from admitted request through validated plan envelope
+and feedback-driven goal-state handling.
+4.2.4 Goal-Keyed Planning-State Helper
+The goal-keyed planning-state helper maintains planning state under an activegoal_id.
+Each accepted plan carries aplan_id and monotonically meaningfulplan_version; stable
+step_id values allow a newer plan version to preserve completed work when replanning
+continues the same goal. Feedback from an older or unrelated version is rejected before it
+can alter the current goal state. If a replacement plan is required,planner_llmcreates and
+validates it under a newer version. Execution supervision and step dispatch remain within
+nao_orchestrator; the helper maintains planning order and lineage across these transitions.
+4.2.5 Skill Registry (skill_common)
+The planner-facing capability model is derived from the canonical skill registry maintained
+by skill_common. Contract 4 and Table 4.5 define the shared entry shape: canonical name
+and aliases, typed parameters, preconditions, expected effects, observable success evidence,
+28
+
+=== PDF PAGE 40 ===
+Implementation Juan David Bendek Williamson
+failure modes, result schema, safety flags, runtime availability, and executor mapping. The
+planner receives a bounded projection of these fields when it selects and orders skills. The
+orchestrator uses the same names, argument requirements, and availability information when
+it validates Contract 5 plans and dispatches Contract 6 calls. This arrangement provides a
+machine-checkable guard against divergence between the prompt-visible capability model and
+the execution surface.
+Table 4.8 lists the planner-visible skill set. Knowledge-base add, revise, and remove operations
+remain knowledge-service operations and are not included in this registry. Appendix A.1 gives
+the arguments, expected evidence, failure modes, and executor for each entry.
+Table 4.8: Planner-visible skills and their implementations.
+Skill Purpose Implementation Controlled
+simulation
+scanRefresh scene evidence and return a
+typed scan payload.
+First-party/skill/scanserver. Shared
+scene-fixture
+control.
+find_objectFind one specified object and return
+whether it was found.
+Perception or simulated
+adapter.
+Yes.
+inspect_areaReturn the objects and people observed
+in a specified area.
+Perception or simulated
+adapter.
+Yes.
+navigate_toReach a semantic destination such as a
+person, object, or location.
+Navigation or simulated
+adapter.
+Yes.
+walk_to Execute a short body-relative locomotion
+segment.
+Robot movement or simulated
+adapter.
+Yes.
+pick_object Grasp one specified object and return the
+observed result.
+Manipulation or simulated
+adapter.
+Yes.
+place_objectPlace a held object at a specified
+destination.
+Manipulation or simulated
+adapter.
+Yes.
+bring_objectDeliver one specified object to a person
+or location.
+Composite manipulation or
+simulated adapter.
+Yes.
+perform_motion Execute a named body motion, including
+a greeting wave.
+Motion replay or simulated
+adapter.
+Yes.
+look_atDirect the robot’s gaze towards a
+specified target.
+Head, gaze, or simulated
+adapter.
+Yes.
+ask_userRequest information needed to continue
+planning.
+Dialogue interface. Trace-based.
+report_resultReport an outcome derived from
+completed skill results.
+Dialogue and reporting
+interface.
+Trace-based.
+4.2.6nao_orchestratorand Plan Execution
+nao_orchestrator implements deterministic execution of accepted plans. Before dispatch, it
+validates the plan envelope, ordered steps, registered skill names, arguments, dependencies,
+failure policies, and goal/plan lineage against the shared skill registry and runtime contracts.
+A plan is accepted only when every executable step can be resolved to an available skill
+interface.
+Accepted plans are executed in order through the ROS action or skill-server interface mapped
+by each registry entry. The orchestrator retains the active goal, plan version, current step,
+completed results, and pending work. For each step it publishes the corresponding started,
+29
+
+=== PDF PAGE 41 ===
+Implementation Juan David Bendek Williamson
+succeeded, or failed event on /planner/execution_feedback, preserving the identifiers
+required to associate execution evidence with the correct goal and plan version.
+Each dispatched skill must return a typed Contract 6 result before the step can complete.
+Successful state-changing results may include world-state updates, which are applied through
+kb_skills and verified through a subsequent query when available. On failure, the orchestra-
+tor follows the validated step policy: it may stop the plan, continue only when permitted,
+or publish feedback that requests replanning or clarification. Replacement plans remain the
+responsibility ofplanner_llm.
+Figure 4.4 summarises the validated plan-execution path described above.
+Accepted struc-
+tured plan
+goal and plan lineage
+Plan validation
+skills, arguments,
+order, and policy
+Ordered dispatcher
+current step and
+pending work
+Skill or adapter call
+typed ac-
+tion/service interface
+Contract 6 result
+status, evidence,
+world-state updates
+Contract 7 feedback
+step and plan
+events with lineage
+Figure 4.4: Execution path implemented bynao_orchestrator. Accepted plans are validated,
+dispatched in order, and correlated with typed skill results and execution feedback.
+4.3 World State and Scene Grounding
+The perception path has parallel people and object branches. The person branch reuses
+hri_face_detect_yunet, hri_person_manager, and the ROS4HRI person interfaces to
+provide identities, tracked-person topics, and frame-qualified state (Mohamed et al. 2020).
+The object branch usesnao_scene_grounding to convert detector output into a provider-
+independent scene representation. Its custom YOLO detector and restricted fruit-and-
+vegetable training set were developed within the EMOROBCARE project and are reused here
+rather than introduced as contributions of this thesis (Cooper et al. 2026). The reused detector
+is integrated with the NAO camera stream through ROS; its configured demonstration classes
+are blueberry, corn, pear, tomato, and zucchini. Detector backends are normalised into one
+internal observation shape so that downstream components do not depend on the detector
+message type.
+The grounding node filters object detections by confidence and an explicit label allowlist,
+maps labels to KB classes, and maintains local identifiers using tracker IDs or bounded
+image-plane matching. Without a tracker ID, the default matcher requires the same label,
+KB class, and detector source, a displacement of at most 64 pixels, and an observation age
+of at most two seconds. It publishes/scene/summary and writes accepted observations as
+transient KnowledgeCore statements through/kb/revise. Under the default configuration,
+KB observations have a four-second lifespan and are refreshed no more often than once per
+second; a local object is removed from the current scene summary after 4.5 seconds without a
+new detection. An object marked visible ingrounded_context is therefore present in this
+30
+
+=== PDF PAGE 42 ===
+Implementation Juan David Bendek Williamson
+bounded current-scene window. People remain managed by the tracked-person pipeline and
+are merged when compact symbolic context is assembled.
+kb_skills provides the query and revision interface for KnowledgeCore. The chatbot formats
+a bounded query result as an internal knowledge snapshot, combines it with the current
+scene summary and tracked-person state, and emits the Contract 2grounded_context. The
+projection retains entities, locations, and bounded relations while omitting unrestricted raw
+rows and detector payloads.
+Planning context and execution evidence consequently have different roles. Current symbolic
+state supports knowledge answers and plan selection. Execution claims require a fresh Con-
+tract 6 result from the responsible skill. Whenpick_object, place_object, orbring_object
+changes the world state, the result identifies the corresponding removals and additions; the
+orchestrator reflects them throughkb_skills and verifies the required postconditions when
+the query interface is available.
+Figure 4.5 presents the implemented object, person, knowledge, and compact-grounding paths.
+NAO camera stream Object detector
+labels and confidence
+nao_scene_grounding
+normalisation,
+identity, recency
+Object scene state
+/scene/summary
+ROS4HRI
+face detector
+hri_person_manager
+identity and
+tracked state
+Tracked-person
+interfaces
+KnowledgeCore
+RDF-style world state
+kb_skills
+query and revi-
+sion interface
+grounded_context
+entities and
+bounded relations
+chatbot_llmand
+planner_llm
+Execution skills
+fresh scene/KB
+queries
+Figure 4.5: Implemented perception and symbolic-grounding pipeline. Reused person-
+perception components and the local object-grounding path provide bounded scene and
+knowledge representations to dialogue, planning, and execution skills.
+4.4 Skill Adapters and Controlled Simulation
+The implementation exposes the planner-visible capabilities in Table 4.8 through a common
+adapter boundary. Robot-facing adapters invoke the available physical implementation,
+whereas the package namedfake_skills supplies deterministic simulated action servers for
+controlled software evaluation. Both paths preserve the Contract 6 result shape. Simulated
+results additionally recordmetadata.fake=true, the scenario and result mode, the selected
+policy source, the deterministic seed when applicable, and the simulated duration. Dispatch
+and outcome events are published on/fake_skills/events.
+The same planner and orchestrator path can therefore be exercised with physical results or
+with all-success, fail-once, and seeded pseudo-random simulated outcomes. Stateful policies
+use deterministic call counters and recorded seeds. Successful simulated results represent the
+corresponding world-state changes, which are reflected in KnowledgeCore so that later plan
+31
+
+=== PDF PAGE 43 ===
+Implementation Juan David Bendek Williamson
+steps and dialogue turns observe the updated scenario rather than the initial fixture.
+Controlled skill-adapter evidence supports software-level claims about route selection, plan
+validity, ordered dispatch, typed feedback, replanning, clarification, report coverage, and
+symbolic postconditions. Deterministic simulation also makes it possible to place a known
+failure at a selected execution step and observe whether the remaining goal is safely replanned.
+Physical navigation accuracy, grasp reliability, manipulation success, perception accuracy,
+NAOqi timing, and human-robot safety require separate embodied evaluation.
+The robot-facing integration includes posture transitions, head motion and gaze, and speech
+through the NAO text-to-speech path. These capabilities were exercised during early inte-
+gration to confirm that admitted simple plans could reach physical adapters and produce
+observable robot behaviour. They were not evaluated with the repeated quantitative matrix
+used for the software-level results, so no physical success rate is reported.
+4.5 Models and Runtime Configuration
+The implementation can run with the NAO adapters or deterministic simulated skill adapters
+while retaining the same dialogue, grounding, planning, orchestration, and result contracts.
+Model and backend selection are supplied through runtime configuration, so changing an
+inference provider does not require a different ROS 2 interface.
+The primary evaluated configuration uses Qwen3-VL-30B-A3B-Instruct-AWQ for chatbot
+and planner inference through an OpenAI-compatible vLLM interface. The planner uses
+temperature0 .1and an 800-token output bound. A later matched runtime comparison
+exercised three Ollama-hosted models over a common semantic evaluation matrix; it is reported
+as a separate evidence scope in Chapter 6 and does not replace the primary qualification.
+Interface compatibility does not imply equivalent semantic behaviour. Model, backend,
+prompt version, sampling configuration, and token limits are therefore recorded as part of the
+experimental configuration and compared under the controls defined in Chapter 5.
+32
+
+=== PDF PAGE 44 ===
+Chapter 5
+Validation Methodology
+5.1 Validation Scope
+The evaluation tests whether the designed system works from a user request to a correct
+response or robot action. A case passes only when the request is interpreted correctly, the
+relevant world information is used, any required plan contains suitable skills in the correct
+order, the orchestrator executes only the accepted plan, and the final response agrees with
+the observed outcome.
+The unit of analysis is one user request under a fixed software, model, world-state, and skill
+configuration. Before an independent case, the declared scene and KB fixture is reset or
+verified; state is preserved only for an explicitly multi-turn or stateful sequence. The main
+questionnaire is entered through the ROSrqt chat interface, which provides repeatable text
+input to the same dialogue component used by the integrated system. Robot speech output is
+checked separately when it is part of the case.
+5.2 Validation Levels
+Table 5.1 separates the claims that can be supported by language and software evidence from
+those that require a physical observation.
+33
+
+=== PDF PAGE 45 ===
+Validation Methodology Juan David Bendek Williamson
+Table 5.1: Validation levels and supported claims.
+Level Required evidence Supported claim
+Semantic response Correct dialogue/knowledge route, rel-
+evant grounded entities, and an appro-
+priate response or planner request.
+The system understood the tested
+request and used the declared sym-
+bolic context.
+Software execution Valid plan, required skills in the cor-
+rect sequence, typed skill results, and a
+truthful final report.
+The integrated software completed
+or safely rejected the tested task.
+Physical outcome Direct robot, camera, or sensor obser-
+vation of the requested effect.
+The tested physical behaviour oc-
+curredunderthestatedconditions.
+Controlled skill adapters support semantic-response and software-execution claims by exposing
+the same call and result contracts as the robot-facing skills. Deterministic simulated outcomes
+provide repeatable success and failure conditions, while physical claims still require direct
+robot or sensor observation. Table 5.2 organises the method into the five modes used again in
+Chapter 6.
+Table 5.2: Five validation modes and their principal acceptance focus.
+Mode Path exercised Acceptance focus
+Simple dialogue Dialogue manager and chatbot
+response path
+One non-executable route, one coherent re-
+sponse, and no planner or skill activity.
+KB interaction Chatbot, grounded context, and
+KnowledgeCore
+Correct entities, properties, relations, and
+authorised state updates with no accidental
+robot action.
+Simple skill Grounding, planner, orchestrator,
+and one principal skill
+Correct target and arguments, one admitted
+execution path, typed result, and truthful
+report.
+Composite skill Planner and orchestrator across
+an ordered multi-step goal
+Complete skill coverage, preserved roles and
+targets, ordered dispatch, postconditions, and
+final coverage.
+Failure management Skill result, execution feedback,
+planner state, and dialogue clo-
+sure
+Correct goal and plan lineage, bounded re-
+plan or clarification, no obsolete-step continu-
+ation, and no false completion.
+5.3 Acceptance Criteria
+34
+
+=== PDF PAGE 46 ===
+Validation Methodology Juan David Bendek Williamson
+Table 5.3: Validation goals, acceptance rules, and evidence sources.
+Goal Pass rule Evidence source
+Route correctness The observed route equals the de-
+clared route. Dialogue and knowl-
+edgeturnsemitnoplannerrequest
+or execution feedback.
+Chatbot turn record, planner-
+request topic, and plan topic.
+Semantic-decision
+uniqueness
+One user turn produces one val-
+idated route before acknowledge-
+ment. A dialogue response fol-
+lowed by unintended execution is
+a failure even when both paths are
+individually observable.
+Turn identifier, route decision,
+planner request, dialogue re-
+sponse, and speech events.
+Plan validity Every candidate plan admitted for
+execution passes the Contract 5
+schema and the Contract 4 skill-
+name, argument, ordering, failure-
+policy, and lineage checks.
+Planner decision record,
+/intents, and orchestrator
+validation events.
+Skill and order cov-
+erage
+All required subgoals appear, for-
+bidden skills are absent, and the
+declared action-order constraints
+hold.
+Expected-plan definition and ob-
+served plan steps.
+Grounding use Required fixture entities appear
+in Contract 2 with canonical iden-
+tifiers and the declared people, ob-
+ject, and location roles.
+KB pre-query,
+/scene/summary, planner
+request, and grounded-context
+record.
+Target-set and role
+integrity
+The selected, planned, executed,
+and reported members equal the
+declared target set. People remain
+recipients or human targets; lo-
+cations and supports remain an-
+chors.
+Case definition, target selection,
+admitted plan, execution events,
+and structured report outcome.
+Execution valida-
+tion
+Only admitted steps are dis-
+patched, and every dispatch has a
+Contract 6 result and Contract 7
+feedback with matching lineage.
+Skill action events and
+/planner/execution_
+feedback.
+Safe failure An injected failure ends in a valid
+replan, clarification, help request,
+or truthful terminal failure. A
+false completion is a failure.
+Controlled skill result, plan ver-
+sions, dialogue act, and final re-
+sponse.
+35
+
+=== PDF PAGE 47 ===
+Validation Methodology Juan David Bendek Williamson
+Table 5.3 continued
+Goal Pass rule Evidence source
+Report coverage Every selected member with ex-
+ecution evidence appears in the
+structured outcome with the cor-
+rect status; the final response
+must not claim completion when
+evidence is incomplete.
+Contract 6 results, report out-
+come, report-result event, and
+final response.
+State freshness The pre-case fixture is verified, un-
+declared earlier entities are absent,
+and successful material effects are
+visible in a post-case KB query.
+Fixture definition, pre/post
+/kb/query, and skill world-
+state updates.
+5.4 Full End-to-End Questionnaire
+The questionnaire in Table 5.4 contains simple-dialogue, KB-interaction, simple-skill,
+composite-skill, and route-safety cases. Every dialogue and knowledge case explicitly forbids
+a planner request. The knowledge cases cover common entity features—name, type, colour,
+count, and location relation—as well as a KB update that remains outside the robot-action
+planner.
+Table 5.4: Twenty-two-case full end-to-end questionnaire.
+Case ID Exact utterance Expected
+route
+Required behaviour
+dialogue_greeting“Hey, how are you?” dialogue One natural response; no
+planner request.
+dialogue_favorite_movie“What is your favourite movie?” dialogue Natural answer; no planner
+request.
+dialogue_movie_followup“My favourite movie is Back to the Future!” dialogue Contextual acknowledge-
+ment; no planner request.
+dialogue_weekend_plans“Do you have any ideas for this weekend?” dialogue Advice only; no planner re-
+quest.
+dialogue_speed_of_light“What is the speed of light?” dialogue Informational answer; no
+planner request.
+kb_visible_now_baseline“What can you see now?” knowledge Answer from the declared
+state; no planner request.
+kb_probe_scene_update“What new objects can you see?” knowledge Use the newly inserted
+scene facts; no planner re-
+quest.
+kb_object_on_table“Which object is on the table?” knowledge Return the correct support
+relation; no planner re-
+quest.
+kb_cup_name“What is the cup called?” knowledge Return the stored name; no
+planner request.
+kb_multi_object_count“How many objects can you see?” knowledge Count objects without
+counting people or tables;
+no planner request.
+kb_cup_colour“What colour is the cup?” knowledge Return the stored colour;
+no planner request.
+36
+
+=== PDF PAGE 48 ===
+Validation Methodology Juan David Bendek Williamson
+Table 5.4 continued
+Case ID Exact utterance Expected
+route
+Required behaviour
+kb_update_red_cup“Add a red cup to your knowledge base.” knowledge Update symbolic state only;
+no robot plan is requested.
+skill_head_up“Move your head up.” execution Execute the required mo-
+tion and report the result.
+skill_pick_phone_generic“Pick up the phone.” execution Ground one phone before
+dispatchingpick_object.
+skill_pick_object_on_
+table
+“Pick up the object on the table.” execution Use the support relation to
+select one object.
+skill_look_at_person“Look at ALEX.” execution Keep ALEX as a person
+and gaze target.
+composite_head_all_
+directions
+“Move your head up, down, left, and right.” execution Preserve all requested mo-
+tions in the correct order.
+composite_bring_objects_
+to_person
+“Bring all the objects you can see to ALEX.”execution Preserve the object set and
+the human recipient.
+composite_kitchen_cup_
+to_operator
+“Go to the kitchen, find the cup, and bring it
+to me.”
+execution Preserve the location, ob-
+ject, recipient, and action
+order.
+composite_go_to_person_
+wave_report
+“Go to ALEX, wave, and tell me when you
+are finished.”
+execution Navigate, perform the
+greeting motion, and
+report completion.
+composite_walk_every_
+object_reports
+“Visit every object and tell me when you reach
+each one.”
+execution Visit each object once and
+report each arrival.
+dialogue_non_action_
+recipient_memory
+“Remember that ALEX is the recipient, but
+do not act yet.”
+dialogue Acknowledge without a
+planner request or robot ac-
+tion.
+5.5 Skill Execution and Failure Stress Testing
+The validation follows the same observable boundaries for robot-facing and simulated skill
+adapters. Robot skills provide evidence from the physical platform, whereas deterministic
+adapters reproduce the same result contract while allowing the outcome of an individual skill
+call to be selected. Multi-step deterministic fake-skill validation therefore stresses planning,
+dispatch, feedback, replanning, and reporting without changing the request or planner-visible
+skill definition.
+Failure injection is interpreted by its position within the accepted goal, as summarised in
+Table 5.5. A failure at the beginning tests whether the initial plan is stopped before later
+work is dispatched. A middle-stage failure tests whether completed work and goal lineage are
+preserved while the remaining sequence is revised. An end-stage failure tests final action or
+reporting closure. The retained evidence contains controlled beginning- and middle-stage skill
+failures; end-stage evidence is provided by terminal-report checks rather than by a dedicated
+last-skill failure injection.
+37
+
+=== PDF PAGE 49 ===
+Validation Methodology Juan David Bendek Williamson
+Table 5.5: Failure position and required recovery evidence.
+Position Injected or observed condi-
+tion
+Required evidence
+Beginning The first executable or target-
+confirmation step fails.
+The original plan stops, later obsolete
+steps are not dispatched, and the system
+replans, clarifies, or terminates truthfully.
+Middle One or more steps succeed before
+a later skill fails.
+Completed work remains correlated with
+the goal, the plan version changes when
+replanning occurs, and only valid remain-
+ing work is executed.
+End The final action, report, or termi-
+nal communication is unavailable
+or inconsistent.
+Completion is withheld until evidence
+is complete; retry, a bounded final con-
+tinuation, or truthful terminal failure is
+produced.
+The expected response depends on the controlled outcome. A successful case must complete
+all required steps and update the represented world state. A recoverable failure may produce
+a revised valid plan; missing information must produce clarification; and an unrecoverable
+failure must produce a truthful final message. No case passes if completion is reported after a
+failed or unexecuted step.
+5.6 Metrics
+All rates in Table 5.6 range from 0 to 1. For every metric, 1 is the best possible result and
+0 is the worst. Cases for which a metric is not applicable are excluded from that metric’s
+denominator.
+38
+
+=== PDF PAGE 50 ===
+Validation Methodology Juan David Bendek Williamson
+Table 5.6: Validation metrics and their interpretation.
+Metric Definition Interpretation
+Route accuracy Fraction of cases assigned to the expected dialogue,
+knowledge, or execution path.
+1: every route cor-
+rect; 0: none cor-
+rect.
+Valid-plan rate Fraction of execution cases that produce a plan
+accepted by the orchestrator.
+1: every plan valid;
+0: no plan valid.
+Required-skill coverage Fraction of required actions that appear in the
+accepted plans.
+1: no required ac-
+tion omitted; 0: all
+omitted.
+Step-order accuracy Fraction of ordered cases in which the required
+robot actions occur in the requested sequence.
+1: every sequence
+correct; 0: none cor-
+rect.
+Safe-failure rate Fraction of injected failures that end in a valid
+replan, clarification, or truthful failure.
+1: every failure han-
+dled safely; 0: none
+handled safely.
+Target-set exactness Fraction of target-bearing cases in which the ex-
+ecuted objects or people exactly match those re-
+quested.
+1: every target set
+exact; 0: none ex-
+act.
+Role integrity Fraction of cases in which people remain people,
+objects remain objects, and locations remain loca-
+tions.
+1: no role errors; 0:
+every case has a role
+error.
+Report coverage Fraction of attempted targets or actions repre-
+sented correctly in the final report.
+1: complete report-
+ing; 0: nothing re-
+ported correctly.
+Postcondition rate Fraction of required world-state changes confirmed
+by the post-execution KB query.
+1: every change con-
+firmed; 0: none con-
+firmed.
+Decision uniqueness Fraction of turns that produce one route decision
+without contradictory dialogue and execution be-
+haviour.
+1: every turn consis-
+tent; 0: every turn
+contradictory.
+A case passes only when every applicable acceptance criterion succeeds. Missing mandatory
+terminal evidence is a failure. Anot scoredcase, or a blank row caused by an unresolved
+global timeout, is excluded because the required observation is unavailable or cannot be
+correlated reliably.
+5.7 Model and Configuration Variability
+The ROS 2 interfaces and runtime contracts are model-independent, but the semantic outputs
+of compatible models are not assumed to be invariant. Two models can receive the same user
+39
+
+=== PDF PAGE 51 ===
+Validation Methodology Juan David Bendek Williamson
+request, grounded entity set, skill registry, and output schema while selecting different routes,
+target sets, arguments, or action sequences. Model comparisons are interpreted only when the
+case set, KB fixture, skill configuration, prompt version, sampling parameters, token limits,
+and execution policy are held constant. Results obtained from different configurations are
+reported as separate evidence scopes rather than pooled into one score.
+The primary Qwen3-VL runtime evaluation remains the principal qualification. A
+separate matched runtime comparison evaluates gemma4:31b-cloud, gemma4:cloud, and
+nemotron-3-super:cloud with the same ROS graph, container image, response-first turn
+pipeline, prompts, generation parameters, fixtures, skill policies, questionnaire definitions, and
+speech-evidence policy. Only the language model changes between these comparison runs.
+Table 5.7 defines the test profiles used in the cross-model results so that their names refer to
+explicit behaviours rather than internal run labels.
+Table 5.7: Test profiles used in the matched model comparison.
+Profile Behaviour exercised
+Environment grounding Eleven checks over declared people, objects, locations, relations, grouped
+targets, and follow-up state.
+Integrated questionnaire Dialogue, knowledge, simple-skill, composite-skill, and route-safety requests
+through the complete software path.
+Stateful KB sequence Add, revise, query, delivery post-effects, subsequent movement, and mixed-
+state querying.
+Repeated robustness Paraphrase, role exclusion, missing recipients, non-action memory, and
+multi-turn carry-over.
+Controlled multi-step skills Nine tasks using deterministic skill outcomes to test ordered dispatch,
+result handling, and reporting.
+Multi-capability tasks Seven demanding tasks that combine several of navigation, selection, ma-
+nipulation, posture, motion, reporting, and recovery.
+Fail-once navigation recovery One targeted execution in which the initial navigation call fails and the
+revised plan must preserve lineage and close truthfully.
+5.8 Research-Question Evidence Map
+Table 5.8 links each research question to the evidence used to answer it.
+40
+
+=== PDF PAGE 52 ===
+Validation Methodology Juan David Bendek Williamson
+Table 5.8: Research questions and validation evidence.
+RQ Profile Main metrics Claim boundary
+RQ1 Planner, skill-execution,
+and full end-to-end tests
+Valid-plan rate, skill coverage,
+and step-order accuracy
+Supported task families
+only.
+RQ2 Perception/grounding and
+full end-to-end tests
+Target-set exactness, role in-
+tegrity, and postcondition rate
+Declared simulated or ob-
+served world state.
+RQ3 Planner and orchestrator
+tests
+Invalid-plan rejection and ab-
+sence of unsupported skill dis-
+patch
+Tested schemas, arguments,
+and registered skills.
+RQ4 Controlled skill failures Safe-failure rate and truthful
+reporting
+Retained beginning-,
+middle-, and end-stage
+evidence.
+RQ5 Full end-to-end tests Route accuracy, decision
+uniqueness, and report cover-
+age
+Implemented component
+and interface boundaries.
+5.9 Threats to Validity
+The fixed questionnaire covers only a bounded part of natural language, and repeated
+development against known prompts may improve performance specifically on those prompts.
+The robustness set reduces this risk through paraphrase and repetition but does not estimate
+performance over unrestricted instructions. Controlled people, objects, and relations also
+simplify the grounding problem compared with an uncontrolled environment.
+Language-model output may vary even when the request, KB entities, prompt, and skill
+registry are unchanged. A single pass can therefore overstate reliability, while comparisons
+across different models or backend settings can confound model quality with configuration
+changes. The methodology addresses this by retaining all repetitions, separating configuration
+tuples, and limiting cross-model conclusions to matched evidence.
+Deterministic simulated adapters make it possible to test the same planner, orchestrator,
+feedback, and reporting logic independently of the robot platform. This reduces platform
+dependence and supports reuse through equivalent skill adapters. Simulated results do not
+measure physical navigation, grasping, manipulation, or safety. Physical observations in this
+thesis are limited to the capabilities exercised on NAO, while the software-level conclusions
+apply to platforms that provide equivalent skill and result interfaces.
+41
+
+=== PDF PAGE 53 ===
+Chapter 6
+Results
+6.1 Primary Evidence Scope
+The primary thesis evidence index contains 108 case records derived from 33 structured runtime
+artifacts. It combines the principal Qwen3-VL qualification with application-configuration
+comparisons and earlier integration observations. Table 6.1 separates these purposes because
+their denominators are not interchangeable. Missing mandatory evidence is included among
+the scoreable non-passes, while unavailable or uncorrelated observations are excluded.
+Table 6.1: Primary thesis evidence index by evaluation purpose.
+Evidence scope Records Pass Non-pass Excluded Purpose
+Primary frozen qualifica-
+tion
+72 64 8 0 Principal Qwen3-VL qualifi-
+cation under the frozen inte-
+grated configuration.
+Application comparisons 26 21 5 0 Qwen3-VL sampling, token-
+budget, timeout, and startup-
+state comparisons.
+Archived integration obser-
+vations
+10 1 7 2 Earlier Qwen3.5 and cloud-
+model observations retained for
+provenance rather than used in
+the matched comparison.
+Total 108 86 20 2 Primary thesis evidence
+index.
+The principal result is the first row: 64 of 72 records passed the complete primary qualification
+and eight were non-passes. A separate 191-record model-invariance supplement is reported in
+Section 6.5; its rows and denominators are not added to Table 6.1.
+42
+
+=== PDF PAGE 54 ===
+Results Juan David Bendek Williamson
+6.2 Primary Results by Validation Mode
+The end-to-end questionnaire covers the first four validation modes and one non-action route-
+safety case. Table 6.2 groups the route-safety case with simple dialogue because it requires
+acknowledgement without planner or skill activity. Twenty of the 22 exercised requirements
+passed.
+Table 6.2: Primary end-to-end questionnaire results by validation mode.
+Mode Cases Pass Fail Result boundary
+Simple dialogue 6 6 0 Five ordinary dialogue turns and one non-action
+recipient-memory turn remained outside execu-
+tion.
+KB interaction 7 6 1 Entity and relation queries passed; the symbolic
+update incorrectly entered the robot-action route.
+Simple skill 4 4 0 Required target, arguments, typed result, and
+report were observed.
+Composite skill 5 4 1 Four composites completed; the kitchen request
+did not preserve the human-recipient role or reach
+execution.
+Total 22 20 2 Twenty requirements passed and two failed.
+The KB failure changed symbolic state but produced an execution route, planner request,
+and the kb_add and report_result operations. The composite failure selected the kitchen
+as recipient_id, asked for clarification, and produced no execution feedback. The stop
+prevented unsupported dispatch, but the requested location, object, and human-recipient
+roles were not preserved and the task did not complete.
+The positive results establish that all four modes can traverse their intended component
+boundaries under the controlled fixtures. In the retained greeting-motion trace, the historical
+label wave_greet denotes the same greeting behaviour represented byperform_motion in
+the canonical thesis skill registry.
+6.2.1 Environment and Stateful Knowledge
+TheKB-interactionevidenceextendsbeyondthequestionnaire. Table6.3reportsthecontrolled
+environment and stateful KnowledgeCore profiles. All 11 environment cases and all seven
+stateful cases passed, including relation revision, delivery post-effects, subsequent movement,
+and follow-up querying.
+43
+
+=== PDF PAGE 55 ===
+Results Juan David Bendek Williamson
+Table 6.3: Grounding and symbolic-state profiles in the primary qualification.
+Profile Pass Cases Supported observation
+Environment 11 11 Declared entities, roles, relations, grouped targets,
+and follow-up state remained coherent.
+Stateful KB sequence 7 7 Add, revise, query, delivery post-effects, subse-
+quent movement, and mixed-state querying re-
+mained coherent.
+These results support symbolic grounding within the injected environment. They do not
+measure detector accuracy, and the later target-selection failures show that correct source
+context does not guarantee complete model-authored selection.
+6.3 Failure Management
+Controlled multi-step skill validation exercised the same planner, orchestrator, feedback,
+and result contracts used by robot-facing skills. Seven of the nine integrated cases passed.
+One omitted a phone from an “every object” target set, and one performed the expected
+missing-object search and help request but did not produce terminal closure. Both are failures
+under the acceptance criteria.
+The retained evidence distinguishes failure position without implying a balanced three-position
+experiment. The primary beginning-stage probe failed the first navigation call, advanced
+the plan version, preserved all four targets, completed the revised execution, and closed
+successfully. A middle-stage pick probe first completed object finding, failedpick_object,
+and then executed a revised scan–find–pick–report sequence. A blocked-delivery observation
+produced replanning after preparatory work but lacked terminal closure. End-stage evidence
+is consequently based on final reporting and closure rather than a dedicated last-skill injection.
+Table 6.4 summarises the supported stage-specific findings. Additional middle- and later-stage
+observations that were not part of the frozen primary matrix are used qualitatively rather
+than added to Table 6.1.
+44
+
+=== PDF PAGE 56 ===
+Results Juan David Bendek Williamson
+Table 6.4: Skill-execution and staged failure-management results.
+Evidence family Failure posi-
+tion
+Verdict Observed behaviour
+Controlled multi-step
+skills
+Mixed controlled
+outcomes
+7 passes, 2 fail-
+ures
+Successful simple and composite
+calls were observable; the failures
+were target omission and absent
+terminal closure.
+Navigation recovery Beginning Pass The first skill failure produced a
+new plan version, complete target
+preservation, recovery execution,
+and closure.
+Pick recovery Middle Pass A second-step pick failure produced
+a revised scan–find–pick–report
+sequence and completed.
+Blocked delivery Middle or late Fail Preparatory work and replanning
+were observed, but the recovery did
+not close.
+Terminal reporting End Fail Meaningful intermediate evidence
+was present, but completion was
+withheld without a final truthful
+outcome.
+6.4 Repeated Robustness and Multi-Capability Tasks
+Five fixed robustness prompts were repeated three times. Table 6.5 reports 12 passes in 15
+observations. The failures were distributed across grouped delivery, universal object selection,
+and multi-turn terminal reporting, showing that one passing sample would overstate reliability.
+45
+
+=== PDF PAGE 57 ===
+Results Juan David Bendek Williamson
+Table 6.5: Primary robustness cases across three repetitions.
+Case R1 R2 R3 Observed instability
+Paraphrased grouped delivery P P F One selected member omit-
+ted.
+Object-role exclusion P P F One required object omitted.
+Missing recipient P P P Correct safe behaviour in the
+three repetitions.
+Future recipient memory P P P Non-action memory and sub-
+sequent role use remained
+coherent.
+Multi-turn execution follow-up P F P One observation lacked the
+required final report.
+Total 5/5 4/5 3/5 12/15 passes.
+The seven multi-capability cases combine several requirements such as navigation, target
+selection, manipulation, posture, motion, reporting, and recovery within one request. Five
+passed and two were non-passes. In both non-passes, the model-authored plan omitted
+required capabilities. The registry and orchestrator rejected the incomplete plans before
+execution and returned truthful failure rather than partially performing a reduced task. This
+is evidence of containment, not successful completion of those two requests.
+6.5 Matched Model-Invariance Supplement
+The later matched runtime comparison contains 191 records across three Ollama-hosted models.
+It is a separate supplement to the primary evidence index. Missing mandatory terminal
+evidence is adjudicated as failure in the comparison index. Table 6.6 therefore reports 150
+passes, 32 failures, and nine rows excluded because they did not contain a complete scoreable
+outcome.
+Table 6.6: All retained records in the separate model-invariance supplement.
+Model Records Pass Fail Excluded
+gemma4:31b-cloud69 54 10 5
+gemma4:cloud61 52 9 0
+nemotron-3-super:cloud61 44 13 4
+Total 191 150 32 9
+The comparable profiles exclude the separate full navigation trace and observations without a
+scoreable outcome. Tables 6.7 and 6.8 give the exact profile-level outcomes. The resulting
+descriptive pass rates were 50/59 (84.7%), 51/60 (85.0%), and 43/56 (76.8%).
+46
+
+=== PDF PAGE 58 ===
+Results Juan David Bendek Williamson
+Table 6.7: Matched model results for the comparable standard suites.
+Model Comparable rate Environment Integrated questionnaire Stateful KB Robustness
+gemma4:31b-cloud50/59 (84.7%) 11/11 17/20 7/7 3/5
+gemma4:cloud51/60 (85.0%) 11/11 18/21 7/7 3/5
+nemotron-3-super:cloud43/56 (76.8%) 11/11 17/19 4/6 3/5
+Table 6.8 isolates the controlled multi-step tasks, the multi-capability tasks, and the fail-once
+navigation recovery check defined in Table 5.7. A targeted one-case recovery result was
+retained for gemma4:cloud and Nemotron; the Gemma 31B evidence contains a broader
+recovery trace rather than the same one-case profile.
+Table 6.8: Matched model results for execution-stress and targeted recovery suites.
+Model Controlled multi-step Multi-capability tasks Fail-once navigation
+gemma4:31b-cloud9/9 3/7 Not separately scored
+gemma4:cloud9/9 3/7 1/1
+nemotron-3-super:cloud8/9 0/6 1/1
+All three models passed the 11-case environment-grounding profile. Both Gemma variants
+also passed all seven stateful-KB cases and all nine controlled multi-step cases. Nemotron
+preserved the environment and fail-once navigation paths but showed additional KB wording
+omissions, terminal-evidence failures, and greater loss of multi-capability coverage. These
+outcomes show stable interface availability alongside model-sensitive semantic projection and
+planning.
+Seven cases failed for all three models. The intersection is concentrated in demanding
+composition, object-grounded picking, recipient clarification, and recovery.
+6.6 Answers to the Research Questions
+RQ1—Can the architecture produce coherent plans?Yes, for the bounded tested
+families. The primary questionnaire passed all four simple-skill cases and four of five composite
+cases, while the multi-capability profile passed five of seven. The supplement confirms that
+demanding composition remains model-sensitive.
+RQ2—Can it preserve grounded entities and symbolic state?Yes within the controlled
+fixtures. The primary environment and stateful KB profiles passed 11/11 and 7/7, and every
+supplementary model passed the same 11-case environment profile. KB wording and target
+selection nevertheless varied by model.
+RQ3—Can generated actions be constrained by reviewed interfaces?Yes for the
+tested schemas and registry. Invalid or incomplete plans did not cross the orchestrator
+boundary, and no retained result requires accepting an unregistered executable skill.
+47
+
+=== PDF PAGE 59 ===
+Results Juan David Bendek Williamson
+RQ4—Can execution failure be handled safely?Beginning-stage navigation and middle-
+stage pick failures demonstrated valid feedback-driven replanning. Fail-once navigation
+recovery also passed for gemma4:cloud and Nemotron. Later delivery, clarification, and
+terminal-closure evidence remained less consistent.
+RQ5—Does the modular separation improve auditability and reuse?Yes at the
+software-contract level. The same dialogue, grounding, plan, feedback, and result boundaries
+were exercised across vLLM, Ollama, deterministic simulated adapters, and NAO adapters.
+The matched supplement also shows why interface compatibility must remain distinct from
+model qualification.
+48
+
+=== PDF PAGE 60 ===
+Chapter 7
+Discussion
+7.1 Model and Backend Variation
+The primary result and the matched supplement answer different questions. The 64/72
+Qwen3-VL result qualifies one frozen configuration across the complete primary matrix. The
+191-record Ollama supplement instead asks which behaviours remain stable when the model
+changes under a largely fixed semantic runtime. Keeping these denominators separate prevents
+a broad comparison from weakening the evidential role of the primary qualification.
+The matched results show both stability and variation. Every model passed the environment
+profile, and both Gemma variants reproduced complete stateful-KB and controlled multi-
+step results. At the same time, the profile rates differed, particularly in multi-capability
+planning, KB wording, target selection, clarification, and closure. The architecture is therefore
+model-agnostic at the interface level but not model-invariant at the semantic-output level.
+7.2 Contract Containment and Qualification
+The strongest architectural finding is containment rather than uniformly correct generation.
+Typed requests, the reviewed skill registry, deterministic plan validation, execution lineage, and
+evidence-based reporting made route, target, plan, clarification, and closure errors observable.
+In the primary multi-capability profile, two incomplete plans were rejected before dispatch.
+This prevented partial execution from being reported as completion, although the user requests
+still failed.
+The primary questionnaire exposes the same distinction. The red-cup update reached Knowl-
+edgeCore but violated the knowledge-versus-execution route boundary. The kitchen request
+stopped safely but lost the location and human-recipient roles. Safe non-dispatch is preferable
+to executing an invalid plan, but it is not task success. A qualification procedure must
+therefore score semantic route and role preservation as well as runtime safety.
+The seven shared supplementary failures are useful because they limit simple model-quality
+49
+
+=== PDF PAGE 61 ===
+Discussion Juan David Bendek Williamson
+explanations. Their concentration in object-grounded picking, demanding composition,
+recipient clarification, and recovery identifies boundaries that merit further instrumentation.
+Shared outcomes identify behaviours that require more discriminating tests; model-specific
+outcomes remain evidence of semantic variance.
+7.3 Grounding, Roles, and Target Sets
+The controlled environment and stateful KB results show that compact symbolic grounding
+can preserve people, objects, locations, support relations, attributes, and post-action state
+across the implemented interfaces. The cross-model environment result further supports
+stable grounding transport during the matched runtime comparison. For the Gemma variants,
+complete stateful-KB results also show that KnowledgeCore transport and the principal
+query/revision paths remained available.
+Correct source context is nevertheless different from correct model-authored use of that
+context. A model can receive the relevant entities and still omit a member of an “all objects”
+set, assign a location to a recipient field, or omit required grounded terms from speech.
+Nemotron’s KB cases illustrate the last distinction: the evidence supports wording omissions,
+not failure of the underlying KB revision transport.
+Validation must consequently follow the entity set across request, grounding, target selection,
+admitted plan, execution, postcondition, and report. Role constraints are equally impor-
+tant: people remain recipients or human targets, locations remain anchors, and objects
+remain manipulable entities. Grounded context supports these decisions but does not replace
+deterministic comparison of the selected and required sets.
+7.4 Failure Handling, Physical Claims, and Portability
+The failure evidence is intentionally asymmetric. Beginning-stage navigation demonstrated a
+complete stop, versioned replan, target preservation, revised execution, and closure. Middle-
+stage pick evidence showed that completed work and lineage can survive a revised plan. Later
+blocked-delivery and missing-object observations showed that replanning can occur without
+reliable terminal closure. End-stage evidence therefore concerns final reporting and truthful
+completion, not a dedicated symmetric last-skill injection.
+Deterministic simulated adapters were essential for placing known outcomes at specific skill
+calls while retaining the robot-facing result contract. Their evidence supports software
+claims about admission, dispatch, replanning, postconditions, and reporting. Robot-facing
+posture, head-motion and gaze, and text-to-speech adapters were exercised during integration,
+providing an initial bridge from planned steps to observable NAO behaviour. These checks
+were not a repeated physical-performance evaluation and do not establish navigation accuracy,
+grasp reliability, manipulation success, perception accuracy, or human safety.
+The same distinction defines portability. Dialogue, grounding, plan, result, feedback, and
+50
+
+=== PDF PAGE 62 ===
+Discussion Juan David Bendek Williamson
+dialogue-act contracts can be reused if another platform provides an equivalent reviewed
+skill registry and typed adapters. NAO speech, motion, posture, gaze, and any physical
+manipulation remain adapter-specific. The matched model comparison supports reuse of the
+interface boundary across backends, while also demonstrating that neither a new model nor a
+new robot inherits behavioural qualification automatically.
+Taken together, RQ1 is supported for the tested task families, RQ2 for the controlled symbolic
+fixtures, RQ3 for the reviewed schemas and registry, RQ4 for the observed beginning- and
+middle-stage recoveries with a weaker closure boundary, and RQ5 at the interface and
+auditability level. The architecture converts several model failures from silent execution risks
+into explicit non-passes, but it does not establish unrestricted autonomy or exhaustive safety.
+51
+
+=== PDF PAGE 63 ===
+Chapter 8
+Limitations and Future Work
+8.1 Current Limitations
+The evaluation is scenario-based. The primary evidence index and fixed questionnaire provide
+bounded evidence over known prompts, fixtures, skills, and failure policies rather than
+exhaustive coverage of natural language or world states. Repeated development against these
+prompts may also improve them more than unseen requests.
+Only Qwen3-VL completed the full primary qualification. The separate three-model Ol-
+lama supplement uses one runtime test series per model and therefore supports descriptive
+engineering comparison rather than statistical ranking.
+Observability is incomplete for a small part of the supplementary evidence. Not-scored and
+unresolved timeout rows were excluded from strict denominators because they do not provide
+a complete correlated outcome.
+The failure-position evidence is asymmetric. Controlled beginning- and middle-stage failures
+were retained, whereas end-stage evidence concerns missing final action or report closure
+rather than a dedicated last-skill injection. The results therefore support the observed recovery
+patterns but not a balanced comparison across every possible failure position.
+Most execution evidence uses deterministic simulated skill adapters and controlled KB fixtures.
+Posture transitions, head motion and gaze, and text-to-speech were exercised through robot-
+facing adapters during integration, but not with the repeated trial matrix used for the
+software results. The evidence therefore supports software-contract, replan, and symbolic-
+state conclusions but not physical navigation, grasping, manipulation, perception accuracy, or
+human safety. Object detection was disabled in the principal semantic profile, so detector
+performance remains outside the primary result.
+52
+
+=== PDF PAGE 64 ===
+Limitations and Future Work Juan David Bendek Williamson
+8.2 Future Work
+8.2.1 Model Qualification and Semantic Guards
+Parameter-efficient post-training, such as LoRA, could target exact role preservation, universal-
+set coverage, valid structured output, clarification wording, plan completeness, and truthful
+terminal closure. Training and evaluation sets should be separated by task template, entity
+names, and paraphrase family. Any adapted or replacement model must repeat the complete
+primary qualification and the sensitive matched cases rather than inherit qualification from
+endpoint compatibility.
+Deterministic guards should also compare requested and selected cardinalities, enforce ob-
+ject/person/location role types, require every admitted composite capability to appear in the
+plan, and verify report coverage against attempted targets. Knowledge-only mutations should
+bypass the robot-action planner by construction. Terminal closure should become an explicit
+orchestrator obligation with a deterministic failure reason when the language path cannot
+formulate the required response.
+8.2.2 Embodied Validation and Portability
+A separate physical evaluation should extend the existing posture, head-motion, gaze, and
+speech checks with direct observations, repeated trial counts, and any supported navigation or
+manipulation adapters. A detector-enabled profile should test freshness, identity continuity,
+ambiguity, and disagreement between perception and authored KB facts. These results must
+remain separate from deterministic simulated-skill evidence.
+Portability should be evaluated by implementing the same reviewed contracts on a second
+ROS-compatible platform. Reuse would be demonstrated only if the alternative adapters
+provide equivalent typed evidence and pass the same software qualification without changing
+planner-facing semantics.
+8.2.3 Evidence and Reproducibility
+Future evaluations should retain one immutable runtime tuple, machine-readable manifests,
+endpoint identity, startup logs, raw traces, derived indexes, and rendered summaries generated
+from the same aggregate source. Sensitive cases should be repeated independently across
+models before inferential comparisons are attempted. Automated checks should reject reports
+when status semantics, denominators, shared-case intersections, or checksums disagree.
+The primary 108-record index and the separate 191-record model supplement provide fixed
+baselines for these extensions. New evaluations should be added as separately identified
+evidence scopes rather than overwriting either dataset.
+53
+
+=== PDF PAGE 65 ===
+Chapter 9
+Conclusion
+This thesis presented the design, integration, and validation of a modular LLM-based inter-
+active architecture implemented with the NAO robot. The contribution combines dialogue
+routing, compact symbolic grounding, structured planning, a reviewed skill registry, determin-
+istic orchestration, typed execution feedback, skill adapters, and evidence-based reporting.
+The principal Qwen3-VL qualification produced 64 passes and eight non-passes across 72
+records, and the 22-case end-to-end questionnaire produced 20 passes and two failures. The
+separate 191-record comparison showed that the same interfaces could be exercised with three
+Ollama-hosted models while semantic behaviour varied in composition, grounded selection,
+clarification, and terminal closure. All three supplementary models preserved the environment
+profile, while their remaining results confirmed that interface compatibility does not imply
+equivalent semantic or planning behaviour.
+The architecture demonstrated complete beginning-stage recovery in the fail-once navigation
+case and preserved completed work during a middle-stage pick replan. It also rejected
+incomplete composite plans before execution. These findings show that generated proposals can
+be constrained by deterministic interfaces and that model errors need not become unrestricted
+robot actions. They do not show that every task or recovery completes successfully, particularly
+when target coverage, roles, clarification, or final reporting is incomplete.
+The research aim is therefore supported within the tested scope. Language-model dialogue and
+planning can participate in an integrated robot architecture when their outputs are grounded,
+validated against reviewed skills, dispatched deterministically, and checked against typed
+feedback and symbolic postconditions. These boundaries do not eliminate non-determinism.
+They make it observable, restrict its execution authority, and provide a repeatable qualification
+procedure for each model and runtime configuration.
+54
+
+=== PDF PAGE 66 ===
+Appendix A
+Full Runtime Contracts
+The runtime contracts are described in Section 4.1. This appendix provides a compact
+reference for the implemented skill interfaces.
+A.1 Runtime Skill Inventory
+Table A.1 gives the compressed runtime projection used by the planner and orchestrator. The
+inventory contains the twelve planner-visible robot and interaction skills. Knowledge-base
+add, revise, and remove operations are not included because they are knowledge-component
+interfaces rather than robot skills.
+55
+
+=== PDF PAGE 67 ===
+Full Runtime Contracts Juan David Bendek WilliamsonTable A.1: Compressed runtime skill inventory and registry values.
+Skill and category Required
+parameters
+Expected effect or evidence Known failure modes Executor and status
+scan
+perception none refreshed scene evidence and typed
+scan payload
+no_person,objects_only,backend_unavailable,
+unexpected_payload
+orchestrator.scan; first-party
+find_object
+perceptiontargetobject or person evidence is returnednot_found,ambiguous,backend_unavailable fake.find_object; fake
+navigate_to
+navigationtargetrobot arrives at the target locationpath_blocked,unknown_location,safety_disabled fake.navigate_to; fake
+walk_to
+navigation none short local walking segment is executed
+or dry-run
+invalid_local_goal,safety_disabled,
+path_blocked,naoqi_move_failed
+orchestrator.walk_to; hybrid
+bring_object
+manipulationtarget,recipientobject is delivered to recipient or
+destination
+acquisition_failure,navigation_failure,
+delivery_blocked,recipient_unavailable
+fake.bring_object; fake
+place_object
+manipulationtarget,destinationobject is released and a support
+relation is added
+destination_unavailable,invalid_support,
+no_held_object,placement_failed
+fake.place_object; fake
+pick_object
+manipulationtargetrobot holds the object and updates its
+support relation
+object_unavailable,unreachable,already_held,
+grasp_failed
+fake.pick_object; fake
+perform_motion
+embodimentobjectrobot posture or head orientation
+changes
+unsupported_motion,dispatch_failed orchestrator.perform_motion;
+first-party
+look_at
+attention none robot gaze is redirected or resetmissing_target,dispatch_failed orchestrator.look_at; first-party
+report_result
+communication none user receives a result summary through
+robot speech
+missing_summary,say_dispatch_failed orchestrator.report_result;
+first-party
+ask_user
+communication none structured clarification request obtains
+missing user information
+missing_prompt,dialogue_relay_unavailable orchestrator.ask_user;
+first-party
+inspect_area
+perceptiontargetscene evidence for the target area is
+returned
+ambiguous,area_unknown,backend_unavailable fake.inspect_area; fake
+56
+
+=== PDF PAGE 68 ===
+Full Runtime Contracts Juan David Bendek Williamson
+The inventory separates each planner-facing skill name from its executor. In the display column,
+orchestrator.* abbreviates nao_orchestrator.*, andfake.* abbreviates fake_skills.*.
+A greeting wave is represented as a namedperform_motion action rather than as a separate
+skill.
+57
+
+=== PDF PAGE 69 ===
+Appendix B
+Launch Commands
+The command below starts the compact planner-enabled simulator profile. Scored validation
+bundles record the complete launch argument tuple described in Chapter 5.
+1ros2 launch n a o _c h a t bo t n a o _ c h a t b o t _ s i m _ d e m o . launch . py \
+2s t a r t _ p l a n n e r _ l l m := true \
+3c h a t b o t _ p l a n n e r _ m o d e _ e n a b l e d := true \
+4p l a n n e r _ l l m _ t h i n k := false
+58
+
+=== PDF PAGE 70 ===
+Appendix C
+Validation Log Template
+Table C.1 shows the fields used to index one validation case. Machine-readable traces and
+run manifests remain the authoritative evidence for aggregate results.
+Field Value
+Case IDNamed questionnaire or stress-test case
+User commandPaste command
+ModelModel name
+Planner requestPath or pasted payload
+Planner outputPath or pasted payload
+Execution feed-
+back
+Path or pasted payload
+Dialogue actPath or pasted payload
+Outcomesuccess / failure / recovered / clarification
+NotesObservations
+Table C.1: Validation log template.
+59
+
+=== PDF PAGE 71 ===
+Appendix D
+Primary Thesis Evidence Index
+D.1 Dataset Scope and Attachment
+The primary thesis evidence index is a provenance index over the retained qualification
+artifacts. It contains 108 case records and 24 fields. The raw JSON files in the primary
+evidence archive remain authoritative for complete event order, payloads, and timing. The
+accompanying machine-readable index is embedded in this PDF as an attachment:
+Primary index:dataset.csv
+The separate 191-record model-invariance supplement is also attached so that its rows remain
+distinct from the primary denominator:
+Model supplement:191-record comparison CSV
+PDF viewers differ in how they display attachments. If an icon is not interactive, the external
+file with the matching SHA-256 value in Table D.2 is the same evidence index used for the
+reported aggregates.
+60
+
+=== PDF PAGE 72 ===
+Primary Thesis Evidence Index Juan David Bendek Williamson
+D.2 Run Inventory
+Table D.1: Machine-derived archive inventory used by the primary evidence index.
+Archive group Source files Case records Purpose
+current_v3412 72 Frozen primary qualification, includ-
+ing two zero-case state snapshots.
+ablations13 26 Sampling, token-budget, timeout, and
+startup-state evidence.
+historical_vllm3 6 Earlier Qwen3.5 route and multi-
+capability evidence.
+historical_ollama3 3 Historical reserve-model multi-
+capability probes.
+current_ollama_switch2 1 Model-resolution record and current
+Gemma smoke result.
+Total 33 108 Complete primary retained in-
+dex.
+D.3 Field Dictionary
+The 24 machine-readable fields are grouped as follows:
+• Provenance and identity:record_id, source_file, run_group, backend, model,
+case_set,case_name, andcategory.
+•Adjudication:status,expected_outcome,reasons, andattribution_class.
+• Context and consistency: all_required_context, evidence_consistent, and
+route_observed.
+• Runtime observations: planner_request_observed, execution_feedback_
+observed,clarification_observed,failure_observed, andreplan_observed.
+• Event counts:fallback_total, target_selection_count, executed_skill_count,
+andspoken_text_count.
+The thesis-facing status codes arepass,fail, andnot scored. Missing mandatory terminal
+evidence is adjudicated as failure; not-scored and unresolved timeout rows are excluded from
+strict denominators. Run groups, exact model names, attribution classes, and source paths
+remain available in the attached indexes.
+61
+
+=== PDF PAGE 73 ===
+Primary Thesis Evidence Index Juan David Bendek Williamson
+D.4 Evidence Integrity
+Table D.2: SHA-256 identifiers for the supplied evidence files.
+File SHA-256
+dataset.csv be4d7d9b0499557cb9a16ba08cba65d58c011863affcaff74211b3e6c57931ce
+model-invariance-dataset-191.csv ef7502f8dacf216ae061c93c2eb6b220265e62f9c29c1ade49e6ca9c98cb07c4
+TFM_Prism_Surgical_Revision_Package_
+2026-07-22.zip
+6643e931422df8f0e0fdde2215f0f30b8280ef552437b63d47db7885004edd36
+nao_ros4hri_model_agnostic_evidence_
+2026-07-20.zip
+9e49b71bd633a8f2005858bbb145dcb5be4917cbf37c2f34c6e6ee05d65b1992
+Model_Agnostic_Runtime_Qualification_Report.
+docx
+225c38378bfc175c69c8bb9d23b1dcdb90516473607026d8d99d4d4a8d7667c7
+The printed 108-row case index has been removed because it duplicates the embedded primary
+CSV. The attachment retains the complete row-level index, while this appendix preserves its
+scope, field semantics, archive inventory, and checksum.
+62
+
+=== PDF PAGE 74 ===
+Bibliography
+Ahn, Michael, Anthony Brohan, Noah Brown, Yevgen Chebotar, Omar Cortes, Byron David,
+Chelsea Finn, Chuyuan Fu, Keerthana Gopalakrishnan, Karol Hausman, et al. (2022). “Do
+As I Can, Not As I Say: Grounding Language in Robotic Affordances”. In:arXiv preprint
+arXiv:2204.01691.
+Bastianelli, Emanuele, Domenico D. Bloisi, Roberto Capobianco, Guglielmo Gemignani,
+Luca Iocchi, and Daniele Nardi (2013). “Knowledge representation for robots through
+human-robot interaction”. In:arXiv preprint arXiv:1307.7351.
+Brohan, Anthony, Noah Brown, Justice Carbajal, Yevgen Chebotar, Xi Chen, Krzysztof
+Choromanski, Tianli Ding, Danny Driess, Avinava Dubey, Chelsea Finn, et al. (2023).
+“RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control”. In:
+arXiv preprint arXiv:2307.15818.
+Cooper, Sara, Bartomeu Pou, Arnau Mayoral-Macau, Alberto Redondo, David Rios, and
+Raquel Ros (2026). “EMOROBCARE: A Low-Cost Social Robot for Supporting Children
+with Autism in Therapeutic Settings”. In:Social Robotics + AI. Vol. 16131. Lecture Notes
+in Computer Science. Singapore: Springer, pp. 607–615.doi:10.1007/978-981-95-2379-
+5_53.
+Driess, Danny, Fei Xia, Mehdi S. M. Sajjadi, Corey Lynch, Aakanksha Chowdhery, Brian Ichter,
+Ayzaan Wahid, Jonathan Tompson, Quan Vuong, Tianhe Yu, et al. (2023). “PaLM-E: An
+Embodied Multimodal Language Model”. In:arXiv preprint arXiv:2303.03378.
+Erol, Kutluhan, James Hendler, and Dana S. Nau (1994). “HTN Planning: Complexity and
+Expressivity”. In:Proceedings of the Twelfth National Conference on Artificial Intelligence.
+AAAI Press, pp. 1123–1128.
+Fong, Terrence, Illah Nourbakhsh, and Kerstin Dautenhahn (2003). “A survey of socially
+interactive robots”. In:Robotics and Autonomous Systems42.3–4, pp. 143–166.
+Georgievski, Ilche and Marco Aiello (2014). “An Overview of Hierarchical Task Network
+Planning”. In:arXiv preprint arXiv:1403.7426.
+Goodrich, Michael A. and Alan C. Schultz (2007). “Human-robot interaction: a survey”. In:
+Foundations and Trends in Human-Computer Interaction1.3, pp. 203–275.
+Gouaillier, David, Vincent Hugel, Pierre Blazevic, Chris Kilner, Jérôme Monceaux,
+Pascal Lafourcade, Brice Marnier, Julien Serre, and Bruno Maisonnier (2008). “The
+NAO humanoid: a combination of performance and affordability”. In:arXiv preprint
+arXiv:0807.3223.
+63
+
+=== PDF PAGE 75 ===
+Bibliography Juan David Bendek Williamson
+Grassi, Lucrezia, Carmine Tommaso Recchiuto, and Antonio Sgorbissa (2021). “Knowledge
+triggering, extraction and storage via human-robot verbal interaction”. In:arXiv preprint
+arXiv:2104.11170.
+Huang, Wenlong, Pieter Abbeel, Deepak Pathak, and Igor Mordatch (2022a). “Language
+Models as Zero-Shot Planners: Extracting Actionable Knowledge for Embodied Agents”.
+In:International Conference on Machine Learning.
+— (2022b). “Language Models as Zero-Shot Planners: Extracting Actionable Knowledge for
+Embodied Agents”. In:arXiv preprint arXiv:2201.07207.
+Huang, Wenlong, Fei Xia, Ted Xiao, Harris Chan, Jacky Liang, Pete Florence, Andy Zeng,
+et al. (2022c). “Inner Monologue: Embodied Reasoning through Planning with Language
+Models”. In:arXiv preprint arXiv:2207.05608.
+Kim, Moo Jin, Karl Pertsch, Siddharth Karamcheti, Ted Xiao, Ashwin Balakrishna, Suraj
+Nair, Rafael Rafailov, Ethan Foster, Grace Lam, Pannag Sanketi, et al. (2024). “OpenVLA:
+An Open-Source Vision-Language-Action Model”. In:arXiv preprint arXiv:2406.09246.
+Lemaignan, Séverin and contributors (2026).KnowledgeCore: an RDF-backed knowledge base
+for robotic applications.https://github.com/severin- lemaignan/knowledge_core .
+Open-source software reused by the implementation; accessed July 20, 2026.
+Li, Junnan, Dongxu Li, Silvio Savarese, and Steven Hoi (2023). “BLIP-2: Bootstrapping
+Language-Image Pre-training with Frozen Image Encoders and Large Language Models”.
+In:arXiv preprint arXiv:2301.12597.
+Liang, Jacky, Wenlong Huang, Fei Xia, Peng Xu, Karol Hausman, Brian Ichter, Pete Florence,
+and Andy Zeng (2022). “Code as Policies: Language Model Programs for Embodied
+Control”. In:arXiv preprint arXiv:2209.07753.
+Liu, Bo, Yuqian Jiang, Xiaohan Zhang, Qiang Liu, Shiqi Zhang, Joydeep Biswas, and Peter
+Stone (2023a). “LLM+P: Empowering Large Language Models with Optimal Planning
+Proficiency”. In:arXiv preprint arXiv:2304.11477.
+Liu, Haotian, Chunyuan Li, Qingyang Wu, and Yong Jae Lee (2023b). “Visual Instruction
+Tuning”. In:arXiv preprint arXiv:2304.08485.
+Macenski, Steve, Tully Foote, Brian Gerkey, Chris Lalancette, and William Woodall (2022).
+“Robot Operating System 2: Design, architecture, and uses in the wild”. In:Science
+Robotics7.66, eabm6074.
+McDermott, Drew, Malik Ghallab, Adele Howe, Craig Knoblock, Ashwin Ram, Manuela
+Veloso, Daniel Weld, and David Wilkins (1998).PDDL: The Planning Domain Definition
+Language. Tech. rep. CVC TR-98-003/DCS TR-1165. Yale Center for Computational
+Vision and Control.
+Mohamed, Youssef and Séverin Lemaignan (2020). “ROS for Human-Robot Interaction”. In:
+arXiv preprint arXiv:2012.13944.
+Nau, Dana S., Tsz-Chiu Au, Okhtay Ilghami, Ugur Kuter, J. William Murdock, Dan Wu,
+and Fusun Yaman (2003). “SHOP2: An HTN Planning System”. In:Journal of Artificial
+Intelligence Research20, pp. 379–404.
+Open Robotics (2025).Robot Operating System 2 Documentation. Accessed as project back-
+ground documentation.
+64
+
+=== PDF PAGE 76 ===
+Bibliography Juan David Bendek Williamson
+Quigley, Morgan, Ken Conley, Brian Gerkey, Josh Faust, Tully Foote, Jeremy Leibs, Rob
+Wheeler, and Andrew Y. Ng (2009). “ROS: an open-source Robot Operating System”. In:
+ICRA Workshop on Open Source Software.
+ROS4HRI Community (2025).ROS4HRI: ROS for Human-Robot Interaction. Accessed as
+project background documentation.
+Saxena, Ashutosh, Ashesh Jain, Ozan Sener, Aditya Jami, Dipendra K. Misra, and Hema S.
+Koppula (2014). “RoboBrain: Large-scale knowledge engine for robots”. In:arXiv preprint
+arXiv:1412.0691.
+Shinn, Noah, Federico Cassano, Edward Berman, Ashwin Gopinath, Karthik Narasimhan, and
+Shunyu Yao (2023). “Reflexion: Language Agents with Verbal Reinforcement Learning”.
+In:arXiv preprint arXiv:2303.11366.
+Tenorth, Moritz and Michael Beetz (2013). “KnowRob: A knowledge processing infrastructure
+for cognition-enabled robots”. In:The International Journal of Robotics Research32.5,
+pp. 566–590.
+— (2017). “Representations for robot knowledge in the KnowRob framework”. In:Artificial
+Intelligence247, pp. 151–169.
+Valmeekam, Karthik, Matthew Marquez, Sarath Sreedharan, and Subbarao Kambhampati
+(2023). “On the Planning Abilities of Large Language Models: A Critical Investigation”.
+In:arXiv preprint arXiv:2305.15771.
+Yao, Shunyu, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik Narasimhan, and Yuan
+Cao (2022). “ReAct: Synergizing Reasoning and Acting in Language Models”. In:arXiv
+preprint arXiv:2210.03629.
+65

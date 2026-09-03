@@ -1,0 +1,42 @@
+[
+  {
+    "slide": 1,
+    "id": "18",
+    "reason": "User requested a closer in-frame crop of the original photograph; preserve title content and photo bytes."
+  },
+  {
+    "slide": 13,
+    "id": "14",
+    "reason": "Remove the developing abstraction-level taxonomy, as requested globally."
+  },
+  {
+    "slide": 17,
+    "id": "5",
+    "reason": "Focus this slide on result and feedback ownership."
+  },
+  {
+    "slide": 17,
+    "id": "13",
+    "reason": "Avoid implying that the planner speaks."
+  },
+  {
+    "slide": 17,
+    "id": "14",
+    "reason": "Make the distinction between structured status and speaking explicit."
+  },
+  {
+    "slide": 17,
+    "id": "15",
+    "reason": "Remove the requested planner-topic-to-dialogue-layer shorthand."
+  },
+  {
+    "slide": 21,
+    "id": "15",
+    "reason": "Express the approved supervision statement in the presenter’s first-person voice."
+  },
+  {
+    "slide": 46,
+    "id": "16",
+    "reason": "Native PowerPoint QA: wrap the accepted label to restore its gutter; preserve all words and slide structure."
+  }
+]

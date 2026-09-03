@@ -1,0 +1,3505 @@
+[
+  {
+    "slide": 1,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "OPENING",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "01",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "MASTER'S THESIS DEFENCE",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "Design, Integration, and\nValidation of a Modular\nLLM-Based Interactive\nArchitecture",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "A NAO-centred ROS 2 architecture for grounded dialogue, structured planning, deterministic execution, and evidence-based reporting.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "Juan David Bendek Williamson    •    Supervised by Raquel Ros    •    2025–2026",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "IIIA-CSIC / Universitat Autònoma de Barcelona\nMSc Modelling for Science and Engineering",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "ROS 2\nLLM\nNAO",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 2,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "PROBLEM",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "02",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "THE PROBLEM",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "A plausible plan is not yet a safe robot action.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "Language is flexible",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "• Users refer to people, objects, and prior turns.\n\n• One request can mix dialogue, knowledge, and action.\n\n• A fluent plan can still omit targets or invent unsupported behaviour.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "Robots require evidence",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "• Capabilities and arguments must be checked before dispatch.\n\n• Identity, order, and lineage must survive execution.\n\n• Completion must follow typed results and verified effects.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "Example: “Bring all the objects you can see to ALEX.”",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 3,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "QUESTION",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "03",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "RESEARCH QUESTION AND OBJECTIVES",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "The study asks how flexibility can be integrated without surrendering execution control.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "How can a modular robot architecture integrate dialogue, symbolic grounding, planning, deterministic execution, and feedback while preserving clear responsibility boundaries and evidence-based communication?",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "Integrate",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "dialogue, grounding, planning, orchestration, and skills through explicit ROS 2 interfaces",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "Constrain",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "candidate plans through reviewed capabilities and deterministic admission before dispatch",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "Validate",
+        "placeholder": false
+      },
+      {
+        "shapeId": "20",
+        "name": "",
+        "text": "full turns, controlled failures, symbolic postconditions, and truthful reporting",
+        "placeholder": false
+      },
+      {
+        "shapeId": "21",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "22",
+        "name": "",
+        "text": "RQ1 plans",
+        "placeholder": false
+      },
+      {
+        "shapeId": "23",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "24",
+        "name": "",
+        "text": "RQ2 grounding",
+        "placeholder": false
+      },
+      {
+        "shapeId": "25",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "26",
+        "name": "",
+        "text": "RQ3 admission",
+        "placeholder": false
+      },
+      {
+        "shapeId": "27",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "28",
+        "name": "",
+        "text": "RQ4 recovery",
+        "placeholder": false
+      },
+      {
+        "shapeId": "29",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "30",
+        "name": "",
+        "text": "RQ5 ownership",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 4,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "PRINCIPLE",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "04",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "DESIGN PRINCIPLE",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "The architecture contains model variation instead of assuming it away.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "1",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "Structure",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "Generated outputs enter typed request and plan contracts.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "2",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "Validate",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "Unsupported skills, roles, arguments, and incomplete coverage are rejected.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "3",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "Execute",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "The orchestrator controls ordered dispatch and plan lineage.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "20",
+        "name": "",
+        "text": "4",
+        "placeholder": false
+      },
+      {
+        "shapeId": "21",
+        "name": "",
+        "text": "Report",
+        "placeholder": false
+      },
+      {
+        "shapeId": "22",
+        "name": "",
+        "text": "Typed results and postconditions constrain user-facing claims.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "23",
+        "name": "",
+        "text": "Deterministic interfaces do not make generation deterministic. They make variation attributable and restrict its execution authority.",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 5,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "ARCHITECTURE",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "05",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "ARCHITECTURE AND RUNTIME FLOW",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "Each uncertainty has an owner, and evidence returns through the same lineage.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "Dialogue",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "turn lifecycle\nand speech",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "→",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "Chatbot",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "route and\ngrounded request",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "→",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "Planner",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "candidate plan\nand supervision",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "→",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "20",
+        "name": "",
+        "text": "Orchestrator",
+        "placeholder": false
+      },
+      {
+        "shapeId": "21",
+        "name": "",
+        "text": "admission, dispatch,\nfeedback",
+        "placeholder": false
+      },
+      {
+        "shapeId": "22",
+        "name": "",
+        "text": "→",
+        "placeholder": false
+      },
+      {
+        "shapeId": "23",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "24",
+        "name": "",
+        "text": "Skills",
+        "placeholder": false
+      },
+      {
+        "shapeId": "25",
+        "name": "",
+        "text": "typed result\nand effects",
+        "placeholder": false
+      },
+      {
+        "shapeId": "26",
+        "name": "",
+        "text": "→",
+        "placeholder": false
+      },
+      {
+        "shapeId": "27",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "28",
+        "name": "",
+        "text": "Dialogue",
+        "placeholder": false
+      },
+      {
+        "shapeId": "29",
+        "name": "",
+        "text": "one evidence-based\nclosure",
+        "placeholder": false
+      },
+      {
+        "shapeId": "30",
+        "name": "",
+        "text": "Goal ID  •  plan ID  •  plan version  •  stable step IDs",
+        "placeholder": false
+      },
+      {
+        "shapeId": "31",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "32",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "33",
+        "name": "",
+        "text": "Symbolic evidence",
+        "placeholder": false
+      },
+      {
+        "shapeId": "34",
+        "name": "",
+        "text": "KnowledgeCore and scene grounding provide bounded entities, roles, locations, and relations.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "35",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "36",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "37",
+        "name": "",
+        "text": "Execution evidence",
+        "placeholder": false
+      },
+      {
+        "shapeId": "38",
+        "name": "",
+        "text": "Robot-facing or simulated adapters return the same typed result boundary.",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 6,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "CONTRACTS",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "06",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "RUNTIME CONTRACTS",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "Explicit interfaces separate proposal quality from execution safety.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "Planner proposes",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "• structured goal and target selection\n\n• ordered candidate steps\n\n• retry or replan policy",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "Admission decides",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "• registered skill and arguments\n\n• role and target-set integrity\n\n• coverage, dependencies, and lineage",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "Executor dispatches",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "• only accepted steps\n\n• typed status and effects\n\n• correlated feedback",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "Safe rejection prevents invalid dispatch, but it does not convert an incomplete plan into success.",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 7,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "GROUNDING",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "07",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "GROUNDING AND SKILL BOUNDARIES",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "Available context supports a decision, but fresh evidence proves an action.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "Role-preserving symbolic context",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "person → recipient or human target\nobject → manipulable entity\nlocation → navigation anchor\nsupport → object relation\n\nrequested → selected → planned → executed → reported",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "Robot-facing in v1",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "Speech, posture and head motion were integrated. Look-at used a real adapter, while the primary profile remained fake-by-default.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "Controlled adapters in v1",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "Navigation, find, pick, place, bring, walk and wave exposed deterministic success and failure outcomes through the same result contract.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "The detector and physical manipulation remain separate evidence seams.",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 8,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "VALIDATION",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "08",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "VALIDATION METHOD",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "A case passed only when semantics, execution, effects, and reporting agreed.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "A",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "Semantic route",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "Correct dialogue, knowledge, or execution path",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "B",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "Accepted plan",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "Complete targets, roles, skills, order, and lineage",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "C",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "Controlled outcome",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "Success, failure, clarification, or bounded replan",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "20",
+        "name": "",
+        "text": "D",
+        "placeholder": false
+      },
+      {
+        "shapeId": "21",
+        "name": "",
+        "text": "Verified closure",
+        "placeholder": false
+      },
+      {
+        "shapeId": "22",
+        "name": "",
+        "text": "Postcondition and final report agree with evidence",
+        "placeholder": false
+      },
+      {
+        "shapeId": "23",
+        "name": "",
+        "text": "One unit of analysis = one user request under a fixed software, model, world-state, and skill configuration.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "24",
+        "name": "",
+        "text": "Scenario-based software and integration validation, not unrestricted robot-task success or human-subject evaluation.",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 9,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "EVIDENCE",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "09",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "FROZEN EVIDENCE SCOPE",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "One primary qualification anchors the thesis; other model probes remain separate.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "108",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "Retained case records",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "Derived from 33 structured runtime traces across the final evidence index.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "72",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "Primary records",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "Qwen3-VL: 64 passes and 8 failures under the frozen qualification.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "191",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "Model supplement",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "Three Ollama models, retained outside the primary denominator.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "The 22-case end-to-end questionnaire produced 20 passes and 2 failures.",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 10,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "RESULTS",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "10",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "PRIMARY QWEN3-VL RESULTS",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "Most tested seams passed.\nSemantic non-passes remained visible.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "What the failures exposed",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "• incomplete universal target selection\n\n• one location-to-recipient role error\n\n• missing terminal closure after recovery\n\n• incomplete multi-capability plan coverage",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "Interpretation",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "Incomplete plans were rejected before dispatch. Safe containment did not erase task-level failure.",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 11,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "FAILURES",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "11",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "ERROR TAXONOMY",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "The remaining failures occur at identifiable semantic and closure boundaries.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "ROUTE",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "KB update entered the execution planner",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "Route and ownership failure",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "SELECTION",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "One member omitted from an “all objects” set",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "Target-set failure",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "ROLE",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "Kitchen treated as the delivery recipient",
+        "placeholder": false
+      },
+      {
+        "shapeId": "20",
+        "name": "",
+        "text": "Entity-role failure",
+        "placeholder": false
+      },
+      {
+        "shapeId": "21",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "22",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "23",
+        "name": "",
+        "text": "COVERAGE",
+        "placeholder": false
+      },
+      {
+        "shapeId": "24",
+        "name": "",
+        "text": "Required action absent from a long composite",
+        "placeholder": false
+      },
+      {
+        "shapeId": "25",
+        "name": "",
+        "text": "Plan-completeness failure",
+        "placeholder": false
+      },
+      {
+        "shapeId": "26",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "27",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "28",
+        "name": "",
+        "text": "CLOSURE",
+        "placeholder": false
+      },
+      {
+        "shapeId": "29",
+        "name": "",
+        "text": "Recovery occurred without reliable terminal speech",
+        "placeholder": false
+      },
+      {
+        "shapeId": "30",
+        "name": "",
+        "text": "Report/closure failure",
+        "placeholder": false
+      },
+      {
+        "shapeId": "31",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "32",
+        "name": "",
+        "text": "The architecture converted silent execution risks into inspectable route, selection, plan, clarification, or closure failures.",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 12,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "MODELS",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "12",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "MODEL COMPARISON",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "Stable interfaces did not produce invariant semantic behaviour.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "Stable across backends",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "Environment profile\nStartup ownership\nSymbolic transport\nPlanner request schema\nTyped execution boundary",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "Variable across backends",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "Route selection\nTarget coverage\nRole assignment\nClarification\nPlan and report completeness",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "Qualification rule",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "Qwen3-VL completed the frozen campaign. A compatible replacement must pass the same campaign before inheriting qualification.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "Model-agnostic describes the interface boundary. Model-invariant would require equivalent behaviour, which the evidence did not show.",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 13,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "RECOVERY",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "13",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "REPRESENTATIVE RETAINED TRACE",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "A failed pick produced a revised plan without losing the completed work.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "find object",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "succeeded",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "→",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "pick object",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "failed",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "→",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "typed feedback",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "goal + plan lineage",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "→",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "20",
+        "name": "",
+        "text": "plan v2",
+        "placeholder": false
+      },
+      {
+        "shapeId": "21",
+        "name": "",
+        "text": "scan → find → pick",
+        "placeholder": false
+      },
+      {
+        "shapeId": "22",
+        "name": "",
+        "text": "→",
+        "placeholder": false
+      },
+      {
+        "shapeId": "23",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "24",
+        "name": "",
+        "text": "report",
+        "placeholder": false
+      },
+      {
+        "shapeId": "25",
+        "name": "",
+        "text": "completed",
+        "placeholder": false
+      },
+      {
+        "shapeId": "26",
+        "name": "",
+        "text": "The model did not directly retry the robot. It proposed plan version 2 after receiving structured failure evidence.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "27",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "28",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "29",
+        "name": "",
+        "text": "Why this trace matters",
+        "placeholder": false
+      },
+      {
+        "shapeId": "30",
+        "name": "",
+        "text": "It demonstrates middle-stage recovery, retained lineage, and a truthful closure. Beginning-stage navigation recovery was also retained; terminal recovery remained less reliable.",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 14,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "DEMONSTRATION",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "14",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "CONTROLLED LIVE DEMONSTRATION",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "Three short turns expose dialogue, knowledge, and execution routing.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "01",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "“Hey, how are you?”",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "Dialogue route",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "one response, no planner request",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "02",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "20",
+        "name": "",
+        "text": "“What can you see now?”",
+        "placeholder": false
+      },
+      {
+        "shapeId": "21",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "22",
+        "name": "",
+        "text": "Knowledge route",
+        "placeholder": false
+      },
+      {
+        "shapeId": "23",
+        "name": "",
+        "text": "answer from the declared symbolic state",
+        "placeholder": false
+      },
+      {
+        "shapeId": "24",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "25",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "26",
+        "name": "",
+        "text": "03",
+        "placeholder": false
+      },
+      {
+        "shapeId": "27",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "28",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "29",
+        "name": "",
+        "text": "“Move your head up.”",
+        "placeholder": false
+      },
+      {
+        "shapeId": "30",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "31",
+        "name": "",
+        "text": "Execution route",
+        "placeholder": false
+      },
+      {
+        "shapeId": "32",
+        "name": "",
+        "text": "accepted plan, one skill result, one closure",
+        "placeholder": false
+      },
+      {
+        "shapeId": "33",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "34",
+        "name": "",
+        "text": "The demonstration illustrates the architecture. The frozen traces remain the scored evidence.",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 15,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "LIMITS",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "15",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "CLAIM BOUNDARIES AND TRANSFER",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "The strongest evidence concerns software contracts and symbolic state.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "Supported",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "• ownership and interface architecture\n\n• deterministic admission and dispatch\n\n• controlled failure and replanning\n\n• symbolic postconditions and reporting",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "Not established",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "• navigation or grasp accuracy\n\n• detector performance\n\n• human safety or acceptance\n\n• unrestricted autonomy or universal model ranking",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "Transfer conditions",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "Another robot needs an equivalent reviewed skill registry and typed adapters. Another model must repeat the frozen qualification.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "Controlled simulation reduced hardware variance and compute waste, but it cannot replace physical safety and performance measurement.",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 16,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "FREEZE",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "16",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "FROZEN RUNTIME TUPLE",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "The thesis result is preserved as one reproducible configuration.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "v1",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "Code",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "Reviewed branch and nested fork commits.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "v34",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "Container",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "iiia:nao-final",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "Q3VL",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "Primary model",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "Qwen3-VL 30B A3B AWQ",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "20",
+        "name": "",
+        "text": "8.4",
+        "placeholder": false
+      },
+      {
+        "shapeId": "21",
+        "name": "",
+        "text": "Operational index",
+        "placeholder": false
+      },
+      {
+        "shapeId": "22",
+        "name": "",
+        "text": "Secondary summary of the explicit case evidence.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "23",
+        "name": "",
+        "text": "sha256:bb82c158092a69870dae48272b3b20fd8cd4ecfe97a0e61a2253a2cca00c663e",
+        "placeholder": false
+      },
+      {
+        "shapeId": "24",
+        "name": "",
+        "text": "The score summarises qualification; the denominators and failure reasons carry the claim.",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 17,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "FUTURE WORK",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "17",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "NEXT VALIDATION FRONTIER",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "Move from validated software contracts toward measured embodiment.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "Embodied skills",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "Quantify head and gaze behaviour, guarded wave, bounded local motion, semantic navigation, and pointing kinematics.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "World evidence",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "Evaluate detector identity settling and scene-grounding quality before promoting detector-derived facts into stronger claims.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "Interaction quality",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "Measure ASR, TTS, latency, interruption handling, and autonomous idle/request arbitration with users and physical trials.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "Every promoted skill should begin with one physical success, one failure or cancellation, and the same typed evidence boundary.",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 18,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "CONTRIBUTIONS",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "18",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "CONTRIBUTIONS",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "The thesis contributes an architecture, a containment boundary, and a qualification method.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "01",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "Architecture",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "A modular ownership model connecting dialogue, grounding, planning, execution, and reporting.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "02",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "Containment",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "Typed contracts and deterministic admission restrict model-generated execution authority.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "03",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "Qualification",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "A repeatable evidence method separates model, stack, observability, and physical claims.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "Together, these boundaries make language-model variation observable without hiding task-level failure.",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 19,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "CONCLUSION",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "19",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "CONCLUSION",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "Language-model dialogue and planning can participate in an integrated robot architecture when their outputs are grounded, validated against reviewed skills, dispatched deterministically, and checked against typed feedback and symbolic postconditions.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "The boundaries do not eliminate non-determinism. They make it observable and restrict its execution authority.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "Thank you. I welcome your questions.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "IIIA-CSIC  •  UAB  •  JAE-ICU 2025",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 20,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "APPENDIX A",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "20",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "APPENDIX",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "Detailed frozen results",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 21,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "APPENDIX B",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "21",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "APPENDIX",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "Research-question synthesis",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "RQ1",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "Supported for tested task families",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "One questionnaire composite and two extreme cases failed",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "RQ2",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "Strong in controlled symbolic profiles",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "Selection and role assignment remained model-sensitive",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "RQ3",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "Supported by deterministic rejection",
+        "placeholder": false
+      },
+      {
+        "shapeId": "20",
+        "name": "",
+        "text": "Tested schemas, arguments, lineage, and registry only",
+        "placeholder": false
+      },
+      {
+        "shapeId": "21",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "22",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "23",
+        "name": "",
+        "text": "RQ4",
+        "placeholder": false
+      },
+      {
+        "shapeId": "24",
+        "name": "",
+        "text": "Direct support for fail-once navigation and pick",
+        "placeholder": false
+      },
+      {
+        "shapeId": "25",
+        "name": "",
+        "text": "Missing-object, recipient, and closure recovery remained partial",
+        "placeholder": false
+      },
+      {
+        "shapeId": "26",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "27",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "28",
+        "name": "",
+        "text": "RQ5",
+        "placeholder": false
+      },
+      {
+        "shapeId": "29",
+        "name": "",
+        "text": "Supported at interface and auditability level",
+        "placeholder": false
+      },
+      {
+        "shapeId": "30",
+        "name": "",
+        "text": "Other robots and equivalent model behaviour remain unqualified",
+        "placeholder": false
+      },
+      {
+        "shapeId": "31",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 22,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "APPENDIX C",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "22",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "APPENDIX",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "Frozen runtime tuple",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "Image",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "iiia:nao-final",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "sha256:bb82c158092a…",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "Primary model",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "Qwen3-VL 30B A3B AWQ",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "chatbot, intent, planner",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "20",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "21",
+        "name": "",
+        "text": "Pipeline",
+        "placeholder": false
+      },
+      {
+        "shapeId": "22",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "23",
+        "name": "",
+        "text": "response-first",
+        "placeholder": false
+      },
+      {
+        "shapeId": "24",
+        "name": "",
+        "text": "JSON-only grounded context",
+        "placeholder": false
+      },
+      {
+        "shapeId": "25",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "26",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "27",
+        "name": "",
+        "text": "Primary evidence",
+        "placeholder": false
+      },
+      {
+        "shapeId": "28",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "29",
+        "name": "",
+        "text": "72 records",
+        "placeholder": false
+      },
+      {
+        "shapeId": "30",
+        "name": "",
+        "text": "64 pass, 8 fail",
+        "placeholder": false
+      },
+      {
+        "shapeId": "31",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "32",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "33",
+        "name": "",
+        "text": "Detector",
+        "placeholder": false
+      },
+      {
+        "shapeId": "34",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "35",
+        "name": "",
+        "text": "disabled in primary profile",
+        "placeholder": false
+      },
+      {
+        "shapeId": "36",
+        "name": "",
+        "text": "separate perception scope",
+        "placeholder": false
+      },
+      {
+        "shapeId": "37",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "38",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "39",
+        "name": "",
+        "text": "Physical scope",
+        "placeholder": false
+      },
+      {
+        "shapeId": "40",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "41",
+        "name": "",
+        "text": "speech, posture, head/gaze integration",
+        "placeholder": false
+      },
+      {
+        "shapeId": "42",
+        "name": "",
+        "text": "no quantified navigation or manipulation",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 23,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "APPENDIX D",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "23",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "APPENDIX",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "Demonstration operating rule",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "Proceed live only if preflight is green",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "• one model endpoint advertised and probed\n\n• clean stack with unique nodes\n\n• rqt input and trace viewer visible\n\n• declared KB fixture verified\n\n• robot adapter selected before the defence",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "Otherwise use retained evidence",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "• name the unavailable dependency once\n\n• do not relaunch or switch models on stage\n\n• show the representative trace slide\n\n• state that the live run is illustrative and the retained campaign is scored",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "Maximum live window: 90 seconds. No troubleshooting inside the timed defence.",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 24,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "APPENDIX E",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "24",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "APPENDIX",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "Short answers for likely questions",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "Why simulated skills?",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "They place repeatable outcomes at the robot-facing result boundary, isolating planning and recovery from hardware variance.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "What is deterministic?",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "Admission, schema checks, dispatch order, lineage, feedback correlation, and effect verification. Route and plan generation remain model-dependent.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "Why model-agnostic?",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "The interfaces accept multiple backends. The results explicitly show that semantic behaviour is not invariant.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "Why no classical planner baseline?",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "The thesis validates integration and containment, not a causal comparison of planning algorithms.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "What comes next?",
+        "placeholder": false
+      },
+      {
+        "shapeId": "20",
+        "name": "",
+        "text": "Quantified physical skills, detector-quality evaluation, and user-facing interaction trials under the same evidence contracts.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "21",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      }
+    ]
+  },
+  {
+    "slide": 25,
+    "shapes": [
+      {
+        "shapeId": "1",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "2",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "3",
+        "name": "",
+        "text": "APPENDIX F",
+        "placeholder": false
+      },
+      {
+        "shapeId": "4",
+        "name": "",
+        "text": "25",
+        "placeholder": false
+      },
+      {
+        "shapeId": "5",
+        "name": "",
+        "text": "APPENDIX",
+        "placeholder": false
+      },
+      {
+        "shapeId": "6",
+        "name": "",
+        "text": "Full implementation and validation objectives",
+        "placeholder": false
+      },
+      {
+        "shapeId": "7",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "8",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "9",
+        "name": "",
+        "text": "1",
+        "placeholder": false
+      },
+      {
+        "shapeId": "10",
+        "name": "",
+        "text": "Integrate dialogue, routing, grounding, planning, deterministic orchestration, and skills through ROS 2 interfaces.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "11",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "12",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "13",
+        "name": "",
+        "text": "2",
+        "placeholder": false
+      },
+      {
+        "shapeId": "14",
+        "name": "",
+        "text": "Define explicit runtime contracts for requests, context, plans, results, feedback, dialogue acts, and raw evidence.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "15",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "16",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "17",
+        "name": "",
+        "text": "3",
+        "placeholder": false
+      },
+      {
+        "shapeId": "18",
+        "name": "",
+        "text": "Expose capabilities through a reviewed skill registry rather than model-generated robot APIs.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "19",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "20",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "21",
+        "name": "",
+        "text": "4",
+        "placeholder": false
+      },
+      {
+        "shapeId": "22",
+        "name": "",
+        "text": "Support dialogue, knowledge, atomic, and composite turns without transferring speech or execution ownership.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "23",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "24",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "25",
+        "name": "",
+        "text": "5",
+        "placeholder": false
+      },
+      {
+        "shapeId": "26",
+        "name": "",
+        "text": "Validate plans before dispatch and return typed evidence for failure, clarification, replanning, and reporting.",
+        "placeholder": false
+      },
+      {
+        "shapeId": "27",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "28",
+        "name": "",
+        "text": "",
+        "placeholder": false
+      },
+      {
+        "shapeId": "29",
+        "name": "",
+        "text": "6",
+        "placeholder": false
+      },
+      {
+        "shapeId": "30",
+        "name": "",
+        "text": "Exercise full turns, controlled outcomes, focused subsystem checks, and symbolic postconditions.",
+        "placeholder": false
+      }
+    ]
+  }
+]

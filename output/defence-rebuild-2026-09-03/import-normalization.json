@@ -1,0 +1,164 @@
+[
+  {
+    "slide": 14,
+    "id": "10",
+    "before": [
+      90,
+      341,
+      64,
+      -40
+    ],
+    "after": {
+      "left": 90,
+      "top": 301,
+      "width": 64,
+      "height": 40,
+      "horizontalFlip": false,
+      "verticalFlip": true
+    }
+  },
+  {
+    "slide": 14,
+    "id": "19",
+    "before": [
+      90,
+      471,
+      64,
+      -40
+    ],
+    "after": {
+      "left": 90,
+      "top": 431,
+      "width": 64,
+      "height": 40,
+      "horizontalFlip": false,
+      "verticalFlip": true
+    }
+  },
+  {
+    "slide": 14,
+    "id": "28",
+    "before": [
+      90,
+      601,
+      64,
+      -40
+    ],
+    "after": {
+      "left": 90,
+      "top": 561,
+      "width": 64,
+      "height": 40,
+      "horizontalFlip": false,
+      "verticalFlip": true
+    }
+  },
+  {
+    "slide": 22,
+    "id": "10",
+    "before": [
+      94,
+      240,
+      1026,
+      -12
+    ],
+    "after": {
+      "left": 94,
+      "top": 228,
+      "width": 1026,
+      "height": 12,
+      "horizontalFlip": false,
+      "verticalFlip": true
+    }
+  },
+  {
+    "slide": 22,
+    "id": "16",
+    "before": [
+      94,
+      310,
+      1026,
+      -12
+    ],
+    "after": {
+      "left": 94,
+      "top": 298,
+      "width": 1026,
+      "height": 12,
+      "horizontalFlip": false,
+      "verticalFlip": true
+    }
+  },
+  {
+    "slide": 22,
+    "id": "22",
+    "before": [
+      94,
+      380,
+      1026,
+      -12
+    ],
+    "after": {
+      "left": 94,
+      "top": 368,
+      "width": 1026,
+      "height": 12,
+      "horizontalFlip": false,
+      "verticalFlip": true
+    }
+  },
+  {
+    "slide": 22,
+    "id": "28",
+    "before": [
+      94,
+      450,
+      1026,
+      -12
+    ],
+    "after": {
+      "left": 94,
+      "top": 438,
+      "width": 1026,
+      "height": 12,
+      "horizontalFlip": false,
+      "verticalFlip": true
+    }
+  },
+  {
+    "slide": 22,
+    "id": "34",
+    "before": [
+      94,
+      520,
+      1026,
+      -12
+    ],
+    "after": {
+      "left": 94,
+      "top": 508,
+      "width": 1026,
+      "height": 12,
+      "horizontalFlip": false,
+      "verticalFlip": true
+    }
+  },
+  {
+    "slide": 22,
+    "id": "40",
+    "before": [
+      94,
+      590,
+      1026,
+      -12
+    ],
+    "after": {
+      "left": 94,
+      "top": 578,
+      "width": 1026,
+      "height": 12,
+      "horizontalFlip": false,
+      "verticalFlip": true
+    }
+  }
+]

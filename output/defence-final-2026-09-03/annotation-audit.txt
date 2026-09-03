@@ -1,0 +1,62 @@
+1. Change | Can you zoom it slightly so the exterior doesnt show as much, obviously focusing on the robot but still some background so its not just a super zoomed picture  | pins 0
+2. Keep | (no comment) | pins 0
+3. Keep | Lovely! | pins 0
+4. Keep | (no comment) | pins 0
+5. Keep | (no comment) | pins 0
+6. Keep | (no comment) | pins 0
+7. Keep | (no comment) | pins 0
+8. Keep | (no comment) | pins 0
+9. Keep | (no comment) | pins 0
+10. Keep | (no comment) | pins 0
+11. Keep | (no comment) | pins 0
+12. Keep | (no comment) | pins 0
+13. Change | PLease remove all mentions of AB structure throughout the ENTIRE PPT, this is still in development and i dont want to create any confusion, otherwise good  | pins 0
+14. Keep | (no comment) | pins 0
+15. Keep | (no comment) | pins 0
+16. Keep | (no comment) | pins 0
+17. Change | remove the /planner/dialogue_act->dialogue_layer part of the PPT as technically thats incorrect as the planner does not speak eventhough we internally set it as dialogue from the success to the skill to build better API calls witn this so whatever | pins 0
+18. Keep | (no comment) | pins 0
+19. Keep | (no comment) | pins 0
+20. Keep | (no comment) | pins 0
+21. Change | Very dangerous text as it shows that this was written by someone external than me where you put "... and tuned by Juan", this should be within my perspective so like "all code was ... thoroughly" or something like that, i like the disclaimer i just dont want to give mistrust but i like to bring this up as part of the dev and evaluation cycle  | pins 0
+22. Keep | (no comment) | pins 0
+23. Keep | (no comment) | pins 0
+24. Keep | (no comment) | pins 0
+25. Keep | (no comment) | pins 0
+26. Keep | (no comment) | pins 0
+27. Keep | (no comment) | pins 0
+28. Keep | (no comment) | pins 0
+29. Keep | (no comment) | pins 0
+30. Keep | (no comment) | pins 0
+31. Keep | (no comment) | pins 0
+32. Keep | (no comment) | pins 0
+33. Keep | (no comment) | pins 0
+34. Keep | (no comment) | pins 0
+35. Keep | (no comment) | pins 0
+36. Keep | (no comment) | pins 0
+37. Accepted by user for slides 33 onward | (no comment) | pins 0
+38. Accepted by user for slides 33 onward | (no comment) | pins 0
+39. Accepted by user for slides 33 onward | (no comment) | pins 0
+40. Accepted by user for slides 33 onward | (no comment) | pins 0
+41. Accepted by user for slides 33 onward | (no comment) | pins 0
+42. Accepted by user for slides 33 onward | (no comment) | pins 0
+43. Accepted by user for slides 33 onward | (no comment) | pins 0
+44. Accepted by user for slides 33 onward | (no comment) | pins 0
+45. Accepted by user for slides 33 onward | (no comment) | pins 0
+46. Accepted by user for slides 33 onward | (no comment) | pins 0
+47. Accepted by user for slides 33 onward | (no comment) | pins 0
+48. Accepted by user for slides 33 onward | (no comment) | pins 0
+49. Accepted by user for slides 33 onward | (no comment) | pins 0
+50. Accepted by user for slides 33 onward | (no comment) | pins 0
+51. Accepted by user for slides 33 onward | (no comment) | pins 0
+52. Accepted by user for slides 33 onward | (no comment) | pins 0
+53. Accepted by user for slides 33 onward | (no comment) | pins 0
+54. Accepted by user for slides 33 onward | (no comment) | pins 0
+55. Accepted by user for slides 33 onward | (no comment) | pins 0
+56. Accepted by user for slides 33 onward | (no comment) | pins 0
+57. Accepted by user for slides 33 onward | (no comment) | pins 0
+58. Accepted by user for slides 33 onward | (no comment) | pins 0
+59. Accepted by user for slides 33 onward | (no comment) | pins 0
+60. Accepted by user for slides 33 onward | (no comment) | pins 0
+61. Accepted by user for slides 33 onward | (no comment) | pins 0
+62. Accepted by user for slides 33 onward | (no comment) | pins 0

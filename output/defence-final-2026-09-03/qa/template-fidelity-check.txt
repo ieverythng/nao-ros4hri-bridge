@@ -1,0 +1,2 @@
+Template fidelity check: fail
+FAIL direct-ooxml-mutation: Script/log suggests direct OOXML package mutation. file=C:\Users\Admin\PROJECTS\nao-ros4hri-bridge\output\defence-final-2026-09-03\verify_package.py

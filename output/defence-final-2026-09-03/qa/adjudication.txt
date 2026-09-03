@@ -1,0 +1,23 @@
+Final revision scope
+Four annotated slides: 1 (original-photo crop), 13 (remove developing taxonomy), 17 (remove misleading speech shorthand), 21 (first-person supervision statement). Latest attachment explicitly marks 25 and 26 Keep. All 33–62 accepted. Native visual QA found one cramped label on slide46, wrapped to two lines without changing any word. No slide reordering, added slides, runtime edits, or scoring changes.
+
+PowerPoint repair investigation
+check-powerpoint.ps1 opens read-only, WithWindow=false, OpenAndRepair=false. The older 25-slide FINAL file fails to open. Office OpenXML validator reports 9 negative-height extents on its slides14 and22. The revised 62-slide source opens successfully without repair and has zero schema errors. The final READY copy also opens without repair (62 slides, Saved=true), renders through native PowerPoint16.0, and has zero Office schema errors. No claim about an unseen repair dialog/log or every PowerPoint release is made.
+
+Export method
+PPTX authored only through artifact-tool, using the validated identity-clone map. No OOXML mutations or python-pptx. Native PowerPoint is used headlessly only for read-only compatibility checks, rendering and PDF conversion. Initial PDF SaveAs with forward-slash output path failed; a normalized Windows path succeeded. No source PPTX save is performed.
+
+Template-fidelity automated finding
+One direct-ooxml-mutation warning is a false positive in verify_package.py. The helper matches any ZipFile reference plus ppt/slides/, without considering access mode. Manual review: the archive is opened explicitly with 'r'; every operation is read/testzip/namelist. Only a separate JSON verification report is written. The checker/report is retained unchanged. All structural/template/content checks otherwise pass.
+
+Evidence preservation
+The input revised PPTX SHA256 remains e12b3c632b9b2a751f7757a8f45e07a3ea165ed1c2e4bef3ac898f91a209621e. Artifact-tool round-trip render comparison reports differences on 1,13,17,21 plus the final label-wrap polish on46. All other source slide renders are byte-identical. All appendix wording is preserved (whitespace-normalized comparison). All example JSON parses. All 62 notes contain Sources blocks. No empty template placeholders or unresolved internal relationships.
+
+HTML
+Self-contained native PowerPoint render images, exported text, notes and embedded assets. Original annotation files preserved. State validation, invalid imports, Unicode/special-character notes and pin round-tripping tested in a VM. The browser's existing local-file restriction is respected; no alternate browser/server bypass attempted. The new HTML uses the same save/navigation implementation as the user-tested review file.
+
+ROS ownership
+IIIA ROS4HRI guardrails informed the change: structured planner status does not confer speaking authority. Dialogue Manager remains speech owner. Existing accepted authentic thesis diagrams and appendix protocol examples remain intact. Source-path provenance is retained even where a registry filename contains a historical taxonomy abbreviation.
+
+Final visual gate
+All62 final slides were reviewed individually at full size using native PowerPoint PNGs or the native PDF rendered with Poppler. The final slide46 wrap was re-rendered and inspected. Titles, JSON, tables, figures, footers and page numbering remain legible; no unresolved clipping/overlap found. PDF has62 searchable 16:9 pages and every referenced FontDescriptor has an embedded font program. Final PPTX SHA256: 1e95b6cdfac8dd04ff067c3a4c196751bac62beb7c2f01dfb1852ea93faed8ce.

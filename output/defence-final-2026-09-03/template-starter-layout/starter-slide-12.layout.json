@@ -1,0 +1,1225 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/cma7ha",
+    "id": "cma7ha",
+    "slide": 12,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "masterLayoutName": "Master",
+    "backgroundColor": "#F7F4EE",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light",
+        "eastAsianTypeface": "Calibri Light",
+        "complexScriptTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri",
+        "eastAsianTypeface": "Calibri",
+        "complexScriptTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Arial",
+      "Calibri",
+      "Calibri Light",
+      "Consolas",
+      "Georgia"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/98batw76",
+      "id": "16",
+      "bbox": [
+        1136,
+        0,
+        144,
+        144
+      ],
+      "geometry": "ellipse",
+      "lineColor": "#DCE9E8",
+      "lineWidth": 2
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gr6xwnyl",
+      "id": "2",
+      "bbox": [
+        1170,
+        0,
+        110,
+        110
+      ],
+      "geometry": "ellipse",
+      "lineColor": "#E8ECEA",
+      "lineWidth": 20
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hsfy5sz6",
+      "id": "3",
+      "bbox": [
+        1035,
+        662,
+        165,
+        18
+      ],
+      "geometry": "rect",
+      "text": "IMPLEMENTATION",
+      "textPreview": "IMPLEMENTATION",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "IMPLEMENTATION"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "IMPLEMENTATION",
+          "resolvedTextStyle": {
+            "fontSize": 10,
+            "typeface": "Arial",
+            "color": "#829091",
+            "bold": true,
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "IMPLEMENTATION",
+              "fontSize": 10,
+              "typeface": "Arial",
+              "color": "#829091",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/61ofqdgj",
+      "id": "4",
+      "bbox": [
+        1206,
+        662,
+        36,
+        18
+      ],
+      "geometry": "rect",
+      "text": "12",
+      "textPreview": "12",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "12"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "12",
+          "resolvedTextStyle": {
+            "fontSize": 11,
+            "typeface": "Arial",
+            "color": "#8A9296",
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "12",
+              "fontSize": 11,
+              "typeface": "Arial",
+              "color": "#8A9296"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/72xgzyho",
+      "id": "5",
+      "bbox": [
+        72,
+        52,
+        860,
+        24
+      ],
+      "geometry": "rect",
+      "text": "IMPLEMENTATION · CONTRACT 3",
+      "textPreview": "IMPLEMENTATION · CONTRACT 3",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "IMPLEMENTATION · CONTRACT 3"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "IMPLEMENTATION · CONTRACT 3",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Arial",
+            "color": "#0C6570",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "IMPLEMENTATION · CONTRACT 3",
+              "fontSize": 14,
+              "typeface": "Arial",
+              "color": "#0C6570",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/s36xs3y9",
+      "id": "6",
+      "bbox": [
+        72,
+        88,
+        1050,
+        122
+      ],
+      "geometry": "rect",
+      "text": "The planner request is an admitted objective",
+      "textPreview": "The planner request is an admitted objective",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The planner request is an admitted objective"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The planner request is an admitted objective",
+          "resolvedTextStyle": {
+            "fontSize": 40,
+            "typeface": "Georgia",
+            "color": "#13202A",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "The planner request is an admitted objective",
+              "fontSize": 40,
+              "typeface": "Georgia",
+              "color": "#13202A",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/t4fy18zu",
+      "id": "7",
+      "bbox": [
+        72,
+        188,
+        544,
+        410
+      ],
+      "geometry": "roundRect",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qx8f2xgn",
+      "id": "8",
+      "bbox": [
+        72,
+        188,
+        6,
+        410
+      ],
+      "geometry": "rect",
+      "fillColor": "#0C6570",
+      "lineColor": "#0C6570",
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ryhgb2h8",
+      "id": "9",
+      "bbox": [
+        94,
+        199,
+        500,
+        36
+      ],
+      "geometry": "rect",
+      "text": "Intent.data · abbreviated contract",
+      "textPreview": "Intent.data · abbreviated contract",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Intent.data · abbreviated contract"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Intent.data · abbreviated contract",
+          "resolvedTextStyle": {
+            "fontSize": 23,
+            "typeface": "Arial",
+            "color": "#13202A",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Intent.data · abbreviated contract",
+              "fontSize": 23,
+              "typeface": "Arial",
+              "color": "#13202A",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zi9snmp4",
+      "id": "10",
+      "bbox": [
+        94,
+        243,
+        500,
+        355
+      ],
+      "geometry": "rect",
+      "text": "{\n  \"dialogue_turn_id\": \"__default__:d343701c:1\",\n  \"goal_id\": \"goal_default___d343701c_1\",\n  \"request_kind\": \"new_goal\",\n  \"goal_text\": \"look at ALEX and report completion\",\n  \"normalized_intents\": [\"look_at\"],\n  \"grounded_context\": {\n    \"entities\": [\n      {\"id\": \"alex_person\", \"kind\": \"person\", \"visible\": true}\n    ]\n  }\n}",
+      "textPreview": "{ |   \"dialogue_turn_id\": \"__default__:d343701c:1\", |   \"goal_id\": \"goal_default___d343701c_1\", |   \"request_kind\": \"new_goal\", |   \"goal...",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 6,
+          "right": 9,
+          "bottom": 6,
+          "left": 9
+        }
+      },
+      "textLayout": {
+        "lineCount": 14,
+        "lines": [
+          {
+            "index": 1,
+            "text": "{"
+          },
+          {
+            "index": 2,
+            "text": "  \"dialogue_turn_id\": \"__default__:d343701c:1\","
+          },
+          {
+            "index": 3,
+            "text": "  \"goal_id\": \"goal_default___d343701c_1\","
+          },
+          {
+            "index": 4,
+            "text": "  \"request_kind\": \"new_goal\","
+          },
+          {
+            "index": 5,
+            "text": "  \"goal_text\": \"look at ALEX and report"
+          },
+          {
+            "index": 6,
+            "text": "completion\","
+          },
+          {
+            "index": 7,
+            "text": "  \"normalized_intents\": [\"look_at\"],"
+          },
+          {
+            "index": 8,
+            "text": "  \"grounded_context\": {"
+          },
+          {
+            "index": 9,
+            "text": "    \"entities\": ["
+          },
+          {
+            "index": 10,
+            "text": "      {\"id\": \"alex_person\", \"kind\": \"person\","
+          },
+          {
+            "index": 11,
+            "text": "\"visible\": true}"
+          },
+          {
+            "index": 12,
+            "text": "    ]"
+          },
+          {
+            "index": 13,
+            "text": "  }"
+          },
+          {
+            "index": 14,
+            "text": "}"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "{",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "{",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "  \"dialogue_turn_id\": \"__default__:d343701c:1\",",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "  \"dialogue_turn_id\": \"__default__:d343701c:1\",",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "  \"goal_id\": \"goal_default___d343701c_1\",",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "  \"goal_id\": \"goal_default___d343701c_1\",",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "  \"request_kind\": \"new_goal\",",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "  \"request_kind\": \"new_goal\",",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 5,
+          "text": "  \"goal_text\": \"look at ALEX and report completion\",",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "  \"goal_text\": \"look at ALEX and report completion\",",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 6,
+          "text": "  \"normalized_intents\": [\"look_at\"],",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "  \"normalized_intents\": [\"look_at\"],",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 7,
+          "text": "  \"grounded_context\": {",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "  \"grounded_context\": {",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 8,
+          "text": "    \"entities\": [",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "    \"entities\": [",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 9,
+          "text": "      {\"id\": \"alex_person\", \"kind\": \"person\", \"visible\": true}",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "      {\"id\": \"alex_person\", \"kind\": \"person\", \"visible\": true}",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 10,
+          "text": "    ]",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "    ]",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 11,
+          "text": "  }",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "  }",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 12,
+          "text": "}",
+          "lineSpacingPercent": 102000,
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Consolas",
+            "color": "#073F47",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "}",
+              "fontSize": 18,
+              "typeface": "Consolas",
+              "color": "#073F47"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/yh0behoj",
+      "id": "11",
+      "bbox": [
+        640,
+        188,
+        552,
+        410
+      ],
+      "geometry": "roundRect",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/l4bapc7a",
+      "id": "12",
+      "bbox": [
+        640,
+        188,
+        6,
+        410
+      ],
+      "geometry": "rect",
+      "fillColor": "#E89A2F",
+      "lineColor": "#E89A2F",
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/kjitgr6p",
+      "id": "13",
+      "bbox": [
+        662,
+        199,
+        508,
+        36
+      ],
+      "geometry": "rect",
+      "text": "Each field has a responsibility",
+      "textPreview": "Each field has a responsibility",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Each field has a responsibility"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Each field has a responsibility",
+          "resolvedTextStyle": {
+            "fontSize": 23,
+            "typeface": "Arial",
+            "color": "#13202A",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Each field has a responsibility",
+              "fontSize": 23,
+              "typeface": "Arial",
+              "color": "#13202A",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/76tsrmp0",
+      "id": "14",
+      "bbox": [
+        662,
+        243,
+        508,
+        355
+      ],
+      "geometry": "rect",
+      "text": "dialogue_turn_id links to the conversation.\ngoal_id links plans and feedback.\nrequest_kind proposes a goal transition.\ngoal_text states the objective.\nnormalized_intents guide skill selection.\ngrounded_context supplies bounded evidence.\n\nChatbot → orchestrator admission → planner.",
+      "textPreview": "dialogue_turn_id links to the conversation. | goal_id links plans and feedback. | request_kind proposes a goal transition. | goal_text st...",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 8,
+        "lines": [
+          {
+            "index": 1,
+            "text": "dialogue_turn_id links to the conversation."
+          },
+          {
+            "index": 2,
+            "text": "goal_id links plans and feedback."
+          },
+          {
+            "index": 3,
+            "text": "request_kind proposes a goal transition."
+          },
+          {
+            "index": 4,
+            "text": "goal_text states the objective."
+          },
+          {
+            "index": 5,
+            "text": "normalized_intents guide skill selection."
+          },
+          {
+            "index": 6,
+            "text": "grounded_context supplies bounded evidence."
+          },
+          {
+            "index": 7,
+            "text": ""
+          },
+          {
+            "index": 8,
+            "text": "Chatbot → orchestrator admission → planner."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "dialogue_turn_id links to the conversation.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "dialogue_turn_id links to the conversation.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "goal_id links plans and feedback.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "goal_id links plans and feedback.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "request_kind proposes a goal transition.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "request_kind proposes a goal transition.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "goal_text states the objective.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "goal_text states the objective.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 5,
+          "text": "normalized_intents guide skill selection.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "normalized_intents guide skill selection.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 6,
+          "text": "grounded_context supplies bounded evidence.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "grounded_context supplies bounded evidence.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 8,
+          "text": "Chatbot → orchestrator admission → planner.",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "Arial",
+            "color": "#5B6770",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Chatbot → orchestrator admission → planner.",
+              "fontSize": 21,
+              "typeface": "Arial",
+              "color": "#5B6770"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m5kbihov",
+      "id": "15",
+      "bbox": [
+        72,
+        615,
+        1110,
+        44
+      ],
+      "geometry": "rect",
+      "text": "/nao_orchestrator/planner_request → /planner/request\nhri_actions_msgs/msg/Intent · JSON in data",
+      "textPreview": "/nao_orchestrator/planner_request → /planner/request | hri_actions_msgs/msg/Intent · JSON in data",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "autoFit": "none",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "/nao_orchestrator/planner_request → /planner/request"
+          },
+          {
+            "index": 2,
+            "text": "hri_actions_msgs/msg/Intent · JSON in data"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "/nao_orchestrator/planner_request → /planner/request",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Arial",
+            "color": "#073F47",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "/nao_orchestrator/planner_request → /planner/request",
+              "fontSize": 18,
+              "typeface": "Arial",
+              "color": "#073F47"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "hri_actions_msgs/msg/Intent · JSON in data",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Arial",
+            "color": "#073F47",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "hri_actions_msgs/msg/Intent · JSON in data",
+              "fontSize": 18,
+              "typeface": "Arial",
+              "color": "#073F47"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

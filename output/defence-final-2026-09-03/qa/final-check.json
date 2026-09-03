@@ -1,0 +1,22 @@
+{
+  "slides": 62,
+  "changedTextSlides": [
+    13,
+    17,
+    21,
+    46
+  ],
+  "renderChanges": [
+    1,
+    13,
+    17,
+    21,
+    46
+  ],
+  "unchangedAcceptedSlides": true,
+  "allAppendixTextPreserved": true,
+  "allJsonParse": true,
+  "textEstimates": [],
+  "htmlStateValidation": true,
+  "sha256": "1e95b6cdfac8dd04ff067c3a4c196751bac62beb7c2f01dfb1852ea93faed8ce"
+}

@@ -1,0 +1,20 @@
+{
+  "slides": 62,
+  "changedRenders": [
+    2,
+    5,
+    7,
+    15,
+    18,
+    19,
+    21,
+    23,
+    58,
+    62
+  ],
+  "textEstimates": [],
+  "sourceHash": "e12b3c632b9b2a751f7757a8f45e07a3ea165ed1c2e4bef3ac898f91a209621e",
+  "originalUnchanged": true,
+  "allJsonExamplesParse": true,
+  "reviewValidation": true
+}

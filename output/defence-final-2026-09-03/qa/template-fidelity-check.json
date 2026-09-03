@@ -1,0 +1,20 @@
+{
+  "status": "fail",
+  "checkedAt": "2026-09-03T01:55:23.786Z",
+  "workspace": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\output\\defence-final-2026-09-03",
+  "finalPptx": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\docs\\presentation\\TFM_DEFENCE_READY_2026-09-03.pptx",
+  "starterPptx": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\output\\defence-final-2026-09-03\\template-starter.pptx",
+  "mapPath": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\output\\defence-final-2026-09-03\\template-frame-map.json",
+  "starterLayoutDir": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\output\\defence-final-2026-09-03\\template-starter-layout",
+  "finalLayoutDir": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\output\\defence-final-2026-09-03\\final-layouts",
+  "editDir": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\output\\defence-final-2026-09-03",
+  "issueCount": 1,
+  "issues": [
+    {
+      "severity": "fail",
+      "id": "direct-ooxml-mutation",
+      "message": "Script/log suggests direct OOXML package mutation.",
+      "file": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\output\\defence-final-2026-09-03\\verify_package.py"
+    }
+  ]
+}

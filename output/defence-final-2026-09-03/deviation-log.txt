@@ -1,0 +1,1 @@
+Slide1 image crop, slide13 taxonomy paragraph removal, slide17 ownership shorthand, and slide21 first-person disclaimer change. Related notes corrected. Native QA also wraps the existing gold apple multiturn label on46 without changing words. No other audience-facing content, structure or data changes.

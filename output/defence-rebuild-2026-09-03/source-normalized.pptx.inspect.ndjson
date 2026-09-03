@@ -1,0 +1,620 @@
+{"kind":"deck","id":"pr/ldr931","name":"Deck"}
+{"kind":"layout","layoutId":"/ppt/slideMasters/slideMaster1.xml","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"/ppt/slideLayouts/slideLayout1.xml","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"OPENING","textShapes":8}
+{"kind":"shape","id":"sh/i1w3yp8f","slide":1,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/547294r6","slide":1,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/k3yl0zql","slide":1,"text":"OPENING","textPreview":"OPENING","textChars":7,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/7qp4be9c","slide":1,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/65g3298r","slide":1,"text":"MASTER'S THESIS DEFENCE","textPreview":"MASTER'S THESIS DEFENCE","textChars":23,"textLines":1,"bbox":[72,76,660,26]}
+{"kind":"textbox","id":"sh/ts7md4r2","slide":1,"text":"Design, Integration, and\nValidation of a Modular\nLLM-Based Interactive\nArchitecture","textPreview":"Design, Integration, and | Validation of a Modular | LLM-Based Interactive | Architecture","textChars":83,"textLines":4,"bbox":[72,116,760,300]}
+{"kind":"textbox","id":"sh/sryl4zqx","slide":1,"text":"A NAO-centred ROS 2 architecture for grounded dialogue, structured planning, deterministic execution, and evidence-based reporting.","textPreview":"A NAO-centred ROS 2 architecture for grounded dialogue, structured planning, deterministic execution, and evidence-based reporting.","textChars":131,"textLines":1,"bbox":[72,435,720,90]}
+{"kind":"textbox","id":"sh/fu94fe98","slide":1,"text":"Juan David Bendek Williamson    •    Supervised by Raquel Ros    •    2025–2026","textPreview":"Juan David Bendek Williamson    •    Supervised by Raquel Ros    •    2025–2026","textChars":79,"textLines":1,"bbox":[72,552,780,30]}
+{"kind":"shape","id":"sh/wn6dc7eh","slide":1,"bbox":[218,602,1,54]}
+{"kind":"textbox","id":"sh/hofulsf2","slide":1,"text":"IIIA-CSIC / Universitat Autònoma de Barcelona\nMSc Modelling for Science and Engineering","textPreview":"IIIA-CSIC / Universitat Autònoma de Barcelona | MSc Modelling for Science and Engineering","textChars":87,"textLines":2,"bbox":[238,607,470,50]}
+{"kind":"textbox","id":"sh/vmdcj2xw","slide":1,"text":"ROS 2\nLLM\nNAO","textPreview":"ROS 2 | LLM | NAO","textChars":13,"textLines":3,"bbox":[979,286,112,105]}
+{"kind":"chart","id":"ch/d4ralori","slide":1,"name":"Chart","chartType":"doughnut","bbox":[870,180,330,330]}
+{"kind":"image","id":"im/bmxw3ido","slide":1,"name":"","bbox":[75.39,604,119.21,48]}
+{"kind":"notes","id":"nt/y90nupkv","slide":1,"text":"Timing: 1:00. Open with the system problem, not the implementation history. Thank Raquel Ros, IIIA-CSIC, SocialMinds, and the JAE-ICU programme in one sentence, then state that the thesis concerns the complete interaction architecture and its qualification boundaries."}
+{"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"PROBLEM","textShapes":9}
+{"kind":"shape","id":"sh/mxgjm5s7","slide":2,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/9072xkry","slide":2,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/ozy1ofad","slide":2,"text":"PROBLEM","textPreview":"PROBLEM","textChars":7,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/b29kza94","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/a10jqpsj","slide":2,"text":"THE PROBLEM","textPreview":"THE PROBLEM","textChars":11,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/x4r21kru","slide":2,"text":"A plausible plan is not yet a safe robot action.","textPreview":"A plausible plan is not yet a safe robot action.","textChars":48,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"shape","id":"sh/w3i1sfa9","slide":2,"bbox":[72,230,510,330]}
+{"kind":"shape","id":"sh/r65knqtk","slide":2,"bbox":[72,230,6,330]}
+{"kind":"textbox","id":"sh/q5wjelsz","slide":2,"text":"Language is flexible","textPreview":"Language is flexible","textChars":20,"textLines":1,"bbox":[94,248,466,34]}
+{"kind":"textbox","id":"sh/ove9o7yd","slide":2,"text":"• Users refer to people, objects, and prior turns.\n\n• One request can mix dialogue, knowledge, and action.\n\n• A fluent plan can still omit targets or invent unsupported behaviour.","textPreview":"• Users refer to people, objects, and prior turns. |  | • One request can mix dialogue, knowledge, and action. |  | • A fluent plan can s...","textChars":179,"textLines":5,"bbox":[94,290,466,252]}
+{"kind":"shape","id":"sh/9wnqhczy","slide":2,"bbox":[612,230,510,330]}
+{"kind":"shape","id":"sh/mtwrmxg7","slide":2,"bbox":[612,230,6,330]}
+{"kind":"textbox","id":"sh/nu58f2hs","slide":2,"text":"Robots require evidence","textPreview":"Robots require evidence","textChars":23,"textLines":1,"bbox":[634,248,466,34]}
+{"kind":"textbox","id":"sh/wjy9sry9","slide":2,"text":"• Capabilities and arguments must be checked before dispatch.\n\n• Identity, order, and lineage must survive execution.\n\n• Completion must follow typed results and verified effects.","textPreview":"• Capabilities and arguments must be checked before dispatch. |  | • Identity, order, and lineage must survive execution. |  | • Completi...","textChars":179,"textLines":5,"bbox":[634,290,466,252]}
+{"kind":"textbox","id":"sh/xk7qlczu","slide":2,"text":"Example: “Bring all the objects you can see to ALEX.”","textPreview":"Example: “Bring all the objects you can see to ALEX.”","textChars":53,"textLines":1,"bbox":[72,590,900,38]}
+{"kind":"notes","id":"nt/hwbqtkby","slide":2,"text":"Timing: 1:30. Use the ALEX example. Explain that correct execution requires route choice, role preservation, complete target selection, valid plan coverage, execution evidence, and truthful final reporting."}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"QUESTION","textShapes":16}
+{"kind":"shape","id":"sh/by1svqlc","slide":3,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/cza94vmx","slide":3,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/d0jax03i","slide":3,"text":"QUESTION","textPreview":"QUESTION","textChars":8,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/298ryl4v","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/3ah8rqlg","slide":3,"text":"RESEARCH QUESTION AND OBJECTIVES","textPreview":"RESEARCH QUESTION AND OBJECTIVES","textChars":32,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/obq90bml","slide":3,"text":"The study asks how flexibility can be integrated without surrendering execution control.","textPreview":"The study asks how flexibility can be integrated without surrendering execution control.","textChars":88,"textLines":1,"bbox":[72,88,1050,104]}
+{"kind":"shape","id":"sh/pcjqtg36","slide":3,"bbox":[72,205,1130,142]}
+{"kind":"textbox","id":"sh/m5cra54z","slide":3,"text":"How can a modular robot architecture integrate dialogue, symbolic grounding, planning, deterministic execution, and feedback while preserving clear responsibility boundaries and evidence-based communication?","textPreview":"How can a modular robot architecture integrate dialogue, symbolic grounding, planning, deterministic execution, and feedback while preser...","textChars":207,"textLines":1,"bbox":[108,232,1058,88]}
+{"kind":"shape","id":"sh/n6ls3alk","slide":3,"bbox":[72,384,350,190]}
+{"kind":"shape","id":"sh/n2l4fq98","slide":3,"bbox":[72,384,6,190]}
+{"kind":"textbox","id":"sh/m1c3mlsn","slide":3,"text":"Integrate","textPreview":"Integrate","textChars":9,"textLines":1,"bbox":[94,402,306,34]}
+{"kind":"textbox","id":"sh/943mhgre","slide":3,"text":"dialogue, grounding, planning, orchestration, and skills through explicit ROS 2 interfaces","textPreview":"dialogue, grounding, planning, orchestration, and skills through explicit ROS 2 interfaces","textChars":90,"textLines":1,"bbox":[94,444,306,112]}
+{"kind":"shape","id":"sh/83ulovat","slide":3,"bbox":[450,384,350,190]}
+{"kind":"shape","id":"sh/v6l4jq94","slide":3,"bbox":[450,384,6,190]}
+{"kind":"textbox","id":"sh/a5c3ql8z","slide":3,"text":"Constrain","textPreview":"Constrain","textChars":9,"textLines":1,"bbox":[472,402,306,34]}
+{"kind":"textbox","id":"sh/x8nml0ra","slide":3,"text":"candidate plans through reviewed capabilities and deterministic admission before dispatch","textPreview":"candidate plans through reviewed capabilities and deterministic admission before dispatch","textChars":89,"textLines":1,"bbox":[472,444,306,112]}
+{"kind":"shape","id":"sh/w7ulsvqp","slide":3,"bbox":[828,384,350,190]}
+{"kind":"shape","id":"sh/ja54na9g","slide":3,"bbox":[828,384,6,190]}
+{"kind":"textbox","id":"sh/i9w3u58v","slide":3,"text":"Validate","textPreview":"Validate","textChars":8,"textLines":1,"bbox":[850,402,306,34]}
+{"kind":"textbox","id":"sh/e10f2twf","slide":3,"text":"full turns, controlled failures, symbolic postconditions, and truthful reporting","textPreview":"full turns, controlled failures, symbolic postconditions, and truthful reporting","textChars":80,"textLines":1,"bbox":[850,444,306,112]}
+{"kind":"shape","id":"sh/f29gbyx0","slide":3,"bbox":[206,606,150,34]}
+{"kind":"textbox","id":"sh/03ix43e5","slide":3,"text":"RQ1 plans","textPreview":"RQ1 plans","textChars":9,"textLines":1,"bbox":[214,613,134,20]}
+{"kind":"shape","id":"sh/14ryd8fq","slide":3,"bbox":[372,606,170,34]}
+{"kind":"textbox","id":"sh/6d0fytg3","slide":3,"text":"RQ2 grounding","textPreview":"RQ2 grounding","textChars":13,"textLines":1,"bbox":[380,613,154,20]}
+{"kind":"shape","id":"sh/re9g7yxo","slide":3,"bbox":[558,606,164,34]}
+{"kind":"textbox","id":"sh/sfix03y9","slide":3,"text":"RQ3 admission","textPreview":"RQ3 admission","textChars":13,"textLines":1,"bbox":[566,613,148,20]}
+{"kind":"shape","id":"sh/tgry9ofu","slide":3,"bbox":[738,606,160,34]}
+{"kind":"textbox","id":"sh/a9kfadwn","slide":3,"text":"RQ4 recovery","textPreview":"RQ4 recovery","textChars":12,"textLines":1,"bbox":[746,613,144,20]}
+{"kind":"shape","id":"sh/batgjixs","slide":3,"bbox":[914,606,174,34]}
+{"kind":"textbox","id":"sh/l4fi9cza","slide":3,"text":"RQ5 ownership","textPreview":"RQ5 ownership","textChars":13,"textLines":1,"bbox":[922,613,158,20]}
+{"kind":"notes","id":"nt/ofy9wn61","slide":3,"text":"Timing: 1:30. State the central question once. The three objective verbs compress the seven thesis objectives. Map the five research questions to plans, grounding, admission, recovery, and ownership."}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"PRINCIPLE","textShapes":17}
+{"kind":"shape","id":"sh/e9sj2tsv","slide":4,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/1cj2d8b6","slide":4,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/0ba143al","slide":4,"text":"PRINCIPLE","textPreview":"PRINCIPLE","textChars":9,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/rm1k7yt4","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/ql8jytsj","slide":4,"text":"DESIGN PRINCIPLE","textPreview":"DESIGN PRINCIPLE","textChars":16,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/doj29oba","slide":4,"text":"The architecture contains model variation instead of assuming it away.","textPreview":"The architecture contains model variation instead of assuming it away.","textChars":70,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"shape","id":"sh/sna103ap","slide":4,"bbox":[72,225,246,290]}
+{"kind":"textbox","id":"sh/3ihk3et8","slide":4,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[86,243,218,66]}
+{"kind":"textbox","id":"sh/ih8ju9sn","slide":4,"text":"Structure","textPreview":"Structure","textChars":9,"textLines":1,"bbox":[88,311,214,34]}
+{"kind":"textbox","id":"sh/kbm987y5","slide":4,"text":"Generated outputs enter typed request and plan contracts.","textPreview":"Generated outputs enter typed request and plan contracts.","textChars":57,"textLines":1,"bbox":[90,351,210,150]}
+{"kind":"shape","id":"sh/5cva1cfq","slide":4,"bbox":[346,225,246,290]}
+{"kind":"textbox","id":"sh/i94r6xgz","slide":4,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[360,243,218,66]}
+{"kind":"textbox","id":"sh/jadsz2xk","slide":4,"text":"Validate","textPreview":"Validate","textChars":8,"textLines":1,"bbox":[362,311,214,34]}
+{"kind":"textbox","id":"sh/w72947yt","slide":4,"text":"Unsupported skills, roles, arguments, and incomplete coverage are rejected.","textPreview":"Unsupported skills, roles, arguments, and incomplete coverage are rejected.","textChars":75,"textLines":1,"bbox":[364,351,210,150]}
+{"kind":"shape","id":"sh/x8vaxsfe","slide":4,"bbox":[620,225,246,290]}
+{"kind":"textbox","id":"sh/a5kr2xg3","slide":4,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[634,243,218,66]}
+{"kind":"textbox","id":"sh/v6tsv2xo","slide":4,"text":"Execute","textPreview":"Execute","textChars":7,"textLines":1,"bbox":[636,311,214,34]}
+{"kind":"textbox","id":"sh/g36tgryd","slide":4,"text":"The orchestrator controls ordered dispatch and plan lineage.","textPreview":"The orchestrator controls ordered dispatch and plan lineage.","textChars":60,"textLines":1,"bbox":[638,351,210,150]}
+{"kind":"shape","id":"sh/h4fa9wfy","slide":4,"bbox":[894,225,246,290]}
+{"kind":"textbox","id":"sh/p0batw72","slide":4,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[908,243,218,66]}
+{"kind":"textbox","id":"sh/oz29krqh","slide":4,"text":"Report","textPreview":"Report","textChars":6,"textLines":1,"bbox":[910,311,214,34]}
+{"kind":"textbox","id":"sh/3ytsrmpw","slide":4,"text":"Typed results and postconditions constrain user-facing claims.","textPreview":"Typed results and postconditions constrain user-facing claims.","textChars":62,"textLines":1,"bbox":[912,351,210,150]}
+{"kind":"textbox","id":"sh/2xkrih8b","slide":4,"text":"Deterministic interfaces do not make generation deterministic. They make variation attributable and restrict its execution authority.","textPreview":"Deterministic interfaces do not make generation deterministic. They make variation attributable and restrict its execution authority.","textChars":133,"textLines":1,"bbox":[105,555,1040,72]}
+{"kind":"notes","id":"nt/jyx0ra1s","slide":4,"text":"Timing: 1:25. This is the thesis in one slide. Emphasise that safe rejection is useful but still counts as a task-level failure."}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"ARCHITECTURE","textShapes":26}
+{"kind":"shape","id":"sh/qd0bahob","slide":5,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/dgbulwnm","slide":5,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/cf2tcr61","slide":5,"text":"ARCHITECTURE","textPreview":"ARCHITECTURE","textChars":12,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/z2tcnm5s","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/yhkbe1o7","slide":5,"text":"ARCHITECTURE AND RUNTIME FLOW","textPreview":"ARCHITECTURE AND RUNTIME FLOW","textChars":29,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/l4bupwny","slide":5,"text":"Each uncertainty has an owner, and evidence returns through the same lineage.","textPreview":"Each uncertainty has an owner, and evidence returns through the same lineage.","textChars":77,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"shape","id":"sh/032tgr6d","slide":5,"bbox":[57,252,165,150]}
+{"kind":"textbox","id":"sh/n6dcr65o","slide":5,"text":"Dialogue","textPreview":"Dialogue","textChars":8,"textLines":1,"bbox":[65,280,149,30]}
+{"kind":"textbox","id":"sh/m5kbi1oj","slide":5,"text":"turn lifecycle\nand speech","textPreview":"turn lifecycle | and speech","textChars":25,"textLines":2,"bbox":[69,321,141,58]}
+{"kind":"textbox","id":"sh/w32dkbuh","slide":5,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[220,309,22,36]}
+{"kind":"shape","id":"sh/x4vedgvm","slide":5,"bbox":[240,252,165,150]}
+{"kind":"textbox","id":"sh/ahkvi1cb","slide":5,"text":"Chatbot","textPreview":"Chatbot","textChars":7,"textLines":1,"bbox":[248,280,149,30]}
+{"kind":"textbox","id":"sh/v2twb6dw","slide":5,"text":"route and\ngrounded request","textPreview":"route and | grounded request","textChars":26,"textLines":2,"bbox":[252,321,141,58]}
+{"kind":"textbox","id":"sh/k7mxovud","slide":5,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[403,309,22,36]}
+{"kind":"shape","id":"sh/58vehgvy","slide":5,"bbox":[423,252,165,150]}
+{"kind":"textbox","id":"sh/i54fmlc7","slide":5,"text":"Planner","textPreview":"Planner","textChars":7,"textLines":1,"bbox":[431,280,149,30]}
+{"kind":"textbox","id":"sh/j6dwfqds","slide":5,"text":"candidate plan\nand supervision","textPreview":"candidate plan | and supervision","textChars":30,"textLines":2,"bbox":[435,321,141,58]}
+{"kind":"textbox","id":"sh/sb6xsvu9","slide":5,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[586,309,22,36]}
+{"kind":"shape","id":"sh/tcfel0vu","slide":5,"bbox":[606,252,165,150]}
+{"kind":"textbox","id":"sh/hgrmpwj2","slide":5,"text":"Orchestrator","textPreview":"Orchestrator","textChars":12,"textLines":1,"bbox":[614,280,149,30]}
+{"kind":"textbox","id":"sh/gfi5grih","slide":5,"text":"admission, dispatch,\nfeedback","textPreview":"admission, dispatch, | feedback","textChars":29,"textLines":2,"bbox":[618,321,141,58]}
+{"kind":"textbox","id":"sh/fe94nm1w","slide":5,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[769,309,22,36]}
+{"kind":"shape","id":"sh/ud0ne10b","slide":5,"bbox":[789,252,165,150]}
+{"kind":"textbox","id":"sh/pkr6tgjy","slide":5,"text":"Skills","textPreview":"Skills","textChars":6,"textLines":1,"bbox":[797,280,149,30]}
+{"kind":"textbox","id":"sh/4ji5kbid","slide":5,"text":"typed result\nand effects","textPreview":"typed result | and effects","textChars":24,"textLines":2,"bbox":[801,321,141,58]}
+{"kind":"textbox","id":"sh/3i94r61s","slide":5,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[952,309,22,36]}
+{"kind":"shape","id":"sh/2h0ni107","slide":5,"bbox":[972,252,165,150]}
+{"kind":"textbox","id":"sh/5o7mhcju","slide":5,"text":"Dialogue","textPreview":"Dialogue","textChars":8,"textLines":1,"bbox":[980,280,149,30]}
+{"kind":"textbox","id":"sh/kny587i9","slide":5,"text":"one evidence-based\nclosure","textPreview":"one evidence-based | closure","textChars":26,"textLines":2,"bbox":[984,321,141,58]}
+{"kind":"textbox","id":"sh/atcjidg7","slide":5,"text":"Goal ID  •  plan ID  •  plan version  •  stable step IDs","textPreview":"Goal ID  •  plan ID  •  plan version  •  stable step IDs","textChars":56,"textLines":1,"bbox":[72,442,1130,40]}
+{"kind":"shape","id":"sh/vu5kbihc","slide":5,"bbox":[150,510,440,110]}
+{"kind":"shape","id":"sh/wve1knyx","slide":5,"bbox":[150,510,6,110]}
+{"kind":"textbox","id":"sh/xwn2dszi","slide":5,"text":"Symbolic evidence","textPreview":"Symbolic evidence","textChars":17,"textLines":1,"bbox":[172,528,396,34]}
+{"kind":"textbox","id":"sh/ihw3mxg3","slide":5,"text":"KnowledgeCore and scene grounding provide bounded entities, roles, locations, and relations.","textPreview":"KnowledgeCore and scene grounding provide bounded entities, roles, locations, and relations.","textChars":92,"textLines":1,"bbox":[172,558,396,44]}
+{"kind":"shape","id":"sh/ji5kf2ho","slide":5,"bbox":[622,510,440,110]}
+{"kind":"shape","id":"sh/kjelony9","slide":5,"bbox":[622,510,6,110]}
+{"kind":"textbox","id":"sh/5kn2hszu","slide":5,"text":"Execution evidence","textPreview":"Execution evidence","textChars":18,"textLines":1,"bbox":[644,528,396,34]}
+{"kind":"textbox","id":"sh/e1sjatgz","slide":5,"text":"Robot-facing or simulated adapters return the same typed result boundary.","textPreview":"Robot-facing or simulated adapters return the same typed result boundary.","textChars":73,"textLines":1,"bbox":[644,558,396,44]}
+{"kind":"notes","id":"nt/i107q5of","slide":5,"text":"Timing: 2:00. Walk left to right. Dialogue owns speech. The chatbot routes and grounds. The planner proposes. The orchestrator validates and dispatches. Skills return evidence. The same lineage reaches one final dialogue act."}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"CONTRACTS","textShapes":11}
+{"kind":"shape","id":"sh/lkrqp4ra","slide":6,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/yhg7epsj","slide":6,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/zi98nu94","slide":6,"text":"CONTRACTS","textPreview":"CONTRACTS","textChars":9,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/87ipkzal","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/98rqt4r6","slide":6,"text":"RUNTIME CONTRACTS","textPreview":"RUNTIME CONTRACTS","textChars":17,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/ml07i9sv","slide":6,"text":"Explicit interfaces separate proposal quality from execution safety.","textPreview":"Explicit interfaces separate proposal quality from execution safety.","textChars":68,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"shape","id":"sh/7m98ru9g","slide":6,"bbox":[72,225,326,285]}
+{"kind":"shape","id":"sh/oryp8fah","slide":6,"bbox":[72,225,6,285]}
+{"kind":"textbox","id":"sh/pc76hkr2","slide":6,"text":"Planner proposes","textPreview":"Planner proposes","textChars":16,"textLines":1,"bbox":[94,243,282,34]}
+{"kind":"textbox","id":"sh/h4bupgn6","slide":6,"text":"• structured goal and target selection\n\n• ordered candidate steps\n\n• retry or replan policy","textPreview":"• structured goal and target selection |  | • ordered candidate steps |  | • retry or replan policy","textChars":91,"textLines":5,"bbox":[94,285,282,207]}
+{"kind":"shape","id":"sh/w32twb6l","slide":6,"bbox":[434,205,350,325]}
+{"kind":"shape","id":"sh/v2tcn650","slide":6,"bbox":[434,205,6,325]}
+{"kind":"textbox","id":"sh/u1kbu1ov","slide":6,"text":"Admission decides","textPreview":"Admission decides","textChars":17,"textLines":1,"bbox":[456,223,306,34]}
+{"kind":"textbox","id":"sh/5svutgni","slide":6,"text":"• registered skill and arguments\n\n• role and target-set integrity\n\n• coverage, dependencies, and lineage","textPreview":"• registered skill and arguments |  | • role and target-set integrity |  | • coverage, dependencies, and lineage","textChars":104,"textLines":5,"bbox":[456,265,306,247]}
+{"kind":"shape","id":"sh/47mt0b6x","slide":6,"bbox":[820,225,326,285]}
+{"kind":"shape","id":"sh/j6dcr65c","slide":6,"bbox":[820,225,6,285]}
+{"kind":"textbox","id":"sh/i54bylor","slide":6,"text":"Executor dispatches","textPreview":"Executor dispatches","textChars":19,"textLines":1,"bbox":[842,243,282,34]}
+{"kind":"textbox","id":"sh/twfux0ne","slide":6,"text":"• only accepted steps\n\n• typed status and effects\n\n• correlated feedback","textPreview":"• only accepted steps |  | • typed status and effects |  | • correlated feedback","textChars":72,"textLines":5,"bbox":[842,285,282,207]}
+{"kind":"textbox","id":"sh/svmt4v6t","slide":6,"text":"Safe rejection prevents invalid dispatch, but it does not convert an incomplete plan into success.","textPreview":"Safe rejection prevents invalid dispatch, but it does not convert an incomplete plan into success.","textChars":98,"textLines":1,"bbox":[130,570,1010,52]}
+{"kind":"notes","id":"nt/x8f69ofe","slide":6,"text":"Timing: 1:35. Mention the reviewed skill registry and the key contracts: planner request, skill description, plan envelope, execution feedback, result, and dialogue act. Do not enumerate every field."}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"GROUNDING","textShapes":11}
+{"kind":"shape","id":"sh/batcbq94","slide":7,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/cb2tkvap","slide":7,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/dcbud0ra","slide":7,"text":"GROUNDING","textPreview":"GROUNDING","textChars":9,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/ydkbm5sv","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/zedcfa9g","slide":7,"text":"GROUNDING AND SKILL BOUNDARIES","textPreview":"GROUNDING AND SKILL BOUNDARIES","textChars":30,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/kzmdova1","slide":7,"text":"Available context supports a decision, but fresh evidence proves an action.","textPreview":"Available context supports a decision, but fresh evidence proves an action.","textChars":75,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"shape","id":"sh/l0vuh0rm","slide":7,"bbox":[72,215,520,310]}
+{"kind":"shape","id":"sh/eh0ba1sr","slide":7,"bbox":[72,215,6,310]}
+{"kind":"textbox","id":"sh/fi9c369c","slide":7,"text":"Role-preserving symbolic context","textPreview":"Role-preserving symbolic context","textChars":32,"textLines":1,"bbox":[94,233,476,34]}
+{"kind":"textbox","id":"sh/baxkjqlk","slide":7,"text":"person → recipient or human target\nobject → manipulable entity\nlocation → navigation anchor\nsupport → object relation\n\nrequested → selected → planned → executed → reported","textPreview":"person → recipient or human target | object → manipulable entity | location → navigation anchor | support → object relation |  | requeste...","textChars":171,"textLines":6,"bbox":[94,275,476,232]}
+{"kind":"shape","id":"sh/a9ojq5kz","slide":7,"bbox":[624,215,520,150]}
+{"kind":"shape","id":"sh/xcz2l03q","slide":7,"bbox":[624,215,6,150]}
+{"kind":"textbox","id":"sh/cbq1sv25","slide":7,"text":"Robot-facing in v1","textPreview":"Robot-facing in v1","textChars":18,"textLines":1,"bbox":[646,233,476,34]}
+{"kind":"textbox","id":"sh/n6x0fqlo","slide":7,"text":"Speech, posture and head motion were integrated. Look-at used a real adapter, while the primary profile remained fake-by-default.","textPreview":"Speech, posture and head motion were integrated. Look-at used a real adapter, while the primary profile remained fake-by-default.","textChars":129,"textLines":1,"bbox":[646,275,476,72]}
+{"kind":"shape","id":"sh/25ojml43","slide":7,"bbox":[624,390,520,180]}
+{"kind":"shape","id":"sh/p8fih03e","slide":7,"bbox":[624,390,6,180]}
+{"kind":"textbox","id":"sh/o761ov2t","slide":7,"text":"Controlled adapters in v1","textPreview":"Controlled adapters in v1","textChars":25,"textLines":1,"bbox":[646,408,476,34]}
+{"kind":"textbox","id":"sh/f2d0b6lc","slide":7,"text":"Navigation, find, pick, place, bring, walk and wave exposed deterministic success and failure outcomes through the same result contract.","textPreview":"Navigation, find, pick, place, bring, walk and wave exposed deterministic success and failure outcomes through the same result contract.","textChars":136,"textLines":1,"bbox":[646,450,476,102]}
+{"kind":"textbox","id":"sh/eh4jil4r","slide":7,"text":"The detector and physical manipulation remain separate evidence seams.","textPreview":"The detector and physical manipulation remain separate evidence seams.","textChars":70,"textLines":1,"bbox":[72,588,1080,42]}
+{"kind":"notes","id":"nt/gnmp4jqx","slide":7,"text":"Timing: 1:30. Explain the distinction between grounded availability and authoritative selection. Be exact about the physical boundary: the thesis validates software and symbolic effects more deeply than navigation, grasping, or detector accuracy."}
+{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"VALIDATION","textShapes":18}
+{"kind":"shape","id":"sh/elkf2pg7","slide":8,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/18byd4zy","slide":8,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/g72x4zyd","slide":8,"text":"VALIDATION","textPreview":"VALIDATION","textChars":10,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/ri9g7uhw","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/6h0fypgb","slide":8,"text":"VALIDATION METHOD","textPreview":"VALIDATION METHOD","textChars":17,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/tkby9kzm","slide":8,"text":"A case passed only when semantics, execution, effects, and reporting agreed.","textPreview":"A case passed only when semantics, execution, effects, and reporting agreed.","textChars":76,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"shape","id":"sh/sjix0zy1","slide":8,"bbox":[72,220,252,260]}
+{"kind":"textbox","id":"sh/je9g3ahk","slide":8,"text":"A","textPreview":"A","textChars":1,"textLines":1,"bbox":[86,238,224,66]}
+{"kind":"textbox","id":"sh/id0fu50z","slide":8,"text":"Semantic route","textPreview":"Semantic route","textChars":14,"textLines":1,"bbox":[88,306,220,34]}
+{"kind":"textbox","id":"sh/o7ydoret","slide":8,"text":"Correct dialogue, knowledge, or execution path","textPreview":"Correct dialogue, knowledge, or execution path","textChars":46,"textLines":1,"bbox":[90,346,216,120]}
+{"kind":"shape","id":"sh/98rehwve","slide":8,"bbox":[350,220,252,260]}
+{"kind":"textbox","id":"sh/m5gvmhwn","slide":8,"text":"B","textPreview":"B","textChars":1,"textLines":1,"bbox":[364,238,224,66]}
+{"kind":"textbox","id":"sh/n6pwfmd8","slide":8,"text":"Accepted plan","textPreview":"Accepted plan","textChars":13,"textLines":1,"bbox":[366,306,220,34]}
+{"kind":"textbox","id":"sh/0jydkreh","slide":8,"text":"Complete targets, roles, skills, order, and lineage","textPreview":"Complete targets, roles, skills, order, and lineage","textChars":51,"textLines":1,"bbox":[368,346,216,120]}
+{"kind":"shape","id":"sh/1k7edwv2","slide":8,"bbox":[628,220,252,260]}
+{"kind":"textbox","id":"sh/ehgvihwr","slide":8,"text":"C","textPreview":"C","textChars":1,"textLines":1,"bbox":[642,238,224,66]}
+{"kind":"textbox","id":"sh/zipwbmdc","slide":8,"text":"Controlled outcome","textPreview":"Controlled outcome","textChars":18,"textLines":1,"bbox":[644,306,220,34]}
+{"kind":"textbox","id":"sh/kfixwbe1","slide":8,"text":"Success, failure, clarification, or bounded replan","textPreview":"Success, failure, clarification, or bounded replan","textChars":50,"textLines":1,"bbox":[646,346,216,120]}
+{"kind":"shape","id":"sh/lgbepgvm","slide":8,"bbox":[906,220,252,260]}
+{"kind":"textbox","id":"sh/tw7e9gnq","slide":8,"text":"D","textPreview":"D","textChars":1,"textLines":1,"bbox":[920,238,224,66]}
+{"kind":"textbox","id":"sh/svydgb65","slide":8,"text":"Verified closure","textPreview":"Verified closure","textChars":16,"textLines":1,"bbox":[922,306,220,34]}
+{"kind":"textbox","id":"sh/7u5w765k","slide":8,"text":"Postcondition and final report agree with evidence","textPreview":"Postcondition and final report agree with evidence","textChars":50,"textLines":1,"bbox":[924,346,216,120]}
+{"kind":"textbox","id":"sh/6twve1oz","slide":8,"text":"One unit of analysis = one user request under a fixed software, model, world-state, and skill configuration.","textPreview":"One unit of analysis = one user request under a fixed software, model, world-state, and skill configuration.","textChars":108,"textLines":1,"bbox":[105,535,1050,54]}
+{"kind":"textbox","id":"sh/5sne5wne","slide":8,"text":"Scenario-based software and integration validation, not unrestricted robot-task success or human-subject evaluation.","textPreview":"Scenario-based software and integration validation, not unrestricted robot-task success or human-subject evaluation.","textChars":116,"textLines":1,"bbox":[135,600,990,38]}
+{"kind":"notes","id":"nt/fu1gfa1s","slide":8,"text":"Timing: 1:40. Explain that event presence alone was insufficient. The harness compared requested, selected, planned, executed, and reported target sets; role integrity; ordered constraints; KB postconditions; report coverage; and exactly-once speech."}
+{"kind":"slide","id":"sl/udsvah03","slide":9,"title":"EVIDENCE","textShapes":14}
+{"kind":"shape","id":"sh/eponml43","slide":9,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/1cfmhgne","slide":9,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/0b65obm9","slide":9,"text":"EVIDENCE","textPreview":"EVIDENCE","textChars":8,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/nex4jq5k","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/mdonql4z","slide":9,"text":"FROZEN EVIDENCE SCOPE","textPreview":"FROZEN EVIDENCE SCOPE","textChars":21,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/9gzml0nq","slide":9,"text":"One primary qualification anchors the thesis; other model probes remain separate.","textPreview":"One primary qualification anchors the thesis; other model probes remain separate.","textChars":81,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"shape","id":"sh/ofq5svm5","slide":9,"bbox":[72,225,340,300]}
+{"kind":"textbox","id":"sh/bih4na5w","slide":9,"text":"108","textPreview":"108","textChars":3,"textLines":1,"bbox":[86,243,312,66]}
+{"kind":"textbox","id":"sh/ah8nu54b","slide":9,"text":"Retained case records","textPreview":"Retained case records","textChars":21,"textLines":1,"bbox":[88,311,308,34]}
+{"kind":"textbox","id":"sh/oza1gfyh","slide":9,"text":"Derived from 33 structured runtime traces across the final evidence index.","textPreview":"Derived from 33 structured runtime traces across the final evidence index.","textChars":74,"textLines":1,"bbox":[90,351,304,160]}
+{"kind":"shape","id":"sh/p0ji9kf2","slide":9,"bbox":[444,225,340,300]}
+{"kind":"textbox","id":"sh/2xsjepgb","slide":9,"text":"72","textPreview":"72","textChars":2,"textLines":1,"bbox":[458,243,312,66]}
+{"kind":"textbox","id":"sh/3y107axw","slide":9,"text":"Primary records","textPreview":"Primary records","textChars":15,"textLines":1,"bbox":[460,311,308,34]}
+{"kind":"textbox","id":"sh/cnu1kzyd","slide":9,"text":"Qwen3-VL: 64 passes and 8 failures under the frozen qualification.","textPreview":"Qwen3-VL: 64 passes and 8 failures under the frozen qualification.","textChars":66,"textLines":1,"bbox":[462,351,304,160]}
+{"kind":"shape","id":"sh/do3id4fy","slide":9,"bbox":[816,225,340,300]}
+{"kind":"textbox","id":"sh/qlcjipgn","slide":9,"text":"191","textPreview":"191","textChars":3,"textLines":1,"bbox":[830,243,312,66]}
+{"kind":"textbox","id":"sh/bml0buxs","slide":9,"text":"Model supplement","textPreview":"Model supplement","textChars":16,"textLines":1,"bbox":[832,311,308,34]}
+{"kind":"textbox","id":"sh/0ru1ozyp","slide":9,"text":"Three Ollama models, retained outside the primary denominator.","textPreview":"Three Ollama models, retained outside the primary denominator.","textChars":62,"textLines":1,"bbox":[834,351,304,160]}
+{"kind":"textbox","id":"sh/lsn2h4fa","slide":9,"text":"The 22-case end-to-end questionnaire produced 20 passes and 2 failures.","textPreview":"The 22-case end-to-end questionnaire produced 20 passes and 2 failures.","textChars":71,"textLines":1,"bbox":[168,570,950,52]}
+{"kind":"notes","id":"nt/udsvah03","slide":9,"text":"Timing: 1:20. Keep denominators explicit. The 191 supplementary observations do not enlarge or replace the 72-record primary qualification."}
+{"kind":"slide","id":"sl/m90b6t0r","slide":10,"title":"RESULTS","textShapes":8}
+{"kind":"shape","id":"sh/q9sn69kb","slide":10,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/xc3mho32","slide":10,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/cbu58j2h","slide":10,"text":"RESULTS","textPreview":"RESULTS","textChars":7,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/zelojyl8","slide":10,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/ydcnatkn","slide":10,"text":"PRIMARY QWEN3-VL RESULTS","textPreview":"PRIMARY QWEN3-VL RESULTS","textChars":24,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/l036l83y","slide":10,"text":"Most tested seams passed.\nSemantic non-passes remained visible.","textPreview":"Most tested seams passed. | Semantic non-passes remained visible.","textChars":63,"textLines":2,"bbox":[72,88,1050,122]}
+{"kind":"shape","id":"sh/725onyl4","slide":10,"bbox":[760,215,390,280]}
+{"kind":"shape","id":"sh/m1cnetkj","slide":10,"bbox":[760,215,6,280]}
+{"kind":"textbox","id":"sh/s7yt4b21","slide":10,"text":"What the failures exposed","textPreview":"What the failures exposed","textChars":25,"textLines":1,"bbox":[782,233,346,34]}
+{"kind":"textbox","id":"sh/d87uxg3m","slide":10,"text":"• incomplete universal target selection\n\n• one location-to-recipient role error\n\n• missing terminal closure after recovery\n\n• incomplete multi-capability plan coverage","textPreview":"• incomplete universal target selection |  | • one location-to-recipient role error |  | • missing terminal closure after recovery |  | •...","textChars":167,"textLines":7,"bbox":[782,275,346,202]}
+{"kind":"shape","id":"sh/q5gb21kb","slide":10,"bbox":[760,505,390,125]}
+{"kind":"shape","id":"sh/r6pcv6lw","slide":10,"bbox":[760,505,6,125]}
+{"kind":"textbox","id":"sh/0bit8b2d","slide":10,"text":"Interpretation","textPreview":"Interpretation","textChars":14,"textLines":1,"bbox":[782,523,346,34]}
+{"kind":"textbox","id":"sh/1cru1g3y","slide":10,"text":"Incomplete plans were rejected before dispatch. Safe containment did not erase task-level failure.","textPreview":"Incomplete plans were rejected before dispatch. Safe containment did not erase task-level failure.","textChars":98,"textLines":1,"bbox":[782,553,346,59]}
+{"kind":"chart","id":"ch/exs3uh0j","slide":10,"name":"Chart","chartType":"bar","bbox":[72,205,650,360]}
+{"kind":"notes","id":"nt/m90b6t0r","slide":10,"text":"Timing: 1:50. Read the exact counts, not only the percentages. Use the 8.4 score later, after the evidence components. State that not all 72 records were physical robot turns."}
+{"kind":"slide","id":"sl/jetc3ut0","slide":11,"title":"FAILURES","textShapes":20}
+{"kind":"shape","id":"sh/a90z21on","slide":11,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/xcryxg7y","slide":11,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/wbih4b6d","slide":11,"text":"FAILURES","textPreview":"FAILURES","textChars":8,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/n69grmpw","slide":11,"text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/250zy18b","slide":11,"text":"ERROR TAXONOMY","textPreview":"ERROR TAXONOMY","textChars":14,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/98rytw72","slide":11,"text":"The remaining failures occur at identifiable semantic and closure boundaries.","textPreview":"The remaining failures occur at identifiable semantic and closure boundaries.","textChars":77,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"shape","id":"sh/o7ih0r6h","slide":11,"bbox":[72,213,142,34]}
+{"kind":"textbox","id":"sh/72t03qp0","slide":11,"text":"ROUTE","textPreview":"ROUTE","textChars":5,"textLines":1,"bbox":[80,220,126,20]}
+{"kind":"textbox","id":"sh/61kzalof","slide":11,"text":"KB update entered the execution planner","textPreview":"KB update entered the execution planner","textChars":39,"textLines":1,"bbox":[244,208,530,50]}
+{"kind":"textbox","id":"sh/ofqtgnyt","slide":11,"text":"Route and ownership failure","textPreview":"Route and ownership failure","textChars":27,"textLines":1,"bbox":[810,213,325,40]}
+{"kind":"shape","id":"sh/9gza9sze","slide":11,"bbox":[72,269,1064,1]}
+{"kind":"shape","id":"sh/mdobedg3","slide":11,"bbox":[72,295,142,34]}
+{"kind":"textbox","id":"sh/nehs7iho","slide":11,"text":"SELECTION","textPreview":"SELECTION","textChars":9,"textLines":1,"bbox":[80,302,126,20]}
+{"kind":"textbox","id":"sh/0b6tc3yx","slide":11,"text":"One member omitted from an “all objects” set","textPreview":"One member omitted from an “all objects” set","textChars":44,"textLines":1,"bbox":[244,290,530,50]}
+{"kind":"textbox","id":"sh/1cfa58zi","slide":11,"text":"Target-set failure","textPreview":"Target-set failure","textChars":18,"textLines":1,"bbox":[810,295,325,40]}
+{"kind":"shape","id":"sh/epobatgr","slide":11,"bbox":[72,351,1064,1]}
+{"kind":"shape","id":"sh/zaxs3yhc","slide":11,"bbox":[72,377,142,34]}
+{"kind":"textbox","id":"sh/cn6t83y1","slide":11,"text":"ROLE","textPreview":"ROLE","textChars":4,"textLines":1,"bbox":[80,384,126,20]}
+{"kind":"textbox","id":"sh/dofa18z6","slide":11,"text":"Kitchen treated as the delivery recipient","textPreview":"Kitchen treated as the delivery recipient","textChars":41,"textLines":1,"bbox":[244,372,530,50]}
+{"kind":"textbox","id":"sh/tsnip0ny","slide":11,"text":"Entity-role failure","textPreview":"Entity-role failure","textChars":19,"textLines":1,"bbox":[810,377,325,40]}
+{"kind":"shape","id":"sh/87ehgv6d","slide":11,"bbox":[72,433,1064,1]}
+{"kind":"shape","id":"sh/7650nq5s","slide":11,"bbox":[72,459,142,34]}
+{"kind":"textbox","id":"sh/65wzelo7","slide":11,"text":"COVERAGE","textPreview":"COVERAGE","textChars":8,"textLines":1,"bbox":[80,466,126,20]}
+{"kind":"textbox","id":"sh/l43ilgn2","slide":11,"text":"Required action absent from a long composite","textPreview":"Required action absent from a long composite","textChars":44,"textLines":1,"bbox":[244,454,530,50]}
+{"kind":"textbox","id":"sh/k3uhcb6h","slide":11,"text":"Plan-completeness failure","textPreview":"Plan-completeness failure","textChars":25,"textLines":1,"bbox":[810,459,325,40]}
+{"kind":"shape","id":"sh/j2lgjq5w","slide":11,"bbox":[72,515,1064,1]}
+{"kind":"shape","id":"sh/y1czalob","slide":11,"bbox":[72,541,142,34]}
+{"kind":"textbox","id":"sh/p07ixkn6","slide":11,"text":"CLOSURE","textPreview":"CLOSURE","textChars":7,"textLines":1,"bbox":[80,548,126,20]}
+{"kind":"textbox","id":"sh/4zyhofml","slide":11,"text":"Recovery occurred without reliable terminal speech","textPreview":"Recovery occurred without reliable terminal speech","textChars":50,"textLines":1,"bbox":[244,536,530,50]}
+{"kind":"textbox","id":"sh/m58fih43","slide":11,"text":"Report/closure failure","textPreview":"Report/closure failure","textChars":22,"textLines":1,"bbox":[810,541,325,40]}
+{"kind":"shape","id":"sh/n61wbmlo","slide":11,"bbox":[72,597,1064,1]}
+{"kind":"textbox","id":"sh/o7axk7m9","slide":11,"text":"The architecture converted silent execution risks into inspectable route, selection, plan, clarification, or closure failures.","textPreview":"The architecture converted silent execution risks into inspectable route, selection, plan, clarification, or closure failures.","textChars":126,"textLines":1,"bbox":[120,625,1040,48]}
+{"kind":"notes","id":"nt/jetc3ut0","slide":11,"text":"Timing: 1:30. Distinguish containment from repair. The architecture caught the two incomplete capability-extreme plans, but target selection, role assignment, clarification, and closure still depended partly on model output."}
+{"kind":"slide","id":"sl/8f2psfyx","slide":12,"title":"MODELS","textShapes":11}
+{"kind":"shape","id":"sh/edk3ed4j","slide":12,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/1gbm9s3a","slide":12,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/0f2lgnmp","slide":12,"text":"MODELS","textPreview":"MODELS","textChars":6,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/ra943il8","slide":12,"text":"12","textPreview":"12","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/q903ad4n","slide":12,"text":"MODEL COMPARISON","textPreview":"MODEL COMPARISON","textChars":16,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/dcbm583y","slide":12,"text":"Stable interfaces did not produce invariant semantic behaviour.","textPreview":"Stable interfaces did not produce invariant semantic behaviour.","textChars":63,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"shape","id":"sh/sb2lcnmd","slide":12,"bbox":[72,220,340,300]}
+{"kind":"shape","id":"sh/b6d4f2lc","slide":12,"bbox":[72,220,6,300]}
+{"kind":"textbox","id":"sh/a543mx4r","slide":12,"text":"Stable across backends","textPreview":"Stable across backends","textChars":22,"textLines":1,"bbox":[94,238,296,34]}
+{"kind":"textbox","id":"sh/wvupgz6t","slide":12,"text":"Environment profile\nStartup ownership\nSymbolic transport\nPlanner request schema\nTyped execution boundary","textPreview":"Environment profile | Startup ownership | Symbolic transport | Planner request schema | Typed execution boundary","textChars":104,"textLines":5,"bbox":[94,280,296,222]}
+{"kind":"shape","id":"sh/xw3q94ne","slide":12,"bbox":[444,220,340,300]}
+{"kind":"shape","id":"sh/atc7epon","slide":12,"bbox":[444,220,6,300]}
+{"kind":"textbox","id":"sh/bulo7u58","slide":12,"text":"Variable across backends","textPreview":"Variable across backends","textChars":24,"textLines":1,"bbox":[466,238,296,62]}
+{"kind":"textbox","id":"sh/orapcf6h","slide":12,"text":"Route selection\nTarget coverage\nRole assignment\nClarification\nPlan and report completeness","textPreview":"Route selection | Target coverage | Role assignment | Clarification | Plan and report completeness","textChars":90,"textLines":5,"bbox":[466,308,296,194]}
+{"kind":"shape","id":"sh/9sj65kn2","slide":12,"bbox":[816,220,340,300]}
+{"kind":"shape","id":"sh/mps7a5or","slide":12,"bbox":[816,220,6,300]}
+{"kind":"textbox","id":"sh/nq1o3a5w","slide":12,"text":"Qualification rule","textPreview":"Qualification rule","textChars":18,"textLines":1,"bbox":[838,238,296,34]}
+{"kind":"textbox","id":"sh/0nap8f6l","slide":12,"text":"Qwen3-VL completed the frozen campaign. A compatible replacement must pass the same campaign before inheriting qualification.","textPreview":"Qwen3-VL completed the frozen campaign. A compatible replacement must pass the same campaign before inheriting qualification.","textChars":125,"textLines":1,"bbox":[838,280,296,222]}
+{"kind":"textbox","id":"sh/1oj61kn6","slide":12,"text":"Model-agnostic describes the interface boundary. Model-invariant would require equivalent behaviour, which the evidence did not show.","textPreview":"Model-agnostic describes the interface boundary. Model-invariant would require equivalent behaviour, which the evidence did not show.","textChars":133,"textLines":1,"bbox":[120,570,1040,62]}
+{"kind":"notes","id":"nt/8f2psfyx","slide":12,"text":"Timing: 1:30. Qwen3.5 and Ollama evidence was narrower and mostly screening-level. The final Gemma fallback passed preflight and one dialogue smoke turn only."}
+{"kind":"slide","id":"sl/hgzapcr6","slide":13,"title":"RECOVERY","textShapes":21}
+{"kind":"shape","id":"sh/dsr6t8bu","slide":13,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/q50nydsj","slide":13,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/bq9orito","slide":13,"text":"RECOVERY","textPreview":"RECOVERY","textChars":8,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/o3i5w3ad","slide":13,"text":"13","textPreview":"13","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/p4r6p8by","slide":13,"text":"REPRESENTATIVE RETAINED TRACE","textPreview":"REPRESENTATIVE RETAINED TRACE","textChars":29,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/21gnuts7","slide":13,"text":"A failed pick produced a revised plan without losing the completed work.","textPreview":"A failed pick produced a revised plan without losing the completed work.","textChars":72,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"shape","id":"sh/32ponyts","slide":13,"bbox":[65,255,190,150]}
+{"kind":"textbox","id":"sh/gzy5s3a1","slide":13,"text":"find object","textPreview":"find object","textChars":11,"textLines":1,"bbox":[79,285,162,34]}
+{"kind":"textbox","id":"sh/1076lobm","slide":13,"text":"succeeded","textPreview":"succeeded","textChars":9,"textLines":1,"bbox":[79,335,162,46]}
+{"kind":"textbox","id":"sh/hcfy9k3u","slide":13,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[252,312,39,36]}
+{"kind":"shape","id":"sh/gb6x0zm9","slide":13,"bbox":[291,255,190,150]}
+{"kind":"textbox","id":"sh/vaxg7ulo","slide":13,"text":"pick object","textPreview":"pick object","textChars":11,"textLines":1,"bbox":[305,285,162,34]}
+{"kind":"textbox","id":"sh/u9ofyp43","slide":13,"text":"failed","textPreview":"failed","textChars":6,"textLines":1,"bbox":[305,335,162,46]}
+{"kind":"textbox","id":"sh/t8fy5k3i","slide":13,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[478,312,39,36]}
+{"kind":"shape","id":"sh/876xwfmx","slide":13,"bbox":[517,255,190,150]}
+{"kind":"textbox","id":"sh/7mdg3als","slide":13,"text":"typed feedback","textPreview":"typed feedback","textChars":14,"textLines":1,"bbox":[531,285,162,34]}
+{"kind":"textbox","id":"sh/6l4fu547","slide":13,"text":"goal + plan lineage","textPreview":"goal + plan lineage","textChars":19,"textLines":1,"bbox":[531,335,162,46]}
+{"kind":"textbox","id":"sh/lkvy103m","slide":13,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[704,312,39,36]}
+{"kind":"shape","id":"sh/kjmxsfm1","slide":13,"bbox":[743,255,190,150]}
+{"kind":"textbox","id":"sh/cnqh8fux","slide":13,"text":"plan v2","textPreview":"plan v2","textChars":7,"textLines":1,"bbox":[757,285,162,34]}
+{"kind":"textbox","id":"sh/xozyhkbi","slide":13,"text":"scan → find → pick","textPreview":"scan → find → pick","textChars":18,"textLines":1,"bbox":[757,335,162,46]}
+{"kind":"textbox","id":"sh/q18f65cr","slide":13,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[930,312,39,36]}
+{"kind":"shape","id":"sh/bmhgfatc","slide":13,"bbox":[969,255,190,150]}
+{"kind":"textbox","id":"sh/oz6x4vul","slide":13,"text":"report","textPreview":"report","textChars":6,"textLines":1,"bbox":[983,285,162,34]}
+{"kind":"textbox","id":"sh/p0zyd0b6","slide":13,"text":"completed","textPreview":"completed","textChars":9,"textLines":1,"bbox":[983,335,162,46]}
+{"kind":"textbox","id":"sh/2xof2lcv","slide":13,"text":"The model did not directly retry the robot. It proposed plan version 2 after receiving structured failure evidence.","textPreview":"The model did not directly retry the robot. It proposed plan version 2 after receiving structured failure evidence.","textChars":115,"textLines":1,"bbox":[120,465,1040,66]}
+{"kind":"shape","id":"sh/3yxgbqdg","slide":13,"bbox":[160,540,900,100]}
+{"kind":"shape","id":"sh/8vahgzu5","slide":13,"bbox":[160,540,6,100]}
+{"kind":"textbox","id":"sh/9wjyp4bq","slide":13,"text":"Why this trace matters","textPreview":"Why this trace matters","textChars":22,"textLines":1,"bbox":[182,558,856,22]}
+{"kind":"textbox","id":"sh/jqlkfyds","slide":13,"text":"It demonstrates middle-stage recovery, retained lineage, and a truthful closure. Beginning-stage navigation recovery was also retained; terminal recovery remained less reliable.","textPreview":"It demonstrates middle-stage recovery, retained lineage, and a truthful closure. Beginning-stage navigation recovery was also retained; t...","textChars":177,"textLines":1,"bbox":[182,578,856,44]}
+{"kind":"notes","id":"nt/hgzapcr6","slide":13,"text":"Timing: 1:35. This is retained evidence, not a staged live run. The corresponding beginning-stage navigation trace preserved a four-target objective and closed. Later-stage delivery and missing-recipient cases were less complete."}
+{"kind":"slide","id":"sl/6lsnupw7","slide":14,"title":"DEMONSTRATION","textShapes":17}
+{"kind":"shape","id":"sh/a9gvid8v","slide":14,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/xc7eds76","slide":14,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/wbydknq1","slide":14,"text":"DEMONSTRATION","textPreview":"DEMONSTRATION","textChars":13,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/jepwf2pc","slide":14,"text":"14","textPreview":"14","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/idgvmx8r","slide":14,"text":"CONTROLLED LIVE DEMONSTRATION","textPreview":"CONTROLLED LIVE DEMONSTRATION","textChars":29,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/5grehs7i","slide":14,"text":"Three short turns expose dialogue, knowledge, and execution routing.","textPreview":"Three short turns expose dialogue, knowledge, and execution routing.","textChars":68,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"shape","id":"sh/kfidonqx","slide":14,"bbox":[72,215,100,100]}
+{"kind":"textbox","id":"sh/zi5c3y98","slide":14,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[86,233,72,66]}
+{"kind":"shape","id":"sh/ehwvat8n","slide":14,"bbox":[88,301,68,34]}
+{"kind":"shape","id":"sh/c3e1gjyd","slide":14,"bbox":[90,301,64,40]}
+{"kind":"textbox","id":"sh/x4ni9ofy","slide":14,"text":"“Hey, how are you?”","textPreview":"“Hey, how are you?”","textChars":19,"textLines":1,"bbox":[200,220,470,42]}
+{"kind":"shape","id":"sh/a1wze9g7","slide":14,"bbox":[710,221,180,34]}
+{"kind":"textbox","id":"sh/b2507exs","slide":14,"text":"Dialogue route","textPreview":"Dialogue route","textChars":14,"textLines":1,"bbox":[718,228,164,20]}
+{"kind":"textbox","id":"sh/kre1k3y9","slide":14,"text":"one response, no planner request","textPreview":"one response, no planner request","textChars":32,"textLines":1,"bbox":[200,270,760,34]}
+{"kind":"shape","id":"sh/ls7idofu","slide":14,"bbox":[200,320,900,1]}
+{"kind":"shape","id":"sh/y5wjitgj","slide":14,"bbox":[72,345,100,100]}
+{"kind":"textbox","id":"sh/z650byxo","slide":14,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[86,363,72,66]}
+{"kind":"shape","id":"sh/0buh8zy5","slide":14,"bbox":[88,431,68,34]}
+{"kind":"shape","id":"sh/1w3i14fq","slide":14,"bbox":[90,431,64,40]}
+{"kind":"textbox","id":"sh/hsvy50re","slide":14,"text":"“What can you see now?”","textPreview":"“What can you see now?”","textChars":23,"textLines":1,"bbox":[200,350,470,42]}
+{"kind":"shape","id":"sh/grmxwvqt","slide":14,"bbox":[710,351,180,34]}
+{"kind":"textbox","id":"sh/fqdg3q98","slide":14,"text":"Knowledge route","textPreview":"Knowledge route","textChars":15,"textLines":1,"bbox":[718,358,164,20]}
+{"kind":"textbox","id":"sh/up4fal83","slide":14,"text":"answer from the declared symbolic state","textPreview":"answer from the declared symbolic state","textChars":39,"textLines":1,"bbox":[200,400,760,34]}
+{"kind":"shape","id":"sh/pwvy90rq","slide":14,"bbox":[200,450,900,1]}
+{"kind":"shape","id":"sh/4vmh0vq5","slide":14,"bbox":[72,475,100,100]}
+{"kind":"textbox","id":"sh/3udg7q9k","slide":14,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[86,493,72,66]}
+{"kind":"shape","id":"sh/2t4fyl8z","slide":14,"bbox":[88,561,68,34]}
+{"kind":"shape","id":"sh/d0fydk7m","slide":14,"bbox":[90,561,64,40]}
+{"kind":"textbox","id":"sh/cz6h4fq1","slide":14,"text":"“Move your head up.”","textPreview":"“Move your head up.”","textChars":20,"textLines":1,"bbox":[200,480,470,42]}
+{"kind":"shape","id":"sh/atg3idk7","slide":14,"bbox":[710,481,180,34]}
+{"kind":"textbox","id":"sh/bup4rils","slide":14,"text":"Execution route","textPreview":"Execution route","textChars":15,"textLines":1,"bbox":[718,488,164,20]}
+{"kind":"textbox","id":"sh/cvylkn2d","slide":14,"text":"accepted plan, one skill result, one closure","textPreview":"accepted plan, one skill result, one closure","textChars":44,"textLines":1,"bbox":[200,530,760,34]}
+{"kind":"shape","id":"sh/xw7mts3y","slide":14,"bbox":[200,580,900,1]}
+{"kind":"textbox","id":"sh/yxgnmxkj","slide":14,"text":"The demonstration illustrates the architecture. The frozen traces remain the scored evidence.","textPreview":"The demonstration illustrates the architecture. The frozen traces remain the scored evidence.","textChars":93,"textLines":1,"bbox":[160,625,960,42]}
+{"kind":"notes","id":"nt/6lsnupw7","slide":14,"text":"Timing: 1:30 maximum. Show rqt input and the trace viewer side by side. Allow about 25 seconds per turn. If a response stalls, stop immediately, state that the live run is illustrative rather than scored, and continue to the retained evidence. Do not change models, relaunch nodes, or troubleshoot during the defence. If the robot is present, the third turn may use real head motion and TTS. Without the robot, use the deterministic adapter and show the typed result."}
+{"kind":"slide","id":"sl/vaxsvy10","slide":15,"title":"LIMITS","textShapes":11}
+{"kind":"shape","id":"sh/ihw3mlkv","slide":15,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/547mhg3m","slide":15,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/k3y5ov21","slide":15,"text":"LIMITS","textPreview":"LIMITS","textChars":6,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/76p4jqls","slide":15,"text":"15","textPreview":"15","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/65gnqlk7","slide":15,"text":"CLAIM BOUNDARIES AND TRANSFER","textPreview":"CLAIM BOUNDARIES AND TRANSFER","textChars":29,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/t87ml0ji","slide":15,"text":"The strongest evidence concerns software contracts and symbolic state.","textPreview":"The strongest evidence concerns software contracts and symbolic state.","textChars":70,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"shape","id":"sh/s7y5sv2x","slide":15,"bbox":[72,220,340,315]}
+{"kind":"shape","id":"sh/na5476l8","slide":15,"bbox":[72,220,6,315]}
+{"kind":"textbox","id":"sh/m9c3e1kn","slide":15,"text":"Supported","textPreview":"Supported","textChars":9,"textLines":1,"bbox":[94,238,296,34]}
+{"kind":"textbox","id":"sh/wrm9kvep","slide":15,"text":"• ownership and interface architecture\n\n• deterministic admission and dispatch\n\n• controlled failure and replanning\n\n• symbolic postconditions and reporting","textPreview":"• ownership and interface architecture |  | • deterministic admission and dispatch |  | • controlled failure and replanning |  | • symbol...","textChars":156,"textLines":7,"bbox":[94,280,296,237]}
+{"kind":"shape","id":"sh/hsvat0fa","slide":15,"bbox":[444,220,340,315]}
+{"kind":"shape","id":"sh/upkrilwj","slide":15,"bbox":[444,220,6,315]}
+{"kind":"textbox","id":"sh/vqdsrqx4","slide":15,"text":"Not established","textPreview":"Not established","textChars":15,"textLines":1,"bbox":[466,238,296,34]}
+{"kind":"textbox","id":"sh/4vm9ovel","slide":15,"text":"• navigation or grasp accuracy\n\n• detector performance\n\n• human safety or acceptance\n\n• unrestricted autonomy or universal model ranking","textPreview":"• navigation or grasp accuracy |  | • detector performance |  | • human safety or acceptance |  | • unrestricted autonomy or universal mo...","textChars":136,"textLines":7,"bbox":[466,280,296,237]}
+{"kind":"shape","id":"sh/5wvax0f6","slide":15,"bbox":[816,220,340,315]}
+{"kind":"shape","id":"sh/it4rm5wv","slide":15,"bbox":[816,220,6,315]}
+{"kind":"textbox","id":"sh/judsvqxg","slide":15,"text":"Transfer conditions","textPreview":"Transfer conditions","textChars":19,"textLines":1,"bbox":[838,238,296,34]}
+{"kind":"textbox","id":"sh/0z29cbyh","slide":15,"text":"Another robot needs an equivalent reviewed skill registry and typed adapters. Another model must repeat the frozen qualification.","textPreview":"Another robot needs an equivalent reviewed skill registry and typed adapters. Another model must repeat the frozen qualification.","textChars":129,"textLines":1,"bbox":[838,280,296,237]}
+{"kind":"textbox","id":"sh/l0bqlgf2","slide":15,"text":"Controlled simulation reduced hardware variance and compute waste, but it cannot replace physical safety and performance measurement.","textPreview":"Controlled simulation reduced hardware variance and compute waste, but it cannot replace physical safety and performance measurement.","textChars":133,"textLines":1,"bbox":[120,580,1040,52]}
+{"kind":"notes","id":"nt/vaxsvy10","slide":15,"text":"Timing: 1:35. Cover ethics and sustainability briefly: execution authority remains bounded; no human-subject or safety claim is made; controlled adapters reduce unnecessary robot trials and enable reproducibility. Transfer remains an architectural proposition until measured on another platform."}
+{"kind":"slide","id":"sl/gny5sjyp","slide":16,"title":"FREEZE","textShapes":18}
+{"kind":"shape","id":"sh/7ytgz6pg","slide":16,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/8z2h8bq1","slide":16,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/9kby1g7m","slide":16,"text":"FREEZE","textPreview":"FREEZE","textChars":6,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/ytkf2h8j","slide":16,"text":"16","textPreview":"16","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/zutgvm94","slide":16,"text":"FROZEN RUNTIME TUPLE","textPreview":"FROZEN RUNTIME TUPLE","textChars":20,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/kv2h4rqp","slide":16,"text":"The thesis result is preserved as one reproducible configuration.","textPreview":"The thesis result is preserved as one reproducible configuration.","textChars":65,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"shape","id":"sh/lwbyxwra","slide":16,"bbox":[72,230,252,260]}
+{"kind":"textbox","id":"sh/ip4zel83","slide":16,"text":"v1","textPreview":"v1","textChars":2,"textLines":1,"bbox":[86,248,224,66]}
+{"kind":"textbox","id":"sh/3qdg7qpo","slide":16,"text":"Code","textPreview":"Code","textChars":4,"textLines":1,"bbox":[88,316,220,34]}
+{"kind":"textbox","id":"sh/fm1gzq5o","slide":16,"text":"Reviewed branch and nested fork commits.","textPreview":"Reviewed branch and nested fork commits.","textChars":40,"textLines":1,"bbox":[90,356,216,120]}
+{"kind":"shape","id":"sh/e1sf65o3","slide":16,"bbox":[348,230,252,260]}
+{"kind":"textbox","id":"sh/1ojy10ne","slide":16,"text":"v34","textPreview":"v34","textChars":3,"textLines":1,"bbox":[362,248,224,66]}
+{"kind":"textbox","id":"sh/gnax8v6t","slide":16,"text":"Container","textPreview":"Container","textChars":9,"textLines":1,"bbox":[364,316,220,34]}
+{"kind":"textbox","id":"sh/nqlg3a5k","slide":16,"text":"iiia:nao-final","textPreview":"iiia:nao-final","textChars":14,"textLines":1,"bbox":[366,356,216,120]}
+{"kind":"shape","id":"sh/2pcfa5oz","slide":16,"bbox":[624,230,252,260]}
+{"kind":"textbox","id":"sh/ps3y5knq","slide":16,"text":"Q3VL","textPreview":"Q3VL","textChars":4,"textLines":1,"bbox":[638,248,224,66]}
+{"kind":"textbox","id":"sh/oruhcf65","slide":16,"text":"Primary model","textPreview":"Primary model","textChars":13,"textLines":1,"bbox":[640,316,220,34]}
+{"kind":"textbox","id":"sh/bulg7u5g","slide":16,"text":"Qwen3-VL 30B A3B AWQ","textPreview":"Qwen3-VL 30B A3B AWQ","textChars":20,"textLines":1,"bbox":[642,356,216,120]}
+{"kind":"shape","id":"sh/atczepob","slide":16,"bbox":[900,230,252,260]}
+{"kind":"textbox","id":"sh/mpgj6t8j","slide":16,"text":"8.4","textPreview":"8.4","textChars":3,"textLines":1,"bbox":[914,248,224,66]}
+{"kind":"textbox","id":"sh/7qp0zepo","slide":16,"text":"Operational index","textPreview":"Operational index","textChars":17,"textLines":1,"bbox":[916,316,220,34]}
+{"kind":"textbox","id":"sh/8by18jq9","slide":16,"text":"Secondary summary of the explicit case evidence.","textPreview":"Secondary summary of the explicit case evidence.","textChars":48,"textLines":1,"bbox":[918,356,216,120]}
+{"kind":"textbox","id":"sh/9c7i1o7u","slide":16,"text":"sha256:bb82c158092a69870dae48272b3b20fd8cd4ecfe97a0e61a2253a2cca00c663e","textPreview":"sha256:bb82c158092a69870dae48272b3b20fd8cd4ecfe97a0e61a2253a2cca00c663e","textChars":71,"textLines":1,"bbox":[150,550,980,30]}
+{"kind":"textbox","id":"sh/ylwj2987","slide":16,"text":"The score summarises qualification; the denominators and failure reasons carry the claim.","textPreview":"The score summarises qualification; the denominators and failure reasons carry the claim.","textChars":89,"textLines":1,"bbox":[160,600,960,42]}
+{"kind":"notes","id":"nt/gny5sjyp","slide":16,"text":"Timing: 1:05. The final tag is an alias of the validated image, not a rebuild after evaluation. Keep the operational index secondary to case counts."}
+{"kind":"slide","id":"sl/14bup87q","slide":17,"title":"FUTURE WORK","textShapes":11}
+{"kind":"shape","id":"sh/e9wvu54r","slide":17,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/1c7e50ni","slide":17,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/gbedwfmx","slide":17,"text":"FUTURE WORK","textPreview":"FUTURE WORK","textChars":11,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/rm5czq50","slide":17,"text":"17","textPreview":"17","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/6lwvql4v","slide":17,"text":"NEXT VALIDATION FRONTIER","textPreview":"NEXT VALIDATION FRONTIER","textChars":24,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/t8ne10n6","slide":17,"text":"Move from validated software contracts toward measured embodiment.","textPreview":"Move from validated software contracts toward measured embodiment.","textChars":66,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"shape","id":"sh/snedsvml","slide":17,"bbox":[72,225,340,310]}
+{"kind":"shape","id":"sh/jilcvq54","slide":17,"bbox":[72,225,6,310]}
+{"kind":"textbox","id":"sh/ihcvml4j","slide":17,"text":"Embodied skills","textPreview":"Embodied skills","textChars":15,"textLines":1,"bbox":[94,243,296,34]}
+{"kind":"textbox","id":"sh/4by9or6l","slide":17,"text":"Quantify head and gaze behaviour, guarded wave, bounded local motion, semantic navigation, and pointing kinematics.","textPreview":"Quantify head and gaze behaviour, guarded wave, bounded local motion, semantic navigation, and pointing kinematics.","textChars":115,"textLines":1,"bbox":[94,285,296,232]}
+{"kind":"shape","id":"sh/pc7qhwn6","slide":17,"bbox":[444,225,340,310]}
+{"kind":"shape","id":"sh/29grm1of","slide":17,"bbox":[444,225,6,310]}
+{"kind":"textbox","id":"sh/3ap8fm50","slide":17,"text":"World evidence","textPreview":"World evidence","textChars":14,"textLines":1,"bbox":[466,243,296,34]}
+{"kind":"textbox","id":"sh/gnepkr69","slide":17,"text":"Evaluate detector identity settling and scene-grounding quality before promoting detector-derived facts into stronger claims.","textPreview":"Evaluate detector identity settling and scene-grounding quality before promoting detector-derived facts into stronger claims.","textChars":125,"textLines":1,"bbox":[466,285,296,232]}
+{"kind":"shape","id":"sh/honqdwnu","slide":17,"bbox":[816,225,340,310]}
+{"kind":"shape","id":"sh/ulw7ihoj","slide":17,"bbox":[816,225,6,310]}
+{"kind":"textbox","id":"sh/fm58bm54","slide":17,"text":"Interaction quality","textPreview":"Interaction quality","textChars":19,"textLines":1,"bbox":[838,243,296,34]}
+{"kind":"textbox","id":"sh/0ji9wb6t","slide":17,"text":"Measure ASR, TTS, latency, interruption handling, and autonomous idle/request arbitration with users and physical trials.","textPreview":"Measure ASR, TTS, latency, interruption handling, and autonomous idle/request arbitration with users and physical trials.","textChars":121,"textLines":1,"bbox":[838,285,296,232]}
+{"kind":"textbox","id":"sh/14rqpgne","slide":17,"text":"Every promoted skill should begin with one physical success, one failure or cancellation, and the same typed evidence boundary.","textPreview":"Every promoted skill should begin with one physical success, one failure or cancellation, and the same typed evidence boundary.","textChars":127,"textLines":1,"bbox":[120,580,1040,54]}
+{"kind":"notes","id":"nt/14bup87q","slide":17,"text":"Timing: 1:20. Keep LocateAnything and broader detector work as future work. The immediate physical path is real head/gaze and wave, followed by navigation and manipulation only when spatial and safety evidence is available."}
+{"kind":"slide","id":"sl/y5wne50z","slide":18,"title":"CONTRIBUTIONS","textShapes":14}
+{"kind":"shape","id":"sh/vqlkjuto","slide":18,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/wrelszu9","slide":18,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/hsn2l4bu","slide":18,"text":"CONTRIBUTIONS","textPreview":"CONTRIBUTIONS","textChars":13,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/itw3upcf","slide":18,"text":"18","textPreview":"18","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/je5knut0","slide":18,"text":"CONTRIBUTIONS","textPreview":"CONTRIBUTIONS","textChars":13,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/4felwzu5","slide":18,"text":"The thesis contributes an architecture, a containment boundary, and a qualification method.","textPreview":"The thesis contributes an architecture, a containment boundary, and a qualification method.","textChars":91,"textLines":1,"bbox":[72,88,1050,112]}
+{"kind":"shape","id":"sh/5gnmp4bq","slide":18,"bbox":[72,230,340,310]}
+{"kind":"textbox","id":"sh/6hw3y9sb","slide":18,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[86,248,312,66]}
+{"kind":"textbox","id":"sh/rip4retw","slide":18,"text":"Architecture","textPreview":"Architecture","textChars":12,"textLines":1,"bbox":[88,316,308,34]}
+{"kind":"textbox","id":"sh/fapkr6pw","slide":18,"text":"A modular ownership model connecting dialogue, grounding, planning, execution, and reporting.","textPreview":"A modular ownership model connecting dialogue, grounding, planning, execution, and reporting.","textChars":93,"textLines":1,"bbox":[90,356,304,170]}
+{"kind":"shape","id":"sh/upg3i18r","slide":18,"bbox":[444,230,340,310]}
+{"kind":"textbox","id":"sh/1cr2tg72","slide":18,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[458,248,312,66]}
+{"kind":"textbox","id":"sh/gbylkbqh","slide":18,"text":"Containment","textPreview":"Containment","textChars":11,"textLines":1,"bbox":[460,316,308,34]}
+{"kind":"textbox","id":"sh/7mpknmp0","slide":18,"text":"Typed contracts and deterministic admission restrict model-generated execution authority.","textPreview":"Typed contracts and deterministic admission restrict model-generated execution authority.","textChars":89,"textLines":1,"bbox":[462,356,304,170]}
+{"kind":"shape","id":"sh/6lg3e18f","slide":18,"bbox":[816,230,340,310]}
+{"kind":"textbox","id":"sh/to72pw76","slide":18,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[830,248,312,66]}
+{"kind":"textbox","id":"sh/snylgrql","slide":18,"text":"Qualification","textPreview":"Qualification","textChars":13,"textLines":1,"bbox":[832,316,308,34]}
+{"kind":"textbox","id":"sh/bi94zqp4","slide":18,"text":"A repeatable evidence method separates model, stack, observability, and physical claims.","textPreview":"A repeatable evidence method separates model, stack, observability, and physical claims.","textChars":88,"textLines":1,"bbox":[834,356,304,170]}
+{"kind":"textbox","id":"sh/qh03ql8j","slide":18,"text":"Together, these boundaries make language-model variation observable without hiding task-level failure.","textPreview":"Together, these boundaries make language-model variation observable without hiding task-level failure.","textChars":102,"textLines":1,"bbox":[155,590,970,48]}
+{"kind":"notes","id":"nt/y5wne50z","slide":18,"text":"Timing: 1:05. These are the three contributions to leave in the committee's notes. Avoid claiming a first or universal architecture."}
+{"kind":"slide","id":"sl/nid43ytk","slide":19,"title":"CONCLUSION","textShapes":7}
+{"kind":"shape","id":"sh/mt07mlsr","slide":19,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/9gb6xgbi","slide":19,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/8v2pobax","slide":19,"text":"CONCLUSION","textPreview":"CONCLUSION","textChars":10,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/vitozqt8","slide":19,"text":"19","textPreview":"19","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/ahk7qls3","slide":19,"text":"CONCLUSION","textPreview":"CONCLUSION","textChars":10,"textLines":1,"bbox":[72,68,380,24]}
+{"kind":"shape","id":"sh/xkbq10be","slide":19,"bbox":[72,132,6,300]}
+{"kind":"textbox","id":"sh/wj2psvat","slide":19,"text":"Language-model dialogue and planning can participate in an integrated robot architecture when their outputs are grounded, validated against reviewed skills, dispatched deterministically, and checked against typed feedback and symbolic postconditions.","textPreview":"Language-model dialogue and planning can participate in an integrated robot architecture when their outputs are grounded, validated again...","textChars":250,"textLines":1,"bbox":[110,126,1020,280]}
+{"kind":"textbox","id":"sh/jmd83atk","slide":19,"text":"The boundaries do not eliminate non-determinism. They make it observable and restrict its execution authority.","textPreview":"The boundaries do not eliminate non-determinism. They make it observable and restrict its execution authority.","textChars":110,"textLines":1,"bbox":[110,455,1010,100]}
+{"kind":"textbox","id":"sh/il47u5sz","slide":19,"text":"Thank you. I welcome your questions.","textPreview":"Thank you. I welcome your questions.","textChars":36,"textLines":1,"bbox":[110,600,700,40]}
+{"kind":"textbox","id":"sh/cri1gnql","slide":19,"text":"IIIA-CSIC  •  UAB  •  JAE-ICU 2025","textPreview":"IIIA-CSIC  •  UAB  •  JAE-ICU 2025","textChars":34,"textLines":1,"bbox":[870,610,300,26]}
+{"kind":"notes","id":"nt/nid43ytk","slide":19,"text":"Timing: 1:00. Pause after the second statement. Thank the committee. Do not introduce new future work during the conclusion."}
+{"kind":"slide","id":"sl/zyxsni5k","slide":20,"title":"APPENDIX A","textShapes":4}
+{"kind":"shape","id":"sh/dcnixw7e","slide":20,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/qpwjmh8n","slide":20,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/rq50vmp8","slide":20,"text":"APPENDIX A","textPreview":"APPENDIX A","textChars":10,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/4nu1krqh","slide":20,"text":"20","textPreview":"20","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/po3itc72","slide":20,"text":"APPENDIX","textPreview":"APPENDIX","textChars":8,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/2lczih8r","slide":20,"text":"Detailed frozen results","textPreview":"Detailed frozen results","textChars":23,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"table","id":"tb/q5cnipsf","slide":20,"name":"","rows":8,"cols":4,"preview":"Evidence scope | Pass | Fail | Interpretation","bbox":[72,190,1070,410]}
+{"kind":"notes","id":"nt/zyxsni5k","slide":20,"text":"Use when asked for the exact denominators. Explain that overlapping evidence families are not summed into a new denominator."}
+{"kind":"slide","id":"sl/m1wvqtk3","slide":21,"title":"APPENDIX B","textShapes":19}
+{"kind":"shape","id":"sh/edk3mdoj","slide":21,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/1gbmxs7a","slide":21,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/0f2lon6p","slide":21,"text":"APPENDIX B","textPreview":"APPENDIX B","textChars":10,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/ra9kryp8","slide":21,"text":"21","textPreview":"21","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/qp03yt8n","slide":21,"text":"APPENDIX","textPreview":"APPENDIX","textChars":8,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/dcb2t87y","slide":21,"text":"Research-question synthesis","textPreview":"Research-question synthesis","textChars":27,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"shape","id":"sh/sb2lk36t","slide":21,"bbox":[72,198,90,34]}
+{"kind":"textbox","id":"sh/b6d432pc","slide":21,"text":"RQ1","textPreview":"RQ1","textChars":3,"textLines":1,"bbox":[80,205,74,20]}
+{"kind":"textbox","id":"sh/al43uxor","slide":21,"text":"Supported for tested task families","textPreview":"Supported for tested task families","textChars":34,"textLines":1,"bbox":[190,193,430,48]}
+{"kind":"textbox","id":"sh/4jax4nqd","slide":21,"text":"One questionnaire composite and two extreme cases failed","textPreview":"One questionnaire composite and two extreme cases failed","textChars":56,"textLines":1,"bbox":[650,193,500,56]}
+{"kind":"shape","id":"sh/5kjydsri","slide":21,"bbox":[190,258,950,1]}
+{"kind":"shape","id":"sh/ixsf2d87","slide":21,"bbox":[72,288,90,34]}
+{"kind":"textbox","id":"sh/jy1gbi9s","slide":21,"text":"RQ2","textPreview":"RQ2","textChars":3,"textLines":1,"bbox":[80,295,74,20]}
+{"kind":"textbox","id":"sh/wvax03q1","slide":21,"text":"Strong in controlled symbolic profiles","textPreview":"Strong in controlled symbolic profiles","textChars":38,"textLines":1,"bbox":[190,283,430,48]}
+{"kind":"textbox","id":"sh/hwjy98rm","slide":21,"text":"Selection and role assignment remained model-sensitive","textPreview":"Selection and role assignment remained model-sensitive","textChars":54,"textLines":1,"bbox":[650,283,500,56]}
+{"kind":"shape","id":"sh/utsfyt8v","slide":21,"bbox":[190,348,950,1]}
+{"kind":"shape","id":"sh/vu1w7y9g","slide":21,"bbox":[72,378,90,34]}
+{"kind":"textbox","id":"sh/8rqxw3q5","slide":21,"text":"RQ3","textPreview":"RQ3","textChars":3,"textLines":1,"bbox":[80,385,74,20]}
+{"kind":"textbox","id":"sh/9sze58rq","slide":21,"text":"Supported by deterministic rejection","textPreview":"Supported by deterministic rejection","textChars":36,"textLines":1,"bbox":[190,373,430,48]}
+{"kind":"textbox","id":"sh/porutkje","slide":21,"text":"Tested schemas, arguments, lineage, and registry only","textPreview":"Tested schemas, arguments, lineage, and registry only","textChars":53,"textLines":1,"bbox":[650,373,500,56]}
+{"kind":"shape","id":"sh/onid0f2t","slide":21,"bbox":[190,438,950,1]}
+{"kind":"shape","id":"sh/nm9cru18","slide":21,"bbox":[72,468,90,34]}
+{"kind":"textbox","id":"sh/2l0vypkn","slide":21,"text":"RQ4","textPreview":"RQ4","textChars":3,"textLines":1,"bbox":[80,475,74,20]}
+{"kind":"textbox","id":"sh/1kru5kj2","slide":21,"text":"Direct support for fail-once navigation and pick","textPreview":"Direct support for fail-once navigation and pick","textChars":48,"textLines":1,"bbox":[190,463,430,48]}
+{"kind":"textbox","id":"sh/0jidwf2x","slide":21,"text":"Missing-object, recipient, and closure recovery remained partial","textPreview":"Missing-object, recipient, and closure recovery remained partial","textChars":64,"textLines":1,"bbox":[650,463,500,56]}
+{"kind":"shape","id":"sh/fi9c3a1c","slide":21,"bbox":[190,528,950,1]}
+{"kind":"shape","id":"sh/ehgvu5kr","slide":21,"bbox":[72,558,90,34]}
+{"kind":"textbox","id":"sh/lgbe14jm","slide":21,"text":"RQ5","textPreview":"RQ5","textChars":3,"textLines":1,"bbox":[80,565,74,20]}
+{"kind":"textbox","id":"sh/kf2d8zi1","slide":21,"text":"Supported at interface and auditability level","textPreview":"Supported at interface and auditability level","textChars":45,"textLines":1,"bbox":[190,553,430,48]}
+{"kind":"textbox","id":"sh/ipcjmhw7","slide":21,"text":"Other robots and equivalent model behaviour remain unqualified","textPreview":"Other robots and equivalent model behaviour remain unqualified","textChars":62,"textLines":1,"bbox":[650,553,500,56]}
+{"kind":"shape","id":"sh/jqlkfmds","slide":21,"bbox":[190,618,950,1]}
+{"kind":"notes","id":"nt/m1wvqtk3","slide":21,"text":"Use this slide when a committee member asks for a direct answer to one or more research questions."}
+{"kind":"slide","id":"sl/5onypobq","slide":22,"title":"APPENDIX C","textShapes":22}
+{"kind":"shape","id":"sh/tcjqt8vi","slide":22,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/6987itcr","slide":22,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/7a18rydc","slide":22,"text":"APPENDIX C","textPreview":"APPENDIX C","textChars":10,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/k7qpgjul","slide":22,"text":"22","textPreview":"22","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/58zqpov6","slide":22,"text":"APPENDIX","textPreview":"APPENDIX","textChars":8,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/il87etcv","slide":22,"text":"Frozen runtime tuple","textPreview":"Frozen runtime tuple","textChars":20,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"shape","id":"sh/jmh8nyd0","slide":22,"bbox":[72,190,1070,56]}
+{"kind":"shape","id":"sh/43u9snu5","slide":22,"bbox":[72,190,6,56]}
+{"kind":"textbox","id":"sh/p43q1sva","slide":22,"text":"Image","textPreview":"Image","textChars":5,"textLines":1,"bbox":[94,208,1026,24]}
+{"kind":"shape","id":"sh/p4z6tcri","slide":22,"bbox":[94,228,1026,12]}
+{"kind":"textbox","id":"sh/436507qx","slide":22,"text":"iiia:nao-final","textPreview":"iiia:nao-final","textChars":14,"textLines":1,"bbox":[350,205,360,28]}
+{"kind":"textbox","id":"sh/3ixor29c","slide":22,"text":"sha256:bb82c158092a…","textPreview":"sha256:bb82c158092a…","textChars":20,"textLines":1,"bbox":[740,205,380,28]}
+{"kind":"shape","id":"sh/2honyx8r","slide":22,"bbox":[72,260,1070,56]}
+{"kind":"shape","id":"sh/hgf6pcr6","slide":22,"bbox":[72,260,6,56]}
+{"kind":"textbox","id":"sh/gf65w7ql","slide":22,"text":"Primary model","textPreview":"Primary model","textChars":13,"textLines":1,"bbox":[94,278,1026,24]}
+{"kind":"shape","id":"sh/fexon290","slide":22,"bbox":[94,298,1026,12]}
+{"kind":"textbox","id":"sh/udonux8v","slide":22,"text":"Qwen3-VL 30B A3B AWQ","textPreview":"Qwen3-VL 30B A3B AWQ","textChars":20,"textLines":1,"bbox":[350,275,360,28]}
+{"kind":"textbox","id":"sh/1cj61w7q","slide":22,"text":"chatbot, intent, planner","textPreview":"chatbot, intent, planner","textChars":24,"textLines":1,"bbox":[740,275,380,28]}
+{"kind":"shape","id":"sh/0bap8rq5","slide":22,"bbox":[72,330,1070,56]}
+{"kind":"shape","id":"sh/krihkz2d","slide":22,"bbox":[72,330,6,56]}
+{"kind":"textbox","id":"sh/lsrit4jy","slide":22,"text":"Pipeline","textPreview":"Pipeline","textChars":8,"textLines":1,"bbox":[94,348,1026,24]}
+{"kind":"shape","id":"sh/yp0zipk7","slide":22,"bbox":[94,368,1026,12]}
+{"kind":"textbox","id":"sh/jq90ru1s","slide":22,"text":"response-first","textPreview":"response-first","textChars":14,"textLines":1,"bbox":[350,345,360,28]}
+{"kind":"textbox","id":"sh/wnihgf2h","slide":22,"text":"JSON-only grounded context","textPreview":"JSON-only grounded context","textChars":26,"textLines":1,"bbox":[740,345,380,28]}
+{"kind":"shape","id":"sh/xoripkj2","slide":22,"bbox":[72,400,1070,56]}
+{"kind":"shape","id":"sh/al0zepkb","slide":22,"bbox":[72,400,6,56]}
+{"kind":"textbox","id":"sh/bm9gnu1w","slide":22,"text":"Primary evidence","textPreview":"Primary evidence","textChars":16,"textLines":1,"bbox":[94,418,1026,24]}
+{"kind":"shape","id":"sh/ozyhcf25","slide":22,"bbox":[94,438,1026,12]}
+{"kind":"textbox","id":"sh/907ylkjq","slide":22,"text":"72 records","textPreview":"72 records","textChars":10,"textLines":1,"bbox":[350,415,360,28]}
+{"kind":"textbox","id":"sh/rup0va5s","slide":22,"text":"64 pass, 8 fail","textPreview":"64 pass, 8 fail","textChars":15,"textLines":1,"bbox":[740,415,380,28]}
+{"kind":"shape","id":"sh/qtwz2547","slide":22,"bbox":[72,470,1070,56]}
+{"kind":"shape","id":"sh/dw7ixkni","slide":22,"bbox":[72,470,6,56]}
+{"kind":"textbox","id":"sh/cvy14fmx","slide":22,"text":"Detector","textPreview":"Detector","textChars":8,"textLines":1,"bbox":[94,488,1026,24]}
+{"kind":"shape","id":"sh/zyp0za5o","slide":22,"bbox":[94,508,1026,12]}
+{"kind":"textbox","id":"sh/exgj6p43","slide":22,"text":"disabled in primary profile","textPreview":"disabled in primary profile","textChars":27,"textLines":1,"bbox":[350,485,360,28]}
+{"kind":"textbox","id":"sh/1k7i1knu","slide":22,"text":"separate perception scope","textPreview":"separate perception scope","textChars":25,"textLines":1,"bbox":[740,485,380,28]}
+{"kind":"shape","id":"sh/0jy18fm9","slide":22,"bbox":[72,540,1070,56]}
+{"kind":"shape","id":"sh/nm903u5k","slide":22,"bbox":[72,540,6,56]}
+{"kind":"textbox","id":"sh/ml0jap4f","slide":22,"text":"Physical scope","textPreview":"Physical scope","textChars":14,"textLines":1,"bbox":[94,558,1026,24]}
+{"kind":"shape","id":"sh/65836tcb","slide":22,"bbox":[94,578,1026,12]}
+{"kind":"textbox","id":"sh/7qhkzytw","slide":22,"text":"speech, posture, head/gaze integration","textPreview":"speech, posture, head/gaze integration","textChars":38,"textLines":1,"bbox":[350,555,360,28]}
+{"kind":"textbox","id":"sh/8rql83uh","slide":22,"text":"no quantified navigation or manipulation","textPreview":"no quantified navigation or manipulation","textChars":40,"textLines":1,"bbox":[740,555,380,28]}
+{"kind":"notes","id":"nt/5onypobq","slide":22,"text":"Use when asked exactly what was held constant or which physical components were exercised."}
+{"kind":"slide","id":"sl/c7uhcr6t","slide":23,"title":"APPENDIX D","textShapes":9}
+{"kind":"shape","id":"sh/mxkrixgf","slide":23,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/90vqdczq","slide":23,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/8zm9k7y5","slide":23,"text":"APPENDIX D","textPreview":"APPENDIX D","textChars":10,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/v2d8fmhw","slide":23,"text":"23","textPreview":"23","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/a14rmhgb","slide":23,"text":"APPENDIX","textPreview":"APPENDIX","textChars":8,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/xovqhcz2","slide":23,"text":"Demonstration operating rule","textPreview":"Demonstration operating rule","textChars":28,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"shape","id":"sh/w3m9o7yh","slide":23,"bbox":[72,205,520,330]}
+{"kind":"shape","id":"sh/jqd8jmhs","slide":23,"bbox":[72,205,6,330]}
+{"kind":"textbox","id":"sh/ip4rqhgn","slide":23,"text":"Proceed live only if preflight is green","textPreview":"Proceed live only if preflight is green","textChars":39,"textLines":1,"bbox":[94,223,476,34]}
+{"kind":"textbox","id":"sh/sby90zm1","slide":23,"text":"• one model endpoint advertised and probed\n\n• clean stack with unique nodes\n\n• rqt input and trace viewer visible\n\n• declared KB fixture verified\n\n• robot adapter selected before the defence","textPreview":"• one model endpoint advertised and probed |  | • clean stack with unique nodes |  | • rqt input and trace viewer visible |  | • declared...","textChars":190,"textLines":9,"bbox":[94,265,476,252]}
+{"kind":"shape","id":"sh/tc7at436","slide":23,"bbox":[624,205,520,330]}
+{"kind":"shape","id":"sh/69gry94v","slide":23,"bbox":[624,205,6,330]}
+{"kind":"textbox","id":"sh/rapsrelg","slide":23,"text":"Otherwise use retained evidence","textPreview":"Otherwise use retained evidence","textChars":31,"textLines":1,"bbox":[646,223,476,34]}
+{"kind":"textbox","id":"sh/0fi94jmx","slide":23,"text":"• name the unavailable dependency once\n\n• do not relaunch or switch models on stage\n\n• show the representative trace slide\n\n• state that the live run is illustrative and the retained campaign is scored","textPreview":"• name the unavailable dependency once |  | • do not relaunch or switch models on stage |  | • show the representative trace slide |  | •...","textChars":201,"textLines":7,"bbox":[646,265,476,252]}
+{"kind":"textbox","id":"sh/1graxo3i","slide":23,"text":"Maximum live window: 90 seconds. No troubleshooting inside the timed defence.","textPreview":"Maximum live window: 90 seconds. No troubleshooting inside the timed defence.","textChars":77,"textLines":1,"bbox":[180,585,920,48]}
+{"kind":"notes","id":"nt/c7uhcr6t","slide":23,"text":"This appendix is for presenter recovery. If the live run fails, return to slide 13 or continue to slide 15 without apology or debugging."}
+{"kind":"slide","id":"sl/7qto7e10","slide":24,"title":"APPENDIX E","textShapes":14}
+{"kind":"shape","id":"sh/e5o72dcv","slide":24,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/1sfqxsv6","slide":24,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/0r6p4nul","slide":24,"text":"APPENDIX E","textPreview":"APPENDIX E","textChars":10,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/nux8zidc","slide":24,"text":"24","textPreview":"24","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/2to76dcr","slide":24,"text":"APPENDIX","textPreview":"APPENDIX","textChars":8,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/9wzq1svi","slide":24,"text":"Short answers for likely questions","textPreview":"Short answers for likely questions","textChars":34,"textLines":1,"bbox":[72,88,1050,122]}
+{"kind":"textbox","id":"sh/ov6p8nux","slide":24,"text":"Why simulated skills?","textPreview":"Why simulated skills?","textChars":21,"textLines":1,"bbox":[72,180,300,40]}
+{"kind":"textbox","id":"sh/3ydonyd8","slide":24,"text":"They place repeatable outcomes at the robot-facing result boundary, isolating planning and recovery from hardware variance.","textPreview":"They place repeatable outcomes at the robot-facing result boundary, isolating planning and recovery from hardware variance.","textChars":123,"textLines":1,"bbox":[390,180,750,66]}
+{"kind":"shape","id":"sh/ix47utcn","slide":24,"bbox":[72,252,1070,1]}
+{"kind":"textbox","id":"sh/8veh8ril","slide":24,"text":"What is deterministic?","textPreview":"What is deterministic?","textChars":22,"textLines":1,"bbox":[72,276,300,40]}
+{"kind":"textbox","id":"sh/9wni1wjq","slide":24,"text":"Admission, schema checks, dispatch order, lineage, feedback correlation, and effect verification. Route and plan generation remain model-dependent.","textPreview":"Admission, schema checks, dispatch order, lineage, feedback correlation, and effect verification. Route and plan generation remain model-...","textChars":147,"textLines":1,"bbox":[390,276,750,66]}
+{"kind":"shape","id":"sh/mtwz6h0f","slide":24,"bbox":[72,348,1070,1]}
+{"kind":"textbox","id":"sh/nu50zm10","slide":24,"text":"Why model-agnostic?","textPreview":"Why model-agnostic?","textChars":19,"textLines":1,"bbox":[72,372,300,40]}
+{"kind":"textbox","id":"sh/wzyhcrih","slide":24,"text":"The interfaces accept multiple backends. The results explicitly show that semantic behaviour is not invariant.","textPreview":"The interfaces accept multiple backends. The results explicitly show that semantic behaviour is not invariant.","textChars":110,"textLines":1,"bbox":[390,372,750,66]}
+{"kind":"shape","id":"sh/x07i5wj2","slide":24,"bbox":[72,444,1070,1]}
+{"kind":"textbox","id":"sh/axgza10b","slide":24,"text":"Why no classical planner baseline?","textPreview":"Why no classical planner baseline?","textChars":34,"textLines":1,"bbox":[72,468,300,40]}
+{"kind":"textbox","id":"sh/vyp03m1w","slide":24,"text":"The thesis validates integration and containment, not a causal comparison of planning algorithms.","textPreview":"The thesis validates integration and containment, not a causal comparison of planning algorithms.","textChars":97,"textLines":1,"bbox":[390,468,750,66]}
+{"kind":"shape","id":"sh/c3uh07id","slide":24,"bbox":[72,540,1070,1]}
+{"kind":"textbox","id":"sh/d43itcjy","slide":24,"text":"What comes next?","textPreview":"What comes next?","textChars":16,"textLines":1,"bbox":[72,564,300,40]}
+{"kind":"textbox","id":"sh/t8v6h47a","slide":24,"text":"Quantified physical skills, detector-quality evaluation, and user-facing interaction trials under the same evidence contracts.","textPreview":"Quantified physical skills, detector-quality evaluation, and user-facing interaction trials under the same evidence contracts.","textChars":126,"textLines":1,"bbox":[390,564,750,66]}
+{"kind":"shape","id":"sh/s72p8z6p","slide":24,"bbox":[72,636,1070,1]}
+{"kind":"notes","id":"nt/7qto7e10","slide":24,"text":"Keep the first answer under 30 seconds. Expand only when the committee asks for additional detail."}
+{"kind":"slide","id":"sl/69wfm9o7","slide":25,"title":"APPENDIX F","textShapes":16}
+{"kind":"shape","id":"sh/adgb2lwr","slide":25,"bbox":[1136,0,144,144]}
+{"kind":"shape","id":"sh/xg7axgf2","slide":25,"bbox":[1170,0,110,110]}
+{"kind":"textbox","id":"sh/cfyt4beh","slide":25,"text":"APPENDIX F","textPreview":"APPENDIX F","textChars":10,"textLines":1,"bbox":[1035,662,165,18]}
+{"kind":"textbox","id":"sh/napsr6x0","slide":25,"text":"25","textPreview":"25","textChars":2,"textLines":1,"bbox":[1206,662,36,18]}
+{"kind":"textbox","id":"sh/29wby1wf","slide":25,"text":"APPENDIX","textPreview":"APPENDIX","textChars":8,"textLines":1,"bbox":[72,52,860,24]}
+{"kind":"textbox","id":"sh/pc7atgf6","slide":25,"text":"Full implementation and validation objectives","textPreview":"Full implementation and validation objectives","textChars":45,"textLines":1,"bbox":[72,88,1050,100]}
+{"kind":"shape","id":"sh/obyt0bel","slide":25,"bbox":[72,180,520,120]}
+{"kind":"shape","id":"sh/fm5snmx4","slide":25,"bbox":[96,212,56,56]}
+{"kind":"textbox","id":"sh/elwbu1wj","slide":25,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[108,225,32,28]}
+{"kind":"textbox","id":"sh/wza9cbqp","slide":25,"text":"Integrate dialogue, routing, grounding, planning, deterministic orchestration, and skills through ROS 2 interfaces.","textPreview":"Integrate dialogue, routing, grounding, planning, deterministic orchestration, and skills through ROS 2 interfaces.","textChars":115,"textLines":1,"bbox":[177,204,385,80]}
+{"kind":"shape","id":"sh/h0jalgra","slide":25,"bbox":[627,180,520,120]}
+{"kind":"shape","id":"sh/uxsra18j","slide":25,"bbox":[651,212,56,56]}
+{"kind":"textbox","id":"sh/vy1sj694","slide":25,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[663,225,32,28]}
+{"kind":"textbox","id":"sh/8ba98bqt","slide":25,"text":"Define explicit runtime contracts for requests, context, plans, results, feedback, dialogue acts, and raw evidence.","textPreview":"Define explicit runtime contracts for requests, context, plans, results, feedback, dialogue acts, and raw evidence.","textChars":115,"textLines":1,"bbox":[732,204,385,80]}
+{"kind":"shape","id":"sh/9cjahgry","slide":25,"bbox":[72,325,520,120]}
+{"kind":"shape","id":"sh/m98r618n","slide":25,"bbox":[96,357,56,56]}
+{"kind":"textbox","id":"sh/7a1sf698","slide":25,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[108,370,32,28]}
+{"kind":"textbox","id":"sh/s7utkvqx","slide":25,"text":"Expose capabilities through a reviewed skill registry rather than model-generated robot APIs.","textPreview":"Expose capabilities through a reviewed skill registry rather than model-generated robot APIs.","textChars":93,"textLines":1,"bbox":[177,349,385,80]}
+{"kind":"shape","id":"sh/t83at0ri","slide":25,"bbox":[627,325,520,120]}
+{"kind":"shape","id":"sh/1czihwva","slide":25,"bbox":[651,357,56,56]}
+{"kind":"textbox","id":"sh/gbq1obep","slide":25,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[663,370,32,28]}
+{"kind":"textbox","id":"sh/fax0f6d4","slide":25,"text":"Support dialogue, knowledge, atomic, and composite turns without transferring speech or execution ownership.","textPreview":"Support dialogue, knowledge, atomic, and composite turns without transferring speech or execution ownership.","textChars":108,"textLines":1,"bbox":[732,349,385,80]}
+{"kind":"shape","id":"sh/e9ojm1wj","slide":25,"bbox":[72,470,520,120]}
+{"kind":"shape","id":"sh/t8fidwfe","slide":25,"bbox":[96,502,56,56]}
+{"kind":"textbox","id":"sh/s761kret","slide":25,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[108,515,32,28]}
+{"kind":"textbox","id":"sh/r6x0bmx8","slide":25,"text":"Validate plans before dispatch and return typed evidence for failure, clarification, replanning, and reporting.","textPreview":"Validate plans before dispatch and return typed evidence for failure, clarification, replanning, and reporting.","textChars":111,"textLines":1,"bbox":[177,494,385,80]}
+{"kind":"shape","id":"sh/6lojihwn","slide":25,"bbox":[627,470,520,120]}
+{"kind":"shape","id":"sh/5kfi9cf2","slide":25,"bbox":[651,502,56,56]}
+{"kind":"textbox","id":"sh/4j61g7eh","slide":25,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[663,515,32,28]}
+{"kind":"textbox","id":"sh/upkfqdcf","slide":25,"text":"Exercise full turns, controlled outcomes, focused subsystem checks, and symbolic postconditions.","textPreview":"Exercise full turns, controlled outcomes, focused subsystem checks, and symbolic postconditions.","textChars":96,"textLines":1,"bbox":[732,494,385,80]}
+{"kind":"notes","id":"nt/69wfm9o7","slide":25,"text":"Use if the committee asks for the complete objective list beyond the three objective verbs shown in the main presentation."}

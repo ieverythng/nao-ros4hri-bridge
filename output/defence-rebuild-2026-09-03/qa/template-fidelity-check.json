@@ -1,0 +1,25 @@
+{
+  "status": "fail",
+  "checkedAt": "2026-09-03T00:01:34.562Z",
+  "workspace": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\output\\defence-rebuild-2026-09-03",
+  "finalPptx": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\docs\\presentation\\TFM_DEFENCE_REVISED_2026-09-03.pptx",
+  "starterPptx": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\output\\defence-rebuild-2026-09-03\\template-starter.pptx",
+  "starterLayoutDir": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\output\\defence-rebuild-2026-09-03\\template-starter-layout",
+  "finalLayoutDir": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\output\\defence-rebuild-2026-09-03\\final-layouts",
+  "editDir": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\output\\defence-rebuild-2026-09-03",
+  "issueCount": 2,
+  "issues": [
+    {
+      "severity": "fail",
+      "id": "direct-ooxml-mutation",
+      "message": "Script/log suggests direct OOXML package mutation.",
+      "file": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\output\\defence-rebuild-2026-09-03\\extract_sources.py"
+    },
+    {
+      "severity": "fail",
+      "id": "direct-ooxml-mutation",
+      "message": "Script/log suggests direct OOXML package mutation.",
+      "file": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\output\\defence-rebuild-2026-09-03\\verify_package.py"
+    }
+  ]
+}

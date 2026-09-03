@@ -1,0 +1,25 @@
+{
+  "status": "pass",
+  "slideCount": 62,
+  "notesWithSources": 62,
+  "allRelationshipsResolve": true,
+  "nonnegativeExtents": true,
+  "noEmptyPlaceholders": true,
+  "nativeCharts": 1,
+  "pdfPages": 62,
+  "allPdfPagesSearchable": true,
+  "pdfFontsEmbedded": {
+    "/BCDEEE+Arial-BoldMT": true,
+    "/BCDFEE+ArialMT": true,
+    "/BCDGEE+Georgia-Bold": true,
+    "/BCDHEE+ArialMT": true,
+    "/BCDIEE+Arial-BoldMT": true,
+    "/BCDJEE+TimesNewRomanPS-BoldMT": true,
+    "/BCDKEE+CambriaMath": true,
+    "/BCDLEE+Consolas": true,
+    "/BCDMEE+Georgia-Bold": true,
+    "/BCDNEE+Calibri": true
+  },
+  "aspectRatio": "16:9",
+  "sha256": "1e95b6cdfac8dd04ff067c3a4c196751bac62beb7c2f01dfb1852ea93faed8ce"
+}

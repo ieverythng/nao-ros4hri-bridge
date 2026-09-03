@@ -1,0 +1,20 @@
+import fs from 'node:fs/promises';
+import {slides,OUT,ROOT} from './content.mjs';
+const layouts=[];
+for(let i=1;i<=25;i++)layouts.push(JSON.parse(await fs.readFile(`${OUT}/template-inspect/layouts/slide-${String(i).padStart(2,'0')}.json`,'utf8')));
+const inventory=[];
+for(const [i,l]of layouts.entries())for(const e of l.elements)inventory.push({slide:i+1,...e,shapeId:e.id});
+await fs.writeFile(`${OUT}/template-inspect/template-inventory.ndjson`,inventory.map(x=>JSON.stringify(x)).join('\n'));
+const outputSlides=slides.map((s,i)=>({outputSlide:i+1,sourceSlide:s.src,narrativeRole:s.title,reuseMode:'duplicate-slide',editTargets:s.ops.map(o=>{
+ if(o.action==='add')return {action:'add',newPrimitiveAllowed:true,zone:{left:o.pos[0],top:o.pos[1],width:o.pos[2],height:o.pos[3]},reason:'Seventh thesis objective explicitly requested in the approved storyboard.',mustNotOverlapInherited:true};
+ const el=layouts[s.src-1].elements.find(e=>e.id===o.id);if(!el)throw Error(`Slide ${i+1}: missing source ${s.src} element ${o.id}`);
+ return {shapeId:o.id,sourceElementId:el.id,sourceAnchor:el.aid,action:o.action,reason:o.image?'Replace mapped source content with the requested thesis figure or author photograph.':o.pos?'Reframe inherited content to accommodate requested technical detail.':'Approved thesis-aligned copy edit.',...(o.style?{styleOverride:o.style}:{}),...(o.pos?{zone:o.pos}:{}),...(o.image?{replacementAsset:o.image}:{})};
+ })}));
+// Intentional native chart/table changes are mapped explicitly.
+for(const [i,s]of slides.entries())if(s.src===10||s.src===20){const e=layouts[s.src-1].elements.find(e=>e.kind===(s.src===10?'chart':'table'));outputSlides[i].editTargets.push({shapeId:e.id,sourceElementId:e.id,sourceAnchor:e.aid,action:s.src===10?'replace':'rewrite-and-reposition',reason:s.src===10?'Replace the mapped native bar chart with the same native chart type and palette, updated data and explicit percentage axis. Imported axis settings were not applied reliably.':'Update data, denominator language and readable suite labels from the final thesis.'});}
+await fs.writeFile(`${OUT}/template-frame-map.json`,JSON.stringify({outputSlides,omittedSourceSlides:[4,16,22,23].map(sourceSlide=>({sourceSlide,reason:'Explicit user removal; useful content merged into relevant methodology or discussion slides.'}))},null,2));
+await fs.writeFile(`${OUT}/template-audit.txt`,'Visual route: edit the original PPTX by duplicating mapped slides. All25original slides inspected. Canvas1280x720. Empty master/layout layers preserved; no structural placeholders. Georgia headings, Arial body, ivory #F7F4EE, teal #073F47/#0C6570, ochre #E89A2F. Original institutional asset on title preserved. Intentional replacements and repositioning are object-specific in frame map. No global master/theme edit. Technical JSON uses a new local Consolas style, because the source has no code style. No blanket text clearing. Inspection helper could not find unzip on Windows; artifact-tool directly exported equivalent full inventory, renders and layout evidence.\n');
+await fs.writeFile(`${OUT}/deviation-log.txt`,'Approved changes: dense technical additions use explicitly reframed source2 content slots; thesis diagrams replace specified source panels; no aesthetic redraw. Code excerpts use Consolas18px as a new semantic style, not shrink-to-fit. Seventh objective added in bounded lower zone. Title chart replaced by supplied standing NAO photo, all other title objects preserved. Primary table/chart changed to final-thesis denominators and non-pass terminology. Additional appendix questionnaire pages duplicate source24.\n');
+await fs.writeFile(`${OUT}/source-notes.txt`,slides.map(s=>`${s.number}. ${s.title}\n${s.sources.join('\n')}\n`).join('\n'));
+await fs.writeFile(`${OUT}/content-plan.txt`,slides.map(s=>`${s.number}. ${s.title} [source ${s.src}, ${s.seconds}s]\n${s.notes}`).join('\n\n'));
+console.log(JSON.stringify({slides:slides.length,main:32,mainSeconds:slides.slice(0,32).reduce((n,s)=>n+s.seconds,0)}));

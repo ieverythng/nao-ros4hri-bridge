@@ -1,0 +1,10 @@
+{
+  "status": "pass",
+  "checkedAt": "2026-09-02T23:47:43.724Z",
+  "workspace": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\output\\defence-rebuild-2026-09-03",
+  "mapPath": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\output\\defence-rebuild-2026-09-03\\template-frame-map.json",
+  "inspectPath": "C:\\Users\\Admin\\PROJECTS\\nao-ros4hri-bridge\\output\\defence-rebuild-2026-09-03\\template-inspect\\template-inventory.ndjson",
+  "sourceSlideCount": 25,
+  "issueCount": 0,
+  "issues": []
+}

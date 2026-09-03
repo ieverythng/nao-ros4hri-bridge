@@ -1,0 +1,1254 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/zyxsni5k",
+    "id": "zyxsni5k",
+    "slide": 20,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "masterLayoutName": "Master",
+    "backgroundColor": "#F7F4EE",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light",
+        "eastAsianTypeface": "Calibri Light",
+        "complexScriptTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri",
+        "eastAsianTypeface": "Calibri",
+        "complexScriptTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Arial",
+      "Calibri",
+      "Calibri Light",
+      "Georgia"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/dcnixw7e",
+      "id": "1",
+      "bbox": [
+        1136,
+        0,
+        144,
+        144
+      ],
+      "geometry": "ellipse",
+      "lineColor": "#DCE9E8",
+      "lineWidth": 2
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qpwjmh8n",
+      "id": "2",
+      "bbox": [
+        1170,
+        0,
+        110,
+        110
+      ],
+      "geometry": "ellipse",
+      "lineColor": "#E8ECEA",
+      "lineWidth": 20
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/rq50vmp8",
+      "id": "3",
+      "bbox": [
+        1035,
+        662,
+        165,
+        18
+      ],
+      "geometry": "rect",
+      "text": "APPENDIX A",
+      "textPreview": "APPENDIX A",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "APPENDIX A"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "APPENDIX A",
+          "resolvedTextStyle": {
+            "fontSize": 10,
+            "typeface": "Arial",
+            "color": "#A33B32",
+            "bold": true,
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "APPENDIX A",
+              "fontSize": 10,
+              "typeface": "Arial",
+              "color": "#A33B32",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4nu1krqh",
+      "id": "4",
+      "bbox": [
+        1206,
+        662,
+        36,
+        18
+      ],
+      "geometry": "rect",
+      "text": "20",
+      "textPreview": "20",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "20"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "20",
+          "resolvedTextStyle": {
+            "fontSize": 11,
+            "typeface": "Arial",
+            "color": "#8A9296",
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "20",
+              "fontSize": 11,
+              "typeface": "Arial",
+              "color": "#8A9296"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/po3itc72",
+      "id": "5",
+      "bbox": [
+        72,
+        52,
+        860,
+        24
+      ],
+      "geometry": "rect",
+      "text": "APPENDIX",
+      "textPreview": "APPENDIX",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "APPENDIX"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "APPENDIX",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Arial",
+            "color": "#0C6570",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "APPENDIX",
+              "fontSize": 14,
+              "typeface": "Arial",
+              "color": "#0C6570",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/2lczih8r",
+      "id": "6",
+      "bbox": [
+        72,
+        88,
+        1050,
+        122
+      ],
+      "geometry": "rect",
+      "text": "Detailed frozen results",
+      "textPreview": "Detailed frozen results",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Detailed frozen results"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Detailed frozen results",
+          "resolvedTextStyle": {
+            "fontSize": 40,
+            "typeface": "Georgia",
+            "color": "#13202A",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Detailed frozen results",
+              "fontSize": 40,
+              "typeface": "Georgia",
+              "color": "#13202A",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "table",
+      "scope": "slide",
+      "aid": "tb/q5cnipsf",
+      "id": "7",
+      "bbox": [
+        72,
+        190,
+        1070,
+        410
+      ],
+      "text": "Evidence scope | Pass | Fail | Interpretation\nPrimary qualification | 64 | 8 | 72 frozen Qwen3-VL records\nEnd-to-end questionnaire | 20 | 2 | 22 integrated user turns\nEnvironment | 11 | 0 | Controlled scene and grounding\nStateful KB | 7 | 0 | Pre-query, mutation/effect, post-query\nRobustness | 12 | 3 | Five frozen cases repeated three times\nFake deep | 7 | 2 | Nine demanding multi-step cases\nCapability extreme | 5 | 2 | Long composite coverage",
+      "textPreview": "Evidence scope | Pass | Fail | Interpretation | Primary qualification | 64 | 8 | 72 frozen Qwen3-VL records | End-to-end questionnaire | ...",
+      "rows": 8,
+      "cols": 4,
+      "cells": [
+        {
+          "index": 1,
+          "row": 1,
+          "column": 1,
+          "bbox": [
+            72,
+            190,
+            310,
+            51.25
+          ],
+          "text": "Evidence scope",
+          "textPreview": "Evidence scope",
+          "fillColor": "#073F47",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Evidence scope",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Evidence scope",
+                  "fontSize": 16,
+                  "color": "#FFFFFF",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "row": 1,
+          "column": 2,
+          "bbox": [
+            382,
+            190,
+            110,
+            51.25
+          ],
+          "text": "Pass",
+          "textPreview": "Pass",
+          "fillColor": "#073F47",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Pass",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Pass",
+                  "fontSize": 16,
+                  "color": "#FFFFFF",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "row": 1,
+          "column": 3,
+          "bbox": [
+            492,
+            190,
+            110,
+            51.25
+          ],
+          "text": "Fail",
+          "textPreview": "Fail",
+          "fillColor": "#073F47",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Fail",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Fail",
+                  "fontSize": 16,
+                  "color": "#FFFFFF",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "row": 1,
+          "column": 4,
+          "bbox": [
+            602,
+            190,
+            540,
+            51.25
+          ],
+          "text": "Interpretation",
+          "textPreview": "Interpretation",
+          "fillColor": "#073F47",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Interpretation",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Interpretation",
+                  "fontSize": 16,
+                  "color": "#FFFFFF",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 5,
+          "row": 2,
+          "column": 1,
+          "bbox": [
+            72,
+            241.25,
+            310,
+            51.25
+          ],
+          "text": "Primary qualification",
+          "textPreview": "Primary qualification",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Primary qualification",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Primary qualification",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 6,
+          "row": 2,
+          "column": 2,
+          "bbox": [
+            382,
+            241.25,
+            110,
+            51.25
+          ],
+          "text": "64",
+          "textPreview": "64",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "64",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "64",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 7,
+          "row": 2,
+          "column": 3,
+          "bbox": [
+            492,
+            241.25,
+            110,
+            51.25
+          ],
+          "text": "8",
+          "textPreview": "8",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "8",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "8",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 8,
+          "row": 2,
+          "column": 4,
+          "bbox": [
+            602,
+            241.25,
+            540,
+            51.25
+          ],
+          "text": "72 frozen Qwen3-VL records",
+          "textPreview": "72 frozen Qwen3-VL records",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "72 frozen Qwen3-VL records",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "72 frozen Qwen3-VL records",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 9,
+          "row": 3,
+          "column": 1,
+          "bbox": [
+            72,
+            292.5,
+            310,
+            51.25
+          ],
+          "text": "End-to-end questionnaire",
+          "textPreview": "End-to-end questionnaire",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "End-to-end questionnaire",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "End-to-end questionnaire",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 10,
+          "row": 3,
+          "column": 2,
+          "bbox": [
+            382,
+            292.5,
+            110,
+            51.25
+          ],
+          "text": "20",
+          "textPreview": "20",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "20",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "20",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 11,
+          "row": 3,
+          "column": 3,
+          "bbox": [
+            492,
+            292.5,
+            110,
+            51.25
+          ],
+          "text": "2",
+          "textPreview": "2",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "2",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "2",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 12,
+          "row": 3,
+          "column": 4,
+          "bbox": [
+            602,
+            292.5,
+            540,
+            51.25
+          ],
+          "text": "22 integrated user turns",
+          "textPreview": "22 integrated user turns",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "22 integrated user turns",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "22 integrated user turns",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 13,
+          "row": 4,
+          "column": 1,
+          "bbox": [
+            72,
+            343.75,
+            310,
+            51.25
+          ],
+          "text": "Environment",
+          "textPreview": "Environment",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Environment",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Environment",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 14,
+          "row": 4,
+          "column": 2,
+          "bbox": [
+            382,
+            343.75,
+            110,
+            51.25
+          ],
+          "text": "11",
+          "textPreview": "11",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "11",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "11",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 15,
+          "row": 4,
+          "column": 3,
+          "bbox": [
+            492,
+            343.75,
+            110,
+            51.25
+          ],
+          "text": "0",
+          "textPreview": "0",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "0",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "0",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 16,
+          "row": 4,
+          "column": 4,
+          "bbox": [
+            602,
+            343.75,
+            540,
+            51.25
+          ],
+          "text": "Controlled scene and grounding",
+          "textPreview": "Controlled scene and grounding",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Controlled scene and grounding",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Controlled scene and grounding",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 17,
+          "row": 5,
+          "column": 1,
+          "bbox": [
+            72,
+            395,
+            310,
+            51.25
+          ],
+          "text": "Stateful KB",
+          "textPreview": "Stateful KB",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Stateful KB",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Stateful KB",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 18,
+          "row": 5,
+          "column": 2,
+          "bbox": [
+            382,
+            395,
+            110,
+            51.25
+          ],
+          "text": "7",
+          "textPreview": "7",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "7",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "7",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 19,
+          "row": 5,
+          "column": 3,
+          "bbox": [
+            492,
+            395,
+            110,
+            51.25
+          ],
+          "text": "0",
+          "textPreview": "0",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "0",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "0",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 20,
+          "row": 5,
+          "column": 4,
+          "bbox": [
+            602,
+            395,
+            540,
+            51.25
+          ],
+          "text": "Pre-query, mutation/effect, post-query",
+          "textPreview": "Pre-query, mutation/effect, post-query",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Pre-query, mutation/effect, post-query",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Pre-query, mutation/effect, post-query",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 21,
+          "row": 6,
+          "column": 1,
+          "bbox": [
+            72,
+            446.25,
+            310,
+            51.25
+          ],
+          "text": "Robustness",
+          "textPreview": "Robustness",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Robustness",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Robustness",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 22,
+          "row": 6,
+          "column": 2,
+          "bbox": [
+            382,
+            446.25,
+            110,
+            51.25
+          ],
+          "text": "12",
+          "textPreview": "12",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "12",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "12",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 23,
+          "row": 6,
+          "column": 3,
+          "bbox": [
+            492,
+            446.25,
+            110,
+            51.25
+          ],
+          "text": "3",
+          "textPreview": "3",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "3",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "3",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 24,
+          "row": 6,
+          "column": 4,
+          "bbox": [
+            602,
+            446.25,
+            540,
+            51.25
+          ],
+          "text": "Five frozen cases repeated three times",
+          "textPreview": "Five frozen cases repeated three times",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Five frozen cases repeated three times",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Five frozen cases repeated three times",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 25,
+          "row": 7,
+          "column": 1,
+          "bbox": [
+            72,
+            497.5,
+            310,
+            51.25
+          ],
+          "text": "Fake deep",
+          "textPreview": "Fake deep",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Fake deep",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Fake deep",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 26,
+          "row": 7,
+          "column": 2,
+          "bbox": [
+            382,
+            497.5,
+            110,
+            51.25
+          ],
+          "text": "7",
+          "textPreview": "7",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "7",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "7",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 27,
+          "row": 7,
+          "column": 3,
+          "bbox": [
+            492,
+            497.5,
+            110,
+            51.25
+          ],
+          "text": "2",
+          "textPreview": "2",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "2",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "2",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 28,
+          "row": 7,
+          "column": 4,
+          "bbox": [
+            602,
+            497.5,
+            540,
+            51.25
+          ],
+          "text": "Nine demanding multi-step cases",
+          "textPreview": "Nine demanding multi-step cases",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Nine demanding multi-step cases",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Nine demanding multi-step cases",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 29,
+          "row": 8,
+          "column": 1,
+          "bbox": [
+            72,
+            548.75,
+            310,
+            51.25
+          ],
+          "text": "Capability extreme",
+          "textPreview": "Capability extreme",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Capability extreme",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Capability extreme",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 30,
+          "row": 8,
+          "column": 2,
+          "bbox": [
+            382,
+            548.75,
+            110,
+            51.25
+          ],
+          "text": "5",
+          "textPreview": "5",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "5",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "5",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 31,
+          "row": 8,
+          "column": 3,
+          "bbox": [
+            492,
+            548.75,
+            110,
+            51.25
+          ],
+          "text": "2",
+          "textPreview": "2",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "2",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "2",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 32,
+          "row": 8,
+          "column": 4,
+          "bbox": [
+            602,
+            548.75,
+            540,
+            51.25
+          ],
+          "text": "Long composite coverage",
+          "textPreview": "Long composite coverage",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Long composite coverage",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Long composite coverage",
+                  "fontSize": 15,
+                  "color": "#13202A"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "composeRuns": []
+}

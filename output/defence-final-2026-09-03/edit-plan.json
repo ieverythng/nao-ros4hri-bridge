@@ -1,0 +1,64 @@
+{
+  "edits": {
+    "1": [
+      {
+        "id": "18",
+        "crop": {
+          "left": 0.16,
+          "top": 0.3,
+          "right": 0.205,
+          "bottom": 0.18
+        },
+        "reason": "User requested a closer in-frame crop of the original photograph; preserve title content and photo bytes."
+      }
+    ],
+    "13": [
+      {
+        "id": "14",
+        "text": "object_id: canonical capability name.\nkind/category: skill and semantic family.\naliases: accepted compatibility names.\nparams: allowed argument names.\nrequired_params: mandatory subset.\n\nA plan invokes this capability with concrete args; the registry is its definition.",
+        "reason": "Remove the developing abstraction-level taxonomy, as requested globally."
+      }
+    ],
+    "17": [
+      {
+        "id": "5",
+        "text": "IMPLEMENTATION · CONTRACTS 6–7",
+        "reason": "Focus this slide on result and feedback ownership."
+      },
+      {
+        "id": "13",
+        "text": "Result → feedback → truthful closure",
+        "reason": "Avoid implying that the planner speaks."
+      },
+      {
+        "id": "14",
+        "text": "C6 · skill result\nstatus + summary_text + evidence + failure + metadata.\n\nC7 · executor feedback\ngoal/plan/version + event + step + status/reason + result_payload.\n\nReporting boundary\nThe planner supplies structured status.\nDialogue Manager alone owns speaking.",
+        "reason": "Make the distinction between structured status and speaking explicit."
+      },
+      {
+        "id": "15",
+        "text": "Action result → /planner/execution_feedback → planner supervision",
+        "reason": "Remove the requested planner-topic-to-dialogue-layer shorthand."
+      }
+    ],
+    "21": [
+      {
+        "id": "15",
+        "text": "I thoroughly reviewed, revised and tuned all agent-generated project code.",
+        "reason": "Express the approved supervision statement in the presenter’s first-person voice."
+      }
+    ],
+    "46": [
+      {
+        "id": "16",
+        "text": "gold apple\nmultiturn",
+        "reason": "Native PowerPoint QA: wrap the accepted label to restore its gutter; preserve all words and slide structure."
+      }
+    ]
+  },
+  "noteEdits": {
+    "13": "MAIN SLIDE 13/32 · rehearsal budget 60 seconds\nExact selected fields from the local canonical-format registry mirror docs/architecture/ab_registry_input.json, checked against src/planner_llm/config/skill_registry.json. The canonical Neural-Wokbench nested source is absent in this Windows checkout. Do not imply params is itself JSON Schema: this projection lists names; value semantics and validation live in shared contracts and adapters. The thesis describes 12 planner-visible skills; only configured runtime-callable skills are exposed.\n\n[Sources]\nC:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis\nC:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — Table 4.5\nC:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/architecture/ab_registry_input.json\nC:/Users/Admin/PROJECTS/nao-ros4hri-bridge/src/planner_llm/config/skill_registry.json",
+    "17": "MAIN SLIDE 17/32 · rehearsal budget 50 seconds\nExcerpt of thesis Contract 6: the remove-holds operation is omitted for space, not a complete effect transaction. metadata.fake=true must remain visible. C7 carries result evidence back into planner supervision. Structured communication intents are internal API messages, never spoken output. The main slide deliberately avoids equating this message with speech. In current frozen v1 source, orchestrator relays the act; dialogue_manager invokes chatbot wording and owns the Say dispatch. Do not copy obsolete direct-wording launch controls from older skill docs.\n\n[Sources]\nC:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis\nC:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — §4.1.7–4.1.9\nC:/Users/Admin/PROJECTS/nao-ros4hri-bridge/docs/launch_profiles.md",
+    "21": "MAIN SLIDE 21/32 · rehearsal budget 60 seconds\nI supervised the agent-assisted development process and thoroughly reviewed, revised and tuned the agent-generated project code. Explain engineering support, not a causal measured efficiency gain or independently validated new algorithm. Runtime and development agents share the model+tools+constraints+feedback pattern; they are not the same running instances. Human judgement and responsibility remain with the author. The skill operational X/10 review score is not the experimental metric. Quotes checked against current SKILL.md; do not infer every historical run followed every current rule.\n\n[Sources]\nC:/Users/Admin/Downloads/TFM_JUAN_BENDEK_FINAL (1).pdf — final thesis\nC:/Users/Admin/PROJECTS/nao-ros4hri-bridge/.codex/skills/robot-stack-iteration-loop/SKILL.md\nC:/Users/Admin/PROJECTS/nao-ros4hri-bridge/.codex/skills/robot-runtime-performance-review/SKILL.md\nAuthor statement in this review conversation"
+  }
+}

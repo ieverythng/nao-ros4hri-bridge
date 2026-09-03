@@ -1,0 +1,562 @@
+{
+  "outputSlides": [
+    {
+      "outputSlide": 1,
+      "sourceSlide": 1,
+      "narrativeRole": "Design, Integration, and Validation of a Modular LLM-Based Interactive Architecture",
+      "sourceTitle": "Design, Integration, and Validation of a Modular LLM-Based Interactive Architecture",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "shapeId": "18",
+          "sourceElementId": "18",
+          "sourceAnchor": "im/nidwzydc",
+          "action": "rewrite",
+          "reason": "User requested a closer in-frame crop of the original photograph; preserve title content and photo bytes."
+        }
+      ]
+    },
+    {
+      "outputSlide": 2,
+      "sourceSlide": 2,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Language must become verifiable action",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 3,
+      "sourceSlide": 3,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Research questions",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 4,
+      "sourceSlide": 4,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Implementation and validation objectives",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 5,
+      "sourceSlide": 5,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "NAO, ROS 2 and ROS4HRI",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 6,
+      "sourceSlide": 6,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "An LLM agent is more than a model",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 7,
+      "sourceSlide": 7,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Grounded planning in embodied systems",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 8,
+      "sourceSlide": 8,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "System architecture and ownership",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 9,
+      "sourceSlide": 9,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Runtime: request, action and feedback",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 10,
+      "sourceSlide": 10,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Dialogue ownership and chatbot routing",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 11,
+      "sourceSlide": 11,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Grounding builds a bounded scene context",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 12,
+      "sourceSlide": 12,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "The planner request is an admitted objective",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 13,
+      "sourceSlide": 13,
+      "narrativeRole": "A skill definition is the planner’s vocabulary",
+      "sourceTitle": "A skill definition is the planner’s vocabulary",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "shapeId": "14",
+          "sourceElementId": "14",
+          "sourceAnchor": "sh/t8fy5k3i",
+          "action": "rewrite",
+          "reason": "Remove the developing abstraction-level taxonomy, as requested globally."
+        }
+      ]
+    },
+    {
+      "outputSlide": 14,
+      "sourceSlide": 14,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Declared effects must become observed evidence",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 15,
+      "sourceSlide": 15,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "The planner proposes and supervises plans",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 16,
+      "sourceSlide": 16,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "The orchestrator controls execution",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 17,
+      "sourceSlide": 17,
+      "narrativeRole": "Results drive feedback and truthful closure",
+      "sourceTitle": "Results drive feedback and truthful closure",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "shapeId": "5",
+          "sourceElementId": "5",
+          "sourceAnchor": "sh/6lwvql4v",
+          "action": "rewrite",
+          "reason": "Focus this slide on result and feedback ownership."
+        },
+        {
+          "shapeId": "13",
+          "sourceElementId": "13",
+          "sourceAnchor": "sh/3ap8fm50",
+          "action": "rewrite",
+          "reason": "Avoid implying that the planner speaks."
+        },
+        {
+          "shapeId": "14",
+          "sourceElementId": "14",
+          "sourceAnchor": "sh/gnepkr69",
+          "action": "rewrite",
+          "reason": "Make the distinction between structured status and speaking explicit."
+        },
+        {
+          "shapeId": "15",
+          "sourceElementId": "15",
+          "sourceAnchor": "sh/honqdwnu",
+          "action": "rewrite",
+          "reason": "Remove the requested planner-topic-to-dialogue-layer shorthand."
+        }
+      ]
+    },
+    {
+      "outputSlide": 18,
+      "sourceSlide": 18,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Real and fake skills share a result boundary",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 19,
+      "sourceSlide": 19,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Evaluation qualifies a configuration",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 20,
+      "sourceSlide": 20,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Evidence determines the case verdict",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 21,
+      "sourceSlide": 21,
+      "narrativeRole": "Human-supervised, agent-assisted validation",
+      "sourceTitle": "Human-supervised, agent-assisted validation",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "shapeId": "15",
+          "sourceElementId": "15",
+          "sourceAnchor": "sh/hwjy98rm",
+          "action": "rewrite",
+          "reason": "Express the approved supervision statement in the presenter’s first-person voice."
+        }
+      ]
+    },
+    {
+      "outputSlide": 22,
+      "sourceSlide": 22,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Frozen evidence scope",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 23,
+      "sourceSlide": 23,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Primary Qwen3-VL results",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 24,
+      "sourceSlide": 24,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Failure analysis",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 25,
+      "sourceSlide": 25,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Model-agnostic does not mean invariant",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 26,
+      "sourceSlide": 26,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Retained recovery: “Pick up the phone.”",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 27,
+      "sourceSlide": 27,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Controlled live demonstration",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 28,
+      "sourceSlide": 28,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Discussion: answers to the research questions",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 29,
+      "sourceSlide": 29,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Limitations and claim boundaries",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 30,
+      "sourceSlide": 30,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Future work",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 31,
+      "sourceSlide": 31,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Contributions",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 32,
+      "sourceSlide": 32,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Conclusion",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 33,
+      "sourceSlide": 33,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Short answers for likely questions",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 34,
+      "sourceSlide": 34,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Detailed primary results",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 35,
+      "sourceSlide": 35,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Main questionnaire · 1/5",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 36,
+      "sourceSlide": 36,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Main questionnaire · 2/5",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 37,
+      "sourceSlide": 37,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Main questionnaire · 3/5",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 38,
+      "sourceSlide": 38,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Main questionnaire · 4/5",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 39,
+      "sourceSlide": 39,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Main questionnaire · 5/5",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 40,
+      "sourceSlide": 40,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Scene and grounding · 1/3",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 41,
+      "sourceSlide": 41,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Scene and grounding · 2/3",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 42,
+      "sourceSlide": 42,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Scene and grounding · 3/3",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 43,
+      "sourceSlide": 43,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Stateful KB · 1/2",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 44,
+      "sourceSlide": 44,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Stateful KB · 2/2",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 45,
+      "sourceSlide": 45,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Controlled multi-step · 1/3",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 46,
+      "sourceSlide": 46,
+      "narrativeRole": "Controlled multi-step · 2/3",
+      "sourceTitle": "Controlled multi-step · 2/3",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "shapeId": "16",
+          "sourceElementId": "16",
+          "sourceAnchor": "sh/nm943m9k",
+          "action": "rewrite",
+          "reason": "Native PowerPoint QA: wrap the accepted label to restore its gutter; preserve all words and slide structure."
+        }
+      ]
+    },
+    {
+      "outputSlide": 47,
+      "sourceSlide": 47,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Controlled multi-step · 3/3",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 48,
+      "sourceSlide": 48,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Robustness · 1/2",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 49,
+      "sourceSlide": 49,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Robustness · 2/2",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 50,
+      "sourceSlide": 50,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Multi-capability · 1/2",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 51,
+      "sourceSlide": 51,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Multi-capability · 2/2",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 52,
+      "sourceSlide": 52,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Contract 1: chatbot turn output",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 53,
+      "sourceSlide": 53,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Contract 2: grounded context",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 54,
+      "sourceSlide": 54,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Skill metadata and dispatch",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 55,
+      "sourceSlide": 55,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Skill implementation and callability",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 56,
+      "sourceSlide": 56,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Contract 5: executable plan",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 57,
+      "sourceSlide": 57,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Contracts 7–8: feedback and communication",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 58,
+      "sourceSlide": 58,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "ROS action carrier and fake configuration",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 59,
+      "sourceSlide": 59,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "KnowledgeCore: state and verified effects",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 60,
+      "sourceSlide": 60,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Recovery trace: retained event sequence",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 61,
+      "sourceSlide": 61,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Implementation ownership recap",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 62,
+      "sourceSlide": 62,
+      "narrativeRole": "Preserve accepted source slide unchanged",
+      "sourceTitle": "Evidence and interpretation notes",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    }
+  ],
+  "omittedSourceSlides": []
+}
