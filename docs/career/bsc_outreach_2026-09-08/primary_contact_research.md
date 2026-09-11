@@ -230,8 +230,14 @@ Systems first.
   for the Salamandra and MarIA model lines. This is a strong technical
   adjacency, but his laboratory is organisationally separate from the AI
   Institute vacancy and no source links him to EVELYN.
-- **Public institutional email:** `aitor.gonzalez@bsc.es`, explicitly published
-  on his BSC profile.
+- **Formerly published institutional email:** `aitor.gonzalez@bsc.es` was
+  displayed on his BSC profile when this research was prepared. **Correction, 11
+  September 2026:** BSC rejected a message to this address with permanent SMTP
+  status `550 5.1.1` (`User unknown in virtual mailbox table`). The staff page
+  is stale and the address must not be retried. Use Aitor's
+  [LinkedIn profile](https://es.linkedin.com/in/aitor-gonzalez-agirre-052910142)
+  or the Language Technologies team mailbox, `langtech@bsc.es`, which appears
+  in recent BSC-LT model documentation.
 - **LinkedIn:** [Aitor Gonzalez Agirre](https://es.linkedin.com/in/aitor-gonzalez-agirre-052910142)
 - **Evidence:** [official BSC profile](https://www.bsc.es/gonzalez-aguirre-aitor),
   [official Language Technologies Laboratory](https://www.bsc.es/discover-bsc/organisation/research-structure/language-technologies-laboratory).

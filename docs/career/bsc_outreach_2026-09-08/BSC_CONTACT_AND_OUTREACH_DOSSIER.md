@@ -41,6 +41,30 @@ without implying that the recipient can reopen or accelerate the process.
 
 No email address below has been inferred from a naming convention.
 
+## Contact correction recorded 11 September 2026
+
+The address `aitor.gonzalez@bsc.es`, although still displayed on Aitor
+Gonzalez-Agirre's BSC staff page, is not operational. A message sent on 10
+September was rejected by BSC's mail server with SMTP status `550 5.1.1` and
+the explanation `User unknown in virtual mailbox table`. This is a permanent
+recipient failure, not a delay or spam-filter response. Do not retry that
+address.
+
+Use these routes instead:
+
+1. [Aitor Gonzalez-Agirre on LinkedIn](https://es.linkedin.com/in/aitor-gonzalez-agirre-052910142).
+   He advertised the exact Agent and Tool-Use vacancy and invited interested
+   candidates to contact him.
+2. `langtech@bsc.es`, the shared Language Technologies Laboratory address
+   published in [recent BSC-LT model documentation](https://huggingface.co/BSC-LT/whisper-bsc-large-v3-cat/blame/main/README.md).
+   Address the subject and opening line explicitly to Dr Gonzalez-Agirre and
+   ask the team to forward the message if necessary.
+3. `aitor.gonzalezagirre@gmail.com`, a direct address published in his earlier
+   [corresponding-author](https://www.researchgate.net/publication/327861444_016_MINING_SPANISH_AND_CATALAN_ELECTRONIC_HEALTH_RECORDS_EXTRACTION_OF_INFORMATION_ON_DIAGNOSIS_OF_STROKE_FROM_DISCHARGE_REPORTS)
+   and [SemEval records](https://www.aclweb.org/portal/content/semeval-2016-semantic-textual-similarity-call-shared-task-participation).
+   Its present operation has not been independently verified, so it is a
+   last-resort route rather than the first resend destination.
+
 ## Ranked application map
 
 | Rank | Reference | Reconstructed remit | Candidate fit | Principal limitation |
@@ -119,15 +143,16 @@ researchers. Contact him only if Perino does not reply.
 
 **Primary: Aitor Gonzalez-Agirre**  
 Role: BSC Language Modeling team leader  
-Route: `aitor.gonzalez@bsc.es`  
-LinkedIn: [Aitor Gonzalez-Agirre](https://es.linkedin.com/in/aitor-gonzalez-agirre-052910142)  
+Route: [LinkedIn](https://es.linkedin.com/in/aitor-gonzalez-agirre-052910142); team mailbox: `langtech@bsc.es`
 Confidence: **Strong group-level**
 
 BSC's [official staff page](https://www.bsc.es/gonzalez-aguirre-aitor) verifies
-his leadership and email. Public evidence does not identify the BSC lead for
-EVELYN or establish that Gonzalez-Agirre sits on the `397_26` panel. He remains
-the most relevant verified language-model contact, but the message must ask for
-fit or routing rather than presume ownership.
+his leadership, but its listed personal mailbox returned a permanent recipient
+error on 10 September 2026. Recent BSC-LT model documentation publishes
+`langtech@bsc.es` as the laboratory contact. Public evidence does not identify
+the BSC lead for EVELYN or establish that Gonzalez-Agirre sits on the `397_26`
+panel. He remains the most relevant verified language-model contact, but the
+message must ask for fit or routing rather than presume ownership.
 
 **Campaign note:** Gonzalez-Agirre directly advertised `187_26` as part of his
 team. Since both applications concern language models and agentic systems,
@@ -138,13 +163,13 @@ for `397_26` and `187_26`.
 
 **Primary: Aitor Gonzalez-Agirre**  
 Role: Leader of the Language Modeling Team named in the advert  
-Route: `aitor.gonzalez@bsc.es`  
-LinkedIn: [Aitor Gonzalez-Agirre](https://es.linkedin.com/in/aitor-gonzalez-agirre-052910142)  
+Route: [LinkedIn](https://es.linkedin.com/in/aitor-gonzalez-agirre-052910142); team mailbox: `langtech@bsc.es`
 Confidence: **Direct**
 
 The [vacancy](https://es.linkedin.com/jobs/view/ai-agent-tool-use-engineer-re2-at-barcelona-supercomputing-center-4444465952)
 names the Language Modeling Team. Gonzalez-Agirre's official BSC profile names
-him as its leader, and his public LinkedIn post advertised the exact role.
+him as its leader, and his public LinkedIn post advertised the exact role. The
+personal BSC address on his staff page is stale and must not be retried.
 
 **Optional secondary: Ignacio Lloret Lorente**  
 Role: Language Modeling Team engineer working on model training and evaluation  
@@ -260,6 +285,24 @@ Juan David Bendek Williamson
 ### Message C: Aitor Gonzalez-Agirre, `397_26` and `187_26`
 
 **Subject:** Applications 397_26 and 187_26 | language models, agents and evaluation
+
+**Recommended delivery:** send the complete message to `langtech@bsc.es` with
+the subject `For Dr Aitor Gonzalez-Agirre | Applications 397_26 and 187_26`.
+Add this sentence before the salutation:
+
+> I attempted to use the address listed on Dr Gonzalez-Agirre's BSC staff page,
+> but BSC returned a permanent unknown-recipient error. I would be grateful if
+> you could forward this message to him or confirm the appropriate address.
+
+Send this separate LinkedIn note directly to Dr Gonzalez-Agirre:
+
+> Dear Dr Gonzalez-Agirre, I applied for BSC positions `397_26_AII_S_RE2` and
+> `187_26_AII_LM_RE2`. I tried the address on your BSC profile, but it returned
+> an unknown-recipient error, so I sent my short introduction and academic CV
+> to the Language Technologies mailbox. Your team advertised the Agent and
+> Tool-Use position directly, and I would value your view on which of the two
+> roles better fits my production agent-workflow and MSc robotics-validation
+> experience. Thank you for your time.
 
 Dear Dr Gonzalez-Agirre,
 
